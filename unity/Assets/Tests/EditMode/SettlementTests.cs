@@ -84,6 +84,32 @@ public class SettlementTests
         StringAssert.Contains(SettlementPlacer.DefaultFileName, Rejects(Entry("b", "lon: east, lat: 32, type: town, founded: 1900, " + Src)).Message);
     }
 
+    // Final fix 3, M5: duplicate keys and malformed ids name the file, the id and the field.
+    [Test]
+    public void DuplicateKeyIsRejectedNamingIdAndField()
+    {
+        var ex = Rejects(Entry("a") + Entry("d", "lon: 35, lon: 35.5, lat: 32, type: town, founded: 1900, " + Src));
+        AssertNames(ex, "d", "lon"); StringAssert.Contains("duplicate", ex.Message);
+    }
+
+    [Test]
+    public void DuplicateKeyInBlockStyleIsRejectedNamingIdAndField()
+    {
+        var ex = Rejects("- id: b\n  name: N\n  lon: 35\n  lat: 32\n  type: town\n  type: city\n  founded: 1900\n  " + Src + "\n");
+        AssertNames(ex, "b", "type"); StringAssert.Contains("duplicate", ex.Message);
+    }
+
+    [TestCase("Tel_Aviv")]
+    [TestCase("tel-aviv")]
+    [TestCase("9a")]
+    [TestCase("_a")]
+    [TestCase("'a b'")]
+    public void IdThatIsNotSnakeCaseIsRejected(string id)
+    {
+        var ex = Rejects(Entry(id));
+        AssertNames(ex, id.Trim('\''), "id");
+    }
+
     [Test]
     public void RealSettlementFileParses()
     {

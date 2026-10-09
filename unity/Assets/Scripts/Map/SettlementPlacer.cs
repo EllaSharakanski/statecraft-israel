@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -53,23 +55,31 @@ namespace Statecraft.Game.Map
 
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
+        static readonly Regex IdRule = new Regex(@"^[a-z][a-z0-9_]*\z");
+
         /// <summary>Parses settlements_1948.yaml. Every malformed input throws InvalidDataException naming
-        /// <paramref name="file"/>, and for content errors the settlement id and the field: YAML syntax, unknown keys or bad
-        /// scalars; empty id or name; unknown type; duplicate id; missing or non-finite lon/lat (or outside
+        /// <paramref name="file"/>, and for content errors the settlement id and the field: YAML syntax, duplicate keys,
+        /// unknown keys or bad scalars (with the id of the settlement they sit in); empty id or name; an id that is not
+        /// lower snake_case; unknown type; duplicate id; missing or non-finite lon/lat (or outside
         /// <paramref name="bounds"/> when given); empty sources, or a source with an empty url or checked; founded null
         /// without pre_modern: true.</summary>
         public static List<Settlement> Parse(string yaml, (double lon0, double lon1, double lat0, double lat1)? bounds = null,
             string file = DefaultFileName)
         {
             SettlementFile doc;
-            try { doc = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build().Deserialize<SettlementFile>(yaml); }
-            catch (YamlException e) { throw new InvalidDataException($"{file}: {e.Message}", e); }
+            try { doc = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).WithDuplicateKeyChecking().Build().Deserialize<SettlementFile>(yaml); }
+            catch (YamlException e)
+            {
+                var id = SettlementIdAt(yaml, e.Start);
+                throw new InvalidDataException(id == null ? $"{file}: {e.Message}" : $"{file}: '{id}' {e.Message}", e);
+            }
             if (doc?.Settlements == null || doc.Settlements.Count == 0) throw new InvalidDataException($"{file}: no settlements");
             var ids = new HashSet<string>();
             foreach (var s in doc.Settlements)
             {
                 if (s == null || string.IsNullOrWhiteSpace(s.Id)) throw new InvalidDataException($"{file}: a settlement has an empty id");
                 string at = $"{file}: '{s.Id}'";
+                if (!IdRule.IsMatch(s.Id)) throw new InvalidDataException($"{at} id must be lower snake_case (^[a-z][a-z0-9_]*$)");
                 if (!ids.Add(s.Id)) throw new InvalidDataException($"{at} duplicate id");
                 if (string.IsNullOrWhiteSpace(s.Name)) throw new InvalidDataException($"{at} has an empty name");
                 if (s.Type == null || !Marker.ContainsKey(s.Type)) throw new InvalidDataException($"{at} has unknown type '{s.Type}'");
@@ -84,6 +94,39 @@ namespace Statecraft.Game.Map
                 if (s.Founded == null && !s.PreModern) throw new InvalidDataException($"{at} founded is null without pre_modern: true");
             }
             return doc.Settlements;
+        }
+
+        /// <summary>The id of the settlement whose mapping contains <paramref name="at"/>, or null when the mark lies outside
+        /// every settlement or the YAML cannot be walked that far. Walks parser events: root mapping (depth 1), the
+        /// settlements sequence (2), one settlement mapping (3), whose keys and values alternate.</summary>
+        static string SettlementIdAt(string yaml, Mark at)
+        {
+            var parser = new Parser(new StringReader(yaml));
+            int depth = 0, node = 0; long start = -1; string key = null, id = null;
+            try
+            {
+                while (parser.MoveNext())
+                {
+                    var ev = parser.Current;
+                    if (ev is MappingStart || ev is SequenceStart)
+                    {
+                        if (depth == 3) node++;   // a collection value inside a settlement (sources)
+                        if (++depth == 3) { start = ev.Start.Index; node = 0; id = null; }
+                    }
+                    else if (ev is MappingEnd || ev is SequenceEnd)
+                    {
+                        if (depth == 3 && start <= at.Index && at.Index <= ev.End.Index) return id;
+                        depth--;
+                    }
+                    else if (ev is Scalar sc && depth == 3)
+                    {
+                        if (node % 2 == 0) key = sc.Value; else if (key == "id" && id == null) id = sc.Value;
+                        node++;
+                    }
+                }
+            }
+            catch (YamlException) { }
+            return null;
         }
 
         static void CheckCoord(string at, string field, double v, double? min, double? max)
