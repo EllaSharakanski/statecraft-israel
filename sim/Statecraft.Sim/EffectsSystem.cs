@@ -69,8 +69,8 @@ namespace Statecraft.Sim
                 bool on = s.ActiveSituations.Contains(sit.Id);
                 bool turnOn = sit.OnBelow.HasValue ? v < sit.OnBelow.Value : v > sit.OnAbove!.Value;
                 bool turnOff = sit.OffAbove.HasValue ? v > sit.OffAbove.Value : v < sit.OffBelow!.Value;
-                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, $"{sit.Id} began ({sit.Indicator} = {v:0.00})")); }
-                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, $"{sit.Id} ended ({sit.Indicator} = {v:0.00})")); }
+                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, FormattableString.Invariant($"{sit.Id} began ({sit.Indicator} = {v:0.00})"))); }
+                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, FormattableString.Invariant($"{sit.Id} ended ({sit.Indicator} = {v:0.00})"))); }
             }
         }
 

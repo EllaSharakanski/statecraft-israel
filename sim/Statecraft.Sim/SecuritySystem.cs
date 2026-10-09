@@ -18,7 +18,7 @@ namespace Statecraft.Sim
             rung = Math.Max(1, Math.Min(5, rung));
             if (rung == 5 && s.Rung != 5) s.CeasefireWeeksLeft = c.Rules.CeasefireWeeks;
             if (rung != 5) s.CeasefireWeeksLeft = 0;
-            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, $"security level {s.Rung} -> {rung}"));
+            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, FormattableString.Invariant($"security level {s.Rung} -> {rung}")));
             s.Rung = rung;
             RaiseToFloor(c, s, why);
         }
@@ -37,7 +37,7 @@ namespace Statecraft.Sim
             var floor = c.Rules.RungMinMobilization[s.Rung - 1];
             if (s.Mobilization < floor)
             {
-                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, $"reserve call-up raised to {floor:P0}, the minimum for security level {s.Rung}"));
+                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {floor * 100:0}%, the minimum for security level {s.Rung}")));
                 s.Mobilization = floor;
             }
         }

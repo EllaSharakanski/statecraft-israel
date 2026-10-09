@@ -26,6 +26,6 @@ namespace Statecraft.Sim
         public static string Fill(Content c, string text, DateTime date) =>
             Placeholder.Replace(text, m =>
                 Holder(c, m.Groups[1].Value, date)?.Name
-                ?? throw new InvalidOperationException($"no holder of '{m.Groups[1].Value}' on {date:yyyy-MM-dd}"));
+                ?? throw new InvalidOperationException(FormattableString.Invariant($"no holder of '{m.Groups[1].Value}' on {date:yyyy-MM-dd}")));
     }
 }

@@ -104,7 +104,7 @@ namespace Statecraft.Sim
                 {
                     if (string.IsNullOrEmpty(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices", "office term without an office");
                     if (!offices.Contains(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", "unknown office");
-                    if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", $"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})");
+                    if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
             }
             var terms = c.People.SelectMany(p => p.Offices.Select(t => (person: p.Id, term: t))).ToList();
@@ -120,7 +120,7 @@ namespace Statecraft.Sim
             {
                 foreach (var kv in l.Seats)
                     if (!parties.Contains(kv.Key)) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].seats.{kv.Key}", "unknown party");
-                if (l.Seats.Values.Sum() != l.Size) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].size", $"seats sum to {l.Seats.Values.Sum()}, size is {l.Size}");
+                if (l.Seats.Values.Sum() != l.Size) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].size", FormattableString.Invariant($"seats sum to {l.Seats.Values.Sum()}, size is {l.Size}"));
             }
             foreach (var g in c.Governments)
                 foreach (var p in g.Coalition)

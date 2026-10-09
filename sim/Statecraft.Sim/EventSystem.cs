@@ -45,7 +45,7 @@ namespace Statecraft.Sim
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
                 else s.Indicators[fx.Target] = Math.Max(0, Math.Min(1, s.Indicators[fx.Target] + fx.Delta));
-                why.Add(new Cause("events", fx.Target, fx.Delta, $"{fx.Target} {fx.Delta:+0.00;-0.00} ({eventId}/{o.Id})"));
+                why.Add(new Cause("events", fx.Target, fx.Delta, FormattableString.Invariant($"{fx.Target} {fx.Delta:+0.00;-0.00} ({eventId}/{o.Id})")));
             }
             if (o.SetRung.HasValue) SecuritySystem.SetRung(c, s, o.SetRung.Value, why);
         }
