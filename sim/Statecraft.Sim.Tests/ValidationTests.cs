@@ -161,4 +161,25 @@ status: draft
     [Fact]
     public void EqualMobilizationFloorsAreAllowed() =>
         ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.05, 0.05, 0.15, 0.4, 0.8]") }));
+
+    // M8: every content id has the office-id shape.
+    [Theory]
+    [InlineData("events/drought.yaml", "id: drought", "id: 'dro,ught'", "events[dro,ught].id")]
+    [InlineData("events/drought.yaml", "id: wait", "id: 'wa,it'", "events[drought].options[wa,it].id")]
+    [InlineData("parties.yaml", "id: beta", "id: 'be,ta'", "parties[be,ta].id")]
+    [InlineData("people.yaml", "id: def_two", "id: 'def,two'", "people[def,two].id")]
+    [InlineData("legislatures.yaml", "id: house", "id: 'ho,use'", "legislatures[ho,use].id")]
+    [InlineData("governments.yaml", "id: gov2", "id: 'gov,2'", "governments[gov,2].id")]
+    [InlineData("model.yaml", "id: food_supply", "id: 'food,supply'", "indicators[food,supply].id")]
+    [InlineData("model.yaml", "id: rationing\n", "id: 'Rationing'\n", "policies[Rationing].id")]
+    [InlineData("model.yaml", "id: rationing_food", "id: 'rationing,food'", "effects[rationing,food].id")]
+    [InlineData("model.yaml", "id: hunger", "id: 'hun,ger'", "situations[hun,ger].id")]
+    [InlineData("model.yaml", "id: everyone", "id: 'every one'", "voter_groups[every one].id")]
+    [InlineData("model.yaml", "id: usa", "id: 'u,sa'", "actors[u,sa].id")]
+    public void IdOutsideTheIdPatternIsAContentError(string file, string from, string to, string field)
+    {
+        var ex = Bad(file, from, to);
+        Assert.Equal(file, ex.File);
+        Assert.Equal(field, ex.Field);
+    }
 }

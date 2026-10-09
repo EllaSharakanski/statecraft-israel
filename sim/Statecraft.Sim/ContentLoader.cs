@@ -108,11 +108,17 @@ namespace Statecraft.Sim
             return c;
         }
 
+        internal const string IdRule = "must be lowercase letters, digits and underscores, starting with a letter";
+
+        /// <summary>Every id has the office-id shape (so it is safe in placeholders, CLI input and save files) and is unique in its list.</summary>
         static void Unique(string file, string list, IEnumerable<string> ids)
         {
             var seen = new HashSet<string>();
             foreach (var id in ids)
+            {
+                if (!Offices.OfficeId.IsMatch(id)) throw new ContentException(file, $"{list}[{id}].id", IdRule);
                 if (!seen.Add(id)) throw new ContentException(file, $"{list}[{id}].id", "duplicate id");
+            }
         }
 
         static readonly HashSet<string> Statuses = new HashSet<string> { "draft", "fact-checked", "historian-reviewed", "sensitivity-reviewed" };
@@ -154,8 +160,6 @@ namespace Statecraft.Sim
             var indicators = new HashSet<string>(c.Indicators.Select(i => i.Id));
             var sources = new HashSet<string>(c.Policies.Select(p => p.Id).Concat(indicators));
             Unique("offices.yaml", "offices", c.Offices.Select(o => o.Id));
-            foreach (var o in c.Offices)
-                if (!Offices.OfficeId.IsMatch(o.Id)) throw new ContentException("offices.yaml", $"offices[{o.Id}].id", "must be lowercase letters, digits and underscores, starting with a letter");
             Unique("parties.yaml", "parties", c.Parties.Select(p => p.Id));
             Unique("people.yaml", "people", c.People.Select(p => p.Id));
             Unique("legislatures.yaml", "legislatures", c.Legislatures.Select(l => l.Id));

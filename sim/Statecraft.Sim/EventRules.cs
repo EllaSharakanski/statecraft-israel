@@ -17,6 +17,7 @@ namespace Statecraft.Sim
             foreach (var e in c.Events)
             {
                 string F(string field) => $"events[{e.Id}].{field}";
+                if (!Offices.OfficeId.IsMatch(e.Id)) throw new ContentException(e.File, F("id"), ContentLoader.IdRule);
                 if (!ids.Add(e.Id)) throw new ContentException(e.File, F("id"), "duplicate event id");
                 if (e.Anchor != "hard" && e.Anchor != "soft") throw new ContentException(e.File, F("anchor"), $"unknown anchor '{e.Anchor}' (must be hard or soft)");
                 ContentLoader.Status(e.File, F("status"), e.Status);
@@ -37,6 +38,7 @@ namespace Statecraft.Sim
                 var optionIds = new HashSet<string>();
                 foreach (var o in e.Options)
                 {
+                    if (!Offices.OfficeId.IsMatch(o.Id)) throw new ContentException(e.File, F($"options[{o.Id}].id"), ContentLoader.IdRule);
                     if (!optionIds.Add(o.Id)) throw new ContentException(e.File, F($"options[{o.Id}].id"), "duplicate option id");
                     CheckPlaceholders(c, e, F($"options[{o.Id}].text"), o.Text, offices);
                     if (o.SetRung.HasValue && (o.SetRung < 1 || o.SetRung > 5)) throw new ContentException(e.File, F($"options[{o.Id}].set_rung"), "must be 1-5");
