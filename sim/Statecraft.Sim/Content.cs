@@ -39,6 +39,7 @@ namespace Statecraft.Sim
     {
         public string Id { get; set; } = "";
         public string Body { get; set; } = "";
+        public DateTime? Elected { get; set; }
         public DateTime From { get; set; }
         public DateTime? To { get; set; }
         public int Size { get; set; }
