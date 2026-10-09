@@ -4420,9 +4420,13 @@ uv run --quiet --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 -
   - Layout: `{"bounds":{lon0,lon1,lat0,lat1},"hex_size_km":5.0,"layout":"pointy","hexes":[{q,r,lon,lat,elev_m,land,biome}]}`.
   - Coordinates are Red Blob Games axial, pointy-top. The hex size is the circumradius.
   - Projection: x is km east of `lon0`, y is km **south** of `lat1`. Longitude km use the cosine of the bounds' mid-latitude (31.4°).
-  - The real grid has **1,102 hexes**: coastal_plain 108, desert 337, hills 143, lake 16, mountains 251, sea 216, valley 31.
-    (Task 24's fix round changed these from desert 309 / valley 59: below-sea-level hexes south of the Dead Sea's north tip,
-    lat < 31.77, i.e. the Dead Sea basin and northern Arava, are now desert, not valley.)
+  - The real grid has **1,102 hexes**: coastal_plain 109, desert 332, hills 147, lake 16, mountains 251, sea 216, valley 31.
+    (Task 24's fix rounds changed these from the original desert 309 / valley 59. First, below-sea-level hexes south of the
+    Dead Sea's north tip, lat < 31.77, i.e. the Dead Sea basin and northern Arava, became desert, not valley. Then the
+    hand-drawn desert rule (lat < 31.25 plus a Judean box) was replaced by real climatology: desert = mean annual
+    precipitation < 200 mm, from CHELSA V2.1 bio12 bias-corrected with IMS rain-gauge normals. The inputs are
+    `content/map/precip_bio12.{u16,json}` and `content/map/precip_stations.json`, written by `tools/precip_clip.py` and
+    `tools/ims_normals.py`.)
 - `content/map/settlements_1948.yaml` lists 25 sourced places, in the shape `{settlements:[{id,name,lon,lat,type,founded,pre_modern?,sources:[{url,checked}]}]}`.
   - `founded` is `null` with `pre_modern: true` for cities that predate the modern era.
   - **Hex ownership rule (for the sim, M3):** a settlement belongs to the hex that contains it, if that hex is land. Otherwise it belongs to the land neighbour whose centre is nearest. This is `hexgrid.settlement_hex`, and Tiberias is the case that needs it. Unity *renders* markers at the sourced lon/lat (Task 25), which is on the real shore.
@@ -4953,8 +4957,9 @@ Expected: `16 passed`.
 - [ ] **Step 5: Generate the real grid.**
 
 Run: `uv run --quiet tools/hexgrid.py`
-Expected: `wrote …/content/map/hexes.json: 1102 hexes {'coastal_plain': 108, 'desert': 337, 'hills': 143, 'lake': 16, 'mountains': 251, 'sea': 216, 'valley': 31}`
-(Originally desert 309 / valley 59; Task 24's fix round added the Dead Sea basin / Arava desert rule, lat < 31.77 below 0 m.)
+Expected: `wrote …/content/map/hexes.json: 1102 hexes {'coastal_plain': 109, 'desert': 332, 'hills': 147, 'lake': 16, 'mountains': 251, 'sea': 216, 'valley': 31}`
+(Originally desert 309 / valley 59. Task 24's fix rounds added the Dead Sea basin / Arava rule (lat < 31.77 below 0 m) and
+replaced the latitude desert rule with corrected precipitation < 200 mm; see the M2a data contract above.)
 
 - [ ] **Step 6: Commit.**
 
@@ -5483,7 +5488,8 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the tests to verify they pass.**
 
 Run: the shared test command.
-Expected: `48 passed` (44 when Task 22 first landed; Task 24's fix round added 4 Dead Sea basin / Arava biome cases).
+Expected: `73 passed` (44 when Task 22 first landed. Task 24's fix rounds added the Dead Sea basin / Arava biome cases,
+the precipitation rule, the CHELSA clip, IMS normals, bias-correction, real-place, station-reproduction and determinism tests.)
 
 - [ ] **Step 5: Render the image and check the geography by eye.** This is the M2 gate. Do not accept the map data until every item passes.
 
