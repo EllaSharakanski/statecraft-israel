@@ -25,6 +25,16 @@ public static class MapCapture
         EditorSceneManager.SaveScene(scene, ScenePath);
     }
 
+    /// <summary>Opens Assets/Map.unity (creating it only when missing) and builds the map in memory. The scene is not
+    /// saved, so captures leave it unchanged.</summary>
+    static MapScene OpenAndBuild()
+    {
+        if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) MakeScene();
+        else EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        return map;
+    }
+
     static Material Load(string path)
     {
         var m = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -35,8 +45,7 @@ public static class MapCapture
     /// <summary>Orthographic straight-down render of the whole map, for comparison with promo/ref/geo-reference.png.</summary>
     public static void TopDown()
     {
-        MakeScene();
-        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        var map = OpenAndBuild();
         var cam = new GameObject("TopCam").AddComponent<Camera>();
         var size = map.Terrain.terrainData.size;
         cam.orthographic = true; cam.orthographicSize = size.z / 2; cam.aspect = size.x / size.z;
@@ -48,8 +57,7 @@ public static class MapCapture
     /// <summary>240 frames flying north along the coast at diorama pitch; encode with ffmpeg.</summary>
     public static void Flythrough()
     {
-        MakeScene();
-        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        var map = OpenAndBuild();
         var rig = Camera.main.GetComponent<CameraRig>();
         var dir = Path.Combine(CaptureDir, "fly"); Directory.CreateDirectory(dir);
         for (int i = 0; i < 240; i++)

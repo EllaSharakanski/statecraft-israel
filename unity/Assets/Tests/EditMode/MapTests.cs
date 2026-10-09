@@ -139,6 +139,41 @@ public class MapTests
         finally { Object.DestroyImmediate(go); }
     }
 
+    [Test]
+    public void EveryPointAlongEveryOverlaySegmentLiesAboveTheTerrain()
+    {
+        // Vertices alone are not enough: a ridge between two draped vertices hides the straight line joining them (K2).
+        var (terrainMat, overlayMat) = Materials();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        try
+        {
+            var data = go.GetComponent<Terrain>().terrainData;
+            var mesh = go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh;
+            var verts = mesh.vertices; var idx = mesh.GetIndices(0);
+            int hidden = 0; float worst = 0f;
+            for (int i = 0; i < idx.Length; i += 2)
+                for (int k = 1; k < 8; k++)
+                {
+                    var p = Vector3.Lerp(verts[idx[i]], verts[idx[i + 1]], k / 8f);
+                    float deficit = data.GetInterpolatedHeight(p.x / data.size.x, p.z / data.size.z) - p.y;
+                    if (deficit >= 0f) hidden++;
+                    worst = Mathf.Max(worst, deficit);
+                }
+            Assert.AreEqual(0, hidden, $"points along overlay segments at or below the terrain (worst {worst:F0} m below)");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    [Test]
+    public void TerrainUsesFineLodSoTheCoarseSurfaceDoesNotCoverTheOverlay()
+    {
+        // At the default heightmapPixelError (5) far cameras get a coarse LOD whose surface sits above the draped lines (K2).
+        var (terrainMat, overlayMat) = Materials();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        try { Assert.AreEqual(MapBuilder.TerrainPixelError, go.GetComponent<Terrain>().heightmapPixelError); Assert.AreEqual(1f, MapBuilder.TerrainPixelError); }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     // --- Runtime-created objects are owned and destroyed with the map (L5) ---
 
     [Test]

@@ -15,6 +15,10 @@ namespace Statecraft.Game.Map
         public const float BiomeLayerTileSizeM = 1000f; // layers are flat colours, so the tiling only needs to be finite
         public const int OverlaySegmentsPerEdge = 10;  // ~500 m sub-segments on a 5 km hex edge, each draped on the terrain
         public const float OverlayClearanceM = 40f * VerticalExaggeration; // above the (exaggerated) terrain surface
+        public const int OverlaySamplesPerSegment = 16;  // ~31 m steps, finer than the ~79 m heightmap spacing
+        /// <summary>Terrain LOD screen-space error in pixels. Unity's default (5) gives distant cameras (the top-down
+        /// capture, the 90 km flythrough) a coarse surface that rises above the draped hex outlines in valleys (K2).</summary>
+        public const float TerrainPixelError = 1f;
 
         static readonly Dictionary<string, Color> Biome = new Dictionary<string, Color>
         {
@@ -46,7 +50,9 @@ namespace Statecraft.Game.Map
             terrainGo.name = "Terrain";
             var assets = terrainGo.AddComponent<MapRuntimeAssets>();
             assets.Own(data);
-            terrainGo.GetComponent<Terrain>().materialTemplate = terrainMaterial;
+            var terrain = terrainGo.GetComponent<Terrain>();
+            terrain.materialTemplate = terrainMaterial;
+            terrain.heightmapPixelError = TerrainPixelError;
             ApplyBiomeColours(data, frame, hexFile, assets);
 
             var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
@@ -108,28 +114,40 @@ namespace Statecraft.Game.Map
             data.SetAlphamaps(0, 0, a);
         }
 
-        /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments whose
-        /// vertices are draped OverlayClearanceM above the terrain; vertices are clamped to the terrain bounds.</summary>
+        /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments; vertices
+        /// are clamped to the terrain bounds. Each vertex sits OverlayClearanceM above the highest terrain sampled along its
+        /// two adjacent sub-segments, so the straight line between two vertices clears any ridge between them.</summary>
         static GameObject BuildHexOverlay(GeoFrame frame, HexFile hexes, TerrainData data, Material material, MapRuntimeAssets assets)
         {
             float size = hexes.hex_size_km * 1000f;
             int n = 6 * OverlaySegmentsPerEdge;
             var verts = new List<Vector3>(); var idx = new List<int>();
-            var corners = new Vector2[6];
+            var corners = new Vector2[6]; var ground = new Vector2[n]; var segMax = new float[n];
             foreach (var h in hexes.hexes)
             {
                 if (!h.land) continue;
                 var c = frame.ToWorld(h.lon, h.lat, 0);
                 for (int i = 0; i < 6; i++) corners[i] = HexMath.Corner(new Vector2(c.x, c.z), size, i);
-                int start = verts.Count;
                 for (int i = 0; i < 6; i++)
                     for (int s = 0; s < OverlaySegmentsPerEdge; s++)
                     {
                         var k = Vector2.Lerp(corners[i], corners[(i + 1) % 6], (float)s / OverlaySegmentsPerEdge);
                         k.x = Mathf.Clamp(k.x, 0f, frame.WidthM); k.y = Mathf.Clamp(k.y, 0f, frame.LengthM);
-                        float y = data.GetInterpolatedHeight(k.x / frame.WidthM, k.y / frame.LengthM) + OverlayClearanceM;
-                        verts.Add(new Vector3(k.x, y, k.y));
+                        ground[i * OverlaySegmentsPerEdge + s] = k;
                     }
+                for (int j = 0; j < n; j++)
+                {
+                    float m = float.MinValue;
+                    for (int t = 0; t <= OverlaySamplesPerSegment; t++)
+                    {
+                        var p = Vector2.Lerp(ground[j], ground[(j + 1) % n], (float)t / OverlaySamplesPerSegment);
+                        m = Mathf.Max(m, data.GetInterpolatedHeight(p.x / frame.WidthM, p.y / frame.LengthM));
+                    }
+                    segMax[j] = m;
+                }
+                int start = verts.Count;
+                for (int j = 0; j < n; j++)
+                    verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + OverlayClearanceM, ground[j].y));
                 for (int i = 0; i < n; i++) { idx.Add(start + i); idx.Add(start + (i + 1) % n); }
             }
             var mesh = assets.Own(new Mesh { name = "HexOverlay", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });

@@ -12,7 +12,6 @@ namespace Statecraft.Game.Map
 
         public GeoFrame Frame { get; private set; }
         public Terrain Terrain { get; private set; }
-        GameObject _settlements, _postFx;
 
         void Awake() => Build();
 
@@ -34,23 +33,30 @@ namespace Statecraft.Game.Map
             var size = Terrain.terrainData.size;
             var (meta, _) = HeightmapLoader.Load(Paths.StreamingMap);
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
-            var list = SettlementPlacer.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", "settlements_1948.yaml")),
-                (meta.lon0, meta.lon1, meta.lat0, meta.lat1));
-            _settlements = SettlementPlacer.Place(list, Frame, Terrain, markerMaterial);
-            _settlements.transform.SetParent(transform, true);
+            var yamlPath = Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName);
+            var list = SettlementPlacer.Parse(File.ReadAllText(yamlPath), (meta.lon0, meta.lon1, meta.lat0, meta.lat1), yamlPath);
+            SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
             rig.LookAt = Frame.ToWorld(34.95, 31.95, 0); rig.Init(); // central Israel: Tel Aviv–Jerusalem corridor
-            _postFx = rig.Volume.gameObject; _postFx.transform.SetParent(transform, true);
-            terrainGo.GetComponent<MapRuntimeAssets>().Own(rig.Volume.profile);
+            rig.Volume.transform.SetParent(transform, true);
+            // VolumeProfile's own teardown only releases its components, it does not destroy them (Core RP 17.3), so own both.
+            var assets = terrainGo.GetComponent<MapRuntimeAssets>();
+            foreach (var c in rig.Volume.profile.components) assets.Own(c);
+            assets.Own(rig.Volume.profile);
         }
 
+        /// <summary>Destroys every child: all of them are things Build made (terrain, Settlements, PostFX). Walking the
+        /// hierarchy rather than remembered fields keeps Build idempotent after a domain reload (R2). The VolumeProfile is
+        /// owned by the terrain's MapRuntimeAssets, so destroying the terrain destroys it.</summary>
         void Clear()
         {
-            // The VolumeProfile is owned by the terrain's MapRuntimeAssets, so destroying the terrain destroys it.
-            foreach (var go in new[] { Terrain != null ? Terrain.gameObject : null, _settlements, _postFx })
-                if (go != null) { if (Application.isPlaying) Destroy(go); else DestroyImmediate(go); }
-            Terrain = null; _settlements = null; _postFx = null;
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                var go = transform.GetChild(i).gameObject;
+                if (Application.isPlaying) { go.transform.SetParent(null); Destroy(go); } else DestroyImmediate(go);
+            }
+            Terrain = null;
         }
     }
 }
