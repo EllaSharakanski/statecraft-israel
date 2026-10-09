@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -35,11 +37,49 @@ namespace Statecraft.Sim
         {
             var path = Path.Combine(root, relPath);
             if (!File.Exists(path)) throw new ContentException(relPath, "(file)", "missing file");
-            try { return Yaml.Deserialize<T>(File.ReadAllText(path)) ?? throw new ContentException(relPath, "(file)", "empty file"); }
+            T result;
+            try { result = Yaml.Deserialize<T>(File.ReadAllText(path)) ?? throw new ContentException(relPath, "(file)", "empty file"); }
             catch (YamlException e) { throw new ContentException(relPath, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
             catch (IOException e) { throw new ContentException(relPath, "(file)", e.Message); }
             catch (UnauthorizedAccessException e) { throw new ContentException(relPath, "(file)", e.Message); }
+            CheckNulls(relPath, result is GameEvent ev ? $"events[{ev.Id}]" : "", result!);
+            return result;
         }
+
+        /// <summary>A key written with no value (`tags:`) deserialises to null. Null lists and maps become load errors
+        /// naming the field; null strings become "" (the default every check already handles). Walks nested content
+        /// objects, naming list entries by id when they have one, else by index.</summary>
+        static void CheckNulls(string file, string path, object o)
+        {
+            foreach (var p in o.GetType().GetProperties())
+            {
+                if (p.GetCustomAttribute<YamlIgnoreAttribute>() != null) continue;
+                var key = (path == "" ? "" : path + ".") + UnderscoredNamingConvention.Instance.Apply(p.Name);
+                var t = p.PropertyType;
+                var v = p.GetValue(o);
+                if (t == typeof(string)) { if (v == null) p.SetValue(o, ""); }
+                else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>))
+                {
+                    if (v == null) throw new ContentException(file, key, "must be a list");
+                    var list = (IList)v;
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        var item = list[i];
+                        if (item == null) throw new ContentException(file, FormattableString.Invariant($"{key}[{i}]"), "empty entry");
+                        if (!IsContentType(item.GetType())) continue;
+                        var id = item.GetType().GetProperty("Id")?.GetValue(item) as string;
+                        CheckNulls(file, string.IsNullOrEmpty(id) ? FormattableString.Invariant($"{key}[{i}]") : $"{key}[{id}]", item);
+                    }
+                }
+                else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                {
+                    if (v == null) throw new ContentException(file, key, "must be a map");
+                }
+                else if (v != null && IsContentType(t)) CheckNulls(file, key, v);
+            }
+        }
+
+        static bool IsContentType(Type t) => t.IsClass && t != typeof(string) && t.Namespace == typeof(Content).Namespace;
 
         public static Content Load(string contentRoot)
         {
