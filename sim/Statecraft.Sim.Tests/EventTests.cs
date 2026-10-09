@@ -172,6 +172,33 @@ options:
         Assert.Contains("1949-01-15", ex.Message);
     }
 
+    // Window ends 1949-01-01; nobody holds defense from then until 1949-02-01.
+    static readonly string LateEvent = Shortage.Replace("text: Ration food", "text: '{defense_minister} rations food'")
+                                               .Replace("from: 1948-06-01", "from: 1948-06-01\nto: 1949-01-01");
+
+    [Fact]
+    public void ChoosingAfterWindowEndFillsAtLastInWindowDate()
+    {
+        var c = LoadWithGap(LateEvent);
+        var s = State(c, new DateTime(1948, 12, 1)); var why = new List<Cause>();
+        EventSystem.Trigger(c, s, why);
+        s.Date = new DateTime(1949, 1, 15);   // still pending after To, office unheld today
+        Assert.Null(EventSystem.Choose(c, s, "shortage", "ration", why));
+        Assert.Contains(why, w => w.Message == "chosen: Pm One rations food");
+    }
+
+    [Fact]
+    public void DelegatingAfterWindowEndFillsAtLastInWindowDate()
+    {
+        var c = LoadWithGap(LateEvent);
+        c.People.First(p => p.Id == "def_two").Competence = 10;   // always the recommended option (ration)
+        var s = State(c, new DateTime(1948, 12, 1)); var why = new List<Cause>();
+        EventSystem.Trigger(c, s, why);
+        s.Date = new DateTime(1949, 1, 1);    // exactly To
+        EventSystem.Delegate(c, s, why);
+        Assert.Contains(why, w => w.Message.StartsWith("delegated") && w.Message.EndsWith("Pm One rations food"));
+    }
+
     [Fact]
     public void PlaceholderFullyCoveredWindowLoads()
     {

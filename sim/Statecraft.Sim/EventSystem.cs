@@ -39,7 +39,11 @@ namespace Statecraft.Sim
         static void Resolve(Content c, GameState s, string eventId, EventOption o, string how, List<Cause> why)
         {
             s.PendingEvents.Remove(eventId);
-            why.Add(new Cause("events", eventId, 0, $"{how}: {Offices.Fill(c, o.Text, s.Date)}"));
+            // Resolved on or after the window end: name whoever held the office on the last in-window day
+            // (load-time coverage guarantees a holder there); otherwise today's holder.
+            var e = Get(c, eventId);
+            var fillDate = e.To.HasValue && s.Date >= e.To.Value ? e.To.Value.AddDays(-1) : s.Date;
+            why.Add(new Cause("events", eventId, 0, $"{how}: {Offices.Fill(c, o.Text, fillDate)}"));
             foreach (var fx in o.Effects)
             {
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
