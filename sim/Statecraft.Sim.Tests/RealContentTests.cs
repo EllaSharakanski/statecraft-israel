@@ -33,7 +33,7 @@ public class RealContentTests
             .Concat(C.Legislatures.SelectMany(l => l.Sources)).Concat(C.Governments.SelectMany(g => g.Sources))
             .Concat(C.Aliyah.SelectMany(a => a.Sources)).Concat(C.PopulationAnchors.SelectMany(a => a.Sources))
             .Concat(C.Events.SelectMany(e => e.Sources));
-        Assert.All(all, s => { Assert.StartsWith("https://", s.Url); Assert.Equal(Checked, s.Checked); });
+        Assert.All(all, s => { Assert.StartsWith("https://", s.Url); Assert.True(s.Checked >= Checked, $"{s.Url} checked {s.Checked:yyyy-MM-dd}, before {Checked:yyyy-MM-dd}"); });   // later re-checks are allowed
     }
 
     [Fact]
