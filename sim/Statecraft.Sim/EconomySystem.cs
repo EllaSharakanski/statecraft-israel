@@ -44,8 +44,10 @@ namespace Statecraft.Sim
         /// <summary>Returns null on success, or the reason the allocation was rejected.</summary>
         public static string? Allocate(Content c, GameState s, Dictionary<string, double> shares)
         {
+            if (shares == null) return "Budget shares are required";
             var unknown = shares.Keys.FirstOrDefault(k => c.Offices.All(o => o.Id != k));
             if (unknown != null) return $"Unknown office '{unknown}'";
+            if (shares.Values.Any(v => double.IsNaN(v) || double.IsInfinity(v))) return "Budget shares must be finite numbers";
             if (Math.Abs(shares.Values.Sum() - 1.0) > 1e-6) return "Budget shares must sum to 1";
             if (shares.Values.Any(v => v < 0)) return "Budget shares cannot be negative";
             s.Budget = new Dictionary<string, double>(shares);

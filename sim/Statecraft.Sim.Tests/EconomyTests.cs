@@ -85,3 +85,37 @@ public class EconomyNegativeShareTests
         Assert.Equal("Budget shares cannot be negative", err);
     }
 }
+
+public class EconomyInvalidShareTests
+{
+    static readonly Content C = ContentLoader.Load(Fixture.Write());
+
+    static GameState Fresh() { var s = new GameState(); EconomySystem.Init(C, s); return s; }
+
+    [Fact]
+    public void NaNShareRejectedAndBudgetUnchanged()
+    {
+        var s = Fresh(); var before = new Dictionary<string, double>(s.Budget);
+        var err = EconomySystem.Allocate(C, s, new Dictionary<string, double> { ["finance_minister"] = double.NaN });
+        Assert.False(string.IsNullOrEmpty(err));
+        Assert.Equal(before, s.Budget);
+    }
+
+    [Fact]
+    public void InfinitePairRejectedAndBudgetUnchanged()
+    {
+        var s = Fresh(); var before = new Dictionary<string, double>(s.Budget);
+        var err = EconomySystem.Allocate(C, s, new Dictionary<string, double> { ["finance_minister"] = double.PositiveInfinity, ["defense_minister"] = double.NegativeInfinity });
+        Assert.False(string.IsNullOrEmpty(err));
+        Assert.Equal(before, s.Budget);
+    }
+
+    [Fact]
+    public void NullSharesRejectedAndBudgetUnchanged()
+    {
+        var s = Fresh(); var before = new Dictionary<string, double>(s.Budget);
+        var err = EconomySystem.Allocate(C, s, null!);
+        Assert.False(string.IsNullOrEmpty(err));
+        Assert.Equal(before, s.Budget);
+    }
+}
