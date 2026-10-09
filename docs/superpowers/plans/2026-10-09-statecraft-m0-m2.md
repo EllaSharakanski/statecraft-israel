@@ -29,6 +29,7 @@
 | Unity C# (Tasks 2, 23–25) | **Not compiled.** Unity needs the owner's sign-in (Task 1) | Task 2 is the first compile; its "API corrections" must be applied to Tasks 23–25 before they start |
 | M0 spike library | Compiled and run | Parses YAML correctly |
 | Settlement YAML in C# | All 25 entries parsed with the exact classes Task 25 uses | Parses correctly |
+| Verified at merge (2026-10-10, after final fix wave 3) | `dotnet build` + `dotnet test sim/Statecraft.sln`; tools pytest (README command); Unity 6000.3.25f1 edit mode in batch mode | sim **309/309**; tools **93 passed**; Unity edit mode **81/81**; 0 warnings (`dotnet build`, and 0 `warning CS` in the Unity log); golden hash `eb975652…00e9` **unchanged** |
 
 ## Global constraints
 
