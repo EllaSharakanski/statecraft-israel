@@ -117,6 +117,7 @@ attention_per_turn: 3
 attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
 rung_attention_step: 0.25
 ceasefire_weeks: 4
+rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
 treasury_start: 100
 fx_start: 50
 tax_per_capita_per_year: 0.0004

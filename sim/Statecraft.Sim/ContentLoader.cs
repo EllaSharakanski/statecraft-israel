@@ -133,6 +133,7 @@ namespace Statecraft.Sim
             foreach (var v in c.VoterGroups)
                 foreach (var k in v.Weights.Keys)
                     if (!indicators.Contains(k)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{k}", "unknown indicator");
+            if (c.Rules.RungMinMobilization.Count != 5) throw new ContentException("rules.yaml", "rung_min_mobilization", "needs exactly 5 values (rungs 1-5)");
             foreach (var k in c.Rules.BudgetStart.Keys)
                 if (!offices.Contains(k)) throw new ContentException("rules.yaml", $"budget_start.{k}", "unknown office");
             EventRules.Validate(c, offices, indicators);

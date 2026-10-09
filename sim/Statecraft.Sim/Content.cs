@@ -103,6 +103,7 @@ namespace Statecraft.Sim
         public Dictionary<string, double> AttentionCost { get; set; } = new Dictionary<string, double>();
         public double RungAttentionStep { get; set; }
         public int CeasefireWeeks { get; set; }
+        public List<double> RungMinMobilization { get; set; } = new List<double>();
         public double TreasuryStart { get; set; }
         public double FxStart { get; set; }
         public double TaxPerCapitaPerYear { get; set; }
