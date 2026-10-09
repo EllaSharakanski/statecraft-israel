@@ -162,6 +162,56 @@ options:
         Assert.Equal(-0.2, r[1].causeDelta, 9);
     }
 
+    // Morale: base 0.5, effect rationing_morale k -0.2, inertia 1, no office, so Base + Σ = 0.5 - 0.2 * rationing.
+    static void SetInner(Content c, GameState s, double rationing) { s.Policies["rationing"] = rationing; EffectsSystem.Apply(c, s, new List<Cause>()); }
+
+    static double ChooseSwing(Content c, GameState s, string option)
+    {
+        s.PendingEvents.Add("swing"); var why = new List<Cause>();
+        Assert.Null(EventSystem.Choose(c, s, "swing", option, why));
+        return why.Single(w => w.Target == "morale").Delta;
+    }
+
+    [Fact]
+    public void EventBelowAnOverBoundEffectSumIsVisibleAndSurvivesEffectChanges()
+    {
+        var c = Load(new Dictionary<string, string> { ["swing.yaml"] = Swing });
+        var s = State(c, new DateTime(1948, 6, 1));
+        SetInner(c, s, -4.0);                                    // Base + Σ = 1.3
+        Assert.Equal(1.0, s.Indicators["morale"], 9);
+        Assert.Equal(-0.2, ChooseSwing(c, s, "down"), 9);         // cause = visible change
+        Assert.Equal(0.8, s.Indicators["morale"], 9);             // visible immediately
+        SetInner(c, s, -4.0);                                    // a rebuild with the same effects keeps it
+        Assert.Equal(0.8, s.Indicators["morale"], 9);
+        SetInner(c, s, -2.5);                                    // Base + Σ = 1.0
+        Assert.Equal(0.8, s.Indicators["morale"], 9);
+        SetInner(c, s, -1.0);                                    // Base + Σ = 0.7
+        Assert.Equal(0.5, s.Indicators["morale"], 9);
+    }
+
+    [Fact]
+    public void OvershootingEventLeavesOnlyTheVisibleShift()
+    {
+        var c = Load(new Dictionary<string, string> { ["swing.yaml"] = Swing });
+        var s = State(c, new DateTime(1948, 6, 1));
+        SetInner(c, s, -2.0);                                    // inner 0.9
+        Assert.Equal(0.1, ChooseSwing(c, s, "up"), 9);            // +0.3 only moves it to 1.0
+        Assert.Equal(1.0, s.Indicators["morale"], 9);
+        Assert.Equal(0.1, s.IndicatorShifts["morale"], 9);
+        Assert.Equal(-0.2, ChooseSwing(c, s, "down"), 9);
+        Assert.Equal(0.8, s.Indicators["morale"], 9);
+    }
+
+    [Fact]
+    public void EventWithNoVisibleChangeReportsZero()
+    {
+        var c = Load(new Dictionary<string, string> { ["swing.yaml"] = Swing });
+        var s = State(c, new DateTime(1948, 6, 1));
+        SetInner(c, s, -4.0);                                    // inner 1.0 (Base + Σ = 1.3)
+        Assert.Equal(0.0, ChooseSwing(c, s, "rise"), 9);          // already at 1.0
+        Assert.Equal(1.0, s.Indicators["morale"], 9);
+    }
+
     [Fact]
     public void UnknownOptionIsRejected()
     {

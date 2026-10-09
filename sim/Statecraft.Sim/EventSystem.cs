@@ -51,14 +51,13 @@ namespace Statecraft.Sim
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
                 else
                 {
-                    // Store only the effective change, so a shift never builds up beyond the 0..1 clamp.
+                    // The shift is set so the level lands exactly on the visible result; it never exceeds the clamp.
                     var ind = c.Indicators.First(i => i.Id == fx.Target);
-                    var before = EffectsSystem.Level(c, s, ind);
-                    var contributions = c.Effects.Where(e => e.Target == ind.Id).Sum(e => s.EffectContributions[e.Id]);
-                    var target = Math.Max(0, Math.Min(1, ind.Base + s.IndicatorShifts[ind.Id] + contributions + fx.Delta));
-                    s.IndicatorShifts[ind.Id] = target - ind.Base - contributions;
-                    s.Indicators[ind.Id] = target;
-                    change = target - before;
+                    var level = EffectsSystem.Level(c, s, ind);
+                    var newLevel = Math.Max(0, Math.Min(1, level + fx.Delta));
+                    s.IndicatorShifts[ind.Id] = newLevel - EffectsSystem.Inner(c, s, ind);
+                    s.Indicators[ind.Id] = newLevel;
+                    change = newLevel - level;
                 }
                 why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00} ({eventId}/{o.Id})")));
             }

@@ -57,12 +57,13 @@ namespace Statecraft.Sim
             UpdateSituations(c, s, why);
         }
 
-        /// <summary>clamp(base + event shift + effect contributions) to [0, 1].</summary>
-        internal static double Level(Content c, GameState s, Indicator i)
-        {
-            var sum = i.Base + s.IndicatorShifts[i.Id] + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id]);
-            return Math.Max(0, Math.Min(1, sum));
-        }
+        /// <summary>clamp(base + effect contributions) to [0, 1], before event shifts.</summary>
+        internal static double Inner(Content c, GameState s, Indicator i) =>
+            Math.Max(0, Math.Min(1, i.Base + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id])));
+
+        /// <summary>clamp(inner + event shift) to [0, 1].</summary>
+        internal static double Level(Content c, GameState s, Indicator i) =>
+            Math.Max(0, Math.Min(1, Inner(c, s, i) + s.IndicatorShifts[i.Id]));
 
         public static void UpdateSituations(Content c, GameState s, List<Cause> why)
         {
