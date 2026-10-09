@@ -12,8 +12,12 @@ namespace Statecraft.Sim
 
         /// <summary>Fires every unfired event whose window [From, To) overlaps the turn just played,
         /// [<paramref name="turnStart"/>, s.Date), or contains s.Date; <paramref name="turnStart"/> defaults to s.Date
-        /// (game start). At most MaxNewPerTurn fire: hard anchors claim the slots first, then the usual order
-        /// (From, then id). The fired events keep the usual order.</summary>
+        /// (game start). Every eligible hard anchor fires; the MaxNewPerTurn cap applies only to the other events,
+        /// which fill the slots that remain (max(0, cap - hard count)) in the usual order (From, then id). The fired
+        /// events keep the usual order.
+        /// Late fire: an event whose window overlapped the turn just played can fire after its window has ended; its
+        /// conditions are evaluated at the end of the turn, and its text is filled at the last in-window day
+        /// (<see cref="FillDate"/>).</summary>
         public static void Trigger(Content c, GameState s, List<Cause> why, DateTime? turnStart = null)
         {
             var start = turnStart ?? s.Date;
@@ -23,7 +27,9 @@ namespace Statecraft.Sim
                                                && (!k.Max.HasValue || s.Indicators[k.Indicator] <= k.Max.Value)))
                 .OrderBy(e => e.From).ThenBy(e => e.Id, StringComparer.Ordinal)
                 .ToList();
-            var chosen = new HashSet<string>(eligible.OrderBy(e => e.Anchor == "hard" ? 0 : 1).Take(MaxNewPerTurn).Select(e => e.Id));
+            var hardCount = eligible.Count(e => e.Anchor == "hard");
+            var chosen = new HashSet<string>(eligible.Where(e => e.Anchor == "hard")
+                .Concat(eligible.Where(e => e.Anchor != "hard").Take(Math.Max(0, MaxNewPerTurn - hardCount))).Select(e => e.Id));
             foreach (var e in eligible.Where(e => chosen.Contains(e.Id)))
             {
                 s.FiredEvents.Add(e.Id);
@@ -66,7 +72,7 @@ namespace Statecraft.Sim
                     s.Indicators[ind.Id] = newLevel;
                     change = newLevel - level;
                 }
-                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00} ({eventId}/{o.Id})")));
+                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00;+0.00} ({eventId}/{o.Id})")));
             }
             foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))
             {

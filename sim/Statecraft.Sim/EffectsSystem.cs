@@ -53,7 +53,7 @@ namespace Statecraft.Sim
                 if (Math.Abs(delta) <= 1e-9) continue;
                 var ids = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Id).ToList();
                 var from = ids.Count > 0 ? $" ({string.Join(", ", ids)})" : "";
-                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000}{from}")));
+                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000;+0.000}{from}")));
             }
             UpdateSituations(c, s, why);
         }

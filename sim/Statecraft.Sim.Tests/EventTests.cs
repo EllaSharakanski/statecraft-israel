@@ -502,6 +502,33 @@ options:
     }
 
     [Fact]
+    public void AllHardAnchorsFireEvenBeyondTheCap()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string>
+        {
+            ["a.yaml"] = Simple("a", "soft", "1948-05-15"),
+            ["h1.yaml"] = Simple("h1", "hard", "1948-05-15"),
+            ["h2.yaml"] = Simple("h2", "hard", "1948-05-15"),
+            ["h3.yaml"] = Simple("h3", "hard", "1948-05-15"),
+            ["h4.yaml"] = Simple("h4", "hard", "1948-05-15"),
+        }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Equal(new[] { "h1", "h2", "h3", "h4" }, s.PendingEvents);   // the soft one finds no slot left
+    }
+
+    [Fact]
+    public void TinyNegativeEffectNeverRendersAsMinusPlusZero()
+    {
+        var ev = Shortage.Replace("delta: -10", "delta: -0.0001");
+        var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = ev });
+        var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
+        EventSystem.Trigger(c, s, why);
+        Assert.Null(EventSystem.Choose(c, s, "shortage", "import", why));
+        Assert.Contains(why, w => w.Message == "fx_reserves +0.00 (shortage/import)");
+        Assert.DoesNotContain(why, w => w.Message.Contains("-+"));
+    }
+
+    [Fact]
     public void EventFiredAfterItsWindowNamesTheInWindowHolder()
     {
         // Quarter turns: 1948-11-15 -> 1949-02-15. defense_minister passes from Pm One to Def Two on 1949-01-01.
