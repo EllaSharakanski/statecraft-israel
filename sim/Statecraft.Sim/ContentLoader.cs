@@ -108,6 +108,15 @@ namespace Statecraft.Sim
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
             }
+            foreach (var p in c.People)
+                for (int i = 0; i < p.Offices.Count; i++)
+                    for (int j = i + 1; j < p.Offices.Count; j++)
+                    {
+                        var (a, b) = (p.Offices[i], p.Offices[j]);
+                        if (a.Party == "" || b.Party == "" || a.Party == b.Party) continue;
+                        if (a.From < (b.To ?? DateTime.MaxValue) && b.From < (a.To ?? DateTime.MaxValue))
+                            throw new ContentException("people.yaml", $"people[{p.Id}].offices", "overlapping terms disagree on party");
+                    }
             var terms = c.People.SelectMany(p => p.Offices.Select(t => (person: p.Id, term: t))).ToList();
             for (int i = 0; i < terms.Count; i++)
                 for (int j = i + 1; j < terms.Count; j++)

@@ -68,6 +68,20 @@ public class ContentLoaderTests
     }
 
     [Fact]
+    public void OverlappingTermsMustAgreeOnParty()
+    {
+        var bad = Fixture.Files["people.yaml"]
+            .Replace("      - office: prime_minister\n        from: 1948-05-14\n", "      - office: prime_minister\n        from: 1948-05-14\n        party: alpha\n")
+            .Replace("      - office: defense_minister\n        from: 1948-05-14\n", "      - office: defense_minister\n        from: 1948-05-14\n        party: beta\n");
+        Assert.Equal(2, bad.Split("party: ").Length - 1);
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["people.yaml"] = bad })));
+        Assert.Equal("people.yaml", ex.File);
+        Assert.Equal("people[pm_one].offices", ex.Field);
+        Assert.Contains("overlapping terms disagree on party", ex.Message);
+        ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["people.yaml"] = bad.Replace("party: beta", "party: alpha") }));
+    }
+
+    [Fact]
     public void OfficeTermEndingBeforeItStartsIsAnError()
     {
         var bad = Fixture.Files["people.yaml"].Replace("to: 1949-01-01", "to: 1947-01-01");
