@@ -110,6 +110,31 @@ def test_build_marks_dry_land_desert_wherever_it_is(tmp_path):
     assert south and all(x["biome"] == "desert" for x in south)
 
 
+def test_hex_precip_averages_only_land_cells(tmp_path):
+    # West half sea (0 m), east half land at 300 m. CHELSA is "extrapolated" to a dry 20 mm over the sea and is
+    # 220 mm over land. The shore land hexes hold ~18% sea cells, so counting them gives ~184 mm (desert); with
+    # land cells only every land hex is 220 mm -> hills.
+    n = 201
+    elev = np.zeros((n, n), dtype="float32")
+    elev[:, n // 2:] = 300.0
+    meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
+            "elev_min_m": 0.0, "elev_max_m": 300.0}
+    (tmp_path / "heightmap.json").write_text(json.dumps(meta))
+    np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
+    cell = 0.01
+    w = round(0.5 / cell) + 2; h = round(0.5 / cell) + 2
+    lons = 35.0 - cell + (np.arange(w) + 0.5) * cell
+    mm = np.where(lons[None, :] < 35.25, 20.0, 220.0) * np.ones((h, 1))
+    hg.write_precip(mm, 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic"})
+    write_no_stations(tmp_path)
+    out = hg.build(tmp_path, 5.0, precip_dir=tmp_path)
+    land = [x for x in out["hexes"] if x["land"]]
+    coastal = [x for x in land if x["lon"] < 35.28]                # land hexes touching the shore
+    assert coastal, "fixture has no coastal land hex"
+    assert land and all(x["biome"] == "hills" for x in land), [(x["q"], x["r"], x["biome"]) for x in land
+                                                                if x["biome"] != "hills"]
+
+
 # --- Station bias correction (synthetic) ---
 
 def test_correction_scales_field_by_idw_of_station_log_ratio(tmp_path):
@@ -124,6 +149,25 @@ def test_correction_scales_field_by_idw_of_station_log_ratio(tmp_path):
     assert out["mm"][0, 3] == pytest.approx(800.0, rel=1e-3)      # the cell holding station B
     assert out["mm"][3, 1] < 400.0 < out["mm"][3, 2]               # nearer A -> drier, nearer B -> wetter
     assert hg.correct_precip(pr, [])["mm"] is not pr["mm"] and np.array_equal(hg.correct_precip(pr, [])["mm"], pr["mm"])
+
+
+@pytest.mark.parametrize("bad, station_mm, label", [
+    (np.nan, 300.0, "nan"),            # CHELSA has no data at the station
+    (0.0, 300.0, "0"),                 # CHELSA zero: ratio would be infinite
+    (-5.0, 300.0, "-5"),               # CHELSA negative
+    (400.0, 0.0, "ratio"),             # station 0 mm: log(0) is not finite
+])
+def test_correction_fails_loudly_on_a_bad_station(tmp_path, bad, station_mm, label):
+    mm = np.full((4, 4), 400.0)
+    mm[0, 0] = bad                                                  # the cell holding the second station
+    pr = {"meta": {"lon0": 35.0, "lat1": 32.0, "cell_deg": 0.25, "width": 4, "height": 4}, "mm": mm}
+    st = [{"ids": [7], "name": "OK", "lon": 35.875, "lat": 31.125, "mm": 400.0, "years": 30},
+          {"ids": [246950], "name": "BAD", "lon": 35.125, "lat": 31.875, "mm": station_mm, "years": 30}]
+    with pytest.raises(ValueError, match=f"246950.*{label}"):
+        hg.correct_precip(pr, st)
+    st[1].pop("ids")                                                # no id: the message names the index
+    with pytest.raises(ValueError, match=f"index 1.*{label}"):
+        hg.correct_precip(pr, st)
 
 
 # --- Real inputs: CHELSA clip + IMS station normals (content/map/precip_*) ---
@@ -176,3 +220,17 @@ def test_build_is_deterministic(tmp_path):
     b = json.dumps(hg.build(hg.MAP_DIR), separators=(",", ":"))
     assert a == b
     assert a == (ROOT / "content" / "map" / "hexes.json").read_text(), "hexes.json is stale: run uv run tools/hexgrid.py"
+
+
+HEXES = ROOT / "content" / "map" / "hexes.json"
+
+
+@pytest.mark.parametrize("place, dry", [("eilat", True), ("mitzpe_ramon", True), ("dimona", True), ("arad", True),
+                                        ("tel_aviv", False), ("ashkelon", False), ("gaza_city", False),
+                                        ("jerusalem", False), ("hebron", False), ("haifa", False)])
+def test_committed_hex_biome_matches_arid_boundary(place, dry):
+    grid = json.loads(HEXES.read_text())
+    lon, lat = PLACES[place]
+    q, r = hg.settlement_hex(lon, lat, grid)
+    biome = next(h["biome"] for h in grid["hexes"] if (h["q"], h["r"]) == (q, r))
+    assert (biome == "desert") == dry, f"{place} hex ({q}, {r}) is {biome}"

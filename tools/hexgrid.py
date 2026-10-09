@@ -16,10 +16,11 @@ Biome rules, first match wins (per hex, over the heightmap pixels / precipitatio
                   basin and northern Arava), otherwise "valley" (Jordan rift, Beit She'an, Hula)
   4 mountains     median >= 700 m
   5 desert        mean annual precipitation < 200 mm (the standard arid boundary): the mean, over the clip cells
-                  whose centres fall inside the hex, of CHELSA V2.1 bio12 (1981-2010, content/map/precip_bio12.*)
+                  whose centres fall inside the hex and on land (the heightmap there is not sea, as in rule 1; CHELSA
+                  is extrapolated over the sea), of CHELSA V2.1 bio12 (1981-2010, content/map/precip_bio12.*)
                   bias-corrected with IMS rain-gauge normals (1981-2010, content/map/precip_stations.json): IDW
-                  (power 2) of log(station / CHELSA) applied as a multiplicative correction. A hex with no valid cell
-                  uses the nearest valid cell to its centre. Inputs are written by tools/precip_clip.py and
+                  (power 2) of log(station / CHELSA) applied as a multiplicative correction. A hex with no valid land
+                  cell uses the nearest valid cell to its centre. Inputs are written by tools/precip_clip.py and
                   tools/ims_normals.py; this build reads only the committed files
   6 hills         median >= 200 m
   7 coastal_plain everything else
@@ -42,6 +43,7 @@ DEAD_SEA_NORTH_TIP_LAT = 31.77
 ARID_MM = 200.0  # mean annual precipitation below which land is desert (arid)
 PRECIP_NODATA = 65535
 STATIONS_NAME = "precip_stations.json"
+SEA_EPS_M = 0.5  # Copernicus sea is exactly 0 m
 IDW_MIN_D2_KM2 = 1e-6  # a station on a cell centre gets (almost) all the weight there
 HEX_SIZE_KM = 5.0  # circumradius (centre to corner)
 SQRT3 = math.sqrt(3)
@@ -139,6 +141,21 @@ def load_stations(d: Path) -> list[dict]:
     return json.loads((Path(d) / STATIONS_NAME).read_text())["stations"]
 
 
+def station_log_ratio(i: int, s: dict, pr: dict) -> float:
+    """log(station mm / CHELSA mm at the station). Raises ValueError rather than letting a NaN or infinite ratio
+    spread through the IDW to every cell."""
+    ids = s.get("ids") or ([s["id"]] if "id" in s else None)
+    who = f"station {ids} ({s.get('name', '?')})" if ids else f"station index {i} ({s.get('name', '?')})"
+    chelsa = precip_at(s["lon"], s["lat"], pr)
+    if not chelsa > 0:  # NaN or <= 0
+        raise ValueError(f"{who}: CHELSA value at the station is {chelsa}; need a finite value > 0")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lr = float(np.log(s["mm"] / chelsa))
+    if not math.isfinite(lr):
+        raise ValueError(f"{who}: station/CHELSA ratio {s['mm']}/{chelsa} has log {lr}; not finite")
+    return lr
+
+
 def correct_precip(pr: dict, stations: list[dict]) -> dict:
     """Bias-correct the CHELSA field with station normals: at each station ratio = station mm / CHELSA mm (bilinear);
     log(ratio) is interpolated to every cell by inverse-distance weighting (power 2, km on the map projection) and
@@ -149,7 +166,7 @@ def correct_precip(pr: dict, stations: list[dict]) -> dict:
     mid = pr["meta"]["lat1"] - pr["meta"]["height"] * pr["meta"]["cell_deg"] / 2
     kx = KM_PER_DEG_LON_EQ * math.cos(math.radians(mid))
     sx = np.array([s["lon"] for s in stations]); sy = np.array([s["lat"] for s in stations])
-    log_ratio = np.log(np.array([s["mm"] / precip_at(s["lon"], s["lat"], pr) for s in stations]))
+    log_ratio = np.array([station_log_ratio(i, s, pr) for i, s in enumerate(stations)])
     num = np.zeros(lons.shape); den = np.zeros(lons.shape)
     for x, y, lr in zip(sx, sy, log_ratio):              # station by station: fixed order, modest memory
         w = 1.0 / np.maximum(((lons - x) * kx) ** 2 + ((lats - y) * KM_PER_DEG_LAT) ** 2, IDW_MIN_D2_KM2)
@@ -191,12 +208,25 @@ def nearest_precip(lon: float, lat: float, pr: dict) -> float:
     return float(pr["mm"][ok][np.argmin(d)])
 
 
-def hex_precip_means(pr: dict, meta: dict, size: float) -> dict:
-    """Mean precipitation of the valid clip cells whose centres fall inside each hex, keyed (q, r)."""
+def is_sea(elev_m: np.ndarray) -> np.ndarray:
+    """Copernicus sea is exactly 0 m: the sea test of biome rule 1."""
+    return np.abs(elev_m) < SEA_EPS_M
+
+
+def hex_precip_means(pr: dict, elev: np.ndarray, meta: dict, size: float) -> dict:
+    """Mean precipitation of the valid clip cells whose centres fall inside each hex and on land, keyed (q, r).
+    A cell is land when the nearest heightmap pixel to its centre (clamped to the map) is not sea: over the sea
+    CHELSA is extrapolated, so sea cells would bias shore hexes."""
     lons, lats = precip_cell_centres(pr)
-    ok = ~np.isnan(pr["mm"])
-    x = (lons[ok] - meta["lon0"]) * km_per_deg_lon(meta)
-    y = (meta["lat1"] - lats[ok]) * KM_PER_DEG_LAT
+    h, w = elev.shape
+    width_km = (meta["lon1"] - meta["lon0"]) * km_per_deg_lon(meta)
+    length_km = (meta["lat1"] - meta["lat0"]) * KM_PER_DEG_LAT
+    x = (lons - meta["lon0"]) * km_per_deg_lon(meta)
+    y = (meta["lat1"] - lats) * KM_PER_DEG_LAT
+    col = np.clip(np.round(x / width_km * (w - 1)), 0, w - 1).astype(int)
+    row = np.clip(np.round(y / length_km * (h - 1)), 0, h - 1).astype(int)
+    ok = ~np.isnan(pr["mm"]) & ~is_sea(elev[row, col])
+    x, y = x[ok], y[ok]
     q, r = point_to_hex(x, y, size)
     sums, counts = {}, {}
     for k, v in zip(zip(q, r), pr["mm"][ok]):
@@ -214,7 +244,7 @@ def load_elevation(map_dir: Path) -> tuple[np.ndarray, dict]:
 def build(map_dir: Path, size: float = HEX_SIZE_KM, precip_dir: Path = PRECIP_DIR) -> dict:
     elev, meta = load_elevation(map_dir)
     pr = load_corrected_precip(precip_dir)
-    precip = hex_precip_means(pr, meta, size)
+    precip = hex_precip_means(pr, elev, meta, size)
     h, w = elev.shape
     width_km = (meta["lon1"] - meta["lon0"]) * km_per_deg_lon(meta)
     length_km = (meta["lat1"] - meta["lat0"]) * KM_PER_DEG_LAT
@@ -235,7 +265,7 @@ def build(map_dir: Path, size: float = HEX_SIZE_KM, precip_dir: Path = PRECIP_DI
         lon = meta["lon0"] + cx / km_per_deg_lon(meta)
         lat = meta["lat1"] - cy / KM_PER_DEG_LAT
         mm = precip.get((hq, hr))
-        st = {"sea_share": float(np.mean(np.abs(v) < 0.5)), "water_share": water_share(v),
+        st = {"sea_share": float(np.mean(is_sea(v))), "water_share": water_share(v),
               "median": float(np.median(v)), "precip_mm": mm if mm is not None else nearest_precip(lon, lat, pr)}
         biome = classify(st, lat)
         hexes.append({"q": hq, "r": hr, "lon": round(lon, 5), "lat": round(lat, 5), "elev_m": round(st["median"], 1),

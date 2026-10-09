@@ -5488,8 +5488,9 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the tests to verify they pass.**
 
 Run: the shared test command.
-Expected: `73 passed` (44 when Task 22 first landed. Task 24's fix rounds added the Dead Sea basin / Arava biome cases,
-the precipitation rule, the CHELSA clip, IMS normals, bias-correction, real-place, station-reproduction and determinism tests.)
+Expected: `88 passed` (44 when Task 22 first landed. Task 24's fix rounds added the Dead Sea basin / Arava biome cases,
+the precipitation rule, the CHELSA clip, IMS normals, bias-correction, bad-station, land-only hex precipitation,
+real-place (field and committed hex biome), station-reproduction and determinism tests.)
 
 - [ ] **Step 5: Render the image and check the geography by eye.** This is the M2 gate. Do not accept the map data until every item passes.
 
