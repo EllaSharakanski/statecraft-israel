@@ -44,6 +44,9 @@ public class MapTests
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[10]); // 3x3 needs 18 bytes
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
         StringAssert.Contains("expected 18", ex.Message);
+        var metaPath = System.IO.Path.Combine(dir, "heightmap.json");
+        var fromBytes = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(System.IO.File.ReadAllText(metaPath), new byte[10], metaPath));
+        Assert.AreEqual(ex.Message, fromBytes.Message);
     }
 
     // M0 correction 1: no Shader.Find at runtime. Materials are editor-made assets passed into Build.
@@ -281,6 +284,8 @@ public class MapTests
         var path = TempFile("hexes.json", json);
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.LoadHexes(path));
         StringAssert.Contains(path, ex.Message); StringAssert.Contains(problem, ex.Message);
+        var fromText = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.LoadHexes(json, path));
+        Assert.AreEqual(ex.Message, fromText.Message);
     }
 
     const string GoodMeta = "\"lon0\":34.2,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367";
@@ -305,6 +310,8 @@ public class MapTests
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[18]);
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
         StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains(problem, ex.Message);
+        var fromText = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(json, new byte[18], meta));
+        Assert.AreEqual(ex.Message, fromText.Message);
     }
 
     [Test]
@@ -318,5 +325,76 @@ public class MapTests
         StringAssert.Contains("unknown biome 'tundra'", ex.Message);
         Assert.AreEqual(terrainsBefore, Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length, "orphan Terrain left behind");
         Assert.AreEqual(dataBefore, Resources.FindObjectsOfTypeAll<TerrainData>().Length, "orphan TerrainData left behind");
+    }
+
+    // --- Text/bytes inputs, for the WebGL build that cannot use System.IO on streamingAssetsPath (final fix 3, I2) ---
+
+    static string MetaPath => System.IO.Path.Combine(Paths.StreamingMap, "heightmap.json");
+    static string R16Path => System.IO.Path.Combine(Paths.StreamingMap, "heightmap.r16");
+
+    [Test]
+    public void HeightmapFromBytesMatchesHeightmapFromPath()
+    {
+        var (pm, ph) = HeightmapLoader.Load(Paths.StreamingMap);
+        var (bm, bh) = HeightmapLoader.Load(System.IO.File.ReadAllText(MetaPath), System.IO.File.ReadAllBytes(R16Path), MetaPath);
+        Assert.AreEqual(JsonUtility.ToJson(pm), JsonUtility.ToJson(bm));
+        Assert.AreEqual(ph.GetLength(0), bh.GetLength(0)); Assert.AreEqual(ph.GetLength(1), bh.GetLength(1));
+        int differ = 0;
+        for (int y = 0; y < ph.GetLength(0); y++) for (int x = 0; x < ph.GetLength(1); x++) if (ph[y, x] != bh[y, x]) differ++;
+        Assert.AreEqual(0, differ, "height samples that differ");
+    }
+
+    [Test]
+    public void HexesFromTextMatchHexesFromPath()
+    {
+        var fromPath = MapBuilder.LoadHexes(HexesJson);
+        var fromText = MapBuilder.LoadHexes(System.IO.File.ReadAllText(HexesJson), HexesJson);
+        Assert.AreEqual(JsonUtility.ToJson(fromPath), JsonUtility.ToJson(fromText));
+    }
+
+    [Test]
+    public void BuildFromReadInputsMatchesBuildFromPaths()
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var a = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var (meta, heights) = HeightmapLoader.Load(System.IO.File.ReadAllText(MetaPath), System.IO.File.ReadAllBytes(R16Path), MetaPath);
+        var b = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(System.IO.File.ReadAllText(HexesJson), HexesJson), terrainMat, overlayMat);
+        try
+        {
+            var ta = a.GetComponent<Terrain>().terrainData; var tb = b.GetComponent<Terrain>(); Assert.IsNotNull(tb, "terrain from read inputs");
+            Assert.AreEqual(ta.size, tb.terrainData.size);
+            Assert.AreEqual(ta.heightmapResolution, tb.terrainData.heightmapResolution);
+            Assert.AreEqual(ta.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution), tb.terrainData.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution));
+            Assert.AreEqual(a.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh.vertices,
+                b.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh.vertices);
+        }
+        finally { Object.DestroyImmediate(a); Object.DestroyImmediate(b); }
+    }
+
+    // --- hexes.json and the heightmap must cover the same area (final fix 3, M3) ---
+
+    [TestCase(1e-6, 0, 0, 0)]
+    [TestCase(0, -1e-6, 0, 0)]
+    [TestCase(0, 0, 1e-6, 0)]
+    [TestCase(0, 0, 0, -1e-6)]
+    public void HexBoundsThatDifferFromTheHeightmapAreRejectedBeforeAnyObjectIsCreated(double dLon0, double dLon1, double dLat0, double dLat1)
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var meta = HeightmapLoader.Load(Paths.StreamingMap).meta;
+        string D(double v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+        var json = "{\"bounds\":{\"lon0\":" + D(meta.lon0 + dLon0) + ",\"lon1\":" + D(meta.lon1 + dLon1) + ",\"lat0\":" + D(meta.lat0 + dLat0) + ",\"lat1\":" + D(meta.lat1 + dLat1)
+            + "},\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"lon\":35,\"lat\":32,\"land\":true,\"biome\":\"hills\"}]}";
+        var path = TempFile("hexes.json", json);
+        int terrainsBefore = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length;
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat, overlayMat));
+        StringAssert.Contains("hexes.json", ex.Message); StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains("bounds", ex.Message);
+        Assert.AreEqual(terrainsBefore, Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length, "orphan Terrain left behind");
+    }
+
+    [Test]
+    public void RealHexesJsonCarriesTheHeightmapBounds()
+    {
+        var b = MapBuilder.LoadHexes(HexesJson).bounds; var meta = HeightmapLoader.Load(Paths.StreamingMap).meta;
+        Assert.AreEqual(meta.lon0, b.lon0); Assert.AreEqual(meta.lon1, b.lon1); Assert.AreEqual(meta.lat0, b.lat0); Assert.AreEqual(meta.lat1, b.lat1);
     }
 }

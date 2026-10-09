@@ -6,7 +6,8 @@ using UnityEngine;
 namespace Statecraft.Game.Map
 {
     [Serializable] public sealed class HexJson { public int q, r; public double lon, lat; public float elev_m; public bool land; public string biome; }
-    [Serializable] public sealed class HexFile { public float hex_size_km; public string layout; public HexJson[] hexes; }
+    [Serializable] public sealed class HexBounds { public double lon0, lon1, lat0, lat1; }
+    [Serializable] public sealed class HexFile { public HexBounds bounds; public float hex_size_km; public string layout; public HexJson[] hexes; }
 
     public static class MapBuilder
     {
@@ -15,7 +16,9 @@ namespace Statecraft.Game.Map
         public const float BiomeLayerTileSizeM = 1000f; // layers are flat colours, so the tiling only needs to be finite
         public const int OverlaySegmentsPerEdge = 10;  // ~500 m sub-segments on a 5 km hex edge, each draped on the terrain
         public const float OverlayClearanceM = 40f * VerticalExaggeration; // above the (exaggerated) terrain surface
-        public const int OverlaySamplesPerSegment = 16;  // ~31 m steps, finer than the ~79 m heightmap spacing
+        // ~31 m steps, finer than the heightmap spacing on both axes: 78.9 m E-W x 210.6 m N-S
+        // (heightmap.json: 2049 samples, so 2048 intervals, over width_km 161.53 x length_km 431.22).
+        public const int OverlaySamplesPerSegment = 16;
         /// <summary>Terrain LOD screen-space error in pixels. Unity's default (5) gives distant cameras (the top-down
         /// capture, the 90 km flythrough) a coarse surface that rises above the draped hex outlines in valleys (K2).</summary>
         public const float TerrainPixelError = 1f;
@@ -29,7 +32,7 @@ namespace Statecraft.Game.Map
         };
 
         /// <summary>Builds the terrain (with a "HexOverlay" child) from the heightmap in <paramref name="mapDir"/> and the
-        /// hexes in <paramref name="hexesJson"/>. Materials are editor-made assets (Assets/Materials/Terrain.mat,
+        /// hexes in <paramref name="hexesJson"/>, both read with System.IO. Materials are editor-made assets (Assets/Materials/Terrain.mat,
         /// HexOverlay.mat) passed in by the caller: Shader.Find returns null in players (M0 correction 1).
         /// Runtime-created objects are owned by a <see cref="MapRuntimeAssets"/> on the returned GameObject and destroyed with it.</summary>
         public static GameObject Build(string mapDir, string hexesJson, Material terrainMaterial, Material overlayMaterial)
@@ -37,7 +40,20 @@ namespace Statecraft.Game.Map
             if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
             if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
             var (meta, heights) = HeightmapLoader.Load(mapDir);
-            var hexFile = LoadHexes(hexesJson);
+            return Build(meta, heights, LoadHexes(hexesJson), terrainMaterial, overlayMaterial);
+        }
+
+        /// <summary>Builds the map from already-read inputs (HeightmapLoader.Load and LoadHexes over text and bytes), so a
+        /// WebGL build needs no System.IO. Throws InvalidDataException, before creating any object, when the hexes' bounds
+        /// differ from the heightmap's by more than <see cref="BoundsTolerance"/>.</summary>
+        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial, Material overlayMaterial)
+        {
+            if (meta == null) throw new ArgumentNullException(nameof(meta));
+            if (heights == null) throw new ArgumentNullException(nameof(heights));
+            if (hexFile == null) throw new ArgumentNullException(nameof(hexFile));
+            if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
+            if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
+            CheckSameArea(meta, hexFile.bounds);
             float widthM = meta.width_km * 1000f, lengthM = meta.length_km * 1000f;
             float reliefM = (meta.elev_max_m - meta.elev_min_m) * VerticalExaggeration;
             var frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, widthM, lengthM);
@@ -62,9 +78,11 @@ namespace Statecraft.Game.Map
 
         /// <summary>Reads and validates hexes.json (non-empty, hex_size_km > 0, pointy layout, known biomes); problems throw
         /// InvalidDataException naming the file. Build calls this before creating any object.</summary>
-        public static HexFile LoadHexes(string path)
+        public static HexFile LoadHexes(string path) => LoadHexes(File.ReadAllText(path), path);
+
+        /// <summary>Parses already-read hexes.json text; errors name <paramref name="path"/>, as the path overload does.</summary>
+        public static HexFile LoadHexes(string text, string path)
         {
-            var text = File.ReadAllText(path);
             if (string.IsNullOrWhiteSpace(text)) throw new InvalidDataException($"{path}: empty file");
             HexFile f;
             try { f = JsonUtility.FromJson<HexFile>(text); }
@@ -77,6 +95,18 @@ namespace Statecraft.Game.Map
                 if (h == null || h.biome == null || !Biome.ContainsKey(h.biome))
                     throw new InvalidDataException($"{path}: unknown biome '{h?.biome}' at q={h?.q} r={h?.r}");
             return f;
+        }
+
+        public const double BoundsTolerance = 1e-9; // degrees
+
+        /// <summary>hexes.json and the heightmap must describe the same lon/lat rectangle, or hexes and settlements land
+        /// in the wrong place on the terrain.</summary>
+        static void CheckSameArea(HeightmapMeta meta, HexBounds b)
+        {
+            if (b == null || Math.Abs(b.lon0 - meta.lon0) > BoundsTolerance || Math.Abs(b.lon1 - meta.lon1) > BoundsTolerance
+                || Math.Abs(b.lat0 - meta.lat0) > BoundsTolerance || Math.Abs(b.lat1 - meta.lat1) > BoundsTolerance)
+                throw new InvalidDataException(FormattableString.Invariant(
+                    $"hexes.json bounds (lon {b?.lon0}..{b?.lon1}, lat {b?.lat0}..{b?.lat1}) differ from heightmap.json (lon {meta.lon0}..{meta.lon1}, lat {meta.lat0}..{meta.lat1}) by more than {BoundsTolerance}"));
         }
 
         /// <summary>One terrain layer per biome; each alphamap texel blends the biomes of nearby hex centres (BiomeBlender).</summary>

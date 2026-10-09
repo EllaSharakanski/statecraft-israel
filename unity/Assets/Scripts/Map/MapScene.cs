@@ -27,14 +27,14 @@ namespace Statecraft.Game.Map
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
             Clear();
-            var terrainGo = MapBuilder.Build(Paths.StreamingMap, Path.Combine(Paths.Content, "map", "hexes.json"), terrainMaterial, overlayMaterial);
+            var (metaJson, r16, hexesJson, settlementsYaml) = ReadInputs();
+            var (meta, heights) = HeightmapLoader.Load(metaJson, r16, MetaPath);
+            var terrainGo = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(hexesJson, HexesPath), terrainMaterial, overlayMaterial);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
-            var (meta, _) = HeightmapLoader.Load(Paths.StreamingMap);
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
-            var yamlPath = Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName);
-            var list = SettlementPlacer.Parse(File.ReadAllText(yamlPath), (meta.lon0, meta.lon1, meta.lat0, meta.lat1), yamlPath);
+            var list = SettlementPlacer.Parse(settlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
@@ -45,6 +45,17 @@ namespace Statecraft.Game.Map
             foreach (var c in rig.Volume.profile.components) assets.Own(c);
             assets.Own(rig.Volume.profile);
         }
+
+        static string MetaPath => Path.Combine(Paths.StreamingMap, "heightmap.json");
+        static string R16Path => Path.Combine(Paths.StreamingMap, "heightmap.r16");
+        static string HexesPath => Path.Combine(Paths.Content, "map", "hexes.json");
+        static string SettlementsPath => Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName);
+
+        /// <summary>Every map input, read once. This uses System.IO, which works in the editor (and desktop players) only:
+        /// M3 (first player build) replaces it with UnityWebRequest for WebGL, which cannot read streamingAssetsPath with
+        /// System.IO, and copies content/map into StreamingAssets.</summary>
+        static (string metaJson, byte[] r16, string hexesJson, string settlementsYaml) ReadInputs() =>
+            (File.ReadAllText(MetaPath), File.ReadAllBytes(R16Path), File.ReadAllText(HexesPath), File.ReadAllText(SettlementsPath));
 
         /// <summary>Destroys every child: all of them are things Build made (terrain, Settlements, PostFX). Walking the
         /// hierarchy rather than remembered fields keeps Build idempotent after a domain reload (R2). The VolumeProfile is
