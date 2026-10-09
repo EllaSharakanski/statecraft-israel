@@ -50,6 +50,15 @@ public class SecurityTests
         Assert.Equal(0.15, s.Mobilization);
     }
 
+    [Theory]
+    [InlineData(double.NaN)] [InlineData(double.PositiveInfinity)] [InlineData(double.NegativeInfinity)]
+    public void NonFiniteMobilizationIsRejectedAndStateUnchanged(double level)
+    {
+        var s = new GameState { Rung = 3, Mobilization = 0.3 }; var why = new List<Cause>();
+        Assert.Equal("Mobilization must be between 0 and 1", SecuritySystem.SetMobilization(C, s, level, why));
+        Assert.Equal(0.3, s.Mobilization);
+    }
+
     [Fact]
     public void LoaderRequiresFiveRungFloors()
     {
