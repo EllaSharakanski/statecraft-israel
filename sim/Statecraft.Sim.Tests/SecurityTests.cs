@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Statecraft.Sim;
@@ -19,6 +20,18 @@ public class SecurityTests
     }
 
     [Fact]
+    public void CeasefireRungDropIsCountedOnce()
+    {
+        var s = new GameState(); var why = new List<Cause>();
+        SecuritySystem.Init(C, s, why);
+        why.Clear();
+        for (int i = 0; i < 4; i++) SecuritySystem.Apply(C, s, TurnLength.Week, why);
+        Assert.Equal(3, s.Rung);
+        Assert.Equal(-2, why.Where(w => w.Target == "rung").Sum(w => w.Delta));
+        Assert.Contains(why, w => w.Target == "ceasefire" && w.Delta == 0 && w.Message.Contains("ceasefire"));
+    }
+
+    [Fact]
     public void CeasefireClockForcesDeescalation()
     {
         var s = new GameState(); var why = new List<Cause>();
@@ -27,7 +40,7 @@ public class SecurityTests
         Assert.Equal(5, s.Rung);
         SecuritySystem.Apply(C, s, TurnLength.Week, why);
         Assert.Equal(3, s.Rung); Assert.Equal(0, s.CeasefireWeeksLeft);
-        Assert.Contains(why, w => w.Target == "rung" && w.Message.Contains("ceasefire"));
+        Assert.Contains(why, w => w.Target == "ceasefire" && w.Message.Contains("ceasefire"));
         Assert.Equal(0.8, s.Mobilization); // de-escalation does not demobilize
     }
 

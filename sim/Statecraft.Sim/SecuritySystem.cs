@@ -50,7 +50,7 @@ namespace Statecraft.Sim
             s.CeasefireWeeksLeft = Math.Max(0, s.CeasefireWeeksLeft - Weeks(len));
             if (s.CeasefireWeeksLeft == 0)
             {
-                why.Add(new Cause("security", "rung", -2, "UN ceasefire imposed: full war ends"));
+                why.Add(new Cause("security", "ceasefire", 0, "UN ceasefire imposed: full war ends"));   // the rung cause SetRung adds carries the -2
                 SetRung(c, s, 3, why);
             }
         }
