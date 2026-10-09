@@ -46,4 +46,21 @@ public class CoreTests
         Assert.NotEqual(s1.Hash(), s2.Hash());
         Assert.Equal(0.5, s1.Indicators["morale"]); // clone is deep
     }
+    [Fact]
+    public void HashTreatsNegativeZeroAsZero()
+    {
+        var a = new GameState { Date = new DateTime(1948, 5, 15), Treasury = 0.0 };
+        a.Indicators["morale"] = 0.0;
+        var b = a.Clone(); b.Treasury = -0.0; b.Indicators["morale"] = -0.0;
+        Assert.Equal(a.Hash(), b.Hash());
+    }
+
+    [Fact]
+    public void HashSeesTheLastBitOfADouble()
+    {
+        var a = new GameState { Date = new DateTime(1948, 5, 15), Treasury = 0.1 };
+        var b = a.Clone(); b.Treasury = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(0.1) + 1);
+        Assert.NotEqual(a.Treasury, b.Treasury);
+        Assert.NotEqual(a.Hash(), b.Hash());
+    }
 }

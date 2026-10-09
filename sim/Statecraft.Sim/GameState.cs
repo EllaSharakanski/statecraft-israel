@@ -50,11 +50,12 @@ namespace Statecraft.Sim
             return c;
         }
 
-        /// <summary>SHA-256 over a canonical text form (ordinal-sorted keys, round-trip doubles).</summary>
+        /// <summary>SHA-256 over a canonical text form (ordinal-sorted keys, doubles as IEEE bit patterns with -0.0
+        /// written as 0.0), so hashes match across .NET, Mono and IL2CPP.</summary>
         public string Hash()
         {
             var sb = new StringBuilder();
-            void Num(string k, double v) => sb.Append(k).Append('=').Append(v.ToString("R", CultureInfo.InvariantCulture)).Append(';');
+            void Num(string k, double v) => sb.Append(k).Append('=').Append(BitConverter.DoubleToInt64Bits(v == 0.0 ? 0.0 : v).ToString("X16", CultureInfo.InvariantCulture)).Append(';');
             void Map(string name, Dictionary<string, double> m)
             {
                 sb.Append(name).Append('{');
