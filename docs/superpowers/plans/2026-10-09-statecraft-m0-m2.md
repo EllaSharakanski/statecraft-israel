@@ -145,7 +145,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 2: Spike: DLL plus YAML in Unity, UI Toolkit binding, URP depth of field, Web and Mac builds
 
 **Files:**
-- Create: `spikes/m0/README.md`, `spikes/m0/lib/SpikeLib.csproj`, `spikes/m0/lib/Probe.cs`
+- Create: `spikes/m0/lib/SpikeLib.csproj`, `spikes/m0/lib/Probe.cs`
 - Create (Unity project made from the Hub's **Universal 3D** template at `spikes/m0/unity`):
   - `Assets/Spike/SpikeBoot.cs`
   - `Assets/Spike/CabinetVM.cs`
@@ -160,7 +160,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - [ ] **Step 1 (owner, interactive): Create the Unity project**
 
-In Unity Hub: Projects → New project → template **Universal 3D** → location `~/israel-game/spikes/m0`, name `unity`, editor 6000.3.25f1. Wait for the project to open, then close the editor.
+In Unity Hub: Projects → New project → template **Universal 3D** → location `~/israel-game/.worktrees/m0-m2/spikes/m0` (the m0-m2 worktree, not the main checkout), name `unity`, editor 6000.3.25f1. Wait for the project to open, then close the editor.
 
 We use the template because it sets up URP correctly. Getting the URP package version for 6000.3 right by hand is error-prone.
 
@@ -302,9 +302,9 @@ public sealed class SpikeBoot : MonoBehaviour
         Debug.Log("SPIKE e: gaussian dof volume created");
 
         // Legacy TextMesh labels are used for settlement names in Task 25; check they render under URP.
-        var label = new GameObject("LabelProbe").AddComponent<TextMesh>();
-        label.text = "Tel Aviv"; label.characterSize = 1f; label.color = Color.black;
-        label.transform.position = new Vector3(45, 6, 30); label.transform.rotation = Quaternion.Euler(50, 0, 0);
+        var textProbe = new GameObject("LabelProbe").AddComponent<TextMesh>();
+        textProbe.text = "Tel Aviv"; textProbe.characterSize = 1f; textProbe.color = Color.black;
+        textProbe.transform.position = new Vector3(45, 6, 30); textProbe.transform.rotation = Quaternion.Euler(50, 0, 0);
         Debug.Log("SPIKE f: textmesh label created (check it is visible, not missing or magenta)");
 
         // (a) Map stress test: 4,000 instanced hex caps (about the hex count of the real map).
@@ -433,7 +433,7 @@ Take a screenshot. Then run `SpikeBuild.BuildMac` the same way, run the app, and
 - [ ] **Step 10: Commit the answers and the spike source (not the build output)**
 
 ```bash
-printf 'spikes/m0/build/\nspikes/m0/*.log\nspikes/m0/unity/Library/\nspikes/m0/unity/Temp/\nspikes/m0/unity/Logs/\nspikes/m0/unity/UserSettings/\nspikes/m0/unity/Assets/Plugins/\n' >> .gitignore
+printf 'spikes/m0/build/\nspikes/m0/*.log\nspikes/m0/lib/bin/\nspikes/m0/lib/obj/\nspikes/m0/unity/Library/\nspikes/m0/unity/Temp/\nspikes/m0/unity/Logs/\nspikes/m0/unity/UserSettings/\nspikes/m0/unity/Assets/Plugins/\n' >> .gitignore
 git add .gitignore spikes/m0 docs/spikes/m0-results.md
 git commit -m "spike(m0): answers for web build, DLL+YAML, UI binding, DoF
 
@@ -476,7 +476,7 @@ In the Unity window, accept the "Pending Connection".
 
 - [ ] **Step 4: Test it**
 
-In Claude Code, ask: "Read the Unity console messages and summarize any warnings or errors."
+In the editor, open `Assets/Spike/Spike.unity` (created by Task 2's `MakeScene`) and press **Play**, so the `SPIKE` lines reach the editor console. Then, in Claude Code, ask: "Read the Unity console messages and summarize any warnings or errors."
 Expected: a summary that includes the `SPIKE` log lines.
 
 - [ ] **Step 5: Record and commit**
@@ -484,7 +484,7 @@ Expected: a summary that includes the `SPIKE` log lines.
 Add row **b** to the table, with: plan or trial status, yes/no, and the exact command used. If the answer is "no" or "trial only", the fallback is batch mode plus scripts, as used in Task 2. That fallback blocks nothing.
 
 ```bash
-git add docs/spikes/m0-results.md
+git add docs/spikes/m0-results.md spikes/m0/unity/Packages spikes/m0/unity/ProjectSettings
 git commit -m "spike(m0): Unity MCP result
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -725,7 +725,7 @@ public class CoreTests
     public void RngValuesAreInUnitInterval()
     {
         var r = new Rng(7);
-        for (int i = 0; i < 1000; i++) { var v = r.NextDouble(); Assert.InRange(v, 0.0, 1.0 - double.Epsilon); }
+        for (int i = 0; i < 1000; i++) { var v = r.NextDouble(); Assert.True(v >= 0.0 && v < 1.0, $"NextDouble out of [0,1): {v}"); }
     }
 
     [Fact]
@@ -4422,7 +4422,7 @@ uv run --quiet --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 -
   - The real grid has **1,102 hexes**: coastal_plain 108, desert 309, hills 143, lake 16, mountains 251, sea 216, valley 59.
 - `content/map/settlements_1948.yaml` lists 25 sourced places, in the shape `{settlements:[{id,name,lon,lat,type,founded,pre_modern?,sources:[{url,checked}]}]}`.
   - `founded` is `null` with `pre_modern: true` for cities that predate the modern era.
-  - **Placement rule (Unity must use the same one):** a settlement sits on the hex that contains it, if that hex is land. Otherwise it goes on the land neighbour whose centre is nearest. This is `hexgrid.settlement_hex`, and Tiberias is the case that needs it.
+  - **Hex ownership rule (for the sim, M3):** a settlement belongs to the hex that contains it, if that hex is land. Otherwise it belongs to the land neighbour whose centre is nearest. This is `hexgrid.settlement_hex`, and Tiberias is the case that needs it. Unity *renders* markers at the sourced lon/lat (Task 25), which is on the real shore.
 
 ---
 
@@ -5510,7 +5510,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ## Milestone M2b: map in Unity, Tasks 23–25
 
-These tasks consume the M1 sim library (Task 18's public interface) and the M2 tool outputs (Tasks 19–21):
+These tasks consume the M1 sim library (public interface defined in Task 15) and the M2 tool outputs (Tasks 19–21):
 - `unity/Assets/StreamingAssets/map/heightmap.r16`
 - `unity/Assets/StreamingAssets/map/heightmap.json`
 - `content/map/hexes.json`
@@ -5532,14 +5532,21 @@ These tasks consume the M1 sim library (Task 18's public interface) and the M2 t
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Consumes: the M1 public interface (see Task 18): `ContentLoader.Load(string)`, `Simulation.NewGame(...)`, `Simulation.Step(...)`, `GameState.Hash()`.
+- Consumes: the M1 public interface (defined in Task 15): `ContentLoader.Load(string)`, `Simulation.NewGame(...)`, `Simulation.Step(...)`, `GameState.Hash()`.
 - Produces:
   - `Paths.RepoRoot`, `Paths.Content` and `Paths.StreamingMap` (string properties).
   - The `Statecraft.Game` assembly, which Tasks 24–25 add scripts to.
 
 - [ ] **Step 1 (owner, interactive): Create the project**
 
-In Unity Hub: Projects → New project → **Universal 3D** → location `~/israel-game`, name `unity`, editor 6000.3.25f1. Open it once, then close it.
+`unity/` already exists after merging m2-tools: it holds `unity/Assets/StreamingAssets/map/` from Task 19. Unity Hub may refuse a non-empty folder or overwrite it, so:
+
+1. In Unity Hub: Projects → New project → **Universal 3D** → location `~/israel-game/.worktrees/m0-m2`, name **`unity-tmp`**, editor 6000.3.25f1. Open it once, then close it.
+2. Merge it into `unity/` without touching the map files, then remove the temp folder:
+```bash
+rsync -a unity-tmp/ unity/ && rm -rf unity-tmp && ls unity/Assets/StreamingAssets/map unity/ProjectSettings | head
+```
+Expected: `heightmap.json` and `heightmap.r16` are still listed, alongside `ProjectSettings` files.
 
 - [ ] **Step 2: Write the build script for the sim DLL**
 
@@ -5596,7 +5603,7 @@ namespace Statecraft.Game
 
 - [ ] **Step 5: Write the failing smoke test**
 
-`unity/Assets/Tests/EditMode/SimSmokeTests.cs`. Use the exact type names from Task 18's Interfaces block. The names below follow the contract, so adjust them if Task 18 reported different final names.
+`unity/Assets/Tests/EditMode/SimSmokeTests.cs`. The type names below match Task 15's Interfaces block (`Statecraft.Sim.Simulation`, `ContentLoader`, `Mode`, `Command`).
 ```csharp
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -5631,7 +5638,8 @@ Expected: `exit=0` and `result="Passed"`. (Step 5's test passes once Step 2's DL
 
 ```bash
 printf 'unity/Library/\nunity/Temp/\nunity/Logs/\nunity/UserSettings/\nunity/Build/\nunity/Assets/Plugins/Statecraft/\nunity-*.xml\nunity-*.log\n' >> .gitignore
-git add .gitignore tools/build_sim_for_unity.sh unity/Assets unity/Packages unity/ProjectSettings
+printf '\n## After cloning\n- Run `tools/build_sim_for_unity.sh` before opening `unity/`. The sim DLLs are build output and are git-ignored.\n' >> docs/dev-setup.md
+git add .gitignore docs/dev-setup.md tools/build_sim_for_unity.sh unity/Assets unity/Packages unity/ProjectSettings
 git commit -m "feat(unity): game project with sim DLL and edit-mode smoke test
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -5930,7 +5938,7 @@ Expected: `exit=0` and `result="Passed"` (smoke test plus the 4 map tests).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add unity/Assets/Scripts/Map unity/Assets/Tests/EditMode/MapTests.cs
+git add unity/Assets   # includes the .meta files Unity generates; Plugins/Statecraft stays ignored
 git commit -m "feat(map): terrain from Copernicus heightmap, biome layers, hex overlay
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -6215,7 +6223,7 @@ Expected: an 8-second, 1920×1080 MP4. Watch it: the coast is on the left, headi
 
 ```bash
 printf 'captures/\n' >> .gitignore
-git add .gitignore unity/Assets/Scripts/Map unity/Assets/Editor/MapCapture.cs unity/Assets/Tests/EditMode/SettlementTests.cs docs/m2-geography-check.md
+git add .gitignore unity/Assets docs/m2-geography-check.md   # unity/Assets includes Map.unity and all .meta files
 git commit -m "feat(map): 1948 settlements, diorama camera, geography check, flythrough
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
