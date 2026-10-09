@@ -144,6 +144,10 @@ namespace Statecraft.Sim
                 foreach (var k in v.Weights.Keys)
                     if (!indicators.Contains(k)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{k}", "unknown indicator");
             if (c.Rules.Start == default) throw new ContentException("rules.yaml", "start", "required");
+            foreach (var k in c.Rules.AttentionCost.Keys)
+                if (!AttentionSystem.CommandKinds.Contains(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "unknown command kind");
+            foreach (var k in AttentionSystem.CommandKinds)
+                if (!c.Rules.AttentionCost.ContainsKey(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "missing cost");
             if (c.Rules.RungMinMobilization.Count != 5) throw new ContentException("rules.yaml", "rung_min_mobilization", "needs exactly 5 values (rungs 1-5)");
             foreach (var k in c.Rules.BudgetStart.Keys)
                 if (!offices.Contains(k)) throw new ContentException("rules.yaml", $"budget_start.{k}", "unknown office");
