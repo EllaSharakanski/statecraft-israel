@@ -37,10 +37,14 @@ namespace Statecraft.Game.Map
         // instead of centring on the marker.
         static readonly Dictionary<string, TextAnchor> LabelAnchor = new Dictionary<string, TextAnchor>
         {
-            ["jaffa"] = TextAnchor.LowerRight, ["rishon_lezion"] = TextAnchor.LowerRight, ["ramla"] = TextAnchor.LowerRight,
+            ["jaffa"] = TextAnchor.LowerRight, ["rishon_lezion"] = TextAnchor.LowerRight,
             ["lod"] = TextAnchor.LowerLeft, ["petah_tikva"] = TextAnchor.LowerLeft,
             ["safed"] = TextAnchor.LowerRight, ["rosh_pinna"] = TextAnchor.LowerLeft,
         };
+
+        // East offset (m) of a label from its marker. Ramla sits between Rishon LeZion (west) and Lod (north-east): centred
+        // and nudged west, its label stays over its own marker and clear of both neighbours' boxes.
+        static readonly Dictionary<string, float> LabelOffsetEastM = new Dictionary<string, float> { ["ramla"] = -1500f };
 
         public const int LabelFontSize = 64;          // glyph raster size; characterSize scales it to world metres
         public const float CapHeightPerUnit = 4.5f;   // cap height (m) per unit of characterSize at LabelFontSize
@@ -111,7 +115,9 @@ namespace Statecraft.Game.Map
 
                 var anchor = LabelAnchor.TryGetValue(s.Id, out var a) ? a : TextAnchor.LowerCenter;
                 var label = MakeText(s.Id + "_label", s.Name, font, cap, anchor, LabelColour);
-                label.transform.SetPositionAndRotation(p + Vector3.up * h * (1f + LabelLift), Quaternion.Euler(CameraRig.Pitch, 0, 0));
+                var east = LabelOffsetEastM.TryGetValue(s.Id, out var dx) ? dx : 0f;
+                label.transform.SetPositionAndRotation(p + Vector3.up * h * (1f + LabelLift) + Vector3.right * east,
+                    Quaternion.Euler(CameraRig.Pitch, 0, 0));
                 label.transform.SetParent(parent, true);
                 var shadow = MakeText("shadow", s.Name, font, cap, anchor, ShadowColour);
                 shadow.transform.SetParent(label.transform, false);

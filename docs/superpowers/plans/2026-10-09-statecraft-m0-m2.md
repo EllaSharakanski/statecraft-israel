@@ -6277,6 +6277,7 @@ Each item below is in the spec and has a home. None is silently dropped.
 | Per-era art prefabs that replace the M2 placeholder markers; in-game portrait pipeline | M3–M4 |
 | Steam page and AI-disclosure manifest | M5 |
 | Legal review of map data licences before release: IMS station rainfall from data.gov.il is labelled "Other (Open)" with no licence URL (content/map/precip_stations.json); CHELSA is CC0; Copernicus DEM attribution | M5 (release pipeline) |
+| Profile terrain `heightmapPixelError = 1` (needed so the hex overlay drape stays visible) on the WebGL target; measured only on macOS batch mode (+2 ms/frame flythrough) | M3 (first player build) |
 | Open fact: how the budget was approved in 1948–56 (`open_questions: [budget_approval]` is pinned by a test) | Content work before M4 |
 | Hebrew names (`name_he`) and birth/death dates for people (spec §5.3) | Content work before M4 |
 | "Military or economic collapse ends the state" (spec §4) | M4 |

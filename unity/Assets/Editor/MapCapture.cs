@@ -31,7 +31,17 @@ public static class MapCapture
     {
         if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) MakeScene();
         else EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        var map = RequireMapScene(); map.Build();
+        return map;
+    }
+
+    /// <summary>The open scene's MapScene; throws naming the scene and the fix when there is none.</summary>
+    public static MapScene RequireMapScene()
+    {
+        var map = Object.FindFirstObjectByType<MapScene>();
+        if (map == null)
+            throw new System.InvalidOperationException($"{ScenePath} has no MapScene component. Delete {ScenePath} so the next " +
+                "capture recreates it, or run MapCapture.MakeScene.");
         return map;
     }
 

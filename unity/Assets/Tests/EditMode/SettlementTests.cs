@@ -235,4 +235,61 @@ public class MapSceneTests
             Assert.Greater(Vector3.Dot(shadow.position - label.position, cam.forward), 0f, s.Id + " shadow behind the label");
         }
     }
+
+    [Test]
+    public void CaptureOfASceneWithoutMapSceneNamesTheSceneAndTheFix()
+    {
+        // MapCapture lives in the predefined editor assembly, which an asmdef cannot reference, so reach it by reflection.
+        var capture = System.Type.GetType("MapCapture, Assembly-CSharp-Editor");
+        Assert.IsNotNull(capture, "MapCapture type");
+        var require = capture.GetMethod("RequireMapScene"); Assert.IsNotNull(require, "MapCapture.RequireMapScene");
+        var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() => require.Invoke(null, null));
+        Assert.IsInstanceOf<System.InvalidOperationException>(ex.InnerException);
+        StringAssert.Contains("Assets/Map.unity", ex.InnerException.Message);
+        StringAssert.Contains("MakeScene", ex.InnerException.Message);
+    }
+
+    static readonly string[] TelAvivCluster = { "tel_aviv", "jaffa", "petah_tikva", "rishon_lezion", "lod", "ramla", "rehovot" };
+
+    static Rect ScreenRect(Camera cam, Bounds b)
+    {
+        float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+        for (int i = 0; i < 8; i++)
+        {
+            var c = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+            var p = cam.WorldToScreenPoint(c);
+            x0 = Mathf.Min(x0, p.x); y0 = Mathf.Min(y0, p.y); x1 = Mathf.Max(x1, p.x); y1 = Mathf.Max(y1, p.y);
+        }
+        return Rect.MinMaxRect(x0, y0, x1, y1);
+    }
+
+    static float Gap(Rect a, Rect b) =>
+        new Vector2(Mathf.Max(0, Mathf.Max(a.xMin - b.xMax, b.xMin - a.xMax)), Mathf.Max(0, Mathf.Max(a.yMin - b.yMax, b.yMin - a.yMax))).magnitude;
+
+    [Test]
+    public void EveryTelAvivClusterLabelIsUnambiguouslyClosestToItsOwnMarker()
+    {
+        // At flythrough frame 120 (1080p), each label's screen box must be at most half as far from its own marker as from
+        // any other marker of the cluster, so no label reads as a neighbour's.
+        var map = NewMap(); map.Build();
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        var rt = new RenderTexture(1920, 1080, 24); cam.targetTexture = rt;
+        try
+        {
+            rig.LookAt = map.Frame.ToWorld(34.95, 31.3 + (32.9 - 31.3) * 120 / 239.0, 0); rig.Distance = 90000f; rig.Apply();
+            var root = GameObject.Find("Settlements").transform;
+            foreach (var id in TelAvivCluster)
+            {
+                var label = ScreenRect(cam, root.Find(id + "_label").GetComponent<MeshRenderer>().bounds);
+                float own = Gap(label, ScreenRect(cam, root.Find(id).GetComponent<MeshRenderer>().bounds));
+                foreach (var other in TelAvivCluster)
+                {
+                    if (other == id) continue;
+                    float gap = Gap(label, ScreenRect(cam, root.Find(other).GetComponent<MeshRenderer>().bounds));
+                    Assert.Greater(gap, 2f * own + 4f, $"{id} label is {own:F0} px from its marker but {gap:F0} px from {other}'s");
+                }
+            }
+        }
+        finally { cam.targetTexture = null; Object.DestroyImmediate(rt); }
+    }
 }

@@ -139,6 +139,16 @@ public class MapTests
         finally { Object.DestroyImmediate(go); }
     }
 
+    // k/7 and k/13 share no interior point with the builder's t/16 sampling grid, so the test does not mirror it.
+    static readonly float[] SegmentProbes = Probes();
+    static float[] Probes()
+    {
+        var l = new System.Collections.Generic.List<float>();
+        for (int k = 1; k < 7; k++) l.Add(k / 7f);
+        for (int k = 1; k < 13; k++) l.Add(k / 13f);
+        return l.ToArray();
+    }
+
     [Test]
     public void EveryPointAlongEveryOverlaySegmentLiesAboveTheTerrain()
     {
@@ -152,9 +162,9 @@ public class MapTests
             var verts = mesh.vertices; var idx = mesh.GetIndices(0);
             int hidden = 0; float worst = 0f;
             for (int i = 0; i < idx.Length; i += 2)
-                for (int k = 1; k < 8; k++)
+                foreach (var t in SegmentProbes)
                 {
-                    var p = Vector3.Lerp(verts[idx[i]], verts[idx[i + 1]], k / 8f);
+                    var p = Vector3.Lerp(verts[idx[i]], verts[idx[i + 1]], t);
                     float deficit = data.GetInterpolatedHeight(p.x / data.size.x, p.z / data.size.z) - p.y;
                     if (deficit >= 0f) hidden++;
                     worst = Mathf.Max(worst, deficit);
