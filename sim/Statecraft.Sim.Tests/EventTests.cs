@@ -124,6 +124,51 @@ options:
         Assert.Equal("events[shortage].text", ex.Field);
     }
 
+    // def_two takes defense only on 1949-02-01: nobody holds it in [1949-01-01, 1949-02-01).
+    static readonly string GapPeople = Fixture.Files["people.yaml"].Replace(
+        "office: defense_minister\n        from: 1949-01-01", "office: defense_minister\n        from: 1949-02-01");
+
+    static Content LoadWithGap(string ev) =>
+        ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["people.yaml"] = GapPeople },
+                                         new Dictionary<string, string> { ["shortage.yaml"] = ev }));
+
+    [Fact]
+    public void PlaceholderOfficeWithoutHolderForPartOfWindowFailsToLoad()
+    {
+        var bad = Shortage.Replace("{finance_minister}", "{defense_minister}");
+        var ex = Assert.Throws<ContentException>(() => LoadWithGap(bad));
+        Assert.Equal("events/shortage.yaml", ex.File);
+        Assert.Equal("events[shortage].text", ex.Field);
+        Assert.Contains("defense_minister", ex.Message);
+        Assert.Contains("1949-01-01", ex.Message);
+    }
+
+    [Fact]
+    public void PlaceholderUncoveredAtWindowStartNamesThatDate()
+    {
+        var bad = Shortage.Replace("text: Ration food", "text: '{defense_minister} rations food'")
+                          .Replace("from: 1948-06-01", "from: 1949-01-15\nto: 1949-03-01");
+        var ex = Assert.Throws<ContentException>(() => LoadWithGap(bad));
+        Assert.Equal("events[shortage].options[ration].text", ex.Field);
+        Assert.Contains("1949-01-15", ex.Message);
+    }
+
+    [Fact]
+    public void PlaceholderFullyCoveredWindowLoads()
+    {
+        var ok = Shortage.Replace("{finance_minister}", "{defense_minister}")
+                         .Replace("from: 1948-06-01", "from: 1948-06-01\nto: 1949-01-01");   // window ends where the gap starts
+        Assert.Single(LoadWithGap(ok).Events);
+    }
+
+    [Fact]
+    public void PlaceholderCoveredAcrossAHandoverLoads()
+    {
+        // Fixture: pm_one holds defense until 1949-01-01, def_two from then on (open-ended).
+        var ok = Shortage.Replace("{finance_minister}", "{defense_minister}");
+        Assert.Single(Load(new Dictionary<string, string> { ["shortage.yaml"] = ok }).Events);
+    }
+
     [Fact]
     public void EffectTargetMustExist()
     {
