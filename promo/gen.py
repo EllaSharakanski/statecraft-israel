@@ -8,7 +8,7 @@ drowning-video/tools/image.py, which ran successfully on 2026-10-08).
 Usage: uv run promo/gen.py SHOT_ID [MODEL]   (shot prompts live in promo/shots.json)
 The API key is read from drowning-video/.env and never printed. Refuses to run if the shared
 credit pool would drop below FLOOR."""
-import json, sys, time
+import base64, json, mimetypes, sys, time
 from pathlib import Path
 import requests
 
@@ -40,7 +40,13 @@ def main(shot_id: str, model: str = "gpt-image-2.5-sunburst"):
             "resolution": "2K"}
     if model.startswith("gpt-image"):
         body["quality"] = "high"
-    r = s.post(f"{BASE}/v1/flows/image", json=body, timeout=120); r.raise_for_status()
+    if shot.get("refs"):  # reference images, paths relative to promo/ (same shape as drowning-video img_ref)
+        body["images"] = [{"type": "inline_base64", "mime_type": mimetypes.guess_type(p)[0] or "image/png",
+                           "content_base64": base64.b64encode((HERE / p).read_bytes()).decode()}
+                          for p in shot["refs"]]
+    r = s.post(f"{BASE}/v1/flows/image", json=body, timeout=120)
+    if not r.ok:
+        raise SystemExit(f"{r.status_code}: {r.text[:500]}")
     gid = r.json()["id"]
     out = HERE / "out"; out.mkdir(exist_ok=True)
     tag = f"{shot_id}-{model.split('-')[0]}"
