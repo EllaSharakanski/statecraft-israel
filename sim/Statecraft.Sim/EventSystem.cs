@@ -6,13 +6,13 @@ namespace Statecraft.Sim
 {
     public static class EventSystem
     {
-        public const int MaxNewPerTurn = 3;
+        public const int MaxSoftEventsPerTurn = 3;
 
         static GameEvent Get(Content c, string id) => c.Events.First(e => e.Id == id);
 
         /// <summary>Fires every unfired event whose window [From, To) overlaps the turn just played,
         /// [<paramref name="turnStart"/>, s.Date), or contains s.Date; <paramref name="turnStart"/> defaults to s.Date
-        /// (game start). Every eligible hard anchor fires; the MaxNewPerTurn cap applies only to the other events,
+        /// (game start). Every eligible hard anchor fires; MaxSoftEventsPerTurn caps only the non-hard events per turn,
         /// which fill the slots that remain (max(0, cap - hard count)) in the usual order (From, then id). The fired
         /// events keep the usual order.
         /// Late fire: an event whose window overlapped the turn just played can fire after its window has ended; its
@@ -29,7 +29,7 @@ namespace Statecraft.Sim
                 .ToList();
             var hardCount = eligible.Count(e => e.Anchor == "hard");
             var chosen = new HashSet<string>(eligible.Where(e => e.Anchor == "hard")
-                .Concat(eligible.Where(e => e.Anchor != "hard").Take(Math.Max(0, MaxNewPerTurn - hardCount))).Select(e => e.Id));
+                .Concat(eligible.Where(e => e.Anchor != "hard").Take(Math.Max(0, MaxSoftEventsPerTurn - hardCount))).Select(e => e.Id));
             foreach (var e in eligible.Where(e => chosen.Contains(e.Id)))
             {
                 s.FiredEvents.Add(e.Id);
