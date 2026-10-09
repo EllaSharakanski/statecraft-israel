@@ -13,12 +13,12 @@ def write_uniform_precip(d, meta, mm, cell=0.01):
     """Synthetic precip clip covering meta's bounds (plus one cell) at a constant value."""
     w = round((meta["lon1"] - meta["lon0"]) / cell) + 2
     h = round((meta["lat1"] - meta["lat0"]) / cell) + 2
-    hg.write_precip(np.full((h, w), mm), meta["lon0"] - cell, meta["lat1"] + cell, cell, d, {"source": "synthetic"})
+    hg.write_precip(np.full((h, w), mm), meta["lon0"] - cell, meta["lat1"] + cell, cell, d, {"source": "synthetic", "attribution": "chelsa-credit"})
     write_no_stations(d)
 
 
 def write_no_stations(d):
-    (Path(d) / "precip_stations.json").write_text(json.dumps({"stations": []}))
+    (Path(d) / "precip_stations.json").write_text(json.dumps({"attribution": "ims-credit", "stations": []}))
 
 
 def test_hex_center_round_trips_through_point_to_hex():
@@ -66,7 +66,8 @@ def test_build_hexes_on_synthetic_map(tmp_path):
     elev = np.zeros((n, n), dtype="float32")
     elev[:, n // 2:] = 300.0                       # west half sea, east half land at 300 m
     meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
-            "elev_min_m": 0.0, "elev_max_m": 300.0}
+            "elev_min_m": 0.0, "elev_max_m": 300.0,
+            "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
     np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
     write_uniform_precip(tmp_path, meta, 500.0)
@@ -80,9 +81,43 @@ def test_build_hexes_on_synthetic_map(tmp_path):
     assert len({(h["q"], h["r"]) for h in out["hexes"]}) == len(out["hexes"])
 
 
+def synthetic_inputs(d):
+    n = 201
+    meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
+            "elev_min_m": 0.0, "elev_max_m": 300.0, "attribution": "dem-credit"}
+    (d / "heightmap.json").write_text(json.dumps(meta))
+    np.full((n, n), 65535, dtype="<u2").tofile(d / "heightmap.r16")
+    write_uniform_precip(d, meta, 500.0)
+
+
+def test_build_credits_the_dem_chelsa_and_ims_inputs(tmp_path):
+    synthetic_inputs(tmp_path)
+    out = hg.build(tmp_path, 5.0, precip_dir=tmp_path)
+    assert out.get("attribution") == ["dem-credit", "chelsa-credit", "ims-credit"]
+
+
+@pytest.mark.parametrize("name", ["heightmap.json", "precip_bio12.json", "precip_stations.json"])
+def test_build_fails_loudly_when_an_input_has_no_attribution(tmp_path, name):
+    synthetic_inputs(tmp_path)
+    doc = json.loads((tmp_path / name).read_text())
+    doc.pop("attribution")
+    (tmp_path / name).write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match=f"{name}.*attribution"):
+        hg.build(tmp_path, 5.0, precip_dir=tmp_path)
+
+
+def test_committed_hexes_credit_the_committed_inputs():
+    attribution = json.loads((ROOT / "content" / "map" / "hexes.json").read_text()).get("attribution")
+    dem = json.loads((hg.MAP_DIR / "heightmap.json").read_text())["attribution"]
+    chelsa = json.loads((ROOT / "content" / "map" / "precip_bio12.json").read_text())["attribution"]
+    ims = json.loads((ROOT / "content" / "map" / "precip_stations.json").read_text())["attribution"]
+    assert attribution == [dem, chelsa, ims]
+    assert dem.startswith("produced using Copernicus WorldDEM-30") and "CHELSA" in chelsa and "Israel Meteorological Service" in ims
+
+
 def test_precip_round_trips_and_samples_bilinearly(tmp_path):
     mm = np.array([[100.0, 200.0], [300.0, np.nan]])          # row 0 = north; NaN = no data (sea)
-    hg.write_precip(mm, 35.0, 32.0, 0.5, tmp_path, {"source": "synthetic"})
+    hg.write_precip(mm, 35.0, 32.0, 0.5, tmp_path, {"source": "synthetic", "attribution": "chelsa-credit"})
     pr = hg.load_precip(tmp_path)
     assert np.isnan(pr["mm"][1, 1]) and pr["mm"][0, 1] == 200.0
     assert pr["meta"]["source"] == "synthetic" and pr["meta"]["units"] == "mm/year"
@@ -95,13 +130,14 @@ def test_build_marks_dry_land_desert_wherever_it_is(tmp_path):
     n = 201
     elev = np.full((n, n), 300.0, dtype="float32")
     meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
-            "elev_min_m": 0.0, "elev_max_m": 300.0}
+            "elev_min_m": 0.0, "elev_max_m": 300.0,
+            "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
     np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
     cell = 0.01
     w = round(0.5 / cell) + 2; h = round(0.5 / cell) + 2
     mm = np.full((h, w), 600.0); mm[h // 2:, :] = 120.0          # dry southern half, far north of any old lat rule
-    hg.write_precip(mm, 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic"})
+    hg.write_precip(mm, 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic", "attribution": "chelsa-credit"})
     write_no_stations(tmp_path)
     out = hg.build(tmp_path, 5.0, precip_dir=tmp_path)
     north = [x for x in out["hexes"] if x["lat"] > 32.55]
@@ -118,14 +154,15 @@ def test_hex_precip_averages_only_land_cells(tmp_path):
     elev = np.zeros((n, n), dtype="float32")
     elev[:, n // 2:] = 300.0
     meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
-            "elev_min_m": 0.0, "elev_max_m": 300.0}
+            "elev_min_m": 0.0, "elev_max_m": 300.0,
+            "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
     np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
     cell = 0.01
     w = round(0.5 / cell) + 2; h = round(0.5 / cell) + 2
     lons = 35.0 - cell + (np.arange(w) + 0.5) * cell
     mm = np.where(lons[None, :] < 35.25, 20.0, 220.0) * np.ones((h, 1))
-    hg.write_precip(mm, 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic"})
+    hg.write_precip(mm, 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic", "attribution": "chelsa-credit"})
     write_no_stations(tmp_path)
     out = hg.build(tmp_path, 5.0, precip_dir=tmp_path)
     land = [x for x in out["hexes"] if x["land"]]
@@ -139,7 +176,7 @@ def test_hex_precip_averages_only_land_cells(tmp_path):
 
 def test_correction_scales_field_by_idw_of_station_log_ratio(tmp_path):
     mm = np.full((4, 4), 400.0)
-    hg.write_precip(mm, 35.0, 32.0, 0.25, tmp_path, {"source": "synthetic"})
+    hg.write_precip(mm, 35.0, 32.0, 0.25, tmp_path, {"source": "synthetic", "attribution": "chelsa-credit"})
     pr = hg.load_precip(tmp_path)
     # one station halves CHELSA, the other doubles it; cell centres at equal distance get the geometric mean (1x)
     st = [{"ids": [1], "name": "A", "lon": 35.125, "lat": 31.875, "mm": 200.0, "years": 30},

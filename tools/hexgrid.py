@@ -6,7 +6,7 @@
 
 Usage: uv run tools/hexgrid.py   (reads unity/Assets/StreamingAssets/map/heightmap.* and content/map/precip_bio12.* +
 precip_stations.json,
-writes content/map/hexes.json)
+writes content/map/hexes.json, whose "attribution" list repeats the Copernicus DEM, CHELSA and IMS credits of its inputs)
 Projection: equirectangular km, x east from lon0, y south from lat1 (so r grows southward).
 Biome rules, first match wins (per hex, over the heightmap pixels / precipitation cells inside it):
   1 sea           >= 50% of pixels within 0.5 m of 0 m (Copernicus sea is exactly 0 m)
@@ -241,9 +241,18 @@ def load_elevation(map_dir: Path) -> tuple[np.ndarray, dict]:
     return elev, meta
 
 
+def credit(doc: dict, name: str) -> str:
+    """The input's `attribution` text; hexes.json repeats it because its biomes are derived from that input."""
+    if not doc.get("attribution"):
+        raise ValueError(f"{name}: no attribution; hexes.json must credit every input it is derived from")
+    return doc["attribution"]
+
+
 def build(map_dir: Path, size: float = HEX_SIZE_KM, precip_dir: Path = PRECIP_DIR) -> dict:
     elev, meta = load_elevation(map_dir)
     pr = load_corrected_precip(precip_dir)
+    attribution = [credit(meta, "heightmap.json"), credit(pr["meta"], f"{PRECIP_NAME}.json"),
+                   credit(json.loads((Path(precip_dir) / STATIONS_NAME).read_text()), STATIONS_NAME)]
     precip = hex_precip_means(pr, elev, meta, size)
     h, w = elev.shape
     width_km = (meta["lon1"] - meta["lon0"]) * km_per_deg_lon(meta)
@@ -271,7 +280,7 @@ def build(map_dir: Path, size: float = HEX_SIZE_KM, precip_dir: Path = PRECIP_DI
         hexes.append({"q": hq, "r": hr, "lon": round(lon, 5), "lat": round(lat, 5), "elev_m": round(st["median"], 1),
                       "land": biome not in ("sea", "lake"), "biome": biome})
     bounds = {k: meta[k] for k in ("lon0", "lon1", "lat0", "lat1")}
-    return {"bounds": bounds, "hex_size_km": size, "layout": "pointy", "hexes": hexes}
+    return {"attribution": attribution, "bounds": bounds, "hex_size_km": size, "layout": "pointy", "hexes": hexes}
 
 
 def main() -> None:
