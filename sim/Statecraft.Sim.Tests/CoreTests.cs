@@ -74,3 +74,40 @@ public class CoreTests
         Assert.NotEqual(a.Hash(), b.Hash());
     }
 }
+
+public class InputParseTests
+{
+    [Theory]
+    [InlineData("0.9", 0.9)] [InlineData("1e0", 1.0)] [InlineData("-2", -2.0)]
+    public void ParsesInvariantDoubles(string text, double expected)
+    {
+        Assert.True(Statecraft.Sim.InputParse.TryDouble(text, out var v)); Assert.Equal(expected, v);
+    }
+
+    [Theory]
+    [InlineData("abc")] [InlineData("")] [InlineData("0,9")] [InlineData("NaN")] [InlineData("Infinity")]
+    public void RejectsBadDoubles(string text) => Assert.False(Statecraft.Sim.InputParse.TryDouble(text, out _));
+
+    [Fact]
+    public void IntAndULongRejectJunkAndNegativeSeed()
+    {
+        Assert.True(Statecraft.Sim.InputParse.TryInt("-1", out var i)); Assert.Equal(-1, i);
+        Assert.False(Statecraft.Sim.InputParse.TryInt("x", out _));
+        Assert.True(Statecraft.Sim.InputParse.TryULong("1948", out var u)); Assert.Equal(1948UL, u);
+        Assert.False(Statecraft.Sim.InputParse.TryULong("-5", out _));
+        Assert.False(Statecraft.Sim.InputParse.TryULong("x", out _));
+    }
+
+    [Fact]
+    public void ParsingIsCultureIndependent()
+    {
+        var old = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            Assert.True(Statecraft.Sim.InputParse.TryDouble("0.9", out var v)); Assert.Equal(0.9, v);
+            Assert.False(Statecraft.Sim.InputParse.TryDouble("0,9", out _));
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = old; }
+    }
+}

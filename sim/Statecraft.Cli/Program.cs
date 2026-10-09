@@ -20,9 +20,14 @@ Content content;
 try { content = ContentLoader.Load(Arg("--content") ?? FindContent()); }
 catch (ContentException e) { Console.Error.WriteLine($"Content error: {e.Message}"); return 2; }
 
-var state = Simulation.NewGame(content, ulong.Parse(Arg("--seed") ?? "1948"), Mode.Historical);
+ulong seed = 1948;
+int turns = 1000;
+var seedText = Arg("--seed");
+if (seedText != null && !InputParse.TryULong(seedText, out seed)) { Console.Error.WriteLine($"Invalid value for --seed: '{seedText}'"); return 1; }
+var turnsText = Arg("--turns");
+if (turnsText != null && !InputParse.TryInt(turnsText, out turns)) { Console.Error.WriteLine($"Invalid value for --turns: '{turnsText}'"); return 1; }
+var state = Simulation.NewGame(content, seed, Mode.Historical);
 bool auto = Arg("--auto") == "historical";
-int turns = int.Parse(Arg("--turns") ?? "1000");
 
 for (int t = 0; t < turns && state.GameOver == null; t++)
 {
@@ -63,9 +68,15 @@ static List<Command>? ReadCommands()
             case "q": return null;
             case "n": return list;
             case "c" when parts.Length == 3: list.Add(new ChooseEventOption(parts[1], parts[2])); break;
-            case "p" when parts.Length == 3: list.Add(new SetPolicy(parts[1], double.Parse(parts[2]))); break;
-            case "m" when parts.Length == 2: list.Add(new SetMobilization(double.Parse(parts[1]))); break;
-            case "s" when parts.Length == 2: list.Add(new SecurityOrder(int.Parse(parts[1]))); break;
+            case "p" when parts.Length == 3:
+                if (InputParse.TryDouble(parts[2], out var level)) list.Add(new SetPolicy(parts[1], level)); else Console.WriteLine($"Invalid number: '{parts[2]}'");
+                break;
+            case "m" when parts.Length == 2:
+                if (InputParse.TryDouble(parts[1], out var mob)) list.Add(new SetMobilization(mob)); else Console.WriteLine($"Invalid number: '{parts[1]}'");
+                break;
+            case "s" when parts.Length == 2:
+                if (InputParse.TryInt(parts[1], out var delta)) list.Add(new SecurityOrder(delta)); else Console.WriteLine($"Invalid number: '{parts[1]}'");
+                break;
             default: Console.WriteLine("commands: c EVENT OPTION | p POLICY LEVEL | m LEVEL | s DELTA | n | q"); break;
         }
     }
