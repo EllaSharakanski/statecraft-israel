@@ -3325,6 +3325,8 @@ namespace Statecraft.Sim
 
 `sim/Statecraft.Sim/Simulation.cs`:
 
+> Superseded at merge (final fix wave, I1): a vote that is held and lost is no longer a rejection. It is charged and recorded as a `politics` Cause; only validation failures are refunded. See `sim/Statecraft.Sim/Simulation.cs` and docs/m0-m2-rulings.md.
+
 ```csharp
 using System;
 using System.Collections.Generic;
