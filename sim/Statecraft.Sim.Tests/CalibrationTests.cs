@@ -47,7 +47,7 @@ public class CalibrationTests
             return (a, sim, error: (sim - a.Jews) / a.Jews);
         }).ToList();
         var lines = string.Join("; ", report.Select(r =>
-            string.Format(CultureInfo.InvariantCulture, "[{0}] {1:yyyy-MM-dd}: sim {2:N0} vs CBS {3:N0} ({4:+0.0;-0.0}%)",
+            string.Format(CultureInfo.InvariantCulture, "[{0}] {1:yyyy-MM-dd}: sim {2:N0} vs CBS {3:N0} ({4:+0.0;-0.0;+0.0}%)",
                 Kind(r.a.Date), r.a.Date, r.sim, r.a.Jews, r.error * 100)));
         Assert.True(report.All(r => Math.Abs(r.error) <= Tolerance),
             "Only 1948-11-08 is an independent anchor; the other two are consistency checks of the rules.yaml derivation. " + lines);
