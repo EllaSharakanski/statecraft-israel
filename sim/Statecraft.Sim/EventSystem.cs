@@ -65,7 +65,8 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Unanswered events go to the responsible minister: with probability competence/10 they pick the
-        /// recommended option (else the first), otherwise a random option.</summary>
+        /// recommended option (else the first), otherwise a random option. In Historical mode a hard-anchor event
+        /// resolves to its historical option without drawing from the RNG (major anchors happen).</summary>
         public static void Delegate(Content c, GameState s, List<Cause> why)
         {
             var rng = new Rng(s.RngState);
@@ -74,9 +75,10 @@ namespace Statecraft.Sim
                 var e = Get(c, id);
                 var minister = e.Office == "" ? null : Offices.Holder(c, e.Office, s.Date);
                 var competence = (minister?.Competence ?? 5) / 10.0;
-                var option = rng.NextDouble() < competence
+                var anchored = s.Mode == Mode.Historical && e.Anchor == "hard" ? e.Options.FirstOrDefault(o => o.Historical) : null;
+                var option = anchored ?? (rng.NextDouble() < competence
                     ? e.Options.FirstOrDefault(o => o.Recommended) ?? e.Options[0]
-                    : e.Options[(int)(rng.NextDouble() * e.Options.Count)];
+                    : e.Options[(int)(rng.NextDouble() * e.Options.Count)]);
                 Resolve(c, s, id, option, $"delegated to {minister?.Name ?? "the cabinet"}", why);
             }
             s.RngState = rng.State;

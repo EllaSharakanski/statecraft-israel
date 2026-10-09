@@ -245,4 +245,106 @@ options:
         Assert.Equal(Play(11), Play(11));
         Assert.NotEqual(Play(11).hash, Play(12).hash);
     }
+
+    // ---- Fix round 1 ----
+
+    const string Partition = @"
+id: partition
+title: The armistice line
+text: 'Where should the line run?'
+anchor: hard
+office: defense_minister
+from: 1948-05-15
+options:
+  - id: hold_north
+    text: Hold the north
+    recommended: true
+  - id: accept_line
+    text: Accept the line
+    historical: true
+  - id: push_on
+    text: Push on
+";
+
+    [Fact]
+    public void HardAnchorDelegatedInHistoricalModeTakesTheHistoricalOptionWithoutRng()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["partition.yaml"] = Partition }));
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            var s0 = Simulation.NewGame(c, seed, Mode.Historical);
+            Assert.Equal(new[] { "partition" }, s0.PendingEvents);
+            var r = Simulation.Step(c, s0, None);
+            Assert.Contains(r.Why, w => w.System == "events" && w.Message == "delegated to Pm One: Accept the line");
+            Assert.Equal(seed, r.State.RngState);
+        }
+    }
+
+    [Fact]
+    public void HardAnchorOutsideHistoricalModeKeepsCompetenceDelegation()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["partition.yaml"] = Partition }));
+        var s0 = Simulation.NewGame(c, 5, Mode.Historical);
+        s0.Mode = Mode.Open;
+        var r = Simulation.Step(c, s0, None);
+        Assert.NotEqual(5UL, r.State.RngState);
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("delegated to Pm One: "));
+    }
+
+    const string Late = @"
+id: late
+title: A later matter
+text: 'Something new.'
+from: 1948-05-22
+options:
+  - id: ok
+    text: Fine
+";
+
+    [Fact]
+    public void CollapseTurnTriggersNoNewEvents()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["late.yaml"] = Late }));
+        var s0 = Simulation.NewGame(c, 42, Mode.Historical);
+        s0.CoalitionStability = 0.2;
+        s0.IndicatorShifts["morale"] = -0.45;   // approval 0.05 drags stability below the collapse line this turn
+        var r = Simulation.Step(c, s0, None);
+        Assert.Equal("coalition_collapse", r.State.GameOver);
+        Assert.Equal(new DateTime(1948, 5, 22), r.State.Date);
+        Assert.Equal(1, r.State.Turn);
+        Assert.Empty(r.State.PendingEvents);
+        Assert.DoesNotContain("late", r.State.FiredEvents);
+    }
+
+    [Fact]
+    public void AttentionIsPricedAtTheRungTheTurnStartedAt()
+    {
+        var s0 = Simulation.NewGame(C, 42, Mode.Historical);   // rung 5: every command costs 2 of 3
+        var r = Simulation.Step(C, s0, new Command[] { new SecurityOrder(-4), new SetPolicy("rationing", 0.5) });
+        Assert.Equal(1, r.State.Rung);
+        Assert.Equal(new[] { "Not enough attention (need 2.0, have 1.0)" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(0.0, r.State.Policies["rationing"]);
+    }
+
+    [Fact]
+    public void DeterministicWhenPolicyVotesDrawFromTheRng()
+    {
+        (string hash, ulong rng, string log) Play(ulong seed)
+        {
+            var s = Simulation.NewGame(C, seed, Mode.Historical);
+            s.CoalitionStability = 0.3;   // below 0.5: each vote passes with probability 2 * stability
+            var lines = new List<string>();
+            for (int i = 0; i < 8; i++)
+            {
+                var r = Simulation.Step(C, s, new Command[] { new SetPolicy("rationing", i % 2 == 0 ? 0.6 : 0.2) });
+                lines.AddRange(r.Why.Select(w => w.ToString()));
+                lines.AddRange(r.Rejected.Select(x => x.Reason));
+                s = r.State;
+            }
+            return (s.Hash(), s.RngState, string.Join("\n", lines));
+        }
+        var a = Play(21);
+        Assert.Equal(a, Play(21));
+        Assert.NotEqual(21UL, a.rng);
+    }
 }

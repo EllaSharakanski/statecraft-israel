@@ -40,11 +40,12 @@ namespace Statecraft.Sim
                 return new StepResult(s, why, rejected);
             }
 
+            var priceRung = s.Rung;   // every command this turn is priced at the rung the turn started at
             foreach (var cmd in commands)
             {
                 if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, $"Unknown command '{cmd.Kind}'")); continue; }
                 var before = s.Attention;
-                var error = AttentionSystem.TrySpend(c, s, cmd.Kind) ?? Execute(c, s, cmd, why);
+                var error = AttentionSystem.TrySpend(c, s, cmd.Kind, priceRung) ?? Execute(c, s, cmd, why);
                 if (error != null) { s.Attention = before; rejected.Add(new Rejection(cmd, error)); }
             }
             EventSystem.Delegate(c, s, why);
@@ -61,7 +62,7 @@ namespace Statecraft.Sim
             s.Date = next;
             s.Turn++;
             AttentionSystem.Refill(c, s);
-            EventSystem.Trigger(c, s, why);
+            if (s.GameOver == null) EventSystem.Trigger(c, s, why);   // a game that just ended raises no new events
             return new StepResult(s, why, rejected);
         }
 
