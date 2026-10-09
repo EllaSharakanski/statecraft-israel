@@ -1204,7 +1204,8 @@ namespace Statecraft.Sim
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
         public string NameHe { get; set; } = "";
-        public bool Living { get; set; }
+        /// <summary>Required (null only when missing, which is a load error): a living person is excluded from release builds.</summary>
+        public bool? Living { get; set; }
         public int Competence { get; set; }
         public int Loyalty { get; set; }
         public string Party { get; set; } = "";
@@ -6256,7 +6257,7 @@ Each item below is in the spec and has a home. None is silently dropped.
 
 | Spec item | Plan |
 |---|---|
-| Release-build gating: only `historian-reviewed` content; `sensitivity-reviewed` required on sensitive tags; `living: true` people excluded until legal review | M5 (release pipeline). M1 already records `status` and `sources` on every fact |
+| Release-build gating: only `historian-reviewed` content; `sensitivity-reviewed` required on sensitive tags; `living: true` people excluded until legal review (release builds include a person only when `living == false`; `null` is a load error and `true` is excluded until legal review is recorded) | M5 (release pipeline). M1 already records `status` and `sources` on every fact |
 | Saves (seed + command log + content hash + schema version, migrations, autosave each turn) | M3 (first player build) |
 | UI screens (HUD, Cabinet, Budget, Defence, Diplomacy, Event/decision scene, "Why did this happen?", legacy report) and content copied into StreamingAssets | M3 |
 | `Appoint` and `MapAction` commands; transit camps and housing (from 1950) | M3–M4 |
