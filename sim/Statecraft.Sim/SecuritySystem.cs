@@ -34,10 +34,11 @@ namespace Statecraft.Sim
 
         static void RaiseToFloor(Content c, GameState s, List<Cause> why)
         {
-            var floor = c.Rules.RungMinMobilization[s.Rung - 1];
+            var rung = Math.Max(1, Math.Min(5, s.Rung));   // a bad save cannot index past the table
+            var floor = c.Rules.RungMinMobilization[rung - 1];
             if (s.Mobilization < floor)
             {
-                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {floor * 100:0}%, the minimum for security level {s.Rung}")));
+                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {floor * 100:0}%, the minimum for security level {rung}")));
                 s.Mobilization = floor;
             }
         }

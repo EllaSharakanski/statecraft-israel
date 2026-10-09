@@ -66,4 +66,11 @@ public class SecurityTests
         var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = bad })));
         Assert.Equal("rung_min_mobilization", ex.Field);
     }
+    [Fact]
+    public void OutOfRangeRungInStateUsesTheRungFiveFloor()
+    {
+        var s = new GameState { Rung = 9, Mobilization = 0.0 }; var why = new List<Cause>();
+        Assert.Null(SecuritySystem.SetMobilization(C, s, 0.0, why));   // reaches RaiseToFloor
+        Assert.Equal(0.8, s.Mobilization);
+    }
 }
