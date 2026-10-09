@@ -13,19 +13,28 @@ namespace Statecraft.Sim
             foreach (var e in c.Effects) s.EffectContributions[e.Id] = 0;
         }
 
-        /// <summary>0.5 + competence/20: a 10-competence minister delivers the full effect, a 0 delivers half.</summary>
-        public static double Multiplier(Content c, string office, DateTime date)
+        /// <summary>Competence (0.5 + competence/20) times budget factor. No office: 1.0.</summary>
+        public static double Multiplier(Content c, GameState s, string office)
         {
             if (office == "") return 1.0;
-            var holder = Offices.Holder(c, office, date);
-            return holder == null ? 0.5 : 0.5 + holder.Competence / 20.0;
+            var holder = Offices.Holder(c, office, s.Date);
+            var competence = holder == null ? 0.5 : 0.5 + holder.Competence / 20.0;
+            return competence * BudgetFactor(s, office);
+        }
+
+        /// <summary>An equal split of the budget is neutral (1.0); a ministry's factor runs from 0.5 (no money) to 1.5.</summary>
+        public static double BudgetFactor(GameState s, string office)
+        {
+            if (s.Budget.Count == 0) return 1.0;
+            var share = s.Budget.TryGetValue(office, out var v) ? v : 0.0;
+            return Math.Min(1.5, 0.5 + share * s.Budget.Count / 2.0);
         }
 
         public static void Apply(Content c, GameState s, List<Cause> why)
         {
             // Read every source before writing anything, so effect order cannot change results.
             var targets = c.Effects.ToDictionary(e => e.Id, e =>
-                e.K * (s.Policies.TryGetValue(e.Source, out var p) ? p : s.Indicators[e.Source]) * Multiplier(c, e.Office, s.Date));
+                e.K * (s.Policies.TryGetValue(e.Source, out var p) ? p : s.Indicators[e.Source]) * Multiplier(c, s, e.Office));
             foreach (var e in c.Effects)
             {
                 var old = s.EffectContributions[e.Id];
