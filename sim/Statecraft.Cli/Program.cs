@@ -1,4 +1,5 @@
 using System.Globalization;
+using Statecraft.Cli;
 using Statecraft.Sim;
 
 // Text front end for the headless sim.
@@ -9,15 +10,25 @@ CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 string? Arg(string name) { var i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
 
+foreach (var flag in new[] { "--content", "--seed", "--turns", "--auto" })
+{
+    var at = Array.IndexOf(args, flag);
+    if (at >= 0 && (at + 1 >= args.Length || args[at + 1].StartsWith("--", StringComparison.Ordinal)))
+    { Console.Error.WriteLine($"Missing value for {flag}"); return 1; }
+}
+var autoMode = Arg("--auto");
+if (autoMode != null && autoMode != "historical") { Console.Error.WriteLine($"Unknown --auto mode: '{autoMode}'"); return 1; }
+
 string FindContent()
 {
     for (var d = new DirectoryInfo(Directory.GetCurrentDirectory()); d != null; d = d.Parent)
         if (File.Exists(Path.Combine(d.FullName, "content", "people.yaml"))) return Path.Combine(d.FullName, "content");
-    throw new DirectoryNotFoundException("content/ not found; pass --content DIR");
+    throw new DirectoryNotFoundException();
 }
 
 Content content;
 try { content = ContentLoader.Load(Arg("--content") ?? FindContent()); }
+catch (DirectoryNotFoundException) { Console.Error.WriteLine("Content error: content directory not found (use --content <path>)"); return 2; }
 catch (ContentException e) { Console.Error.WriteLine($"Content error: {e.Message}"); return 2; }
 
 ulong seed = 1948;
@@ -27,7 +38,7 @@ if (seedText != null && !InputParse.TryULong(seedText, out seed)) { Console.Erro
 var turnsText = Arg("--turns");
 if (turnsText != null && !InputParse.TryInt(turnsText, out turns)) { Console.Error.WriteLine($"Invalid value for --turns: '{turnsText}'"); return 1; }
 var state = Simulation.NewGame(content, seed, Mode.Historical);
-bool auto = Arg("--auto") == "historical";
+bool auto = autoMode == "historical";
 
 for (int t = 0; t < turns && state.GameOver == null; t++)
 {
@@ -65,8 +76,8 @@ static List<Command>? ReadCommands()
         if (parts.Length == 0) continue;
         switch (parts[0])
         {
-            case "q": return null;
-            case "n": return list;
+            case "q" when parts.Length == 1: return null;
+            case "n" when parts.Length == 1: return list;
             case "c" when parts.Length == 3: list.Add(new ChooseEventOption(parts[1], parts[2])); break;
             case "p" when parts.Length == 3:
                 if (InputParse.TryDouble(parts[2], out var level)) list.Add(new SetPolicy(parts[1], level)); else Console.WriteLine($"Invalid number: '{parts[2]}'");

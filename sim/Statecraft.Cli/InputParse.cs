@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Statecraft.Sim
+namespace Statecraft.Cli
 {
     /// <summary>Culture-invariant parsing for text front ends; failures are values, never exceptions.</summary>
     public static class InputParse

@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Statecraft.Sim/Statecraft.Sim.csproj" />
+    <ProjectReference Include="../Statecraft.Cli/Statecraft.Cli.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
