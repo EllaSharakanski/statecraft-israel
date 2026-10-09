@@ -93,4 +93,72 @@ status: draft
     [InlineData("sensitivity-reviewed")]
     public void EveryStatusLoads(string status) =>
         ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = Event.Replace("status: draft", "status: " + status) }));
+
+    // I3: numbers and dates out of range.
+    [Theory]
+    [InlineData("model.yaml", "base: 0.5", "base: .nan", "indicators[morale].base")]
+    [InlineData("model.yaml", "base: 0.5", "base: 1.5", "indicators[morale].base")]
+    [InlineData("model.yaml", "base: 0.5", "base: -0.1", "indicators[morale].base")]
+    [InlineData("model.yaml", "default: 0.0", "default: 1.2", "policies[rationing].default")]
+    [InlineData("model.yaml", "default: 0.0", "default: .nan", "policies[rationing].default")]
+    [InlineData("model.yaml", "k: 0.4", "k: .inf", "effects[rationing_food].k")]
+    [InlineData("model.yaml", "k: 0.4", "k: .nan", "effects[rationing_food].k")]
+    [InlineData("model.yaml", "on_below: 0.3", "on_below: .nan", "situations[hunger].on_below")]
+    [InlineData("model.yaml", "off_above: 0.45", "off_above: 1.45", "situations[hunger].off_above")]
+    [InlineData("model.yaml", "weights: { morale: 1.0 }", "weights: { morale: .nan }", "voter_groups[everyone].weights.morale")]
+    [InlineData("model.yaml", "standing: 0.5", "standing: 2", "actors[usa].standing")]
+    [InlineData("model.yaml", "standing: 0.5", "standing: .nan", "actors[usa].standing")]
+    [InlineData("rules.yaml", "[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.02, 0.05, .nan, 0.4, 0.8]", "rung_min_mobilization[2]")]
+    [InlineData("rules.yaml", "[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.02, 0.05, 0.15, 0.4, 7]", "rung_min_mobilization[4]")]
+    [InlineData("rules.yaml", "[0.02, 0.05, 0.15, 0.4, 0.8]", "[-0.02, 0.05, 0.15, 0.4, 0.8]", "rung_min_mobilization[0]")]
+    [InlineData("rules.yaml", "[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.02, 0.05, 0.15, 0.1, 0.8]", "rung_min_mobilization[3]")]
+    [InlineData("rules.yaml", "treasury_start: 100", "treasury_start: .nan", "treasury_start")]
+    [InlineData("rules.yaml", "fx_start: 50", "fx_start: .inf", "fx_start")]
+    [InlineData("rules.yaml", "tax_per_capita_per_year: 0.0004", "tax_per_capita_per_year: .nan", "tax_per_capita_per_year")]
+    [InlineData("rules.yaml", "spending_per_capita_per_year: 0.0005", "spending_per_capita_per_year: -.inf", "spending_per_capita_per_year")]
+    [InlineData("rules.yaml", "exports_per_year: 20", "exports_per_year: .nan", "exports_per_year")]
+    [InlineData("rules.yaml", "imports_per_capita_per_year: 0.0001", "imports_per_capita_per_year: .inf", "imports_per_capita_per_year")]
+    [InlineData("rules.yaml", "mobilization_cost_per_year: 40", "mobilization_cost_per_year: .nan", "mobilization_cost_per_year")]
+    [InlineData("rules.yaml", "natural_increase_per_year: 0.017", "natural_increase_per_year: .nan", "natural_increase_per_year")]
+    [InlineData("rules.yaml", "initial_population: { veterans: 1000 }", "initial_population: { veterans: -5 }", "initial_population.veterans")]
+    [InlineData("rules.yaml", "initial_population: { veterans: 1000 }", "initial_population: { veterans: .inf }", "initial_population.veterans")]
+    [InlineData("rules.yaml", "budget_start: { finance_minister: 1.0 }", "budget_start: { finance_minister: .nan }", "budget_start.finance_minister")]
+    [InlineData("rules.yaml", "budget_start: { finance_minister: 1.0 }", "budget_start: { finance_minister: 1.5, defense_minister: -0.5 }", "budget_start.finance_minister")]
+    [InlineData("rules.yaml", "budget_start: { finance_minister: 1.0 }", "budget_start: { finance_minister: 0.9 }", "budget_start")]
+    [InlineData("rules.yaml", "ceasefire_weeks: 4", "ceasefire_weeks: 0", "ceasefire_weeks")]
+    [InlineData("rules.yaml", "ceasefire_weeks: 4", "ceasefire_weeks: -5", "ceasefire_weeks")]
+    [InlineData("rules.yaml", "start_rung: 5", "start_rung: 0", "start_rung")]
+    [InlineData("rules.yaml", "start_rung: 5", "start_rung: 6", "start_rung")]
+    [InlineData("aliyah.yaml", "europe: 230", "europe: -230", "series[0].origins.europe")]
+    [InlineData("aliyah.yaml", "europe: 230", "europe: .nan", "series[0].origins.europe")]
+    [InlineData("aliyah.yaml", "  - from: 1948-05-15\n    to:", "  - to:", "series[0].from")]
+    [InlineData("aliyah.yaml", "to: 1948-12-31", "to: 1948-05-01", "series[0].to")]
+    [InlineData("population.yaml", "anchors: []", "anchors:\n  - date: 1948-11-08\n    jews: -1\n", "anchors[0].jews")]
+    [InlineData("population.yaml", "anchors: []", "anchors:\n  - jews: 700\n", "anchors[0].date")]
+    [InlineData("people.yaml", "competence: 8", "competence: 11", "people[pm_one].competence")]
+    [InlineData("people.yaml", "competence: 8", "competence: -1", "people[pm_one].competence")]
+    [InlineData("people.yaml", "loyalty: 9", "loyalty: 50", "people[pm_one].loyalty")]
+    [InlineData("people.yaml", "      - office: prime_minister\n        from: 1948-05-14\n", "      - office: prime_minister\n", "people[pm_one].offices.prime_minister.from")]
+    [InlineData("legislatures.yaml", "seats: { alpha: 4, beta: 6 }", "seats: { alpha: -2, beta: 12 }", "legislatures[house].seats.alpha")]
+    [InlineData("legislatures.yaml", "    size: 5\n", "    size: 0\n", "legislatures[council].size")]
+    [InlineData("legislatures.yaml", "    from: 1949-02-14\n", "", "legislatures[house].from")]
+    [InlineData("legislatures.yaml", "to: 1949-02-14", "to: 1948-05-14", "legislatures[council].to")]
+    [InlineData("governments.yaml", "    from: 1949-03-10\n", "", "governments[gov2].from")]
+    [InlineData("governments.yaml", "to: 1949-03-10", "to: 1948-01-01", "governments[gov1].to")]
+    [InlineData("events/drought.yaml", "delta: 0.1", "delta: .nan", "events[drought].options[ration].effects.food_supply.delta")]
+    [InlineData("events/drought.yaml", "delta: 0.1", "delta: .inf", "events[drought].options[ration].effects.food_supply.delta")]
+    [InlineData("events/drought.yaml", "max: 0.9", "max: .nan", "events[drought].conditions.food_supply.max")]
+    [InlineData("events/drought.yaml", "from: 1948-06-01\n", "", "events[drought].from")]
+    [InlineData("events/drought.yaml", "to: 1948-09-01", "to: 1948-06-01", "events[drought].to")]
+    [InlineData("events/drought.yaml", "to: 1948-09-01", "to: 1948-01-01", "events[drought].to")]
+    public void NumberOrDateOutOfRangeIsAContentError(string file, string from, string to, string field)
+    {
+        var ex = Bad(file, from, to);
+        Assert.Equal(file, ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    [Fact]
+    public void EqualMobilizationFloorsAreAllowed() =>
+        ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.05, 0.05, 0.15, 0.4, 0.8]") }));
 }

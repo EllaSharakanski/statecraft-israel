@@ -123,6 +123,30 @@ namespace Statecraft.Sim
                 throw new ContentException(file, field, $"unknown status '{status}' (must be draft, fact-checked, historian-reviewed or sensitivity-reviewed)");
         }
 
+        static bool IsFinite(double v) => !double.IsNaN(v) && !double.IsInfinity(v);
+
+        internal static void Finite(string file, string field, double v)
+        {
+            if (!IsFinite(v)) throw new ContentException(file, field, "must be a finite number");
+        }
+
+        internal static void Unit(string file, string field, double v)
+        {
+            if (!(v >= 0 && v <= 1)) throw new ContentException(file, field, "must be a number from 0 to 1");
+        }
+
+        static void Count(string file, string field, double v)
+        {
+            if (!(v >= 0 && IsFinite(v))) throw new ContentException(file, field, "must be a finite number >= 0");
+        }
+
+        /// <summary>from is required (a missing date deserialises to DateTime default); to, when given, must be after from.</summary>
+        internal static void Period(string file, string path, DateTime from, DateTime? to)
+        {
+            if (from == default) throw new ContentException(file, path + ".from", "required");
+            if (to.HasValue && to.Value <= from) throw new ContentException(file, path + ".to", FormattableString.Invariant($"must be after from ({from:yyyy-MM-dd})"));
+        }
+
         static void Validate(Content c)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
@@ -153,11 +177,14 @@ namespace Statecraft.Sim
 
             foreach (var p in c.People)
             {
+                if (p.Competence < 0 || p.Competence > 10) throw new ContentException("people.yaml", $"people[{p.Id}].competence", "must be 0-10");
+                if (p.Loyalty < 0 || p.Loyalty > 10) throw new ContentException("people.yaml", $"people[{p.Id}].loyalty", "must be 0-10");
                 if (p.Party != "" && !parties.Contains(p.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].party", $"unknown party '{p.Party}'");
                 foreach (var t in p.Offices)
                 {
                     if (string.IsNullOrEmpty(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices", "office term without an office");
                     if (!offices.Contains(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", "unknown office");
+                    if (t.From == default) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}.from", "required");
                     if (t.Party != "" && !parties.Contains(t.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}.party", $"unknown party '{t.Party}'");
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
@@ -182,19 +209,38 @@ namespace Statecraft.Sim
                 }
             foreach (var l in c.Legislatures)
             {
+                Period("legislatures.yaml", $"legislatures[{l.Id}]", l.From, l.To);
+                if (l.Size <= 0) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].size", "must be > 0");
                 foreach (var kv in l.Seats)
+                {
                     if (!parties.Contains(kv.Key)) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].seats.{kv.Key}", "unknown party");
+                    if (kv.Value < 0) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].seats.{kv.Key}", "must be >= 0");
+                }
                 if (l.Seats.Values.Sum() != l.Size) throw new ContentException("legislatures.yaml", $"legislatures[{l.Id}].size", FormattableString.Invariant($"seats sum to {l.Seats.Values.Sum()}, size is {l.Size}"));
             }
             foreach (var g in c.Governments)
+            {
+                Period("governments.yaml", $"governments[{g.Id}]", g.From, g.To);
                 foreach (var p in g.Coalition)
                     if (!parties.Contains(p)) throw new ContentException("governments.yaml", $"governments[{g.Id}].coalition.{p}", "unknown party");
+            }
+            foreach (var i in c.Indicators)
+            {
+                Finite("model.yaml", $"indicators[{i.Id}].base", i.Base);
+                Unit("model.yaml", $"indicators[{i.Id}].base", i.Base);
+            }
+            foreach (var p in c.Policies)
+            {
+                Finite("model.yaml", $"policies[{p.Id}].default", p.Default);
+                Unit("model.yaml", $"policies[{p.Id}].default", p.Default);
+            }
             foreach (var p in c.Policies)
                 if (!offices.Contains(p.Office)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", $"unknown office '{p.Office}'");
             foreach (var e in c.Effects)
             {
                 if (!sources.Contains(e.Source)) throw new ContentException("model.yaml", $"effects[{e.Id}].source", $"unknown policy or indicator '{e.Source}'");
                 if (!indicators.Contains(e.Target)) throw new ContentException("model.yaml", $"effects[{e.Id}].target", $"unknown indicator '{e.Target}'");
+                Finite("model.yaml", $"effects[{e.Id}].k", e.K);
                 if (e.Inertia < 1) throw new ContentException("model.yaml", $"effects[{e.Id}].inertia", "must be >= 1");
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", $"unknown office '{e.Office}'");
             }
@@ -203,10 +249,16 @@ namespace Statecraft.Sim
                 if (!indicators.Contains(s.Indicator)) throw new ContentException("model.yaml", $"situations[{s.Id}].indicator", $"unknown indicator '{s.Indicator}'");
                 bool below = s.OnBelow.HasValue && s.OffAbove.HasValue, above = s.OnAbove.HasValue && s.OffBelow.HasValue;
                 if (below == above) throw new ContentException("model.yaml", $"situations[{s.Id}]", "needs exactly one pair: on_below+off_above or on_above+off_below");
+                foreach (var (key, v) in new[] { ("on_below", s.OnBelow), ("off_above", s.OffAbove), ("on_above", s.OnAbove), ("off_below", s.OffBelow) })
+                    if (v.HasValue) Unit("model.yaml", $"situations[{s.Id}].{key}", v.Value);
             }
             foreach (var v in c.VoterGroups)
-                foreach (var k in v.Weights.Keys)
-                    if (!indicators.Contains(k)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{k}", "unknown indicator");
+                foreach (var kv in v.Weights)
+                {
+                    if (!indicators.Contains(kv.Key)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{kv.Key}", "unknown indicator");
+                    Finite("model.yaml", $"voter_groups[{v.Id}].weights.{kv.Key}", kv.Value);
+                }
+            foreach (var a in c.Actors) Unit("model.yaml", $"actors[{a.Id}].standing", a.Standing);
             if (c.Rules.Start == default) throw new ContentException("rules.yaml", "start", "required");
             if (!(c.Rules.AttentionPerTurn >= 0 && !double.IsInfinity(c.Rules.AttentionPerTurn))) throw new ContentException("rules.yaml", "attention_per_turn", "must be a finite non-negative number");
             if (!(c.Rules.RungAttentionStep >= 0 && !double.IsInfinity(c.Rules.RungAttentionStep))) throw new ContentException("rules.yaml", "rung_attention_step", "must be a finite non-negative number");
@@ -217,8 +269,41 @@ namespace Statecraft.Sim
             foreach (var k in AttentionSystem.CommandKinds)
                 if (!c.Rules.AttentionCost.ContainsKey(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "missing cost");
             if (c.Rules.RungMinMobilization.Count != 5) throw new ContentException("rules.yaml", "rung_min_mobilization", "needs exactly 5 values (rungs 1-5)");
-            foreach (var k in c.Rules.BudgetStart.Keys)
-                if (!offices.Contains(k)) throw new ContentException("rules.yaml", $"budget_start.{k}", "unknown office");
+            for (int i = 0; i < 5; i++)
+            {
+                var field = FormattableString.Invariant($"rung_min_mobilization[{i}]");
+                Unit("rules.yaml", field, c.Rules.RungMinMobilization[i]);
+                if (i > 0 && c.Rules.RungMinMobilization[i] < c.Rules.RungMinMobilization[i - 1])
+                    throw new ContentException("rules.yaml", field, "must not be below the previous rung's floor");
+            }
+            if (c.Rules.StartRung < 1 || c.Rules.StartRung > 5) throw new ContentException("rules.yaml", "start_rung", "must be 1-5");
+            if (c.Rules.CeasefireWeeks <= 0) throw new ContentException("rules.yaml", "ceasefire_weeks", "must be > 0");
+            var r = c.Rules;
+            foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
+                ("spending_per_capita_per_year", r.SpendingPerCapitaPerYear), ("exports_per_year", r.ExportsPerYear), ("imports_per_capita_per_year", r.ImportsPerCapitaPerYear),
+                ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear) })
+                Finite("rules.yaml", key, v);
+            foreach (var kv in r.InitialPopulation) Count("rules.yaml", $"initial_population.{kv.Key}", kv.Value);
+            foreach (var kv in r.BudgetStart)
+            {
+                if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                Unit("rules.yaml", $"budget_start.{kv.Key}", kv.Value);
+            }
+            // The same rule EconomySystem.Allocate applies to every later allocation.
+            if (r.BudgetStart.Count > 0 && Math.Abs(r.BudgetStart.Values.Sum() - 1.0) > 1e-6) throw new ContentException("rules.yaml", "budget_start", "shares must sum to 1");
+            for (int i = 0; i < c.Aliyah.Count; i++)
+            {
+                var a = c.Aliyah[i]; var path = FormattableString.Invariant($"series[{i}]");
+                if (a.From == default) throw new ContentException("aliyah.yaml", path + ".from", "required");
+                if (a.To < a.From) throw new ContentException("aliyah.yaml", path + ".to", "required, on or after from (both dates are inclusive)");
+                foreach (var kv in a.Origins) Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
+            }
+            for (int i = 0; i < c.PopulationAnchors.Count; i++)
+            {
+                var a = c.PopulationAnchors[i]; var path = FormattableString.Invariant($"anchors[{i}]");
+                if (a.Date == default) throw new ContentException("population.yaml", path + ".date", "required");
+                Count("population.yaml", path + ".jews", a.Jews);
+            }
             EventRules.Validate(c, offices, indicators);
         }
     }
