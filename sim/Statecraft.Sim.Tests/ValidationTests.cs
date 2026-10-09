@@ -62,4 +62,35 @@ status: draft
         Assert.Equal(field, ex.Field);
         Assert.EndsWith(message, ex.Message);
     }
+
+    // I2: enum-like fields.
+    [Theory]
+    [InlineData("events/drought.yaml", "anchor: soft", "anchor: hrad", "events[drought].anchor")]
+    [InlineData("events/drought.yaml", "anchor: soft", "anchor: Hard", "events[drought].anchor")]
+    [InlineData("events/drought.yaml", "status: draft", "status: done", "events[drought].status")]
+    [InlineData("people.yaml", "    loyalty: 9\n", "    loyalty: 9\n    status: checked\n", "people[pm_one].status")]
+    [InlineData("legislatures.yaml", "    size: 10\n", "    size: 10\n    status: final\n", "legislatures[house].status")]
+    [InlineData("governments.yaml", "    coalition: [alpha]\n", "    coalition: [alpha]\n    status: Fact-Checked\n", "governments[gov1].status")]
+    [InlineData("aliyah.yaml", "    origins: { europe: 230, asia: 0 }\n", "    origins: { europe: 230, asia: 0 }\n    status: ok\n", "series[0].status")]
+    [InlineData("population.yaml", "anchors: []", "anchors:\n  - date: 1948-11-08\n    jews: 700\n    status: ''\n", "anchors[0].status")]
+    public void EnumLikeFieldOutsideItsValuesIsAContentError(string file, string from, string to, string field)
+    {
+        var ex = Bad(file, from, to);
+        Assert.Equal(file, ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    [Theory]
+    [InlineData("hard")]
+    [InlineData("soft")]
+    public void BothAnchorsLoad(string anchor) =>
+        ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = Event.Replace("anchor: soft", "anchor: " + anchor) }));
+
+    [Theory]
+    [InlineData("draft")]
+    [InlineData("fact-checked")]
+    [InlineData("historian-reviewed")]
+    [InlineData("sensitivity-reviewed")]
+    public void EveryStatusLoads(string status) =>
+        ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = Event.Replace("status: draft", "status: " + status) }));
 }

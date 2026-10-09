@@ -115,6 +115,14 @@ namespace Statecraft.Sim
                 if (!seen.Add(id)) throw new ContentException(file, $"{list}[{id}].id", "duplicate id");
         }
 
+        static readonly HashSet<string> Statuses = new HashSet<string> { "draft", "fact-checked", "historian-reviewed", "sensitivity-reviewed" };
+
+        internal static void Status(string file, string field, string status)
+        {
+            if (!Statuses.Contains(status))
+                throw new ContentException(file, field, $"unknown status '{status}' (must be draft, fact-checked, historian-reviewed or sensitivity-reviewed)");
+        }
+
         static void Validate(Content c)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
@@ -136,6 +144,12 @@ namespace Statecraft.Sim
             Unique("model.yaml", "actors", c.Actors.Select(a => a.Id));
             foreach (var p in c.Policies)
                 if (indicators.Contains(p.Id)) throw new ContentException("model.yaml", $"policies[{p.Id}].id", "same id as an indicator (effect sources would be ambiguous)");
+
+            foreach (var p in c.People) Status("people.yaml", $"people[{p.Id}].status", p.Status);
+            foreach (var l in c.Legislatures) Status("legislatures.yaml", $"legislatures[{l.Id}].status", l.Status);
+            foreach (var g in c.Governments) Status("governments.yaml", $"governments[{g.Id}].status", g.Status);
+            for (int i = 0; i < c.Aliyah.Count; i++) Status("aliyah.yaml", FormattableString.Invariant($"series[{i}].status"), c.Aliyah[i].Status);
+            for (int i = 0; i < c.PopulationAnchors.Count; i++) Status("population.yaml", FormattableString.Invariant($"anchors[{i}].status"), c.PopulationAnchors[i].Status);
 
             foreach (var p in c.People)
             {

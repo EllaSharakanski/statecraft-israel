@@ -18,6 +18,8 @@ namespace Statecraft.Sim
             {
                 string F(string field) => $"events[{e.Id}].{field}";
                 if (!ids.Add(e.Id)) throw new ContentException(e.File, F("id"), "duplicate event id");
+                if (e.Anchor != "hard" && e.Anchor != "soft") throw new ContentException(e.File, F("anchor"), $"unknown anchor '{e.Anchor}' (must be hard or soft)");
+                ContentLoader.Status(e.File, F("status"), e.Status);
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException(e.File, F("office"), $"unknown office '{e.Office}'");
                 CheckPlaceholders(c, e, F("title"), e.Title, offices);
                 CheckPlaceholders(c, e, F("text"), e.Text, offices);
