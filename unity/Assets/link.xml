@@ -1,4 +1,5 @@
 <linker>
   <assembly fullname="YamlDotNet" preserve="all" />
   <assembly fullname="Statecraft.Sim" preserve="all" />
+  <assembly fullname="Statecraft.Game"><type fullname="Statecraft.Game.Map.*" preserve="all"/></assembly>
 </linker>
