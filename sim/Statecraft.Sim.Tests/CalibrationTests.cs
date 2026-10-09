@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Statecraft.Sim;
 
@@ -46,7 +47,8 @@ public class CalibrationTests
             return (a, sim, error: (sim - a.Jews) / a.Jews);
         }).ToList();
         var lines = string.Join("; ", report.Select(r =>
-            $"[{Kind(r.a.Date)}] {r.a.Date:yyyy-MM-dd}: sim {r.sim:N0} vs CBS {r.a.Jews:N0} ({r.error * 100:+0.0;-0.0}%)"));
+            string.Format(CultureInfo.InvariantCulture, "[{0}] {1:yyyy-MM-dd}: sim {2:N0} vs CBS {3:N0} ({4:+0.0;-0.0}%)",
+                Kind(r.a.Date), r.a.Date, r.sim, r.a.Jews, r.error * 100)));
         Assert.True(report.All(r => Math.Abs(r.error) <= Tolerance),
             "Only 1948-11-08 is an independent anchor; the other two are consistency checks of the rules.yaml derivation. " + lines);
     }
@@ -56,7 +58,11 @@ public class CalibrationTests
     {
         var s = Simulation.NewGame(C, 1948, Mode.Historical);
         while (s.Date <= new DateTime(1950, 1, 1)) s = Simulation.Step(C, s, HistoricalAI.Commands(C, s)).State;
-        Assert.Subset(s.FiredEvents, new SortedSet<string> { "armistice_egypt", "armistice_lebanon", "armistice_jordan", "armistice_syria" });
-        Assert.Equal(2, s.Rung);
+        var final = s.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        Assert.True(s.GameOver == null, "Game ended early with GameOver = " + s.GameOver + " at " + final);
+        var required = new[] { "armistice_egypt", "armistice_lebanon", "armistice_jordan", "armistice_syria" };
+        var missing = required.Where(id => !s.FiredEvents.Contains(id)).ToList();
+        Assert.True(missing.Count == 0, "Missing armistice events: " + string.Join(", ", missing) + " (final date " + final + ")");
+        Assert.True(s.Rung == 2, string.Format(CultureInfo.InvariantCulture, "Expected war to end at rung 2 but rung is {0} at {1}", s.Rung, final));
     }
 }
