@@ -20,7 +20,7 @@ namespace Statecraft.Sim
 
         internal static readonly Regex Placeholder = new Regex(@"\{([a-z0-9_]+)\}");
 
-        internal static readonly Regex OfficeId = new Regex(@"^[a-z][a-z0-9_]*$");
+        internal static readonly Regex OfficeId = new Regex(@"^[a-z][a-z0-9_]*\z");
 
         /// <summary>Replaces {office_id} with the name of the person holding it on date.</summary>
         public static string Fill(Content c, string text, DateTime date) =>

@@ -53,6 +53,15 @@ public class OfficesTests
     }
 
     [Fact]
+    public void OfficeIdWithTrailingNewlineIsRejected()
+    {
+        var offices = Fixture.Files["offices.yaml"] + "  - id: \"minister\\n\"\n    title: Bad\n";
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new System.Collections.Generic.Dictionary<string, string> { ["offices.yaml"] = offices })));
+        Assert.Equal("offices.yaml", ex.File);
+        Assert.Equal("offices[minister\n].id", ex.Field);
+    }
+
+    [Fact]
     public void UnfilledPlaceholderThrows() =>
         Assert.Throws<InvalidOperationException>(() => Offices.Fill(C, "{prime_minister}", new DateTime(1947, 1, 1)));
 
