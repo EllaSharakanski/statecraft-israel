@@ -153,4 +153,41 @@ public class ContentLoaderTests
         Assert.Equal("people.yaml", ex.File);
         Assert.Equal("people[def_two].offices", ex.Field);
     }
+
+    // I5: a WebGL build reads StreamingAssets through a URL, so the loader also takes a reader function.
+    static Func<string, string?> Reader(string dir) => rel =>
+    {
+        var path = Path.Combine(dir, rel);
+        return File.Exists(path) ? File.ReadAllText(path) : null;
+    };
+
+    static string[] EventFiles(string dir) =>
+        Array.ConvertAll(Directory.GetFiles(Path.Combine(dir, "events"), "*.yaml"), f => "events/" + Path.GetFileName(f));
+
+    [Fact]
+    public void ReaderAndDirectoryEntryPointsLoadTheSameContent()
+    {
+        var dir = Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event });
+        var fromDir = ContentLoader.Load(dir);
+        var fromReader = ContentLoader.Load(Reader(dir), EventFiles(dir));
+        Assert.Single(fromReader.Events);
+        Assert.Equal("events/drought.yaml", fromReader.Events[0].File);
+        Assert.Equal(Simulation.NewGame(fromDir, 7, Mode.Historical).Hash(), Simulation.NewGame(fromReader, 7, Mode.Historical).Hash());
+    }
+
+    [Theory]
+    [InlineData("parties.yaml")]
+    [InlineData("events/drought.yaml")]
+    public void MissingFileGivesTheSameErrorThroughBothEntryPoints(string missing)
+    {
+        var dir = Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event });
+        var events = EventFiles(dir);
+        File.Delete(Path.Combine(dir, missing));
+        var viaReader = Assert.Throws<ContentException>(() => ContentLoader.Load(Reader(dir), events));
+        Assert.Equal((missing, "(file)", "missing file"), (viaReader.File, viaReader.Field, viaReader.Message.Substring(viaReader.Message.LastIndexOf(": ") + 2)));
+        if (missing.StartsWith("events/")) return;   // the directory entry point lists events itself, so it never asks for a deleted one
+        var viaDir = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+        Assert.Equal(viaDir.Message, viaReader.Message);
+        Assert.Equal(viaDir.Field, viaReader.Field);
+    }
 }

@@ -33,15 +33,16 @@ namespace Statecraft.Sim
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .Build();
 
-        static T Read<T>(string root, string relPath)
+        static T Read<T>(Func<string, string?> readFile, string relPath)
         {
-            var path = Path.Combine(root, relPath);
-            if (!File.Exists(path)) throw new ContentException(relPath, "(file)", "missing file");
-            T result;
-            try { result = Yaml.Deserialize<T>(File.ReadAllText(path)) ?? throw new ContentException(relPath, "(file)", "empty file"); }
-            catch (YamlException e) { throw new ContentException(relPath, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
+            string? text;
+            try { text = readFile(relPath); }
             catch (IOException e) { throw new ContentException(relPath, "(file)", e.Message); }
             catch (UnauthorizedAccessException e) { throw new ContentException(relPath, "(file)", e.Message); }
+            if (text == null) throw new ContentException(relPath, "(file)", "missing file");
+            T result;
+            try { result = Yaml.Deserialize<T>(text) ?? throw new ContentException(relPath, "(file)", "empty file"); }
+            catch (YamlException e) { throw new ContentException(relPath, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
             CheckNulls(relPath, result is GameEvent ev ? $"events[{ev.Id}]" : "", result!);
             return result;
         }
@@ -81,31 +82,48 @@ namespace Statecraft.Sim
 
         static bool IsContentType(Type t) => t.IsClass && t != typeof(string) && t.Namespace == typeof(Content).Namespace;
 
-        public static Content Load(string contentRoot)
+        /// <summary>Loads content through <paramref name="readFile"/>, which takes a path relative to the content root
+        /// ("people.yaml", "events/x.yaml") and returns the file's text, or null when it is missing. This is the
+        /// entry point for platforms without a file system (a WebGL build reads StreamingAssets through a URL).
+        /// <paramref name="eventFiles"/> are the event files, relative to the content root; they load in ordinal order.</summary>
+        public static Content Load(Func<string, string?> readFile, IEnumerable<string> eventFiles)
         {
+            if (readFile == null) throw new ArgumentNullException(nameof(readFile));
+            if (eventFiles == null) throw new ArgumentNullException(nameof(eventFiles));
             var c = new Content();
-            c.Offices = Read<OfficesFile>(contentRoot, "offices.yaml").Offices;
-            c.Parties = Read<PartiesFile>(contentRoot, "parties.yaml").Parties;
-            c.People = Read<PeopleFile>(contentRoot, "people.yaml").People;
-            c.Legislatures = Read<LegislaturesFile>(contentRoot, "legislatures.yaml").Legislatures;
-            c.Governments = Read<GovernmentsFile>(contentRoot, "governments.yaml").Governments;
-            var m = Read<ModelFile>(contentRoot, "model.yaml");
+            c.Offices = Read<OfficesFile>(readFile, "offices.yaml").Offices;
+            c.Parties = Read<PartiesFile>(readFile, "parties.yaml").Parties;
+            c.People = Read<PeopleFile>(readFile, "people.yaml").People;
+            c.Legislatures = Read<LegislaturesFile>(readFile, "legislatures.yaml").Legislatures;
+            c.Governments = Read<GovernmentsFile>(readFile, "governments.yaml").Governments;
+            var m = Read<ModelFile>(readFile, "model.yaml");
             c.Indicators = m.Indicators; c.Policies = m.Policies; c.Effects = m.Effects;
             c.Situations = m.Situations; c.VoterGroups = m.VoterGroups; c.Actors = m.Actors;
-            c.Rules = Read<Rules>(contentRoot, "rules.yaml");
-            c.Aliyah = Read<AliyahFile>(contentRoot, "aliyah.yaml").Series;
-            c.PopulationAnchors = Read<PopulationFile>(contentRoot, "population.yaml").Anchors;
-            var eventsDir = Path.Combine(contentRoot, "events");
-            if (Directory.Exists(eventsDir))
-                foreach (var f in Directory.GetFiles(eventsDir, "*.yaml").OrderBy(p => p, StringComparer.Ordinal))
-                {
-                    var rel = "events/" + Path.GetFileName(f);
-                    var e = Read<GameEvent>(contentRoot, rel);
-                    e.File = rel;
-                    c.Events.Add(e);
-                }
+            c.Rules = Read<Rules>(readFile, "rules.yaml");
+            c.Aliyah = Read<AliyahFile>(readFile, "aliyah.yaml").Series;
+            c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
+            foreach (var rel in eventFiles.OrderBy(p => p, StringComparer.Ordinal))
+            {
+                var e = Read<GameEvent>(readFile, rel);
+                e.File = rel;
+                c.Events.Add(e);
+            }
             Validate(c);
             return c;
+        }
+
+        /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
+        public static Content Load(string contentRoot)
+        {
+            var eventsDir = Path.Combine(contentRoot, "events");
+            var eventFiles = Directory.Exists(eventsDir)
+                ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
+                : new List<string>();
+            return Load(rel =>
+            {
+                var path = Path.Combine(contentRoot, rel);
+                return File.Exists(path) ? File.ReadAllText(path) : null;
+            }, eventFiles);
         }
 
         internal const string IdRule = "must be lowercase letters, digits and underscores, starting with a letter";
