@@ -63,4 +63,14 @@ public class CoreTests
         Assert.NotEqual(a.Treasury, b.Treasury);
         Assert.NotEqual(a.Hash(), b.Hash());
     }
+    [Fact]
+    public void CloneIsolatesIndicatorShiftsAndHashSeesThem()
+    {
+        var a = new GameState { Date = new DateTime(1948, 5, 15) };
+        a.IndicatorShifts["morale"] = 0.0;
+        var b = a.Clone();
+        b.IndicatorShifts["morale"] = 0.1;
+        Assert.Equal(0.0, a.IndicatorShifts["morale"]);
+        Assert.NotEqual(a.Hash(), b.Hash());
+    }
 }

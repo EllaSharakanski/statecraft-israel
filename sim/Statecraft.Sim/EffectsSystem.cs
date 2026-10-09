@@ -8,7 +8,7 @@ namespace Statecraft.Sim
     {
         public static void Init(Content c, GameState s)
         {
-            foreach (var i in c.Indicators) s.Indicators[i.Id] = i.Base;
+            foreach (var i in c.Indicators) { s.Indicators[i.Id] = i.Base; s.IndicatorShifts[i.Id] = 0.0; }
             foreach (var p in c.Policies) s.Policies[p.Id] = p.Default;
             foreach (var e in c.Effects) s.EffectContributions[e.Id] = 0;
         }
@@ -44,11 +44,7 @@ namespace Statecraft.Sim
                 if (Math.Abs(now - old) > 1e-9) moved.Add(e.Id);
             }
             var before = c.Indicators.ToDictionary(i => i.Id, i => s.Indicators[i.Id]);
-            foreach (var i in c.Indicators)
-            {
-                var sum = i.Base + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id]);
-                s.Indicators[i.Id] = Math.Max(0, Math.Min(1, sum));
-            }
+            foreach (var i in c.Indicators) s.Indicators[i.Id] = Level(c, s, i);
             // One cause per indicator that actually changed (a clamped indicator reports nothing).
             foreach (var i in c.Indicators)
             {
@@ -59,6 +55,13 @@ namespace Statecraft.Sim
                 why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000}{from}")));
             }
             UpdateSituations(c, s, why);
+        }
+
+        /// <summary>clamp(base + event shift + effect contributions) to [0, 1].</summary>
+        internal static double Level(Content c, GameState s, Indicator i)
+        {
+            var sum = i.Base + s.IndicatorShifts[i.Id] + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id]);
+            return Math.Max(0, Math.Min(1, sum));
         }
 
         public static void UpdateSituations(Content c, GameState s, List<Cause> why)

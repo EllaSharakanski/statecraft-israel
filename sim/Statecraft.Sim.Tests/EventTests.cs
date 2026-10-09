@@ -76,6 +76,25 @@ options:
     }
 
     [Fact]
+    public void EventIndicatorEffectPersistsThroughEffectsRebuilds()
+    {
+        var ev = Shortage.Replace("target: food_supply\n        delta: 0.2", "target: food_supply\n        delta: 0.1");
+        var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = ev });
+        var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
+        EventSystem.Trigger(c, s, why);
+        Assert.Null(EventSystem.Choose(c, s, "shortage", "ration", why));
+        Assert.Equal(0.5, s.Indicators["food_supply"], 9);   // visible immediately: base 0.4 + 0.1
+        for (int i = 0; i < 3; i++)
+        {
+            var turn = new List<Cause>();
+            EffectsSystem.Apply(c, s, turn);
+            Assert.Equal(0.5, s.Indicators["food_supply"], 9);
+            Assert.DoesNotContain(turn, w => w.System == "effects" && w.Target == "food_supply");   // no fake reversal
+        }
+        Assert.Equal(0.1, s.IndicatorShifts["food_supply"], 9);
+    }
+
+    [Fact]
     public void UnknownOptionIsRejected()
     {
         var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = Shortage });

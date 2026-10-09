@@ -19,6 +19,8 @@ namespace Statecraft.Sim
         public Dictionary<string, double> Indicators = new Dictionary<string, double>();
         public Dictionary<string, double> Policies = new Dictionary<string, double>();
         public Dictionary<string, double> EffectContributions = new Dictionary<string, double>();
+        /// <summary>Permanent per-indicator offsets from event choices, added on top of base and effects.</summary>
+        public Dictionary<string, double> IndicatorShifts = new Dictionary<string, double>();
         public SortedSet<string> ActiveSituations = new SortedSet<string>(StringComparer.Ordinal);
         public Dictionary<string, double> Budget = new Dictionary<string, double>();
         public double Treasury;
@@ -42,6 +44,7 @@ namespace Statecraft.Sim
             c.Indicators = new Dictionary<string, double>(Indicators);
             c.Policies = new Dictionary<string, double>(Policies);
             c.EffectContributions = new Dictionary<string, double>(EffectContributions);
+            c.IndicatorShifts = new Dictionary<string, double>(IndicatorShifts);
             c.ActiveSituations = new SortedSet<string>(ActiveSituations, StringComparer.Ordinal);
             c.Budget = new Dictionary<string, double>(Budget);
             c.Population = new Dictionary<string, double>(Population);
@@ -64,7 +67,7 @@ namespace Statecraft.Sim
             }
             sb.Append(Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';')
               .Append(RngState).Append(';').Append(Mode).Append(';').Append(Turn).Append(';');
-            Map("ind", Indicators); Map("pol", Policies); Map("eff", EffectContributions);
+            Map("ind", Indicators); Map("pol", Policies); Map("eff", EffectContributions); Map("shift", IndicatorShifts);
             Map("bud", Budget); Map("pop", Population);
             sb.Append("sit[").Append(string.Join(",", ActiveSituations)).Append(']');
             Num("treasury", Treasury); Num("debt", Debt); Num("fx", FxReserves);
