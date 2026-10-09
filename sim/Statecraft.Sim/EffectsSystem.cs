@@ -35,18 +35,28 @@ namespace Statecraft.Sim
             // Read every source before writing anything, so effect order cannot change results.
             var targets = c.Effects.ToDictionary(e => e.Id, e =>
                 e.K * (s.Policies.TryGetValue(e.Source, out var p) ? p : s.Indicators[e.Source]) * Multiplier(c, s, e.Office));
+            var moved = new HashSet<string>();
             foreach (var e in c.Effects)
             {
                 var old = s.EffectContributions[e.Id];
                 var now = old + (targets[e.Id] - old) / e.Inertia;
                 s.EffectContributions[e.Id] = now;
-                if (Math.Abs(now - old) > 1e-9)
-                    why.Add(new Cause("effects", e.Target, now - old, $"{e.Target} {now - old:+0.000;-0.000} ({e.Id})"));
+                if (Math.Abs(now - old) > 1e-9) moved.Add(e.Id);
             }
+            var before = c.Indicators.ToDictionary(i => i.Id, i => s.Indicators[i.Id]);
             foreach (var i in c.Indicators)
             {
                 var sum = i.Base + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id]);
                 s.Indicators[i.Id] = Math.Max(0, Math.Min(1, sum));
+            }
+            // One cause per indicator that actually changed (a clamped indicator reports nothing).
+            foreach (var i in c.Indicators)
+            {
+                var delta = s.Indicators[i.Id] - before[i.Id];
+                if (Math.Abs(delta) <= 1e-9) continue;
+                var ids = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Id).ToList();
+                var from = ids.Count > 0 ? $" ({string.Join(", ", ids)})" : "";
+                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000}{from}")));
             }
             UpdateSituations(c, s, why);
         }
