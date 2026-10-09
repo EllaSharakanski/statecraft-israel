@@ -15,12 +15,16 @@ namespace Statecraft.Game.EditorTools
         public static void Create()
         {
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets", "Materials");
-            Make(TerrainPath, "Universal Render Pipeline/Terrain/Lit", null);
+            var terrain = Make(TerrainPath, "Universal Render Pipeline/Terrain/Lit", null);
+            // Matte defaults. The terrain overrides these from each TerrainLayer (MapBuilder sets 0 there too); URP Terrain/Lit
+            // exposes no specular-highlight or environment-reflection toggle.
+            for (int i = 0; i < 4; i++) { terrain.SetFloat("_Smoothness" + i, 0f); terrain.SetFloat("_Metallic" + i, 0f); }
+            EditorUtility.SetDirty(terrain);
             Make(OverlayPath, "Universal Render Pipeline/Unlit", new Color(0.15f, 0.12f, 0.08f, 1f));
             AssetDatabase.SaveAssets();
         }
 
-        static void Make(string path, string shaderName, Color? colour)
+        static Material Make(string path, string shaderName, Color? colour)
         {
             var shader = Shader.Find(shaderName); // editor only: fine here
             if (shader == null) throw new System.InvalidOperationException($"shader not found: {shaderName}");
@@ -30,6 +34,7 @@ namespace Statecraft.Game.EditorTools
             mat.enableInstancing = true;
             if (colour.HasValue) mat.color = colour.Value;
             EditorUtility.SetDirty(mat);
+            return mat;
         }
     }
 }

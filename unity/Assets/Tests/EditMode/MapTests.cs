@@ -87,6 +87,32 @@ public class MapTests
         Assert.Throws<System.ArgumentNullException>(() => MapBuilder.Build(Paths.StreamingMap, HexesJson, null, null));
     }
 
+    [Test]
+    public void BiomeLayersAreMatte()
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        try
+        {
+            var layers = go.GetComponent<Terrain>().terrainData.terrainLayers;
+            Assert.IsNotEmpty(layers);
+            foreach (var l in layers)
+            {
+                Assert.AreEqual(0f, l.smoothness, $"{l.name} smoothness"); Assert.AreEqual(0f, l.metallic, $"{l.name} metallic");
+                // URP Terrain/Lit uses diffuse alpha as smoothness and forces _SmoothnessN to 1 when the diffuse has alpha.
+                Assert.IsFalse(UnityEngine.Experimental.Rendering.GraphicsFormatUtility.HasAlphaChannel(l.diffuseTexture.graphicsFormat),
+                    $"{l.name} diffuse must have no alpha channel");
+            }
+            // URP Terrain/Lit has no specular-highlight or environment-reflection toggle; its per-layer defaults are zeroed.
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.AreEqual(0f, terrainMat.GetFloat("_Smoothness" + i), $"Terrain.mat _Smoothness{i}");
+                Assert.AreEqual(0f, terrainMat.GetFloat("_Metallic" + i), $"Terrain.mat _Metallic{i}");
+            }
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     // --- Overlay drape (M1, L6) ---
 
     [Test]
@@ -152,6 +178,20 @@ public class MapTests
         b.Weights(new Vector2(W / 2, 0), w);
         Assert.That(w[0], Is.InRange(0.3f, 0.7f)); Assert.That(w[1], Is.InRange(0.3f, 0.7f));
         Assert.AreEqual(0f, w[2], 1e-6);
+    }
+
+    [Test]
+    public void BlendBandIsAboutSixTenthsOfAHex()
+    {
+        // Along the line between two neighbouring centres, the band where both biomes have > 10% weight spans ~0.6 hex widths.
+        var b = new BiomeBlender(new[] { Vector2.zero, new Vector2(W, 0) }, new[] { 0, 1 }, S, 2);
+        var w = new float[2]; float lo = float.MaxValue, hi = float.MinValue;
+        for (int i = 0; i <= 1000; i++)
+        {
+            float x = W * i / 1000f; b.Weights(new Vector2(x, 0), w);
+            if (w[0] > 0.1f && w[1] > 0.1f) { lo = Mathf.Min(lo, x); hi = Mathf.Max(hi, x); }
+        }
+        Assert.That((hi - lo) / W, Is.InRange(0.55f, 0.65f));
     }
 
     [Test]

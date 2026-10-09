@@ -9,7 +9,10 @@ namespace Statecraft.Game.Map
     /// edge, beyond the outermost centres) takes the nearest centre's biome. Deterministic: fixed iteration order.</summary>
     public sealed class BiomeBlender
     {
-        public const float BlendRadiusHexes = 1.25f;
+        /// <summary>Falloff radius in hex radii. Neighbouring centres are sqrt(3) = 1.732 radii apart, so 1.72 keeps every
+        /// neighbour out of reach of a hex's own centre (centre weight stays 1) while making the band where both biomes
+        /// have more than 10% weight about 0.6 of a hex width (1.25 gave about 0.24).</summary>
+        public const float BlendRadiusHexes = 1.72f;
 
         readonly Dictionary<(int, int), List<(Vector2 p, int layer)>> grid = new Dictionary<(int, int), List<(Vector2, int)>>();
         readonly List<(Vector2 p, int layer)> all = new List<(Vector2, int)>();

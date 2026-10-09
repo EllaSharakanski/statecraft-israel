@@ -76,9 +76,13 @@ namespace Statecraft.Game.Map
             var layers = new TerrainLayer[names.Count];
             for (int i = 0; i < names.Count; i++)
             {
-                var tex = assets.Own(new Texture2D(1, 1) { name = "Biome_" + names[i] });
+                var tex = assets.Own(new Texture2D(1, 1, TextureFormat.RGB24, false) { name = "Biome_" + names[i] }); // no alpha: Terrain/Lit would read it as smoothness 1
                 tex.SetPixel(0, 0, Biome[names[i]]); tex.Apply();
-                layers[i] = assets.Own(new TerrainLayer { name = names[i], diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM) });
+                layers[i] = assets.Own(new TerrainLayer
+                {
+                    name = names[i], diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM),
+                    smoothness = 0f, metallic = 0f, // matte: URP Terrain/Lit's default 0.5 smoothness gives white streaks on slopes
+                });
             }
             data.terrainLayers = layers;
             int res = AlphamapResolution; data.alphamapResolution = res;
