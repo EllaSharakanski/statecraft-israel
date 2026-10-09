@@ -22,8 +22,9 @@ namespace Statecraft.Sim
             return s;
         }
 
-        /// <summary>Applies commands in order (each pays attention first; a rejected command is refunded and carries a
-        /// reason), delegates unanswered events, then advances one turn. Never mutates <paramref name="state"/>.</summary>
+        /// <summary>Applies commands in order (each pays attention first; a command that fails validation is refunded
+        /// and carries a reason; a vote that is held and lost is charged and reported as a politics cause), delegates
+        /// unanswered events, then advances one turn. Never mutates <paramref name="state"/>.</summary>
         public static StepResult Step(Content c, GameState state, IReadOnlyList<Command> commands)
         {
             if (c == null) throw new ArgumentNullException(nameof(c));
@@ -67,8 +68,9 @@ namespace Statecraft.Sim
             return new StepResult(s, why, rejected);
         }
 
-        /// <summary>Returns null on success, or the reason the command was rejected. A rejected command leaves the
-        /// state as it found it (attention is refunded by the caller).</summary>
+        /// <summary>Returns null when the command was carried out (a lost vote counts: it consumes the RNG draw and is
+        /// reported as a politics cause), or the reason it failed validation. A command that fails validation leaves
+        /// the state as it found it (attention is refunded by the caller).</summary>
         static string? Execute(Content c, GameState s, Command cmd, List<Cause> why)
         {
             switch (cmd)
@@ -78,7 +80,11 @@ namespace Statecraft.Sim
                     if (!(p.Level >= 0 && p.Level <= 1)) return "Policy level must be between 0 and 1";
                     var legislature = Offices.Legislature(c, s.Date);
                     if (legislature == null) return "No legislature is sitting";
-                    if (!PassVote(c, s)) return $"{legislature.Body} voted it down";
+                    if (!PassVote(c, s))
+                    {
+                        why.Add(new Cause("politics", p.Policy, 0, FormattableString.Invariant($"{legislature.Body} voted down {p.Policy} {p.Level:0.00}")));
+                        return null;
+                    }
                     s.Policies[p.Policy] = p.Level;
                     why.Add(new Cause("policy", p.Policy, p.Level, FormattableString.Invariant($"{p.Policy} set to {p.Level:0.00}")));
                     return null;
@@ -91,7 +97,7 @@ namespace Statecraft.Sim
                     if (PoliticsSystem.BudgetNeedsVote(c, s.Date) && !PassVote(c, s))
                     {
                         s.Budget = old;
-                        return $"{Offices.Legislature(c, s.Date)!.Body} voted the budget down";
+                        why.Add(new Cause("politics", "budget", 0, $"{Offices.Legislature(c, s.Date)!.Body} voted the budget down"));
                     }
                     return null;
                 }

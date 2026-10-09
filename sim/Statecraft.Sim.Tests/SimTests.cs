@@ -192,7 +192,47 @@ options:
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         s0.Date = new DateTime(1949, 3, 1);   // House sits, gov1 (alpha, 4 of 10) has no majority
         var r = Simulation.Step(C, s0, new Command[] { new AllocateBudget(new Dictionary<string, double> { ["finance_minister"] = 1.0 }) });
-        Assert.Equal("House voted the budget down", r.Rejected.Single().Reason);
+        Assert.Empty(r.Rejected);   // a vote held and lost is an outcome, not a rejection
+        Assert.Contains(r.Why, w => w.System == "politics" && w.Target == "budget" && w.Message == "House voted the budget down");
+    }
+
+    // ---- Final fix 3: a defeated vote is an outcome, not a rejection ----
+
+    [Fact]
+    public void DefeatedPolicyVoteIsChargedAndReportedAsACause()
+    {
+        var s0 = Simulation.NewGame(C, 42, Mode.Historical);
+        s0.Date = new DateTime(1949, 3, 1);   // House sits, gov1 (alpha, 4 of 10) has no majority: every vote fails
+        s0.CoalitionStability = 0.3;
+        s0.Rung = 1; s0.Attention = 2;         // each set_policy costs 1: two afford, the third cannot
+        var cmd = new SetPolicy("rationing", 0.9);
+        var r = Simulation.Step(C, s0, new Command[] { cmd, cmd, cmd });
+        Assert.Equal(new[] { "Not enough attention (need 1.0, have 0.0)" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(0.0, r.State.Policies["rationing"]);
+        Assert.Equal(2, r.Why.Count(w => w.System == "politics" && w.Target == "rationing" && w.Message == "House voted down rationing 0.90"));
+    }
+
+    [Theory]
+    [InlineData(1UL)] [InlineData(2UL)] [InlineData(3UL)] [InlineData(4UL)] [InlineData(5UL)]
+    public void RepeatedPolicyVotesCostAttentionWhetherTheyPassOrFail(ulong seed)
+    {
+        var s0 = Simulation.NewGame(C, seed, Mode.Historical);   // council: alpha holds 3 of 5
+        s0.CoalitionStability = 0.3;   // below 0.5: each vote passes with probability 0.6
+        s0.Rung = 1; s0.Attention = 2;
+        var cmd = new SetPolicy("rationing", 0.9);
+        var r = Simulation.Step(C, s0, new Command[] { cmd, cmd, cmd });
+        Assert.Equal(new[] { "Not enough attention (need 1.0, have 0.0)" }, r.Rejected.Select(x => x.Reason));
+    }
+
+    [Fact]
+    public void ValidationFailureIsStillRefunded()
+    {
+        var s0 = Simulation.NewGame(C, 42, Mode.Historical);
+        s0.Rung = 1; s0.Attention = 1;
+        var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("no_such_policy", 0.5), new SetPolicy("rationing", 0.5) });
+        Assert.Equal(new[] { "Unknown policy 'no_such_policy'" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(0.5, r.State.Policies["rationing"]);
+        Assert.Equal(s0.RngState, r.State.RngState);
     }
 
     [Fact]
