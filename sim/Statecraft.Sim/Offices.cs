@@ -18,7 +18,7 @@ namespace Statecraft.Sim
         public static Government? Government(Content c, DateTime date) =>
             c.Governments.FirstOrDefault(g => In(date, g.From, g.To));
 
-        static readonly Regex Placeholder = new Regex(@"\{([a-z_]+)\}");
+        internal static readonly Regex Placeholder = new Regex(@"\{([a-z_]+)\}");
 
         /// <summary>Replaces {office_id} with the name of the person holding it on date.</summary>
         public static string Fill(Content c, string text, DateTime date) =>

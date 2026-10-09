@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using YamlDotNet.Serialization;
 
 namespace Statecraft.Sim
 {
@@ -161,6 +162,8 @@ namespace Statecraft.Sim
         public List<EventOption> Options { get; set; } = new List<EventOption>();
         public List<Source> Sources { get; set; } = new List<Source>();
         public string Status { get; set; } = "draft";
+        /// <summary>Path relative to the content root, set by the loader (not read from YAML).</summary>
+        [YamlIgnore] public string File { get; set; } = "";
     }
 
     public sealed class Content

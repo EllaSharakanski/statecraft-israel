@@ -56,7 +56,12 @@ namespace Statecraft.Sim
             var eventsDir = Path.Combine(contentRoot, "events");
             if (Directory.Exists(eventsDir))
                 foreach (var f in Directory.GetFiles(eventsDir, "*.yaml").OrderBy(p => p, StringComparer.Ordinal))
-                    c.Events.Add(Read<GameEvent>(contentRoot, Path.Combine("events", Path.GetFileName(f))));
+                {
+                    var rel = "events/" + Path.GetFileName(f);
+                    var e = Read<GameEvent>(contentRoot, rel);
+                    e.File = rel;
+                    c.Events.Add(e);
+                }
             Validate(c);
             return c;
         }
