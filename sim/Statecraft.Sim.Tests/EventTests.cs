@@ -254,6 +254,24 @@ options:
     }
 
     [Fact]
+    public void HardAnchorNeedsAHistoricalOption()
+    {
+        var bad = Shortage.Replace("office: finance_minister", "anchor: hard\noffice: finance_minister")
+                          .Replace("    historical: true\n", "");
+        var ex = Assert.Throws<ContentException>(() => Load(new Dictionary<string, string> { ["shortage.yaml"] = bad }));
+        Assert.Equal("events/shortage.yaml", ex.File);
+        Assert.Equal("events[shortage].options", ex.Field);
+        Assert.Contains("hard anchor needs a historical option", ex.Message);
+    }
+
+    [Fact]
+    public void HardAnchorWithAHistoricalOptionLoads()
+    {
+        var ok = Shortage.Replace("office: finance_minister", "anchor: hard\noffice: finance_minister");
+        Assert.Equal("hard", Load(new Dictionary<string, string> { ["shortage.yaml"] = ok }).Events.Single().Anchor);
+    }
+
+    [Fact]
     public void PlaceholderMustBeAnOffice()
     {
         var bad = Shortage.Replace("{finance_minister}", "{king}");

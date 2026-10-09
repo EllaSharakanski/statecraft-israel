@@ -25,6 +25,7 @@ namespace Statecraft.Sim
                     if (!indicators.Contains(cond.Indicator)) throw new ContentException(e.File, F($"conditions.{cond.Indicator}"), "unknown indicator");
                 if (e.Options.Count == 0) throw new ContentException(e.File, F("options"), "at least one option required");
                 if (e.Options.Count(o => o.Historical) > 1) throw new ContentException(e.File, F("options"), "at most one option can be historical");
+                if (e.Anchor == "hard" && !e.Options.Any(o => o.Historical)) throw new ContentException(e.File, F("options"), "hard anchor needs a historical option");
                 bool sensitive = e.Tags.Any(SensitiveTags.Contains);
                 var optionIds = new HashSet<string>();
                 foreach (var o in e.Options)
