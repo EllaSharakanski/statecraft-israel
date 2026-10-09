@@ -32,6 +32,17 @@ public class SecurityTests
     }
 
     [Fact]
+    public void CallUpOrderAboveFloorRecordsCause()
+    {
+        var s = new GameState { Rung = 1 }; var why = new List<Cause>();
+        Assert.Null(SecuritySystem.SetMobilization(C, s, 0.9, why));
+        var cause = Assert.Single(why, w => w.System == "security" && w.Target == "mobilization");
+        Assert.Equal(0.9, cause.Delta);
+        Assert.Equal("reserve call-up set to 90%", cause.Message);
+        Assert.Equal(0.9, s.Mobilization);
+    }
+
+    [Fact]
     public void EscalationRaisesCallUpFloor()
     {
         var s = new GameState { Rung = 1 }; var why = new List<Cause>();

@@ -28,6 +28,7 @@ namespace Statecraft.Sim
         {
             if (!(level >= 0 && level <= 1)) return "Mobilization must be between 0 and 1";
             s.Mobilization = level;
+            why.Add(new Cause("security", "mobilization", level, FormattableString.Invariant($"reserve call-up set to {level * 100:0}%")));
             RaiseToFloor(c, s, why);
             return null;
         }
