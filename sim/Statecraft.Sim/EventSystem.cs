@@ -10,21 +10,31 @@ namespace Statecraft.Sim
 
         static GameEvent Get(Content c, string id) => c.Events.First(e => e.Id == id);
 
-        public static void Trigger(Content c, GameState s, List<Cause> why)
+        /// <summary>Fires every unfired event whose window [From, To) overlaps the turn just played,
+        /// [<paramref name="turnStart"/>, s.Date), or contains s.Date; <paramref name="turnStart"/> defaults to s.Date
+        /// (game start). At most MaxNewPerTurn fire: hard anchors claim the slots first, then the usual order
+        /// (From, then id). The fired events keep the usual order.</summary>
+        public static void Trigger(Content c, GameState s, List<Cause> why, DateTime? turnStart = null)
         {
+            var start = turnStart ?? s.Date;
             var eligible = c.Events
-                .Where(e => !s.FiredEvents.Contains(e.Id) && e.From <= s.Date && (e.To == null || s.Date < e.To.Value))
+                .Where(e => !s.FiredEvents.Contains(e.Id) && e.From <= s.Date && (e.To == null || start < e.To.Value))
                 .Where(e => e.Conditions.All(k => (!k.Min.HasValue || s.Indicators[k.Indicator] >= k.Min.Value)
                                                && (!k.Max.HasValue || s.Indicators[k.Indicator] <= k.Max.Value)))
                 .OrderBy(e => e.From).ThenBy(e => e.Id, StringComparer.Ordinal)
-                .Take(MaxNewPerTurn);
-            foreach (var e in eligible)
+                .ToList();
+            var chosen = new HashSet<string>(eligible.OrderBy(e => e.Anchor == "hard" ? 0 : 1).Take(MaxNewPerTurn).Select(e => e.Id));
+            foreach (var e in eligible.Where(e => chosen.Contains(e.Id)))
             {
                 s.FiredEvents.Add(e.Id);
                 s.PendingEvents.Add(e.Id);
-                why.Add(new Cause("events", e.Id, 0, $"New: {Offices.Fill(c, e.Title, s.Date)}"));
+                why.Add(new Cause("events", e.Id, 0, $"New: {Offices.Fill(c, e.Title, FillDate(e, s.Date))}"));
             }
         }
+
+        /// <summary>The date whose office holders an event's text names: the given date, or the last in-window day
+        /// once the window has ended (load-time coverage guarantees a holder there).</summary>
+        public static DateTime FillDate(GameEvent e, DateTime date) => e.To.HasValue && date >= e.To.Value ? e.To.Value.AddDays(-1) : date;
 
         /// <summary>Returns null on success, or the reason the choice was rejected.</summary>
         public static string? Choose(Content c, GameState s, string eventId, string optionId, List<Cause> why)
@@ -39,10 +49,7 @@ namespace Statecraft.Sim
         static void Resolve(Content c, GameState s, string eventId, EventOption o, string how, List<Cause> why)
         {
             s.PendingEvents.Remove(eventId);
-            // Resolved on or after the window end: name whoever held the office on the last in-window day
-            // (load-time coverage guarantees a holder there); otherwise today's holder.
-            var e = Get(c, eventId);
-            var fillDate = e.To.HasValue && s.Date >= e.To.Value ? e.To.Value.AddDays(-1) : s.Date;
+            var fillDate = FillDate(Get(c, eventId), s.Date);
             why.Add(new Cause("events", eventId, 0, $"{how}: {Offices.Fill(c, o.Text, fillDate)}"));
             foreach (var fx in o.Effects)
             {
@@ -89,6 +96,6 @@ namespace Statecraft.Sim
             s.RngState = rng.State;
         }
 
-        public static string Render(Content c, GameEvent e, DateTime date) => Offices.Fill(c, e.Text, date);
+        public static string Render(Content c, GameEvent e, DateTime date) => Offices.Fill(c, e.Text, FillDate(e, date));
     }
 }

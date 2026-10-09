@@ -456,4 +456,62 @@ options:
         for (ulong seed = 1; seed <= 60; seed++) picks.Add(DelegatedText(c, 0, seed));
         Assert.True(picks.Count > 1, "competence 0 should choose at random among options");
     }
+
+    static string Simple(string id, string anchor, string from, string? to = null) =>
+        $"id: {id}\ntitle: '{id} for {{defense_minister}}'\ntext: Something happens.\nanchor: {anchor}\nfrom: {from}\n" +
+        (to == null ? "" : $"to: {to}\n") +
+        "options:\n  - id: ok\n    text: Accept\n    historical: true\n";
+
+    [Fact]
+    public void ShortWindowInsideAQuarterTurnStillFires()
+    {
+        // start_rung 1 gives quarter turns: 1948-05-15 -> 1948-08-15. The window 1948-06-01..06-11 lies wholly inside it.
+        var c = ContentLoader.Load(Fixture.Write(
+            new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("start_rung: 5", "start_rung: 1") },
+            new Dictionary<string, string> { ["brief.yaml"] = Simple("brief", "soft", "1948-06-01", "1948-06-11") }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Empty(s.PendingEvents);
+        var r = Simulation.Step(c, s, new List<Command>());
+        Assert.Equal(new DateTime(1948, 8, 15), r.State.Date);
+        Assert.Equal(new[] { "brief" }, r.State.PendingEvents);
+        Assert.Contains(r.Why, w => w.Message == "New: brief for Pm One");
+    }
+
+    [Fact]
+    public void WindowThatEndedBeforeTheTurnDoesNotFire()
+    {
+        var c = ContentLoader.Load(Fixture.Write(
+            new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("start_rung: 5", "start_rung: 1") },
+            new Dictionary<string, string> { ["old.yaml"] = Simple("old", "soft", "1948-05-14", "1948-05-15") }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Empty(Simulation.Step(c, s, new List<Command>()).State.PendingEvents);
+    }
+
+    [Fact]
+    public void HardAnchorIsNeverLostToTheCap()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string>
+        {
+            ["a.yaml"] = Simple("a", "soft", "1948-05-15"),
+            ["b.yaml"] = Simple("b", "soft", "1948-05-15"),
+            ["c.yaml"] = Simple("c", "soft", "1948-05-15"),
+            ["z.yaml"] = Simple("z", "hard", "1948-05-15"),
+        }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Equal(new[] { "a", "b", "z" }, s.PendingEvents);   // hard first for the cap, then the usual order
+    }
+
+    [Fact]
+    public void EventFiredAfterItsWindowNamesTheInWindowHolder()
+    {
+        // Quarter turns: 1948-11-15 -> 1949-02-15. defense_minister passes from Pm One to Def Two on 1949-01-01.
+        var c = ContentLoader.Load(Fixture.Write(
+            new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("start_rung: 5", "start_rung: 1") },
+            new Dictionary<string, string> { ["late.yaml"] = Simple("late", "soft", "1948-12-20", "1948-12-30") }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        StepResult r = null!;
+        for (int i = 0; i < 3; i++) { r = Simulation.Step(c, s, new List<Command>()); s = r.State; }
+        Assert.Equal(new DateTime(1949, 2, 15), s.Date);
+        Assert.Contains(r.Why, w => w.Message == "New: late for Pm One");
+    }
 }

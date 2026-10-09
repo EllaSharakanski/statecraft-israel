@@ -61,8 +61,9 @@ static void Briefing(Content c, GameState s)
     foreach (var id in s.PendingEvents)
     {
         var e = c.Events.First(x => x.Id == id);
-        Console.WriteLine($"  EVENT {e.Id}: {Offices.Fill(c, e.Title, s.Date)} - {EventSystem.Render(c, e, s.Date)}");
-        foreach (var o in e.Options) Console.WriteLine($"    {o.Id}: {Offices.Fill(c, o.Text, s.Date)}");
+        var fillDate = EventSystem.FillDate(e, s.Date);   // after the window ends, name the last in-window holder
+        Console.WriteLine($"  EVENT {e.Id}: {Offices.Fill(c, e.Title, fillDate)} - {EventSystem.Render(c, e, s.Date)}");
+        foreach (var o in e.Options) Console.WriteLine($"    {o.Id}: {Offices.Fill(c, o.Text, fillDate)}");
     }
 }
 

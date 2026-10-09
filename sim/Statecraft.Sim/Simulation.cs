@@ -59,10 +59,11 @@ namespace Statecraft.Sim
             PoliticsSystem.UpdateStability(c, s, yf, why);
             SecuritySystem.Apply(c, s, len, why);
             PoliticsSystem.ReportChanges(c, s.Date, next, why);
+            var turnStart = s.Date;
             s.Date = next;
             s.Turn++;
             AttentionSystem.Refill(c, s);
-            if (s.GameOver == null) EventSystem.Trigger(c, s, why);   // a game that just ended raises no new events
+            if (s.GameOver == null) EventSystem.Trigger(c, s, why, turnStart);   // a game that just ended raises no new events
             return new StepResult(s, why, rejected);
         }
 
