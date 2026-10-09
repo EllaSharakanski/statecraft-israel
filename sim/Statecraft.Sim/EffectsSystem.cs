@@ -22,11 +22,12 @@ namespace Statecraft.Sim
             return competence * BudgetFactor(s, office);
         }
 
-        /// <summary>An equal split of the budget is neutral (1.0); a ministry's factor runs from 0.5 (no money) to 1.5.</summary>
+        /// <summary>An equal split of the budget is neutral (1.0); a ministry's factor runs from 0.5 (no money) to 1.5.
+        /// An office with no budget line (not in budget_start, so the player can never fund it) is neutral too:
+        /// treating it as unfunded would halve its effects permanently with no way to fix it.</summary>
         public static double BudgetFactor(GameState s, string office)
         {
-            if (s.Budget.Count == 0) return 1.0;
-            var share = s.Budget.TryGetValue(office, out var v) ? v : 0.0;
+            if (!s.Budget.TryGetValue(office, out var share)) return 1.0;
             return Math.Min(1.5, 0.5 + share * s.Budget.Count / 2.0);
         }
 

@@ -89,4 +89,12 @@ public class RealContentTests
         Assert.Equal(1.0, e.Options.Single(o => o.Id == "impose").SetPolicy["rationing"]);
         Assert.Empty(e.Options.Single(o => o.Id == "decline").SetPolicy);
     }
+
+    [Fact]
+    public void OfficeWithoutABudgetLineHasANeutralBudgetFactor()
+    {
+        Assert.DoesNotContain("rationing_minister", C.Rules.BudgetStart.Keys);
+        var s = Simulation.NewGame(C, 1, Mode.Historical);
+        Assert.Equal(1.0, EffectsSystem.BudgetFactor(s, "rationing_minister"));
+    }
 }
