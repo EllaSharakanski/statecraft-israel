@@ -31,6 +31,28 @@ public class OfficesTests
     }
 
     [Fact]
+    public void OfficeIdWithDigitsWorksAsPlaceholder()
+    {
+        var offices = Fixture.Files["offices.yaml"] + "  - id: minister_2\n    title: Second Minister\n";
+        var people = Fixture.Files["people.yaml"].Replace("      - office: prime_minister\n",
+            "      - office: minister_2\n        from: 1948-05-14\n      - office: prime_minister\n");
+        var c = ContentLoader.Load(Fixture.Write(new System.Collections.Generic.Dictionary<string, string> { ["offices.yaml"] = offices, ["people.yaml"] = people }));
+        Assert.Equal("Pm One speaks.", Offices.Fill(c, "{minister_2} speaks.", new DateTime(1949, 6, 1)));
+    }
+
+    [Theory]
+    [InlineData("Bad-Id")]
+    [InlineData("2nd_minister")]
+    [InlineData("_minister")]
+    public void OfficeIdMustBeLowercaseSnakeCase(string id)
+    {
+        var offices = Fixture.Files["offices.yaml"] + "  - id: " + id + "\n    title: Bad\n";
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new System.Collections.Generic.Dictionary<string, string> { ["offices.yaml"] = offices })));
+        Assert.Equal("offices.yaml", ex.File);
+        Assert.Equal($"offices[{id}].id", ex.Field);
+    }
+
+    [Fact]
     public void UnfilledPlaceholderThrows() =>
         Assert.Throws<InvalidOperationException>(() => Offices.Fill(C, "{prime_minister}", new DateTime(1947, 1, 1)));
 

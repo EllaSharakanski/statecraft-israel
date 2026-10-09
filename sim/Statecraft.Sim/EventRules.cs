@@ -45,6 +45,8 @@ namespace Statecraft.Sim
 
         static void CheckPlaceholders(Content c, GameEvent e, string field, string text, HashSet<string> offices)
         {
+            if (Offices.Placeholder.Replace(text, "").IndexOfAny(new[] { '{', '}' }) >= 0)
+                throw new ContentException(e.File, field, "stray '{' or '}' outside an {office_id} placeholder");
             foreach (Match m in Offices.Placeholder.Matches(text))
             {
                 var office = m.Groups[1].Value;

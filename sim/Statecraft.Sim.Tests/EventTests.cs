@@ -169,6 +169,26 @@ options:
         Assert.Single(Load(new Dictionary<string, string> { ["shortage.yaml"] = ok }).Events);
     }
 
+    [Theory]
+    [InlineData("'{Finance} reports shortages.'", "text: Ration food", "events[shortage].text")]
+    [InlineData("'{finance_minister} reports { shortages.'", "text: Ration food", "events[shortage].text")]
+    [InlineData("'{finance_minister} reports shortages.'", "text: 'Ration } food'", "events[shortage].options[ration].text")]
+    public void StrayBracesAreRejected(string text, string optionText, string field)
+    {
+        var bad = Shortage.Replace("'{finance_minister} reports shortages.'", text).Replace("text: Ration food", optionText);
+        var ex = Assert.Throws<ContentException>(() => Load(new Dictionary<string, string> { ["shortage.yaml"] = bad }));
+        Assert.Equal("events/shortage.yaml", ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    [Fact]
+    public void StrayBraceInTitleIsRejected()
+    {
+        var bad = Shortage.Replace("title: Bread lines", "title: 'Bread {lines'");
+        var ex = Assert.Throws<ContentException>(() => Load(new Dictionary<string, string> { ["shortage.yaml"] = bad }));
+        Assert.Equal("events[shortage].title", ex.Field);
+    }
+
     [Fact]
     public void EffectTargetMustExist()
     {
