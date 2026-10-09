@@ -20,3 +20,16 @@ spikes/m0/unity/*.csproj
 spikes/m0/unity/*.slnx
 spikes/m0/unity/.vscode/
 spikes/m0/unity/Assets/Plugins.meta
+unity/Library/
+unity/Temp/
+unity/Logs/
+unity/UserSettings/
+unity/Build/
+unity/Assets/Plugins/Statecraft/
+unity/Assets/Plugins/Statecraft.meta
+unity/Assets/Plugins.meta
+unity/.vscode/
+unity/*.csproj
+unity/*.slnx
+unity-*.xml
+unity-*.log

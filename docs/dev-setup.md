@@ -8,3 +8,6 @@
 - `export UNITY="/Applications/Unity/Hub/Editor/6000.3.25f1/Unity.app/Contents/MacOS/Unity"`
 - Python tools: `uv` (0.12.5 verified). Dependencies are declared inline in each tools/*.py script.
 - ffmpeg (Homebrew) is used for flythrough videos.
+
+## After cloning
+- Run `tools/build_sim_for_unity.sh` before opening `unity/`. The sim DLLs are build output and are git-ignored.
