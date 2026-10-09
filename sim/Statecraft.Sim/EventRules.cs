@@ -7,7 +7,7 @@ namespace Statecraft.Sim
     /// <summary>Load-time checks for events, including the sensitive-content rule.</summary>
     static class EventRules
     {
-        public static readonly HashSet<string> SensitiveTags = new HashSet<string> { "holocaust", "terror", "massacre", "war-casualties" };
+        public static readonly HashSet<string> SensitiveTags = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase) { "holocaust", "terror", "massacre", "war-casualties" };
         public static readonly HashSet<string> SpecialTargets = new HashSet<string> { "treasury", "fx_reserves" };
 
         public static void Validate(Content c, HashSet<string> offices, HashSet<string> indicators)
@@ -25,16 +25,18 @@ namespace Statecraft.Sim
                 if (e.Options.Count == 0) throw new ContentException(e.File, F("options"), "at least one option required");
                 if (e.Options.Count(o => o.Historical) > 1) throw new ContentException(e.File, F("options"), "at most one option can be historical");
                 bool sensitive = e.Tags.Any(SensitiveTags.Contains);
+                var optionIds = new HashSet<string>();
                 foreach (var o in e.Options)
                 {
+                    if (!optionIds.Add(o.Id)) throw new ContentException(e.File, F($"options[{o.Id}].id"), "duplicate option id");
                     CheckPlaceholders(e.File, F($"options[{o.Id}].text"), o.Text, offices);
                     if (o.SetRung.HasValue && (o.SetRung < 1 || o.SetRung > 5)) throw new ContentException(e.File, F($"options[{o.Id}].set_rung"), "must be 1-5");
                     foreach (var fx in o.Effects)
                     {
                         if (!indicators.Contains(fx.Target) && !SpecialTargets.Contains(fx.Target))
                             throw new ContentException(e.File, F($"options[{o.Id}].effects.{fx.Target}"), "unknown target");
-                        if (sensitive && fx.Target == "treasury" && fx.Delta > 0)
-                            throw new ContentException(e.File, F($"options[{o.Id}].effects.treasury"), "sensitive events cannot reward the treasury");
+                        if (sensitive && (fx.Target == "treasury" || fx.Target == "fx_reserves") && fx.Delta > 0)
+                            throw new ContentException(e.File, F($"options[{o.Id}].effects.{fx.Target}"), $"sensitive events cannot reward {fx.Target}");
                     }
                 }
             }
