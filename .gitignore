@@ -33,3 +33,4 @@ unity/*.csproj
 unity/*.slnx
 unity-*.xml
 unity-*.log
+captures/

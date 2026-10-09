@@ -11,6 +11,7 @@ namespace Statecraft.Game.EditorTools
         public const string Folder = "Assets/Materials";
         public const string TerrainPath = Folder + "/Terrain.mat";
         public const string OverlayPath = Folder + "/HexOverlay.mat";
+        public const string MarkerPath = Folder + "/SettlementMarker.mat";
 
         public static void Create()
         {
@@ -21,6 +22,10 @@ namespace Statecraft.Game.EditorTools
             for (int i = 0; i < 4; i++) { terrain.SetFloat("_Smoothness" + i, 0f); terrain.SetFloat("_Metallic" + i, 0f); }
             EditorUtility.SetDirty(terrain);
             Make(OverlayPath, "Universal Render Pipeline/Unlit", new Color(0.15f, 0.12f, 0.08f, 1f));
+            // Settlement boxes: matte URP Lit; SettlementPlacer sets the per-type _BaseColor through a MaterialPropertyBlock.
+            var marker = Make(MarkerPath, "Universal Render Pipeline/Lit", Color.white);
+            marker.SetFloat("_Smoothness", 0f); marker.SetFloat("_Metallic", 0f);
+            EditorUtility.SetDirty(marker);
             AssetDatabase.SaveAssets();
         }
 
