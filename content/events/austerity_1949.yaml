@@ -1,0 +1,24 @@
+id: austerity_1949
+title: Austerity
+text: 'Food and foreign currency cannot keep pace with the immigrants arriving every week. {rationing_minister}, heading the new Ministry of Rationing and Supply, proposes strict rationing.'
+anchor: hard
+office: rationing_minister
+from: 1949-03-10
+to: 1950-01-01
+options:
+  - id: impose
+    text: Impose rationing
+    historical: true
+    recommended: true
+    effects:
+      - { target: food_supply, delta: 0.15 }
+      - { target: morale, delta: -0.05 }
+  - id: decline
+    text: Keep markets free and import more
+    effects:
+      - { target: fx_reserves, delta: -8 }
+      - { target: food_supply, delta: -0.05 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Austerity_in_Israel", checked: 2026-10-09 }
+  - { url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }
+status: fact-checked

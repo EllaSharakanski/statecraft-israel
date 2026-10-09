@@ -1,0 +1,52 @@
+legislatures:
+  - id: provisional_state_council
+    body: Provisional State Council
+    from: 1948-05-14
+    to: 1949-02-14
+    size: 37
+    budget_approval: false
+    open_questions: [budget_approval]
+    seats:
+      mapai: 10
+      mapam: 3
+      general_zionists: 3
+      new_aliyah: 3
+      mizrachi: 3
+      hapoel_hamizrachi: 2
+      agudat_yisrael: 2
+      sephardim: 1
+      ahdut_haavoda_poalei_tzion: 1
+      poale_zion_left: 1
+      independent: 1
+      hatzohar: 3
+      poalei_agudat_yisrael: 1
+      maki: 1
+      wizo: 1
+      yemenite_association: 1
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/Provisional_State_Council", checked: 2026-10-09 }
+    status: fact-checked
+  - id: first_knesset
+    body: Constituent Assembly (First Knesset)
+    elected: 1949-01-25
+    from: 1949-02-14
+    size: 120
+    budget_approval: true
+    open_questions: [budget_approval]
+    seats:
+      mapai: 46
+      mapam: 19
+      united_religious_front: 16
+      herut: 14
+      general_zionists: 7
+      progressive: 5
+      sephardim: 4
+      maki: 4
+      democratic_list_nazareth: 2
+      fighters_list: 1
+      wizo: 1
+      yemenite_association: 1
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-09 }
+      - { url: "https://en.wikipedia.org/wiki/Knesset", checked: 2026-10-09 }
+    status: fact-checked

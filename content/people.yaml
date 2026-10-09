@@ -1,0 +1,176 @@
+# Offices and dates are historical facts (sourced per term). competence/loyalty are game-balance values, not facts.
+# Periods are [from, to). Terms without `to` continue beyond the M1 content range (end of 1949).
+# Portraits: public-domain files fetched with license check (promo/CREDITS.md).
+people:
+  - id: ben_gurion
+    name: David Ben-Gurion
+    party: mapai
+    competence: 9
+    loyalty: 10
+    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg" }
+    offices:
+      - { office: prime_minister, from: 1948-05-14, sources: &prov [{ url: "https://en.wikipedia.org/wiki/Provisional_government_of_Israel", checked: 2026-10-09 }] }
+      - { office: defense_minister, from: 1948-05-14, sources: *prov }
+    status: fact-checked
+  - id: zisling
+    name: Aharon Zisling
+    party: mapam
+    competence: 6
+    loyalty: 5
+    portrait: { file: promo/ref/people/Aharon_Zisling.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg" }
+    offices:
+      - { office: agriculture_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+    status: fact-checked
+  - id: kaplan
+    name: Eliezer Kaplan
+    party: mapai
+    competence: 8
+    loyalty: 9
+    portrait: { file: promo/ref/people/Eliezer_Kaplan.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg" }
+    offices:
+      - { office: finance_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: finance_minister, from: 1949-03-10, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
+      - { office: trade_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: sharett
+    name: Moshe Sharett
+    party: mapai
+    competence: 8
+    loyalty: 8
+    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg" }
+    offices:
+      - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: foreign_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: shapira
+    name: Haim-Moshe Shapira
+    party: hapoel_hamizrachi
+    competence: 7
+    loyalty: 7
+    portrait: { file: promo/ref/people/Haim-Moshe_Shapira.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg" }
+    offices:
+      - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: health_minister, from: 1949-03-10, sources: *first }
+      - { office: immigration_minister, from: 1949-03-10, sources: *first }
+      - { office: interior_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: gruenbaum
+    name: Yitzhak Gruenbaum
+    party: independent
+    competence: 6
+    loyalty: 6
+    portrait: { file: promo/ref/people/Yitzhak_Gruenbaum.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg" }
+    offices:
+      - { office: interior_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+    status: fact-checked
+  - id: rosen
+    name: Pinchas Rosen
+    party: new_aliyah
+    competence: 8
+    loyalty: 7
+    portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg" }
+    offices:
+      - { office: justice_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: justice_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: bentov
+    name: Mordechai Bentov
+    party: mapam
+    competence: 7
+    loyalty: 5
+    portrait: { file: promo/ref/people/Mordechai_Bentov.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:MordechaiBentov.jpg" }
+    offices:
+      - { office: labour_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+    status: fact-checked
+  - id: sheetrit
+    name: Bechor-Shalom Sheetrit
+    party: sephardim
+    competence: 7
+    loyalty: 7
+    portrait: { file: promo/ref/people/Bechor-Shalom_Sheetrit.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg" }
+    offices:
+      - { office: police_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: minority_affairs_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: police_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: maimon
+    name: Yehuda Leib Maimon
+    party: mizrachi
+    competence: 6
+    loyalty: 7
+    portrait: { file: promo/ref/people/Yehuda_Leib_Maimon.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg" }
+    offices:
+      - { office: religions_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: war_victims_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: religions_minister, from: 1949-03-10, sources: *first }
+      - { office: war_victims_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: bernstein
+    name: Peretz Bernstein
+    party: general_zionists
+    competence: 7
+    loyalty: 6
+    portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg" }
+    offices:
+      - { office: trade_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+    status: fact-checked
+  - id: remez
+    name: David Remez
+    party: mapai
+    competence: 7
+    loyalty: 8
+    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg" }
+    offices:
+      - { office: transportation_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: transportation_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: levin
+    name: Yitzhak-Meir Levin
+    party: agudat_yisrael
+    competence: 6
+    loyalty: 6
+    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg" }
+    offices:
+      - { office: welfare_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
+      - { office: welfare_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: dov_yosef
+    name: Dov Yosef
+    party: mapai
+    competence: 7
+    loyalty: 8
+    offices:
+      - { office: agriculture_minister, from: 1949-03-10, sources: *first }
+      - { office: rationing_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: shazar
+    name: Zalman Shazar
+    party: mapai
+    competence: 7
+    loyalty: 8
+    offices:
+      - { office: education_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: golda_meir
+    name: Golda Meir
+    party: mapai
+    competence: 8
+    loyalty: 9
+    offices:
+      - { office: labour_minister, from: 1949-03-10, sources: *first }
+    status: fact-checked
+  - id: dori
+    name: Yaakov Dori
+    competence: 7
+    loyalty: 8
+    offices:
+      - { office: chief_of_staff, from: 1947-06-01, to: 1949-11-09, sources: &cos [{ url: "https://en.wikipedia.org/wiki/Chief_of_the_General_Staff_(Israel)", checked: 2026-10-09 }] }
+    status: fact-checked
+  - id: yadin
+    name: Yigael Yadin
+    competence: 8
+    loyalty: 8
+    offices:
+      - { office: chief_of_staff, from: 1949-11-09, sources: *cos }
+    status: fact-checked

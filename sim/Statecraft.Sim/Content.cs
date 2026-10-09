@@ -46,6 +46,8 @@ namespace Statecraft.Sim
         public int Size { get; set; }
         public bool BudgetApproval { get; set; }
         public Dictionary<string, int> Seats { get; set; } = new Dictionary<string, int>();
+        /// <summary>Fields of this record not yet verified (spec section 5 "open fact"). Kept explicit and tested.</summary>
+        public List<string> OpenQuestions { get; set; } = new List<string>();
         public List<Source> Sources { get; set; } = new List<Source>();
         public string Status { get; set; } = "draft";
     }

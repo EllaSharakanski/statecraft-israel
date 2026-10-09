@@ -1,0 +1,14 @@
+# Jewish population, CBS Statistical Abstract table 2.1 (thousands, converted).
+anchors:
+  - date: 1948-11-08
+    jews: 716700        # census day
+    sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-09 }]
+    status: fact-checked
+  - date: 1948-12-31
+    jews: 758700        # end of year
+    sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-09 }]
+    status: fact-checked
+  - date: 1949-12-31
+    jews: 1013900       # end of year
+    sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-09 }]
+    status: fact-checked

@@ -1,0 +1,29 @@
+# Game rules. Values are game balance, except where a comment cites a source.
+start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
+start_rung: 5                     # the war is under way when the slice opens
+attention_per_turn: 4
+attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+rung_attention_step: 0.25
+rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
+ceasefire_weeks: 52               # long enough that the historical armistice events end the war first
+treasury_start: 20
+fx_start: 40
+tax_per_capita_per_year: 0.00012
+spending_per_capita_per_year: 0.00016
+exports_per_year: 30
+imports_per_capita_per_year: 0.00008
+mobilization_cost_per_year: 60
+# Derived from CBS table 2.1 (1949): (end-1949 1,013.9k - end-1948 758.7k - 1949 immigrants 239,954) / average 1949 population 901.0k.
+natural_increase_per_year: 0.0169
+# Derived: CBS end-1948 Jewish population 758,700 minus 101,828 immigrants (15 May-31 Dec 1948) minus natural increase over
+# 7.5 months at the rate above. Checked against the 8 Nov 1948 census by the calibration test.
+initial_population: { veterans: 649400 }
+budget_start:
+  defense_minister: 0.45
+  finance_minister: 0.05
+  immigration_minister: 0.15
+  labour_minister: 0.10
+  health_minister: 0.07
+  education_minister: 0.06
+  agriculture_minister: 0.07
+  interior_minister: 0.05
