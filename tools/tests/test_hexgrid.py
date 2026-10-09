@@ -27,6 +27,11 @@ def test_neighbouring_centres_are_one_hex_width_apart():
     ({"sea_share": 0.0, "median": 300.0, "water_share": 0.0}, 31.6, 35.35, "desert"),
     ({"sea_share": 0.0, "median": 400.0, "water_share": 0.0}, 32.7, 35.3, "hills"),
     ({"sea_share": 0.1, "median": 25.0, "water_share": 0.0}, 32.08, 34.8, "coastal_plain"),
+    # Dead Sea basin and northern Arava (below 0 m, south of the Dead Sea's north tip 31.77) are hyper-arid desert
+    ({"sea_share": 0.0, "median": -380.0, "water_share": 0.1}, 31.5, 35.45, "desert"),
+    ({"sea_share": 0.0, "median": -50.0, "water_share": 0.0}, 31.76, 35.5, "desert"),
+    ({"sea_share": 0.0, "median": -300.0, "water_share": 0.0}, 31.78, 35.5, "valley"),
+    ({"sea_share": 0.0, "water_share": 0.8, "median": -430.0}, 31.5, 35.5, "lake"),  # lake still wins
 ])
 def test_biome_rules(stats, lat, lon, biome):
     assert hg.classify(stats, lat, lon) == biome

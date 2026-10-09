@@ -10,7 +10,8 @@ Biome rules, first match wins (per hex, over the heightmap pixels inside it):
   1 sea           >= 50% of pixels within 0.5 m of 0 m (Copernicus sea is exactly 0 m)
   2 lake          >= 40% of pixels are flat water: below -150 m and within 1.5 m of the hex's most common
                   sub -150 m level (Sea of Galilee ~-210 m, Dead Sea ~-430 m, evaporation ponds)
-  3 valley        median < 0 m (Jordan rift / Arava floor)
+  3 desert/valley median < 0 m: "desert" south of the Dead Sea's north tip (lat < 31.77: the hyper-arid Dead Sea
+                  basin and northern Arava), otherwise "valley" (Jordan rift, Beit She'an, Hula)
   4 mountains     median >= 700 m
   5 desert        lat < 31.25 (Negev, Sinai, Arava, Edom foothills) or the Judean Desert strip
                   31.25 <= lat < 32.0 and 35.28 <= lon < 35.60
@@ -28,6 +29,7 @@ from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ
 ROOT = Path(__file__).resolve().parents[1]
 MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 OUT = ROOT / "content" / "map" / "hexes.json"
+DEAD_SEA_NORTH_TIP_LAT = 31.77
 HEX_SIZE_KM = 5.0  # circumradius (centre to corner)
 SQRT3 = math.sqrt(3)
 NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]  # axial directions
@@ -90,7 +92,7 @@ def classify(st: dict, lat: float, lon: float) -> str:
     if st["water_share"] >= 0.4:
         return "lake"
     if st["median"] < 0:
-        return "valley"
+        return "desert" if lat < DEAD_SEA_NORTH_TIP_LAT else "valley"
     if st["median"] >= 700:
         return "mountains"
     if lat < 31.25 or (31.25 <= lat < 32.0 and 35.28 <= lon < 35.60):

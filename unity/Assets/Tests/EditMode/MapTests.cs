@@ -51,36 +51,163 @@ public class MapTests
 
     static string HexesJson => System.IO.Path.Combine(Paths.Content, "map", "hexes.json");
 
-    [Test]
-    public void BuildUsesThePassedTerrainAndOverlayMaterials()
+    static (Material terrain, Material overlay) Materials()
     {
         var terrainMat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath);
         var overlayMat = AssetDatabase.LoadAssetAtPath<Material>(OverlayMatPath);
         Assert.IsNotNull(terrainMat, TerrainMatPath); Assert.IsNotNull(overlayMat, OverlayMatPath);
+        return (terrainMat, overlayMat);
+    }
+
+    [Test]
+    public void BuildUsesThePassedTerrainAndOverlayMaterials()
+    {
+        var (terrainMat, overlayMat) = Materials();
         Assert.AreEqual("Universal Render Pipeline/Terrain/Lit", terrainMat.shader.name);
         Assert.AreEqual("Universal Render Pipeline/Unlit", overlayMat.shader.name);
 
         var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
-        var terrain = go.GetComponent<Terrain>();
         try
         {
+            var terrain = go.GetComponent<Terrain>();
             Assert.AreSame(terrainMat, terrain.materialTemplate);
             var overlay = go.transform.Find("HexOverlay");
             Assert.IsNotNull(overlay, "HexOverlay child");
             Assert.AreSame(overlayMat, overlay.GetComponent<MeshRenderer>().sharedMaterial);
             Assert.AreEqual(2049, terrain.terrainData.heightmapResolution);
+            Assert.AreEqual(MapBuilder.AlphamapResolution, terrain.terrainData.alphamapResolution);
             Assert.Greater(overlay.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
         }
-        finally
-        {
-            Object.DestroyImmediate(terrain.terrainData);
-            Object.DestroyImmediate(go);
-        }
+        finally { Object.DestroyImmediate(go); }
     }
 
     [Test]
     public void BuildRejectsMissingMaterials()
     {
         Assert.Throws<System.ArgumentNullException>(() => MapBuilder.Build(Paths.StreamingMap, HexesJson, null, null));
+    }
+
+    // --- Overlay drape (M1, L6) ---
+
+    [Test]
+    public void EveryOverlayVertexLiesAboveTheTerrainAndInsideItsBounds()
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        try
+        {
+            var data = go.GetComponent<Terrain>().terrainData;
+            var mesh = go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh;
+            var verts = mesh.vertices;
+            int land = 0; foreach (var h in MapBuilder.LoadHexes(HexesJson).hexes) if (h.land) land++;
+            Assert.AreEqual(land * 6 * MapBuilder.OverlaySegmentsPerEdge, verts.Length);
+            int below = 0, outside = 0;
+            foreach (var v in verts)
+            {
+                if (v.x < 0 || v.x > data.size.x || v.z < 0 || v.z > data.size.z) { outside++; continue; }
+                if (v.y <= data.GetInterpolatedHeight(v.x / data.size.x, v.z / data.size.z)) below++;
+            }
+            Assert.AreEqual(0, outside, "vertices outside the terrain bounds");
+            Assert.AreEqual(0, below, "vertices at or below the terrain");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    // --- Runtime-created objects are owned and destroyed with the map (L5) ---
+
+    [Test]
+    public void DestroyingTheMapDestroysItsRuntimeAssets()
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var data = go.GetComponent<Terrain>().terrainData;
+        var owned = new System.Collections.Generic.List<Object> { data, go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh };
+        foreach (var l in data.terrainLayers) { owned.Add(l); owned.Add(l.diffuseTexture); }
+        Object.DestroyImmediate(go);
+        foreach (var o in owned) Assert.IsTrue(o == null, $"{o} survived the map");
+        Assert.IsTrue(terrainMat != null && overlayMat != null, "material assets must not be destroyed");
+    }
+
+    // --- Biome blending (C2) ---
+
+    const float S = 5000f; // hex size (circumradius) in metres
+    static readonly float W = Mathf.Sqrt(3f) * S; // centre spacing of neighbouring pointy-top hexes
+
+    [Test]
+    public void TexelAtAHexCentreIsDominatedByThatHexsBiome()
+    {
+        var b = new BiomeBlender(new[] { Vector2.zero, new Vector2(W, 0) }, new[] { 0, 1 }, S, 3);
+        var w = new float[3];
+        b.Weights(Vector2.zero, w);
+        Assert.Greater(w[0], 0.9f);
+        b.Weights(new Vector2(W, 0), w);
+        Assert.Greater(w[1], 0.9f);
+    }
+
+    [Test]
+    public void TexelMidwayBetweenTwoBiomesBlendsBoth()
+    {
+        var b = new BiomeBlender(new[] { Vector2.zero, new Vector2(W, 0) }, new[] { 0, 1 }, S, 3);
+        var w = new float[3];
+        b.Weights(new Vector2(W / 2, 0), w);
+        Assert.That(w[0], Is.InRange(0.3f, 0.7f)); Assert.That(w[1], Is.InRange(0.3f, 0.7f));
+        Assert.AreEqual(0f, w[2], 1e-6);
+    }
+
+    [Test]
+    public void BlendWeightsSumToOneEverywhere()
+    {
+        // A 7-hex flower with mixed biomes, sampled on a grid that also reaches outside it (fallback to nearest).
+        var centres = new System.Collections.Generic.List<Vector2> { Vector2.zero };
+        for (int i = 0; i < 6; i++) { float a = Mathf.Deg2Rad * 60f * i; centres.Add(new Vector2(W * Mathf.Cos(a), W * Mathf.Sin(a))); }
+        var b = new BiomeBlender(centres, new[] { 0, 1, 2, 3, 1, 2, 0 }, S, 4);
+        var w = new float[4];
+        for (float x = -3 * S; x <= 3 * S; x += S / 7f)
+            for (float y = -3 * S; y <= 3 * S; y += S / 7f)
+            {
+                b.Weights(new Vector2(x, y), w);
+                float sum = 0; foreach (var v in w) { Assert.GreaterOrEqual(v, 0f); sum += v; }
+                Assert.AreEqual(1f, sum, 1e-5, $"at {x},{y}");
+            }
+    }
+
+    // --- Robustness (M2) ---
+
+    static string TempFile(string name, string text)
+    {
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "map_" + System.Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(dir);
+        var p = System.IO.Path.Combine(dir, name); System.IO.File.WriteAllText(p, text); return p;
+    }
+
+    [TestCase("", "empty")]
+    [TestCase("   ", "empty")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":\"pointy\"}", "no hexes")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":null}", "no hexes")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[]}", "no hexes")]
+    [TestCase("{\"hex_size_km\":0,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "hex_size_km")]
+    [TestCase("{\"hex_size_km\":-5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "hex_size_km")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":\"flat\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "layout")]
+    public void BadHexesJsonIsRejectedNamingFileAndProblem(string json, string problem)
+    {
+        var path = TempFile("hexes.json", json);
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.LoadHexes(path));
+        StringAssert.Contains(path, ex.Message); StringAssert.Contains(problem, ex.Message);
+    }
+
+    const string GoodMeta = "\"lon0\":34.2,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367";
+
+    [TestCase("", "empty")]
+    [TestCase("{\"width\":0,\"height\":0,\"width_km\":161.5,\"length_km\":431.2," + GoodMeta + "}", "width")]
+    [TestCase("{\"width\":-3,\"height\":-3,\"width_km\":161.5,\"length_km\":431.2," + GoodMeta + "}", "width")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":0,\"length_km\":431.2," + GoodMeta + "}", "width_km")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":-1," + GoodMeta + "}", "length_km")]
+    public void BadHeightmapMetaIsRejected(string json, string problem)
+    {
+        var meta = TempFile("heightmap.json", json);
+        var dir = System.IO.Path.GetDirectoryName(meta);
+        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[18]);
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
+        StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains(problem, ex.Message);
     }
 }
