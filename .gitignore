@@ -3,3 +3,5 @@ promo/preview/
 promo/*.log
 .DS_Store
 .worktrees/
+sim/**/bin/
+sim/**/obj/
