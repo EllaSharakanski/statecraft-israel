@@ -16,13 +16,13 @@ import requests
 from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject
 
+from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ
+
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tools" / ".cache" / "dem"
 OUT = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 BOUNDS = {"lon0": 34.20, "lon1": 35.90, "lat0": 29.45, "lat1": 33.35}
 SIZE = 2049  # Unity Terrain heightmap resolution must be 2^n + 1
-KM_PER_DEG_LAT = 110.57
-KM_PER_DEG_LON_EQ = 111.32
 # Required notice for adapted/modified WorldDEM-30 data (Copernicus DEM licence; wording as quoted on
 # developers.google.com/earth-engine/datasets/catalog/COPERNICUS_DEM_GLO30_2024_1, checked 2026-10-09).
 ATTRIBUTION = ("produced using Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space "
