@@ -30,10 +30,16 @@ MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 OUT = ROOT / "content" / "map" / "hexes.json"
 HEX_SIZE_KM = 5.0  # circumradius (centre to corner)
 SQRT3 = math.sqrt(3)
+NEIGHBOURS = [(1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1)]  # axial directions
 
 
 def km_per_deg_lon(meta: dict) -> float:
     return KM_PER_DEG_LON_EQ * math.cos(math.radians((meta["lat0"] + meta["lat1"]) / 2))
+
+
+def lonlat_to_km(lon: float, lat: float, b: dict) -> tuple[float, float]:
+    """Map projection used by every tool: x km east of lon0, y km south of lat1."""
+    return (lon - b["lon0"]) * km_per_deg_lon(b), (b["lat1"] - lat) * KM_PER_DEG_LAT
 
 
 def hex_center_km(q: int, r: int, size: float) -> tuple[float, float]:
@@ -61,6 +67,21 @@ def water_share(v: np.ndarray) -> float:
     vals, counts = np.unique(low, return_counts=True)
     level = vals[np.argmax(counts)]
     return float(np.mean((v < -150) & (np.abs(v - level) < 1.5)))
+
+
+def settlement_hex(lon: float, lat: float, grid: dict) -> tuple[int, int]:
+    """Placement rule: the containing hex if it is land, else the land neighbour with the nearest centre
+    (shore towns such as Tiberias). Raises if neither exists, which the content tests turn into a failure."""
+    size = grid["hex_size_km"]
+    x, y = lonlat_to_km(lon, lat, grid["bounds"])
+    (q,), (r,) = point_to_hex(np.array([x]), np.array([y]), size)
+    land = {(h["q"], h["r"]) for h in grid["hexes"] if h["land"]}
+    if (q, r) in land:
+        return q, r
+    options = [(q + dq, r + dr) for dq, dr in NEIGHBOURS if (q + dq, r + dr) in land]
+    if not options:
+        raise ValueError(f"no land hex at or next to ({lon}, {lat})")
+    return min(options, key=lambda c: math.dist(hex_center_km(*c, size), (x, y)))
 
 
 def classify(st: dict, lat: float, lon: float) -> str:

@@ -1,0 +1,239 @@
+# Key places that existed in May 1948 (M2 map seed). Coordinates: Wikipedia API prop=coordinates;
+# founding years: the cited article's text. founded: null + pre_modern: true = pre-19th-century city.
+# Naming follows the spec's Israeli-perspective rule.
+settlements:
+- id: jerusalem
+  name: Jerusalem
+  lon: 35.2256
+  lat: 31.7789
+  type: city
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Jerusalem
+    checked: '2026-10-09'
+- id: tel_aviv
+  name: Tel Aviv
+  lon: 34.78
+  lat: 32.08
+  type: city
+  founded: 1909
+  sources:
+  - url: https://en.wikipedia.org/wiki/Tel_Aviv
+    checked: '2026-10-09'
+- id: jaffa
+  name: Jaffa
+  lon: 34.7531
+  lat: 32.0522
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Jaffa
+    checked: '2026-10-09'
+- id: haifa
+  name: Haifa
+  lon: 34.9992
+  lat: 32.8192
+  type: city
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Haifa
+    checked: '2026-10-09'
+- id: acre
+  name: Acre
+  lon: 35.0817
+  lat: 32.9278
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Acre,_Israel
+    checked: '2026-10-09'
+- id: tiberias
+  name: Tiberias
+  lon: 35.5333
+  lat: 32.7944
+  type: town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Tiberias
+    checked: '2026-10-09'
+- id: safed
+  name: Safed
+  lon: 35.4983
+  lat: 32.9658
+  type: town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Safed
+    checked: '2026-10-09'
+- id: nazareth
+  name: Nazareth
+  lon: 35.3033
+  lat: 32.7019
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Nazareth
+    checked: '2026-10-09'
+- id: lod
+  name: Lod
+  lon: 34.8881
+  lat: 31.9519
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Lod
+    checked: '2026-10-09'
+- id: ramla
+  name: Ramla
+  lon: 34.8625
+  lat: 31.9275
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Ramla
+    checked: '2026-10-09'
+- id: gaza
+  name: Gaza
+  lon: 34.4597
+  lat: 31.5075
+  type: arab_town
+  founded: null
+  pre_modern: true
+  sources:
+  - url: https://en.wikipedia.org/wiki/Gaza_City
+    checked: '2026-10-09'
+- id: beersheba
+  name: Beersheba
+  lon: 34.7867
+  lat: 31.2522
+  type: arab_town
+  founded: 1900
+  sources:
+  - url: https://en.wikipedia.org/wiki/Beersheba
+    checked: '2026-10-09'
+- id: petah_tikva
+  name: Petah Tikva
+  lon: 34.8864
+  lat: 32.0889
+  type: town
+  founded: 1878
+  sources:
+  - url: https://en.wikipedia.org/wiki/Petah_Tikva
+    checked: '2026-10-09'
+- id: rishon_lezion
+  name: Rishon LeZion
+  lon: 34.8
+  lat: 31.95
+  type: town
+  founded: 1882
+  sources:
+  - url: https://en.wikipedia.org/wiki/Rishon_LeZion
+    checked: '2026-10-09'
+- id: zikhron_yaakov
+  name: Zikhron Ya'akov
+  lon: 34.9517
+  lat: 32.5708
+  type: town
+  founded: 1882
+  sources:
+  - url: https://en.wikipedia.org/wiki/Zikhron_Ya'akov
+    checked: '2026-10-09'
+- id: rosh_pinna
+  name: Rosh Pinna
+  lon: 35.5422
+  lat: 32.97
+  type: town
+  founded: 1878
+  sources:
+  - url: https://en.wikipedia.org/wiki/Rosh_Pinna
+    checked: '2026-10-09'
+- id: rehovot
+  name: Rehovot
+  lon: 34.8167
+  lat: 31.8969
+  type: town
+  founded: 1890
+  sources:
+  - url: https://en.wikipedia.org/wiki/Rehovot
+    checked: '2026-10-09'
+- id: hadera
+  name: Hadera
+  lon: 34.9167
+  lat: 32.45
+  type: town
+  founded: 1891
+  sources:
+  - url: https://en.wikipedia.org/wiki/Hadera
+    checked: '2026-10-09'
+- id: netanya
+  name: Netanya
+  lon: 34.8567
+  lat: 32.3286
+  type: town
+  founded: 1929
+  sources:
+  - url: https://en.wikipedia.org/wiki/Netanya
+    checked: '2026-10-09'
+- id: degania_alef
+  name: Degania Alef
+  lon: 35.5747
+  lat: 32.7081
+  type: kibbutz
+  founded: 1910
+  sources:
+  - url: https://en.wikipedia.org/wiki/Degania_Alef
+    checked: '2026-10-09'
+- id: ein_harod
+  name: Ein Harod
+  lon: 35.3908
+  lat: 32.5603
+  type: kibbutz
+  founded: 1921
+  sources:
+  - url: https://en.wikipedia.org/wiki/Ein_Harod
+    checked: '2026-10-09'
+- id: nahalal
+  name: Nahalal
+  lon: 35.1967
+  lat: 32.69
+  type: moshav
+  founded: 1921
+  sources:
+  - url: https://en.wikipedia.org/wiki/Nahalal
+    checked: '2026-10-09'
+- id: hanita
+  name: Hanita
+  lon: 35.1736
+  lat: 33.0875
+  type: kibbutz
+  founded: 1938
+  sources:
+  - url: https://en.wikipedia.org/wiki/Hanita
+    checked: '2026-10-09'
+- id: revivim
+  name: Revivim
+  lon: 34.7211
+  lat: 31.0436
+  type: kibbutz
+  founded: 1943
+  sources:
+  - url: https://en.wikipedia.org/wiki/Revivim
+    checked: '2026-10-09'
+- id: yad_mordechai
+  name: Yad Mordechai
+  lon: 34.5583
+  lat: 31.5886
+  type: kibbutz
+  founded: 1943
+  sources:
+  - url: https://en.wikipedia.org/wiki/Yad_Mordechai
+    checked: '2026-10-09'
