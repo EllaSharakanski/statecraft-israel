@@ -26,6 +26,9 @@ The constant is asserted in two places:
 - `sim/Statecraft.Sim.Tests/DeterminismTests.cs` (`GoldenHash`), on .NET.
 - `unity/Assets/Tests/EditMode/SimSmokeTests.cs` (`GoldenHash`), inside Unity (plan Task 23).
 
+So far the hash is verified on .NET and Unity editor Mono; IL2CPP/WebGL pending M3 (the first player build asserts it
+in a macOS IL2CPP player and a WebGL player).
+
 **Any change to this hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
 content in `content/`, or the hash format. When it happens, update the constant here, in `DeterminismTests.cs` and in
 `SimSmokeTests.cs`, all in the same commit, and say in the commit message why the hash moved. If the hash changes and

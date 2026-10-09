@@ -18,7 +18,8 @@ public class SimSmokeTests
     }
 
     /// <summary>The same playthrough and constant as sim/Statecraft.Sim.Tests/DeterminismTests.cs (see docs/determinism.md).
-    /// It proves Unity's runtime computes, bit for bit, what .NET computes. Update all three places together.</summary>
+    /// It proves the Unity editor's runtime computes, bit for bit, what .NET computes: verified on .NET and Unity editor
+    /// Mono; IL2CPP/WebGL pending M3. Update all three places together.</summary>
     public const string GoldenHash = "eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9";
 
     [Test]
