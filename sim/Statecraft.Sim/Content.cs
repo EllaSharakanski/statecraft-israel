@@ -29,7 +29,8 @@ namespace Statecraft.Sim
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
         public string NameHe { get; set; } = "";
-        public bool Living { get; set; }
+        /// <summary>Required (null only when missing, which is a load error): a living person is excluded from release builds.</summary>
+        public bool? Living { get; set; }
         public int Competence { get; set; }
         public int Loyalty { get; set; }
         public string Party { get; set; } = "";

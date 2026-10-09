@@ -182,4 +182,15 @@ status: draft
         Assert.Equal(file, ex.File);
         Assert.Equal(field, ex.Field);
     }
+
+    // I6: living is required, so a forgotten value cannot ship a living person in a release build.
+    [Theory]
+    [InlineData("    living: false\n", "")]
+    [InlineData("    living: false\n", "    living:\n")]
+    public void LivingIsRequired(string from, string to)
+    {
+        var ex = Bad("people.yaml", from, to);
+        Assert.Equal("people.yaml", ex.File);
+        Assert.Equal("people[pm_one].living", ex.Field);
+    }
 }

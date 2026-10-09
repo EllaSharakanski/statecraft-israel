@@ -199,6 +199,7 @@ namespace Statecraft.Sim
 
             foreach (var p in c.People)
             {
+                if (!p.Living.HasValue) throw new ContentException("people.yaml", $"people[{p.Id}].living", "required (true or false)");
                 if (p.Competence < 0 || p.Competence > 10) throw new ContentException("people.yaml", $"people[{p.Id}].competence", "must be 0-10");
                 if (p.Loyalty < 0 || p.Loyalty > 10) throw new ContentException("people.yaml", $"people[{p.Id}].loyalty", "must be 0-10");
                 if (p.Party != "" && !parties.Contains(p.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].party", $"unknown party '{p.Party}'");

@@ -1,10 +1,12 @@
 # Offices and dates are historical facts (sourced per term). competence/loyalty are game-balance values, not facts.
 # A term's `party` (when set) is the list the holder sat for in that government (First_government_of_Israel); otherwise `party` of the person applies.
 # Periods are [from, to). Terms without `to` continue beyond the M1 content range (end of 1949).
+# living: false is set only after confirming each person's death date (en.wikipedia.org infobox, checked 2026-10-09).
 # Portraits: public-domain files fetched with license check (promo/CREDITS.md).
 people:
   - id: ben_gurion
     name: David Ben-Gurion
+    living: false
     party: mapai
     competence: 9
     loyalty: 10
@@ -15,6 +17,7 @@ people:
     status: fact-checked
   - id: zisling
     name: Aharon Zisling
+    living: false
     party: mapam
     competence: 6
     loyalty: 5
@@ -24,6 +27,7 @@ people:
     status: fact-checked
   - id: kaplan
     name: Eliezer Kaplan
+    living: false
     party: mapai
     competence: 8
     loyalty: 9
@@ -35,6 +39,7 @@ people:
     status: fact-checked
   - id: sharett
     name: Moshe Sharett
+    living: false
     party: mapai
     competence: 8
     loyalty: 8
@@ -45,6 +50,7 @@ people:
     status: fact-checked
   - id: shapira
     name: Haim-Moshe Shapira
+    living: false
     party: hapoel_hamizrachi
     competence: 7
     loyalty: 7
@@ -58,6 +64,7 @@ people:
     status: fact-checked
   - id: gruenbaum
     name: Yitzhak Gruenbaum
+    living: false
     party: independent
     competence: 6
     loyalty: 6
@@ -67,6 +74,7 @@ people:
     status: fact-checked
   - id: rosen
     name: Pinchas Rosen
+    living: false
     party: new_aliyah
     competence: 8
     loyalty: 7
@@ -77,6 +85,7 @@ people:
     status: fact-checked
   - id: bentov
     name: Mordechai Bentov
+    living: false
     party: mapam
     competence: 7
     loyalty: 5
@@ -86,6 +95,7 @@ people:
     status: fact-checked
   - id: sheetrit
     name: Bechor-Shalom Sheetrit
+    living: false
     party: sephardim
     competence: 7
     loyalty: 7
@@ -97,6 +107,7 @@ people:
     status: fact-checked
   - id: maimon
     name: Yehuda Leib Maimon
+    living: false
     party: mizrachi
     competence: 6
     loyalty: 7
@@ -109,6 +120,7 @@ people:
     status: fact-checked
   - id: bernstein
     name: Peretz Bernstein
+    living: false
     party: general_zionists
     competence: 7
     loyalty: 6
@@ -118,6 +130,7 @@ people:
     status: fact-checked
   - id: remez
     name: David Remez
+    living: false
     party: mapai
     competence: 7
     loyalty: 8
@@ -128,6 +141,7 @@ people:
     status: fact-checked
   - id: levin
     name: Yitzhak-Meir Levin
+    living: false
     party: agudat_yisrael
     competence: 6
     loyalty: 6
@@ -138,6 +152,7 @@ people:
     status: fact-checked
   - id: dov_yosef
     name: Dov Yosef
+    living: false
     party: mapai
     competence: 7
     loyalty: 8
@@ -147,6 +162,7 @@ people:
     status: fact-checked
   - id: shazar
     name: Zalman Shazar
+    living: false
     party: mapai
     competence: 7
     loyalty: 8
@@ -155,6 +171,7 @@ people:
     status: fact-checked
   - id: golda_meir
     name: Golda Meir
+    living: false
     party: mapai
     competence: 8
     loyalty: 9
@@ -163,6 +180,7 @@ people:
     status: fact-checked
   - id: dori
     name: Yaakov Dori
+    living: false
     competence: 7
     loyalty: 8
     offices:
@@ -170,6 +188,7 @@ people:
     status: fact-checked
   - id: yadin
     name: Yigael Yadin
+    living: false
     competence: 8
     loyalty: 8
     offices:
