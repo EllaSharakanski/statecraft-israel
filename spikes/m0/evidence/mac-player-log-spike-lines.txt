@@ -1,0 +1,19 @@
+SPIKE c: yaml ok count=2 first=David Ben-Gurion
+SPIKE e: gaussian dof volume created
+SPIKE f: textmesh label created (check it is visible, not missing or magenta)
+SPIKE f2: textmesh default font=LegacyRuntime; explicit-font label 'Haifa' created
+SPIKE e: camera renderPostProcessing was False; enabling
+SPIKE e: dof OFF
+SPIKE a: fps=837.4
+SPIKE d: mutated vm0 competence to 9 (check card shows 9)
+SPIKE e: dof ON
+SPIKE a: fps=2461.8
+SPIKE e: dof OFF
+SPIKE a: fps=2389.7
+SPIKE e: dof ON
+SPIKE e: dof OFF
+SPIKE a: fps=2235.1
+SPIKE e: dof ON
+SPIKE a: fps=2082.2
+SPIKE e: dof OFF
+SPIKE a: fps=1856.7

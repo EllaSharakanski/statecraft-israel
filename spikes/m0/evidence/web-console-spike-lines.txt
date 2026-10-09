@@ -1,0 +1,23 @@
+Chrome console (http://localhost:8080/?v=3, final web build), filtered on "SPIKE":
+[11:55:07 PM] SPIKE c: yaml ok count=2 first=David Ben-Gurion
+[11:55:07 PM] SPIKE e: gaussian dof volume created
+[11:55:07 PM] SPIKE f: textmesh label created (check it is visible, not missing or magenta)
+[11:55:07 PM] SPIKE f2: textmesh default font=LegacyRuntime; explicit-font label 'Haifa' created
+[11:55:07 PM] SPIKE e: camera renderPostProcessing was False; enabling
+[11:55:09 PM] SPIKE e: dof OFF
+[11:55:10 PM] SPIKE d: mutated vm0 competence to 9 (check card shows 9)
+[11:55:10 PM] SPIKE a: fps=51.7   (first window includes load)
+[11:55:13 PM] SPIKE e: dof ON
+[11:55:15 PM] SPIKE a: fps=120.0
+[11:55:20 PM] SPIKE a: fps=120.0
+[11:55:25 PM] SPIKE a: fps=120.0
+[11:56:30 PM] SPIKE a: fps=120.0
+[11:56:35 PM] SPIKE a: fps=119.8
+[11:56:40 PM] SPIKE a: fps=120.0
+[11:56:45 PM] SPIKE a: fps=120.0
+
+First web build (brief code as written), same console:
+[11:50:28 PM] SPIKE c: yaml ok count=2 first=David Ben-Gurion
+[11:50:28 PM] SPIKE e: gaussian dof volume created
+[11:50:28 PM] SPIKE f: textmesh label created (check it is visible, not missing or magenta)
+[11:50:28 PM] [ERROR] ArgumentNullException: Value cannot be null. Parameter name: shader   (Shader.Find("Universal Render Pipeline/Lit") == null in player)

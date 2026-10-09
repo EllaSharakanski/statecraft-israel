@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="YamlDotNet" preserve="all" />
+  <assembly fullname="SpikeLib" preserve="all" />
+</linker>

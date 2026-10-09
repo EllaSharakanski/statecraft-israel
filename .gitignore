@@ -7,3 +7,14 @@ tools/.cache/
 __pycache__/
 sim/**/bin/
 sim/**/obj/
+spikes/m0/build/
+spikes/m0/*.log
+spikes/m0/lib/bin/
+spikes/m0/lib/obj/
+spikes/m0/unity/Library/
+spikes/m0/unity/Temp/
+spikes/m0/unity/Logs/
+spikes/m0/unity/UserSettings/
+spikes/m0/unity/Assets/Plugins/
+spikes/m0/unity/*.csproj
+spikes/m0/unity/*.slnx
