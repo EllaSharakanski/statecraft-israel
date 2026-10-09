@@ -5,3 +5,5 @@ promo/*.log
 .worktrees/
 tools/.cache/
 __pycache__/
+sim/**/bin/
+sim/**/obj/

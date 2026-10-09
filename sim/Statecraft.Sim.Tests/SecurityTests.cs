@@ -1,0 +1,87 @@
+using System;
+using System.Collections.Generic;
+using Statecraft.Sim;
+
+public class SecurityTests
+{
+    static readonly Content C = ContentLoader.Load(Fixture.Write());
+
+    [Theory]
+    [InlineData(1, TurnLength.Quarter)] [InlineData(3, TurnLength.Quarter)]
+    [InlineData(4, TurnLength.Month)] [InlineData(5, TurnLength.Week)]
+    public void TurnLengthByRung(int rung, TurnLength expected) => Assert.Equal(expected, SecuritySystem.TurnLengthFor(rung));
+
+    [Fact]
+    public void StartAtWarSetsCeasefireClockAndCallUp()
+    {
+        var s = new GameState(); SecuritySystem.Init(C, s, new List<Cause>());
+        Assert.Equal(5, s.Rung); Assert.Equal(4, s.CeasefireWeeksLeft); Assert.Equal(0.8, s.Mobilization);
+    }
+
+    [Fact]
+    public void CeasefireClockForcesDeescalation()
+    {
+        var s = new GameState(); var why = new List<Cause>();
+        SecuritySystem.Init(C, s, why);
+        for (int i = 0; i < 3; i++) SecuritySystem.Apply(C, s, TurnLength.Week, why);
+        Assert.Equal(5, s.Rung);
+        SecuritySystem.Apply(C, s, TurnLength.Week, why);
+        Assert.Equal(3, s.Rung); Assert.Equal(0, s.CeasefireWeeksLeft);
+        Assert.Contains(why, w => w.Target == "rung" && w.Message.Contains("ceasefire"));
+        Assert.Equal(0.8, s.Mobilization); // de-escalation does not demobilize
+    }
+
+    [Fact]
+    public void CallUpOrderAboveFloorRecordsCause()
+    {
+        var s = new GameState { Rung = 1 }; var why = new List<Cause>();
+        Assert.Null(SecuritySystem.SetMobilization(C, s, 0.9, why));
+        var cause = Assert.Single(why, w => w.System == "security" && w.Target == "mobilization");
+        Assert.Equal(0.9, cause.Delta);
+        Assert.Equal("reserve call-up set to 90%", cause.Message);
+        Assert.Equal(0.9, s.Mobilization);
+    }
+
+    [Fact]
+    public void EscalationRaisesCallUpFloor()
+    {
+        var s = new GameState { Rung = 1 }; var why = new List<Cause>();
+        SecuritySystem.SetRung(C, s, 4, why);
+        Assert.Equal(0.4, s.Mobilization);
+        SecuritySystem.SetRung(C, s, 9, why);
+        Assert.Equal(5, s.Rung); Assert.Equal(4, s.CeasefireWeeksLeft);
+    }
+
+    [Fact]
+    public void MobilizationOrdersAreValidatedAndFloored()
+    {
+        var s = new GameState { Rung = 3 }; var why = new List<Cause>();
+        Assert.Equal("Mobilization must be between 0 and 1", SecuritySystem.SetMobilization(C, s, 1.5, why));
+        Assert.Null(SecuritySystem.SetMobilization(C, s, 0.0, why));
+        Assert.Equal(0.15, s.Mobilization);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)] [InlineData(double.PositiveInfinity)] [InlineData(double.NegativeInfinity)]
+    public void NonFiniteMobilizationIsRejectedAndStateUnchanged(double level)
+    {
+        var s = new GameState { Rung = 3, Mobilization = 0.3 }; var why = new List<Cause>();
+        Assert.Equal("Mobilization must be between 0 and 1", SecuritySystem.SetMobilization(C, s, level, why));
+        Assert.Equal(0.3, s.Mobilization);
+    }
+
+    [Fact]
+    public void LoaderRequiresFiveRungFloors()
+    {
+        var bad = Fixture.Files["rules.yaml"].Replace("[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.1]");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = bad })));
+        Assert.Equal("rung_min_mobilization", ex.Field);
+    }
+    [Fact]
+    public void OutOfRangeRungInStateUsesTheRungFiveFloor()
+    {
+        var s = new GameState { Rung = 9, Mobilization = 0.0 }; var why = new List<Cause>();
+        Assert.Null(SecuritySystem.SetMobilization(C, s, 0.0, why));   // reaches RaiseToFloor
+        Assert.Equal(0.8, s.Mobilization);
+    }
+}

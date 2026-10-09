@@ -1,0 +1,21 @@
+offices:
+  - { id: prime_minister, title: Prime Minister }
+  - { id: defense_minister, title: Minister of Defense }
+  - { id: finance_minister, title: Minister of Finance }
+  - { id: foreign_minister, title: Minister of Foreign Affairs }
+  - { id: health_minister, title: Minister of Health }
+  - { id: immigration_minister, title: Minister of Immigration }
+  - { id: interior_minister, title: Minister of Internal Affairs }
+  - { id: justice_minister, title: Minister of Justice }
+  - { id: agriculture_minister, title: Minister of Agriculture }
+  - { id: labour_minister, title: Minister of Labour }
+  - { id: police_minister, title: Minister of Police }
+  - { id: minority_affairs_minister, title: Minister of Minority Affairs }
+  - { id: religions_minister, title: Minister of Religions }
+  - { id: war_victims_minister, title: Minister of War Victims }
+  - { id: trade_minister, title: Minister of Trade and Industry }
+  - { id: transportation_minister, title: Minister of Transportation }
+  - { id: welfare_minister, title: Minister of Welfare }
+  - { id: education_minister, title: Minister of Education and Culture }
+  - { id: rationing_minister, title: Minister of Rationing and Supply }
+  - { id: chief_of_staff, title: IDF Chief of the General Staff }

@@ -1,0 +1,19 @@
+governments:
+  - id: provisional_government
+    name: Provisional Government
+    from: 1948-05-14
+    to: 1949-03-10
+    coalition: [mapai, mapam, general_zionists, new_aliyah, mizrachi, hapoel_hamizrachi, agudat_yisrael, sephardim, ahdut_haavoda_poalei_tzion, poale_zion_left, independent]
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/Provisional_government_of_Israel", checked: 2026-10-09 }
+      - { url: "https://en.wikipedia.org/wiki/Provisional_State_Council", checked: 2026-10-09 }
+    status: fact-checked
+  - id: first_government
+    name: First Government
+    # Sources differ (8 vs 10 March 1949); 10 March is the Knesset confidence vote recorded in Ben-Gurion's diary.
+    from: 1949-03-10
+    coalition: [mapai, united_religious_front, progressive, sephardim, democratic_list_nazareth]
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }
+      - { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }
+    status: fact-checked

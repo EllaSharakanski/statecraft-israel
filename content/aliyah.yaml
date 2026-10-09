@@ -1,0 +1,17 @@
+# Immigrants by continent of origin, CBS figures as tabulated by the Jewish Virtual Library.
+series:
+  - from: 1948-05-15
+    to: 1948-12-31
+    origins: { asia: 4739, africa: 8192, europe: 76554, america_oceania: 478, unknown: 11865 }
+    sources:
+      - { url: "https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html", checked: 2026-10-09 }
+      - { url: "https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year", checked: 2026-10-09 }
+    status: fact-checked
+  - from: 1949-01-01
+    to: 1949-12-31
+    # The research notes saw 249,954 in one secondary source; CBS-based tables give 239,954, which is used.
+    origins: { asia: 71652, africa: 39215, europe: 121963, america_oceania: 1422, unknown: 5702 }
+    sources:
+      - { url: "https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html", checked: 2026-10-09 }
+      - { url: "https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year", checked: 2026-10-09 }
+    status: fact-checked

@@ -1,0 +1,21 @@
+id: armistice_egypt
+title: Armistice with Egypt
+text: 'Talks in Rhodes have produced an armistice agreement with Egypt. {prime_minister} must decide whether Israel signs.'
+anchor: hard
+office: prime_minister
+from: 1949-02-24
+options:
+  - id: sign
+    text: Sign the armistice
+    historical: true
+    recommended: true
+    set_rung: 2
+    effects:
+      - { target: intl_standing, delta: 0.05 }
+  - id: hold_out
+    text: Refuse and keep fighting
+    effects:
+      - { target: intl_standing, delta: -0.10 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/1949_Armistice_Agreements", checked: 2026-10-09 }
+status: fact-checked

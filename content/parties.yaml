@@ -1,0 +1,23 @@
+# Names as listed in the Provisional State Council and 1949 election sources (see legislatures.yaml).
+parties:
+  - { id: mapai, name: Mapai }
+  - { id: mapam, name: Mapam }
+  - { id: general_zionists, name: General Zionists }
+  - { id: new_aliyah, name: New Aliyah }
+  - { id: mizrachi, name: Mizrachi }
+  - { id: hapoel_hamizrachi, name: Hapoel HaMizrachi }
+  - { id: agudat_yisrael, name: Agudat Yisrael }
+  - { id: sephardim, name: Sephardim and Oriental Communities }
+  - { id: ahdut_haavoda_poalei_tzion, name: Ahdut HaAvoda-Poalei Tzion }
+  - { id: poale_zion_left, name: Poale Zion Left }
+  - { id: independent, name: Independent }
+  - { id: hatzohar, name: Hatzohar }
+  - { id: poalei_agudat_yisrael, name: Poalei Agudat Yisrael }
+  - { id: maki, name: Maki }
+  - { id: wizo, name: WIZO }
+  - { id: yemenite_association, name: Yemenite Association }
+  - { id: united_religious_front, name: United Religious Front }
+  - { id: herut, name: Herut }
+  - { id: progressive, name: Progressive Party }
+  - { id: democratic_list_nazareth, name: Democratic List of Nazareth }
+  - { id: fighters_list, name: Fighters' List }
