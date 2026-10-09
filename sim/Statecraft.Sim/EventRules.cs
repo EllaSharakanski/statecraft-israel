@@ -28,8 +28,10 @@ namespace Statecraft.Sim
                 foreach (var cond in e.Conditions)
                 {
                     if (!indicators.Contains(cond.Indicator)) throw new ContentException(e.File, F($"conditions.{cond.Indicator}"), "unknown indicator");
-                    if (cond.Min.HasValue) ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.min"), cond.Min.Value);
-                    if (cond.Max.HasValue) ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value);
+                    // Indicators live in [0,1], so a bound outside it (or min above max) could never be met.
+                    if (cond.Min.HasValue) { ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.min"), cond.Min.Value); ContentLoader.Unit(e.File, F($"conditions.{cond.Indicator}.min"), cond.Min.Value); }
+                    if (cond.Max.HasValue) { ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); ContentLoader.Unit(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); }
+                    if (cond.Min > cond.Max) throw new ContentException(e.File, F($"conditions.{cond.Indicator}.min"), "must not exceed max");
                 }
                 if (e.Options.Count == 0) throw new ContentException(e.File, F("options"), "at least one option required");
                 if (e.Options.Count(o => o.Historical) > 1) throw new ContentException(e.File, F("options"), "at most one option can be historical");

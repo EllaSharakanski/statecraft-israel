@@ -168,6 +168,26 @@ status: draft
         Assert.Equal(field, ex.Field);
     }
 
+    // Final fix 3 M6: event condition bounds are finite, within [0,1], and min <= max.
+    [Theory]
+    [InlineData("max: 0.9", "max: .inf", "events[drought].conditions.food_supply.max", "must be a finite number")]
+    [InlineData("max: 0.9", "max: 1.5", "events[drought].conditions.food_supply.max", "must be a number from 0 to 1")]
+    [InlineData("max: 0.9", "max: -0.1", "events[drought].conditions.food_supply.max", "must be a number from 0 to 1")]
+    [InlineData("max: 0.9", "min: -0.5\n    max: 0.9", "events[drought].conditions.food_supply.min", "must be a number from 0 to 1")]
+    [InlineData("max: 0.9", "min: .nan\n    max: 0.9", "events[drought].conditions.food_supply.min", "must be a finite number")]
+    [InlineData("max: 0.9", "min: 0.95\n    max: 0.9", "events[drought].conditions.food_supply.min", "must not exceed max")]
+    public void EventConditionBoundsAreCheckedAtLoad(string from, string to, string field, string message)
+    {
+        var ex = Bad("events/drought.yaml", from, to);
+        Assert.Equal("events/drought.yaml", ex.File);
+        Assert.Equal(field, ex.Field);
+        Assert.EndsWith(message, ex.Message);
+    }
+
+    [Fact]
+    public void EqualConditionBoundsAreAllowed() =>
+        ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = Event.Replace("max: 0.9", "min: 0.9\n    max: 0.9") }));
+
     [Fact]
     public void EqualMobilizationFloorsAreAllowed() =>
         ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("[0.02, 0.05, 0.15, 0.4, 0.8]", "[0.05, 0.05, 0.15, 0.4, 0.8]") }));
