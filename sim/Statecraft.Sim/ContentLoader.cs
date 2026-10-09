@@ -144,8 +144,12 @@ namespace Statecraft.Sim
                 foreach (var k in v.Weights.Keys)
                     if (!indicators.Contains(k)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{k}", "unknown indicator");
             if (c.Rules.Start == default) throw new ContentException("rules.yaml", "start", "required");
+            if (!(c.Rules.AttentionPerTurn >= 0 && !double.IsInfinity(c.Rules.AttentionPerTurn))) throw new ContentException("rules.yaml", "attention_per_turn", "must be a finite non-negative number");
+            if (!(c.Rules.RungAttentionStep >= 0 && !double.IsInfinity(c.Rules.RungAttentionStep))) throw new ContentException("rules.yaml", "rung_attention_step", "must be a finite non-negative number");
+            foreach (var kv in c.Rules.AttentionCost)
+                if (!(kv.Value >= 0 && !double.IsInfinity(kv.Value))) throw new ContentException("rules.yaml", $"attention_cost.{kv.Key}", "must be a finite non-negative number");
             foreach (var k in c.Rules.AttentionCost.Keys)
-                if (!AttentionSystem.CommandKinds.Contains(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "unknown command kind");
+                if (!AttentionSystem.IsCommandKind(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "unknown command kind");
             foreach (var k in AttentionSystem.CommandKinds)
                 if (!c.Rules.AttentionCost.ContainsKey(k)) throw new ContentException("rules.yaml", $"attention_cost.{k}", "missing cost");
             if (c.Rules.RungMinMobilization.Count != 5) throw new ContentException("rules.yaml", "rung_min_mobilization", "needs exactly 5 values (rungs 1-5)");

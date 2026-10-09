@@ -31,4 +31,23 @@ public class AttentionTests
         var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = bad })));
         Assert.Equal("attention_cost.set_polcy", ex.Field);
     }
+
+    static string LoadField(string from, string to)
+    {
+        var bad = Fixture.Files["rules.yaml"].Replace(from, to);
+        Assert.NotEqual(Fixture.Files["rules.yaml"], bad);
+        return Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = bad }))).Field;
+    }
+
+    [Fact]
+    public void LoaderRejectsNegativeCost() =>
+        Assert.Equal("attention_cost.set_policy", LoadField("set_policy: 1,", "set_policy: -1,"));
+
+    [Fact]
+    public void LoaderRejectsNaNStep() =>
+        Assert.Equal("rung_attention_step", LoadField("rung_attention_step: 0.25", "rung_attention_step: .nan"));
+
+    [Fact]
+    public void LoaderRejectsNegativePerTurn() =>
+        Assert.Equal("attention_per_turn", LoadField("attention_per_turn: 3", "attention_per_turn: -3"));
 }
