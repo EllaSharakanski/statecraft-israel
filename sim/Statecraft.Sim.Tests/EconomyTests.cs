@@ -78,7 +78,7 @@ public class EconomyNegativeShareTests
     [Fact]
     public void NegativeShareRejectedEvenIfSumIsOne()
     {
-        var c = ContentLoader.Load(Fixture.Write());
+        var c = EconomyCoverageTests.TwoBudgets();
         var s = new GameState();
         EconomySystem.Init(c, s);
         var err = EconomySystem.Allocate(c, s, new System.Collections.Generic.Dictionary<string, double> { ["finance_minister"] = 1.5, ["defense_minister"] = -0.5 });
@@ -117,5 +117,40 @@ public class EconomyInvalidShareTests
         var err = EconomySystem.Allocate(C, s, null!);
         Assert.False(string.IsNullOrEmpty(err));
         Assert.Equal(before, s.Budget);
+    }
+}
+
+public class EconomyCoverageTests
+{
+    internal static Content TwoBudgets() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+    {
+        ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("budget_start: { finance_minister: 1.0 }", "budget_start: { finance_minister: 0.5, defense_minister: 0.5 }"),
+    }));
+
+    [Fact]
+    public void PartialMapIsRejectedAndBudgetUnchanged()
+    {
+        var c = TwoBudgets(); var s = new GameState(); EconomySystem.Init(c, s);
+        var before = new Dictionary<string, double>(s.Budget);
+        Assert.Equal("Budget shares must cover exactly: defense_minister, finance_minister",
+            EconomySystem.Allocate(c, s, new Dictionary<string, double> { ["finance_minister"] = 1.0 }));
+        Assert.Equal(before, s.Budget);
+    }
+
+    [Fact]
+    public void MapWithAnUnbudgetedOfficeIsRejected()
+    {
+        var c = TwoBudgets(); var s = new GameState(); EconomySystem.Init(c, s);
+        Assert.Equal("Budget shares must cover exactly: defense_minister, finance_minister",
+            EconomySystem.Allocate(c, s, new Dictionary<string, double> { ["finance_minister"] = 0.4, ["defense_minister"] = 0.4, ["prime_minister"] = 0.2 }));
+    }
+
+    [Fact]
+    public void FullMapIsAccepted()
+    {
+        var c = TwoBudgets(); var s = new GameState(); EconomySystem.Init(c, s);
+        var shares = new Dictionary<string, double> { ["finance_minister"] = 0.3, ["defense_minister"] = 0.7 };
+        Assert.Null(EconomySystem.Allocate(c, s, shares));
+        Assert.Equal(shares, s.Budget);
     }
 }
