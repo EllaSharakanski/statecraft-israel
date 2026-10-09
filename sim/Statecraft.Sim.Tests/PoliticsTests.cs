@@ -54,4 +54,25 @@ public class PoliticsTests
         Assert.Contains(why, w => w.Target == "house");
         Assert.Contains(why, w => w.Target == "gov2");
     }
+
+    [Fact]
+    public void PolicyRejectedWithNoLegislatureSaysSo()
+    {
+        var c = ContentLoader.Load(Fixture.Write(new System.Collections.Generic.Dictionary<string, string>
+        {
+            ["legislatures.yaml"] = Fixture.Files["legislatures.yaml"].Replace("from: 1948-05-14", "from: 1948-06-01"),
+        }));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Null(Offices.Legislature(c, s.Date));
+        var r = Simulation.Step(c, s, new Command[] { new SetPolicy("rationing", 1.0) });
+        Assert.Equal("No legislature is sitting", Assert.Single(r.Rejected).Reason);
+    }
+
+    [Fact]
+    public void GovernmentChangeNamesThePartiesByName()
+    {
+        var why = new System.Collections.Generic.List<Cause>();
+        PoliticsSystem.ReportChanges(C, new System.DateTime(1949, 3, 1), new System.DateTime(1949, 3, 15), why);
+        Assert.Contains(why, w => w.Message == "Government Two took office (Alpha, Beta)");
+    }
 }

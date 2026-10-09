@@ -55,7 +55,7 @@ namespace Statecraft.Sim
             }
             var g0 = Offices.Government(c, from); var g1 = Offices.Government(c, to);
             if (g1 != null && g1 != g0)
-                why.Add(new Cause("politics", g1.Id, 0, $"{g1.Name} took office ({string.Join(", ", g1.Coalition)})"));
+                why.Add(new Cause("politics", g1.Id, 0, $"{g1.Name} took office ({string.Join(", ", g1.Coalition.Select(id => c.Parties.First(p => p.Id == id).Name))})"));
         }
     }
 }

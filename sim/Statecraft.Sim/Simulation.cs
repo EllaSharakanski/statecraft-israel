@@ -76,7 +76,9 @@ namespace Statecraft.Sim
                 case SetPolicy p:
                     if (c.Policies.All(x => x.Id != p.Policy)) return $"Unknown policy '{p.Policy}'";
                     if (!(p.Level >= 0 && p.Level <= 1)) return "Policy level must be between 0 and 1";
-                    if (!PassVote(c, s)) return $"{Offices.Legislature(c, s.Date)?.Body ?? "The legislature"} voted it down";
+                    var legislature = Offices.Legislature(c, s.Date);
+                    if (legislature == null) return "No legislature is sitting";
+                    if (!PassVote(c, s)) return $"{legislature.Body} voted it down";
                     s.Policies[p.Policy] = p.Level;
                     why.Add(new Cause("policy", p.Policy, p.Level, FormattableString.Invariant($"{p.Policy} set to {p.Level:0.00}")));
                     return null;
