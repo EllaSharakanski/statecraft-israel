@@ -5532,7 +5532,8 @@ These tasks consume the M1 sim library (public interface defined in Task 15) and
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Consumes: the M1 public interface (defined in Task 15): `ContentLoader.Load(string)`, `Simulation.NewGame(...)`, `Simulation.Step(...)`, `GameState.Hash()`.
+- Consumes: the M1 public interface (defined in Task 15): `ContentLoader.Load(string)`, `Simulation.NewGame(...)`, `Simulation.Step(...)`, `HistoricalAI.Commands(...)`, `GameState.Hash()`.
+- Consumes: the golden hash constant in `docs/determinism.md` (also in `sim/Statecraft.Sim.Tests/DeterminismTests.cs`).
 - Produces:
   - `Paths.RepoRoot`, `Paths.Content` and `Paths.StreamingMap` (string properties).
   - The `Statecraft.Game` assembly, which Tasks 24–25 add scripts to.
@@ -5623,8 +5624,26 @@ public class SimSmokeTests
         Assert.AreEqual(ra.State.Hash(), rb.State.Hash());
         Assert.IsNotEmpty(ra.State.Hash());
     }
+
+    /// <summary>The same playthrough and constant as sim/Statecraft.Sim.Tests/DeterminismTests.cs (see docs/determinism.md).
+    /// It proves Unity's runtime computes, bit for bit, what .NET computes. Update all three places together.</summary>
+    public const string GoldenHash = "eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9";
+
+    [Test]
+    public void GoldenPlaythroughMatchesDotNet()
+    {
+        var c = ContentLoader.Load(Paths.Content);
+        var s = Simulation.NewGame(c, 1948UL, Mode.Historical);
+        for (int turn = 0; turn < 1000 && s.Date < new System.DateTime(1950, 1, 1) && s.GameOver == null; turn++)
+            s = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
+        Assert.IsNull(s.GameOver);
+        Assert.GreaterOrEqual(s.Date, new System.DateTime(1950, 1, 1));
+        Assert.AreEqual(GoldenHash, s.Hash());
+    }
 }
 ```
+
+`GoldenPlaythroughMatchesDotNet` mirrors the xUnit `DeterminismTests.GoldenPlaythroughHashIsFixed` line for line. Edit mode runs on the editor's Mono runtime. IL2CPP is checked when the first player build (M3) runs the same test in a player. If the two hashes differ, the cause is a determinism bug, not a reason to change the constant.
 
 - [ ] **Step 6: Run the edit-mode tests in batch mode**
 
@@ -6247,3 +6266,6 @@ Each item below is in the spec and has a home. None is silently dropped.
 | Per-era art prefabs that replace the M2 placeholder markers; in-game portrait pipeline | M3–M4 |
 | Steam page and AI-disclosure manifest | M5 |
 | Open fact: how the budget was approved in 1948–56 (`open_questions: [budget_approval]` is pinned by a test) | Content work before M4 |
+| Hebrew names (`name_he`) and birth/death dates for people (spec §5.3) | Content work before M4 |
+| "Military or economic collapse ends the state" (spec §4) | M4 |
+| Validation that legislature periods do not overlap, and that government periods do not overlap | Before M4 adds the 1951 and 1955 Knessets |
