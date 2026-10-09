@@ -6,6 +6,10 @@ Redone on 2026-10-10 against the merged m0-m2 tree, which has the climatology bi
 - `tools/preview_map.py`'s image
 - flythrough frames 0, 60, 120, 180 and 239
 
+Durable copies (captures/ is git-ignored and goes away with the worktree):
+- `promo/final/09-m2-flythrough.mp4`: byte-identical copy of `captures/flythrough.mp4`.
+- `promo/final/10-m2-topdown.png`: `captures/topdown.png` downscaled to 374×1000.
+
 - [x] Coast on the west; Carmel ridge reaching the coast at Haifa — PASS. The sea fills the west edge. The Haifa marker sits on the headland, with Haifa Bay and Acre to its north. With the fine terrain LOD, the Carmel relief can be seen running south-east from Haifa (clearest in flythrough frame 239).
 - [x] Sea of Galilee north-east; Jordan valley running south to the Dead Sea — PASS. The Galilee lake is at about 35.6E 32.8N. A low valley runs south from it to the Dead Sea along the east side of the land.
 - [x] Dead Sea's north tip level with Jerusalem; Jerusalem south-east of Tel Aviv — PASS. In the top-down image the Dead Sea's north tip and Jerusalem's marker are both at row ≈ 400/1000. Jerusalem is east and south of Tel Aviv. The same layout shows in flythrough frame 60.
