@@ -1,0 +1,572 @@
+# M3 content research: 1950–1951 facts (extension to 31 Dec 1951)
+
+Researched 2026-10-10. All URLs were checked on that date unless noted.
+
+**Conventions**
+- **[V]** means verified on the cited page, or extracted directly from the CBS PDF text.
+- **[S]** means single source or secondary only. Treat it as "probably", not "fact-checked".
+- **[C]** means sources conflict. Every version is given, each with its source.
+- **[GAP]** means not found.
+- Ids in `backticks` follow the existing `content/*.yaml` ids. New ids are proposals only.
+- No quotes are invented. The few short quotes below are copied from the cited page.
+
+**Access notes**
+- knesset.gov.il (both the history pages and main.knesset.gov.il) sits behind a bot wall and returned an empty JS shell. Knesset-sourced facts below are therefore taken through Wikipedia (en and he), IDI and JVL, which cite the Knesset site.
+- CBS PDFs could only be read by fetching them and then extracting the raw text streams locally. The CBS numbers below come from those extracts.
+
+---
+
+## 1. Governments in office, 1950–51
+
+### 1a. First Government (`first_government`): end
+- **Coalition (unchanged until the end):** Mapai, United Religious Front, Progressive, Sephardim and Oriental Communities, Democratic List of Nazareth. [V] https://en.wikipedia.org/wiki/First_government_of_Israel
+- **Ministers:** No changes to ministers before the end are recorded on the en.wiki page. The lineup is the same as in `people.yaml` (Ben-Gurion PM+Defence; Kaplan Finance+Trade & Industry; Sharett FA; Shapira Health+Immigration+Interior; Rosen Justice; Golda Meir Labour; Sheetrit Police; Maimon Religions+War Victims; Remez Transportation; Levin Welfare; Dov Yosef Agriculture+Rationing & Supply; Shazar Education). [V] same page.
+- **Resignation:** Ben-Gurion resigned on **15 Oct 1950**. [V] en.wiki First government; https://en.wikipedia.org/wiki/1950_in_Israel. [C] Some pages (e.g. the en.wiki Mizrachi party article) give **16 Oct 1950**.
+- **End date:** [C] The en.wiki infobox gives **30 Oct 1950** as the dissolution date. The successor government was sworn in on **1 Nov 1950**. The Rationing ministry article ends Dov Yosef's term on **1 Nov 1950**.
+  - Recommendation: First Government `to: 1950-11-01`, using the existing handover convention `[from, to)`.
+- **Causes of the October 1950 crisis:**
+  - **Supply and Rationing.** Ben-Gurion wanted to close the Ministry of Supply and Rationing. The en.wiki Rationing-minister page says the government's collapse was "partially due to an internal crisis in Mapai over the ministry's liquidation". [V] https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel
+  - **Trade and Industry.** Ben-Gurion wanted a businessman (Ya'akov Geri, not an MK) as Minister of Trade and Industry, taking that portfolio from Kaplan. Under the law of the time, adding a minister required the government to resign and win a new confidence vote. The law was amended afterwards. [V] he.wiki First Knesset https://he.wikipedia.org/wiki/הכנסת_הראשונה
+  - **United Religious Front demands.** The URF demanded the ministry's closure and the businessman appointment. [S, uncited on page] https://en.wikipedia.org/wiki/United_Religious_Front
+  - **Education in the immigrant camps.** This was a background cause (see the Frumkin crisis below). [V] en.wiki First government.
+  - **Geri as a minor factor.** A contemporary JTA-wire piece calls Geri's appointment "one of the minor factors" in the crisis, and says religious circles wanted one of their own in the post. [S] Detroit Jewish News, 17 Nov 1950: https://digital.bentley.umich.edu/djnews/djn.1950.11.17.001/20/download_text
+- **Sequence 15 Oct – 1 Nov 1950** [V] https://en.wikipedia.org/wiki/1950_in_Israel:
+  - 15 Oct: Ben-Gurion resigns. Weizmann asks him to form a new government.
+  - 17 Oct: Ben-Gurion presents a minority government, which fails to win Knesset approval. he.wiki Second Government adds that his Mapai + Sephardim attempt had only 52 supporters.
+  - 19 Oct: Weizmann asks **Pinchas Rosen** (Progressive) to form a government.
+  - 29 Oct: Rosen returns the mandate. he.wiki says Rosen rebuilt the same coalition and Ben-Gurion then presented it.
+  - 1 Nov: The Second Government is approved **69–42, 2 abstentions**.
+
+### 1b. The January 1950 immigrant-camp education crisis (Frumkin Commission)
+- **Background:** Under the "uniform education" in immigrant camps, children were placed under the Culture Department, so parents had no choice of school stream. Religious Yemenite parents reported coercion, including the cutting of sidelocks. MK David-Zvi Pinkas (Mizrachi) filed a parliamentary question in **December 1949**. [V] https://he.wikipedia.org/wiki/ועדת_פרומקין
+- **Commission:** Appointed in January 1950 by decision of Ben-Gurion.
+  - [S] One search snippet gives **17 Jan 1950** as the appointment date, but no page carrying it could be confirmed.
+  - [V] he.wiki gives the first session as **25 Jan (1950)**.
+- **Members** [V] he.wiki:
+  - Judge Gad Frumkin (chair)
+  - Yitzhak Ben-Zvi (Mapai MK)
+  - Avraham Elmaliah (Sephardim MK)
+  - Rabbi Avraham Haim Shag (URF MK)
+  - Rabbi Kalman Kahana (URF MK)
+- **Report submitted:** **9 May 1950**. [V] he.wiki
+- **Findings** [V] he.wiki:
+  - There was no government intention of anti-religious coercion.
+  - Handing camp education to the Culture Department was a serious error.
+  - Sidelock-cutting was a practice, not isolated cases.
+  - Direct responsibility lay with department head Nahum Levin. Education Minister Shazar was not held personally responsible.
+  - en.wiki (Gad Frumkin) summarises that the uniform system "resulted in the harsh infringement of the new immigrants' freedom of religion". https://en.wikipedia.org/wiki/Gad_Frumkin
+- **Consequences:**
+  - Camp education was moved to the Education Ministry's education department. Officials were reassigned. [V] he.wiki
+  - Shazar was replaced by Remez when the Second Government formed. [V] he.wiki says "replaced". [C] en.wiki Gad Frumkin says the findings "led to the resignation of Education Minister Zalman Shazar and the fall of Israel's first government".
+- **March 1950:** The URF threatened to leave the coalition over religious services in the camps, and Mapai failed to bring Mapam into the coalition. [V, undated within the month] https://en.wikipedia.org/wiki/1950_in_Israel
+- **29 Nov 1950:** A new Mapai–religious dispute broke out over education in the camps. This one led to the Feb 1951 fall. [V] same page.
+
+### 1c. Second Government (proposed id `second_government`)
+- **Dates:**
+  - `from: 1950-11-01` [V] en.wiki and he.wiki.
+  - Resigned on **14 Feb 1951** and continued as a transitional government until **8 Oct 1951**. [V] https://en.wikipedia.org/wiki/Second_government_of_Israel ; https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה
+  - Recommendation: `to: 1951-10-08`, and add a flag for "transitional from 14 Feb 1951".
+- **Coalition:** Mapai, United Religious Front, Progressive Party, Sephardim and Oriental Communities, Democratic List of Nazareth. That is the same as the First Government, with **73 MKs**. [V] en.wiki and he.wiki
+- **Investiture vote:** 69–42–2. [V] 1950 in Israel
+- **Ministers.** All terms run 1 Nov 1950 → 8 Oct 1951 unless noted. Sources: en.wiki and he.wiki Second Government.
+
+| Person (id) | Office(s) | Party (list) | Dates / notes |
+|---|---|---|---|
+| David Ben-Gurion (`ben_gurion`) | PM; Defence | Mapai | Also **Education and Culture from 19 May 1951** after Remez's death |
+| Eliezer Kaplan (`kaplan`) | Finance | Mapai | Lost Trade and Industry |
+| Moshe Sharett (`sharett`) | Foreign Affairs | Mapai | |
+| Haim-Moshe Shapira (`shapira`) | Health; Immigration; Interior | United Religious Front | [S] en.wiki lists all three. The he.wiki extract did not clearly show Interior and Immigration. |
+| Pinchas Rosen (`rosen`) | Justice | Progressive | |
+| Golda Meir (`golda_meir`) | Labour (and Social Insurance) | Mapai | |
+| Bechor-Shalom Sheetrit (`sheetrit`) | Police | Sephardim and Oriental Communities | |
+| Yehuda Leib Maimon (`maimon`) | Religions; War Victims | URF | [C] Resignation date unclear, see 1d |
+| Yitzhak-Meir Levin (`levin`) | Welfare | URF | |
+| David Remez (`remez`) | **Education and Culture** | Mapai | 1 Nov 1950 → **19 May 1951** (died in office) |
+| Dov Yosef (`dov_yosef`) | **Transportation** | Mapai | Moved from Agriculture and Rationing. The Rationing ministry was abolished. |
+| Pinhas Lavon (new `lavon`) | **Agriculture** | Mapai | |
+| Ya'akov Geri (new `geri`) | **Trade and Industry** | [C] en.wiki: no party, "not a Knesset member". he.wiki lists him under Mapai. | Not an MK |
+| Yosef Efrati (new) | Deputy Minister of Agriculture | Mapai | **26 Feb 1951** → 8 Oct 1951 (he.wiki) |
+| Reuven Shari (new) | Deputy Minister of Transportation | Mapai | **1 Apr 1951** → 8 Oct 1951 (he.wiki) |
+
+- **Zalman Shazar** (`shazar`): the education term ends **1 Nov 1950**. He was not in the Second Government. [V]
+- **Dov Yosef:** the Agriculture and Rationing terms end **1 Nov 1950**. [V] Rationing-minister page.
+
+### 1d. February 1951 fall of the Second Government
+- **Resignation:** **14 Feb 1951**. [V] en.wiki and he.wiki Second Government; he.wiki First Knesset.
+- **Formal cause:** The Knesset rejected Education Minister David Remez's proposals on the registration of schoolchildren (in the immigrant camps). The dispute was over whether the Histadrut's labour stream could run religious education for immigrant children. [V] he.wiki and en.wiki Second Government.
+- **Vote count:** [S] The only figure found is a contemporary JTA-wire report of a **49–42** vote "on the question of the education of children in immigrant camps", with Mizrachi voting against Mapai together with Mapam, Herut and others. https://digital.bentley.umich.edu/djnews/djn.1951.02.23.001/4 . Not cross-checked against Knesset minutes.
+- **Maimon:** [C]
+  - he.wiki: Minister Maimon resigned after the Knesset vote, and Ben-Gurion treated that as a loss of confidence.
+  - en.wiki "1951 in Israel" lists Maimon resigning on **4 Jan 1951** "over the education crisis in the ma'abarot" (no footnote).
+- **Informal cause** [V] he.wiki Second Government:
+  - The **14 Nov 1950 local elections** saw Mapai fall and the General Zionists win roughly a quarter of the vote. https://en.wikipedia.org/wiki/1950_in_Israel
+  - Ben-Gurion read this as a sign that the Knesset no longer reflected public opinion, and preferred early elections. Sharett's diary is cited for this.
+  - he.wiki on austerity gives the margin as General Zionists about 3% behind Mapai. https://he.wikipedia.org/wiki/תקופת_הצנע
+
+### 1e. Third Government (proposed id `third_government`)
+- **Dates:** `from: 1951-10-08`, ends 24 Dec 1952 (resigned 19 Dec 1952). It runs past the M3 window. [V] https://en.wikipedia.org/wiki/Third_government_of_Israel ; https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית
+- **Investiture vote:** **56–40**. [S] he.wiki, citing Haaretz 9 Oct 1951.
+- **Coalition (65 seats per he.wiki):**
+  - Mapai 45
+  - Hapoel HaMizrachi 8
+  - Agudat Yisrael 3
+  - Democratic List for Israeli Arabs 3
+  - Mizrachi 2
+  - Poalei Agudat Yisrael 2
+  - Progress and Work 1
+  - Agriculture and Development 1
+  - The three minority lists were affiliated with Mapai and held no ministers.
+  - **Out of the coalition:** Progressive Party and General Zionists.
+- **Ministers on 8 Oct 1951.** Only one change falls within 1951 (Kahana, 4 Nov 1951).
+
+| Person (id) | Office(s) | Party | Notes |
+|---|---|---|---|
+| David Ben-Gurion | PM; Defence | Mapai | |
+| Eliezer Kaplan | Finance; also Deputy PM | Mapai | Finance until 25 Jun 1952; died 13 Jul 1952 (outside window) |
+| Levi Eshkol (new `eshkol`) | Agriculture | Mapai | Until 25 Jun 1952 |
+| Moshe Sharett | Foreign Affairs | Mapai | |
+| Haim-Moshe Shapira | Interior; Religions | Hapoel HaMizrachi | Party changed: the URF dissolved in 1951 |
+| Ben-Zion Dinur (new `dinur`) | Education and Culture | Non-MK; former Mapai MK | |
+| Golda Meir | Labour | Mapai | |
+| Bechor-Shalom Sheetrit | Police | [C] en.wiki 3rd Government says **Mapai**. He was elected in 1949 for the Sephardim list. | Check whether he moved to Mapai for the 1951 election |
+| Dov Yosef | **Trade and Industry** and **Justice** | Mapai | Justice until 25 Jun 1952 (en.wiki). he.wiki lists only Trade and Industry clearly. |
+| Yosef Burg (new `burg`) | [C] **Health** per en.wiki 3rd Government and en.wiki Yosef Burg (https://en.wikipedia.org/wiki/Yosef_Burg). he.wiki's table shows him as Post. | Hapoel HaMizrachi | The Postal ministry went to Nurock only on 3 Nov 1952 (https://en.wikipedia.org/wiki/Mordechai_Nurock), so Health is the likely 1951 portfolio. |
+| David-Zvi Pinkas (new `pinkas`) | Transportation | Mizrachi | Died 14 Aug 1952 |
+| Yitzhak-Meir Levin | Welfare | Agudat Yisrael | Left Sep 1952 |
+| Peretz Naftali (new) | Minister without Portfolio | Mapai | Until 25 Jun 1952 |
+| Kalman Kahana (new) | Deputy Minister of Education | Poalei Agudat Yisrael | From **4 Nov 1951** (he.wiki) |
+
+- **Leaving office on 8 Oct 1951 (not in the Third Government):** Pinchas Rosen (Progressive, now in opposition), Pinhas Lavon, Ya'akov Geri, Maimon.
+  - Lavon later became Minister without Portfolio from 17 Aug 1952 (outside window).
+  - Remez's terms end with his death on 19 May 1951. Ben-Gurion holds Education 19 May → 8 Oct 1951.
+- **Proposed new office ids:**
+  - `education_minister` already exists.
+  - Deputy ministers would need new office ids, or can be skipped.
+  - `postal_minister` is not needed before Nov 1952.
+  - `rationing_minister` ends 1 Nov 1950. The offices file should mark it defunct from that date.
+
+---
+
+## 2. Knesset
+
+- **First Knesset (`first_knesset`) end:**
+  - It continued until the Second Knesset convened. Term: 14 Feb 1949 → **20 Aug 1951**. [V] he.wiki https://he.wikipedia.org/wiki/הכנסת_הראשונה
+  - **Self-dissolution, not the Feb 1951 resignation, set the election.** The government resigned on 14 Feb 1951. In **April 1951** the Knesset passed the **Transition to the Second Knesset Law 5711-1951**, the **Second Knesset Elections Law**, and a law fixing the election day as **30 Jul 1951**. [V] he.wiki First Knesset (month only).
+  - [S] One page (hamichlol.org.il, "חוק יסוד: הכנסת") dates the Transition Law to **12 Apr 1951**, with the election laws about a week later: https://www.hamichlol.org.il/חוק_יסוד:_הכנסת
+  - IDI classes 1951 as a dissolution "by a Law to Dissolve the Knesset". https://www.idi.org.il/articles/38887
+  - **Reason:** The Feb 1951 education crisis (see 1d) and Ben-Gurion's choice of elections over a new coalition. [V] he.wiki; IDI 1951 page.
+  - So if the game needs a "dissolution" event, the trigger is **14 Feb 1951** (government resignation) and the law is **April 1951**. "February 1951 dissolution" is imprecise.
+- **Speaker (First and Second Knessets):** **Yosef Sprinzak** (Mapai), 14 Feb 1949 → 28 Jan 1959, continuously. [V] https://en.wikipedia.org/wiki/Yosef_Sprinzak ; he.wiki First and Second Knesset.
+  - Deputy speakers of the First Knesset included Yosef Burg (URF) and Nahum Nir (Mapam). [V] he.wiki.
+- **Election:** **30 Jul 1951**. [V] https://en.wikipedia.org/wiki/1951_Israeli_legislative_election ; https://en.idi.org.il/israeli-elections-and-parties/elections/1951/ ; https://www.jewishvirtuallibrary.org/elections-to-the-2nd-knesset-july-1951
+  - Eligible voters: **924,885**
+  - Turnout: **75.1%**
+  - Total votes: 695,007
+  - Valid votes: **687,492**
+  - Threshold: **1%** (6,874 votes per JVL)
+  - Votes per seat: 5,692 (JVL)
+- **Seats.** Total **120**. Identical in en.wiki, IDI and JVL. [V]
+
+| Party | Votes | % | Seats | id |
+|---|---|---|---|---|
+| Mapai | 256,456 | 37.3 | **45** | `mapai` |
+| General Zionists | 111,394 | 16.2 | **20** | `general_zionists` |
+| Mapam | 86,095 | 12.5 | **15** | `mapam` |
+| Hapoel HaMizrachi | 46,347 | 6.8 | **8** | `hapoel_hamizrachi` |
+| Herut | 45,651 | 6.6 | **8** | `herut` |
+| Maki | 27,334 | 4.0 | **5** | `maki` |
+| Progressive Party | 22,171 | 3.2 | **4** | `progressive` |
+| Democratic List for Israeli Arabs | 16,370 | 2.4 | **3** | new `democratic_list_israeli_arabs` |
+| Agudat Yisrael | 13,799 | 2.0 | **3** | `agudat_yisrael` |
+| Sephardim and Oriental Communities | 12,002 | 1.8 | **2** | `sephardim` |
+| Poalei Agudat Yisrael | 11,194 | 1.6 | **2** | `poalei_agudat_yisrael` |
+| Mizrachi | 10,383 | 1.5 | **2** | `mizrachi` |
+| Progress and Work | 8,067 | 1.2 | **1** | new `progress_and_work` |
+| Yemenite Association | 7,965 | 1.2 | **1** | `yemenite_association` |
+| Agriculture and Development | 7,851 | 1.1 | **1** | new `agriculture_and_development` |
+| Sepharadim–Ashkenazim Unity | 4,038 | 0.6 | 0 | |
+| For New Immigrants and Freed Soldiers | 375 | 0.05 | 0 | |
+
+- **Notes on the results:**
+  - The URF did not run as one list. It split into four lists: Hapoel HaMizrachi, Mizrachi, Agudat Yisrael and Poalei Agudat Yisrael, with 15 seats combined (IDI).
+  - The three minority lists were Mapai-affiliated (JVL footnote).
+  - he.wiki Second Knesset shows a "composition" (General Zionists 23, Mapai 47 …) that reflects **later mergers and splits**, not the election result. Use the table above for the convening date.
+- **Convened:** **20 Aug 1951** (sworn in). [S] he.wiki https://he.wikipedia.org/wiki/הכנסת_השנייה . Not confirmed elsewhere.
+- **Opposition leader in the game sense:** en.wiki infoboxes give **Meir Ya'ari** (Mapam) for the Second Government, and Peretz Bernstein (General Zionists) for the Third. [S]
+
+---
+
+## 3. President
+
+- **Chaim Weizmann** was in office throughout 1950–51. His first term was tied to the First Knesset's term.
+- **Re-elected 19 Nov 1951** by the Second Knesset, **85 for, 11 against, 3 blank**, with 21 MKs not voting. He was the only candidate. [V] https://en.wikipedia.org/wiki/1951_Israeli_presidential_election ; https://en.wikipedia.org/wiki/1951_in_Israel
+- **Sworn in at his Rehovot residence on 25 Nov 1951.** [S] Search summary attributing the date to the IDI presidential-elections article https://en.idi.org.il/articles/34583 . Not confirmed by direct read.
+- **Why a new election:** The early dissolution of the First Knesset forced it. [V] en.wiki 1951 presidential election.
+- Weizmann died 9 Nov 1952 (outside window). [V] en.wiki Third Government infobox.
+
+---
+
+## 4. Aliyah
+
+### 4a. Annual immigration (CBS)
+
+| Period | Total | Asia | Africa | Europe | America & Oceania | Unknown |
+|---|---|---|---|---|---|---|
+| 1950 | **170,563** | 57,565 | 26,162 | 81,195 | 1,954 | 3,687 |
+| 1951 | **175,279** | 103,396 | 20,382 | 47,074 | 1,286 | 3,141 |
+| (1952, for reference) | 24,610 | 6,867 | 10,286 | 6,232 | 950 | 275 |
+
+- **Source:** CBS table reproduced at https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html (CBS source line http://www1.cbs.gov.il/hodaot2015n/21_15_129t2.pdf). [V]
+- **Parsing warning:** The JVL table is right-to-left and the row label sits *after* the data. A WebFetch summariser mis-shifted the rows, giving "1950 = 175,279". The figures above come from parsing the raw HTML. The row sums check exactly (57,565+26,162+81,195+1,954+3,687 = 170,563, and so on), and they match the existing 1948 and 1949 rows in `aliyah.yaml`.
+- **Totals cross-checks:**
+  - https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year : 1950 = 170,563; 1951 = 175,279. [V]
+  - CBS, *Immigration to Israel 2002–2006* (Publication 1365, 2009), Table 1 (1948–2006): 1950 = 170,215 immigrants + potential immigrants … total **170,563**; 1951 total **175,279**. [V] https://www.cbs.gov.il/he/publications/DocLib/2009/1365/pdf/e_print.pdf
+- **1948–51 first wave:** **687,624** total. 48% Europe, 34% Asia, 14% Africa. Two-thirds of the Europeans came from Poland and Romania. Iraq supplied 52% of the Asian arrivals. [V] same CBS publication.
+
+### 4b. Immigrants 15 May 1948 – 1951 by country of birth (CBS)
+- **Source:** Publication 1365, the period table. The 1948–51 column was extracted from the PDF text. [V, parsed]
+- Annual 1950 vs 1951 splits by country were **not found** [GAP].
+- **Figures:**
+  - Iraq **123,371**
+  - Romania **117,950**
+  - Poland **106,414**
+  - Yemen **48,315**
+  - Bulgaria **37,260**
+  - Turkey **34,547**
+  - Libya **30,972**
+  - Morocco **28,263**
+  - Iran **21,910**
+  - Czechoslovakia **18,788** (parse slightly ambiguous)
+  - Egypt and Sudan **16,028**
+  - Hungary **14,324**
+  - Tunisia **13,293**
+  - Germany **8,210**
+  - Algeria **3,810**
+- **Cross-checks:**
+  - These match a Jewish Agency archive summary found in search: Iraq 123.3k, Rumania 118.0k, Poland 106.4k, Yemen and Aden 48.3k, Morocco/Tunisia/Algeria 45.4k. Morocco + Tunisia + Algeria = 45,366 ✓.
+  - The page itself (https://archive.jewishagency.org/society-and-politics/content/36566) now returns 404.
+
+### 4c. Operations
+- **On Wings of Eagles (Yemen and Aden):**
+  - 16 Dec 1948 → **24 Sep 1950**, when the last two planes landed at Lydda with 177 passengers.
+  - Total about **49,000**. About 430 flights, transport cost over US$4 million.
+  - Source: Schechtman 1952 via https://en.wikipedia.org/wiki/Operation_On_Wings_of_Eagles [V]
+  - [C] The stage figures on that page (about 7,000 + about 30,000 + an unquantified 1950 stage) don't reconcile with 49,000.
+  - The 1950 timeline says the operation brought "roughly 50,000". https://en.wikipedia.org/wiki/1950_in_Israel
+  - CBS: Yemen-born 1948–51 = 48,315.
+- **Ezra and Nehemiah (Iraq)** [V] https://en.wikipedia.org/wiki/Operation_Ezra_and_Nehemiah :
+  - **March 1950:** Iraq passes the one-year **Denaturalisation Law**. Jews may leave if they renounce citizenship. The window expires March 1951 (Meir-Glitzenstein 2004, p. 206).
+  - **Registration:** about 50,000 in the first month, about 90,000 within two months [S, uncited]. By Sep 1950, about 70,000 registered but only about 10,000 had left (Meir-Glitzenstein p. 204).
+  - **10 Mar 1951:** A new Iraqi law freezes the assets of Jews who renounced citizenship. 64,000 were still waiting (Meir-Glitzenstein p. 206).
+  - **Airlift dates:** [C]
+    - en.wiki 1950 timeline: "18 May 1950: Operation Ezra and Nehemiah begins".
+    - The operation article: flights via Cyprus began "mid-May 1951" [uncited], later direct Baghdad → Lod. It ended "early 1952" [citation needed], leaving about 6,000 Jews.
+    - **Interpretation:** emigration flights ran from May 1950, and the mass airlift came in 1951. The game should treat **1951** as the peak year. The CBS Asia figure for 1951 (103,396) supports this.
+  - **Total:** 120,000–130,000 (Pasachoff and Littman; Szulc).
+  - **Cost:** about US$4m, largely paid by the JDC.
+  - **Carriers:** Near East Transport Company (founded by James Wooten, who had run the Yemen airlift) and El Al.
+  - A 1951 Israeli Foreign Ministry letter to the UNCCP says about **104,000** registered "during the year", with over 40,000 already arrived [S, snippet]. https://www.un.org/unispal/document/auto-insert-211728
+  - **Baghdad bombings, Apr 1950 – Jun 1951** (Israeli historians' framing). https://en.wikipedia.org/wiki/1950–1951_Baghdad_bombings
+    - Five attacks; 3–4 Jews killed on 14 Jan 1951.
+    - **Moshe Gat** (Israeli historian, *The Jewish Exodus from Iraq 1948–1951*, 1997) argues the emissaries did not plant the bombs and suspects Istiqlal militants.
+    - **Esther Meir-Glitzenstein** calls the Iraqi charges "groundless" and shows mass registration preceded most bombings.
+    - A **1960 secret Israeli inquiry** appointed by Ben-Gurion found no proof that any Jewish body threw the bombs.
+    - The contrary view is Avi Shlaim (2023).
+    - Recommend game text: "bombings whose perpetrators remain disputed; Israeli inquiries found no Israeli involvement."
+- **Romania:**
+  - About 115,000 had emigrated to Israel by Dec 1951 [S] (en.wiki Romanian Jews in Israel, via search). CBS 1948–51 Romania-born = 117,950.
+  - **Pauker–Rubin understanding:** about 4,000 per month [S]. https://en.wikipedia.org/wiki/Jewish_emigration_from_Romania
+  - **Exit closure:** [C] "orders of 1951" (1959 Detroit Jewish News) vs. "drastically reduced by 1952" (Ioanid via Wilson Center). https://www.wilsoncenter.org/event/book-launch-the-ransom-the-jews-the-story-the-extraordinary-secret-bargain-between-romania-and
+  - The AJYB 1952 estimate has Romania's Jewish population falling from 335,000 (1950) to 280,000 (mid-1951). https://www.bjpa.org/content/upload/bjpa/1952/1952worldpop.pdf [S]
+- **Poland:** CBS 1948–51 Poland-born = 106,414. No reliable annual figures were found [GAP]. Exits were encouraged roughly 1949–51 [S].
+- **North Africa and Libya:**
+  - CBS 1948–51: Morocco 28,263, Tunisia 13,293, Algeria 3,810, Libya 30,972.
+  - **Selective immigration:** In **November 1951** the Jewish Agency (via the Coordinating Committee) adopted selection guidelines for North African aliyah: young, healthy, working-age people. This held at least to 1956. [S] Secondary sources only: Avi Picard, *Olim Bemesorah* (2013); Daniel Ben Simon; jewishrefugees.org.uk https://www.jewishrefugees.org.uk/2013/10/israels-painful-selection-of-moroccan.html . Disputed by Shifra Shvarts. Primary document not seen.
+
+### 4d. Population (CBS Statistical Abstract 2023, table 2.1 and table 2.2, thousands)
+
+| Date | Total | Jews (and Others) | Arabs | Muslims | Christians | Druze |
+|---|---|---|---|---|---|---|
+| End 1949 (existing) | 1,173.9 | 1,013.9 | 160.0 | 111.5 | 34.0 | 14.5 |
+| **End 1950** | **1,370.1** | **1,203.0** | **167.1** | 116.1 | 36.0 | 15.0 |
+| **End 1951** | **1,577.8** | **1,404.4** | **173.4** | 118.9 | 39.0 | 15.5 |
+| Avg 1950 | 1,266.8 | 1,103.0 | 163.8 | | | |
+| Avg 1951 | 1,494.3 | 1,324.0 | 170.3 | | | |
+
+- **Sources:** https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf (by population group) and https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_02.pdf (by religion). [V, parsed]
+- The end-1949 row reproduces the value already in `population.yaml` (1,013.9k), which validates the parse.
+- **For `population.yaml`:** `1950-12-31 jews: 1203000`, `1951-12-31 jews: 1404400`.
+- **Natural increase:** [GAP] The CBS "sources of population growth" table was not located (tried st02_04/05, both 404).
+  - **Derived, not a CBS figure:** The Jewish increase of 189.1k in 1950 against 170.6k immigrants leaves about 18.5k for natural increase net of emigration and adjustments. The 201.4k increase in 1951 against 175.3k immigrants leaves about 26.1k. Use only as a calibration hint.
+  - he.wiki ma'abarot gives population growth rates of 28.3% (1948–49), 16.7% and 15.2% for the following years [S].
+
+---
+
+## 5. Ma'abarot (transit camps)
+
+- **Origin:**
+  - The idea is credited to **Levi Eshkol** (head of the Jewish Agency Settlement Department). He proposed replacing the immigrant camps (*machanot olim*) in **March 1950** (Hacohen 2003, p. 151).
+  - The word "ma'abarot" first appears in Eshkol's letter of **21 Apr 1950** (he.wiki).
+  - The government and Jewish Agency decision is dated "May 1950" in the en.wiki 1950 timeline (undated within the month). [V] https://en.wikipedia.org/wiki/Ma'abarot ; https://he.wikipedia.org/wiki/מעברה
+- **Key design difference from the camps:** The camps fed and housed immigrants free. In the ma'abarot, residents had to earn their own living. [V] he.wiki
+- **First ma'abara:** **Kesalon**, Jerusalem Hills, **May 1950**, 150 families (Allweil 2012; *Davar* 23 May 1950). [V]
+- **Population and count over time:**
+  - **April 1950:** about 100,000 immigrants in temporary camps (en.wiki 1950 timeline, undated). [S]
+  - **July 1950:** Giora Yoseftal moved 70,000 immigrants into ma'abarot (Roby 2015). [V]
+  - **End 1950:** **62 ma'abarot housing 93,000**, plus 40,000 in other temporary camps. [S] en.wiki 1950 timeline, no footnote.
+  - **End 1951 (the usual "peak" anchor):** [C]
+    - About **227,000 in 123 or 125 ma'abarot**, about one-sixth of the population (Lipshitz 1998; Roby 2015; Kachanski 1986).
+    - vs. **127 ma'abarot / 250,000** (Swirski 2002, in the en.wiki lead).
+    - he.wiki: "over 220,000" within two years; 98 + 31 = about 129 ma'abarot in total.
+  - **January 1952:** 157,140 residents (he.wiki). [S] Note the conflict with the 227,000 end-1951 figure. It may reflect a different count (e.g. registered vs. including batei olim). Unresolved.
+  - **1952:** 172,500 in 111 tent camps plus 38,544 in wooden shacks (Roby 2015). [S]
+- **Conditions (citable):**
+  - Infant mortality 157 per 1,000 (Davidovich and Shvarts 2004; Hacohen 2003).
+  - Worst-camp unemployment 90–96% (Roby 2015).
+  - Migdal Gad: two faucets for about 1,000 people (Shapira 2014).
+- **Winter 1950–51 flooding and storms:** [GAP] Not found in the sources read.
+  - en.wiki 1950: the **6 Nov 1950** "Shelter campaign" appealed to the public to house immigrant children for the winter. [S]
+- **End:** Most residents were rehoused 1957–60. The last ma'abara (Hatzrot Yosef) was dismantled 20 Jan 2004 (he.wiki). en.wiki says "around 1963".
+
+---
+
+## 6. Austerity (tzena)
+
+- **Start and ministry:**
+  - Rationing was decided **26 Apr 1949**, the same day Ben-Gurion's Knesset statement presented it as temporary. [V] https://he.wikipedia.org/wiki/תקופת_הצנע
+  - Ministry of Supply and Rationing: Dov Yosef, **26 Apr 1949 → 1 Nov 1950**. [V] https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel
+  - Note that `people.yaml` currently starts `rationing_minister` on 1949-03-10. The en.wiki ministry page says the ministry was created on 26 Apr 1949. [C] Flag for the M1 owner.
+- **Ration:**
+  - en.wiki: about **1,600 kcal/day**, monthly coupons worth IL 6, modelled on the UK wartime diet (Seidman 2008). [V] https://en.wikipedia.org/wiki/Austerity_in_Israel
+  - he.wiki daily list: 360 g bread, 58 g sugar, 200 g cheese …; meat 750 g a month.
+- **1950 tightening:**
+  - **31 Jul 1950** (en.wiki) / "July 1950" (he.wiki): rationing was extended to **clothing and footwear**. [V]
+  - **Aug 1950:** Retailers' strike (1–14 Aug), which became a general strike against austerity on 7 Aug.
+  - **8 Aug 1950:** A no-confidence motion on rationing failed, **57–36**. [V] en.wiki 1950 in Israel. he.wiki also mentions a public review committee.
+- **Black market:**
+  - By Feb 1950, about **5,000 police files** had been opened (Mordechai Naor, via he.wiki). [S]
+  - **Sep 1950:** The **Office for Fighting the Black Market** was created (en.wiki, Seidman). [V]
+  - **3 Oct 1950:** Ben-Gurion launched an anti-black-market campaign with a personal public appeal (en.wiki 1950). [V]
+  - **Mar 1951:** On the black market the gold sovereign fell from IL 30 to IL 20, and the government moved to ban gold trading. [V] JTA, 27 Mar 1951 https://www.jta.org/archive/israel-to-prohibit-trading-in-gold-measure-taken-to-check-inflation-in-country
+- **Late 1950 easing:**
+  - The **14 Nov 1950** local elections (General Zionists strong) showed Mapai it had to ease austerity.
+  - The Supply ministry was "symbolically" abolished and its powers spread to other ministries. [V] he.wiki tzena
+  - **Note:** rationing itself continued, with Dov Yosef back in charge as Trade and Industry minister from 8 Oct 1951.
+- **Repressed inflation:**
+  - Official consumer price index: up only about **10%** from end-1948 to end-1951. The money supply rose about **140%** over the same period, and Michaely estimates free-market prices rose about 30 points more.
+  - Black-market activity peaked at the 1952 devaluation.
+  - [V] Michael Michaely, *Foreign Trade Regimes and Economic Development: Israel* (NBER, 1975), ch. 5, pp. 133–134. https://www.nber.org/system/files/chapters/c4560/c4560.pdf
+- **New Economic Policy:** **1952, outside the window.** Announced **13 Feb 1952** [C: 14 Feb in the NBER devaluation study; 13 Feb in a 1952 pamphlet] https://www.marxists.org/archive/vilenska/1952/new-economic-plan.pdf .
+  - It brought devaluation from IL 1 = $2.80 to multiple rates ($1.40 / $1.00), and gradual decontrol.
+  - Michaely Table 5-1 shows the formal rate jumping from IL 0.36/$ (1950–51) to 0.70 (1952 average). [V]
+  - A Jerusalem Post archive item gives the confidence vote on the NEP as 55–44 [S].
+  - **Fiscal tightening is visible from April 1951:** public-sector excess demand fell from about 20% of GNP (1949–50) to about 11% (1951), and money growth almost stopped from Q3 1951 (Michaely Table 5-2 and text). [V]
+  - **Use for the game:** a "pre-NEP tightening" in late 1951 is historical; the NEP itself is a 1952 event.
+
+---
+
+## 7. Key laws, 1950–51 (and 1949 carry-over)
+
+| Law | Date | Notes | Source |
+|---|---|---|---|
+| Compulsory Education Law 5709-1949 | Passed **12 Sep 1949** [S]; [C] another source says August 1949. In force 18 Sep 1949. | Free compulsory schooling. Ages [C] 5–13 / 5–14 / 5–15 depending on source. Parents choose a recognised stream ("trend"). | https://israeled.org/compulsory-education-law ; https://www.jewishvirtuallibrary.org/principal-laws-relating-to-education-in-israel ; en.wiki First Gov (Louvish: 5–14) |
+| Jerusalem resolution | **23 Jan 1950** | Knesset declares Jerusalem the capital | en.wiki 1950 (Gilbert) |
+| Absentees' Property Law 5710-1950 | **14 Mar 1950** [V date in en.wiki 1950 timeline; the UN working paper also references 14 Mar 1950] | Vests absentee property in a Custodian. "Absentee" is defined from 29 Nov 1947. | https://en.wikipedia.org/wiki/1950_in_Israel ; UNCCP https://www.un.org/unispal/?p=211848 ; text https://www.adalah.org/uploads/oldfiles/Public/files/Discriminatory-Laws-Database/English/04-Absentees-Property-Law-1950.pdf |
+| Development Authority (Transfer of Property) Law 5710-1950 | [C] In force **9 Aug 1950** (UN working paper) vs "July 1950" (Forman and Kedar, via a partisan explainer) | Lets the Custodian sell to the Development Authority, which can sell to the State and the JNF | UNCCP paper above |
+| Harari Decision | **13 Jun 1950** | Constitution to be built chapter by chapter as Basic Laws. Vote 50–30, URF abstaining (Kraines 1957). | en.wiki URF; he.wiki First Knesset |
+| Law of Return 5710-1950 | **5 Jul 1950**, unanimous (Herzl's yahrzeit) | "Every Jew has the right to come to this country as an oleh". Exclusions for activity against the Jewish people or danger to public health and security (later amendments added more). | https://en.wikipedia.org/wiki/Law_of_Return |
+| Nazis and Nazi Collaborators (Punishment) Law | **1 Aug 1950** | Allows capital punishment | en.wiki 1950; he.wiki First Knesset |
+| 1950/51 state budget | **29 Jun 1950** | **IL 60 million** (about US$168m), +30%. After a 3-month provisional budget (ordinary IL 10.601m + development IL 20m). | en.wiki 1950; JTA-wire via Bentley |
+| Women's Equal Rights Law 5711-1951 | [S] **17 Jul 1951** (date not confirmed by any page read; only "1951") | Formal equality for women | https://en.wikipedia.org/wiki/Women%27s_Equal_Rights_Law_of_Israel_(1951) |
+| Hours of Work and Rest Law; MKs' Immunity Law; Civil Defence Law | 1951 (exact dates not taken) | | he.wiki First Knesset |
+| Transition to the Second Knesset Law; Second Knesset Elections Law; election-day law | April 1951 (Transition Law 12 Apr per hamichlol [S]) | Dissolution mechanism | §2 above |
+| Israel Bonds authorising vote | **Feb 1951** (Knesset voted to launch the first issue) | | https://en.wikipedia.org/wiki/Israel_Bonds (citing JTA "Facts About Israel Bonds") |
+
+- **Yeshiva deferments (not a law):**
+  - **About 400** yeshiva students exempted under the Ben-Gurion arrangement. [C] Dated 1948 or 1949 depending on source.
+  - [S] Jüdische Allgemeine reports a 1951 Ben-Gurion letter formalising the exemption under section 12 of the Defence Service Law.
+  - https://en.wikipedia.org/wiki/Haredi_conscription_in_Israel ; https://www.juedische-allgemeine.de/religion/beten-oder-schiessen/
+
+---
+
+## 8. Security, 1950–51
+
+- **Chief of Staff:** **Yigael Yadin** (`yadin`), 9 Nov 1949 → resigned **7 Dec 1952** over defence-budget cuts. The cabinet accepted his resignation and named Maklef on 4 Dec 1952. [V] https://www.jta.org/archive/israel-army-chief-of-staff-resigns-makleff-named-new-head ; https://en.wikipedia.org/wiki/Mordechai_Maklef . In office for the whole window.
+- **Defence Minister:** Ben-Gurion throughout. [V] cabinet tables above.
+- **Infiltration (Israeli historians' framing):**
+  - **Benny Morris, *Israel's Border Wars 1949–1956* (1993)** is the standard reference.
+    - Most crossings were economic or social: refugees returning to homes, fields and relatives. A minority were armed theft or murder.
+    - Between 2,700 and 5,000 infiltrators were killed in 1949–56, most of them in 1949–51 (pp. 215–216).
+    - [V via] https://en.wikipedia.org/wiki/Reprisal_operations
+  - **Israeli deaths from infiltration by year** (Morris figures as reported by Algemeiner): **1950: 19**, **1951: 48** (1949: 22; 1952: 42). [S] https://www.algemeiner.com/2023/11/13/attacks-from-gaza-were-common-from-1948-to-1956-heres-how-they-were-stopped/
+  - Brecher, *Israel's Foreign Policy* p. 229: **137 Israeli "casualties" in 1951** (likely killed + wounded). [S] https://cojs.org/1951-attacks-by-arab-infiltrators-fedayeen/
+  - Morris: 57 Israelis (mostly civilians) killed by infiltrators from the West Bank and Jordan, Jun 1949 – end 1952 (en.wiki Reprisal operations). [V]
+  - [C] The figures differ by front and definition. Use 1950 ≈ 19 killed and 1951 ≈ 48 killed as the "killed" series; use 137 only as "casualties".
+- **Notable incidents:**
+  - **17 Mar 1950:** Shepherd killed (Gilad Sharon).
+  - **31 Mar 1950:** Negev ambush; 3 soldiers and 2 civilians killed (Morris p. 168).
+  - **23 Aug 1950:** Woman killed in a Yarkona orange grove.
+  - **29 Nov – 2 Dec 1950:** Jordan blocks the Eilat road at km 78; Israel clears it on 2 Dec.
+  - **6 Feb 1951:** IDF raid on Sharafat; 9 killed (Morris p. 194).
+  - **20 Oct 1951:** 7th Brigade companies raid the eastern suburbs of Gaza (Morris p. 202).
+  - **4 Dec 1951:** Woman abducted and murdered in Jerusalem.
+  - **Sources:** https://en.wikipedia.org/wiki/1950_in_Israel and https://en.wikipedia.org/wiki/1951_in_Israel . [V, footnotes as listed]
+- **Egypt:**
+  - The Tiran and Sanafir islands were taken by Egypt on **24–25 Feb 1950**. [V] en.wiki 1950
+  - The **Tripartite Declaration** (US/UK/France) was issued **25 May 1950**. [V] en.wiki 1950
+- **Hula drainage dispute (Syria):**
+  - Works by the Palestine Land Development Company began about **14 Feb 1951** on the west bank of the Jordan, south of Lake Hula, partly inside the DMZ. Israel relied on the 1914 Ottoman concession, which passed to PLDC in 1934.
+  - Syria complained to the MAC on **21 Feb 1951**. General Riley's 7 Mar memo recommended that work stop pending agreement.
+  - [V] FRUS 1951 v.V doc 288 (5 Mar 1951) https://history.state.gov/historicaldocuments/frus1951v05/d288
+  - Israel resumed the works despite Syrian troop concentrations [V] JTA 27 Mar 1951 https://www.jta.org/archive/israel-resumes-drainage-of-huleh-swamps-syria-concentrates-troops-situation-tense
+  - Riley allowed work to continue on undisputed land in early June 1951 [S].
+  - **Israeli framing:** normal civilian development and restoration of life in the DMZ; Israel holds the concession.
+- **Al-Hamma incident, 4 Apr 1951:**
+  - An Israeli patrol in police guise, sent to assert Israeli sovereignty in the southern DMZ, was fired on near al-Hamma (Hamat Gader). **7 IDF soldiers were killed.**
+  - **5 Apr 1951:** The IAF bombed the al-Hamma police post and Syrian positions. Israel also razed remaining houses in DMZ Arab villages, whose residents (about 2,200) it wanted moved.
+  - **Israeli version:** Syrian troops entered al-Hamma, disarmed local police and fired on the Israeli police patrol.
+  - [V] https://en.wikipedia.org/wiki/Al-Hamma_incident (Morris 1993 pp. 362–363; UN S/2099)
+- **Tel Mutila, 2–6 May 1951:**
+  - Syrian forces and irregulars seized Tel el-Mutilla and Khirbet Abu Zeid, about 1 km west of the DMZ (north of the Sea of Galilee). Golani units recaptured them after five days.
+  - **41 IDF killed** [S, Hebrew memorial article https://www.inn.co.il/news/219362 ; ru-wiki also gives 70 wounded].
+  - Israel's 2 May statement to the Security Council (read by Eban) called it "unprovoked aggression". [V] https://www.jewishvirtuallibrary.org/statement-to-the-security-council-by-ambassador-eban-on-syrian-incursions
+  - The UNSC called for a cease-fire on 8 May [S, FRUS editorial note https://history.state.gov/historicaldocuments/frus1951v05/d330].
+- **UNSC Resolution 93, 18 May 1951:**
+  - Adopted 10–0–1 (USSR abstained).
+  - Found that Israel's 5 Apr air action violated the cease-fire.
+  - Per FRUS it also called for halting drainage on Arab-owned DMZ land and the return of displaced DMZ Arabs. [V for date, vote and air-action finding] https://en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_93
+  - [S] for the drainage and return clauses: https://history.state.gov/historicaldocuments/frus1951v05/d416
+- **Armistice commissions:**
+  - **Jordan:** The MAC was frozen after km 78; Jordan refused MAC talks until the route was settled (Dec 1950). [V] en.wiki 1950
+  - **Syria:** Sovereignty in the DMZ was the core issue (Riley: neither party has sovereignty). [V] FRUS d288
+  - **Egypt:** The Feb 1950 Auja agreement and the Gaza Strip neutral-zone note [V en.wiki 1950].
+
+---
+
+## 9. Economy anchors
+
+- **GNP:**
+  - National-accounts data begin only in 1950. Real GNP grew **about 25%, 1950→1951**. [V] Michaely 1975, p. 134.
+  - Halevi's EH.net summary: real GNP grew more than 11% a year on average, 1950–65. https://eh.net/encyclopedia/a-brief-economic-history-of-modern-israel/ [V]
+  - [S, unverified] A search snippet attributed to an NBER table (source: CBS Statistical Abstract) gives GNP at current prices of IL **460m (1950)** and **IL 700m (1951)**; in 1955 IL, 1,096m and 1,435m (+30.9%); per capita 865 → 960. Not read directly. The +30.9% also conflicts with Michaely's "about 25%".
+  - **National income (Kaplan, Mar 1951):** "the state's national income of 300,000,000 pounds". The four-month budget equalled 16–17% of it. [V] JTA 27 Mar 1951 (link above). Note that this conflicts with the IL 460m GNP snippet: a different concept and Kaplan's own estimate.
+- **Budgets:**
+  - FY 1950/51 (Apr–Mar): **IL 60m** approved 29 Jun 1950 (en.wiki 1950). [V]
+  - Joint Development Authority budget: IL 65m (Aug 1950, JTA wire) [S].
+  - FY 1951/52 was passed in instalments: a four-month budget in Mar 1951 and **IL 27.4m for three months** in Sep 1951, excluding the secret defence budget. Revenue Apr–Aug 1951 was 66% above estimate. [S] JTA wire via https://digital.bentley.umich.edu/djnews/djn.1951.09.28.001/74
+  - [GAP] No full-year 1951/52 total was found.
+- **Fiscal and monetary** (Michaely Table 5-2; IL millions; budget years) [V]:
+
+| Year | Internal debt rise | External debt rise | Total | Excess demand % GNP | Money supply % | Credit to public % |
+|---|---|---|---|---|---|---|
+| 1950 | 65.4 | 22.6 | 88.0 | 19.2 | 35.4 | 42.3 |
+| 1951 | 33.0 | 43.1 | 76.1 | 10.9 | 27.2 | 28.9 |
+
+- **Exchange rate** (Michaely Table 5-1, IL per $): formal rate 0.36 in 1950 and 1951 (IL 1 = $2.80). Effective export/import rates were 0.39/0.40 (1950) and 0.41/0.40 (1951). [V]
+- **Inflation:**
+  - Official CPI about +10% over end-1948 to end-1951 (repressed; see §6). [V]
+  - MFA via JVL: inflation "had risen from 14% the previous year to 66%" in 1952, i.e. **1951 ≈ 14%**. [S] https://jewishvirtuallibrary.org/the-rise-and-fall-of-israeli-inflation
+  - A new cost-of-living index base was set at Sep 1951 = 100 [S] (JTA).
+- **Foreign-currency crisis, autumn 1951** [V] FRUS 1951 v.V doc 513, Amb. Davis, **19 Oct 1951** https://history.state.gov/historicaldocuments/frus1951v05/d513 :
+  - Drought forced higher wheat imports.
+  - Immigration in the first six months "greatly exceeded" plan, mainly from Iraq and Romania.
+  - Bond cash receipts were only **$60m against $80m pledged**.
+  - About **$45m** of short-term commercial credit matured Oct–Dec.
+  - Israel asked for about **$15m** in immediate US aid.
+  - en.wiki Austerity: foreign banks and oil companies refused to expand credit at the end of 1951. [V]
+  - Earlier, on **11 Feb 1950**, Britain released £15m of frozen Mandate-era Israeli sterling assets. [V] en.wiki 1950
+- **Israel Bonds:**
+  - Ben-Gurion convened US Jewish leaders at the King David Hotel in **Sep 1950** ("Billion Dollar Conference", **3 Sep 1950** per en.wiki 1950).
+  - The Knesset authorised the issue in **Feb 1951**.
+  - **Launch: 10 May 1951**, Madison Square Garden. The rally raised $35m (JTA 11 May 1951).
+  - First-year sales were over **$52m** against a $25m goal. The 3.5% "Independence Issue".
+  - [V] https://en.wikipedia.org/wiki/Israel_Bonds ; https://www.jewishvirtuallibrary.org/state-of-israel-bonds
+  - [C] en.wiki "1950 in Israel" says "6 Sep 1950: the first State of Israel Bond issue is launched in the United States". This conflicts with the Bonds article and JVL, which say May 1951. Treat **May 1951** as the launch.
+- **Unemployment:** [GAP]
+  - No rate found. The Falk Institute labour study has "Estimates of Unemployment, Jews: 1949–1959", but the PDF was too large to fetch: https://en.falk.huji.ac.il/sites/default/files/falk/files/laborhovne.pdf
+  - The ILO reported a +25% rise in Israeli unemployment (Sep 1951 JTA brief). [S] https://jta.org/archive/israel-was-one-of-five-countries-to-show
+  - Ma'abarot worst-case unemployment was 90–96% (Roby).
+
+---
+
+## 10. Candidate events for 1950–51
+
+Each candidate gives dates, the real choice faced, the historical option taken, the alternatives that were discussed, and sources. Effects are left to design.
+
+1. **`frumkin_commission` – Camp-education crisis (Jan–May 1950).** Office: prime_minister.
+   - **Choice:** Religious parties allege anti-religious coercion of Yemenite children in the camps. Ignore the charges, or appoint an inquiry and transfer camp education?
+   - **Historical:** A commission under Judge Frumkin was appointed in Jan 1950 and reported on 9 May 1950. Camp education moved to the Education Ministry and officials were reassigned. The government did not formally adopt the report.
+   - **Alternatives raised at the time:** URF threats to leave the coalition (March 1950).
+   - **Sources:** he.wiki Frumkin Commission; en.wiki Gad Frumkin; en.wiki 1950.
+2. **`ministry_supply_crisis` – Abolishing the Ministry of Supply and Rationing (Oct 1950).** Office: prime_minister.
+   - **Choice:** Keep Dov Yosef's ministry and the coalition as it is, or restructure: close the ministry and bring in a non-party businessman (Geri) for Trade and Industry, at the cost of resigning and rebuilding the coalition.
+   - **Historical:** Resigned 15 Oct 1950. A minority government failed on 17 Oct. Rosen's attempt (19–29 Oct) failed. Same coalition re-formed on 1 Nov 1950 (69–42). The ministry was abolished, Yosef moved to Transportation and Geri took Trade and Industry.
+   - **Sources:** en.wiki 1950; en.wiki Rationing minister; he.wiki First Knesset.
+3. **`law_of_return` – Law of Return (5 Jul 1950).** Office: prime_minister.
+   - **Choice:** An unrestricted right of every Jew to immigrate, vs. regulated or selective entry.
+   - **Historical:** Passed unanimously.
+   - **Sources:** en.wiki Law of Return.
+   - **Note:** Not a contested vote. Better treated as a scripted milestone than a dilemma.
+4. **`iraqi_exodus` – Iraqi Jews (Mar 1950 – 1951).** Office: prime_minister / immigration_minister.
+   - **Choice:** After Iraq's March 1950 denaturalisation law, bring all registrants fast despite ma'abarot overload and the forex crisis, or pace arrivals to absorption capacity.
+   - **Historical:** The Zionist movement initially tried to slow registration (Meir-Glitzenstein). After the March 1951 asset freeze, Israel ran the mass airlift through 1951, and about 120–130k arrived by early 1952.
+   - **Sources:** en.wiki Ezra and Nehemiah; Meir-Glitzenstein (Iyunim 40, https://in.bgu.ac.il/bgi/iyunim/40/Meir-Glitzenstein.pdf); FRUS d513 (Iraqi inflow exceeding plan).
+   - **Caution:** No primary Israeli cabinet decision was seen. Keep the event text general.
+5. **`maabarot_policy` – Replace immigrant camps with ma'abarot (Mar–May 1950).** Office: prime_minister (in practice the Jewish Agency, Eshkol).
+   - **Choice:** Keep free-board camps, or move to self-supporting tent and tin camps near towns and work.
+   - **Historical:** Ma'abarot from May 1950. About 227,000 residents by end-1951.
+   - **Sources:** en.wiki and he.wiki Ma'abarot.
+6. **`clothing_rationing_1950` – Tighten austerity (Jul–Aug 1950).** Office: rationing_minister.
+   - **Choice:** Extend rationing to clothing and footwear and fight the black market, or relax.
+   - **Historical:** Extended on 31 Jul 1950. Merchants' and general strikes followed (1–14 Aug). The no-confidence motion failed 57–36 on 8 Aug. The anti-black-market office was set up in Sep 1950.
+   - **Sources:** en.wiki and he.wiki austerity; en.wiki 1950.
+   - **Note:** This continues the existing `austerity_1949`.
+7. **`education_registration_1951` – Religious stream in the camps and the government's fall (Nov 1950 – Feb 1951).** Office: prime_minister / education_minister.
+   - **Choice:** Accept the religious parties' demand to keep immigrant children in the religious stream (no Histadrut religious stream), or press Remez's registration plan and risk defeat.
+   - **Historical:** The Knesset rejected Remez's proposal. The government resigned on 14 Feb 1951 and Ben-Gurion chose early elections (laws of April 1951, election 30 Jul 1951) over a new coalition.
+   - **Sources:** en.wiki and he.wiki Second Government; he.wiki First Knesset; JTA wire (49–42).
+8. **`israel_bonds` – Launch Israel Bonds (Sep 1950 → May 1951).** Office: finance_minister / prime_minister.
+   - **Choice:** Rely on UJA donations and loans, or sell sovereign bonds to diaspora Jews (risking competition with UJA fundraising).
+   - **Historical:** King David conference Sep 1950, Knesset approval Feb 1951, launch 10 May 1951. Over $52m sold in 1951.
+   - **Sources:** en.wiki Israel Bonds; JVL.
+9. **`hula_drainage` / `al_hamma` – DMZ with Syria (Feb–May 1951).** Office: prime_minister / defense_minister.
+   - **Choice:** Continue Hula drainage and assert sovereignty in the DMZ despite the MAC chairman's requests to stop, or halt pending agreement.
+   - **Historical:** Continued. Patrol to al-Hamma, 7 killed (4 Apr). Air strike (5 Apr). Tel Mutila battle (2–6 May, 41 killed). UNSC Res. 93 (18 May) criticised the air action. Drainage continued on undisputed land.
+   - **Sources:** FRUS d288; en.wiki Al-Hamma incident; JVL Eban statement; en.wiki UNSC 93.
+10. **`reparations_claim` – Reparations from Germany (Mar 1951 → Jan 1952).** Office: foreign_minister / prime_minister.
+    - **Choice:** Claim compensation from Germany (and later negotiate directly), or refuse any dealings on moral grounds.
+    - **Historical:**
+      - **12 Mar 1951:** Sharett's note to the four occupying powers claims **$1.5bn**, based on absorbing 500,000 survivors at $3,000 each. [C] en.wiki 1951 timeline: 13 Mar.
+      - **27 Sep 1951:** Adenauer's Bundestag declaration offering negotiations.
+      - **Oct 1951:** Claims Conference founded.
+      - **Within the window, the decision is only the claim note.** The Knesset debate and vote to authorise direct talks were **7–9 Jan 1952 (61–50, 6 abstentions; Begin-led riot on 7 Jan)**, outside the window. Signing in Luxembourg was on 10 Sep 1952.
+    - **Sources:** https://en.wikipedia.org/wiki/Reparations_Agreement_between_Israel_and_the_Federal_Republic_of_Germany ; https://www.jewishvirtuallibrary.org/german-holocaust-reparations ; https://www.juedische-allgemeine.de/politik/bruecke-in-die-zukunft-2 ; he.wiki Second Knesset (vote).
+- **Extra candidates, if needed:**
+  - `selective_aliyah_1951` (Nov 1951 North Africa selection guidelines, [S] secondary only).
+  - `yeshiva_deferment` (about 400 exemptions; 1951 formal letter [S]).
+  - `forex_crisis_1951` (Oct 1951 US aid request, FRUS d513). This is the strongest-sourced late-1951 economic event.
+  - `local_elections_1950` (14 Nov 1950; General Zionists surge).
+
+---
+
+## Gaps and open conflicts (summary)
+- **Knesset primary site:** Blocked, so no Knesset-site confirmation. Every government and Knesset date comes from en.wiki, he.wiki, IDI or JVL.
+- **Government dates:**
+  - First Government end: 30 Oct vs 1 Nov 1950.
+  - Ben-Gurion's resignation: 15 vs 16 Oct 1950.
+  - Maimon's resignation: 4 Jan 1951 vs post-vote Feb 1951.
+- **Third Government parties and portfolios:** Burg Health vs Post. Sheetrit's party in the Third Government (Mapai vs Sephardim).
+- **Knesset session dates:**
+  - Exact day of the April 1951 dissolution laws (12 Apr from a single source).
+  - Second Knesset convening, 20 Aug 1951, from a single source.
+- **Aliyah:**
+  - No country-by-year (1950 vs 1951) immigration split. Only 1948–51 country totals.
+  - Romania and Poland annual figures missing.
+- **Demography and ma'abarot:**
+  - No natural-increase figure from CBS.
+  - Ma'abarot end-1951 count and population conflict (123/125 and 227k vs 127 and 250k). The January 1952 figure of 157k conflicts as well.
+- **Economy:**
+  - No unemployment rate.
+  - GNP in IL is an unverified snippet; Kaplan's IL 300m "national income" is a different concept.
+  - No full-year FY1951/52 budget.
+- **Security:** Infiltration counts per year come from secondary reports of Morris and Brecher. The Tel Mutila 41-killed figure is from an Israeli memorial article and ru-wiki only.
