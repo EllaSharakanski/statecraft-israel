@@ -222,4 +222,13 @@ status: draft
         Assert.Equal("events/drought.yaml", ex.File);
         Assert.Equal(field, ex.Field);
     }
+
+    [Fact]
+    public void DuplicateKeyIsAContentError()
+    {
+        // YamlDotNet keeps the last of two equal keys by default, which would silently drop the first value.
+        var ex = Bad("legislatures.yaml", "    size: 10\n", "    size: 10\n    seats:\n");
+        Assert.Equal("legislatures.yaml", ex.File);
+        Assert.StartsWith("line ", ex.Field);
+    }
 }

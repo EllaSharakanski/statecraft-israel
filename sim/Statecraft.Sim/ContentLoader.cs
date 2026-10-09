@@ -31,6 +31,7 @@ namespace Statecraft.Sim
 
         static readonly IDeserializer Yaml = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
+            .WithDuplicateKeyChecking()   // two equal keys would otherwise silently keep only the last value
             .Build();
 
         static T Read<T>(Func<string, string?> readFile, string relPath)
