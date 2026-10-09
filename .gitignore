@@ -18,3 +18,5 @@ spikes/m0/unity/UserSettings/
 spikes/m0/unity/Assets/Plugins/
 spikes/m0/unity/*.csproj
 spikes/m0/unity/*.slnx
+spikes/m0/unity/.vscode/
+spikes/m0/unity/Assets/Plugins.meta

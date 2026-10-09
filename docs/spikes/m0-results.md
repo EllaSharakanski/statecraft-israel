@@ -6,7 +6,7 @@ Web = WebGL 2 (IL2CPP), Chrome on this Mac. Mac = StandaloneOSX, IL2CPP (GameAss
 
 | Q | Question | Answer | Evidence |
 |---|---|---|---|
-| a | URP Web build runs a 4,000-hex instanced scene | **yes**, fps=120.0 (vsync cap; Chrome, this Mac, foreground tab). Mac IL2CPP player: 1,850-2,460 fps uncapped | `spikes/m0/evidence/web-dof-off.jpg`; `SPIKE a: fps=120.0` in `spikes/m0/evidence/web-console-spike-lines.txt`; `mac-player-log-spike-lines.txt` |
+| a | URP Web build runs a 4,000-hex instanced scene | **yes**, fps=120.0 in Chrome on this Mac. Web headroom unmeasured (vsync-capped at 120 fps in a foreground tab; ~1 fps when the tab is backgrounded). The Mac IL2CPP player runs uncapped at 1,850–2,460 fps (1280×720 window, different backend/renderer), which only shows the scene itself is cheap. Real terrain, shading and shadow costs were not spiked | `spikes/m0/evidence/web-dof-off.jpg`; `SPIKE a: fps=120.0` in `spikes/m0/evidence/web-console-spike-lines.txt`; `mac-player-log-spike-lines.txt` |
 | c | netstandard2.1 DLL + YamlDotNet in Unity (IL2CPP Web and Mac) | **yes** | `SPIKE c: yaml ok count=2 first=David Ben-Gurion` in browser console and in Mac Player.log (both IL2CPP, link.xml as in brief) |
 | d | UI Toolkit runtime binding, 13 cards, live update | **yes** | `web-d-before-mutation.jpg` (card 1 shows 5) vs `web-d-after-mutation.jpg` (card 1 shows 9) after `SPIKE d: mutated vm0 competence to 9`; Mac: `mac-dof-on.jpg` shows 9 |
 | e | URP Gaussian DoF (tilt-shift look) | **yes**, but only after enabling post-processing on the camera (see API corrections) | `web-dof-on.jpg` vs `web-dof-off.jpg`; `mac-dof-on.jpg` vs `mac-dof-off.jpg` (volume toggled every 4 s, logged as `SPIKE e: dof ON/OFF`). Far hexes blur, near hexes stay sharper |
@@ -14,7 +14,10 @@ Web = WebGL 2 (IL2CPP), Chrome on this Mac. Mac = StandaloneOSX, IL2CPP (GameAss
 
 Notes on (a): the browser tab must be foreground/visible. In a background or occluded Chrome window the
 player ran at 0.7-1.3 fps (rAF throttling), and the splash screen did not finish. That is browser behaviour, not
-a render cost. 120 fps is the display refresh cap, so the real web headroom is above 120.
+a render cost. Web headroom unmeasured (vsync-capped at 120 fps in a foreground tab; ~1 fps when the tab is
+backgrounded). The Mac IL2CPP player runs uncapped at 1,850–2,460 fps (1280×720 window, different backend/renderer),
+which only shows the scene itself is cheap. Real terrain, shading and shadow costs were not spiked: the stress test is
+4,000 flat top-face hex caps with plain URP Lit.
 
 ## API corrections
 1. `Shader.Find("Universal Render Pipeline/Lit")` returns **null in the player** (Web and Mac), because nothing in the
