@@ -17,6 +17,8 @@ namespace Statecraft.Sim
         public string Office { get; set; } = "";
         public DateTime From { get; set; }
         public DateTime? To { get; set; }
+        /// <summary>Party the holder represented in this term; empty means Person.Party applies.</summary>
+        public string Party { get; set; } = "";
         public List<Source> Sources { get; set; } = new List<Source>();
     }
 

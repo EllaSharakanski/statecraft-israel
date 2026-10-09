@@ -1,4 +1,5 @@
 # Offices and dates are historical facts (sourced per term). competence/loyalty are game-balance values, not facts.
+# A term's `party` (when set) is the list the holder sat for in that government (First_government_of_Israel); otherwise `party` of the person applies.
 # Periods are [from, to). Terms without `to` continue beyond the M1 content range (end of 1949).
 # Portraits: public-domain files fetched with license check (promo/CREDITS.md).
 people:
@@ -51,9 +52,9 @@ people:
     offices:
       - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: health_minister, from: 1949-03-10, sources: *first }
-      - { office: immigration_minister, from: 1949-03-10, sources: *first }
-      - { office: interior_minister, from: 1949-03-10, sources: *first }
+      - { office: health_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: immigration_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: interior_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
     status: fact-checked
   - id: gruenbaum
     name: Yitzhak Gruenbaum
@@ -72,7 +73,7 @@ people:
     portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg" }
     offices:
       - { office: justice_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: justice_minister, from: 1949-03-10, sources: *first }
+      - { office: justice_minister, from: 1949-03-10, party: progressive, sources: *first }
     status: fact-checked
   - id: bentov
     name: Mordechai Bentov
@@ -103,8 +104,8 @@ people:
     offices:
       - { office: religions_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: war_victims_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: religions_minister, from: 1949-03-10, sources: *first }
-      - { office: war_victims_minister, from: 1949-03-10, sources: *first }
+      - { office: religions_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: war_victims_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
     status: fact-checked
   - id: bernstein
     name: Peretz Bernstein
@@ -133,7 +134,7 @@ people:
     portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg" }
     offices:
       - { office: welfare_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: welfare_minister, from: 1949-03-10, sources: *first }
+      - { office: welfare_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
     status: fact-checked
   - id: dov_yosef
     name: Dov Yosef

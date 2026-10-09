@@ -55,6 +55,20 @@ public class RealContentTests
     }
 
     [Fact]
+    public void PartyFollowsTheTermHeldOnTheDate()
+    {
+        var rosen = C.People.Single(p => p.Id == "rosen");
+        Assert.Equal("new_aliyah", Offices.PartyOf(C, rosen, new DateTime(1948, 6, 1)));
+        Assert.Equal("progressive", Offices.PartyOf(C, rosen, new DateTime(1949, 6, 1)));
+        foreach (var id in new[] { "shapira", "maimon", "levin" })
+        {
+            var p = C.People.Single(x => x.Id == id);
+            Assert.Equal(p.Party, Offices.PartyOf(C, p, new DateTime(1948, 6, 1)));
+            Assert.Equal("united_religious_front", Offices.PartyOf(C, p, new DateTime(1949, 6, 1)));
+        }
+    }
+
+    [Fact]
     public void SpotChecksAgainstVerifiedFacts()
     {
         Assert.Equal("ben_gurion", Offices.Holder(C, "defense_minister", new DateTime(1948, 6, 1))!.Id);

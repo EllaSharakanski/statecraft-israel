@@ -12,6 +12,10 @@ namespace Statecraft.Sim
         public static Person? Holder(Content c, string office, DateTime date) =>
             c.People.FirstOrDefault(p => p.Offices.Any(t => t.Office == office && In(date, t.From, t.To)));
 
+        /// <summary>Party of the person on date: the party of a term held that day, else Person.Party.</summary>
+        public static string PartyOf(Content c, Person p, DateTime date) =>
+            p.Offices.FirstOrDefault(t => t.Party != "" && In(date, t.From, t.To))?.Party ?? p.Party;
+
         public static Legislature? Legislature(Content c, DateTime date) =>
             c.Legislatures.FirstOrDefault(l => In(date, l.From, l.To));
 

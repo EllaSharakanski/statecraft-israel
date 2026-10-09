@@ -17,6 +17,8 @@ mobilization_cost_per_year: 60
 natural_increase_per_year: 0.0169
 # Derived: CBS end-1948 Jewish population 758,700 minus 101,828 immigrants (15 May-31 Dec 1948) minus natural increase over
 # 7.5 months at the rate above. Checked against the 8 Nov 1948 census by the calibration test.
+# Arithmetic: 758,700 - 101,828 = 656,872. Natural-increase base = average of 656,872 and 758,700 = 707,786.
+# Natural increase = 707,786 x 0.0169 x 7.5/12 = 7,476. 656,872 - 7,476 = 649,396, rounded to the nearest hundred = 649,400.
 initial_population: { veterans: 649400 }
 budget_start:
   defense_minister: 0.45

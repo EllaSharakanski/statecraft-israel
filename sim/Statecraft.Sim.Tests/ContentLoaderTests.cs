@@ -58,6 +58,16 @@ public class ContentLoaderTests
     }
 
     [Fact]
+    public void OfficeTermPartyMustExist()
+    {
+        var bad = Fixture.Files["people.yaml"].Replace("      - office: finance_minister\n", "      - office: finance_minister\n        party: gamma\n");
+        Assert.NotEqual(Fixture.Files["people.yaml"], bad);
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["people.yaml"] = bad })));
+        Assert.Equal("people.yaml", ex.File);
+        Assert.Equal("people[def_two].offices.finance_minister.party", ex.Field);
+    }
+
+    [Fact]
     public void OfficeTermEndingBeforeItStartsIsAnError()
     {
         var bad = Fixture.Files["people.yaml"].Replace("to: 1949-01-01", "to: 1947-01-01");
