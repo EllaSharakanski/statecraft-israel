@@ -10,6 +10,7 @@ options:
     text: Impose rationing
     historical: true
     recommended: true
+    set_policy: { rationing: 1.0 }
     effects:
       - { target: food_supply, delta: 0.15 }
       - { target: morale, delta: -0.05 }

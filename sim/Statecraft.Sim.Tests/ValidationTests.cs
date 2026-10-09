@@ -193,4 +193,33 @@ status: draft
         Assert.Equal("people.yaml", ex.File);
         Assert.Equal("people[pm_one].living", ex.Field);
     }
+
+    // M1: event options can set policies.
+    internal static readonly string RationingEvent = Event.Replace("    historical: true\n", "    historical: true\n    set_policy: { rationing: 1.0 }\n");
+
+    [Fact]
+    public void ChoosingAnOptionSetsItsPolicies()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = RationingEvent }));
+        var s = new GameState { Date = new DateTime(1948, 6, 1) };
+        EffectsSystem.Init(c, s); EconomySystem.Init(c, s);
+        var why = new List<Cause>();
+        EventSystem.Trigger(c, s, why);
+        Assert.Equal(0.0, s.Policies["rationing"]);
+        Assert.Null(EventSystem.Choose(c, s, "drought", "ration", why));
+        Assert.Equal(1.0, s.Policies["rationing"]);
+        Assert.Contains(why, w => w.System == "events" && w.Target == "rationing" && w.Delta == 1.0);
+    }
+
+    [Theory]
+    [InlineData("set_policy: { rationing: 1.0 }", "set_policy: { bread: 1.0 }", "events[drought].options[ration].set_policy.bread")]
+    [InlineData("set_policy: { rationing: 1.0 }", "set_policy: { rationing: 1.5 }", "events[drought].options[ration].set_policy.rationing")]
+    [InlineData("set_policy: { rationing: 1.0 }", "set_policy: { rationing: .nan }", "events[drought].options[ration].set_policy.rationing")]
+    public void SetPolicyNeedsAKnownPolicyAndALevelFrom0To1(string from, string to, string field)
+    {
+        var bad = RationingEvent.Replace(from, to);
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = bad })));
+        Assert.Equal("events/drought.yaml", ex.File);
+        Assert.Equal(field, ex.Field);
+    }
 }

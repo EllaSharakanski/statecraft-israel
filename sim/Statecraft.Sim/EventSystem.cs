@@ -61,6 +61,11 @@ namespace Statecraft.Sim
                 }
                 why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00} ({eventId}/{o.Id})")));
             }
+            foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))
+            {
+                s.Policies[kv.Key] = kv.Value;
+                why.Add(new Cause("events", kv.Key, kv.Value, FormattableString.Invariant($"{kv.Key} set to {kv.Value:0.00} ({eventId}/{o.Id})")));
+            }
             if (o.SetRung.HasValue) SecuritySystem.SetRung(c, s, o.SetRung.Value, why);
         }
 

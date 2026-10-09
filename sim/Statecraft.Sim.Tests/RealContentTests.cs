@@ -81,4 +81,12 @@ public class RealContentTests
         Assert.Equal(239954, C.Aliyah[1].Origins.Values.Sum());
         Assert.Equal(13, C.Actors.Count);
     }
+
+    [Fact]
+    public void ImposingAusterityTurnsRationingOn()
+    {
+        var e = C.Events.Single(x => x.Id == "austerity_1949");
+        Assert.Equal(1.0, e.Options.Single(o => o.Id == "impose").SetPolicy["rationing"]);
+        Assert.Empty(e.Options.Single(o => o.Id == "decline").SetPolicy);
+    }
 }

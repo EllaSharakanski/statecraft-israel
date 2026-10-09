@@ -151,6 +151,8 @@ namespace Statecraft.Sim
         public bool Recommended { get; set; }
         public List<OptionEffect> Effects { get; set; } = new List<OptionEffect>();
         public int? SetRung { get; set; }
+        /// <summary>Policies this option sets, by id, to a level in [0, 1].</summary>
+        public Dictionary<string, double> SetPolicy { get; set; } = new Dictionary<string, double>();
     }
 
     public sealed class GameEvent
