@@ -46,14 +46,21 @@ namespace Statecraft.Sim
             why.Add(new Cause("events", eventId, 0, $"{how}: {Offices.Fill(c, o.Text, fillDate)}"));
             foreach (var fx in o.Effects)
             {
+                var change = fx.Delta;
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
                 else
                 {
-                    s.IndicatorShifts[fx.Target] += fx.Delta;
-                    s.Indicators[fx.Target] = EffectsSystem.Level(c, s, c.Indicators.First(i => i.Id == fx.Target));
+                    // Store only the effective change, so a shift never builds up beyond the 0..1 clamp.
+                    var ind = c.Indicators.First(i => i.Id == fx.Target);
+                    var before = EffectsSystem.Level(c, s, ind);
+                    var contributions = c.Effects.Where(e => e.Target == ind.Id).Sum(e => s.EffectContributions[e.Id]);
+                    var target = Math.Max(0, Math.Min(1, ind.Base + s.IndicatorShifts[ind.Id] + contributions + fx.Delta));
+                    s.IndicatorShifts[ind.Id] = target - ind.Base - contributions;
+                    s.Indicators[ind.Id] = target;
+                    change = target - before;
                 }
-                why.Add(new Cause("events", fx.Target, fx.Delta, FormattableString.Invariant($"{fx.Target} {fx.Delta:+0.00;-0.00} ({eventId}/{o.Id})")));
+                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00} ({eventId}/{o.Id})")));
             }
             if (o.SetRung.HasValue) SecuritySystem.SetRung(c, s, o.SetRung.Value, why);
         }

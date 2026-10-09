@@ -94,6 +94,74 @@ options:
         Assert.Equal(0.1, s.IndicatorShifts["food_supply"], 9);
     }
 
+    const string Swing = @"
+id: swing
+title: Mood swing
+text: Public mood shifts.
+from: 1948-06-01
+options:
+  - id: up
+    text: Up
+    effects:
+      - target: morale
+        delta: 0.3
+  - id: down
+    text: Down
+    effects:
+      - target: morale
+        delta: -0.2
+  - id: sink
+    text: Sink
+    effects:
+      - target: morale
+        delta: -0.5
+  - id: rise
+    text: Rise
+    effects:
+      - target: morale
+        delta: 0.1
+";
+
+    /// <summary>Morale (base 0.5, no effect contributions) set to level via its shift, then each option chosen in turn.</summary>
+    static List<(double level, double causeDelta)> Swings(double level, params string[] options)
+    {
+        var c = Load(new Dictionary<string, string> { ["swing.yaml"] = Swing });
+        var s = State(c, new DateTime(1948, 6, 1));
+        s.IndicatorShifts["morale"] = level - 0.5; s.Indicators["morale"] = level;
+        var result = new List<(double, double)>();
+        foreach (var o in options)
+        {
+            s.PendingEvents.Add("swing"); var why = new List<Cause>();
+            Assert.Null(EventSystem.Choose(c, s, "swing", o, why));
+            result.Add((s.Indicators["morale"], why.Single(w => w.Target == "morale").Delta));
+        }
+        return result;
+    }
+
+    [Fact]
+    public void EventPastTheTopStoresOnlyTheEffectiveChange()
+    {
+        var r = Swings(0.95, "up", "down");
+        Assert.Equal(1.0, r[0].level, 9);
+        Assert.Equal(0.8, r[1].level, 9);   // not stuck at 1.0
+    }
+
+    [Fact]
+    public void EventPastTheBottomStoresOnlyTheEffectiveChange()
+    {
+        var r = Swings(0.02, "sink", "rise");
+        Assert.Equal(0.0, r[0].level, 9);
+        Assert.Equal(0.1, r[1].level, 9);
+    }
+
+    [Fact]
+    public void EventCauseAmountIsTheActualChange()
+    {
+        var r = Swings(0.95, "up", "down");
+        Assert.Equal(0.05, r[0].causeDelta, 9);
+        Assert.Equal(-0.2, r[1].causeDelta, 9);
+    }
+
     [Fact]
     public void UnknownOptionIsRejected()
     {
