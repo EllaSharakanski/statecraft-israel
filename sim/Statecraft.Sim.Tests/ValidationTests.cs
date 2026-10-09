@@ -63,6 +63,16 @@ status: draft
         Assert.EndsWith(message, ex.Message);
     }
 
+    // R3: with two null lists, the ordinally-first property is reported on every runtime.
+    [Fact]
+    public void FirstNullFieldReportedIsOrdinallyFirst()
+    {
+        var two = Event.Replace("tags: [economy]", "tags:").Replace(
+            "options:\n  - id: ration\n    text: Ration water\n    historical: true\n    effects:\n      - target: food_supply\n        delta: 0.1\n  - id: wait\n    text: Wait for rain\n", "options:\n");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = two })));
+        Assert.Equal("events[drought].options", ex.Field);
+    }
+
     // I2: enum-like fields.
     [Theory]
     [InlineData("events/drought.yaml", "anchor: soft", "anchor: hrad", "events[drought].anchor")]

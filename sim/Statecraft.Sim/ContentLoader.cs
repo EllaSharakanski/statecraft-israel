@@ -53,7 +53,7 @@ namespace Statecraft.Sim
         /// objects, naming list entries by id when they have one, else by index.</summary>
         static void CheckNulls(string file, string path, object o)
         {
-            foreach (var p in o.GetType().GetProperties())
+            foreach (var p in o.GetType().GetProperties().OrderBy(x => x.Name, StringComparer.Ordinal))
             {
                 if (p.GetCustomAttribute<YamlIgnoreAttribute>() != null) continue;
                 var key = (path == "" ? "" : path + ".") + UnderscoredNamingConvention.Instance.Apply(p.Name);
