@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Statecraft.Sim;
 
 public class ContentLoaderTests
@@ -78,5 +80,53 @@ public class ContentLoaderTests
         var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { [file] = bad })));
         Assert.Equal(file, ex.File);
         Assert.Equal(field, ex.Field);
+    }
+    [Fact]
+    public void UnreadableFileIsAContentError()
+    {
+        if (OperatingSystem.IsWindows()) return;   // unix permissions only
+        var dir = Fixture.Write();
+        var path = Path.Combine(dir, "parties.yaml");
+        File.SetUnixFileMode(path, UnixFileMode.None);
+        try
+        {
+            var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+            Assert.Equal("parties.yaml", ex.File);
+            Assert.Equal("(file)", ex.Field);
+        }
+        finally { File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+    }
+
+    [Fact]
+    public void LockedFileIsAContentError()
+    {
+        var dir = Fixture.Write();
+        using (new FileStream(Path.Combine(dir, "parties.yaml"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+            Assert.Equal("parties.yaml", ex.File);
+            Assert.Equal("(file)", ex.Field);
+        }
+    }
+
+    [Fact]
+    public void RulesStartIsRequired()
+    {
+        var bad = Fixture.Files["rules.yaml"].Replace("start: 1948-05-15\n", "");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = bad })));
+        Assert.Equal("rules.yaml", ex.File);
+        Assert.Equal("start", ex.Field);
+        Assert.EndsWith("required", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("office:")]
+    [InlineData("office: ''")]
+    public void OfficeTermNeedsAnOffice(string replacement)
+    {
+        var bad = Fixture.Files["people.yaml"].Replace("office: finance_minister", replacement);
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["people.yaml"] = bad })));
+        Assert.Equal("people.yaml", ex.File);
+        Assert.Equal("people[def_two].offices", ex.Field);
     }
 }

@@ -37,6 +37,8 @@ namespace Statecraft.Sim
             if (!File.Exists(path)) throw new ContentException(relPath, "(file)", "missing file");
             try { return Yaml.Deserialize<T>(File.ReadAllText(path)) ?? throw new ContentException(relPath, "(file)", "empty file"); }
             catch (YamlException e) { throw new ContentException(relPath, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
+            catch (IOException e) { throw new ContentException(relPath, "(file)", e.Message); }
+            catch (UnauthorizedAccessException e) { throw new ContentException(relPath, "(file)", e.Message); }
         }
 
         public static Content Load(string contentRoot)
@@ -100,6 +102,7 @@ namespace Statecraft.Sim
                 if (p.Party != "" && !parties.Contains(p.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].party", $"unknown party '{p.Party}'");
                 foreach (var t in p.Offices)
                 {
+                    if (string.IsNullOrEmpty(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices", "office term without an office");
                     if (!offices.Contains(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", "unknown office");
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", $"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})");
                 }
@@ -140,6 +143,7 @@ namespace Statecraft.Sim
             foreach (var v in c.VoterGroups)
                 foreach (var k in v.Weights.Keys)
                     if (!indicators.Contains(k)) throw new ContentException("model.yaml", $"voter_groups[{v.Id}].weights.{k}", "unknown indicator");
+            if (c.Rules.Start == default) throw new ContentException("rules.yaml", "start", "required");
             if (c.Rules.RungMinMobilization.Count != 5) throw new ContentException("rules.yaml", "rung_min_mobilization", "needs exactly 5 values (rungs 1-5)");
             foreach (var k in c.Rules.BudgetStart.Keys)
                 if (!offices.Contains(k)) throw new ContentException("rules.yaml", $"budget_start.{k}", "unknown office");
