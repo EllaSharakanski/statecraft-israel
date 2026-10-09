@@ -1,0 +1,29 @@
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Statecraft.Sim
+{
+    /// <summary>"Who held this office / which body sat on this date." Periods are [from, to).</summary>
+    public static class Offices
+    {
+        static bool In(DateTime d, DateTime from, DateTime? to) => d >= from && (to == null || d < to.Value);
+
+        public static Person? Holder(Content c, string office, DateTime date) =>
+            c.People.FirstOrDefault(p => p.Offices.Any(t => t.Office == office && In(date, t.From, t.To)));
+
+        public static Legislature? Legislature(Content c, DateTime date) =>
+            c.Legislatures.FirstOrDefault(l => In(date, l.From, l.To));
+
+        public static Government? Government(Content c, DateTime date) =>
+            c.Governments.FirstOrDefault(g => In(date, g.From, g.To));
+
+        static readonly Regex Placeholder = new Regex(@"\{([a-z_]+)\}");
+
+        /// <summary>Replaces {office_id} with the name of the person holding it on date.</summary>
+        public static string Fill(Content c, string text, DateTime date) =>
+            Placeholder.Replace(text, m =>
+                Holder(c, m.Groups[1].Value, date)?.Name
+                ?? throw new InvalidOperationException($"no holder of '{m.Groups[1].Value}' on {date:yyyy-MM-dd}"));
+    }
+}

@@ -97,6 +97,15 @@ namespace Statecraft.Sim
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", $"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})");
                 }
             }
+            var terms = c.People.SelectMany(p => p.Offices.Select(t => (person: p.Id, term: t))).ToList();
+            for (int i = 0; i < terms.Count; i++)
+                for (int j = i + 1; j < terms.Count; j++)
+                {
+                    var (a, b) = (terms[i], terms[j]);
+                    if (a.term.Office != b.term.Office || a.person == b.person) continue;
+                    if (a.term.From < (b.term.To ?? DateTime.MaxValue) && b.term.From < (a.term.To ?? DateTime.MaxValue))
+                        throw new ContentException("people.yaml", $"offices.{a.term.Office}", $"held by both {a.person} and {b.person} on overlapping dates");
+                }
             foreach (var l in c.Legislatures)
             {
                 foreach (var kv in l.Seats)
