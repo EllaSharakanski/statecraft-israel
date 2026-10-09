@@ -69,10 +69,9 @@ namespace Statecraft.Sim
                 if (Inside(t.From)) points.Add(t.From);
                 if (t.To.HasValue && Inside(t.To.Value)) points.Add(t.To.Value);
             }
+            // An open-ended window needs no extra check: a last finite term ends inside [from, ∞) and is caught above.
             foreach (var d in points)
                 if (Offices.Holder(c, office, d) == null) return d;
-            if (to == null && !terms.Any(t => t.To == null))
-                return terms.Select(t => t.To!.Value).DefaultIfEmpty(from).Max();
             return null;
         }
     }
