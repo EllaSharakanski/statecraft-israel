@@ -228,6 +228,9 @@ public class MapTests
     [TestCase("{\"hex_size_km\":0,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "hex_size_km")]
     [TestCase("{\"hex_size_km\":-5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "hex_size_km")]
     [TestCase("{\"hex_size_km\":5,\"layout\":\"flat\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"}]}", "layout")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[{\"q\":3,\"r\":4,\"biome\":\"jungle\"}]}", "unknown biome 'jungle' at q=3 r=4")]
+    [TestCase("{\"hex_size_km\":5,\"layout\":", "malformed JSON")]
+    [TestCase("not json at all", "malformed JSON")]
     public void BadHexesJsonIsRejectedNamingFileAndProblem(string json, string problem)
     {
         var path = TempFile("hexes.json", json);
@@ -242,6 +245,14 @@ public class MapTests
     [TestCase("{\"width\":-3,\"height\":-3,\"width_km\":161.5,\"length_km\":431.2," + GoodMeta + "}", "width")]
     [TestCase("{\"width\":3,\"height\":3,\"width_km\":0,\"length_km\":431.2," + GoodMeta + "}", "width_km")]
     [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":-1," + GoodMeta + "}", "length_km")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,", "malformed JSON")]
+    [TestCase("not json at all", "malformed JSON")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":35.9,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367}", "lon1")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":35.9,\"lon1\":34.2,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367}", "lon1")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":34.2,\"lon1\":35.9,\"lat0\":33.35,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367}", "lat1")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":34.2,\"lon1\":35.9,\"lat0\":33.35,\"lat1\":29.45,\"elev_min_m\":-427,\"elev_max_m\":2367}", "lat1")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":34.2,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":100,\"elev_max_m\":100}", "elev_max_m")]
+    [TestCase("{\"width\":3,\"height\":3,\"width_km\":161.5,\"length_km\":431.2,\"lon0\":34.2,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":2367,\"elev_max_m\":-427}", "elev_max_m")]
     public void BadHeightmapMetaIsRejected(string json, string problem)
     {
         var meta = TempFile("heightmap.json", json);
@@ -249,5 +260,18 @@ public class MapTests
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[18]);
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
         StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains(problem, ex.Message);
+    }
+
+    [Test]
+    public void UnknownBiomeIsRejectedBeforeAnyObjectIsCreated()
+    {
+        var (terrainMat, overlayMat) = Materials();
+        var path = TempFile("hexes.json", "{\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"},{\"q\":1,\"r\":0,\"biome\":\"tundra\"}]}");
+        int terrainsBefore = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length;
+        int dataBefore = Resources.FindObjectsOfTypeAll<TerrainData>().Length;
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat, overlayMat));
+        StringAssert.Contains("unknown biome 'tundra'", ex.Message);
+        Assert.AreEqual(terrainsBefore, Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length, "orphan Terrain left behind");
+        Assert.AreEqual(dataBefore, Resources.FindObjectsOfTypeAll<TerrainData>().Length, "orphan TerrainData left behind");
     }
 }

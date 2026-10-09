@@ -35,6 +35,9 @@ namespace Statecraft.Game.Map
             if (meta.width <= 0 || meta.height <= 0) throw new InvalidDataException($"{path}: width {meta.width} / height {meta.height} must be > 0");
             if (!(meta.width_km > 0)) throw new InvalidDataException($"{path}: width_km {meta.width_km} must be > 0");
             if (!(meta.length_km > 0)) throw new InvalidDataException($"{path}: length_km {meta.length_km} must be > 0");
+            if (!(meta.lon1 > meta.lon0)) throw new InvalidDataException($"{path}: lon1 {meta.lon1} must be > lon0 {meta.lon0}");
+            if (!(meta.lat1 > meta.lat0)) throw new InvalidDataException($"{path}: lat1 {meta.lat1} must be > lat0 {meta.lat0}");
+            if (!(meta.elev_max_m > meta.elev_min_m)) throw new InvalidDataException($"{path}: elev_max_m {meta.elev_max_m} must be > elev_min_m {meta.elev_min_m}");
             return meta;
         }
 

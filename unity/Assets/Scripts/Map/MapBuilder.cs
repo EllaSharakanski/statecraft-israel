@@ -47,14 +47,15 @@ namespace Statecraft.Game.Map
             var assets = terrainGo.AddComponent<MapRuntimeAssets>();
             assets.Own(data);
             terrainGo.GetComponent<Terrain>().materialTemplate = terrainMaterial;
-            ApplyBiomeColours(data, frame, hexFile, hexesJson, assets);
+            ApplyBiomeColours(data, frame, hexFile, assets);
 
             var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
             overlay.transform.SetParent(terrainGo.transform, false);
             return terrainGo;
         }
 
-        /// <summary>Reads and validates hexes.json; problems throw InvalidDataException naming the file.</summary>
+        /// <summary>Reads and validates hexes.json (non-empty, hex_size_km > 0, pointy layout, known biomes); problems throw
+        /// InvalidDataException naming the file. Build calls this before creating any object.</summary>
         public static HexFile LoadHexes(string path)
         {
             var text = File.ReadAllText(path);
@@ -66,11 +67,14 @@ namespace Statecraft.Game.Map
             if (f.hexes == null || f.hexes.Length == 0) throw new InvalidDataException($"{path}: no hexes");
             if (!(f.hex_size_km > 0)) throw new InvalidDataException($"{path}: hex_size_km {f.hex_size_km} must be > 0");
             if (f.layout != "pointy") throw new InvalidDataException($"{path}: layout '{f.layout}' unsupported (expected 'pointy')");
+            foreach (var h in f.hexes)
+                if (h == null || h.biome == null || !Biome.ContainsKey(h.biome))
+                    throw new InvalidDataException($"{path}: unknown biome '{h?.biome}' at q={h?.q} r={h?.r}");
             return f;
         }
 
         /// <summary>One terrain layer per biome; each alphamap texel blends the biomes of nearby hex centres (BiomeBlender).</summary>
-        static void ApplyBiomeColours(TerrainData data, GeoFrame frame, HexFile hexes, string path, MapRuntimeAssets assets)
+        static void ApplyBiomeColours(TerrainData data, GeoFrame frame, HexFile hexes, MapRuntimeAssets assets)
         {
             var names = new List<string>(Biome.Keys);
             var layers = new TerrainLayer[names.Count];
@@ -90,8 +94,7 @@ namespace Statecraft.Game.Map
             var centres = new List<Vector2>(hexes.hexes.Length); var layerOf = new List<int>(hexes.hexes.Length);
             foreach (var h in hexes.hexes)
             {
-                int idx = names.IndexOf(h.biome);
-                if (idx < 0) throw new InvalidDataException($"{path}: unknown biome '{h.biome}' at q={h.q} r={h.r}");
+                int idx = names.IndexOf(h.biome); // validated in LoadHexes, before any object exists
                 var w = frame.ToWorld(h.lon, h.lat, 0); centres.Add(new Vector2(w.x, w.z)); layerOf.Add(idx);
             }
             var blender = new BiomeBlender(centres, layerOf, hexes.hex_size_km * 1000f, names.Count);
