@@ -1,0 +1,64 @@
+import os
+import re
+import subprocess
+import zipfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+NOTICES = ["LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "LICENSES/CC-BY-4.0.txt", "LICENSES/CC-BY-SA-4.0.txt",
+           "LICENSES/CC0-1.0.txt", "LICENSES/YamlDotNet-MIT.txt", "OFL.txt"]
+# Stands in for tools/package_release.py (which needs dotnet and real content): zips the folder, index.html at the root.
+STUB = """import argparse, zipfile
+from pathlib import Path
+a = argparse.ArgumentParser(); a.add_argument("--build"); a.add_argument("--zip"); a = a.parse_args()
+b = Path(a.build)
+with zipfile.ZipFile(a.zip, "w") as z:
+    for f in sorted(p for p in b.rglob("*") if p.is_file()):
+        z.write(f, f.relative_to(b).as_posix())
+print("PACKAGED", a.zip)
+"""
+
+
+def run(tmp_path, build, out, stub=STUB):
+    s = tmp_path / "stub.py"
+    s.write_text(stub)
+    return subprocess.run(["bash", str(ROOT / "scripts/oss/package_web.sh"), str(build), str(out)], cwd=ROOT,
+                          capture_output=True, text=True, env=dict(os.environ, PACKAGE_RELEASE=str(s)))
+
+
+def fake_build(tmp_path):
+    build = tmp_path / "Web-brotli"
+    (build / "Build").mkdir(parents=True)
+    (build / "index.html").write_text("<html></html>")
+    (build / "Build" / "x.data.br").write_bytes(b"\x00")
+    return build
+
+
+def test_the_gate_zip_carries_every_notice(tmp_path):
+    out = tmp_path / "game.zip"
+    r = run(tmp_path, fake_build(tmp_path), out)
+    assert r.returncode == 0, r.stdout + r.stderr
+    names = set(zipfile.ZipFile(out).namelist())
+    assert "index.html" in names and "Build/x.data.br" in names
+    for n in NOTICES:
+        assert n in names, n
+
+
+def test_a_refusing_gate_stops_the_package(tmp_path):
+    out = tmp_path / "game.zip"
+    r = run(tmp_path, fake_build(tmp_path), out, stub="import sys\nprint('PACKAGE REFUSED: review')\nsys.exit(1)\n")
+    assert r.returncode != 0 and "PACKAGE REFUSED" in r.stdout and not out.exists()
+
+
+def test_package_refuses_a_missing_build(tmp_path):
+    r = run(tmp_path, tmp_path / "nope", tmp_path / "z.zip")
+    assert r.returncode != 0 and not (tmp_path / "z.zip").exists()
+
+
+def test_versions_agree():
+    sim = re.search(r'Version = "([^"]+)"', (ROOT / "sim/Statecraft.Sim/SimInfo.cs").read_text()).group(1)
+    unity = re.search(r"bundleVersion: (\S+)", (ROOT / "unity/ProjectSettings/ProjectSettings.asset").read_text()).group(1)
+    assert sim == unity
+    released = re.findall(r"^## \[(\d+\.\d+\.\d+)\]", (ROOT / "CHANGELOG.md").read_text(), re.M)
+    if released:
+        assert released[0] == sim

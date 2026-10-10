@@ -56,6 +56,10 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.12.5"
+          # Dependencies are declared inline (uv run --with, # /// script), so there is no lock file to hash.
+          cache-dependency-glob: |
+            tools/**/*.py
+            scripts/oss/**/*.py
       - name: Data tool tests
         run: uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 
@@ -70,10 +74,14 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.12.5"
+          # Dependencies are declared inline (uv run --with, # /// script), so there is no lock file to hash.
+          cache-dependency-glob: |
+            tools/**/*.py
+            scripts/oss/**/*.py
       - name: Policy checker tests
         run: uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q
       - name: Licences, provenance, secrets and required files at the tip
-        run: uv run scripts/oss/check_repo.py --only secrets,emails,home-paths,sizes,symlinks
+        run: uv run scripts/oss/check_repo.py
 
   changelog:
     name: Changelog
@@ -88,6 +96,10 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.12.5"
+          # Dependencies are declared inline (uv run --with, # /// script), so there is no lock file to hash.
+          cache-dependency-glob: |
+            tools/**/*.py
+            scripts/oss/**/*.py
       - name: A user-visible change carries a CHANGELOG line or the no-changelog label
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}

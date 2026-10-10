@@ -109,3 +109,12 @@ def test_toolchain_is_pinned_and_main_pushes_are_not_cancelled():
     assert 'UV_PYTHON: "3.12"' in text
     assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in text
     assert "ruleset-protect-main.json" not in text and "ruleset-main-review.json" in text
+
+
+def test_setup_uv_caches_on_the_files_that_carry_the_dependencies():
+    # No uv.lock exists (dependencies are inline), so the default glob matched nothing and CI warned.
+    uv_steps = [s for s in steps(ci()) if s.get("uses", "").startswith("astral-sh/setup-uv@")]
+    assert uv_steps
+    for s in uv_steps:
+        globs = s["with"]["cache-dependency-glob"].split()
+        assert globs == ["tools/**/*.py", "scripts/oss/**/*.py"], globs

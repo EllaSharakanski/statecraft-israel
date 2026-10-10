@@ -118,7 +118,8 @@ def test_docs_describe_only_what_is_live_today():
 def test_contributing_uses_the_check_that_passes_today():
     # Review I6: the full check_repo run fails until Task 14; CI's own command is what a contributor can run.
     c = read("CONTRIBUTING.md")
-    assert "uv run scripts/oss/check_repo.py --only secrets,emails,home-paths,sizes,symlinks" in c
+    # Task 14 landed the last required files, so CI and CONTRIBUTING both run the full check now.
+    assert "`uv run scripts/oss/check_repo.py` (the command CI runs)" in c and "check_repo.py --only" not in c
 
 
 def test_untrusted_review_profile_restores_with_network_then_runs_without():
