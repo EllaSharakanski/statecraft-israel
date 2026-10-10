@@ -228,4 +228,26 @@ public class CameraInputTests
         }
         finally { Object.DestroyImmediate(go); }
     }
+
+    // Task 24 (carry 3), measured in headed Chrome on the WebGL build: the Input System's default scroll behaviour
+    // (UniformAcrossAllPlatforms) already gives 1 per wheel notch (Chrome's 100 px notch arrived as 1.0, a 300 px burst
+    // as 3.0), so one notch must zoom by ZoomPerStep (10%), not by a /120 of it.
+    [Test]
+    public void OneWheelNotchZoomsByOneStep()
+    {
+        Assert.AreEqual(UnityEngine.InputSystem.InputSettings.ScrollDeltaBehavior.UniformAcrossAllPlatforms,
+            UnityEngine.InputSystem.InputSystem.settings.scrollDeltaBehavior, "the scroll range this controller assumes");
+        var c = NewController(out var go);
+        try
+        {
+            Assert.AreEqual(1f, c.Gather(Vector2.zero, Vector2.zero, 1f, 0, false, null).Zoom);
+            Assert.AreEqual(-1f, c.Gather(Vector2.zero, Vector2.zero, -1f, 0, false, null).Zoom);
+            Assert.AreEqual(3f, c.Gather(Vector2.zero, Vector2.zero, 7f, 0, false, null).Zoom, "bursts are clamped");
+            var rig = go.GetComponent<CameraRig>();
+            rig.Distance = 120000f;
+            CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, 1f, 0, false, null), 0.016f, Map);
+            Assert.AreEqual(108000f, rig.Distance, 1f);
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
 }
