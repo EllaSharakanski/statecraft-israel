@@ -77,7 +77,7 @@ namespace Statecraft.Game.Map
         public const string Coast = "Assets/Textures/Map/coast.png";
         /// <summary>The ambient occlusion on its own, uncompressed (R8): BC1 stepped it on broad slopes (Task 6 fix round 1).</summary>
         public const string Ao = "Assets/Textures/Map/ao.png";
-        /// <summary>The land-use mask (tools/land_bake.py, issue #33): r fields, g orchards, b wet; block-compressed.</summary>
+        /// <summary>The land (tools/land_bake.py, issue #33): rgb its linear colour, a its weight over the biome ground.</summary>
         public const string Land = "Assets/Textures/Map/landuse.png";
         /// <summary>The offset to the nearest dirt track (tools/land_bake.py): two uncompressed channels (RG16), so the GPU's
         /// filter keeps each track's line straight and its width even.</summary>

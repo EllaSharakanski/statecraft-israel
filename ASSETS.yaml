@@ -86,7 +86,7 @@ rules:
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/Map/landuse.png"
     licence: Copernicus-DEM
-    source: "tools/land_bake.py (issue #33): land-use mask (fields, citrus belt, wet hills) from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
+    source: "tools/land_bake.py (issue #33): the land-use colour and weight (procedural field parcels, garrigue, terraces and scrub, placed by fields, citrus belt and wet hills) from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
     status: owner-verify
     note: "Derived data combining Copernicus-DEM, CC0 rainfall and settlement coordinates taken from Wikipedia: the owner confirms the combined licence (the coordinates are facts; the yaml row is CC-BY-SA-4.0)."
   - glob: "unity/Assets/Textures/Map/tracks.png"

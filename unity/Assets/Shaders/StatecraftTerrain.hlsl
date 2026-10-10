@@ -7,8 +7,8 @@
 // its INPUTS and OUTPUTS). UV is the terrain UV (0..1 over the map); PositionWS and NormalWS are absolute world space;
 // Bake is terrain_bake.png (g curvature, b sky-view; its r is not read); Coast is coast.png (0.5 = shore, lower = water);
 // Ao is ao.png, the ambient occlusion on its own, uncompressed (BC1 banded it: Task 6 fix round 1); Land is landuse.png
-// (tools/land_bake.py: r fields, g orchards, b wet) and Tracks tracks.png (rg the offset to the nearest dirt track), read
-// by ScLandUse (StatecraftLand.hlsl).
+// (tools/land_bake.py: rgb the land's linear colour, a its weight) and Tracks tracks.png (rg the offset to the nearest
+// dirt track), read by ScLandUse (StatecraftLand.hlsl).
 void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast, UnityTexture2D Ao, UnityTexture2D Land,
     UnityTexture2D Tracks,
     out float3 BaseColor, out float3 NormalOut, out float Occlusion, out float Smoothness, out float Metallic, out float3 Emission)
@@ -18,18 +18,12 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     bake.r = SAMPLE_TEXTURE2D(Ao.tex, Ao.samplerstate, UV).r;
     float coast = SAMPLE_TEXTURE2D(Coast.tex, Coast.samplerstate, UV).r;
     float2 mapM = UV * _ScMap.xy;
-    // ScGround with the land use painted between its colour and its shading (curvature, AO and breakup shade the fields).
-    float3 land = SAMPLE_TEXTURE2D(Land.tex, Land.samplerstate, UV).rgb;
+    // ScGround with the land use (StatecraftLand.hlsl) laid between its colour and its shading: curvature, AO and breakup
+    // shade the fields too. The "land" toggle lerps it away.
+    float4 land = SAMPLE_TEXTURE2D(Land.tex, Land.samplerstate, UV);
     float2 track = SAMPLE_TEXTURE2D(Tracks.tex, Tracks.samplerstate, UV).rg;
     float3 ground = ScGroundBase(UV, mapM, n, PositionWS);
-    // Land use only where there is any (not the sea, the desert or the "land" toggle off): its derivatives are taken here, in
-    // uniform control flow, so the branch may skip it per pixel.
-    float landElevM = (PositionWS.y - _ScMap.z) / _ScMap.w;
-    float landFp = max(length(ddx(mapM)), length(ddy(mapM)));
-    float terraceFp = fwidth(landElevM / ScTerraceStepM);
-    bool nearTrack = dot(track * 255.0 - 127.0, track * 255.0 - 127.0) < 127.0 * 127.0;   // within ScTrackRangeM
-    [branch] if (_ScLandOn > 0.5 && coast > 0.5 && (land.r + land.g + land.b > 0.004 || nearTrack))
-        ground = ScLandUse(ground, land, track, mapM, n, landElevM, coast, landFp, terraceFp);
+    ground = lerp(ground, ScLandUse(ground, land, track, coast, max(length(ddx(mapM)), length(ddy(mapM)))), _ScLandOn);
     ground = ScGroundShade(ground, mapM, bake);
     float h = _ScHaze.a * ScHazeAmount(PositionWS);                 // land haze, applied after lighting via Emission
     float ao = bake.r * lerp(0.6, 1.0, bake.b);

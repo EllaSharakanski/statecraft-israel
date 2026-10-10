@@ -30,53 +30,55 @@ public class LandUseTests
     static HeightmapMeta Meta() =>
         JsonUtility.FromJson<HeightmapMeta>(System.IO.File.ReadAllText(System.IO.Path.Combine(Paths.StreamingMap, "heightmap.json")));
 
-    /// <summary>The mask at (lon, lat), from the source PNG (Texture2D row 0 is south).</summary>
+    /// <summary>The texel at (lon, lat), from the source PNG (Texture2D row 0 is south).</summary>
     static Color MaskAt(Texture2D png, HeightmapMeta m, double lon, double lat) =>
         png.GetPixel((int)((lon - m.lon0) / (m.lon1 - m.lon0) * png.width), (int)((lat - m.lat0) / (m.lat1 - m.lat0) * png.height));
+
+    /// <summary>The land weight (alpha) averaged over the 13 x 13 texels (about 1 x 1.4 km) round (lon, lat): parcels left
+    /// as grass and hedges vary it texel by texel.</summary>
+    static float WeightAround(Texture2D png, HeightmapMeta m, double lon, double lat)
+    {
+        int x = (int)((lon - m.lon0) / (m.lon1 - m.lon0) * png.width), y = (int)((lat - m.lat0) / (m.lat1 - m.lat0) * png.height);
+        float sum = 0; for (int dy = -6; dy <= 6; dy++) for (int dx = -6; dx <= 6; dx++) sum += png.GetPixel(x + dx, y + dy).a;
+        return sum / 169f;
+    }
 
     [Test]
     public void TheMasksImportAsLinearClampedDataOnTheTerrain()
     {
         var land = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Land);
         var tracks = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Tracks);
-        Assert.AreEqual((1024, 2048), (land.width, land.height), "about 158 x 211 m per texel");
+        Assert.AreEqual((2048, 4096), (land.width, land.height), "about 79 x 105 m per texel");
         Assert.AreEqual((512, 1024), (tracks.width, tracks.height), "about 316 x 421 m per texel");
         foreach (var t in new[] { land, tracks })
         {
-            Assert.IsFalse(t.isDataSRGB, t.name + ": weights and offsets, not colour");
+            Assert.IsFalse(t.isDataSRGB, t.name + ": linear colour and offsets, read as they are");
             Assert.AreEqual(TextureWrapMode.Clamp, t.wrapMode, t.name);
             Assert.AreEqual(FilterMode.Trilinear, t.filterMode, t.name);
             Assert.Greater(t.mipmapCount, 1, t.name);
         }
         Assert.AreEqual(TextureFormat.RG16, tracks.format, "uncompressed: block compression would bend the offsets");
+        Assert.AreEqual(2, land.anisoLevel, "seen at a grazing angle");
+        Assert.AreEqual(TextureFormat.DXT5, land.format, "colour and weight block-compressed (BC3)");
         var mat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath);
         Assert.AreEqual(land, mat.GetTexture("_ScLandTex")); Assert.AreEqual(tracks, mat.GetTexture("_ScTrackTex"));
     }
 
+    /// <summary>The land follows the real ground: it covers the coastal plain by Rehovot, the Jezreel valley and (as
+    /// garrigue and terraces) the Judean hills, and leaves the central Negev and the Dead Sea to the biome and the water;
+    /// the tracks reach the towns they join.</summary>
     [Test]
-    public void TheLandShaderUsesThePalettesBrightness()
-    {
-        var m = System.Text.RegularExpressions.Regex.Match(System.IO.File.ReadAllText("Assets/Shaders/StatecraftLand.hlsl"),
-            @"static const float ScPaletteBrightness = ([0-9.]+);");
-        Assert.IsTrue(m.Success);
-        Assert.AreEqual(MapPalette.Brightness, float.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), 1e-6f);
-    }
-
-    /// <summary>The mask follows the real ground: fields on the coastal plain by Rehovot and in the Jezreel valley, none in
-    /// the central Negev or on the Dead Sea; the Judean hills wet enough for terraces, the Negev not; the tracks reach the
-    /// towns they join.</summary>
-    [Test]
-    public void TheMaskFollowsSlopeRainAndTowns()
+    public void TheLandFollowsSlopeRainAndTowns()
     {
         var png = Read(MapTexturePaths.Land); var tracks = Read(MapTexturePaths.Tracks); var m = Meta();
         try
         {
-            Color plain = MaskAt(png, m, 34.84, 31.92), jezreel = MaskAt(png, m, 35.30, 32.62), negev = MaskAt(png, m, 34.90, 30.60);
-            Color deadSea = MaskAt(png, m, 35.50, 31.50), judea = MaskAt(png, m, 35.15, 31.78);
-            TestContext.WriteLine($"plain {plain}, Jezreel {jezreel}, Negev {negev}, Dead Sea {deadSea}, Judea {judea}");
-            Assert.Greater(plain.r, 0.6f, "fields on the coastal plain"); Assert.Greater(jezreel.r, 0.6f, "fields in the Jezreel valley");
-            Assert.Less(negev.r, 0.05f, "no dry farming in the central Negev"); Assert.AreEqual(0f, deadSea.r + deadSea.g + deadSea.b, 1e-3f, "water");
-            Assert.Greater(judea.b, 0.5f, "the Judean hills are wet enough for terraces"); Assert.Less(negev.b, 0.05f);
+            float plain = WeightAround(png, m, 34.84, 31.92), jezreel = WeightAround(png, m, 35.30, 32.62);
+            float negev = WeightAround(png, m, 34.90, 30.60), deadSea = WeightAround(png, m, 35.50, 31.50), judea = WeightAround(png, m, 35.15, 31.78);
+            TestContext.WriteLine($"land weight: plain {plain:0.000}, Jezreel {jezreel:0.000}, Negev {negev:0.000}, Dead Sea {deadSea:0.000}, Judea {judea:0.000}");
+            Assert.Greater(plain, 0.8f, "fields on the coastal plain"); Assert.Greater(jezreel, 0.8f, "fields in the Jezreel valley");
+            Assert.Less(negev, 0.02f, "the central Negev stays desert"); Assert.Less(deadSea, 0.02f, "water");
+            Assert.Greater(judea, 0.4f, "garrigue and terraces on the Judean hills");
             foreach (var (name, lon, lat) in new[] { ("Jerusalem", 35.2256, 31.7789), ("Nazareth", 35.3035, 32.7019), ("Petah Tikva", 34.8878, 32.0889) })
                 Assert.Less(TrackDistanceM(MaskAt(tracks, m, lon, lat)), 250f, name + " is on a track");
             Assert.Greater(TrackDistanceM(MaskAt(tracks, m, 34.90, 30.60)), 1000f, "no track across the empty Negev");
@@ -85,8 +87,8 @@ public class LandUseTests
     }
 
     /// <summary>Rendered at the gameplay pose: the fields, hedges and tracks add local detail to the plain (the flat
-    /// mustard ground had little): the gradient energy of the frame's lower half rises by at least 15% against an empty
-    /// mask (the "land" toggle off), and the mean colour stays the same ground (saturation within 0.06).</summary>
+    /// mustard ground had little): the gradient energy of the frame's lower half rises by at least 15% against the bare
+    /// biome ground (the "land" toggle off), and the mean colour stays the same ground (saturation within 0.06).</summary>
     [UnityTest]
     public IEnumerator TheFieldsAddDetailToThePlainWithoutChangingItsColour()
     {
