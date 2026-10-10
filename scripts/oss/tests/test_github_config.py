@@ -92,3 +92,20 @@ def test_ci_commands_match_contributing():
 def test_codeowners_makes_the_maintainer_owner_of_everything():
     lines = [l for l in (ROOT / ".github/CODEOWNERS").read_text().splitlines() if l and not l.startswith("#")]
     assert lines == ["* @eyalgolan"]
+
+
+# Review fix round 1 (I5, M1, M2, M4).
+def test_pins_carry_exact_version_comments_and_dependabot_keeps_them_current():
+    for ref_line in re.findall(r"uses:\s*[\w.-]+/[\w./-]+@[0-9a-f]{40}.*", CI.read_text(encoding="utf-8")):
+        assert re.search(r"# v\d+\.\d+\.\d+$", ref_line), ref_line
+    dep = yaml.safe_load((ROOT / ".github/dependabot.yml").read_text(encoding="utf-8"))
+    assert dep["version"] == 2 and any(u["package-ecosystem"] == "github-actions" for u in dep["updates"])
+
+
+def test_toolchain_is_pinned_and_main_pushes_are_not_cancelled():
+    text = CI.read_text(encoding="utf-8")
+    assert "ubuntu-latest" not in text and "ubuntu-24.04" in text
+    assert 'dotnet-version: "10.0.401"' in text and "10.0.x" not in text
+    assert 'UV_PYTHON: "3.12"' in text
+    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in text
+    assert "ruleset-protect-main.json" not in text and "ruleset-main-review.json" in text
