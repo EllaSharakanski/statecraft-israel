@@ -44,22 +44,26 @@ Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DP
 - boot: each span (`map_build_ms` and `first_frame_ms`, median of 3, at `--cpu 1` and at `--cpu 4`) grows by at most
   max(300 ms, 50% of its Task 1 baseline): the tool's default when `--budget` is not given (controller ruling 3).
 
-## Baseline (Task 1, before any visual change)
+## Baseline (Task 1, before any visual change; re-recorded in fix round 1)
+Viewport fixed to 1920x1080 at DPR 1 over CDP; Chrome kept awake; build from `0b6058e` (harness only).
+
 | Run | Lines |
 |---|---|
-| headless | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.42 spread_ms=0.68 median_p95_ms=4.00`<br>`PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.39 spread_ms=0.86 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=5.32 spread_ms=0.02 median_p95_ms=7.00`<br>`PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=5.33 spread_ms=0.09 median_p95_ms=7.00`<br>run line: `PROFILE visual=all pose=gameplay03 res=1920x937 scale=0.80 rep=0 frames=300 avg_ms=1.73 p95_ms=2.00` |
-| headed (DPR 1) | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=1.16 median_p95_ms=2.00`<br>`PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=1.46 spread_ms=0.33 median_p95_ms=2.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=4.58 spread_ms=0.04 median_p95_ms=6.00`<br>`PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=4.58 spread_ms=0.01 median_p95_ms=7.00`<br>run line: `PROFILE visual=all pose=gameplay03 res=1728x860 scale=0.80 rep=0 frames=300 avg_ms=1.45 p95_ms=2.00` |
-| boot | `BOOT map_build_ms median=450 runs=3` |
+| headless | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.29 spread_ms=0.17 median_p95_ms=4.00`<br>`PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.35 spread_ms=0.14 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=6.84 spread_ms=0.06 median_p95_ms=7.00`<br>`PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=6.92 spread_ms=0.05 median_p95_ms=8.00`<br>run line: `PROFILE visual=all pose=gameplay03 res=1920x1080 scale=0.80 rep=0 frames=300 avg_ms=2.43 p95_ms=4.00` |
+| headed (DPR 1) | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.31 spread_ms=0.57 median_p95_ms=4.00`<br>`PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=1.83 spread_ms=0.76 median_p95_ms=3.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=7.18 spread_ms=0.29 median_p95_ms=8.00`<br>`PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.15 spread_ms=0.40 median_p95_ms=8.00`<br>run line: `PROFILE visual=all pose=gameplay03 res=1920x1080 scale=0.80 rep=0 frames=300 avg_ms=1.78 p95_ms=3.00` |
+| boot, `--cpu 1` | `BOOT map_build_ms median=443 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3547 runs=3 cpu=1` |
+| boot, `--cpu 4` | `BOOT map_build_ms median=1813 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6963 runs=3 cpu=4` |
 
-Notes on the baseline (Task 1, commit base `7e610aa`):
-- **Resolution.** Neither run drew 1920x1080. Headless (`--headless=new --window-size=1920,1080`) reports `res=1920x937`:
-  the window size is the outer window, and the template's full-viewport canvas loses 143 px to the emulated browser UI.
-  The headed window was clamped by the laptop screen to `res=1728x860`. Compare like with like (same tool, same `res=`)
-  until this is settled.
-- **Headed stall.** The first headed attempt stopped producing frames after 4 of 12 runs (presumably Chrome throttling
-  a hidden or occluded window) and timed out at 1,800 s; an unchanged retry (`--timeout 300`) completed. Keep the
-  headed window visible while profiling.
-- No toggles exist yet, so `all` and `none` are the same scene: their difference (and the spreads) is the noise floor.
+Boot budgets from these (ruling 3, baseline + max(300 ms, 50%)): `--cpu 1` map build 443 -> 743 ms, first frame
+3547 -> 5321 ms; `--cpu 4` map build 1813 -> 2720 ms, first frame 6963 -> 10445 ms.
+
+Notes:
+- The headed window is clamped by the laptop screen (1728 px wide); the emulated 1920x1080 viewport still gives a
+  1920x1080 backbuffer (`res=1920x1080`), only the final composite to the window is scaled.
+- No toggles exist yet, so `all` and `none` are the same scene: their difference and the spreads are the noise floor.
+  Headless spreads are 0.05-0.17 ms; headed gameplay03 is noisier (spreads 0.57-0.76 ms, `all` vs `none` 0.48 ms apart).
+- Superseded first recording (commit `33fb072`, before the CDP viewport): headless ran at `res=1920x937` and headed at
+  `res=1728x860`, with a first-pose spread of 0.68 ms (headless) and one headed run that stalled; do not compare with it.
 
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
