@@ -64,12 +64,12 @@ namespace Statecraft.Sim
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
                 else change = EffectsSystem.Shift(c, s, fx.Target, fx.Delta);
-                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{PlayerText.Target(c, fx.Target)} {change:+0.00;-0.00;+0.00} ({title})")));
+                why.Add(new Cause("events", fx.Target, change, $"{PlayerText.Change(c, fx.Target, change)} ({title})"));
             }
             foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))
             {
                 s.Policies[kv.Key] = kv.Value;
-                why.Add(new Cause("events", kv.Key, kv.Value, FormattableString.Invariant($"{PlayerText.Target(c, kv.Key)} set to {kv.Value:0.00} ({title})")));
+                why.Add(new Cause("events", kv.Key, kv.Value, $"{PlayerText.Target(c, kv.Key)} set to {PlayerText.Percent(kv.Value)} ({title})"));
             }
             if (o.SetRung.HasValue) SecuritySystem.SetRung(c, s, o.SetRung.Value, why);
         }

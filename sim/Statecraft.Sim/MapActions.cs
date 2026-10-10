@@ -37,6 +37,8 @@ namespace Statecraft.Sim
 
         static string Name(string action) => action == TransitCamp ? "a transit camp" : "a housing project";
 
+        static string Capitalised(string s) => char.ToUpperInvariant(s[0]) + s.Substring(1);
+
         /// <summary>Null when <paramref name="action"/> may be placed on (q, r) now, else the reason shown to the player.</summary>
         public static string? Check(Content c, GameState s, string action, int q, int r)
         {
@@ -76,13 +78,13 @@ namespace Statecraft.Sim
             if (s.Treasury < 0)
             {
                 s.Debt += -s.Treasury;
-                why.Add(new Cause("economy", "debt", -s.Treasury, FormattableString.Invariant($"borrowed {-s.Treasury:0.00} to build {Name(action)}")));
+                why.Add(new Cause("economy", "debt", -s.Treasury, $"borrowed {PlayerText.Money(c, "debt", -s.Treasury)} to build {Name(action)}"));
                 s.Treasury = 0;
             }
             var housing = rule.Housing == 0 ? 0 : EffectsSystem.Shift(c, s, "housing", rule.Housing);
             var morale = rule.Morale == 0 ? 0 : EffectsSystem.Shift(c, s, "morale", rule.Morale);
             why.Add(new Cause("map", action, 1, FormattableString.Invariant(
-                $"{Name(action)} at ({q}, {r}): cost {rule.Cost:0.0}, housing {housing:+0.000;-0.000;+0.000}, morale {morale:+0.000;-0.000;+0.000}")));
+                $"{Capitalised(Name(action))} at ({q}, {r}): cost {PlayerText.Money(c, "treasury", rule.Cost)}, {PlayerText.Change(c, "housing", housing)}, {PlayerText.Change(c, "morale", morale)}")));
             return null;
         }
     }

@@ -35,7 +35,7 @@ namespace Statecraft.Sim
         {
             rung = ClampRung(rung);
             s.CeasefireWeeksLeft = CeasefireWeeksAfter(c, s.Rung, s.CeasefireWeeksLeft, rung);
-            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, FormattableString.Invariant($"security level {s.Rung} -> {rung}")));
+            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, FormattableString.Invariant($"Security level {s.Rung} to {rung}")));
             s.Rung = rung;
             RaiseToFloor(c, s, why);
         }

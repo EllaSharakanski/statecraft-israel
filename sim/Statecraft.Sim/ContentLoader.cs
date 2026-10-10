@@ -25,6 +25,7 @@ namespace Statecraft.Sim
             public List<Situation> Situations { get; set; } = new List<Situation>();
             public List<VoterGroup> VoterGroups { get; set; } = new List<VoterGroup>();
             public List<Actor> Actors { get; set; } = new List<Actor>();
+            public List<MoneyAccount> Money { get; set; } = new List<MoneyAccount>();
         }
         sealed class AliyahFile
         {
@@ -159,7 +160,7 @@ namespace Statecraft.Sim
             c.Governments = Read<GovernmentsFile>(readFile, "governments.yaml").Governments;
             var m = Read<ModelFile>(readFile, "model.yaml");
             c.Indicators = m.Indicators; c.Policies = m.Policies; c.Effects = m.Effects;
-            c.Situations = m.Situations; c.VoterGroups = m.VoterGroups; c.Actors = m.Actors;
+            c.Situations = m.Situations; c.VoterGroups = m.VoterGroups; c.Actors = m.Actors; c.Money = m.Money;
             c.Rules = Read<Rules>(readFile, "rules.yaml");
             var aliyah = Read<AliyahFile>(readFile, "aliyah.yaml");
             c.Aliyah = aliyah.Series; c.Regions = aliyah.Regions;
@@ -288,6 +289,7 @@ namespace Statecraft.Sim
             Unique("model.yaml", "situations", c.Situations.Select(s => s.Id));
             Unique("model.yaml", "voter_groups", c.VoterGroups.Select(v => v.Id));
             Unique("model.yaml", "actors", c.Actors.Select(a => a.Id));
+            Unique("model.yaml", "money", c.Money.Select(a => a.Id));
             Unique("aliyah.yaml", "regions", c.Regions.Select(g => g.Id));
             // Display names (spec: player-facing text): Cause messages show these, never the ids.
             foreach (var i in c.Indicators) Named("model.yaml", $"indicators[{i.Id}].name", i.Name);
@@ -295,6 +297,15 @@ namespace Statecraft.Sim
             foreach (var e in c.Effects) Named("model.yaml", $"effects[{e.Id}].name", e.Name);
             foreach (var s in c.Situations) Named("model.yaml", $"situations[{s.Id}].name", s.Name);
             foreach (var g in c.Regions) Named("aliyah.yaml", $"regions[{g.Id}].name", g.Name);
+            foreach (var a in c.Money)
+            {
+                if (Array.IndexOf(PlayerText.MoneyIds, a.Id) < 0)
+                    throw new ContentException("model.yaml", $"money[{a.Id}].id", $"must be one of {string.Join(", ", PlayerText.MoneyIds)}");
+                Named("model.yaml", $"money[{a.Id}].name", a.Name);
+                if (a.Prefix.Length == 0) throw new ContentException("model.yaml", $"money[{a.Id}].prefix", "required (the currency the player sees, e.g. 'IL ' or '$')");
+            }
+            var missingMoney = PlayerText.MoneyIds.FirstOrDefault(id => c.Money.All(a => a.Id != id));
+            if (missingMoney != null) throw new ContentException("model.yaml", "money", $"missing {missingMoney}");
             foreach (var p in c.Policies)
                 if (indicators.Contains(p.Id)) throw new ContentException("model.yaml", $"policies[{p.Id}].id", "same id as an indicator (effect sources would be ambiguous)");
 

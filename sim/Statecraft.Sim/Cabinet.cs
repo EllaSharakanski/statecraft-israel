@@ -121,8 +121,8 @@ namespace Statecraft.Sim
             var before = s.CoalitionStability;
             s.CoalitionStability = Math.Max(0, before - cost);
             var who = oldParty == "" ? displaced.Name : c.Parties.First(p => p.Id == oldParty).Name;
-            why.Add(new Cause("politics", "coalition_stability", s.CoalitionStability - before, FormattableString.Invariant(
-                $"coalition stability {s.CoalitionStability - before:+0.00;-0.00;+0.00} ({who} {(sameParty ? "resents the reshuffle" : "lost the " + office.Title)})")));
+            why.Add(new Cause("politics", "coalition_stability", s.CoalitionStability - before, (
+                $"coalition stability {PlayerText.PercentChange(s.CoalitionStability - before)} ({who} {(sameParty ? "resents the reshuffle" : "lost the " + office.Title)})")));
             return null;
         }
 

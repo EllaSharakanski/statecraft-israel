@@ -168,6 +168,15 @@ namespace Statecraft.Sim
         public double Morale { get; set; }
     }
 
+    /// <summary>Money the sim tracks (model.yaml money): treasury, debt and fx_reserves, each with the name and currency
+    /// prefix the player sees ("IL " for Israeli pounds, "$" for foreign currency; amounts are in millions).</summary>
+    public sealed class MoneyAccount
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Prefix { get; set; } = "";
+    }
+
     /// <summary>An origin group of immigrants (aliyah.yaml regions): the key of AliyahPeriod.Origins.</summary>
     public sealed class Region
     {
@@ -265,6 +274,8 @@ namespace Statecraft.Sim
         public List<AliyahPeriod> Aliyah = new List<AliyahPeriod>();
         /// <summary>Origin groups of the aliyah series, with display names (aliyah.yaml regions).</summary>
         public List<Region> Regions = new List<Region>();
+        /// <summary>Display names and currency prefixes of the treasury, debt and foreign currency reserves (model.yaml money).</summary>
+        public List<MoneyAccount> Money = new List<MoneyAccount>();
         public List<PopulationAnchor> PopulationAnchors = new List<PopulationAnchor>();
         public List<GameEvent> Events = new List<GameEvent>();
         List<MapHex> _hexes = new List<MapHex>();

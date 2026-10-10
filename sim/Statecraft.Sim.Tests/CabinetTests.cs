@@ -61,7 +61,7 @@ public class CabinetTests
         Assert.Equal("def_two", Offices.Holder(C, "finance_minister", s.Date)!.Id);   // history itself is unchanged
         Assert.Equal(0.9, s.CoalitionStability, 9);                                    // Def Two had no party: a seat lost
         Assert.Contains(why, w => w.System == "cabinet" && w.Message == "Loy Alist appointed Minister of Finance, replacing Def Two");
-        Assert.Contains(why, w => w.Target == "coalition_stability" && w.Message == "coalition stability -0.10 (Def Two lost the Minister of Finance)");
+        Assert.Contains(why, w => w.Target == "coalition_stability" && w.Message == "coalition stability -10.0% (Def Two lost the Minister of Finance)");
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class CabinetTests
         var why = new List<Cause>();
         Assert.Null(Cabinet.Appoint(C, s, "finance_minister", "loyal_two", why));
         Assert.Equal(0.9 - 0.03, s.CoalitionStability, 9);
-        Assert.Contains(why, w => w.Message == "coalition stability -0.03 (Alpha resents the reshuffle)");
+        Assert.Contains(why, w => w.Message == "coalition stability -3.0% (Alpha resents the reshuffle)");
     }
 
     [Theory]

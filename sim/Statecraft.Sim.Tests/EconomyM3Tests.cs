@@ -27,7 +27,7 @@ public class EconomyM3Tests
         var why = new List<Cause>();
         EconomySystem.Apply(c, s, 0.25, why);
         Assert.Equal(50 + 5 + 2 - 0.025, s.FxReserves, 9);   // exports 20/4, inflow 8/4, imports 0.0001*1000/4
-        Assert.Contains(why, w => w.Target == "fx_reserves" && w.Message.Contains("donations and loans 2.00"));
+        Assert.Contains(why, w => w.Target == "fx_reserves" && w.Message.Contains("donations and loans $2.0m"));
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class EconomyM3Tests
         Assert.Contains(EconomySystem.FxCrisis, s.ActiveSituations);
         Assert.Equal(0.4 - 0.1, s.Indicators["food_supply"], 9);
         Assert.Equal(-0.1, s.IndicatorShifts["food_supply"], 9);
-        Assert.Contains(why, w => w.Target == "food_supply" && w.Message == "Food supply -0.100 (foreign currency crisis: food imports cut)");
+        Assert.Contains(why, w => w.Target == "food_supply" && w.Message == "Food supply -10.0% (foreign currency crisis: food imports cut)");
     }
 
     [Fact]

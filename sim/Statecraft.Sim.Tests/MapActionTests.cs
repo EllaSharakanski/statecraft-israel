@@ -32,7 +32,7 @@ public class MapActionTests
         Assert.Equal(housing + 0.05, s.Indicators["housing"], 9);
         Assert.Equal(morale - 0.02, s.Indicators["morale"], 9);
         Assert.Equal("transit_camp", MapActions.At(s, 2, 0)!.Action);
-        Assert.Contains(why, w => w.System == "map" && w.Message == "a transit camp at (2, 0): cost 2.0, housing +0.050, morale -0.020");
+        Assert.Contains(why, w => w.System == "map" && w.Message == "A transit camp at (2, 0): cost IL 2.0m, Housing +5.0%, Morale -2.0%");
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class MapActionTests
         Assert.Null(MapActions.Apply(C, s, "housing", 1, 1, why));
         Assert.Equal(0, s.Treasury);
         Assert.Equal(5, s.Debt, 9);
-        Assert.Contains(why, w => w.Message == "borrowed 5.00 to build a housing project");
+        Assert.Contains(why, w => w.Message == "borrowed IL 5.0m to build a housing project");
     }
 
     [Fact]

@@ -5,26 +5,61 @@ using System.Linq;
 namespace Statecraft.Sim
 {
     /// <summary>Player-facing wording shared by the sim (Cause text, refusal reasons) and the UI: the one date format
-    /// ("15 May 1948") and the display names content gives its ids. No player-facing string shows a content id or an
-    /// ISO date (spec: player-facing text).</summary>
+    /// ("15 May 1948"), the display names content gives its ids, money with its currency ("IL 18.6m", "$41.5m"), and the
+    /// one scale for indicators (0-100, as the top bar shows them, written with "%"). No player-facing string shows a
+    /// content id, an ISO date or a bare number (spec: player-facing text; playtest 1 items 4, 5 and 7). An id content
+    /// does not name is an error, never shown as it is.</summary>
     public static class PlayerText
     {
+        /// <summary>The money the sim tracks; model.yaml money names each one.</summary>
+        public static readonly string[] MoneyIds = { "treasury", "debt", "fx_reserves" };
+
         /// <summary>"15 May 1948".</summary>
         public static string Date(DateTime d) => d.ToString("d MMMM yyyy", CultureInfo.InvariantCulture);
 
         /// <summary>"May 1948".</summary>
         public static string Month(DateTime d) => d.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
 
-        /// <summary>The display name of an aliyah origin group (aliyah.yaml regions).</summary>
-        public static string Region(Content c, string id) => c.Regions.FirstOrDefault(r => r.Id == id)?.Name ?? id;
+        static InvalidOperationException Unknown(string what, string id) =>
+            new InvalidOperationException($"no display name for {what} '{id}' (content validation should have caught this)");
 
-        /// <summary>The display name of what a cause changes: an indicator or policy (model.yaml names), the treasury or
-        /// the foreign currency reserves.</summary>
-        public static string Target(Content c, string id) => id switch
+        /// <summary>The display name of an aliyah origin group (aliyah.yaml regions).</summary>
+        public static string Region(Content c, string id) => c.Regions.FirstOrDefault(r => r.Id == id)?.Name ?? throw Unknown("region", id);
+
+        /// <summary>The display name of what a cause changes: an indicator or policy (model.yaml names), or money
+        /// (model.yaml money).</summary>
+        public static string Target(Content c, string id) =>
+            c.Indicators.FirstOrDefault(i => i.Id == id)?.Name ?? c.Policies.FirstOrDefault(p => p.Id == id)?.Name
+            ?? c.Money.FirstOrDefault(m => m.Id == id)?.Name ?? throw Unknown("indicator, policy or money", id);
+
+        public static bool IsMoney(Content c, string id) => c.Money.Any(m => m.Id == id);
+
+        static MoneyAccount Account(Content c, string id) => c.Money.FirstOrDefault(m => m.Id == id) ?? throw Unknown("money", id);
+
+        /// <summary>An amount in millions with its currency: "IL 18.6m", "$41.5m".</summary>
+        public static string Money(Content c, string id, double millions) =>
+            Account(c, id).Prefix + millions.ToString("0.0", CultureInfo.InvariantCulture) + "m";
+
+        /// <summary>A signed change in millions with its currency, sign first: "+IL 1.2m", "-$0.4m" (a change that rounds to
+        /// zero reads "+IL 0.0m", never "-IL 0.0m").</summary>
+        public static string MoneyChange(Content c, string id, double millions)
         {
-            "treasury" => "Treasury",
-            "fx_reserves" => "Foreign currency reserves",
-            _ => c.Indicators.FirstOrDefault(i => i.Id == id)?.Name ?? c.Policies.FirstOrDefault(p => p.Id == id)?.Name ?? id,
-        };
+            var abs = Math.Abs(millions).ToString("0.0", CultureInfo.InvariantCulture);
+            var sign = millions < 0 && abs != "0.0" ? "-" : "+";
+            return sign + Account(c, id).Prefix + abs + "m";
+        }
+
+        /// <summary>An indicator level (0..1) or a share on the scale the player sees: 0..100.</summary>
+        public static double Scale(double level) => level * 100;
+
+        /// <summary>"55%" for a level of 0.55.</summary>
+        public static string Percent(double level) => Scale(level).ToString("0", CultureInfo.InvariantCulture) + "%";
+
+        /// <summary>"+4.1%" for a change of 0.041 (points on the 0-100 scale).</summary>
+        public static string PercentChange(double change) => Scale(change).ToString("+0.0;-0.0;+0.0", CultureInfo.InvariantCulture) + "%";
+
+        /// <summary>"Morale +4.1%" or "Treasury -IL 2.0m": the name and the change, in the target's unit.</summary>
+        public static string Change(Content c, string id, double change) =>
+            Target(c, id) + " " + (IsMoney(c, id) ? MoneyChange(c, id, change) : PercentChange(change));
     }
 }

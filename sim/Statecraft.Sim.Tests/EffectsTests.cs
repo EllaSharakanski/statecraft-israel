@@ -57,7 +57,7 @@ public class EffectsTests
         Assert.Equal(0.64, s.Indicators["food_supply"], 9);   // 0.4 + 0.14 + 0.1
         var cause = Assert.Single(why, w => w.System == "effects" && w.Target == "food_supply");
         Assert.Equal(s.Indicators["food_supply"] - before, cause.Delta, 12);
-        Assert.Equal("Food supply +0.240 (Rations feed people, More rations)", cause.Message);
+        Assert.Equal("Food supply +24.0% (Rations feed people, More rations)", cause.Message);
     }
 
     [Fact]

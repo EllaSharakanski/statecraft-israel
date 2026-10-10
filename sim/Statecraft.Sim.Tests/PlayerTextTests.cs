@@ -41,7 +41,7 @@ public class PlayerTextTests
         Assert.Contains(messages, m => m.EndsWith("immigrants arrived (the Americas and Oceania)", StringComparison.Ordinal));
         Assert.Contains(messages, m => m.EndsWith("immigrants arrived (country of origin not recorded)", StringComparison.Ordinal));
         Assert.Contains(messages, m => m.StartsWith("Morale ", StringComparison.Ordinal) && m.Contains("Homes lift morale"));
-        Assert.Contains(messages, m => m.StartsWith("International standing +0.05 (Armistice with Egypt)", StringComparison.Ordinal));
+        Assert.Contains(messages, m => m.StartsWith("International standing +5.0% (Armistice with Egypt)", StringComparison.Ordinal));
         Assert.Contains(messages, m => m.Contains("elected 25 January 1949"));
     }
 
@@ -76,6 +76,180 @@ public class PlayerTextTests
     {
         var ex = ValidationTests.Bad(file, from, to);
         Assert.Equal(file, ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    // ---- Fix round 1 (review I1, I2, M3) ----
+
+    static readonly Content Real = ContentLoader.Load(RealContentTests.ContentRoot());
+
+    /// <summary>Every content id a Cause could leak: indicators, policies, effects, situations, money, regions, offices
+    /// and events.</summary>
+    static IEnumerable<string> ContentIds(Content c) =>
+        c.Indicators.Select(x => x.Id).Concat(c.Policies.Select(x => x.Id)).Concat(c.Effects.Select(x => x.Id))
+            .Concat(c.Situations.Select(x => x.Id)).Concat(c.Money.Select(x => x.Id)).Concat(c.Regions.Select(x => x.Id))
+            .Concat(c.Offices.Select(x => x.Id)).Concat(c.Events.Select(x => x.Id)).Distinct();
+
+    /// <summary>Where an id would appear in a Cause: a snake_case id anywhere as a whole word; a one-word id ("morale",
+    /// "treasury", "asia") at the start, alone in parentheses or a list, before a signed number, "set to", "=",
+    /// "began"/"ended", or after "from" (case-sensitive: the display names are capitalised or phrased).</summary>
+    static Regex IdPattern(string id)
+    {
+        var e = Regex.Escape(id);
+        return id.Contains("_")
+            ? new Regex($@"\b{e}\b")
+            : new Regex($@"(^|\(|, |/|from ){e}(\)|,|/| [+-]\d| set to| =| began| ended|$)");
+    }
+
+    static List<string> Leaks(Content c, IEnumerable<string> messages)
+    {
+        var patterns = ContentIds(c).Select(id => (id, re: IdPattern(id))).ToList();
+        return messages.Distinct().SelectMany(m => patterns.Where(p => p.re.IsMatch(m)).Select(p => $"'{p.id}' in: {m}")).ToList();
+    }
+
+    /// <summary>The player's own commands from mid-1950 on (historical play up to then): policy votes (passed and lost),
+    /// an appointment, a budget, both map actions, and every option of every event, each from a state where the event
+    /// is pending. Returns every Cause.</summary>
+    internal static List<Cause> ScriptedCauses(Content c)
+    {
+        var causes = new List<Cause>();
+        foreach (var e in c.Events)
+            foreach (var o in e.Options)
+            {
+                var g = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
+                g.Date = e.From; g.PendingEvents.Clear(); g.PendingEvents.Add(e.Id);
+                var r = Simulation.Step(c, g, new Command[] { new ChooseEventOption(e.Id, o.Id) });
+                Assert.Empty(r.Rejected);
+                causes.AddRange(r.Why);
+            }
+        var s = GoldenRun.Play(c, new DateTime(1950, 6, 15));
+        bool appointed = false, budget = false, camp = false, housing = false;
+        for (int turn = 0; turn < 60 && s.GameOver == null; turn++)
+        {
+            var cmds = new List<Command>(HistoricalAI.Commands(c, s));
+            cmds.Add(new SetPolicy("rationing", turn % 2 == 0 ? 0.9 : 0.2));
+            if (!appointed)
+            {
+                var pick = c.Offices.SelectMany(o => Cabinet.Candidates(c, s, o.Id).Where(x => x.reason == null).Select(x => (o.Id, x.person.Id))).FirstOrDefault();
+                if (pick.Item1 != null) cmds.Add(new Appoint(pick.Item1, pick.Item2));
+            }
+            if (!budget)
+            {
+                var first = s.Budget.Keys.OrderBy(k => k, StringComparer.Ordinal).First();
+                cmds.Add(new AllocateBudget(new Dictionary<string, double>(s.Budget.ToDictionary(k => k.Key, k => k.Value)) { [first] = s.Budget[first] }));
+            }
+            foreach (var (action, done) in new[] { (MapActions.TransitCamp, camp), (MapActions.Housing, housing) })
+            {
+                if (done) continue;
+                var hex = c.Hexes.FirstOrDefault(h => MapActions.Check(c, s, action, h.Q, h.R) == null);
+                if (hex != null) cmds.Add(new MapAction(action, hex.Q, hex.R));
+            }
+            var r = Simulation.Step(c, s, cmds);
+            causes.AddRange(r.Why);
+            appointed |= r.Why.Any(w => w.System == "cabinet");
+            budget |= cmds.OfType<AllocateBudget>().Any() && !r.Rejected.Any(x => x.Command is AllocateBudget);
+            camp |= r.Why.Any(w => w.System == "map" && w.Target == MapActions.TransitCamp);
+            housing |= r.Why.Any(w => w.System == "map" && w.Target == MapActions.Housing);
+            s = r.State;
+        }
+        Assert.True(appointed && budget && camp && housing, $"the script ran every command (appointed {appointed}, budget {budget}, camp {camp}, housing {housing})");
+        Assert.Contains(causes, w => w.System == "policy");
+        Assert.Contains(causes, w => w.System == "politics" && w.Message.Contains(" voted down "));
+        return causes;
+    }
+
+    static List<Cause> AllCauses(Content c)
+    {
+        var all = new List<Cause>();
+        var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
+        for (int turn = 0; turn < 1000 && s.Date < GoldenRun.Until1952 && s.GameOver == null; turn++)
+        {
+            var r = Simulation.Step(c, s, HistoricalAI.Commands(c, s));
+            all.AddRange(r.Why);
+            s = r.State;
+        }
+        all.AddRange(ScriptedCauses(c));
+        return all;
+    }
+
+    [Fact]
+    public void NoCauseFromAnyCommandShowsAContentId()
+    {
+        var leaks = Leaks(Real, AllCauses(Real).Select(w => w.Message));
+        Assert.True(leaks.Count == 0, "Cause text shows content ids:\n" + string.Join("\n", leaks.Take(60)));
+    }
+
+    /// <summary>The guard itself: a one-word id in an id position is caught (the old snake_case regex missed these).</summary>
+    [Theory]
+    [InlineData("rationing set to 0.50", "rationing")]
+    [InlineData("treasury +1.23 (tax 2.00)", "treasury")]
+    [InlineData("14 immigrants arrived from asia", "asia")]
+    [InlineData("Morale +4.1% (homes_lift_morale)", "homes_lift_morale")]
+    [InlineData("Food supply +5.0% (austerity_1949)", "austerity_1949")]
+    public void TheGuardCatchesOneWordIds(string message, string id) =>
+        Assert.Contains(Leaks(Real, new[] { message }), l => l.StartsWith($"'{id}'", StringComparison.Ordinal));
+
+    [Theory]
+    [InlineData("Impose rationing")]
+    [InlineData("A housing project at (3, 4): cost IL 1.5m")]
+    [InlineData("reserve call-up raised to 80%, the minimum for security level 5")]
+    public void TheGuardLeavesPlainEnglishAlone(string message) => Assert.Empty(Leaks(Real, new[] { message }));
+
+    /// <summary>Review I2: money Causes carry their currency (IL or $, in millions); indicator Causes use the top bar's
+    /// 0-100 scale with "%".</summary>
+    [Fact]
+    public void EveryCauseNumberCarriesItsUnit()
+    {
+        var money = Real.Money.Select(m => m.Id).ToHashSet();
+        var indicators = Real.Indicators.Select(i => i.Id).ToHashSet();
+        var bad = new List<string>();
+        foreach (var w in AllCauses(Real))
+        {
+            if (money.Contains(w.Target) && !Regex.IsMatch(w.Message, @"[+-]?(IL |\$)\d+\.\dm"))
+                bad.Add("money without a unit: " + w.Message);
+            if (indicators.Contains(w.Target) && w.System != "situations" && !Regex.IsMatch(w.Message, @"[+-]\d+\.\d%"))
+                bad.Add("indicator change not on the 0-100 % scale: " + w.Message);
+            if (w.Message.Contains("stability") && !w.Message.Contains("%"))
+                bad.Add("stability without %: " + w.Message);
+        }
+        Assert.True(bad.Count == 0, string.Join("\n", bad.Distinct().Take(40)));
+    }
+
+    [Fact]
+    public void PlayerTextFormatsMoneyAndTheIndicatorScale()
+    {
+        Assert.Equal("IL 18.6m", PlayerText.Money(Real, "treasury", 18.6));
+        Assert.Equal("$41.5m", PlayerText.Money(Real, "fx_reserves", 41.5));
+        Assert.Equal("+IL 1.2m", PlayerText.MoneyChange(Real, "treasury", 1.23));
+        Assert.Equal("-$0.4m", PlayerText.MoneyChange(Real, "fx_reserves", -0.4));
+        Assert.Equal("+$0.0m", PlayerText.MoneyChange(Real, "fx_reserves", -0.004));
+        Assert.Equal(30.0, PlayerText.Scale(0.3), 9);
+        Assert.Equal("55%", PlayerText.Percent(0.55));
+        Assert.Equal("+4.1%", PlayerText.PercentChange(0.041));
+        Assert.Equal("Treasury -IL 2.0m", PlayerText.Change(Real, "treasury", -2));
+        Assert.Equal("Morale +5.0%", PlayerText.Change(Real, "morale", 0.05));
+        Assert.Equal("Foreign currency", PlayerText.Target(Real, "fx_reserves"));
+    }
+
+    /// <summary>Review M3: no silent fallback to the id.</summary>
+    [Fact]
+    public void AnUnknownIdIsAnError()
+    {
+        Assert.Throws<InvalidOperationException>(() => PlayerText.Target(Real, "no_such_thing"));
+        Assert.Throws<InvalidOperationException>(() => PlayerText.Region(Real, "atlantis"));
+        Assert.Throws<InvalidOperationException>(() => PlayerText.Money(Real, "morale", 1));
+    }
+
+    /// <summary>Review M3: the money names and currency prefixes come from content and are validated at load.</summary>
+    [Theory]
+    [InlineData("  - { id: treasury, name: Treasury, prefix: 'IL ' }\n", "  - { id: treasury, prefix: 'IL ' }\n", "money[treasury].name")]
+    [InlineData("  - { id: fx_reserves, name: Foreign currency, prefix: '$' }\n", "  - { id: fx_reserves, name: Foreign currency }\n", "money[fx_reserves].prefix")]
+    [InlineData("  - { id: debt, name: Debt, prefix: 'IL ' }\n", "", "money")]
+    [InlineData("  - { id: debt, name: Debt, prefix: 'IL ' }\n", "  - { id: debt, name: Debt, prefix: 'IL ' }\n  - { id: gold, name: Gold, prefix: 'g' }\n", "money[gold].id")]
+    public void MoneyNamesAreRequired(string from, string to, string field)
+    {
+        var ex = ValidationTests.Bad("model.yaml", from, to);
+        Assert.Equal("model.yaml", ex.File);
         Assert.Equal(field, ex.Field);
     }
 }

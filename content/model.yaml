@@ -24,6 +24,11 @@ effects:
 situations:
   - { id: food_crisis, indicator: food_supply, on_below: 0.30, off_above: 0.45, name: Food crisis }
   - { id: housing_crisis, indicator: housing, on_below: 0.25, off_above: 0.40, name: Housing crisis }
+# Money the sim tracks (these three ids, in millions): the name and the currency prefix the player sees.
+money:
+  - { id: treasury, name: Treasury, prefix: 'IL ' }
+  - { id: debt, name: Debt, prefix: 'IL ' }
+  - { id: fx_reserves, name: Foreign currency, prefix: '$' }
 voter_groups:
   - { id: veterans, weights: { morale: 0.6, security: 0.4 } }
   - { id: new_immigrants, weights: { housing: 0.5, food_supply: 0.5 } }

@@ -115,6 +115,10 @@ situations:
     on_below: 0.3
     off_above: 0.45
     name: Hunger
+money:
+  - { id: treasury, name: Treasury, prefix: 'IL ' }
+  - { id: debt, name: Debt, prefix: 'IL ' }
+  - { id: fx_reserves, name: Foreign currency, prefix: '$' }
 voter_groups:
   - id: everyone
     weights: { morale: 1.0 }

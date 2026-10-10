@@ -36,7 +36,7 @@ namespace Statecraft.Sim
             var old = s.CoalitionStability;
             s.CoalitionStability = old + (EffectsSystem.Approval(c, s) - old) * Math.Min(1.0, yearFraction * 2);
             if (Math.Abs(s.CoalitionStability - old) > 1e-9)
-                why.Add(new Cause("politics", "coalition_stability", s.CoalitionStability - old, FormattableString.Invariant($"coalition stability {s.CoalitionStability - old:+0.00;-0.00;+0.00} (public approval)")));
+                why.Add(new Cause("politics", "coalition_stability", s.CoalitionStability - old, $"coalition stability {PlayerText.PercentChange(s.CoalitionStability - old)} (public approval)"));
             if (s.CoalitionStability < CollapseBelow && s.GameOver == null)
             {
                 s.GameOver = "coalition_collapse";

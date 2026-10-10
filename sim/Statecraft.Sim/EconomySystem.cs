@@ -37,11 +37,11 @@ namespace Statecraft.Sim
             var revenue = flows.Tax; var spending = flows.Spending; var mobilization = flows.Mobilization;
             s.Treasury += revenue - spending - mobilization;
             why.Add(new Cause("economy", "treasury", revenue - spending - mobilization,
-                FormattableString.Invariant($"treasury {revenue - spending - mobilization:+0.00;-0.00;+0.00} (tax {revenue:0.00}, spending {spending:0.00}, reserve call-up {mobilization:0.00})")));
+                $"{PlayerText.Change(c, "treasury", revenue - spending - mobilization)} (tax {PlayerText.Money(c, "treasury", revenue)}, spending {PlayerText.Money(c, "treasury", spending)}, reserve call-up {PlayerText.Money(c, "treasury", mobilization)})"));
             if (s.Treasury < 0)
             {
                 s.Debt += -s.Treasury;
-                why.Add(new Cause("economy", "debt", -s.Treasury, FormattableString.Invariant($"borrowed {-s.Treasury:0.00} to cover the deficit")));
+                why.Add(new Cause("economy", "debt", -s.Treasury, $"borrowed {PlayerText.Money(c, "debt", -s.Treasury)} to cover the deficit"));
                 s.Treasury = 0;
             }
 
@@ -50,7 +50,7 @@ namespace Statecraft.Sim
             var imports = r.ImportsPerCapitaPerYear * pop * yearFraction;
             var net = exports + inflow - imports;
             s.FxReserves += net;
-            why.Add(new Cause("economy", "fx_reserves", net, FormattableString.Invariant($"foreign currency {net:+0.00;-0.00;+0.00} (exports {exports:0.00}, donations and loans {inflow:0.00}, imports {imports:0.00})")));
+            why.Add(new Cause("economy", "fx_reserves", net, $"{PlayerText.Change(c, "fx_reserves", net)} (exports {PlayerText.Money(c, "fx_reserves", exports)}, donations and loans {PlayerText.Money(c, "fx_reserves", inflow)}, imports {PlayerText.Money(c, "fx_reserves", imports)})"));
 
             bool on = s.ActiveSituations.Contains(FxCrisis);
             if (!on && s.FxReserves < 0) { s.ActiveSituations.Add(FxCrisis); why.Add(new Cause("economy", FxCrisis, 1, "Foreign currency reserves are exhausted")); }
@@ -61,7 +61,7 @@ namespace Statecraft.Sim
             {
                 var change = EffectsSystem.Shift(c, s, "food_supply", r.FxCrisisFoodPerYear * yearFraction);
                 if (change != 0)
-                    why.Add(new Cause("economy", "food_supply", change, FormattableString.Invariant($"{PlayerText.Target(c, "food_supply")} {change:+0.000;-0.000;+0.000} (foreign currency crisis: food imports cut)")));
+                    why.Add(new Cause("economy", "food_supply", change, $"{PlayerText.Change(c, "food_supply", change)} (foreign currency crisis: food imports cut)"));
             }
         }
 
