@@ -14,7 +14,12 @@ namespace Statecraft.Game.Map
     {
         /// <summary>Neutral, not ACES: it only rolls off highlights, so the sea's blue and the amber land keep their hue (plan Task 4).</summary>
         public const TonemappingMode Tonemapper = TonemappingMode.Neutral;
-        public const float PostExposure = 0.15f, Contrast = 14f, Saturation = 16f, Temperature = 9f, Tint = 2f;
+        /// <summary>Temperature 5, not the plan's 9 (Task 4 merge arithmetic, docs/visual-v1.md "Task 4: grade"): at 9 the t04
+        /// diorama warmth was 0.118, and Track B's land (+0.021 before the grade, about +0.027 after it) would put the merged
+        /// diorama at the promo's 0.145 with nothing left for Track B's later haze and palette work. Each unit is about 0.003
+        /// of frame warmth, so 5 aims the merge at about 0.133.</summary>
+        public const float Temperature = 5f;
+        public const float PostExposure = 0.15f, Contrast = 14f, Saturation = 16f, Tint = 2f;
         public const float SplitBalance = -15f, VignetteIntensity = 0.26f, VignetteSmoothness = 0.45f;
         public static readonly Color SplitShadows = new Color(0.36f, 0.52f, 0.60f);
         public static readonly Color SplitHighlights = new Color(0.96f, 0.78f, 0.55f);
