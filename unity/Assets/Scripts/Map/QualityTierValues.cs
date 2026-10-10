@@ -13,9 +13,10 @@ namespace Statecraft.Game.Map
         /// cost is the caster pass's geometry, not the map's resolution, and halving it would only blur the relief.</summary>
         public const int WebShadowMap = 2048, WebTiltShiftDownsample = 2;
         public const int DesktopShadowMap = 2048, DesktopTiltShiftDownsample = 2;
-        /// <summary>The pipeline profile's bloom (the URP template's 0.25 above 1), off on both tiers: rendered, it changed at
-        /// most 2/255 of any pixel at either pose on either tier, for 0.1-0.4 ms on the web and 0.13-0.17 ms on the macOS
-        /// player.</summary>
+        /// <summary>The pipeline profile's bloom (the URP template's 0.25 above 1), off on both tiers. Measured with a
+        /// temporary "bloom" toggle (commit 8d45a93, removed once bloom shipped off): rendered on both tiers at both promo
+        /// poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003), for 0.37 ms (headless),
+        /// 0.18 ms (headed) and 0.17 / 0.13 ms (macOS) at diorama02 (docs/visual-v1.md "Tier decisions").</summary>
         public const bool Bloom = false;
     }
 }

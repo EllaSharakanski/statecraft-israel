@@ -35,9 +35,10 @@
   batch commands in `uv run tools/machine_lock.py --shared -- ...`; `tools/art_checkpoint.sh [--no-build] <name>` for the
   owner's side-by-side images.
 - Quality tiers: `uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.QualityTiers.Apply`
-  writes the decisions in `QualityTierValues` to the URP assets (docs/visual-v1.md "Tier decisions"). The macOS player
-  does not run in the background (`runInBackground` is off): start `-vprofile` with the player window in front, or it
-  waits at `GAME OK` until it is.
+  writes the decisions in `QualityTierValues` to the URP assets (docs/visual-v1.md "Tier decisions"). The built macOS
+  player (`unity/Builds/Mac/Statecraft.app`) does not run in the background (`runInBackground` is off): its `-vprofile`
+  waits at `GAME OK` until that player's window is in front (`open -a unity/Builds/Mac/Statecraft.app` brings it
+  forward). Never script, `open -a` or AppleScript the Unity editor itself.
 - A player build rewrites some URP asset and player-setting fields as build-time caches; drop them afterwards with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset`.
 - Play a build locally: `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`, then open http://localhost:8000/.

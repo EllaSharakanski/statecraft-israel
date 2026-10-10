@@ -10,6 +10,7 @@ using UnityEngine.Rendering.Universal;
 /// <summary>Plan Task 10: the tier decisions recorded in docs/visual-v1.md, pinned on the URP assets.</summary>
 public class QualityTierTests
 {
+    // The asset paths repeat QualityTiers.WebAsset etc.: that class is in the editor assembly, which this one cannot see.
     static SerializedObject Asset(string path) => new SerializedObject(AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path));
 
     [Test]
@@ -24,6 +25,8 @@ public class QualityTierTests
         Assert.AreEqual(QualityTierValues.WebRenderScale, web.FindProperty("m_RenderScale").floatValue, 1e-4f);
         var renderer = new SerializedObject(AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/Mobile_Renderer.asset"));
         Assert.AreEqual(0, renderer.FindProperty("m_RenderingMode").intValue, "Forward on WebGL (research notes 2.1)");
+        var webData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/Mobile_Renderer.asset");
+        Assert.IsFalse(webData.rendererFeatures.Any(f => f != null && f.isActive && f.GetType().Name == "ScreenSpaceAmbientOcclusion"), "no SSAO on the web");
         StringAssert.IsMatch(@"(?m)^\s+WebGL: 0\s*$", System.IO.File.ReadAllText("ProjectSettings/QualitySettings.asset"), "WebGL runs the Mobile tier (level 0)");
     }
 
@@ -32,6 +35,7 @@ public class QualityTierTests
     {
         var pc = Asset("Assets/Settings/PC_RPAsset.asset");
         Assert.AreEqual(4, pc.FindProperty("m_ShadowCascadeCount").intValue);
+        Assert.AreEqual(1f, pc.FindProperty("m_RenderScale").floatValue, 1e-4f, "desktop renders 1:1");
         Assert.AreEqual(QualityTierValues.DesktopShadowMap, pc.FindProperty("m_MainLightShadowmapResolution").intValue);
         Assert.IsTrue(pc.FindProperty("m_SoftShadowsSupported").boolValue);
         Assert.IsFalse(pc.FindProperty("m_RequireDepthTexture").boolValue);
@@ -51,7 +55,7 @@ public class QualityTierTests
         }
     }
     /// <summary>The pipeline assets' own volume profile: bloom as decided (rendered, the template's 0.25 above 1 changed at
-    /// most 2/255 of any pixel at either pose on either tier: GradeTests.TheBloomToggleSwitchesThePipelineBloom), and the
+    /// most 2/255 of any pixel at either pose on either tier: measured in commit 8d45a93, docs/visual-v1.md "Tier decisions"), and the
     /// Neutral tonemapper kept, which keeps its variants in builds (GradeTests).</summary>
     [Test]
     public void BothTiersBloomAsDecidedAndKeepTheNeutralTonemapper()
