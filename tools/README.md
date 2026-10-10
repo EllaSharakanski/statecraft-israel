@@ -16,9 +16,15 @@ Offline data tools (uv inline-script Python). Run from the repo root.
 - `package_release.py` zips a Brotli WebGL build for sharing (`unity/Builds/statecraft-m3-web.zip`) and refuses
   (exit 1) until every sensitive event is `sensitivity-reviewed` (docs/m3-release.md).
 - `preview_map.py` renders the geography check image `tools/.cache/map-preview.png`.
+- `art_compare.py` puts screenshots next to the promo image of their pose, writes deuteranopia and protanopia copies and
+  logs rough colour numbers; `art_checkpoint.sh [--no-build] <name>` builds WebGL, takes the screenshots
+  (`web_check.py --shots`) and runs it (docs/visual-v1.md).
+- `machine_lock.py` serialises frame-time measurements against every other Unity job on the machine (all worktrees,
+  batch runs and open editors).
 - `headed.py` drives a WebGL build in a headed Chrome for Testing over CDP (real GPU, real mouse events, a temporary
   profile deleted on exit): `boot` (?bootlog phase timings, optional CPU throttling), `navpairs` (same-frame click pairs
-  under ?navlog) and `loadshot` (screenshots during the load). Its browser test runs only with `pytest --headed`.
+  under ?navlog), `loadshot` (screenshots during the load) and `profile` (visual v1's `?vprofile` in a headed window at a
+  chosen DPR); `boot --runs N --baseline MS` checks the boot budget. Its browser test runs only with `pytest --headed`.
 
 ## Running the tests
 
@@ -28,7 +34,7 @@ Run from the repo root; this installs every pinned dependency (rasterio included
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 ```
 
-Expected: `109 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
+Expected: `129 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
 
 ## Required attribution (Copernicus DEM licence, modified data)
 

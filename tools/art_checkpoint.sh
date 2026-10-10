@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Owner art checkpoint (non-blocking): a WebGL build (skipped with --no-build when the task has just built), screenshots at
+# the promo poses from the player itself (?shot: the web tier with its UI and labels), editor renders of both quality
+# tiers, and side-by-side images against the promo with colour-blind simulations. Re-checks both golden hashes in the same
+# player run and fails if a screenshot is missing or blank. The art log lives in the main checkout's captures/ so every
+# worktree appends to one history. Usage: tools/art_checkpoint.sh [--no-build] <checkpoint-name>
+set -euo pipefail
+build=1
+if [[ "${1:-}" == "--no-build" ]]; then build=0; shift; fi
+name="${1:?usage: tools/art_checkpoint.sh [--no-build] <checkpoint-name>}"
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+main_root="$(cd "$(git rev-parse --path-format=absolute --git-common-dir)/.." && pwd)"
+: "${UNITY:?set UNITY as in docs/dev-setup.md}"
+shared() { uv run tools/machine_lock.py --shared -- "$@"; }
+if [[ $build == 1 ]]; then
+  if ! git diff --quiet -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset; then
+    echo "art_checkpoint: stage your changes under unity/Assets/Settings and ProjectSettings.asset first (the build rewrites them and this script restores them from the index)" >&2
+    exit 2
+  fi
+  shared "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$root/unity-build-web-art.log"
+  git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
+  if grep -n "Shader error" "$root/unity-build-web-art.log"; then echo "art_checkpoint: shader errors in the WebGL build" >&2; exit 1; fi
+fi
+[[ -f unity/Builds/Web-disabled/index.html ]] || { echo "art_checkpoint: no build at unity/Builds/Web-disabled (run without --no-build)" >&2; exit 2; }
+out="captures/visual/$name"
+rm -rf "$out"; mkdir -p "$out"
+uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&shot" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" --shots "$out" \
+  --fail 'GOLDEN FAIL|SMOKE FAIL|BOOT FAIL|Statecraft/.*(not supported|Unsupported)|(not supported|Unsupported).*Statecraft/'
+for pose in gameplay03 diorama02; do
+  [[ -s "$out/$pose.png" ]] || { echo "art_checkpoint: $out/$pose.png is missing" >&2; exit 1; }
+done
+shared "$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" -logFile "$root/unity-capture-promo.log"
+git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality
+uv run tools/art_compare.py "$out" "$name" --log "$main_root/captures/visual/art-log.tsv"
+echo "ART CHECKPOINT $name: $(ls "$out"/*-compare*.png "$out"/editor/*-compare*.png | tr '\n' ' ')"

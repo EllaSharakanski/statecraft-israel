@@ -103,6 +103,32 @@ public static class MapCapture
         }
     }
 
+    /// <summary>Renders each promo pose (PromoPose.All) at 1920x1080 once per quality tier (0 = Mobile, the WebGL tier;
+    /// 1 = PC) into &lt;-captureDir&gt; (default captures/visual/editor) as &lt;tier&gt;-&lt;pose&gt;.png. Editor renders show no UI
+    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do.</summary>
+    public static void Promo()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        int at = System.Array.IndexOf(args, "-captureDir");
+        var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "editor");
+        var map = OpenAndBuild();
+        var rig = Camera.main.GetComponent<CameraRig>();
+        int saved = QualitySettings.GetQualityLevel();
+        try
+        {
+            for (int level = 0; level < QualitySettings.names.Length; level++)
+            {
+                QualitySettings.SetQualityLevel(level, true);
+                foreach (var pose in PromoPose.All)
+                {
+                    pose.Apply(rig, map.Frame);
+                    Save(Camera.main, 1920, 1080, Path.Combine(dir, $"{QualitySettings.names[level]}-{pose.Name}.png"));
+                }
+            }
+        }
+        finally { QualitySettings.SetQualityLevel(saved, true); }
+    }
+
     static void Save(Camera cam, int w, int h, string path)
     {
         var rt = new RenderTexture(w, h, 24); cam.targetTexture = rt; cam.Render();

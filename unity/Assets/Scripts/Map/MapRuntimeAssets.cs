@@ -10,11 +10,18 @@ namespace Statecraft.Game.Map
     public sealed class MapRuntimeAssets : MonoBehaviour
     {
         readonly List<Object> owned = new List<Object>();
+        readonly List<System.Action> teardown = new List<System.Action>();
 
         public T Own<T>(T o) where T : Object { owned.Add(o); return o; }
 
+        /// <summary>Runs <paramref name="action"/> when the map is destroyed (newest first), for state the map changes outside
+        /// itself: the URP asset's shadow distance, global shader values.</summary>
+        public void OnTeardown(System.Action action) => teardown.Add(action ?? throw new System.ArgumentNullException(nameof(action)));
+
         void OnDestroy()
         {
+            for (int i = teardown.Count - 1; i >= 0; i--) teardown[i]();
+            teardown.Clear();
             foreach (var o in owned)
             {
                 if (o == null) continue;

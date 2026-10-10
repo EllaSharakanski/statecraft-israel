@@ -23,8 +23,15 @@
   elsewhere `npx playwright install chromium`).
 - Page flags: `?golden` (golden check), `?smoke=N` (play N turns through the UI; bare `?smoke` = 5, `?smoke=0` = off),
   `?profile` (terrain profile), `?camlog` (log the camera distance), `?bootlog` (each boot phase's timing) and `?navlog`
-  (every UI pointer and submit event, screen toggle and map click, with its frame). Desktop players take `-golden`,
-  `-smoke N`, `-profile`, `-camlog`, `-bootlog` and `-navlog`. The console also shows `GAME OK <date> turn <n> hash <h>` at start and `TURN <n> <date> hash <h>` per turn.
+  (every UI pointer and submit event, screen toggle and map click, with its frame), `?vprofile` (the visual frame-time
+  profile per feature) and `?shot` (screenshots at the promo poses as `SHOT` console lines). Desktop players take `-golden`,
+  `-smoke N`, `-profile`, `-camlog`, `-bootlog`, `-navlog`, `-vprofile` and `-shot`. The console also shows `GAME OK <date> turn <n> hash <h>` at start and `TURN <n> <date> hash <h>` per turn.
+- Visual checks (docs/visual-v1.md): measure only under the machine lock, which also waits for any open Unity editor:
+  `uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py <build> --query vprofile --expect "PROFILE visual done" --timeout 1800`
+  (headless), `... -- uv run tools/headed.py profile --build <build> --dpr 1` (headed; `--dpr 2` is the fill-rate stress
+  proxy) and `... -- uv run tools/headed.py boot --build <build> --runs 3 --baseline <ms>` (the boot budget); wrap Unity
+  batch commands in `uv run tools/machine_lock.py --shared -- ...`; `tools/art_checkpoint.sh [--no-build] <name>` for the
+  owner's side-by-side images.
 - A player build rewrites some URP asset and player-setting fields as build-time caches; drop them afterwards with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset`.
 - Play a build locally: `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`, then open http://localhost:8000/.

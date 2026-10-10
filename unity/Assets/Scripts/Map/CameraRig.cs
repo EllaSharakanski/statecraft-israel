@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -18,6 +20,10 @@ namespace Statecraft.Game.Map
         /// the view still looks down, so the sky never shows (MapSceneTests.TheCameraClearsToTheSeaColour).</summary>
         public const float MaxTopInset = 0.5f;
         DepthOfField _dof;
+
+        /// <summary>Undo actions for state Init changes outside the rig (the URP asset's shadow distance...). MapScene.Build hands
+        /// them to the map's MapRuntimeAssets right after Init, so destroying the map undoes them.</summary>
+        public readonly List<Action> TeardownActions = new List<Action>();
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
         /// (MapScene registers it with MapRuntimeAssets).</summary>

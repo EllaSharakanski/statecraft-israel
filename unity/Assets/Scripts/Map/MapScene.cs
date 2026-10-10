@@ -126,6 +126,8 @@ namespace Statecraft.Game.Map
             var assets = terrainGo.GetComponent<MapRuntimeAssets>();
             foreach (var c in rig.Volume.profile.components) assets.Own(c);
             assets.Own(rig.Volume.profile);
+            foreach (var undo in rig.TeardownActions) assets.OnTeardown(undo);
+            rig.TeardownActions.Clear();
         }
 
         /// <summary>The land and sea past the map's edge (MapBuilder.BuildBorderSkirt), drawn with the editor-made Sea.mat and

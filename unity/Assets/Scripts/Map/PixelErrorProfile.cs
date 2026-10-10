@@ -24,12 +24,9 @@ namespace Statecraft.Game.Map
 
         public static string Line(float pixelError, List<float> frameMs)
         {
-            if (frameMs == null) throw new ArgumentNullException(nameof(frameMs));
-            if (frameMs.Count == 0) throw new ArgumentException("no frames were measured", nameof(frameMs));
-            var sorted = frameMs.OrderBy(x => x).ToList();
-            var p95 = sorted[Math.Min(sorted.Count - 1, (int)Math.Ceiling(sorted.Count * 0.95) - 1)];
+            var (avg, p95) = FrameStats.Summary(frameMs);
             return string.Format(CultureInfo.InvariantCulture, "PROFILE pixelError={0:0} frames={1} avg_ms={2:0.00} p95_ms={3:0.00}",
-                pixelError, sorted.Count, sorted.Average(), p95);
+                pixelError, frameMs.Count, avg, p95);
         }
 
         public static IEnumerator Run(Terrain terrain)
