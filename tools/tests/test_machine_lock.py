@@ -73,7 +73,7 @@ def test_only_the_unity_executable_counts_never_a_wrapper_naming_it():
     their arguments; selecting by argument text made an exclusive profile wait on them (a deadlock)."""
     comm = "\n".join([
         f"  101 {UNITY_EXE}",
-        "  102 /Users/me/.local/share/uv/python/cpython-3.13/bin/python3.13",
+        "  102 /opt/statecraft-test/uv/python/cpython-3.13/bin/python3.13",
         "  103 /opt/homebrew/bin/uv",
         f"  104 {UNITY_EXE}",
         "  105 /Applications/Unity Hub.app/Contents/MacOS/Unity Hub",
