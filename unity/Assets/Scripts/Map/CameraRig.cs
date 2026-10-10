@@ -46,8 +46,10 @@ namespace Statecraft.Game.Map
             _dof = vol.profile.Add<DepthOfField>(true); _dof.mode.Override(DepthOfFieldMode.Gaussian);
             _dof.gaussianMaxRadius.Override(1.5f);
             Volume = vol;
-            MapLighting.Apply(MapLighting.FindSun());
-            TeardownActions.Add(VisualToggles.Register("shadows", on => { var sun = MapLighting.FindSun(); if (sun != null) sun.shadows = on ? LightShadows.Soft : LightShadows.None; }));
+            var sun = MapLighting.FindSun();
+            TeardownActions.Add(MapLighting.Capture(sun));   // first, so it runs last (review M1)
+            MapLighting.Apply(sun);
+            TeardownActions.Add(VisualToggles.Register("shadows", on => { var s = MapLighting.FindSun(); if (s != null) s.shadows = on ? LightShadows.Soft : LightShadows.None; }));
             TeardownActions.Add(ShadowFit.Restore);
             initialised = true;
             Apply();
@@ -58,8 +60,8 @@ namespace Statecraft.Game.Map
             transform.rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.position = LookAt - transform.forward * Distance;
             if (_dof != null) { _dof.gaussianStart.Override(Distance * 1.05f); _dof.gaussianEnd.Override(Distance * 1.8f); }
-            if (initialised) ShadowFit.Apply(Distance);
             ApplyProjection();
+            if (initialised) ShadowFit.Apply(GetComponent<Camera>());   // after the projection: the fit reads the corner rays
         }
 
         /// <summary>Sets the camera's projection for <see cref="TopInset"/> only (the transform is left alone). Apply calls it

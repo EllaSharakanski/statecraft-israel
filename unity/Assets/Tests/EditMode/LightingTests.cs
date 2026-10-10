@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
 using UnityEditor;
@@ -48,29 +49,43 @@ public class LightingTests
         Assert.Greater(c[0].b, c[0].r, "sky fill is cool");
         Assert.Greater(c[0].grayscale, c[1].grayscale + 0.05f, "brighter from above");
         Assert.AreEqual(AmbientMode.Trilight, RenderSettings.ambientMode);
+        // Review M4: the SH lobes leak into every direction, so the trilight constants are inputs, not the evaluated
+        // colours (MapLighting.AmbientProbe); print the evaluated up / horizon / down so the documented values are checked.
+        var e = new Color[3]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up, Vector3.right, Vector3.down }, e);
+        TestContext.WriteLine($"ambient evaluated up {e[0]} horizon {e[1]} down {e[2]}");
+        var expected = new[] { new Color(0.216f, 0.255f, 0.326f), new Color(0.184f, 0.179f, 0.171f), new Color(0.119f, 0.103f, 0.080f) };
+        for (int i = 0; i < 3; i++)
+        {
+            Assert.AreEqual(expected[i].r, e[i].r, 0.01f, $"direction {i} r"); Assert.AreEqual(expected[i].g, e[i].g, 0.01f, $"direction {i} g");
+            Assert.AreEqual(expected[i].b, e[i].b, 0.01f, $"direction {i} b");
+        }
     }
 
-    [TestCase(6000f)]
-    [TestCase(45000f)]
-    [TestCase(120000f)]
-    [TestCase(250000f)]
-    public void TheShadowDistanceCoversTheWholeView(float distance)
+    /// <summary>Review I1: URP fades shadows by straight-line distance from the camera, starting at (1 - cascadeBorder) of
+    /// the shadow distance, so every corner of the view (top corners at 21:9 and the largest top inset included) must lie
+    /// inside the unfaded range.</summary>
+    [Test]
+    public void TheShadowDistanceCoversTheWholeView([Values(6000f, 45000f, 120000f, 250000f)] float distance, [Values(0.1f, 0.2f)] float border)
     {
         var go = new GameObject("Cam"); var cam = go.AddComponent<Camera>(); var rig = go.AddComponent<CameraRig>();
         try
         {
             cam.fieldOfView = CameraRig.Fov;
-            foreach (var aspect in new[] { 16f / 9f, 21f / 9f })
+            foreach (var aspect in new[] { 16f / 9f, 21f / 9f, 4f / 3f })
+            foreach (var inset in new[] { 0f, 0.08f, 0.3f, CameraRig.MaxTopInset })
             {
                 cam.aspect = aspect;
-                rig.LookAt = Vector3.zero; rig.Distance = distance; rig.TopInset = CameraRig.MaxTopInset; rig.Apply();
-                foreach (var v in new[] { new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(1f, 1f) })
+                rig.LookAt = Vector3.zero; rig.Distance = distance; rig.TopInset = inset; rig.Apply();
+                float fitted = ShadowFit.Distance(cam, border);
+                foreach (var v in new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(0.5f, 1f), new Vector2(1f, 1f) })
                 {
                     var ray = cam.ViewportPointToRay(new Vector3(v.x, v.y, 0));
-                    var hit = ray.origin + ray.direction * (-ray.origin.y / ray.direction.y);
-                    var depth = Vector3.Dot(hit - cam.transform.position, cam.transform.forward);
-                    Assert.LessOrEqual(depth, ShadowFit.Distance(distance), $"{distance} m, aspect {aspect:0.00}, viewport {v}");
+                    Assert.Less(ray.direction.y, 0f, "the view looks down everywhere");
+                    var hit = ray.origin + ray.direction * ((ShadowFit.GroundY - ray.origin.y) / ray.direction.y);
+                    var range = (hit - cam.transform.position).magnitude;
+                    Assert.LessOrEqual(range, fitted * (1f - border) + 1f, $"{distance} m, aspect {aspect:0.00}, inset {inset}, viewport {v}");
                 }
+                Assert.LessOrEqual(fitted, ShadowFit.MaxDistanceM);
             }
         }
         finally { Object.DestroyImmediate(go); }
@@ -81,11 +96,39 @@ public class LightingTests
     {
         var asset = UniversalRenderPipeline.asset; Assert.IsNotNull(asset);
         var before = asset!.shadowDistance;
-        ShadowFit.Apply(60000f); Assert.AreEqual(ShadowFit.Distance(60000f), asset.shadowDistance, 1e-3f);
-        ShadowFit.Apply(10000f); Assert.AreEqual(ShadowFit.Distance(10000f), asset.shadowDistance, 1e-3f);
-        Assert.AreEqual(ShadowFit.MinDistanceM, ShadowFit.Distance(100f));
-        ShadowFit.Restore(); Assert.AreEqual(before, asset.shadowDistance);
-        ShadowFit.Restore(); Assert.AreEqual(before, asset.shadowDistance, "restoring twice is harmless");
+        var go = new GameObject("Cam"); var cam = go.AddComponent<Camera>(); var rig = go.AddComponent<CameraRig>();
+        try
+        {
+            cam.fieldOfView = CameraRig.Fov; cam.aspect = 16f / 9f; rig.LookAt = Vector3.zero;
+            rig.Distance = 60000f; rig.Apply(); ShadowFit.Apply(cam);
+            var far = ShadowFit.Distance(cam, asset.cascadeBorder);
+            Assert.AreEqual(far, asset.shadowDistance, 1e-3f);
+            rig.Distance = 10000f; rig.Apply(); ShadowFit.Apply(cam);
+            Assert.AreEqual(ShadowFit.Distance(cam, asset.cascadeBorder), asset.shadowDistance, 1e-3f);
+            Assert.Less(asset.shadowDistance, far, "follows the zoom");
+            rig.Distance = 100f; rig.Apply();
+            Assert.AreEqual(ShadowFit.MinDistanceM, ShadowFit.Distance(cam, asset.cascadeBorder));
+            ShadowFit.Restore(); Assert.AreEqual(before, asset.shadowDistance);
+            ShadowFit.Restore(); Assert.AreEqual(before, asset.shadowDistance, "restoring twice is harmless");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    /// <summary>Review M2: leaving play mode (and an assembly reload, which runs the same Restore) puts the asset back even
+    /// though the map's teardown list is gone.</summary>
+    [Test]
+    public void LeavingPlayModeRestoresTheShadowDistance()
+    {
+        var asset = UniversalRenderPipeline.asset!; var before = asset.shadowDistance;
+        var go = new GameObject("Cam"); var cam = go.AddComponent<Camera>(); go.AddComponent<CameraRig>().Apply();
+        try
+        {
+            ShadowFit.Apply(cam); Assert.AreNotEqual(before, asset.shadowDistance);
+            ShadowFit.OnPlayModeChanged(PlayModeStateChange.EnteredPlayMode); Assert.AreNotEqual(before, asset.shadowDistance);
+            ShadowFit.OnPlayModeChanged(PlayModeStateChange.ExitingPlayMode); Assert.AreEqual(before, asset.shadowDistance);
+            ShadowFit.Apply(cam); ShadowFit.OnBeforeAssemblyReload(); Assert.AreEqual(before, asset.shadowDistance);
+        }
+        finally { Object.DestroyImmediate(go); }
     }
 
     [Test]
@@ -98,6 +141,44 @@ public class LightingTests
         CollectionAssert.Contains(VisualToggles.Names, "shadows");
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         Assert.AreEqual(before, asset.shadowDistance, "restored with the map");
+    }
+
+    /// <summary>Review M1: the sun and the ambient are put back when the map goes, so saving an open Map.unity after a Build
+    /// does not bake the runtime lighting into the scene.</summary>
+    [Test]
+    public void DestroyingTheMapRestoresTheSunAndTheAmbient()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var sun = MapLighting.FindSun()!; Assert.IsNotNull(sun);
+        var rot = sun.transform.rotation; var colour = sun.color; var intensity = sun.intensity; var shadows = sun.shadows;
+        var strength = sun.shadowStrength; var mode = RenderSettings.ambientMode; var sky = RenderSettings.ambientSkyColor;
+        var equator = RenderSettings.ambientEquatorColor; var ground = RenderSettings.ambientGroundColor;
+        var up = new Color[1]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up }, up);
+        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        Assert.AreNotEqual(rot, sun.transform.rotation, "Build points the sun");
+        Object.DestroyImmediate(map.Terrain.gameObject);   // its MapRuntimeAssets runs the teardown
+        Assert.AreEqual(0f, Quaternion.Angle(rot, sun.transform.rotation), 1e-3f);
+        Assert.AreEqual(colour, sun.color); Assert.AreEqual(intensity, sun.intensity); Assert.AreEqual(shadows, sun.shadows);
+        Assert.AreEqual(strength, sun.shadowStrength); Assert.AreEqual(mode, RenderSettings.ambientMode);
+        Assert.AreEqual(sky, RenderSettings.ambientSkyColor); Assert.AreEqual(equator, RenderSettings.ambientEquatorColor);
+        Assert.AreEqual(ground, RenderSettings.ambientGroundColor);
+        var upAfter = new Color[1]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up }, upAfter);
+        Assert.AreEqual(up[0], upAfter[0]);
+    }
+
+    /// <summary>Review M6 (Review Focus 1): the sun is fixed in the world; orbiting the rig moves the light across the screen.</summary>
+    [Test]
+    public void TheSunStaysFixedInTheWorldWhenTheRigOrbits()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build();
+        var sun = MapLighting.FindSun()!; var rig = Camera.main.GetComponent<CameraRig>();
+        var forward = sun.transform.forward;
+        foreach (var yaw in new[] { 90f, 180f, 270f })
+        {
+            rig.Yaw = yaw; rig.Apply();
+            Assert.AreEqual(0f, Vector3.Angle(forward, sun.transform.forward), 1e-3f, $"yaw {yaw}");
+        }
     }
 
     [Test]
@@ -114,25 +195,50 @@ public class LightingTests
         Assert.AreEqual(2048, web.mainLightShadowmapResolution);
     }
 
-    /// <summary>Rendered: over the Dead Sea escarpment (the steepest relief on the map) the sun now casts shadows. Without
-    /// the fit (the asset's 50 m) nothing would. Much of the escarpment's shadow at 30 degrees falls east onto the Dead Sea;
-    /// in Track A alone that water is URP-lit terrain and darkens; after the merge the water is ScWaterShade, which samples
-    /// the main light's shadow attenuation (Task 7, review I6), so the shadow still lands on it and the 2% floor holds.</summary>
-    [UnityTest]
-    public IEnumerator ReliefCastsShadowsAtMapScale()
+    /// <summary>Review I1: the web tier (one cascade) fades its shadows over the last tenth of the fitted distance, not the
+    /// last fifth, so less of the 2048 map is spent past the view.</summary>
+    [Test]
+    public void TheWebTierFadesShadowsOverTheLastTenth()
     {
-        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
-        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
-        yield return null;
-        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>(); var sun = MapLighting.FindSun();
-        Assert.IsNotNull(sun, "Map.unity has a directional light");
-        rig.LookAt = map.Frame.ToWorld(35.38, 31.45, 0); rig.Distance = 60000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
-        var lit = RenderSample.Render(cam, 480, 270);
-        VisualToggles.Set("shadows", false);
-        var flat = RenderSample.Render(cam, 480, 270);
-        VisualToggles.Set("shadows", true);
-        float shadowed = RenderSample.FractionDarker(lit, flat, 0.04f);
-        TestContext.WriteLine($"shadowed share {shadowed:P1}");
-        Assert.Greater(shadowed, 0.02f, "at least 2% of the view is in a cast shadow");
+        var web = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/Mobile_RPAsset.asset");
+        Assert.AreEqual(0.1f, web.cascadeBorder, 1e-4f);
+    }
+
+    /// <summary>Rendered, at both tiers (review I2: 0 is the web tier, 1 the PC tier the edit-mode runs default to): over the
+    /// Dead Sea escarpment (the steepest relief on the map) the sun casts shadows. The measurement is isolated (review I3):
+    /// every other registered visual except the water is off and the settlement markers are hidden, so only relief casts;
+    /// and a control at the asset's own 50 m shows that without the fit nothing would. Much of the escarpment's shadow at
+    /// 30 degrees falls east onto the Dead Sea; in Track A alone that water is URP-lit terrain and darkens; after the merge
+    /// the water is ScWaterShade, which samples the main light's shadow attenuation (Task 7, review I6), so the shadow still
+    /// lands on it.</summary>
+    [UnityTest]
+    public IEnumerator ReliefCastsShadowsAtMapScale([Values(0, 1)] int level)
+    {
+        int previous = QualitySettings.GetQualityLevel();
+        QualitySettings.SetQualityLevel(level, false);
+        try
+        {
+            EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+            var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+            yield return null;
+            var cam = Camera.main; var rig = cam.GetComponent<CameraRig>(); var sun = MapLighting.FindSun();
+            Assert.IsNotNull(sun, "Map.unity has a directional light");
+            foreach (var n in VisualToggles.Names.Where(n => n != "shadows" && n != "water")) VisualToggles.Set(n, false);
+            map.transform.Find("Settlements").gameObject.SetActive(false);
+            rig.LookAt = map.Frame.ToWorld(35.38, 31.45, 0); rig.Distance = 60000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+            var lit = RenderSample.Render(cam, 480, 270);
+            VisualToggles.Set("shadows", false);
+            var flat = RenderSample.Render(cam, 480, 270);
+            VisualToggles.Set("shadows", true);
+            float shadowed = RenderSample.FractionDarker(lit, flat, 0.04f);
+
+            ShadowFit.Restore();   // the control: the asset's own shadow distance (50 m)
+            var litUnfitted = RenderSample.Render(cam, 480, 270);
+            float control = RenderSample.FractionDarker(litUnfitted, flat, 0.04f);
+            TestContext.WriteLine($"level {level}: shadowed share {shadowed:P2}, unfitted control {control:P2}");
+            Assert.Less(control, 0.002f, "without the fit the map casts (almost) nothing");
+            Assert.Greater(shadowed, 0.02f, "at least 2% of the view is in a cast shadow");
+        }
+        finally { QualitySettings.SetQualityLevel(previous, false); }
     }
 }

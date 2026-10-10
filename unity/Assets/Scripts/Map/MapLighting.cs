@@ -1,6 +1,9 @@
 #nullable enable
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace Statecraft.Game.Map
 {
@@ -16,6 +19,33 @@ namespace Statecraft.Game.Map
         public static readonly Color AmbientSky = new Color(0.52f, 0.60f, 0.72f);
         public static readonly Color AmbientEquator = new Color(0.48f, 0.46f, 0.42f);
         public static readonly Color AmbientGround = new Color(0.26f, 0.22f, 0.17f);
+
+        /// <summary>Records the sun's transform and light settings and the active scene's ambient, and returns the action that
+        /// puts them back (review M1: CameraRig.Init registers it as its first teardown action, so destroying the map leaves
+        /// the scene's lighting as it was and saving an open Map.unity does not bake the runtime values). The ambient is put
+        /// back only while the same scene is still active, so a map destroyed by loading another scene never writes into it.</summary>
+        public static Action Capture(Light? sun)
+        {
+            var scene = SceneManager.GetActiveScene();
+            var mode = RenderSettings.ambientMode; var sky = RenderSettings.ambientSkyColor;
+            var equator = RenderSettings.ambientEquatorColor; var ground = RenderSettings.ambientGroundColor;
+            var probe = RenderSettings.ambientProbe; var renderSun = RenderSettings.sun;
+            bool hadSun = sun != null;
+            Quaternion rot = default; Color colour = default; float intensity = 0f, strength = 0f; LightShadows shadows = default;
+            if (sun != null) { rot = sun.transform.rotation; colour = sun.color; intensity = sun.intensity; strength = sun.shadowStrength; shadows = sun.shadows; }
+            return () =>
+            {
+                if (hadSun && sun != null)
+                {
+                    sun.transform.rotation = rot; sun.color = colour; sun.intensity = intensity;
+                    sun.shadowStrength = strength; sun.shadows = shadows;
+                }
+                if (SceneManager.GetActiveScene() != scene) return;
+                RenderSettings.ambientMode = mode; RenderSettings.ambientSkyColor = sky;
+                RenderSettings.ambientEquatorColor = equator; RenderSettings.ambientGroundColor = ground;
+                RenderSettings.ambientProbe = probe; RenderSettings.sun = renderSun;
+            };
+        }
 
         /// <summary>The scene's first directional light, or null.</summary>
         public static Light? FindSun()
@@ -43,7 +73,12 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>The trilight ambient as spherical harmonics (set explicitly: a runtime change of the trilight colours does
-        /// not rebuild the probe the shaders read).</summary>
+        /// not rebuild the probe the shaders read). Review M4: this is an approximation, and the three colours are its
+        /// inputs, not what it evaluates to. Each AddDirectionalLight lobe also adds constant and linear terms in every
+        /// direction, and the ground lobe (darker than the equator) pulls the whole probe down. Evaluated, the probe is
+        /// darker than the constants everywhere; LightingTests.TheAmbientFillIsCoolFromTheSkyAndDarkFromTheGround pins the
+        /// evaluated up/horizon/down colours. The look was judged on these evaluated values, and Track B's render thresholds
+        /// were derived with them, so a least-squares refit is a look change for Task 4's grade, not a bug fix here.</summary>
         public static SphericalHarmonicsL2 AmbientProbe()
         {
             var sh = new SphericalHarmonicsL2();

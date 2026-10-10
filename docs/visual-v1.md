@@ -66,19 +66,52 @@ Notes:
   `res=1728x860`, with a first-pose spread of 0.68 ms (headless) and one headed run that stalled; do not compare with it.
 
 ## Task 2: sun and shadows
-Headless, viewport 1920x1080 at DPR 1 (`res=1920x1080 scale=0.80`), web tier (shadow map 2048, shadow distance fitted to
-1.75 x the rig distance); build from the Task 2 tree on `vis-light`.
+Headless, viewport 1920x1080 at DPR 1 (`res=1920x1080 scale=0.80`), web tier (shadow map 2048, one cascade, cascade
+border 0.1).
+
+**Shadow fit (fix round 1, review I1).** URP fades shadows by straight-line distance from the camera, from
+(1 - cascadeBorder) x shadowDistance out (URP 17.3 `Shadows.hlsl`, `ShadowUtils.GetScaleAndBiasForLinearDistanceFade`).
+The first delivery fitted 1.75 x the rig distance from *view depth*, which left the top corners partly or wholly faded
+(about 76% faded on the web tier at a 0.08 top inset). `ShadowFit` now takes, on every rig `Apply`, the farthest
+straight-line distance from the camera to the ground hits of the four viewport corners (the current aspect and top inset
+included; ground plane y = 0, the terrain's lowest point, so the fit is never short) and divides it by
+(1 - cascadeBorder). It clamps to 3 km .. 1,000 km (the far clip). `LightingTests.TheShadowDistanceCoversTheWholeView`
+checks 6/45/120/250 km x 16:9, 21:9, 4:3 x top insets 0, 0.08, 0.3, 0.5 x borders 0.1 and 0.2.
+
+**Decision: web-tier cascade border 0.2 -> 0.1** (`Mobile_RPAsset` `m_CascadeBorder`). With one cascade, the border is
+the fade band at the edge of the fitted range. A tenth keeps the fade off-screen while spending less of the 2048 map past
+the view (the fitted distance is 1/0.9 rather than 1/0.8 of the farthest corner). PC keeps 0.108 (4 cascades).
 
 | Run | Lines |
 |---|---|
-| headless | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.11 spread_ms=0.10 median_p95_ms=3.00`<br>`PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.43 spread_ms=0.11 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.12 spread_ms=0.43 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.39 spread_ms=0.17 median_p95_ms=8.00` |
+| headless, first delivery (`8b20507`, 1.75 x D view-depth fit, border 0.2) | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.11 spread_ms=0.10 median_p95_ms=3.00`<br>`PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.43 spread_ms=0.11 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.12 spread_ms=0.43 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.39 spread_ms=0.17 median_p95_ms=8.00` |
+| headless, fix round 1 (corner fit, border 0.1) | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.03 spread_ms=0.09 median_p95_ms=3.00`<br>`PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.42 spread_ms=0.08 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.87 spread_ms=0.46 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.12 spread_ms=0.11 median_p95_ms=8.00` |
 
-Budget check (`median(all) - median(-shadows) <= 2.5 ms + the larger spread`):
-- gameplay03: -0.32 ms (within noise; the 6-60 km view casts few shadows) against 2.61 ms: within.
-- diorama02: 2.73 ms against 2.93 ms (2.5 + 0.43): within, with 0.20 ms to spare. The country-wide pose fits the shadow
-  map over about 400 km of relief; Task 10 should re-check this pose (cascades or a lower cover factor at the far zoom are
-  the levers if the tier review needs headroom).
-- Edit-mode `ReliefCastsShadowsAtMapScale`: shadowed share 3.1 % (floor 2 %) over the Dead Sea escarpment at 60 km.
+Budget check, fix round 1 (`median(all) - median(-shadows) <= 2.5 ms + the larger spread`):
+- gameplay03: -0.39 ms against 2.59 ms: within.
+- diorama02: 2.75 ms against 2.96 ms (2.5 + 0.46): within, with 0.21 ms to spare.
+
+**For Task 10 (review M5).** At gameplay03, `all` is faster than `-shadows` by more than both spreads, in both deliveries.
+Three runs understate the run-to-run noise, so the 0.2 ms headroom at diorama02 means little. Re-measure diorama02
+shadows with more repeats (at least 7) and headed. If the tier review needs headroom, the levers are:
+- terrain shadow LOD or pixel error (the whole terrain is drawn into the shadow map at about 400 km);
+- a cheaper fit at the far zoom (fit to the map's extent rather than the frustum once the frustum is wider than the map);
+- a web-tier shadow map of 1024 at the far zoom only.
+
+**Rendered coverage (review I2, I3).** `ReliefCastsShadowsAtMapScale` runs at both tiers over the Dead Sea escarpment at
+60 km. Every other registered visual except `water` is off and the settlement markers are hidden, so only relief casts.
+Results: shadowed share **3.06% (web)** and **3.12% (PC)**; the control at the asset's own 50 m is **0.00%** at both.
+Hiding the markers moved the web share from 3.03% to 3.06%, which is noise, so the cubes were never a material part of
+it. The 2% floor stays: it allows a third of the measured share to be lost to the merge (Task 3's tilt-shift softening
+edges, Task 4's grade compressing darks, Track B's haze lifting distant shadow), and the control's 0.00% shows the
+separation is clean. If the merge squeezes it further, switch to a relative test (`lit < flat * 0.9`), not a lower floor.
+
+**Ambient (review M4).** `MapLighting.AmbientProbe` builds the trilight from `AddAmbientLight` plus two
+`AddDirectionalLight` lobes. The lobes add constant and linear terms in every direction, so the probe evaluates darker
+than its constants, which are inputs, not the evaluated colours. Evaluated values, pinned in `LightingTests`: up
+(0.216, 0.255, 0.326), horizon (0.184, 0.179, 0.171), down (0.119, 0.103, 0.080); the constants are sky (0.52, 0.60,
+0.72), equator (0.48, 0.46, 0.42), ground (0.26, 0.22, 0.17). The images were judged on the evaluated values, and Track
+B's thresholds were derived with them, so a least-squares refit would be a look change for Task 4, not a fix here.
 
 ## Checkpoints
 | Task | Name | Images | Owner verdict |

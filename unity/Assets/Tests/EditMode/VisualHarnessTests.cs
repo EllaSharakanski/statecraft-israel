@@ -177,18 +177,23 @@ public class VisualHarnessTests
         var go = new GameObject("cam", typeof(Camera)); var rig = go.AddComponent<CameraRig>();
         int ran = 0;
         System.Action stale = () => ran++;
-        rig.TeardownActions.Add(stale);
+        UnityEngine.Rendering.Volume? first = null;
         try
         {
+            rig.Init(); first = rig.Volume;
+            int own = rig.TeardownActions.Count;   // Init's own undo actions (Task 2: the lighting, the toggle, the shadow fit)
+            rig.TeardownActions.Add(stale);
             rig.Init();
             Assert.AreEqual(1, ran);
             CollectionAssert.DoesNotContain(rig.TeardownActions, stale);
+            Assert.AreEqual(own, rig.TeardownActions.Count, "a second Init does not pile up undo actions (review M3)");
         }
         finally
         {
             for (int i = rig.TeardownActions.Count - 1; i >= 0; i--) rig.TeardownActions[i]();   // the shadow fit, the toggle
             rig.TeardownActions.Clear();
-            if (rig.Volume != null) { Object.DestroyImmediate(rig.Volume.profile); Object.DestroyImmediate(rig.Volume.gameObject); }
+            foreach (var vol in new[] { first, rig.Volume })
+                if (vol != null) { Object.DestroyImmediate(vol.profile); Object.DestroyImmediate(vol.gameObject); }
             Object.DestroyImmediate(go);
         }
     }
