@@ -975,7 +975,7 @@ Run:
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 grep -E "Assets/(Scripts|Editor|Tests)/.*warning CS[0-9]+" unity-tests.log
 ```
-Expected: `exit=0`; total = **B0 + 14** (11 tests plus the 3 cases of the flag test), `failed="0"`; no warning lines. Write the total down as **B1**.
+Expected: `exit=0`; total = **B0 + 14** at first delivery (11 tests plus the 3 cases of the flag test; **B0 + 21** after Task 1 fix round 1), `failed="0"`; no warning lines. Write the total down as **B1**.
 
 - [ ] **Step 6: Write the failing tools tests**
 
@@ -1914,7 +1914,7 @@ Run:
 ```bash
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q | tail -1
 ```
-Expected: **T0 + 20** passed, the skipped count unchanged (the M3 `test_web_check.py` tests still pass: `scan` and `watch` keep their behaviour, `on_text` defaults to `None`; M3's headed browser test still skips without `--headed`). Write the passed total down as **T1**.
+Expected: **T0 + 20** passed at first delivery (**T0 + 34** after Task 1 fix round 1), the skipped count unchanged (the M3 `test_web_check.py` tests still pass: `scan` and `watch` keep their behaviour, `on_text` defaults to `None`; M3's headed browser test still skips without `--headed`). Write the passed total down as **T1**.
 
 - [ ] **Step 9: Record the baseline profile, boot time and the "before" checkpoint**
 
@@ -1967,7 +1967,7 @@ Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DP
   when it exceeds the budget plus the larger of the two spreads;
 - headed numbers are recorded, plus a DPR-2 headed run in Task 10 as a fill-rate stress proxy for weaker GPUs; the 30 fps
   floor for an integrated-GPU laptop (research notes 2.3) is 33 ms p95;
-- boot: the map-build span grows by at most 1,000 ms over the Task 1 baseline (median of 3).
+- boot: each boot span stays within baseline + max(300 ms, 50%) of the Task 1 baseline (median of 3; Task 1 fix round 1).
 
 ## Baseline (Task 1, before any visual change)
 | Run | Lines |
@@ -6685,7 +6685,7 @@ Every finding of `.superpowers/sdd/2026-10-10-statecraft-m3/visual-v1-plan-revie
 |---|---|
 | **C1** Custom Function in String mode | `terrain_graph.py` writes `m_SourceType` 0 (`FILE_MODE`, Shader Graph's `HlslSourceType { File, String }`); the generator test expects `(0, ...)`. Task 6's gate is two-sided (controller ruling): the negative half (no import error, a Custom Function node, `"m_SourceType": 0` in the file) in Step 5, and the positive half first in Step 7, `TerrainShaderTests.TheCustomFunctionDrivesTheTerrain`: every generated pass's source is searched for `StatecraftTerrain.hlsl`, and a land pixel rendered with a magenta biome texture must be magenta and not black. Controller question 1 updated. |
 | **C2** GLES3 check fails on DOTS subshaders | `ShaderChecks.Gles3Errors` skips passes whose source excludes GLES3 (`exclude_renderers ... gles3`, or `only_renderers` without it, `ExcludesGles3`), compiles the base and `_MAIN_LIGHT_SHADOWS` variants, and fails unless at least one subshader has passes built for GLES3 that all compile. Negative controls in Task 1: `SubshadersThatExcludeGles3AreSkippedButOneMustCompile` (an excluded broken subshader beside a good one: no errors; only an excluded one: "no subshader" error). |
-| **I1** Measurements | `chrome_flags` forces `--force-device-scale-factor=1` (`--dpr 2` for the stress proxy); every `PROFILE` line has `res=` and `scale=`; `FrameProfile` runs each configuration 3 times in interleaved orders (`Order`) and logs `PROFILE summary` (median, spread, median p95); a cost is over budget only beyond budget plus the larger spread; `tools/machine_lock.py` (exclusive for profiles with `--wait-unity`, shared for every Unity batch command, lock file shared by all worktrees) serialises measurements, plus a Global Constraint and a controller note; a headed DPR-2 fill-rate stress run in Task 10 and a deferred runtime fallback; the boot budget with `?bootlog` and `tools/boot_report.py` (baseline in Task 1, checks after Tasks 6, 8 and in Task 10, at most +1,000 ms on the map-build span). |
+| **I1** Measurements | the viewport is set to exactly 1920×1080 over CDP at the requested DPR (Task 1 fix round 1; `--dpr 2` for the stress proxy); every `PROFILE` line has `res=` and `scale=`; `FrameProfile` runs each configuration 3 times in interleaved orders (`Order`) and logs `PROFILE summary` (median, spread, median p95); a cost is over budget only beyond budget plus the larger spread; `tools/machine_lock.py` (exclusive for profiles with `--wait-unity`, shared for every Unity batch command, lock file shared by all worktrees) serialises measurements, plus a Global Constraint and a controller note; a headed DPR-2 fill-rate stress run in Task 10 and a deferred runtime fallback; the boot budget with `?bootlog` and `tools/boot_report.py` (baseline in Task 1, checks after Tasks 6, 8 and in Task 10, at most +1,000 ms on the map-build span). |
 | **I2** Haze through Lit; sea loses its blue | Land haze is applied after lighting (`BaseColor × (1 − h)`, `Emission = haze × h`); water uses a cooler, weaker haze (`_ScHazeWater`, 0.4 × strength, (0.62, 0.74, 0.86)) on both sides of the edge. Task 7 Step 4 states the arithmetic for `TheBackdropIsLand…` (b − r ≈ 0.23), the new `TheOpenSeaStaysBlueUnderTheHaze` at the diorama pose (≈ 0.21) and `TheCoastSeparatesLandFromSea` (≈ 0.26), each against 0.15, with the merge-time grade estimate. |
 | **I3** Grid stops at the map's edge | Option (a): `Sea.shader` draws the same `ScGridAmount` lines, so the lattice continues on the skirt's sea (as in the promo). The seam test samples hex centres (via `HexGrid.NearestCentre`/`ToWorld`), with the grid on and off, at four yaws. |
 | **I4** Tilt-shift test symmetric; mixed pixel bases | New `AnOffCentreFocusFollowsTheTopBar` (TopInset 0.3: the 0.33–0.37 band keeps over 95% of its gradient energy, 0.70–0.78 falls below 80%). The radius is now a share of the picture height (`MaxRadiusUv`, `Params(topInset, distance)`); the shader converts it with the aspect ratio only, so render scale, window size and batch-mode captures (`MapCapture.Promo`) all get the same blur with no pixel-height source. The note on texture targets ignoring render scale is in Task 3. |
