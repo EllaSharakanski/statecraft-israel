@@ -65,8 +65,9 @@ This needs the owner's itch.io account and is never automated.
 2. Set the title to "Statecraft: Israel (M3 preview)", Kind of project to **HTML**, and Classification to Games.
 3. Under Uploads, upload `unity/Builds/statecraft-m3-web.zip` and tick **This file will be played in the browser**.
 4. Embed options:
-   - Viewport **1920 × 1080**.
-   - Tick **Fullscreen button**.
+   - Viewport **1280 × 720**. It fits a 1366×768 or 1440×900 laptop page without scrolling, and under the UI's
+     ScaleWithScreenSize (reference 1920×1080) it lays out exactly like 1920×1080; `UiLayoutTests` covers 1280×720.
+   - Tick **Fullscreen button**. ("Click to launch in fullscreen" is the alternative launch mode if the embed feels small.)
    - Leave **SharedArrayBuffer support** off; the build uses no threads.
 5. Visibility & access:
    - Choose **Draft** first.
