@@ -8,7 +8,7 @@ namespace Statecraft.Sim
         public double Delta { get; }
         public string Message { get; }
         public Cause(string system, string target, double delta, string message)
-        { System = system; Target = target; Delta = delta; Message = message; }
+        { System = system; Target = target; Delta = delta; Message = PlayerText.Capitalised(message); }   // sentence case (playtest 2, P2-6)
         public override string ToString() => $"[{System}] {Message}";
     }
 }

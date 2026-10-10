@@ -10,5 +10,9 @@ namespace Statecraft.Game.Map
         { Lon0 = lon0; Lon1 = lon1; Lat0 = lat0; Lat1 = lat1; WidthM = widthM; LengthM = lengthM; }
         public Vector3 ToWorld(double lon, double lat, float y) =>
             new Vector3((float)((lon - Lon0) / (Lon1 - Lon0) * WidthM), y, (float)((lat - Lat0) / (Lat1 - Lat0) * LengthM));
+
+        /// <summary>The inverse of ToWorld on the ground plane (y is ignored).</summary>
+        public (double lon, double lat) ToLonLat(Vector3 world) =>
+            (Lon0 + world.x / WidthM * (Lon1 - Lon0), Lat0 + world.z / LengthM * (Lat1 - Lat0));
     }
 }

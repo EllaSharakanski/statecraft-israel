@@ -191,3 +191,28 @@ public class ContentLoaderTests
         Assert.Equal(viaDir.Field, viaReader.Field);
     }
 }
+
+public class ContentTextTests
+{
+    static Func<string, string?> Reader(string file, string text)
+    {
+        var dir = Fixture.Write();   // a file on disk would turn the lone surrogate into U+FFFD, so the bad file is served from memory
+        return rel => { if (rel == file) return text; var f = Path.Combine(dir, rel); return File.Exists(f) ? File.ReadAllText(f) : null; };
+    }
+
+    // (<S> stands for a lone surrogate: xUnit would mangle a real one in theory data.) A lone surrogate in a string handed to the loader (not through a YAML escape, which YamlDotNet rejects itself)
+    // cannot be saved; it must be a load error naming file and field, not a crash later in End Turn.
+    [Theory]
+    [InlineData("offices.yaml", "id: finance_minister", "id: fin<S>", "offices[")]
+    [InlineData("people.yaml", "name: Def Two", "name: Def<S>", "people[")]
+    [InlineData("rules.yaml", "budget_start: { finance_minister: 1.0 }", "budget_start: { fin<S>: 1.0 }", "budget_start")]
+    public void ATextThatIsNotValidIsALoadError(string file, string from, string to, string field)
+    {
+        var bad = Fixture.Files[file].Replace(from, to.Replace("<S>", "\uD800"));
+        Assert.NotEqual(Fixture.Files[file], bad);
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Reader(file, bad), new string[0]));
+        Assert.Equal(file, ex.File);
+        Assert.Contains("valid text", ex.Message);
+        Assert.Contains(field, ex.Field);
+    }
+}

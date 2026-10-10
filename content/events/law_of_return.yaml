@@ -1,0 +1,23 @@
+id: law_of_return
+title: The Law of Return
+text: 'The Knesset is ready to vote on the Law of Return, which gives every Jew the right to come to Israel as an oleh. {prime_minister} must decide whether the government backs it.'
+anchor: hard
+office: prime_minister
+# Passed unanimously on 5 July 1950.
+from: 1950-07-05
+to: 1950-07-06
+options:
+  - id: enact
+    text: Enact the right of every Jew to immigrate
+    historical: true
+    recommended: true
+    effects:
+      - { target: morale, delta: 0.03 }
+      - { target: intl_standing, delta: 0.01 }
+  - id: quota
+    text: Regulate immigration by yearly quota
+    effects:
+      - { target: morale, delta: -0.06 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Law_of_Return", checked: 2026-10-10 }
+status: fact-checked

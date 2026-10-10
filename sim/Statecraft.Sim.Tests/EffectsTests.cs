@@ -38,7 +38,7 @@ public class EffectsTests
         Assert.Equal(2, food.Count);   // one truthful cause per turn the indicator moved
         Assert.Equal(0.14, food[0].Delta, 9);
         Assert.Equal(0.07, food[1].Delta, 9);
-        Assert.All(food, w => Assert.Contains("rationing_food", w.Message));
+        Assert.All(food, w => Assert.Contains("Rations feed people", w.Message));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class EffectsTests
     {
         // Two effects on food_supply: one cause for the indicator, naming both, with the real change.
         var model = Fixture.Files["model.yaml"].Replace("situations:",
-            "  - id: rationing_food2\n    source: rationing\n    target: food_supply\n    k: 0.1\n    inertia: 1\nsituations:");
+            "  - id: rationing_food2\n    source: rationing\n    target: food_supply\n    k: 0.1\n    inertia: 1\n    name: More rations\nsituations:");
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["model.yaml"] = model }));
         var s = new GameState { Date = new DateTime(1948, 6, 1) };
         EffectsSystem.Init(c, s);
@@ -57,7 +57,7 @@ public class EffectsTests
         Assert.Equal(0.64, s.Indicators["food_supply"], 9);   // 0.4 + 0.14 + 0.1
         var cause = Assert.Single(why, w => w.System == "effects" && w.Target == "food_supply");
         Assert.Equal(s.Indicators["food_supply"] - before, cause.Delta, 12);
-        Assert.Equal("food_supply +0.240 (rationing_food, rationing_food2)", cause.Message);
+        Assert.Equal("Food supply +24.0% (Rations feed people, More rations)", cause.Message);
     }
 
     [Fact]

@@ -13,11 +13,12 @@ namespace Statecraft.Sim
             foreach (var e in c.Effects) s.EffectContributions[e.Id] = 0;
         }
 
-        /// <summary>Competence (0.5 + competence/20) times budget factor. No office: 1.0.</summary>
+        /// <summary>Competence (0.5 + competence/20) of the office holder (player appointments included) times budget
+        /// factor. No office: 1.0.</summary>
         public static double Multiplier(Content c, GameState s, string office)
         {
             if (office == "") return 1.0;
-            var holder = Offices.Holder(c, office, s.Date);
+            var holder = Cabinet.Holder(c, s, office);
             var competence = holder == null ? 0.5 : 0.5 + holder.Competence / 20.0;
             return competence * BudgetFactor(s, office);
         }
@@ -25,10 +26,13 @@ namespace Statecraft.Sim
         /// <summary>An equal split of the budget is neutral (1.0); a ministry's factor runs from 0.5 (no money) to 1.5.
         /// An office with no budget line (not in budget_start, so the player can never fund it) is neutral too:
         /// treating it as unfunded would halve its effects permanently with no way to fix it.</summary>
-        public static double BudgetFactor(GameState s, string office)
+        public static double BudgetFactor(GameState s, string office) => BudgetFactor(s.Budget, office);
+
+        /// <summary>The same rule for any set of shares (the Budget screen shows the factor of a draft budget).</summary>
+        public static double BudgetFactor(IReadOnlyDictionary<string, double> budget, string office)
         {
-            if (!s.Budget.TryGetValue(office, out var share)) return 1.0;
-            return Math.Min(1.5, 0.5 + share * s.Budget.Count / 2.0);
+            if (!budget.TryGetValue(office, out var share)) return 1.0;
+            return Math.Min(1.5, 0.5 + share * budget.Count / 2.0);
         }
 
         public static void Apply(Content c, GameState s, List<Cause> why)
@@ -51,9 +55,9 @@ namespace Statecraft.Sim
             {
                 var delta = s.Indicators[i.Id] - before[i.Id];
                 if (Math.Abs(delta) <= 1e-9) continue;
-                var ids = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Id).ToList();
-                var from = ids.Count > 0 ? $" ({string.Join(", ", ids)})" : "";
-                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000;+0.000}{from}")));
+                var names = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Name).ToList();
+                var from = names.Count > 0 ? $" ({string.Join(", ", names)})" : "";
+                why.Add(new Cause("effects", i.Id, delta, $"{PlayerText.Change(c, i.Id, delta)}{from}"));
             }
             UpdateSituations(c, s, why);
         }
@@ -66,6 +70,19 @@ namespace Statecraft.Sim
         internal static double Level(Content c, GameState s, Indicator i) =>
             Math.Max(0, Math.Min(1, Inner(c, s, i) + s.IndicatorShifts[i.Id]));
 
+        /// <summary>Moves an indicator's level by <paramref name="delta"/> through its permanent shift (the layer event
+        /// choices and crises use), clamped to [0, 1]. The shift is set so the level lands exactly on the visible result.
+        /// Returns the change actually applied (0 when the indicator was already at the clamp).</summary>
+        public static double Shift(Content c, GameState s, string indicator, double delta)
+        {
+            var ind = c.Indicators.First(i => i.Id == indicator);
+            var level = Level(c, s, ind);
+            var newLevel = Math.Max(0, Math.Min(1, level + delta));
+            s.IndicatorShifts[ind.Id] = newLevel - Inner(c, s, ind);
+            s.Indicators[ind.Id] = newLevel;
+            return newLevel - level;
+        }
+
         public static void UpdateSituations(Content c, GameState s, List<Cause> why)
         {
             foreach (var sit in c.Situations)
@@ -74,8 +91,8 @@ namespace Statecraft.Sim
                 bool on = s.ActiveSituations.Contains(sit.Id);
                 bool turnOn = sit.OnBelow.HasValue ? v < sit.OnBelow.Value : v > sit.OnAbove!.Value;
                 bool turnOff = sit.OffAbove.HasValue ? v > sit.OffAbove.Value : v < sit.OffBelow!.Value;
-                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, FormattableString.Invariant($"{sit.Id} began ({sit.Indicator} = {v:0.00})"))); }
-                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, FormattableString.Invariant($"{sit.Id} ended ({sit.Indicator} = {v:0.00})"))); }
+                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, $"{sit.Name} began ({PlayerText.Target(c, sit.Indicator)} at {PlayerText.Percent(v)})")); }
+                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, $"{sit.Name} ended ({PlayerText.Target(c, sit.Indicator)} at {PlayerText.Percent(v)})")); }
             }
         }
 

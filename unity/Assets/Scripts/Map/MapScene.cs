@@ -1,41 +1,123 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using Statecraft.Game.Boot;
 using UnityEngine;
 
 namespace Statecraft.Game.Map
 {
-    /// <summary>Builds the whole map at runtime: terrain, hexes, 1948 settlements, camera. Materials are editor-made assets
-    /// (M0 correction 1). Build is idempotent: it destroys what the previous Build made first.</summary>
+    /// <summary>Builds the whole map: terrain, hexes, 1948 settlements, camera. Materials are editor-made assets
+    /// (M0 correction 1). Build is idempotent: it destroys what the previous Build made first. In play mode the Boot
+    /// component calls Build(inputs) once the inputs are loaded (fetched on WebGL); editor tools call Build().</summary>
     public sealed class MapScene : MonoBehaviour
     {
-        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial;
+        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial, selectionMaterial, seaMaterial, borderLandMaterial;
 
         public GeoFrame Frame { get; private set; }
+        /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
+        public HexFile Hexes { get; private set; }
         public Terrain Terrain { get; private set; }
+        public Material MarkerMaterial => markerMaterial;
 
-        void Awake() => Build();
+        /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
+        public const string SelectionName = "HexSelection";
+        /// <summary>The land and sea past the map's edge: a child of the terrain (so a rebuild destroys it).</summary>
+        public const string BorderSkirtName = "BorderSkirt";
+        /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome); MapMaterials
+        /// bakes it into the editor-made HexSelection.mat.</summary>
+        public static readonly Color SelectionColour = new Color(1f, 0.84f, 0.38f);
+        /// <summary>Width of the outline band, as a fraction of the hex circumradius (about 600 m on a 5 km hex).</summary>
+        public const float SelectionWidth = 0.12f;
+        /// <summary>Height of the band above the hex overlay's lines, which it covers (its material also has a depth offset).</summary>
+        public const float SelectionLiftM = 20f;
 
-        public void Configure(Material terrain, Material overlay, Material marker)
-        { terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; }
-
-        public void Build()
+        /// <summary>Outlines hex (q, r) with a band draped on the terrain: the hex overlay's geometry (MapBuilder.DrapedRing,
+        /// HexMath corners) drawn with the editor-made HexSelection.mat, whose depth offset keeps the overlay lines under it
+        /// from z-fighting (no runtime material). The band is sampled at its outer, middle and inner rings and each index
+        /// takes the highest, so terrain inside the band cannot rise through it. A hex that is not on the map hides it.</summary>
+        public void Select(int q, int r)
         {
+            if (Terrain == null || Hexes == null) return;
+            var found = Terrain.transform.Find(SelectionName);
+            var go = found != null ? found.gameObject : null;
+            if (go == null)
+            {
+                go = new GameObject(SelectionName);
+                go.transform.SetParent(Terrain.transform, false);
+                var mesh = Terrain.GetComponent<MapRuntimeAssets>().Own(new Mesh { name = SelectionName });
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var renderer = go.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = selectionMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            var mr = go.GetComponent<MeshRenderer>();
+            HexJson hex = null;
+            foreach (var h in Hexes.hexes) if (h.q == q && h.r == r) { hex = h; break; }
+            if (hex == null) { mr.enabled = false; return; }
+            var c = Frame.ToWorld(hex.lon, hex.lat, 0);
+            var centre = new Vector2(c.x, c.z);
+            float size = Hexes.hex_size_km * 1000f, clearance = MapBuilder.OverlayClearanceM + SelectionLiftM;
+            var verts = new List<Vector3>(2 * MapBuilder.RingVertices);
+            var middle = new List<Vector3>(MapBuilder.RingVertices);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size, clearance, verts);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size * (1f - SelectionWidth), clearance, verts);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size * (1f - SelectionWidth / 2), clearance, middle);
+            int n = MapBuilder.RingVertices;
+            var tris = new List<int>(6 * n);
+            for (int j = 0; j < n; j++)
+            {
+                // Each index at the highest of the outer, middle and inner ring, so the band clears the ground across it.
+                float y = Mathf.Max(verts[j].y, Mathf.Max(verts[n + j].y, middle[j].y));
+                verts[j] = new Vector3(verts[j].x, y, verts[j].z); verts[n + j] = new Vector3(verts[n + j].x, y, verts[n + j].z);
+            }
+            for (int j = 0; j < n; j++)
+            {
+                int a = j, b = (j + 1) % n, ai = n + j, bi = n + (j + 1) % n;
+                tris.AddRange(new[] { a, ai, b, b, ai, bi });   // the shader draws both faces (Cull Off)
+            }
+            var m = go.GetComponent<MeshFilter>().sharedMesh;
+            m.Clear();
+            m.SetVertices(verts); m.SetTriangles(tris, 0);
+            m.RecalculateBounds();
+            mr.enabled = true;
+        }
+
+        public void Configure(Material terrain, Material overlay, Material marker, Material selection, Material sea, Material borderLand)
+        {
+            terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; selectionMaterial = selection;
+            seaMaterial = sea; borderLandMaterial = borderLand;
+        }
+
+        /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
+        public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
+
+        public void Build(MapInputs inputs)
+        {
+            if (inputs == null) throw new ArgumentNullException(nameof(inputs));
             if (terrainMaterial == null) throw new InvalidOperationException("MapScene: terrainMaterial is not assigned");
             if (overlayMaterial == null) throw new InvalidOperationException("MapScene: overlayMaterial is not assigned");
             if (markerMaterial == null) throw new InvalidOperationException("MapScene: markerMaterial is not assigned");
+            if (selectionMaterial == null) throw new InvalidOperationException("MapScene: selectionMaterial is not assigned");
+            if (seaMaterial == null) throw new InvalidOperationException("MapScene: seaMaterial is not assigned");
+            if (borderLandMaterial == null) throw new InvalidOperationException("MapScene: borderLandMaterial is not assigned");
             var cam = Camera.main;
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
             Clear();
-            var (metaJson, r16, hexesJson, settlementsYaml) = ReadInputs();
-            var (meta, heights) = HeightmapLoader.Load(metaJson, r16, MetaPath);
-            var terrainGo = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(hexesJson, HexesPath), terrainMaterial, overlayMaterial);
+            var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16, MetaPath);
+            DiagLog.BootPhase("heightmap decoded");
+            Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
+            DiagLog.BootPhase("hexes parsed");
+            var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial, overlayMaterial);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
+            AddBorderSkirt(terrainGo, meta.elev_min_m);
+            DiagLog.BootPhase("border skirt");
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
-            var list = SettlementPlacer.Parse(settlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
+            var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
+            DiagLog.BootPhase("settlements placed");
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
             rig.LookAt = Frame.ToWorld(34.95, 31.95, 0); rig.Init(); // central Israel: Tel Aviv–Jerusalem corridor
@@ -46,16 +128,22 @@ namespace Statecraft.Game.Map
             assets.Own(rig.Volume.profile);
         }
 
-        static string MetaPath => Path.Combine(Paths.StreamingMap, "heightmap.json");
-        static string R16Path => Path.Combine(Paths.StreamingMap, "heightmap.r16");
-        static string HexesPath => Path.Combine(Paths.Content, "map", "hexes.json");
-        static string SettlementsPath => Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName);
+        /// <summary>The land and sea past the map's edge (MapBuilder.BuildBorderSkirt), drawn with the editor-made Sea.mat and
+        /// BorderLand.mat; no collider, so clicks still pick only the terrain. It lies outside the terrain's footprint only.</summary>
+        void AddBorderSkirt(GameObject terrainGo, float elevMinM)
+        {
+            var skirt = new GameObject(BorderSkirtName);
+            skirt.transform.SetParent(terrainGo.transform, false);
+            skirt.AddComponent<MeshFilter>().sharedMesh =
+                MapBuilder.BuildBorderSkirt(Terrain.terrainData, elevMinM, terrainGo.GetComponent<MapRuntimeAssets>());
+            var renderer = skirt.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = new[] { seaMaterial, borderLandMaterial };
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
 
-        /// <summary>Every map input, read once. This uses System.IO, which works in the editor (and desktop players) only:
-        /// M3 (first player build) replaces it with UnityWebRequest for WebGL, which cannot read streamingAssetsPath with
-        /// System.IO, and copies content/map into StreamingAssets.</summary>
-        static (string metaJson, byte[] r16, string hexesJson, string settlementsYaml) ReadInputs() =>
-            (File.ReadAllText(MetaPath), File.ReadAllBytes(R16Path), File.ReadAllText(HexesPath), File.ReadAllText(SettlementsPath));
+        static string MetaPath => "heightmap.json";
+        static string HexesPath => "hexes.json";
+        static string SettlementsPath => SettlementPlacer.DefaultFileName;
 
         /// <summary>Destroys every child: all of them are things Build made (terrain, Settlements, PostFX). Walking the
         /// hierarchy rather than remembered fields keeps Build idempotent after a domain reload (R2). The VolumeProfile is
@@ -68,6 +156,7 @@ namespace Statecraft.Game.Map
                 if (Application.isPlaying) { go.transform.SetParent(null); Destroy(go); } else DestroyImmediate(go);
             }
             Terrain = null;
+            Hexes = null;
         }
     }
 }

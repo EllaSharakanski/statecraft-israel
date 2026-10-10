@@ -33,6 +33,9 @@ legislatures:
     # The Knesset article gives "20 January" for the election, which conflicts; the election article (25 January 1949) is the source used.
     elected: 1949-01-25
     from: 1949-02-14
+    # Sat until the Second Knesset convened. The government resigned on 14 February 1951; in April 1951 the Knesset
+    # passed the Transition to the Second Knesset Law and fixed the election for 30 July 1951 (he.wiki First Knesset).
+    to: 1951-08-20
     size: 120
     budget_approval: true
     open_questions: [budget_approval]
@@ -52,4 +55,37 @@ legislatures:
     sources:
       - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-09 }
       - { url: "https://en.wikipedia.org/wiki/Knesset", checked: 2026-10-09 }
+      - { url: "https://he.wikipedia.org/wiki/הכנסת_הראשונה", checked: 2026-10-10 }
+    status: fact-checked
+  - id: second_knesset
+    body: Second Knesset
+    elected: 1951-07-30
+    # Convening date from he.wiki only (single source; not confirmed elsewhere).
+    from: 1951-08-20
+    size: 120
+    budget_approval: true
+    open_questions: [budget_approval]
+    # Election results, identical in en.wiki, IDI and JVL. The United Religious Front ran as four lists (Hapoel
+    # HaMizrachi, Mizrachi, Agudat Yisrael, Poalei Agudat Yisrael). he.wiki's composition table reflects later mergers.
+    seats:
+      mapai: 45
+      general_zionists: 20
+      mapam: 15
+      hapoel_hamizrachi: 8
+      herut: 8
+      maki: 5
+      progressive: 4
+      democratic_list_israeli_arabs: 3
+      agudat_yisrael: 3
+      sephardim: 2
+      poalei_agudat_yisrael: 2
+      mizrachi: 2
+      progress_and_work: 1
+      yemenite_association: 1
+      agriculture_and_development: 1
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/1951_Israeli_legislative_election", checked: 2026-10-10 }
+      - { url: "https://en.idi.org.il/israeli-elections-and-parties/elections/1951/", checked: 2026-10-10 }
+      - { url: "https://www.jewishvirtuallibrary.org/elections-to-the-2nd-knesset-july-1951", checked: 2026-10-10 }
+      - { url: "https://he.wikipedia.org/wiki/הכנסת_השנייה", checked: 2026-10-10 }
     status: fact-checked

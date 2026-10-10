@@ -14,7 +14,12 @@ namespace Statecraft.Game.Map
         /// have more than 10% weight about 0.6 of a hex width (1.25 gave about 0.24).</summary>
         public const float BlendRadiusHexes = 1.72f;
 
-        readonly Dictionary<(int, int), List<(Vector2 p, int layer)>> grid = new Dictionary<(int, int), List<(Vector2, int)>>();
+        // The radius-sized grid as flat arrays (playtest 2, P2-1: the tuple-keyed dictionary made this the largest avoidable
+        // boot phase). Cell (ix, iy) holds items cellStart[c] .. cellStart[c + 1] - 1, in insertion order, so the weights are
+        // bit-identical to the dictionary version (BiomeBlenderSpeedTests).
+        readonly int minX, minY, nx, ny;
+        readonly int[] cellStart;
+        readonly float[] px, py; readonly int[] pl;
         readonly List<(Vector2 p, int layer)> all = new List<(Vector2, int)>();
         readonly float radius, cell; readonly int layerCount;
 
@@ -25,14 +30,27 @@ namespace Statecraft.Game.Map
             this.layerCount = layerCount;
             radius = BlendRadiusHexes * hexSizeM;
             cell = radius; // a radius-sized cell: the 3x3 neighbourhood covers every centre within the radius
+            int maxX = int.MinValue, maxY = int.MinValue; minX = int.MaxValue; minY = int.MaxValue;
             for (int i = 0; i < centres.Count; i++)
             {
                 if (layers[i] < 0 || layers[i] >= layerCount) throw new ArgumentOutOfRangeException(nameof(layers));
-                var c = (centres[i], layers[i]);
-                all.Add(c);
-                var k = Key(centres[i]);
-                if (!grid.TryGetValue(k, out var l)) grid[k] = l = new List<(Vector2, int)>();
-                l.Add(c);
+                all.Add((centres[i], layers[i]));
+                var (kx, ky) = Key(centres[i]);
+                minX = Math.Min(minX, kx); minY = Math.Min(minY, ky); maxX = Math.Max(maxX, kx); maxY = Math.Max(maxY, ky);
+            }
+            if (centres.Count == 0) { minX = minY = 0; maxX = maxY = -1; }
+            nx = maxX - minX + 1; ny = maxY - minY + 1;
+            cellStart = new int[nx * ny + 1];
+            var counts = new int[nx * ny];
+            foreach (var c in all) { var (kx, ky) = Key(c.p); counts[(kx - minX) + (ky - minY) * nx]++; }
+            for (int c = 0; c < counts.Length; c++) cellStart[c + 1] = cellStart[c] + counts[c];
+            px = new float[all.Count]; py = new float[all.Count]; pl = new int[all.Count];
+            var fill = (int[])cellStart.Clone();
+            foreach (var c in all)                                      // insertion order within each cell
+            {
+                var (kx, ky) = Key(c.p);
+                var at = fill[(kx - minX) + (ky - minY) * nx]++;
+                px[at] = c.p.x; py[at] = c.p.y; pl[at] = c.layer;
             }
         }
 
@@ -45,15 +63,23 @@ namespace Statecraft.Game.Map
             Array.Clear(w, 0, w.Length);
             var (cx, cy) = Key(p); float total = 0f;
             for (int dx = -1; dx <= 1; dx++)
+            {
+                int gx = cx + dx - minX;
+                if (gx < 0 || gx >= nx) continue;
                 for (int dy = -1; dy <= 1; dy++)
-                    if (grid.TryGetValue((cx + dx, cy + dy), out var l))
-                        foreach (var c in l)
-                        {
-                            float t = (c.p - p).magnitude / radius;
-                            if (t >= 1f) continue;
-                            float f = 1f - t * t * (3f - 2f * t); // 1 - smoothstep
-                            w[c.layer] += f; total += f;
-                        }
+                {
+                    int gy = cy + dy - minY;
+                    if (gy < 0 || gy >= ny) continue;
+                    int c = gx + gy * nx;
+                    for (int k = cellStart[c]; k < cellStart[c + 1]; k++)
+                    {
+                        float t = new Vector2(px[k] - p.x, py[k] - p.y).magnitude / radius;
+                        if (t >= 1f) continue;
+                        float f = 1f - t * t * (3f - 2f * t); // 1 - smoothstep
+                        w[pl[k]] += f; total += f;
+                    }
+                }
+            }
             if (total > 0f) { for (int i = 0; i < w.Length; i++) w[i] /= total; return; }
             w[NearestLayer(p)] = 1f;
         }

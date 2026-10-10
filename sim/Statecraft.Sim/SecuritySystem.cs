@@ -11,14 +11,31 @@ namespace Statecraft.Sim
 
         static int Weeks(TurnLength len) => len == TurnLength.Week ? 1 : len == TurnLength.Month ? 4 : 13;
 
+        /// <summary>The ladder has rungs 1..5; anything outside is clamped (a bad save or a large order delta).</summary>
+        public static int ClampRung(int rung) => Math.Max(1, Math.Min(5, rung));
+
+        /// <summary>The least reserve call-up the rung allows (rules.yaml rung_min_mobilization).</summary>
+        public static double MinMobilization(Content c, int rung) => c.Rules.RungMinMobilization[ClampRung(rung) - 1];
+
+        /// <summary>The call-up a level ends up at on this rung: the sim raises a lower order to the rung's minimum.</summary>
+        public static double EffectiveMobilization(Content c, int rung, double level) => Math.Max(level, MinMobilization(c, rung));
+
+        /// <summary>Weeks left on the UN ceasefire clock after moving from <paramref name="fromRung"/> (with
+        /// <paramref name="weeksLeft"/> on the clock) to <paramref name="toRung"/>: entering full war starts it, leaving ends it.</summary>
+        public static int CeasefireWeeksAfter(Content c, int fromRung, int weeksLeft, int toRung)
+        {
+            toRung = ClampRung(toRung);
+            if (toRung != 5) return 0;
+            return fromRung != 5 ? c.Rules.CeasefireWeeks : weeksLeft;
+        }
+
         public static void Init(Content c, GameState s, List<Cause> why) => SetRung(c, s, c.Rules.StartRung, why);
 
         public static void SetRung(Content c, GameState s, int rung, List<Cause> why)
         {
-            rung = Math.Max(1, Math.Min(5, rung));
-            if (rung == 5 && s.Rung != 5) s.CeasefireWeeksLeft = c.Rules.CeasefireWeeks;
-            if (rung != 5) s.CeasefireWeeksLeft = 0;
-            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, FormattableString.Invariant($"security level {s.Rung} -> {rung}")));
+            rung = ClampRung(rung);
+            s.CeasefireWeeksLeft = CeasefireWeeksAfter(c, s.Rung, s.CeasefireWeeksLeft, rung);
+            if (rung != s.Rung) why.Add(new Cause("security", "rung", rung - s.Rung, FormattableString.Invariant($"Security level {s.Rung} to {rung}")));
             s.Rung = rung;
             RaiseToFloor(c, s, why);
         }
@@ -28,18 +45,18 @@ namespace Statecraft.Sim
         {
             if (!(level >= 0 && level <= 1)) return "Mobilization must be between 0 and 1";
             s.Mobilization = level;
-            why.Add(new Cause("security", "mobilization", level, FormattableString.Invariant($"reserve call-up set to {level * 100:0}%")));
+            why.Add(new Cause("security", "mobilization", level, $"reserve call-up set to {PlayerText.Percent(level)}"));
             RaiseToFloor(c, s, why);
             return null;
         }
 
         static void RaiseToFloor(Content c, GameState s, List<Cause> why)
         {
-            var rung = Math.Max(1, Math.Min(5, s.Rung));   // a bad save cannot index past the table
-            var floor = c.Rules.RungMinMobilization[rung - 1];
+            var rung = ClampRung(s.Rung);   // a bad save cannot index past the table
+            var floor = MinMobilization(c, rung);
             if (s.Mobilization < floor)
             {
-                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {floor * 100:0}%, the minimum for security level {rung}")));
+                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {PlayerText.Percent(floor)}, the minimum for security level {rung}")));
                 s.Mobilization = floor;
             }
         }

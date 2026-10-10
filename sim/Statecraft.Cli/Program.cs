@@ -4,6 +4,7 @@ using Statecraft.Sim;
 
 // Text front end for the headless sim.
 //   dotnet run --project Statecraft.Cli -- [--content DIR] [--seed N] [--auto historical --turns N]
+//   dotnet run --project Statecraft.Cli -- --release-gate [--content DIR]   (exit 0 when shareable, 3 when not)
 // Interactive commands: c EVENT OPTION | p POLICY LEVEL | m LEVEL | s DELTA | n (end turn) | q
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -30,6 +31,17 @@ Content content;
 try { content = ContentLoader.Load(Arg("--content") ?? FindContent()); }
 catch (DirectoryNotFoundException) { Console.Error.WriteLine("Content error: content directory not found (use --content <path>)"); return 2; }
 catch (ContentException e) { Console.Error.WriteLine($"Content error: {e.Message}"); return 2; }
+
+// --release-gate: the sensitivity gate before a build is shared (spec 5.5; tools/package_release.py, Build -shareable).
+// Exit 0 and "RELEASE GATE OK" when every sensitive event is sensitivity-reviewed, else exit 3 naming them.
+if (Array.IndexOf(args, "--release-gate") >= 0)
+{
+    var open = ReleaseGate.SensitiveUnreviewed(content);
+    if (open.Count == 0) { Console.WriteLine("RELEASE GATE OK"); return 0; }
+    Console.WriteLine("RELEASE GATE REFUSED: the owner's sensitivity review is missing for: " + string.Join(", ", open)
+        + " (set status: sensitivity-reviewed in each event's YAML; see docs/m3-release.md)");
+    return 3;
+}
 
 ulong seed = 1948;
 int turns = 1000;

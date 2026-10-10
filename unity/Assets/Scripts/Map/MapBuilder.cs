@@ -23,6 +23,12 @@ namespace Statecraft.Game.Map
         /// capture, the 90 km flythrough) a coarse surface that rises above the draped hex outlines in valleys (K2).</summary>
         public const float TerrainPixelError = 1f;
 
+        /// <summary>The muted land tone of neighbouring land past the map's edge (BorderLand.mat).</summary>
+        public static readonly Color BorderLandColour = new Color(0.60f, 0.56f, 0.46f);
+
+        /// <summary>Biome colours of the terrain layers (the minimap uses the same ones).</summary>
+        public static IReadOnlyDictionary<string, Color> BiomeColours => Biome;
+
         static readonly Dictionary<string, Color> Biome = new Dictionary<string, Color>
         {
             ["sea"] = new Color(0.16f, 0.42f, 0.55f), ["lake"] = new Color(0.20f, 0.50f, 0.62f),
@@ -61,6 +67,7 @@ namespace Statecraft.Game.Map
             var data = new TerrainData { heightmapResolution = meta.width };
             data.size = new Vector3(widthM, reliefM, lengthM);
             data.SetHeights(0, 0, heights);
+            Boot.DiagLog.BootPhase("terrain heights set");
 
             var terrainGo = Terrain.CreateTerrainGameObject(data);
             terrainGo.name = "Terrain";
@@ -70,9 +77,11 @@ namespace Statecraft.Game.Map
             terrain.materialTemplate = terrainMaterial;
             terrain.heightmapPixelError = TerrainPixelError;
             ApplyBiomeColours(data, frame, hexFile, assets);
+            Boot.DiagLog.BootPhase("biome colours blended");
 
             var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
             overlay.transform.SetParent(terrainGo.transform, false);
+            Boot.DiagLog.BootPhase("hex overlay draped");
             return terrainGo;
         }
 
@@ -144,40 +153,141 @@ namespace Statecraft.Game.Map
             data.SetAlphamaps(0, 0, a);
         }
 
+        /// <summary>Distances (m) of the border skirt's rings from the map's edge: land falls from the edge's height to sea
+        /// level across the first rings, then stays flat to the last, beyond anything the camera can see.</summary>
+        public static readonly float[] SkirtRings = { 0f, 4000f, 20000f, 60000f, 600000f };
+        /// <summary>Share of the fall to sea level reached at each ring (land samples only).</summary>
+        static readonly float[] SkirtFall = { 0f, 0.4f, 0.85f, 1f, 1f };
+        /// <summary>A heightmap sample this close to 0 m is sea (tools/dem_to_heightmap.py writes open sea as exactly 0 m).</summary>
+        public const float SeaToleranceM = 0.5f;
+
+        /// <summary>The land and sea past the map's edge (fix round 2, R2-1 and N1). Each edge sample continues outward: a sea
+        /// sample stays flat at sea level (submesh 0, the sea material, lit like the terrain's sea, so no seam shows); a land
+        /// sample falls from the edge's height to sea level (submesh 1, a muted land tone), so Sinai, Jordan and Lebanon read
+        /// as land. A segment with a land end is land. Corner fans close the four corners. Every triangle lies outside the
+        /// terrain's footprint, so nothing covers the map (the old full sea plane hid all land below about -10 m).</summary>
+        public static Mesh BuildBorderSkirt(TerrainData data, float elevMinM, MapRuntimeAssets assets)
+        {
+            var size = data.size;
+            float seaY = (0f - elevMinM) * VerticalExaggeration;
+            // One spoke per terrain vertex along each edge (the heightmap's own resolution), so the skirt's inner edge follows
+            // the terrain's edge exactly; sampling every second vertex left slivers up to 36 m (fix round 3, m-4).
+            int samples = data.heightmapResolution - 1;
+            var verts = new List<Vector3>(); var sea = new List<int>(); var land = new List<int>();
+            bool IsLand(float h) => Mathf.Abs(h / VerticalExaggeration + elevMinM) > SeaToleranceM;
+            // One ring of vertices outward from an edge point; returns the index of its first vertex.
+            int Spoke(Vector2 p, Vector2 outward, bool isLand, Vector2? outward2 = null)
+            {
+                float h = data.GetInterpolatedHeight(Mathf.Clamp01(p.x / size.x), Mathf.Clamp01(p.y / size.z));
+                int first = verts.Count;
+                for (int k = 0; k < SkirtRings.Length; k++)
+                {
+                    var q = p + (outward + (outward2 ?? Vector2.zero)) * SkirtRings[k];
+                    float y = isLand ? Mathf.Lerp(h, seaY, SkirtFall[k]) : seaY;
+                    if (k == 0) y = h;                                     // meets the terrain's edge exactly
+                    verts.Add(new Vector3(q.x, y, q.y));
+                }
+                return first;
+            }
+            void Quad(List<int> into, int a0, int b0)                   // the band between two spokes
+            {
+                for (int k = 0; k + 1 < SkirtRings.Length; k++)
+                {
+                    int a = a0 + k, a1 = a0 + k + 1, b = b0 + k, b1 = b0 + k + 1;
+                    Tri(into, a, b, b1); Tri(into, a, b1, a1);
+                }
+            }
+            void Tri(List<int> into, int i, int j, int l)               // wound to face up
+            {
+                var n = Vector3.Cross(verts[j] - verts[i], verts[l] - verts[i]);
+                if (n.y < 0) { var t = j; j = l; l = t; }
+                if (Mathf.Abs(n.y) > 1e-3f) { into.Add(i); into.Add(j); into.Add(l); }   // drops the degenerate corner centre
+            }
+            float Height(Vector2 p) => data.GetInterpolatedHeight(Mathf.Clamp01(p.x / size.x), Mathf.Clamp01(p.y / size.z));
+            // The four edges, walked along: (start, end, outward).
+            var edges = new (Vector2 a, Vector2 b, Vector2 n)[]
+            {
+                (new Vector2(0, 0), new Vector2(size.x, 0), Vector2.down),                 // south
+                (new Vector2(size.x, 0), new Vector2(size.x, size.z), Vector2.right),       // east
+                (new Vector2(size.x, size.z), new Vector2(0, size.z), Vector2.up),          // north
+                (new Vector2(0, size.z), new Vector2(0, 0), Vector2.left),                  // west
+            };
+            foreach (var (a, b, n) in edges)
+            {
+                int prev = -1; bool prevLand = false;
+                for (int i = 0; i <= samples; i++)
+                {
+                    var p = Vector2.Lerp(a, b, (float)i / samples);
+                    bool isLand = IsLand(Height(p));
+                    int spoke = Spoke(p, n, isLand);
+                    if (prev >= 0) Quad(prevLand || isLand ? land : sea, prev, spoke);
+                    prev = spoke; prevLand = isLand;
+                }
+            }
+            // Corners: a fan between the two edges' outward spokes and the diagonal, in the corner sample's kind.
+            for (int e = 0; e < edges.Length; e++)
+            {
+                var corner = edges[e].b; var n1 = edges[e].n; var n2 = edges[(e + 1) % edges.Length].n;
+                bool isLand = IsLand(Height(corner));
+                int s1 = Spoke(corner, n1, isLand), sd = Spoke(corner, n1, isLand, n2), s2 = Spoke(corner, n2, isLand);
+                Quad(isLand ? land : sea, s1, sd); Quad(isLand ? land : sea, sd, s2);
+            }
+            var mesh = assets.Own(new Mesh { name = "BorderSkirt", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
+            mesh.SetVertices(verts);
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(sea, 0); mesh.SetTriangles(land, 1);
+            mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>Vertices of one draped hex ring (<see cref="DrapedRing"/>).</summary>
+        public const int RingVertices = 6 * OverlaySegmentsPerEdge;
+
+        /// <summary>Appends the <see cref="RingVertices"/> vertices of a hex outline of circumradius <paramref name="size"/>
+        /// around <paramref name="centre"/> (world x, z), corners from HexMath. Each edge is split into OverlaySegmentsPerEdge
+        /// sub-segments, clamped to the terrain bounds; each vertex sits <paramref name="clearance"/> above the highest
+        /// terrain sampled along its two adjacent sub-segments, so the straight line between two vertices clears any ridge.
+        /// The hex overlay and the selection outline share it.</summary>
+        public static void DrapedRing(GeoFrame frame, TerrainData data, Vector2 centre, float size, float clearance, List<Vector3> verts)
+        {
+            int n = RingVertices;
+            var corners = new Vector2[6]; var ground = new Vector2[n]; var segMax = new float[n];
+            for (int i = 0; i < 6; i++) corners[i] = HexMath.Corner(centre, size, i);
+            for (int i = 0; i < 6; i++)
+                for (int s = 0; s < OverlaySegmentsPerEdge; s++)
+                {
+                    var k = Vector2.Lerp(corners[i], corners[(i + 1) % 6], (float)s / OverlaySegmentsPerEdge);
+                    k.x = Mathf.Clamp(k.x, 0f, frame.WidthM); k.y = Mathf.Clamp(k.y, 0f, frame.LengthM);
+                    ground[i * OverlaySegmentsPerEdge + s] = k;
+                }
+            for (int j = 0; j < n; j++)
+            {
+                float m = float.MinValue;
+                for (int t = 0; t <= OverlaySamplesPerSegment; t++)
+                {
+                    var p = Vector2.Lerp(ground[j], ground[(j + 1) % n], (float)t / OverlaySamplesPerSegment);
+                    m = Mathf.Max(m, data.GetInterpolatedHeight(p.x / frame.WidthM, p.y / frame.LengthM));
+                }
+                segMax[j] = m;
+            }
+            for (int j = 0; j < n; j++)
+                verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + clearance, ground[j].y));
+        }
+
         /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments; vertices
         /// are clamped to the terrain bounds. Each vertex sits OverlayClearanceM above the highest terrain sampled along its
         /// two adjacent sub-segments, so the straight line between two vertices clears any ridge between them.</summary>
         static GameObject BuildHexOverlay(GeoFrame frame, HexFile hexes, TerrainData data, Material material, MapRuntimeAssets assets)
         {
             float size = hexes.hex_size_km * 1000f;
-            int n = 6 * OverlaySegmentsPerEdge;
+            int n = RingVertices;
             var verts = new List<Vector3>(); var idx = new List<int>();
-            var corners = new Vector2[6]; var ground = new Vector2[n]; var segMax = new float[n];
             foreach (var h in hexes.hexes)
             {
                 if (!h.land) continue;
                 var c = frame.ToWorld(h.lon, h.lat, 0);
-                for (int i = 0; i < 6; i++) corners[i] = HexMath.Corner(new Vector2(c.x, c.z), size, i);
-                for (int i = 0; i < 6; i++)
-                    for (int s = 0; s < OverlaySegmentsPerEdge; s++)
-                    {
-                        var k = Vector2.Lerp(corners[i], corners[(i + 1) % 6], (float)s / OverlaySegmentsPerEdge);
-                        k.x = Mathf.Clamp(k.x, 0f, frame.WidthM); k.y = Mathf.Clamp(k.y, 0f, frame.LengthM);
-                        ground[i * OverlaySegmentsPerEdge + s] = k;
-                    }
-                for (int j = 0; j < n; j++)
-                {
-                    float m = float.MinValue;
-                    for (int t = 0; t <= OverlaySamplesPerSegment; t++)
-                    {
-                        var p = Vector2.Lerp(ground[j], ground[(j + 1) % n], (float)t / OverlaySamplesPerSegment);
-                        m = Mathf.Max(m, data.GetInterpolatedHeight(p.x / frame.WidthM, p.y / frame.LengthM));
-                    }
-                    segMax[j] = m;
-                }
                 int start = verts.Count;
-                for (int j = 0; j < n; j++)
-                    verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + OverlayClearanceM, ground[j].y));
+                DrapedRing(frame, data, new Vector2(c.x, c.z), size, OverlayClearanceM, verts);
                 for (int i = 0; i < n; i++) { idx.Add(start + i); idx.Add(start + (i + 1) % n); }
             }
             var mesh = assets.Own(new Mesh { name = "HexOverlay", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });

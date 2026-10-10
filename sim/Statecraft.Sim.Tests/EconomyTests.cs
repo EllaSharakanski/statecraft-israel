@@ -54,7 +54,7 @@ public class EconomyTests
     [Theory]
     [InlineData("finance_minister", 1.0, null)]
     [InlineData("finance_minister", 0.9, "Budget shares must sum to 1")]
-    [InlineData("chief_rabbi", 1.0, "Unknown office 'chief_rabbi'")]
+    [InlineData("chief_rabbi", 1.0, "The budget names a ministry that does not exist in this game")]
     [InlineData("finance_minister", -1.0, "Budget shares must sum to 1")]
     public void AllocateValidates(string office, double share, string? error)
     {
@@ -132,7 +132,7 @@ public class EconomyCoverageTests
     {
         var c = TwoBudgets(); var s = new GameState(); EconomySystem.Init(c, s);
         var before = new Dictionary<string, double>(s.Budget);
-        Assert.Equal("Budget shares must cover exactly: defense_minister, finance_minister",
+        Assert.Equal("The budget must give a share to every ministry, and only to them",
             EconomySystem.Allocate(c, s, new Dictionary<string, double> { ["finance_minister"] = 1.0 }));
         Assert.Equal(before, s.Budget);
     }
@@ -141,7 +141,7 @@ public class EconomyCoverageTests
     public void MapWithAnUnbudgetedOfficeIsRejected()
     {
         var c = TwoBudgets(); var s = new GameState(); EconomySystem.Init(c, s);
-        Assert.Equal("Budget shares must cover exactly: defense_minister, finance_minister",
+        Assert.Equal("The budget must give a share to every ministry, and only to them",
             EconomySystem.Allocate(c, s, new Dictionary<string, double> { ["finance_minister"] = 0.4, ["defense_minister"] = 0.4, ["prime_minister"] = 0.2 }));
     }
 

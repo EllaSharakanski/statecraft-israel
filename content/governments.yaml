@@ -1,3 +1,4 @@
+# Periods are [from, to): a government's `to` is the day its successor was sworn in.
 governments:
   - id: provisional_government
     name: Provisional Government
@@ -12,8 +13,36 @@ governments:
     name: First Government
     # Sources differ (8 vs 10 March 1949); 10 March is the Knesset confidence vote recorded in Ben-Gurion's diary.
     from: 1949-03-10
+    # Ben-Gurion resigned 15 October 1950 (some pages give 16 October); the en.wiki infobox gives 30 October as the
+    # dissolution date. The successor was sworn in on 1 November 1950, which is the handover date used here.
+    to: 1950-11-01
     coalition: [mapai, united_religious_front, progressive, sephardim, democratic_list_nazareth]
     sources:
-      - { url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }
+      - { url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }
       - { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }
+      - { url: "https://en.wikipedia.org/wiki/1950_in_Israel", checked: 2026-10-10 }
+    status: fact-checked
+  - id: second_government
+    name: Second Government
+    # Approved 69-42 with 2 abstentions on 1 November 1950. Resigned 14 February 1951 and served as a transitional
+    # government until the Third Government was sworn in on 8 October 1951. From 20 August 1951 its parties are measured
+    # against the Second Knesset, where the United Religious Front and the Democratic List of Nazareth held no seats.
+    from: 1950-11-01
+    to: 1951-10-08
+    coalition: [mapai, united_religious_front, progressive, sephardim, democratic_list_nazareth]
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }
+      - { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }
+      - { url: "https://en.wikipedia.org/wiki/1950_in_Israel", checked: 2026-10-10 }
+    status: fact-checked
+  - id: third_government
+    name: Third Government
+    # Coalition of 65 seats per he.wiki. Democratic List for Israeli Arabs, Progress and Work and Agriculture and
+    # Development were Mapai-affiliated minority lists without ministers. The Progressive Party and the General Zionists
+    # were in opposition. Investiture vote 56-40 (he.wiki citing Haaretz, 9 October 1951).
+    from: 1951-10-08
+    coalition: [mapai, hapoel_hamizrachi, agudat_yisrael, democratic_list_israeli_arabs, mizrachi, poalei_agudat_yisrael, progress_and_work, agriculture_and_development]
+    sources:
+      - { url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }
+      - { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }
     status: fact-checked

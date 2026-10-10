@@ -1,10 +1,13 @@
 using System.IO;
 using Statecraft.Game;
 using Statecraft.Game.EditorTools;
+using Statecraft.Game.Boot;
 using Statecraft.Game.Map;
+using Statecraft.Game.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 /// <summary>Editor capture tools. Run headless (with graphics, not -nographics):
 /// Unity -batchmode -quit -projectPath unity -executeMethod MapCapture.TopDown (or MapCapture.Flythrough).
@@ -15,14 +18,36 @@ public static class MapCapture
 
     static string CaptureDir => Path.Combine(Paths.RepoRoot, "captures");
 
-    /// <summary>Creates and saves Assets/Map.unity: default camera and light plus a MapScene wired to the material assets.</summary>
+    /// <summary>Creates and saves Assets/Map.unity, the boot scene: the default camera (with CameraRig and
+    /// CameraController) and light, a MapScene wired to the material assets, the GameBoot that loads the inputs and builds
+    /// the map in play mode and in players, the placement layer, the map pointer, and the UI document with GameRoot wired
+    /// to all of them. No EventSystem: UI Toolkit reads the Input System directly.</summary>
     public static void MakeScene()
     {
         MapMaterials.Create();
+        UiAssets.Create();
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-        new GameObject("MapScene").AddComponent<MapScene>().Configure(
-            Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath));
+        var controller = Camera.main.gameObject.AddComponent<CameraController>();   // adds the CameraRig it requires
+        var map = new GameObject("MapScene").AddComponent<MapScene>();
+        map.Configure(Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath), Load(MapMaterials.SelectionPath), Load(MapMaterials.SeaPath), Load(MapMaterials.BorderLandPath));
+        var boot = new GameObject("Boot").AddComponent<GameBoot>();
+        boot.Configure(map);
+        var placements = new GameObject("Placements").AddComponent<PlacementLayer>();
+        var pointer = new GameObject("MapPointer").AddComponent<MapPointer>();
+        var ui = new GameObject("UI");
+        var doc = ui.AddComponent<UIDocument>();
+        doc.panelSettings = Asset<PanelSettings>(UiPaths.Panel);
+        doc.visualTreeAsset = Asset<VisualTreeAsset>(UiPaths.GameUxml);
+        ui.AddComponent<GameRoot>().Configure(boot, doc, Asset<TextAsset>(UiPaths.Strings),
+            Asset<PortraitCatalog>(PortraitImport.CatalogPath), map, placements, pointer, controller);
         EditorSceneManager.SaveScene(scene, ScenePath);
+    }
+
+    static T Asset<T>(string path) where T : Object
+    {
+        var a = AssetDatabase.LoadAssetAtPath<T>(path);
+        if (a == null) throw new FileNotFoundException($"{typeof(T).Name} asset missing", path);
+        return a;
     }
 
     /// <summary>Opens Assets/Map.unity (creating it only when missing) and builds the map in memory. The scene is not

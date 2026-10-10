@@ -1,8 +1,14 @@
 # Offices and dates are historical facts (sourced per term). competence/loyalty are game-balance values, not facts.
-# A term's `party` (when set) is the list the holder sat for in that government (First_government_of_Israel); otherwise `party` of the person applies.
-# Periods are [from, to). Terms without `to` continue beyond the M1 content range (end of 1949).
-# living: false is set only after confirming each person's death date (en.wikipedia.org infobox, checked 2026-10-09).
+# A term's `party` (when set) is the list the holder sat for in that government; otherwise `party` of the person applies.
+# An empty person `party` means the person sat for no list (non-MK ministers, the President).
+# Periods are [from, to). Terms without `to` continue beyond the M3 content range (end of 1951).
+# Terms are split per government (Provisional, First 1949-03-10, Second 1950-11-01, Third 1951-10-08).
+# living: false is set only after confirming each person's death date (en.wikipedia.org infobox; 2026-10-09 for the
+# 1948-49 cabinet, 2026-10-10 for people added in M3).
 # Portraits: public-domain files fetched with license check (promo/CREDITS.md).
+# Not modelled: deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title (research notes 1c, 1e).
+# portrait.focus_y: the face centre's height as a share of the picture (0 top, 1 bottom), measured on each picture;
+# the event card keeps it in view (playtest 2, P2-5).
 people:
   - id: ben_gurion
     name: David Ben-Gurion
@@ -10,10 +16,12 @@ people:
     party: mapai
     competence: 9
     loyalty: 10
-    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg" }
+    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg", focus_y: 0.3 }
     offices:
       - { office: prime_minister, from: 1948-05-14, sources: &prov [{ url: "https://en.wikipedia.org/wiki/Provisional_government_of_Israel", checked: 2026-10-09 }] }
       - { office: defense_minister, from: 1948-05-14, sources: *prov }
+      # Held Education after Remez died in office on 19 May 1951.
+      - { office: education_minister, from: 1951-05-19, to: 1951-10-08, sources: &second [{ url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }] }
     status: fact-checked
   - id: zisling
     name: Aharon Zisling
@@ -21,7 +29,7 @@ people:
     party: mapam
     competence: 6
     loyalty: 5
-    portrait: { file: promo/ref/people/Aharon_Zisling.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg" }
+    portrait: { file: promo/ref/people/Aharon_Zisling.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg", focus_y: 0.34 }
     offices:
       - { office: agriculture_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -31,11 +39,13 @@ people:
     party: mapai
     competence: 8
     loyalty: 9
-    portrait: { file: promo/ref/people/Eliezer_Kaplan.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg" }
+    portrait: { file: promo/ref/people/Eliezer_Kaplan.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg", focus_y: 0.3 }
     offices:
       - { office: finance_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: finance_minister, from: 1949-03-10, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
-      - { office: trade_minister, from: 1949-03-10, sources: *first }
+      - { office: finance_minister, from: 1949-03-10, to: 1950-11-01, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
+      - { office: trade_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      - { office: finance_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      - { office: finance_minister, from: 1951-10-08, sources: &third [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }] }
     status: fact-checked
   - id: sharett
     name: Moshe Sharett
@@ -43,10 +53,12 @@ people:
     party: mapai
     competence: 8
     loyalty: 8
-    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg" }
+    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg", focus_y: 0.22 }
     offices:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: foreign_minister, from: 1949-03-10, sources: *first }
+      - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      - { office: foreign_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      - { office: foreign_minister, from: 1951-10-08, sources: *third }
     status: fact-checked
   - id: shapira
     name: Haim-Moshe Shapira
@@ -54,13 +66,22 @@ people:
     party: hapoel_hamizrachi
     competence: 7
     loyalty: 7
-    portrait: { file: promo/ref/people/Haim-Moshe_Shapira.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg" }
+    portrait: { file: promo/ref/people/Haim-Moshe_Shapira.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg", focus_y: 0.42 }
     offices:
       - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: health_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
-      - { office: immigration_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
-      - { office: interior_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: health_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      - { office: immigration_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      - { office: interior_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      # en.wiki lists all three portfolios in the Second Government; the he.wiki extract did not clearly show Interior
+      # and Immigration (research notes 1c). en.wiki is used.
+      - { office: health_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
+      - { office: immigration_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
+      - { office: interior_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
+      # The United Religious Front dissolved in 1951; Shapira sat for Hapoel HaMizrachi (the person's party). The Third
+      # Government had no Immigration portfolio (notes, Addendum (a)): offices.yaml ends that office on 1951-10-08.
+      - { office: interior_minister, from: 1951-10-08, sources: *third }
+      - { office: religions_minister, from: 1951-10-08, sources: *third }
     status: fact-checked
   - id: gruenbaum
     name: Yitzhak Gruenbaum
@@ -68,7 +89,7 @@ people:
     party: independent
     competence: 6
     loyalty: 6
-    portrait: { file: promo/ref/people/Yitzhak_Gruenbaum.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg" }
+    portrait: { file: promo/ref/people/Yitzhak_Gruenbaum.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg", focus_y: 0.3 }
     offices:
       - { office: interior_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -78,10 +99,12 @@ people:
     party: new_aliyah
     competence: 8
     loyalty: 7
-    portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg" }
+    portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg", focus_y: 0.36 }
     offices:
       - { office: justice_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: justice_minister, from: 1949-03-10, party: progressive, sources: *first }
+      - { office: justice_minister, from: 1949-03-10, to: 1950-11-01, party: progressive, sources: *first }
+      # The Progressive Party went into opposition and was not in the Third Government.
+      - { office: justice_minister, from: 1950-11-01, to: 1951-10-08, party: progressive, sources: *second }
     status: fact-checked
   - id: bentov
     name: Mordechai Bentov
@@ -89,7 +112,7 @@ people:
     party: mapam
     competence: 7
     loyalty: 5
-    portrait: { file: promo/ref/people/Mordechai_Bentov.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:MordechaiBentov.jpg" }
+    portrait: { file: promo/ref/people/Mordechai_Bentov.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:MordechaiBentov.jpg", focus_y: 0.28 }
     offices:
       - { office: labour_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -99,11 +122,15 @@ people:
     party: sephardim
     competence: 7
     loyalty: 7
-    portrait: { file: promo/ref/people/Bechor-Shalom_Sheetrit.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg" }
+    portrait: { file: promo/ref/people/Bechor-Shalom_Sheetrit.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg", focus_y: 0.18 }
     offices:
       - { office: police_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: minority_affairs_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: police_minister, from: 1949-03-10, sources: *first }
+      - { office: police_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      - { office: police_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      # Both Wikipedias and JVL list him under Mapai for 1951 (Addendum (d)); he was elected in 1949 for the Sephardim
+      # list. The cabinet tables are used.
+      - { office: police_minister, from: 1951-10-08, party: mapai, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }, { url: "https://www.jewishvirtuallibrary.org/third-government-of-israel", checked: 2026-10-10 }] }
     status: fact-checked
   - id: maimon
     name: Yehuda Leib Maimon
@@ -111,12 +138,19 @@ people:
     party: mizrachi
     competence: 6
     loyalty: 7
-    portrait: { file: promo/ref/people/Yehuda_Leib_Maimon.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg" }
+    portrait: { file: promo/ref/people/Yehuda_Leib_Maimon.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg", focus_y: 0.26 }
     offices:
       - { office: religions_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: war_victims_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: religions_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
-      - { office: war_victims_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: religions_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      - { office: war_victims_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      # Resignation date conflicts (research notes 1d). he.wiki's text says he resigned before the government's
+      # resignation of 14 February 1951 but gives no date; 14 February is used as the latest possible date. The cabinet
+      # tables (en.wiki and he.wiki, Second Government) show the full term to 8 October 1951. en.wiki "1951 in Israel"
+      # gives 4 January 1951, with no footnote. Religions and War Victims are vacant from 14 February 1951; no
+      # successor is named.
+      - { office: religions_minister, from: 1950-11-01, to: 1951-02-14, party: united_religious_front, sources: *second }
+      - { office: war_victims_minister, from: 1950-11-01, to: 1951-02-14, party: united_religious_front, sources: *second }
     status: fact-checked
   - id: bernstein
     name: Peretz Bernstein
@@ -124,20 +158,23 @@ people:
     party: general_zionists
     competence: 7
     loyalty: 6
-    portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg" }
+    portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg", focus_y: 0.28 }
     offices:
       - { office: trade_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
   - id: remez
     name: David Remez
     living: false
+    # Died in office on 19 May 1951 (research notes 1c).
+    died: 1951-05-19
     party: mapai
     competence: 7
     loyalty: 8
-    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg" }
+    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg", focus_y: 0.38 }
     offices:
       - { office: transportation_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: transportation_minister, from: 1949-03-10, sources: *first }
+      - { office: transportation_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      - { office: education_minister, from: 1950-11-01, to: 1951-05-19, sources: *second }
     status: fact-checked
   - id: levin
     name: Yitzhak-Meir Levin
@@ -145,10 +182,12 @@ people:
     party: agudat_yisrael
     competence: 6
     loyalty: 6
-    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg" }
+    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg", focus_y: 0.28 }
     offices:
       - { office: welfare_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: welfare_minister, from: 1949-03-10, party: united_religious_front, sources: *first }
+      - { office: welfare_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      - { office: welfare_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
+      - { office: welfare_minister, from: 1951-10-08, party: agudat_yisrael, sources: *third }
     status: fact-checked
   - id: dov_yosef
     name: Dov Yosef
@@ -157,8 +196,14 @@ people:
     competence: 7
     loyalty: 8
     offices:
-      - { office: agriculture_minister, from: 1949-03-10, sources: *first }
-      - { office: rationing_minister, from: 1949-03-10, sources: *first }
+      - { office: agriculture_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      # As Minister of Rationing and Supply: the ministry was created on 26 April 1949, the day rationing was decided,
+      # and abolished on 1 November 1950.
+      - { office: rationing_minister, from: 1949-04-26, to: 1950-11-01, sources: &rationing [{ url: "https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/תקופת_הצנע", checked: 2026-10-10 }] }
+      - { office: transportation_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      # en.wiki lists Trade and Industry and Justice; he.wiki lists only Trade and Industry clearly (research notes 1e).
+      - { office: trade_minister, from: 1951-10-08, sources: *third }
+      - { office: justice_minister, from: 1951-10-08, sources: *third }
     status: fact-checked
   - id: shazar
     name: Zalman Shazar
@@ -167,7 +212,7 @@ people:
     competence: 7
     loyalty: 8
     offices:
-      - { office: education_minister, from: 1949-03-10, sources: *first }
+      - { office: education_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
     status: fact-checked
   - id: golda_meir
     name: Golda Meir
@@ -176,7 +221,97 @@ people:
     competence: 8
     loyalty: 9
     offices:
-      - { office: labour_minister, from: 1949-03-10, sources: *first }
+      - { office: labour_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      - { office: labour_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      - { office: labour_minister, from: 1951-10-08, sources: *third }
+    status: fact-checked
+  - id: lavon
+    name: Pinhas Lavon
+    living: false
+    party: mapai
+    competence: 7
+    loyalty: 7
+    offices:
+      - { office: agriculture_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      # Agriculture took most of the rationing and supply functions of the abolished Ministry of Rationing and Supply;
+      # Trade and Industry (Geri) took some supply departments (commodities and stock). Research notes, Addendum 2 (A1):
+      # he.wiki was read directly; the Weitz PDF and SSRN 6351358 were not read directly, only their search summaries.
+      - { office: rationing_minister, from: 1950-11-01, to: 1951-10-08, sources: [{ url: "https://he.wikipedia.org/wiki/משרד_האספקה_והקיצוב", checked: 2026-10-10 }, { url: "https://in.bgu.ac.il/bgi/iyunim/24/Yechiam-Weitz.pdf", checked: 2026-10-10 }, { url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6351358", checked: 2026-10-10 }] }
+      # From 8 October 1951: no source names the responsible minister (Addendum 2: not found), so the office is vacant.
+    status: fact-checked
+  - id: geri
+    name: Ya'akov Geri
+    living: false
+    # Not a Knesset member. en.wiki gives no party; he.wiki lists him under Mapai (research notes 1c). He sat for no
+    # list, so no party is set.
+    party: ""
+    competence: 7
+    loyalty: 6
+    offices:
+      - { office: trade_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+    status: fact-checked
+  - id: eshkol
+    name: Levi Eshkol
+    living: false
+    party: mapai
+    competence: 8
+    loyalty: 8
+    offices:
+      - { office: agriculture_minister, from: 1951-10-08, sources: *third }
+    status: fact-checked
+  - id: dinur
+    name: Ben-Zion Dinur
+    living: false
+    # Not a Knesset member in the Third Government (a former Mapai MK; he.wiki lists him under Mapai), so no party is set.
+    party: ""
+    competence: 7
+    loyalty: 7
+    offices:
+      - { office: education_minister, from: 1951-10-08, sources: *third }
+    status: fact-checked
+  - id: burg
+    name: Yosef Burg
+    living: false
+    party: hapoel_hamizrachi
+    competence: 7
+    loyalty: 7
+    offices:
+      # Four sources give Health (en.wiki Third Government and Yosef Burg, he.wiki Yosef Burg, JVL). Posts came only in
+      # the Fourth Government (24 December 1952), per Addendum (c).
+      - { office: health_minister, from: 1951-10-08, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/Yosef_Burg", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/יוסף_בורג", checked: 2026-10-10 }] }
+    status: fact-checked
+  - id: pinkas
+    name: David-Zvi Pinkas
+    living: false
+    party: mizrachi
+    competence: 6
+    loyalty: 6
+    offices:
+      - { office: transportation_minister, from: 1951-10-08, sources: *third }
+    status: fact-checked
+  - id: naftali
+    name: Peretz Naftali
+    living: false
+    party: mapai
+    competence: 7
+    loyalty: 8
+    offices:
+      - { office: minister_without_portfolio, from: 1951-10-08, sources: *third }
+    status: fact-checked
+  - id: weizmann
+    name: Chaim Weizmann
+    living: false
+    party: ""
+    competence: 8
+    loyalty: 7
+    offices:
+      # Elected 16 February 1949, declared president and sworn in 17 February 1949 (2 sources; the MFA page gives the oath
+      # on 16 February): research notes, Addendum Q3. Re-elected by the Second Knesset on 19 November 1951, 85 for,
+      # 11 against, 3 blank; the only candidate.
+      - { office: president, from: 1949-02-17, to: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/Chaim_Weizmann", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1949_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://weizmann.ac.il/WeizmannCompass/node/914", checked: 2026-10-10 }] }
+      # The second term starts on the election date (notes section 3); he was sworn in at Rehovot on 25 November 1951
+      # (stated on the cited en.wiki 1951 presidential election page), which is not used as a date.
+      - { office: president, from: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/1951_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1951_in_Israel", checked: 2026-10-10 }] }
     status: fact-checked
   - id: dori
     name: Yaakov Dori
@@ -192,5 +327,6 @@ people:
     competence: 8
     loyalty: 8
     offices:
+      # In office through the M3 range: resigned 7 December 1952 (research notes 8).
       - { office: chief_of_staff, from: 1949-11-09, sources: *cos }
     status: fact-checked

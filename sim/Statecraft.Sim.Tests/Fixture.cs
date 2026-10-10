@@ -79,12 +79,22 @@ governments:
 indicators:
   - id: morale
     base: 0.5
+    name: Morale
   - id: food_supply
     base: 0.4
+    name: Food supply
+  - id: housing
+    base: 0.3
+    name: Housing
 policies:
   - id: rationing
     default: 0.0
     office: finance_minister
+    name: Rationing
+  - id: maabarot
+    default: 0.0
+    office: finance_minister
+    name: Transit camps
 effects:
   - id: rationing_food
     source: rationing
@@ -92,16 +102,23 @@ effects:
     k: 0.4
     inertia: 2
     office: finance_minister
+    name: Rations feed people
   - id: rationing_morale
     source: rationing
     target: morale
     k: -0.2
     inertia: 1
+    name: Rationing wears on morale
 situations:
   - id: hunger
     indicator: food_supply
     on_below: 0.3
     off_above: 0.45
+    name: Hunger
+money:
+  - { id: treasury, name: Treasury, prefix: 'IL ' }
+  - { id: debt, name: Debt, prefix: 'IL ' }
+  - { id: fx_reserves, name: Foreign currency, prefix: '$' }
 voter_groups:
   - id: everyone
     weights: { morale: 1.0 }
@@ -114,7 +131,15 @@ actors:
 start: 1948-05-15
 start_rung: 5
 attention_per_turn: 3
-attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 1, map_action: 1 }
+appoint_stability_cost_other_party: 0.1
+appoint_stability_cost_same_party: 0.03
+map_actions_from: 1948-06-01
+map_action_max_distance: 1
+map_actions_per_turn: 2
+map_actions:
+  transit_camp: { cost: 2, housing: 0.05, morale: -0.02, name: a transit camp }
+  housing: { cost: 8, housing: 0.08, morale: 0.01, name: a housing project }
 rung_attention_step: 0.25
 ceasefire_weeks: 4
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
@@ -132,7 +157,30 @@ budget_start: { finance_minister: 1.0 }
         ["population.yaml"] = @"
 anchors: []
 ",
+        // A 5 x 2 map: one sea hex, the rest land; one settlement at (1, 0).
+        ["map/hexes.json"] = @"{""attribution"":[""test""],""bounds"":{""lon0"":34.2,""lon1"":35.9,""lat0"":29.45,""lat1"":33.35},""hex_size_km"":5.0,""layout"":""pointy"",""hexes"":[
+{""q"":0,""r"":0,""lon"":34.2,""lat"":33.35,""elev_m"":0.0,""land"":false,""biome"":""sea""},
+{""q"":1,""r"":0,""lon"":34.29,""lat"":33.35,""elev_m"":20.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":2,""r"":0,""lon"":34.38,""lat"":33.35,""elev_m"":250.0,""land"":true,""biome"":""hills""},
+{""q"":3,""r"":0,""lon"":34.47,""lat"":33.35,""elev_m"":300.0,""land"":true,""biome"":""hills""},
+{""q"":4,""r"":0,""lon"":34.56,""lat"":33.35,""elev_m"":100.0,""land"":true,""biome"":""desert""},
+{""q"":0,""r"":1,""lon"":34.24,""lat"":33.28,""elev_m"":10.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":1,""r"":1,""lon"":34.33,""lat"":33.28,""elev_m"":40.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":2,""r"":1,""lon"":34.42,""lat"":33.28,""elev_m"":260.0,""land"":true,""biome"":""hills""},
+{""q"":3,""r"":1,""lon"":34.51,""lat"":33.28,""elev_m"":120.0,""land"":true,""biome"":""desert""}]}
+",
+        ["map/settlement_hexes.yaml"] = @"
+settlements:
+  - { id: town_a, q: 1, r: 0 }
+",
+        ["map/settlements_1948.yaml"] = @"
+settlements:
+  - { id: town_a, name: Town A, lon: 34.29, lat: 33.35, type: town, founded: 1900, pre_modern: false }
+",
         ["aliyah.yaml"] = @"
+regions:
+  - { id: europe, name: Europe }
+  - { id: asia, name: Asia }
 series:
   - from: 1948-05-15
     to: 1948-12-31
@@ -144,6 +192,7 @@ series:
     {
         var dir = Path.Combine(Path.GetTempPath(), "statecraft-fixture-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(dir, "events"));
+        Directory.CreateDirectory(Path.Combine(dir, "map"));
         foreach (var kv in Files)
             File.WriteAllText(Path.Combine(dir, kv.Key), overrides != null && overrides.TryGetValue(kv.Key, out var o) ? o : kv.Value);
         if (events != null)

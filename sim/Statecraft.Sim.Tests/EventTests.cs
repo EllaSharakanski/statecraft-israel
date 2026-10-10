@@ -72,7 +72,7 @@ options:
         Assert.Null(EventSystem.Choose(c, s, "shortage", "import", why));
         Assert.Equal(40, s.FxReserves);
         Assert.Empty(s.PendingEvents);
-        Assert.Equal("Event 'shortage' is not waiting for a decision", EventSystem.Choose(c, s, "shortage", "ration", why));
+        Assert.Equal("That event is not waiting for a decision", EventSystem.Choose(c, s, "shortage", "ration", why));
     }
 
     [Fact]
@@ -218,7 +218,7 @@ options:
         var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = Shortage });
         var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
         EventSystem.Trigger(c, s, why);
-        Assert.Equal("Event 'shortage' has no option 'nap'", EventSystem.Choose(c, s, "shortage", "nap", why));
+        Assert.Equal("That event has no such option", EventSystem.Choose(c, s, "shortage", "nap", why));
     }
 
     [Fact]
@@ -320,7 +320,7 @@ options:
         EventSystem.Trigger(c, s, why);
         s.Date = new DateTime(1949, 1, 15);   // still pending after To, office unheld today
         Assert.Null(EventSystem.Choose(c, s, "shortage", "ration", why));
-        Assert.Contains(why, w => w.Message == "chosen: Pm One rations food");
+        Assert.Contains(why, w => w.Message == "Chosen: Pm One rations food");
     }
 
     [Fact]
@@ -332,7 +332,7 @@ options:
         EventSystem.Trigger(c, s, why);
         s.Date = new DateTime(1949, 1, 1);    // exactly To
         EventSystem.Delegate(c, s, why);
-        Assert.Contains(why, w => w.Message.StartsWith("delegated") && w.Message.EndsWith("Pm One rations food"));
+        Assert.Contains(why, w => w.Message.StartsWith("Delegated") && w.Message.EndsWith("Pm One rations food"));
     }
 
     [Fact]
@@ -437,7 +437,7 @@ options:
         var s = State(c, new DateTime(1948, 6, 1)); s.RngState = seed; var why = new List<Cause>();
         EventSystem.Trigger(c, s, why); why.Clear();
         EventSystem.Delegate(c, s, why);
-        return why.First(w => w.Message.StartsWith("delegated")).Message;
+        return why.First(w => w.Message.StartsWith("Delegated")).Message;
     }
 
     [Fact]
@@ -524,7 +524,7 @@ options:
         var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
         EventSystem.Trigger(c, s, why);
         Assert.Null(EventSystem.Choose(c, s, "shortage", "import", why));
-        Assert.Contains(why, w => w.Message == "fx_reserves +0.00 (shortage/import)");
+        Assert.Contains(why, w => w.Message == "Foreign currency $0.0m (Bread lines)");
         Assert.DoesNotContain(why, w => w.Message.Contains("-+"));
     }
 

@@ -42,7 +42,7 @@ public class PopulationTests
     public void ArrivalsAcrossLeapDayAndYearEndSumToThePeriodTotal()
     {
         // 1951-12-10..1952-03-20 inclusive = 22 + 31 + 29 (leap year) + 20 = 102 days.
-        var aliyah = "series:\n  - from: 1951-12-10\n    to: 1952-03-20\n    origins: { europe: 1000 }\n";
+        var aliyah = "regions:\n  - { id: europe, name: Europe }\nseries:\n  - from: 1951-12-10\n    to: 1952-03-20\n    origins: { europe: 1000 }\n";
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["aliyah.yaml"] = aliyah }));
         double sum = 0;
         for (var d = new DateTime(1951, 10, 1); d < new DateTime(1952, 7, 1); d = d.AddMonths(3))

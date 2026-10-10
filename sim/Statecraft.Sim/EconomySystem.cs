@@ -15,42 +15,71 @@ namespace Statecraft.Sim
             s.Budget = new Dictionary<string, double>(c.Rules.BudgetStart);
         }
 
+        /// <summary>The treasury's money in and out over <paramref name="yearFraction"/> of a year (1.0 = a year): tax,
+        /// spending and the cost of the reserve call-up. Apply uses it, and the Budget screen shows it.</summary>
+        public readonly struct TreasuryFlows
+        {
+            public readonly double Tax, Spending, Mobilization;
+            public TreasuryFlows(double tax, double spending, double mobilization) { Tax = tax; Spending = spending; Mobilization = mobilization; }
+        }
+
+        public static TreasuryFlows Flows(Content c, GameState s, double yearFraction)
+        {
+            var r = c.Rules; var pop = s.TotalPopulation;
+            return new TreasuryFlows(r.TaxPerCapitaPerYear * pop * yearFraction, r.SpendingPerCapitaPerYear * pop * yearFraction,
+                MobilizationCost(c, s.Mobilization, yearFraction));
+        }
+
+        /// <summary>The reserve call-up's cost (pay and lost work) for <paramref name="level"/> (0..1) over a share of a year:
+        /// the one rule Flows and the Defence screen both use (M3 final review M5).</summary>
+        public static double MobilizationCost(Content c, double level, double yearFraction = 1.0) => c.Rules.MobilizationCostPerYear * level * yearFraction;
+
         public static void Apply(Content c, GameState s, double yearFraction, List<Cause> why)
         {
             var r = c.Rules; var pop = s.TotalPopulation;
-            var revenue = r.TaxPerCapitaPerYear * pop * yearFraction;
-            var spending = r.SpendingPerCapitaPerYear * pop * yearFraction;
-            var mobilization = r.MobilizationCostPerYear * s.Mobilization * yearFraction;
+            var flows = Flows(c, s, yearFraction);
+            var revenue = flows.Tax; var spending = flows.Spending; var mobilization = flows.Mobilization;
             s.Treasury += revenue - spending - mobilization;
             why.Add(new Cause("economy", "treasury", revenue - spending - mobilization,
-                FormattableString.Invariant($"treasury {revenue - spending - mobilization:+0.00;-0.00;+0.00} (tax {revenue:0.00}, spending {spending:0.00}, reserve call-up {mobilization:0.00})")));
+                $"{PlayerText.Change(c, "treasury", revenue - spending - mobilization)} (tax {PlayerText.Money(c, "treasury", revenue)}, spending {PlayerText.Money(c, "treasury", spending)}, reserve call-up {PlayerText.Money(c, "treasury", mobilization)})"));
             if (s.Treasury < 0)
             {
                 s.Debt += -s.Treasury;
-                why.Add(new Cause("economy", "debt", -s.Treasury, FormattableString.Invariant($"borrowed {-s.Treasury:0.00} to cover the deficit")));
+                why.Add(new Cause("economy", "debt", -s.Treasury, $"borrowed {PlayerText.Money(c, "debt", -s.Treasury)} to cover the deficit"));
                 s.Treasury = 0;
             }
 
             var exports = r.ExportsPerYear * yearFraction;
+            var inflow = r.CapitalInflowPerYear * yearFraction;
             var imports = r.ImportsPerCapitaPerYear * pop * yearFraction;
-            s.FxReserves += exports - imports;
-            why.Add(new Cause("economy", "fx_reserves", exports - imports, FormattableString.Invariant($"foreign currency {exports - imports:+0.00;-0.00;+0.00} (exports {exports:0.00}, imports {imports:0.00})")));
+            var net = exports + inflow - imports;
+            s.FxReserves += net;
+            why.Add(new Cause("economy", "fx_reserves", net, $"{PlayerText.Change(c, "fx_reserves", net)} (exports {PlayerText.Money(c, "fx_reserves", exports)}, donations and loans {PlayerText.Money(c, "fx_reserves", inflow)}, imports {PlayerText.Money(c, "fx_reserves", imports)})"));
 
             bool on = s.ActiveSituations.Contains(FxCrisis);
             if (!on && s.FxReserves < 0) { s.ActiveSituations.Add(FxCrisis); why.Add(new Cause("economy", FxCrisis, 1, "Foreign currency reserves are exhausted")); }
             else if (on && s.FxReserves > 0.25 * r.FxStart) { s.ActiveSituations.Remove(FxCrisis); why.Add(new Cause("economy", FxCrisis, -1, "Foreign currency crisis eased")); }
+
+            // The consequence: with no currency to pay for them, food imports are cut while the crisis lasts.
+            if (s.ActiveSituations.Contains(FxCrisis) && r.FxCrisisFoodPerYear < 0)
+            {
+                var change = EffectsSystem.Shift(c, s, "food_supply", r.FxCrisisFoodPerYear * yearFraction);
+                if (change != 0)
+                    why.Add(new Cause("economy", "food_supply", change, $"{PlayerText.Change(c, "food_supply", change)} (foreign currency crisis: food imports cut)"));
+            }
         }
 
         /// <summary>Returns null on success, or the reason the allocation was rejected.</summary>
         public static string? Allocate(Content c, GameState s, Dictionary<string, double> shares)
         {
             if (shares == null) return "Budget shares are required";
-            var unknown = shares.Keys.FirstOrDefault(k => c.Offices.All(o => o.Id != k));
-            if (unknown != null) return $"Unknown office '{unknown}'";
+            var unknown = shares.Keys.OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault(k => c.Offices.All(o => o.Id != k));   // ordinal: play and replay name the same office
+            if (unknown != null) return "The budget names a ministry that does not exist in this game";
             if (shares.Values.Any(v => double.IsNaN(v) || double.IsInfinity(v))) return "Budget shares must be finite numbers";
             if (!new HashSet<string>(shares.Keys).SetEquals(c.Rules.BudgetStart.Keys))
-                return "Budget shares must cover exactly: " + string.Join(", ", c.Rules.BudgetStart.Keys.OrderBy(k => k, StringComparer.Ordinal));
-            if (Math.Abs(shares.Values.Sum() - 1.0) > 1e-6) return "Budget shares must sum to 1";
+                return "The budget must give a share to every ministry, and only to them";
+            // Summed in key order, not dictionary order, so play and replay agree to the bit whatever order the caller built the map in.
+            if (Math.Abs(shares.OrderBy(kv => kv.Key, StringComparer.Ordinal).Sum(kv => kv.Value) - 1.0) > 1e-6) return "Budget shares must sum to 1";
             if (shares.Values.Any(v => v < 0)) return "Budget shares cannot be negative";
             s.Budget = new Dictionary<string, double>(shares);
             return null;

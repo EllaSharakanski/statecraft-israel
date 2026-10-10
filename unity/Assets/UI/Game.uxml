@@ -1,0 +1,143 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="Statecraft.uss" />
+    <!-- "loading" until GameRoot has started the game: only the loading line shows (playtest 2, P2-1). -->
+    <ui:VisualElement name="root" class="root loading" picking-mode="Ignore">
+        <ui:Label name="loading" text="Loading the map of 1948…" class="loading-line" picking-mode="Ignore" />
+        <ui:VisualElement name="top-bar" class="panel top-bar">
+            <ui:VisualElement class="date-box">
+                <ui:Label name="year" class="year" />
+                <ui:VisualElement class="date-row">
+                    <ui:Label name="turn" class="muted" />
+                    <ui:Label name="date" class="muted" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <!-- Meter captions are the content display names in title case, a deliberate casing for captions (Treasury and
+                 Foreign Currency: model.yaml money; Security and International Standing: model.yaml indicators;
+                 HudTests.TopBarCaptionsAreTheContentNamesInTitleCase). Immigration and Public Support are UI quantities. -->
+            <ui:VisualElement name="meters" class="meters">
+                <ui:VisualElement name="meter-treasury" class="meter">
+                    <ui:Label text="Treasury" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="treasury-value" class="meter-value" /><ui:Label name="treasury-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-immigration" class="meter">
+                    <ui:Label text="Immigration" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="immigration-value" class="meter-value" /><ui:Label name="immigration-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-security" class="meter">
+                    <ui:Label text="Security" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="security-value" class="meter-value" /><ui:Label name="security-delta" class="meter-delta" /></ui:VisualElement>
+                    <ui:Label name="security-level" class="meter-name" />
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-support" class="meter">
+                    <ui:Label text="Public Support" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="support-value" class="meter-value" /><ui:Label name="support-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-standing" class="meter">
+                    <ui:Label text="International Standing" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="standing-value" class="meter-value" /><ui:Label name="standing-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-fx" class="meter">
+                    <ui:Label text="Foreign Currency" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="fx-value" class="meter-value" /><ui:Label name="fx-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="nav" class="nav">
+                <ui:Button name="nav-cabinet" text="Cabinet" />
+                <ui:Button name="nav-budget" text="Budget" />
+                <ui:Button name="nav-defence" text="Defence" />
+                <ui:Button name="nav-why" text="Why?" />
+                <ui:Button name="new-game" text="New Game" />
+            </ui:VisualElement>
+            <ui:VisualElement class="turn-box">
+                <ui:Label name="attention" class="muted" />
+                <ui:Button name="end-turn" text="End Turn" class="end-turn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <!-- The right-hand column (Task 24 review I2): the event card above the minimap, so the two can never overlap; a tall
+             card shrinks its text, which scrolls, and keeps its option buttons. -->
+        <ui:VisualElement name="right-column" class="right-column" picking-mode="Ignore">
+            <ui:VisualElement name="event-card" class="panel event-card">
+                <!-- A portrait-shaped thumbnail beside the heading, framed on the face (playtest 2, P2-3 and P2-5). -->
+                <ui:VisualElement class="event-head">
+                    <ui:VisualElement name="event-image" class="event-image" />
+                    <ui:VisualElement class="event-heading">
+                        <ui:Label name="event-draft" text="DRAFT" class="draft" />
+                        <ui:Label name="event-title" class="title event-title" />
+                        <ui:Label name="event-office" class="muted event-office" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:ScrollView name="event-scroll" class="event-scroll"><ui:Label name="event-text" class="event-text" /></ui:ScrollView>
+                <ui:VisualElement name="event-options" />
+                <ui:Label name="event-count" class="muted" />
+            </ui:VisualElement>
+            <ui:VisualElement class="right-gap" picking-mode="Ignore" />
+            <ui:VisualElement name="minimap" class="panel minimap">
+                <ui:VisualElement name="minimap-image" class="minimap-image">
+                    <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="info-panel" class="panel info-panel">
+            <ui:Label name="info-title" class="title" />
+            <ui:Label name="info-subtitle" class="muted" />
+            <ui:Label name="info-settlements" />
+            <ui:Label name="info-placement" class="muted" />
+            <ui:VisualElement class="row">
+                <ui:Button name="build-camp" />
+                <ui:Button name="build-housing" />
+            </ui:VisualElement>
+            <ui:Label name="info-reason" class="reason" />
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-cabinet" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>
+            <ui:VisualElement class="row grow">
+                <ui:ScrollView name="cabinet-seats" class="grow" />
+                <ui:VisualElement name="cabinet-pick" class="grow">
+                    <ui:Label name="cabinet-pick-title" class="meter-name" />
+                    <ui:ScrollView name="cabinet-candidates" class="grow" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="cabinet-status" class="muted" />
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-budget" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Budget" class="title" /><ui:Label name="budget-vote" class="muted" /></ui:VisualElement>
+            <ui:Label name="budget-money" />
+            <ui:Label name="budget-flow" class="muted" />
+            <ui:ScrollView name="budget-rows" class="grow" />
+            <ui:VisualElement class="row">
+                <ui:Button name="budget-reset" text="Reset" />
+                <ui:Button name="budget-submit" text="Submit the budget" />
+                <ui:Label name="budget-status" class="muted grow" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-defence" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Defence" class="title" /><ui:Label name="defence-command" class="muted" /></ui:VisualElement>
+            <ui:Label text="Security level" class="meter-name" />
+            <ui:VisualElement name="ladder">
+                <ui:VisualElement name="rung-5" class="rung"><ui:Label name="rung-5-name" class="grow" /><ui:Label name="rung-5-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-4" class="rung"><ui:Label name="rung-4-name" class="grow" /><ui:Label name="rung-4-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-3" class="rung"><ui:Label name="rung-3-name" class="grow" /><ui:Label name="rung-3-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-2" class="rung"><ui:Label name="rung-2-name" class="grow" /><ui:Label name="rung-2-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-1" class="rung"><ui:Label name="rung-1-name" class="grow" /><ui:Label name="rung-1-turn" class="muted" /></ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="ceasefire" class="muted" />
+            <ui:VisualElement class="row">
+                <ui:Button name="de-escalate" text="Lower the level" />
+                <ui:Button name="escalate" text="Raise the level" />
+                <ui:Label name="order-pending" class="muted grow" />
+            </ui:VisualElement>
+            <ui:Label text="Reserve call-up" class="meter-name" />
+            <ui:VisualElement class="row">
+                <ui:Button name="mob-down" text="-5%" />
+                <ui:Label name="mob-level" class="grow" />
+                <ui:Button name="mob-up" text="+5%" />
+            </ui:VisualElement>
+            <ui:Label name="mob-cost" class="muted" />
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-why" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Why did this happen?" class="title" /><ui:Label name="why-turn" class="muted" /></ui:VisualElement>
+            <ui:ScrollView name="why-rows" class="grow" />
+        </ui:VisualElement>
+        <ui:Label name="toast" class="panel toast" />
+    </ui:VisualElement>
+</ui:UXML>

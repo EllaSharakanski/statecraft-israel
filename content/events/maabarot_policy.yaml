@@ -1,0 +1,28 @@
+id: maabarot_policy
+title: Transit Camps
+text: 'The immigrant camps, which house and feed new arrivals free of charge, are overflowing. Levi Eshkol of the Jewish Agency Settlement Department proposes transit camps near towns and work, where residents earn their own living. {prime_minister} must decide.'
+anchor: hard
+office: prime_minister
+# Eshkol proposed replacing the camps in March 1950; the word ma'abarot first appears in his letter of 21 April 1950
+# (he.wiki). The first transit camp, Kesalon, opened in May 1950.
+from: 1950-03-01
+to: 1950-06-01
+options:
+  - id: maabarot
+    text: Build transit camps where residents work for their living
+    historical: true
+    recommended: true
+    set_policy: { maabarot: 1.0 }
+    effects:
+      - { target: housing, delta: 0.04 }
+      - { target: morale, delta: -0.02 }
+      - { target: treasury, delta: 2 }
+  - id: keep_camps
+    text: Keep the free-board immigrant camps
+    effects:
+      - { target: housing, delta: -0.03 }
+      - { target: treasury, delta: -4 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Ma'abarot", checked: 2026-10-10 }
+  - { url: "https://he.wikipedia.org/wiki/מעברה", checked: 2026-10-10 }
+status: fact-checked

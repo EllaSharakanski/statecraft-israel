@@ -47,7 +47,7 @@ public class SimTests
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("curfew", 1), new SetMobilization(2) });
-        Assert.Equal(new[] { "Unknown policy 'curfew'", "Mobilization must be between 0 and 1" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(new[] { "That policy does not exist in this game", "Mobilization must be between 0 and 1" }, r.Rejected.Select(x => x.Reason));
     }
 
     [Fact]
@@ -138,13 +138,14 @@ options:
 
     sealed class Bogus : Command { public override string Kind => "bogus"; }
 
+    /// <summary>A Command type this assembly does not know cannot be saved, so Step refuses it up front (a programmer error,
+    /// like a null command) instead of rejecting it and leaving a game whose save cannot be written.</summary>
     [Fact]
-    public void UnknownCommandKindIsRejectedNotThrown()
+    public void ACommandTypeTheSimDoesNotKnowIsRefusedBeforeAnythingRuns()
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
-        var r = Simulation.Step(C, s0, new Command[] { new Bogus(), new SetMobilization(1.0) });
-        Assert.Equal(new[] { "Unknown command 'bogus'" }, r.Rejected.Select(x => x.Reason));
-        Assert.Equal(1.0, r.State.Mobilization);   // the bogus command cost no attention
+        var ex = Assert.Throws<ArgumentException>(() => Simulation.Step(C, s0, new Command[] { new SetMobilization(1.0), new Bogus() }));
+        Assert.Contains("unknown command type", ex.Message);
     }
 
     [Fact]
@@ -163,7 +164,7 @@ options:
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("rationing", 0.5) });
         Assert.Empty(r.Rejected);
         Assert.Equal(0.5, r.State.Policies["rationing"]);
-        Assert.Contains(r.Why, w => w.System == "policy" && w.Message == "rationing set to 0.50");
+        Assert.Contains(r.Why, w => w.System == "policy" && w.Message == "Rationing set to 50%");
     }
 
     [Fact]
@@ -171,7 +172,7 @@ options:
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         var r = Simulation.Step(C, s0, new Command[] { new AllocateBudget(new Dictionary<string, double> { ["defense_minister"] = 1.0 }) });
-        Assert.Equal("Budget shares must cover exactly: finance_minister", r.Rejected.Single().Reason);
+        Assert.Equal("The budget must give a share to every ministry, and only to them", r.Rejected.Single().Reason);
         Assert.Equal(1.0, r.State.Budget["finance_minister"]);
     }
 
@@ -209,7 +210,7 @@ options:
         var r = Simulation.Step(C, s0, new Command[] { cmd, cmd, cmd });
         Assert.Equal(new[] { "Not enough attention (need 1.0, have 0.0)" }, r.Rejected.Select(x => x.Reason));
         Assert.Equal(0.0, r.State.Policies["rationing"]);
-        Assert.Equal(2, r.Why.Count(w => w.System == "politics" && w.Target == "rationing" && w.Message == "House voted down rationing 0.90"));
+        Assert.Equal(2, r.Why.Count(w => w.System == "politics" && w.Target == "rationing" && w.Message == "House voted down Rationing at 90%"));
     }
 
     [Theory]
@@ -230,7 +231,7 @@ options:
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         s0.Rung = 1; s0.Attention = 1;
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("no_such_policy", 0.5), new SetPolicy("rationing", 0.5) });
-        Assert.Equal(new[] { "Unknown policy 'no_such_policy'" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(new[] { "That policy does not exist in this game" }, r.Rejected.Select(x => x.Reason));
         Assert.Equal(0.5, r.State.Policies["rationing"]);
         Assert.Equal(s0.RngState, r.State.RngState);
     }
@@ -262,8 +263,8 @@ options:
         var r = Simulation.Step(c, s0, HistoricalAI.Commands(c, s0));   // 3 attention, each choice costs 2
         Assert.StartsWith("Not enough attention", r.Rejected.Single().Reason);
         Assert.Empty(r.State.PendingEvents);
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("chosen: "));
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("delegated to Def Two"));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Chosen: "));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Delegated to Def Two"));
     }
 
     [Fact]
@@ -315,7 +316,7 @@ options:
             var s0 = Simulation.NewGame(c, seed, Mode.Historical);
             Assert.Equal(new[] { "partition" }, s0.PendingEvents);
             var r = Simulation.Step(c, s0, None);
-            Assert.Contains(r.Why, w => w.System == "events" && w.Message == "delegated to Pm One: Accept the line");
+            Assert.Contains(r.Why, w => w.System == "events" && w.Message == "Delegated to Pm One: Accept the line");
             Assert.Equal(seed, r.State.RngState);
         }
     }
@@ -328,7 +329,7 @@ options:
         s0.Mode = Mode.Open;
         var r = Simulation.Step(c, s0, None);
         Assert.NotEqual(5UL, r.State.RngState);
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("delegated to Pm One: "));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Delegated to Pm One: "));
     }
 
     const string Late = @"

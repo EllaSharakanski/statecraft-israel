@@ -5,11 +5,18 @@ using UnityEngine.Rendering.Universal;
 namespace Statecraft.Game.Map
 {
     /// <summary>Diorama camera: fixed 50-degree pitch, 35-degree FOV, Gaussian far blur beyond the look-at point (tilt-shift look).
+    /// Yaw turns the view around the look-at point (0 = looking north); CameraController drives LookAt, Distance and Yaw.
     /// Gaussian, not Bokeh: physical Bokeh DoF keeps everything sharp at 100 km focus distances.</summary>
     public sealed class CameraRig : MonoBehaviour
     {
         public const float Pitch = 50f, Fov = 35f;
-        public Vector3 LookAt; public float Distance = 120000f;
+        public Vector3 LookAt; public float Distance = 120000f; public float Yaw;
+        /// <summary>Share of the screen height (0..1) the UI covers at the top. The view is shifted so LookAt sits in the
+        /// middle of the map area below it (an off-centre frustum: picking rays and WorldToScreenPoint follow it).</summary>
+        public float TopInset;
+        /// <summary>The largest inset the projection applies (TopInset is clamped to it); at this pitch and FOV the top of
+        /// the view still looks down, so the sky never shows (MapSceneTests.TheCameraClearsToTheSeaColour).</summary>
+        public const float MaxTopInset = 0.5f;
         DepthOfField _dof;
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
@@ -19,6 +26,10 @@ namespace Statecraft.Game.Map
         public void Init()
         {
             var cam = GetComponent<Camera>(); cam.fieldOfView = Fov; cam.farClipPlane = 1_000_000f; cam.nearClipPlane = 50f;
+            // Beyond the terrain the view shows open sea, not a grey void (playtest 1, item 9). At this pitch the top of the
+            // view still looks down, so the sky never shows and a solid clear in the sea biome colour is the whole fix.
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = MapBuilder.BiomeColours["sea"];
             cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             var vol = new GameObject("PostFX").AddComponent<Volume>(); vol.isGlobal = true;
             vol.profile = ScriptableObject.CreateInstance<VolumeProfile>();
@@ -30,9 +41,23 @@ namespace Statecraft.Game.Map
 
         public void Apply()
         {
-            transform.rotation = Quaternion.Euler(Pitch, 0, 0);
+            transform.rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.position = LookAt - transform.forward * Distance;
             if (_dof != null) { _dof.gaussianStart.Override(Distance * 1.05f); _dof.gaussianEnd.Override(Distance * 1.8f); }
+            ApplyProjection();
+        }
+
+        /// <summary>Sets the camera's projection for <see cref="TopInset"/> only (the transform is left alone). Apply calls it
+        /// every frame, so a new window aspect is picked up too.</summary>
+        public void ApplyProjection()
+        {
+            var cam = GetComponent<Camera>();
+            if (cam == null) return;
+            cam.ResetProjectionMatrix();   // follows the aspect and FOV again
+            if (TopInset <= 0f) return;
+            // NDC y = (m11 y + m12 z) / -z, so m12 = s moves every point down by s: the centre of the area below the bar
+            // (NDC y from -1 to 1 - 2 TopInset) is at -TopInset.
+            var p = cam.projectionMatrix; p[1, 2] = Mathf.Clamp(TopInset, 0f, MaxTopInset); cam.projectionMatrix = p;
         }
     }
 }

@@ -31,6 +31,7 @@ namespace Statecraft.Sim
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (commands == null) throw new ArgumentNullException(nameof(commands));
             if (commands.Any(x => x == null)) throw new ArgumentException("Commands cannot contain null.", nameof(commands));
+            CommandText.Validate(commands);
 
             var s = state.Clone();
             var why = new List<Cause>();
@@ -44,7 +45,7 @@ namespace Statecraft.Sim
             var priceRung = s.Rung;   // every command this turn is priced at the rung the turn started at
             foreach (var cmd in commands)
             {
-                if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, $"Unknown command '{cmd.Kind}'")); continue; }
+                if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, "That order is not known")); continue; }
                 var before = s.Attention;
                 var error = AttentionSystem.TrySpend(c, s, cmd.Kind, priceRung) ?? Execute(c, s, cmd, why);
                 if (error != null) { s.Attention = before; rejected.Add(new Rejection(cmd, error)); }
@@ -63,6 +64,7 @@ namespace Statecraft.Sim
             var turnStart = s.Date;
             s.Date = next;
             s.Turn++;
+            Cabinet.ExpireOnGovernmentChange(c, s, why);
             AttentionSystem.Refill(c, s);
             if (s.GameOver == null) EventSystem.Trigger(c, s, why, turnStart);   // a game that just ended raises no new events
             return new StepResult(s, why, rejected);
@@ -76,17 +78,17 @@ namespace Statecraft.Sim
             switch (cmd)
             {
                 case SetPolicy p:
-                    if (c.Policies.All(x => x.Id != p.Policy)) return $"Unknown policy '{p.Policy}'";
+                    if (c.Policies.All(x => x.Id != p.Policy)) return "That policy does not exist in this game";
                     if (!(p.Level >= 0 && p.Level <= 1)) return "Policy level must be between 0 and 1";
                     var legislature = Offices.Legislature(c, s.Date);
                     if (legislature == null) return "No legislature is sitting";
                     if (!PassVote(c, s))
                     {
-                        why.Add(new Cause("politics", p.Policy, 0, FormattableString.Invariant($"{legislature.Body} voted down {p.Policy} {p.Level:0.00}")));
+                        why.Add(new Cause("politics", p.Policy, 0, $"{legislature.Body} voted down {PlayerText.Target(c, p.Policy)} at {PlayerText.Percent(p.Level)}"));
                         return null;
                     }
                     s.Policies[p.Policy] = p.Level;
-                    why.Add(new Cause("policy", p.Policy, p.Level, FormattableString.Invariant($"{p.Policy} set to {p.Level:0.00}")));
+                    why.Add(new Cause("policy", p.Policy, p.Level, $"{PlayerText.Target(c, p.Policy)} set to {PlayerText.Percent(p.Level)}"));
                     return null;
                 case AllocateBudget b:
                 {
@@ -105,12 +107,16 @@ namespace Statecraft.Sim
                     return EventSystem.Choose(c, s, e.EventId, e.OptionId, why);
                 case SetMobilization m:
                     return SecuritySystem.SetMobilization(c, s, m.Level, why);
+                case Appoint a:
+                    return Cabinet.Appoint(c, s, a.Office, a.Person, why);
+                case MapAction m:
+                    return MapActions.Apply(c, s, m.Action, m.Q, m.R, why);
                 case SecurityOrder o:
                     // long arithmetic: an extreme delta clamps to the ladder's end instead of wrapping around.
                     SecuritySystem.SetRung(c, s, (int)Math.Max(1L, Math.Min(5L, (long)s.Rung + o.Delta)), why);
                     return null;
                 default:
-                    return $"Unknown command '{cmd.Kind}'";
+                    return "That order is not known";
             }
         }
 

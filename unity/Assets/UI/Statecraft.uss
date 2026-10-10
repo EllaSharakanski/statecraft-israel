@@ -1,0 +1,135 @@
+/* Statecraft UI language (target: promo/final/03-gameplay-1936.png): dark navy panels, thin gold borders, serif type. */
+:root {
+    --navy: rgba(14, 22, 38, 0.94);
+    --navy-deep: rgb(9, 14, 26);
+    --navy-solid: rgb(14, 22, 38);   /* --navy without its transparency */
+    --gold: rgb(196, 160, 92);
+    --gold-dim: rgba(196, 160, 92, 0.45);
+    --ink: rgb(236, 228, 210);
+    --ink-dim: rgb(170, 164, 150);
+    --up: rgb(126, 196, 120);
+    --down: rgb(222, 120, 104);
+}
+
+.root {
+    flex-grow: 1;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-Regular.ttf");
+    color: var(--ink);
+    font-size: 20px;
+}
+
+.panel {
+    background-color: var(--navy);
+    border-color: var(--gold-dim);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.title {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf");
+    font-size: 30px;
+    color: var(--ink);
+}
+
+.muted { color: var(--ink-dim); }
+.delta-up { color: var(--up); }
+.delta-down { color: var(--down); }
+
+.button, Button {
+    background-color: var(--navy-deep);
+    border-color: var(--gold-dim);
+    border-width: 1px;
+    border-radius: 3px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-Regular.ttf");
+    font-size: 19px;
+    padding: 6px 12px;
+    margin: 3px 0;
+    -unity-text-align: middle-left;
+}
+Button:hover { border-color: var(--gold); }
+Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4); }
+
+/* Top bar: date box, national indicators with value and change, screen buttons, attention and End turn. */
+.top-bar {
+    position: absolute; left: 0; right: 0; top: 0; height: 96px;
+    flex-direction: row; align-items: center;
+    border-width: 0 0 1px 0; border-radius: 0; padding: 0 16px;
+    background-color: var(--navy-solid);   /* opaque: map labels must not show through it (Task 24 review M7) */
+}
+/* Everything in the bar must fit its 96px (EB Garamond lines are about 1.55 x the font size): labels lose their default
+   vertical padding and margin, the year is 32px, and turn and date share one line. */
+.top-bar Label { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
+.date-box { width: 190px; flex-shrink: 1; min-width: 150px; border-right-width: 1px; border-color: var(--gold-dim); padding-right: 12px; }
+.date-row { flex-direction: row; }
+.date-row Label { font-size: 17px; margin-right: 8px; }
+.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 32px; }
+.meters { flex-direction: row; flex-grow: 1; }
+.meter { min-width: 130px; flex-shrink: 1; padding: 0 8px; border-right-width: 1px; border-color: var(--gold-dim); }
+.meter-name { font-size: 16px; color: var(--ink-dim); white-space: normal; }   /* wraps in a narrow meter */
+.meter-row { flex-direction: row; align-items: flex-end; }
+.meter-value { font-size: 24px; }
+.meter-delta { font-size: 16px; margin-left: 8px; }
+.nav { flex-direction: row; flex-shrink: 0; }
+.nav Button { margin: 0 4px; -unity-text-align: middle-center; }
+.turn-box { width: 190px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
+.end-turn { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 22px; border-color: var(--gold); }
+
+/* Event card at the right, info panel at the bottom-left, minimap at the bottom-right. */
+/* The event card and the minimap share one column (Task 24 review I2): the card can never reach the minimap; when the
+   window is short the portrait and then the text (it scrolls) give way, never the option buttons. */
+.right-column { position: absolute; right: 16px; top: 112px; bottom: 16px; width: 480px; }
+.right-gap { flex-grow: 1; flex-shrink: 0; min-height: 16px; }
+.event-card { flex-shrink: 1; min-height: 0; max-height: 560px; overflow: hidden; }
+.event-card > * { flex-shrink: 0; }
+.event-card > .event-scroll { flex-shrink: 1; min-height: 48px; }
+#event-options { flex-shrink: 0; }
+/* Hidden until EventCardPresenter shows an event (never visible while loading). */
+.event-card { display: none; }
+.event-head { flex-direction: row; align-items: flex-start; margin-bottom: 8px; }
+.event-heading { flex-grow: 1; flex-shrink: 1; }
+/* Portrait-shaped, so the whole head shows; EventCardPresenter sets background-position-y from the portrait's focal point. */
+.event-image { width: 96px; height: 128px; flex-shrink: 0; margin-right: 12px; background-size: cover; background-color: var(--navy-deep); }
+.event-office { white-space: normal; }
+/* Options wrap inside the card (playtest 2, P2-2). */
+#event-options Button { white-space: normal; -unity-text-align: middle-left; }
+.event-title { -unity-text-align: middle-center; margin-bottom: 4px; white-space: normal; font-size: 26px; }   /* centred, as before, in its column */
+.event-text { white-space: normal; margin-bottom: 8px; }
+.draft { display: none; color: var(--down); -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); -unity-text-align: middle-center; }
+.info-panel { position: absolute; left: 16px; bottom: 16px; width: 520px; min-height: 160px; }
+.minimap { align-self: flex-end; flex-shrink: 0; width: 300px; height: 340px; padding: 6px; }
+.minimap-image { align-self: center; -unity-background-scale-mode: stretch-to-fill; }   /* the element is sized to the picture's aspect by MinimapPresenter */
+.minimap-view { position: absolute; border-color: var(--ink); border-width: 1px; }
+
+/* Full screens (Cabinet, Budget, Defence, Why) open in the centre, one at a time. */
+/* Hidden until ScreenNav opens one (never visible while loading; playtest 2, P2-1). Right edge clear of the 480px column. */
+.screen { display: none; position: absolute; left: 552px; right: 512px; top: 112px; bottom: 16px; }
+.screen-header { flex-direction: row; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 8px; }
+.row { flex-direction: row; align-items: center; }
+.rung { flex-direction: row; padding: 4px 8px; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); }
+.rung-current { border-color: var(--gold); background-color: rgba(196, 160, 92, 0.15); }
+.grow { flex-grow: 1; }
+/* A growing row inside a screen (the Cabinet's seats and candidates) takes the height that is left and stretches its
+   lists to it, so a long list scrolls instead of growing out of the screen. */
+.screen .row.grow { align-items: stretch; flex-basis: 0; flex-shrink: 1; min-height: 0; }
+.screen .row.grow > .grow { min-height: 0; flex-shrink: 1; }
+
+.toast { display: none; position: absolute; left: 30%; right: 30%; top: 112px; -unity-text-align: middle-center; white-space: normal; }
+
+.why-group { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); color: var(--gold); margin-top: 8px; }
+.why-line { white-space: normal; padding-left: 12px; }
+
+.seat { flex-direction: row; align-items: center; }
+.seat-portrait { width: 40px; height: 48px; margin-right: 8px; -unity-background-scale-mode: scale-and-crop; background-color: var(--navy-deep); }
+.seat-selected { border-color: var(--gold); }
+.appointed { color: var(--gold); }
+.candidate { flex-direction: row; align-items: center; }
+.reason { color: var(--ink-dim); font-size: 16px; white-space: normal; flex-shrink: 1; }
+
+/* Loading (playtest 2, P2-1): until GameRoot is ready only this line shows; the bar's values, the info panel and the
+   right-hand column are kept out of sight (visibility, so the layout does not jump when they appear). */
+.loading-line { display: none; position: absolute; left: 0; right: 0; top: 45%; -unity-text-align: middle-center; font-size: 28px; color: var(--ink); }
+.loading .loading-line { display: flex; }
+.root.loading { background-color: var(--navy-solid); }   /* the template's navy, not the default sky (final review M1) */
+.loading .date-box, .loading .meters, .loading .nav, .loading .turn-box, .loading .info-panel, .loading .right-column { visibility: hidden; }
