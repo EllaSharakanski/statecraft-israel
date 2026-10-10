@@ -11,6 +11,8 @@ namespace Statecraft.Game.Map
     {
         public const float Pitch = 50f, Fov = 35f;
         public Vector3 LookAt; public float Distance = 120000f; public float Yaw;
+        /// <summary>Share of the screen height (0..1) the UI covers at the top. The view is shifted so LookAt sits in the
+        /// middle of the map area below it (an off-centre frustum: picking rays and WorldToScreenPoint follow it).</summary>
         public float TopInset;
         DepthOfField _dof;
 
@@ -39,6 +41,20 @@ namespace Statecraft.Game.Map
             transform.rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.position = LookAt - transform.forward * Distance;
             if (_dof != null) { _dof.gaussianStart.Override(Distance * 1.05f); _dof.gaussianEnd.Override(Distance * 1.8f); }
+            ApplyProjection();
+        }
+
+        /// <summary>Sets the camera's projection for <see cref="TopInset"/> only (the transform is left alone). Apply calls it
+        /// every frame, so a new window aspect is picked up too.</summary>
+        public void ApplyProjection()
+        {
+            var cam = GetComponent<Camera>();
+            if (cam == null) return;
+            cam.ResetProjectionMatrix();   // follows the aspect and FOV again
+            if (TopInset <= 0f) return;
+            // NDC y = (m11 y + m12 z) / -z, so m12 = s moves every point down by s: the centre of the area below the bar
+            // (NDC y from -1 to 1 - 2 TopInset) is at -TopInset.
+            var p = cam.projectionMatrix; p[1, 2] = Mathf.Clamp(TopInset, 0f, 0.5f); cam.projectionMatrix = p;
         }
     }
 }

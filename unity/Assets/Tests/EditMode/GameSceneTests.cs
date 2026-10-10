@@ -182,7 +182,7 @@ public class GameSceneTests
         Assert.AreEqual(ground.z, b.center.z, 100f);
     }
 
-    /// <summary>Points the main camera straight down at Tel Aviv and returns the screen centre.</summary>
+    /// <summary>Points the main camera straight down at Tel Aviv and returns Tel Aviv's screen position.</summary>
     static Vector2 AimAtTelAviv()
     {
         var map = Object.FindFirstObjectByType<MapScene>();
@@ -193,7 +193,9 @@ public class GameSceneTests
         var cam = Camera.main!;
         cam.transform.position = new Vector3(ground.x, 50_000f, ground.z);
         cam.transform.rotation = Quaternion.Euler(90, 0, 0);
-        return new Vector2(cam.pixelWidth / 2f, cam.pixelHeight / 2f);
+        Ui.panel?.Pick(Vector2.zero);   // settle the layout first: the top bar's height sets the camera's inset (TopBarInset)
+        var p = cam.WorldToScreenPoint(new Vector3(ground.x, map.Terrain.SampleHeight(ground), ground.z));
+        return new Vector2(p.x, p.y);   // projected, not the screen centre: the frame below the top bar is off-centre (TopBarInset)
     }
 
     // One label each presenter writes on every change: HUD, toast, info panel, Why, Budget, Defence, Cabinet, event card

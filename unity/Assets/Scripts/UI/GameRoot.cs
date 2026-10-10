@@ -148,6 +148,7 @@ namespace Statecraft.Game.UI
             Action<int, int> onHex = info.Show;
             pointer.HexClicked += onHex;
             var camRig = rig = cameraController.GetComponent<CameraRig>();
+            Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
             mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); };
             Action onChanged = RenderPlacementsIfChanged;
