@@ -67,7 +67,7 @@ namespace Statecraft.Game.UI
         {
             if (document == null || strings == null) return;
             var line = document.rootVisualElement.Q<Label>("loading");
-            if (line != null) line.text = UiText.Parse(strings.text).Format("boot.failed", reason);
+            if (line != null) line.text = UiText.Parse(strings.text).Format("boot.failed", GameBoot.ForPlayer(reason).TrimEnd('.'));
         }
 
         void OnDisable()

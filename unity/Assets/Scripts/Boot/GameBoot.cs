@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Text.RegularExpressions;
 using Statecraft.Game.Map;
 using UnityEngine;
 
@@ -29,15 +30,34 @@ namespace Statecraft.Game.Boot
             Failed?.Invoke(reason);
         }
 
+        /// <summary>The failure reason as the player sees it: absolute local paths (a desktop player reads its files from
+        /// disk, file:// URIs included) shortened to the file name; http(s) URLs and plain reasons are kept. Error and the
+        /// log keep the full reason (pre-merge rereview).</summary>
+        public static string ForPlayer(string reason) =>
+            BarePath.Replace(QuotedPath.Replace(reason, m => m.Groups[1].Value + FileName(m.Groups[2].Value) + m.Groups[1].Value),
+                m => FileName(m.Value));
+
+        static readonly Regex QuotedPath = new Regex(@"(['""])((?:file://|/|[A-Za-z]:\\)[^'""]*)\1");
+        static readonly Regex BarePath = new Regex(@"(?<![\w:/.\\])(?:file://)?(?:/|[A-Za-z]:\\)[^\s'""()]+");
+        static string FileName(string path) => path.Substring(path.LastIndexOfAny(new[] { '/', '\\' }) + 1);
+
         async void Start()
         {
             DiagLog.Init();
             DiagLog.BootPhase("player started");
+            await BootAsync(LoadAsync);
+        }
+
+        static async Awaitable<GameInputs> LoadAsync() => Application.platform == RuntimePlatform.WebGLPlayer
+            ? await GameInputs.FetchAsync(GameInputs.StreamingUrl())
+            : GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+
+        /// <summary>The boot Start runs, with the loader passed in so a test can drive the real failure path.</summary>
+        internal async Awaitable BootAsync(Func<Awaitable<GameInputs>> load)
+        {
             try
             {
-                Inputs = Application.platform == RuntimePlatform.WebGLPlayer
-                    ? await GameInputs.FetchAsync(GameInputs.StreamingUrl())
-                    : GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+                Inputs = await load();
                 if (GoldenCheck.Requested())
                 {
                     var (ok, lines) = GoldenCheck.Run(Inputs.Content);
