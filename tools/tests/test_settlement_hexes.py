@@ -29,3 +29,11 @@ def test_every_settlement_is_on_its_rule_hex_and_that_hex_is_land():
 def test_tiberias_is_moved_off_the_lake():
     rows = {r["id"]: r for r in yaml.safe_load((MAP / "settlement_hexes.yaml").read_text())["settlements"]}
     assert BY_QR[(rows["tiberias"]["q"], rows["tiberias"]["r"])]["biome"] != "lake"
+
+
+def test_two_known_settlements_are_pinned_literally():
+    rows = {r["id"]: (r["q"], r["r"]) for r in yaml.safe_load((MAP / "settlement_hexes.yaml").read_text())["settlements"]}
+    assert rows["jerusalem"] == (0, 23)
+    # jaffa and tel_aviv share this hex legitimately: Jaffa is the old port town beside Tel Aviv, inside one 5 km hex.
+    assert rows["tel_aviv"] == (-3, 19)
+    assert rows["jaffa"] == rows["tel_aviv"]

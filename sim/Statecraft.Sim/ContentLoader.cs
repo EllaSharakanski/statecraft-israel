@@ -42,6 +42,26 @@ namespace Statecraft.Sim
 
         public const string HexesFile = "map/hexes.json";
         public const string SettlementHexesFileName = "map/settlement_hexes.yaml";
+        public const string SettlementsFileName = "map/settlements_1948.yaml";
+
+        /// <summary>The ids of settlements_1948.yaml, which the tools own (its other keys are not the sim's business), so it is
+        /// read as plain maps rather than through the strict content types.</summary>
+        static List<string> ReadSettlementIds(Func<string, string?> readFile)
+        {
+            string? text;
+            try { text = readFile(SettlementsFileName); }
+            catch (IOException e) { throw new ContentException(SettlementsFileName, "(file)", e.Message); }
+            catch (UnauthorizedAccessException e) { throw new ContentException(SettlementsFileName, "(file)", e.Message); }
+            if (text == null) throw new ContentException(SettlementsFileName, "(file)", "missing file");
+            try
+            {
+                var file = new DeserializerBuilder().Build().Deserialize<Dictionary<string, List<Dictionary<string, object>>>>(text);
+                if (file == null || !file.TryGetValue("settlements", out var rows)) throw new ContentException(SettlementsFileName, "settlements", "required");
+                return rows.Select((r, i) => r.TryGetValue("id", out var id) && id is string sid && sid != ""
+                    ? sid : throw new ContentException(SettlementsFileName, $"settlements[{i}].id", "required")).ToList();
+            }
+            catch (YamlException e) { throw new ContentException(SettlementsFileName, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
+        }
 
         static readonly IDeserializer Yaml = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -119,13 +139,14 @@ namespace Statecraft.Sim
             c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
             c.Hexes = Read<MapFile>(readFile, HexesFile).Hexes;
             c.SettlementHexes = Read<SettlementHexesFile>(readFile, SettlementHexesFileName).Settlements;
+            var settlementIds = ReadSettlementIds(readFile);
             foreach (var rel in eventFiles.OrderBy(p => p, StringComparer.Ordinal))
             {
                 var e = Read<GameEvent>(readFile, rel);
                 e.File = rel;
                 c.Events.Add(e);
             }
-            Validate(c);
+            Validate(c, settlementIds);
             return c;
         }
 
@@ -203,7 +224,7 @@ namespace Statecraft.Sim
             }
         }
 
-        static void Validate(Content c)
+        static void Validate(Content c, List<string> settlementIds)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
             var parties = new HashSet<string>(c.Parties.Select(p => p.Id));
@@ -380,11 +401,11 @@ namespace Statecraft.Sim
                 if (a.Date == default) throw new ContentException("population.yaml", path + ".date", "required");
                 Count("population.yaml", path + ".jews", a.Jews);
             }
-            ValidateMap(c);
+            ValidateMap(c, settlementIds);
             EventRules.Validate(c, offices, indicators);
         }
 
-        static void ValidateMap(Content c)
+        static void ValidateMap(Content c, List<string> settlementIds)
         {
             if (c.Hexes.Count == 0) throw new ContentException(HexesFile, "hexes", "no hexes");
             var seen = new HashSet<(int, int)>();
@@ -395,6 +416,15 @@ namespace Statecraft.Sim
                 if (h.Biome == "") throw new ContentException(HexesFile, at + ".biome", "required");
             }
             Unique(SettlementHexesFileName, "settlements", c.SettlementHexes.Select(s => s.Id));
+            Unique(SettlementsFileName, "settlements", settlementIds);
+            var known = new HashSet<string>(settlementIds);
+            var placed = new HashSet<string>(c.SettlementHexes.Select(s => s.Id));
+            foreach (var s in c.SettlementHexes)
+                if (!known.Contains(s.Id))
+                    throw new ContentException(SettlementHexesFileName, $"settlements[{s.Id}]", $"is not in {SettlementsFileName}");
+            foreach (var id in settlementIds)
+                if (!placed.Contains(id))
+                    throw new ContentException(SettlementsFileName, $"settlements[{id}]", $"has no hex in {SettlementHexesFileName}");
             foreach (var s in c.SettlementHexes)
             {
                 var hex = c.HexAt(s.Q, s.R);

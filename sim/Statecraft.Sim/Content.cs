@@ -227,19 +227,26 @@ namespace Statecraft.Sim
         public List<AliyahPeriod> Aliyah = new List<AliyahPeriod>();
         public List<PopulationAnchor> PopulationAnchors = new List<PopulationAnchor>();
         public List<GameEvent> Events = new List<GameEvent>();
-        public List<MapHex> Hexes = new List<MapHex>();
+        List<MapHex> _hexes = new List<MapHex>();
+        Dictionary<(int, int), MapHex> _hexIndex = new Dictionary<(int, int), MapHex>();
+
+        /// <summary>The map. Assign it (the index behind <see cref="HexAt"/> is rebuilt on assignment, so it cannot go stale).</summary>
+        public List<MapHex> Hexes
+        {
+            get => _hexes;
+            set
+            {
+                _hexes = value;
+                var index = new Dictionary<(int, int), MapHex>();
+                foreach (var h in value) index[(h.Q, h.R)] = h;
+                _hexIndex = index;
+            }
+        }
         public List<SettlementHex> SettlementHexes = new List<SettlementHex>();
-        Dictionary<(int, int), MapHex>? _hexIndex;
 
         /// <summary>The hex at axial (q, r), or null when the map has none there.</summary>
         public MapHex? HexAt(int q, int r)
         {
-            if (_hexIndex == null)
-            {
-                var index = new Dictionary<(int, int), MapHex>();
-                foreach (var h in Hexes) index[(h.Q, h.R)] = h;
-                _hexIndex = index;
-            }
             return _hexIndex.TryGetValue((q, r), out var hex) ? hex : null;
         }
     }

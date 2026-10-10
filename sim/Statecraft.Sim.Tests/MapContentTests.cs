@@ -52,6 +52,39 @@ public class MapContentTests
     }
 
     [Fact]
+    public void ASettlementHexRowForAnUnknownSettlementIsALoadError()
+    {
+        var bad = Fixture.Files["map/settlement_hexes.yaml"] + "  - { id: town_b, q: 2, r: 0 }\n";
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/settlement_hexes.yaml"] = bad })));
+        Assert.Equal("map/settlement_hexes.yaml", ex.File);
+        Assert.Equal("settlements[town_b]", ex.Field);
+        Assert.Contains("is not in map/settlements_1948.yaml", ex.Message);
+    }
+
+    [Fact]
+    public void ASettlementWithoutAHexRowIsALoadError()
+    {
+        var bad = Fixture.Files["map/settlements_1948.yaml"] + "  - { id: town_c, name: Town C, lon: 34.4, lat: 33.3, type: town, founded: 1900, pre_modern: false }\n";
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/settlements_1948.yaml"] = bad })));
+        Assert.Equal("map/settlements_1948.yaml", ex.File);
+        Assert.Equal("settlements[town_c]", ex.Field);
+        Assert.Contains("has no hex in map/settlement_hexes.yaml", ex.Message);
+    }
+
+    [Fact]
+    public void AMissingSettlementHexesFileIsALoadError()
+    {
+        var dir = Fixture.Write();
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(rel =>
+        {
+            var path = System.IO.Path.Combine(dir, rel);
+            return rel == "map/settlement_hexes.yaml" || !System.IO.File.Exists(path) ? null : System.IO.File.ReadAllText(path);
+        }, new string[0]));
+        Assert.Equal("map/settlement_hexes.yaml", ex.File);
+        Assert.Contains("missing file", ex.Message);
+    }
+
+    [Fact]
     public void TheRealMapHas1102HexesAndEvery1948Settlement()
     {
         var c = ContentLoader.Load(RealContentTests.ContentRoot());

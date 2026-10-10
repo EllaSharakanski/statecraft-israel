@@ -150,6 +150,10 @@ anchors: []
 settlements:
   - { id: town_a, q: 1, r: 0 }
 ",
+        ["map/settlements_1948.yaml"] = @"
+settlements:
+  - { id: town_a, name: Town A, lon: 34.29, lat: 33.35, type: town, founded: 1900, pre_modern: false }
+",
         ["aliyah.yaml"] = @"
 series:
   - from: 1948-05-15
