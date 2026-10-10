@@ -146,7 +146,10 @@ it. The 2% floor stays: it allows a third of the measured share to be lost to th
 edges, Task 4's grade compressing darks, Track B's haze lifting distant shadow), and the control's 0.00% shows the
 separation is clean. If the merge squeezes it further, switch to a relative test (`lit < flat * 0.9`), not a lower floor.
 
-**Ambient (review M4).** `MapLighting.AmbientProbe` builds the trilight from `AddAmbientLight` plus two
+**Ambient (review M4). Superseded by Task 4:** the explicit probe described here was never read. In Trilight mode Unity
+replaces it with its own linear conversion of the colours, and Task 4 removed `MapLighting.AmbientProbe`. The evaluated
+values below are that conversion, and they match the constants once converted to sRGB; see "Task 4: grade". The original
+note follows. `MapLighting.AmbientProbe` builds the trilight from `AddAmbientLight` plus two
 `AddDirectionalLight` lobes. The lobes add constant and linear terms in every direction, so the probe evaluates darker
 than its constants, which are inputs, not the evaluated colours. Evaluated values, pinned in `LightingTests`: up
 (0.216, 0.255, 0.326), horizon (0.184, 0.179, 0.171), down (0.119, 0.103, 0.080); the constants are sky (0.52, 0.60,
@@ -230,7 +233,7 @@ Cost `median(all) - median(-tiltshift)`, all within the 1.5 ms budget and within
 
 So the build was not "without a tonemapper". The `grade` toggle off falls back to that profile, not to a raw image. Two consequences:
 - The control in `TheSunlitDesertDoesNotClip` sets the grade's tonemapper to None. That overrides the template's Neutral, and the graded Negev then clips 2.3% of its pixels, against 0.00% with Neutral.
-- URP strips the tonemapper's uber variants unless some VolumeProfile *asset* has a Tonemapping component. The runtime profile is not an asset, so it does not count. `TheGradeIsWarmLandTealShadowsAndAGentleVignette` checks that such an asset exists, and today the template profile is that asset.
+- URP strips the tonemapper's uber variants unless some VolumeProfile *asset* has a Tonemapping component. The runtime profile is not an asset, so it does not count. `TheGradeIsWarmLandTealShadowsAndAGentleVignette` checks that such an asset exists. Today two assets carry one: the template's `SampleSceneProfile` and the global settings' `DefaultVolumeProfile`. The check fails only if both lose their Tonemapping component. If Task 10 drops the template profile (the bloom decision), it should add a project-owned VolumeProfile with Neutral, so the guarantee no longer rests on URP template leftovers.
 
 Bloom is the template's, not this plan's; Task 10 should decide whether the web tier keeps it.
 
@@ -298,7 +301,11 @@ Bloom is the template's, not this plan's; Task 10 should decide whether the web 
 - Saturation is now about 0.09 above the promo at diorama02 and 0.17 above it at gameplay03. The lever is `Saturation` (16 → 8 is about −0.04).
 - Gameplay03 warmth is already above its promo (0.064) on Track A alone, and Track B adds about +0.03. The promo's gameplay frame has green fields and orchards, which is the art track's vegetation, and a global grade cannot fix that without cooling the diorama.
 
-**Seam test.** `TheSeaBeyondTheEdgeMatchesTheTerrainSea` measures before the grade (`grade` off). The grade roughly doubles the sub-step mismatch between the terrain sea and the skirt shader, from 0.008 to 0.016 against a limit of 0.012. A per-pixel transform cannot open a seam. At the merge, Track B's patch-mean version should keep the line.
+**Seam test.** `TheSeaBeyondTheEdgeMatchesTheTerrainSea` measures the seam twice:
+- **Before the grade, against 0.012.** This isolates the grade, which is a per-pixel LUT plus a vignette that is flat this close to the centre, so it cannot open a seam.
+- **On the shipped, graded frame, against 0.024.** The grade scales the sea's chroma by about 2: the sub-step mismatch between the terrain sea and the skirt shader goes from 0.008 to 0.016.
+
+At the merge, Track B's patch-mean version should keep this graded/ungraded loop.
 
 **Profile** (headless, 1920x1080, DPR 1, scale 0.80, 3 interleaved runs; build `9603700`. Temperature only changes LUT values, so the cost is the same at `2ac7b6e`):
 ```

@@ -38,7 +38,8 @@ public class GradeTests
         // The runtime profile is invisible to URP's build-time post-processing stripping, which keeps the tonemapper's
         // uber-shader variants only when some VolumeProfile asset under Assets has a Tonemapping component (URP 17.3
         // ShaderBuildPreprocessor.GetSupportedFeaturesFromVolumes; strip-unused-post-processing is on). The pipeline assets'
-        // own profile (Settings/SampleSceneProfile) has one; without it the WebGL player would silently drop Neutral.
+        // own profile (Settings/SampleSceneProfile) and the global settings' Settings/DefaultVolumeProfile both carry one today,
+        // so this fails only if every such asset loses it, which would make the WebGL player silently drop Neutral.
         bool kept = false;
         foreach (var guid in AssetDatabase.FindAssets("t:VolumeProfile", new[] { "Assets" }))
             kept |= AssetDatabase.LoadAssetAtPath<VolumeProfile>(AssetDatabase.GUIDToAssetPath(guid))?.Has<Tonemapping>() == true;
@@ -164,7 +165,8 @@ public class GradeTests
         Assert.Greater(graded.MeanSaturation(), flat.MeanSaturation() * 1.05f);
     }
 
-    /// <summary>Rendered: the vignette darkens the corners relative to the centre.</summary>
+    /// <summary>Rendered: MapGrade's vignette darkens the corners relative to the centre more than the vignette it replaces
+    /// (the pipeline's template profile, Settings/SampleSceneProfile, applies a 0.2 black one, which "plain" still shows).</summary>
     [UnityTest]
     public IEnumerator TheVignetteDarkensTheCorners()
     {

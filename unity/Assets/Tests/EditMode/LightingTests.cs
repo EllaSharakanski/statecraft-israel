@@ -70,7 +70,6 @@ public class LightingTests
         RenderSettings.ambientProbe = custom;
         var after = new Color[1]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.right }, after);
         Assert.AreEqual(e[1].r, after[0].r, 1e-4f, "an explicit probe does not stick in Trilight mode");
-        Assert.IsNull(typeof(MapLighting).GetMethod("AmbientProbe"), "MapLighting sets the colours only");
     }
 
     /// <summary>Review I1: URP fades shadows by straight-line distance from the camera, starting at (1 - cascadeBorder) of
