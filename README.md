@@ -1,10 +1,8 @@
 **English** · [עברית](README.he.md)
 
-<p align="center">
-  <a href="docs/media/trailer.mp4"><img src="docs/images/trailer-loop.webp" alt="A 20-second loop from the cinematic trailer: Herzl's line over the sea, the gameplay map, Israeli Air Force aircraft from 1948, 1967 and 1973, and a Tel Aviv tile growing from 1909 to 2026. The trailer is made with AI video tools from our concept art; it is not in-game footage." width="100%"></a>
-  <br>
-  <em>From the cinematic trailer, made with AI video tools from our concept art, not in-game footage. <a href="docs/media/trailer.mp4">Watch the full trailer (1:23, with sound)</a>.</em>
-</p>
+https://github.com/user-attachments/assets/5d0d9b40-65eb-4db9-b951-8195ddeb1ca8
+
+<p align="center"><em>The cinematic trailer (1:23, with sound), made with AI video tools from our concept art; it is not in-game footage.</em></p>
 
 # Statecraft: Israel
 

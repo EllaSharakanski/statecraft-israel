@@ -25,18 +25,6 @@ rules:
     source: "Web copy of promo/final/03-gameplay-1936.png (published 2026-10-10); same provenance as promo/final"
     status: owner-verify
     note: "Owner-ruled README hero, captioned as concept art. Blocker if D5 disallows redistribution: the owner rules, an agent never drops it. D-H: no Civilization VII icon, logo or wordmark."
-  - glob: "docs/images/trailer-loop.webp"
-    licence: CC0-1.0
-    ai_generated: true
-    source: "A 20-second loop, 24 fps, cut from docs/media/trailer.mp4 (2026-10-10)"
-    status: verified
-    note: "README hero. AI video (Veo 3.1 Fast via ElevenLabs Pro; Seedance 2.5 via Dreamina, whose clips keep Dreamina's own 'AI' badge) from our concept art; title cards are verified quotes, sources in the trailer row."
-  - glob: "docs/media/trailer.mp4"
-    licence: CC0-1.0
-    ai_generated: true
-    source: "Cinematic trailer edited 2026-10-10 from AI video clips generated from promo/final (ElevenLabs Pro: Veo 3.1 Fast and GPT Image; Dreamina: Seedance 2.5) and an ElevenLabs Music score (Pro plan; ToS s. 4(c)(ii), Output rights stay with the user, decision D5)"
-    status: verified
-    note: "Not in-game footage. Title cards quote Herzl (diary 1897; Altneuland 1902), Rabin and Begin (Nobel lectures 1994/1978), the Declaration of Independence (1948) and Netanyahu (7 Oct 2023); every quote is sourced with URLs in the trailer production notes. The cabinet shot shows AI likenesses derived from the GPO portraits (decision D-P)."
   # --- Reference sheets composed from the public-domain portraits ---
   - glob: "promo/ref/*-sheet.jpg"
     licence: Public-Domain

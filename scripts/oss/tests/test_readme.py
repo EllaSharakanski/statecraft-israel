@@ -2,7 +2,6 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-HERO = "docs/images/trailer-loop.webp"
 CONCEPT = "docs/images/hero-concept-1936.jpg"
 GRID = ["docs/images/build-m3-map.jpg", "docs/images/build-m3-cabinet.jpg", "docs/images/build-m3-why.jpg"]
 
@@ -25,14 +24,11 @@ def test_language_bar_comes_first():
     assert "English" in first and "README.he.md" in first
 
 
-def test_hero_is_the_trailer_loop_disclosed_as_ai_and_linked_to_the_full_trailer():
+def test_hero_is_the_trailer_in_githubs_player_disclosed_as_ai():
     text = read("README.md")
-    assert images(text)[0] == HERO
-    tag = re.search(rf'<img src="{re.escape(HERO)}"[^>]*>', text, re.S).group(0)
-    assert "AI video tools" in tag and "not in-game footage" in tag
-    after = text.split(tag, 1)[1][:600]
-    assert "not in-game footage" in after and 'href="docs/media/trailer.mp4"' in after
-    assert (ROOT / "docs/media/trailer.mp4").stat().st_size < 10 * 1024 * 1024
+    head = text.split("# Statecraft: Israel", 1)[0]
+    assert re.search(r"^https://github\.com/user-attachments/assets/[0-9a-f-]{36}$", head, re.M)
+    assert "AI video tools" in head and "not in-game footage" in head
 
 
 def test_concept_art_opens_what_is_this_captioned_as_concept_art():
@@ -46,7 +42,7 @@ def test_concept_art_opens_what_is_this_captioned_as_concept_art():
 
 def test_real_dated_screenshots_in_a_one_plus_two_grid():
     text = read("README.md")
-    assert images(text)[2:5] == GRID
+    assert images(text)[1:4] == GRID
     for path, width in zip(GRID, ("820", "405", "405")):
         assert re.search(rf'<img src="{re.escape(path)}"[^>]*width="{width}"', text), path
     assert re.search(r"Real screenshots from build \d+\.\d+\.\d+ \(M3\), \d{4}-\d{2}-\d{2}\.", text)
@@ -107,7 +103,7 @@ def test_hebrew_readme_is_rtl_and_names_english_as_authoritative():
     assert he.lstrip().splitlines()[0].startswith("[English](README.md)")
     assert he.count('<div dir="rtl">') >= 2
     assert he.count("<div") == he.count("</div>")
-    assert "הנוסח האנגלי" in he and images(he)[:4] == [HERO, *GRID]
+    assert "הנוסח האנגלי" in he and images(he)[:3] == GRID and CONCEPT in images(he)
 
 
 def test_images_are_web_sized_and_the_original_stays():
@@ -169,7 +165,7 @@ def test_hebrew_readme_polish_and_alt_text():
     for bad in ("מורשה ב־CC", "מצוטטת עם מקור", "מאסיבי", "שערי סקירה", "בזמן אמת בזמן"):
         assert bad not in he, bad
     alts = re.findall(r'alt="([^"]+)"', he)
-    assert len(alts) == 5 and all(re.search(r"[א-ת]", a) for a in alts)
+    assert len(alts) == 4 and all(re.search(r"[א-ת]", a) for a in alts)
 
 
 def test_first_open_in_unity_is_in_all_three_files():
