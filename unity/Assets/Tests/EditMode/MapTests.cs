@@ -66,7 +66,7 @@ public class MapTests
     public void BuildUsesThePassedTerrainAndOverlayMaterials()
     {
         var (terrainMat, overlayMat) = Materials();
-        Assert.AreEqual("Universal Render Pipeline/Terrain/Lit", terrainMat.shader.name);
+        Assert.AreEqual("Statecraft/StatecraftTerrain", terrainMat.shader.name);
         Assert.AreEqual("Universal Render Pipeline/Unlit", overlayMat.shader.name);
 
         var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
@@ -78,7 +78,7 @@ public class MapTests
             Assert.IsNotNull(overlay, "HexOverlay child");
             Assert.AreSame(overlayMat, overlay.GetComponent<MeshRenderer>().sharedMaterial);
             Assert.AreEqual(2049, terrain.terrainData.heightmapResolution);
-            Assert.AreEqual(MapBuilder.AlphamapResolution, terrain.terrainData.alphamapResolution);
+            Assert.AreEqual(1, terrain.terrainData.terrainLayers.Length);
             Assert.Greater(overlay.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
         }
         finally { Object.DestroyImmediate(go); }
@@ -105,12 +105,6 @@ public class MapTests
                 // URP Terrain/Lit uses diffuse alpha as smoothness and forces _SmoothnessN to 1 when the diffuse has alpha.
                 Assert.IsFalse(UnityEngine.Experimental.Rendering.GraphicsFormatUtility.HasAlphaChannel(l.diffuseTexture.graphicsFormat),
                     $"{l.name} diffuse must have no alpha channel");
-            }
-            // URP Terrain/Lit has no specular-highlight or environment-reflection toggle; its per-layer defaults are zeroed.
-            for (int i = 0; i < 4; i++)
-            {
-                Assert.AreEqual(0f, terrainMat.GetFloat("_Smoothness" + i), $"Terrain.mat _Smoothness{i}");
-                Assert.AreEqual(0f, terrainMat.GetFloat("_Metallic" + i), $"Terrain.mat _Metallic{i}");
             }
         }
         finally { Object.DestroyImmediate(go); }

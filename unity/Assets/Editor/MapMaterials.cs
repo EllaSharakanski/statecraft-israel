@@ -19,10 +19,11 @@ namespace Statecraft.Game.EditorTools
         public static void Create()
         {
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets", "Materials");
-            var terrain = Make(TerrainPath, "Universal Render Pipeline/Terrain/Lit", null);
-            // Matte defaults. The terrain overrides these from each TerrainLayer (MapBuilder sets 0 there too); URP Terrain/Lit
-            // exposes no specular-highlight or environment-reflection toggle.
-            for (int i = 0; i < 4; i++) { terrain.SetFloat("_Smoothness" + i, 0f); terrain.SetFloat("_Metallic" + i, 0f); }
+            MapTextures.Configure();
+            // The Statecraft terrain graph (tools/terrain_graph.py + StatecraftTerrain.hlsl) with the baked textures.
+            var terrain = Make(TerrainPath, "Statecraft/StatecraftTerrain", null);
+            terrain.SetTexture("_ScBakeTex", Tex(Statecraft.Game.Map.MapTexturePaths.Bake));
+            terrain.SetTexture("_ScCoastTex", Tex(Statecraft.Game.Map.MapTexturePaths.Coast));
             EditorUtility.SetDirty(terrain);
             Make(OverlayPath, "Universal Render Pipeline/Unlit", new Color(0.15f, 0.12f, 0.08f, 1f));
             // Settlement boxes: matte URP Lit; SettlementPlacer sets the per-type _BaseColor through a MaterialPropertyBlock.
@@ -60,5 +61,8 @@ namespace Statecraft.Game.EditorTools
             EditorUtility.SetDirty(mat);
             return mat;
         }
+
+        static Texture2D Tex(string path) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>(path) ?? throw new System.IO.FileNotFoundException("texture missing (tools/terrain_bake.py)", path);
     }
 }

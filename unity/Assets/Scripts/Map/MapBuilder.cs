@@ -12,7 +12,10 @@ namespace Statecraft.Game.Map
     public static class MapBuilder
     {
         public const float VerticalExaggeration = 3f; // diorama look; real relief would read flat at 400 km scale
-        public const int AlphamapResolution = 1024;   // ~158 m (E-W) x ~421 m (N-S) per texel
+        public const int BiomeTextureResolution = 1024;   // ~158 m (E-W) x ~421 m (N-S) per texel
+        /// <summary>Terrain.basemapDistance: farther than the camera ever is, so the terrain is always drawn by the Statecraft
+        /// graph, never by its low-resolution baked basemap (Unity's default switches at 1 km).</summary>
+        public const float NoBasemapDistanceM = 1e7f;
         public const float BiomeLayerTileSizeM = 1000f; // layers are flat colours, so the tiling only needs to be finite
         public const int OverlaySegmentsPerEdge = 10;  // ~500 m sub-segments on a 5 km hex edge, each draped on the terrain
         public const float OverlayClearanceM = 40f * VerticalExaggeration; // above the (exaggerated) terrain surface
@@ -76,8 +79,11 @@ namespace Statecraft.Game.Map
             var terrain = terrainGo.GetComponent<Terrain>();
             terrain.materialTemplate = terrainMaterial;
             terrain.heightmapPixelError = TerrainPixelError;
-            ApplyBiomeColours(data, frame, hexFile, assets);
-            Boot.DiagLog.BootPhase("biome colours blended");
+            terrain.basemapDistance = NoBasemapDistanceM;
+            data.terrainLayers = new[] { NeutralLayer(assets) };   // one layer, one pass: the graph paints from the biome texture
+            data.alphamapResolution = 16;
+            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets), assets);
+            Boot.DiagLog.BootPhase("biome texture baked");
 
             var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
             overlay.transform.SetParent(terrainGo.transform, false);
@@ -118,39 +124,47 @@ namespace Statecraft.Game.Map
                     $"hexes.json bounds (lon {b?.lon0}..{b?.lon1}, lat {b?.lat0}..{b?.lat1}) differ from heightmap.json (lon {meta.lon0}..{meta.lon1}, lat {meta.lat0}..{meta.lat1}) by more than {BoundsTolerance}"));
         }
 
-        /// <summary>One terrain layer per biome; each alphamap texel blends the biomes of nearby hex centres (BiomeBlender).</summary>
-        static void ApplyBiomeColours(TerrainData data, GeoFrame frame, HexFile hexes, MapRuntimeAssets assets)
+        /// <summary>The single terrain layer the Terrain Lit target needs; the graph ignores its colour.</summary>
+        static TerrainLayer NeutralLayer(MapRuntimeAssets assets)
+        {
+            var tex = assets.Own(new Texture2D(1, 1, TextureFormat.RGB24, false) { name = "TerrainLayerNeutral" }); // no alpha: no smoothness
+            tex.SetPixel(0, 0, Color.grey); tex.Apply();
+            return assets.Own(new TerrainLayer
+            {
+                name = "neutral", diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM),
+                smoothness = 0f, metallic = 0f,
+            });
+        }
+
+        /// <summary>The ground colour of every point, blended from the biomes of nearby hex centres (BiomeBlender) in the
+        /// MapPalette.Ground colours, baked once into an sRGB texture over the whole map (texel row 0 = south) that the
+        /// terrain shader samples as _ScBiomeTex. Owned by the map.</summary>
+        static Texture2D BakeBiomeTexture(GeoFrame frame, HexFile hexes, MapRuntimeAssets assets)
         {
             var names = new List<string>(Biome.Keys);
-            var layers = new TerrainLayer[names.Count];
-            for (int i = 0; i < names.Count; i++)
-            {
-                var tex = assets.Own(new Texture2D(1, 1, TextureFormat.RGB24, false) { name = "Biome_" + names[i] }); // no alpha: Terrain/Lit would read it as smoothness 1
-                tex.SetPixel(0, 0, Biome[names[i]]); tex.Apply();
-                layers[i] = assets.Own(new TerrainLayer
-                {
-                    name = names[i], diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM),
-                    smoothness = 0f, metallic = 0f, // matte: URP Terrain/Lit's default 0.5 smoothness gives white streaks on slopes
-                });
-            }
-            data.terrainLayers = layers;
-            int res = AlphamapResolution; data.alphamapResolution = res;
-
+            var colours = new Color[names.Count];
+            for (int i = 0; i < names.Count; i++) colours[i] = MapPalette.Ground[names[i]];
             var centres = new List<Vector2>(hexes.hexes.Length); var layerOf = new List<int>(hexes.hexes.Length);
             foreach (var h in hexes.hexes)
             {
-                int idx = names.IndexOf(h.biome); // validated in LoadHexes, before any object exists
-                var w = frame.ToWorld(h.lon, h.lat, 0); centres.Add(new Vector2(w.x, w.z)); layerOf.Add(idx);
+                var w = frame.ToWorld(h.lon, h.lat, 0); centres.Add(new Vector2(w.x, w.z)); layerOf.Add(names.IndexOf(h.biome));
             }
             var blender = new BiomeBlender(centres, layerOf, hexes.hex_size_km * 1000f, names.Count);
-            var a = new float[res, res, names.Count]; var wts = new float[names.Count];
+            int res = BiomeTextureResolution;
+            var tex = assets.Own(new Texture2D(res, res, TextureFormat.RGBA32, true, false)
+                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear });
+            var px = new Color32[res * res]; var wts = new float[names.Count];
             for (int y = 0; y < res; y++)
                 for (int x = 0; x < res; x++)
                 {
                     blender.Weights(new Vector2((x + 0.5f) / res * frame.WidthM, (y + 0.5f) / res * frame.LengthM), wts);
-                    for (int l = 0; l < wts.Length; l++) a[y, x, l] = wts[l];
+                    var c = Color.clear;
+                    for (int l = 0; l < wts.Length; l++) c += colours[l] * wts[l];
+                    c.a = 1f;
+                    px[y * res + x] = c;
                 }
-            data.SetAlphamaps(0, 0, a);
+            tex.SetPixels32(px); tex.Apply(true, false);
+            return tex;
         }
 
         /// <summary>Distances (m) of the border skirt's rings from the map's edge: land falls from the edge's height to sea
