@@ -534,12 +534,12 @@ public class MapSceneTests
     }
 
     [Test]
-    public void RebuildingDoesNotLeakDepthOfFieldComponents()
+    public void RebuildingDoesNotLeakVolumeComponents()
     {
         var map = NewMap(); map.Build();
-        int after1 = Resources.FindObjectsOfTypeAll<DepthOfField>().Length;
+        int after1 = Resources.FindObjectsOfTypeAll<VolumeComponent>().Length;
         map.Build(); map.Build();
-        Assert.AreEqual(after1, Resources.FindObjectsOfTypeAll<DepthOfField>().Length);
+        Assert.AreEqual(after1, Resources.FindObjectsOfTypeAll<VolumeComponent>().Length);
     }
 
     [Test]

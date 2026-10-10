@@ -125,8 +125,33 @@ than its constants, which are inputs, not the evaluated colours. Evaluated value
 0.72), equator (0.48, 0.46, 0.42), ground (0.26, 0.22, 0.17). The images were judged on the evaluated values, and Track
 B's thresholds were derived with them, so a least-squares refit would be a look change for Task 4, not a fix here.
 
+## Task 3: tilt-shift
+Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on both renderers, `Statecraft/TiltShift`):
+a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv` (10/1080 of the picture height), focus at
+the middle of the map area below the top bar, weakening to 35% from 60 km to the 250 km overview. URP's far-only
+Gaussian DoF is retired. Toggle: `tiltshift`. Tests (gradient-energy ratio, shifted / sharp, at the gameplay pose, 960x540):
+Mobile top 0.22, bottom 0.31, middle 1.00 (top at 1920x1080 0.21); PC top 0.16, bottom 0.24, middle 1.00 (top at
+1920x1080 0.15); TopInset 0.3: focus band 1.00, upper band 0.19.
+
+Profile (1920x1080, DPR 1, render scale 0.80, 3 interleaved runs per configuration):
+```
+headless (web_check.py)
+PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.10 spread_ms=0.14 median_p95_ms=3.00
+PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=2.18 spread_ms=0.55 median_p95_ms=3.00
+PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.07 spread_ms=0.53 median_p95_ms=11.00
+PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=9.59 spread_ms=0.59 median_p95_ms=10.00
+headed (headed.py profile --dpr 1)
+PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.86 spread_ms=0.13 median_p95_ms=3.00
+PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.85 spread_ms=0.01 median_p95_ms=3.00
+PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.57 spread_ms=0.30 median_p95_ms=10.00
+PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=9.50 spread_ms=0.16 median_p95_ms=10.00
+```
+Cost `median(all) - median(-tiltshift)`: headless -0.08 ms (gameplay03) and +0.48 ms (diorama02); headed +0.01 and
++0.07 ms. All are within the 1.5 ms budget before any spread allowance.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
 | 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) Note: at the new 6 km hero zoom the view is filled by the 600-1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them. |
+| 3 | t03-tiltshift | captures/visual/t03-tiltshift/*-compare*.png | (owner) Note: the map labels are still world-space text, so they blur with the map in the top and bottom bands until Task 9 moves them to UI Toolkit. |
