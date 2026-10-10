@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -59,6 +60,13 @@ namespace Statecraft.Game.EditorTools
         /// <summary>Exits with code 1 after the caller's settings have been restored.</summary>
         static void ExitIfFailed(bool ok) { if (!ok) EditorApplication.Exit(1); }
 
+        /// <summary>The real size of the build output (summary.totalSize also counts build intermediates).</summary>
+        static double OutputMegabytes(string path)
+        {
+            if (File.Exists(path)) return new FileInfo(path).Length / 1048576.0;
+            return Directory.Exists(path) ? new DirectoryInfo(path).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length) / 1048576.0 : 0;
+        }
+
         static bool Run(BuildTarget target, string location)
         {
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -66,7 +74,7 @@ namespace Statecraft.Game.EditorTools
                 scenes = new[] { ProjectSetup.BootScene }, locationPathName = location, target = target, options = BuildOptions.None,
             });
             var s = report.summary;
-            Debug.Log($"BUILD {s.result} {target} -> {location}: {s.totalSize / 1048576.0:0.0} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s");
+            Debug.Log($"BUILD {s.result} {target} -> {location}: {OutputMegabytes(location):0.0} MB on disk, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s");
             return s.result == BuildResult.Succeeded;
         }
     }

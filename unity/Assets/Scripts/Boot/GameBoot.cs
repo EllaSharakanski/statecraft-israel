@@ -5,8 +5,9 @@ using UnityEngine;
 
 namespace Statecraft.Game.Boot
 {
-    /// <summary>The first thing Map.unity runs: loads the game inputs (fetched on WebGL, read from disk elsewhere), builds
-    /// the map, then raises Ready for the game (GameRoot) to start. A failure is logged ("BOOT FAIL ...") and kept in Error.</summary>
+    /// <summary>The first thing Map.unity runs: loads the game inputs (fetched on WebGL, read from disk elsewhere), runs
+    /// the golden check when asked (GoldenCheck), builds the map, then raises Ready for the game (GameRoot) to start.
+    /// A failure is logged ("BOOT FAIL ...") and kept in Error.</summary>
     public sealed class GameBoot : MonoBehaviour
     {
         [SerializeField] MapScene map = null!;
@@ -24,8 +25,15 @@ namespace Statecraft.Game.Boot
                 Inputs = Application.platform == RuntimePlatform.WebGLPlayer
                     ? await GameInputs.FetchAsync(GameInputs.StreamingUrl())
                     : GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+                if (GoldenCheck.Requested())
+                {
+                    var (ok, lines) = GoldenCheck.Run(Inputs.Content);
+                    foreach (var line in lines) Debug.Log(line);
+                    // Desktop players run the check headless (-batchmode -nographics) and report through the exit code.
+                    if (Application.platform != RuntimePlatform.WebGLPlayer) { Application.Quit(ok ? 0 : 1); return; }
+                }
                 map.Build(Inputs.Map);
-                Debug.Log($"BOOT OK {Inputs.Content.Events.Count} events");
+                Debug.Log($"BOOT OK content {Inputs.Content.Hash}");
                 Ready?.Invoke(Inputs);
             }
             catch (Exception e)
@@ -33,6 +41,7 @@ namespace Statecraft.Game.Boot
                 Error = e.Message;
                 Debug.LogError("BOOT FAIL " + e.Message);
                 Debug.LogException(e);
+                if (GoldenCheck.QuitCodeOnError(GoldenCheck.Requested(), Application.platform == RuntimePlatform.WebGLPlayer) is int code) Application.Quit(code);
             }
         }
     }
