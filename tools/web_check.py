@@ -176,7 +176,9 @@ def find_chrome() -> Path:
 def chrome_flags(profile: str, swiftshader: bool, dpr: float = 1.0) -> list[str]:
     """Headless Chrome at the device pixel ratio (1 unless asked), frame rate uncapped (so frame times are not the
     display's), never throttled, with a DevTools port for the viewport override."""
-    flags = ["--headless=new", "--enable-logging=stderr", "--v=1", "--no-first-run", "--no-default-browser-check",
+    # --vmodule: Chrome's page content agent logs at --v=1 from another thread, and its line can land inside a long
+    # console line (a SHOT part) on stderr, which then fails to parse.
+    flags = ["--headless=new", "--enable-logging=stderr", "--v=1", "--vmodule=ai_page_content_agent=0", "--no-first-run", "--no-default-browser-check",
              "--autoplay-policy=no-user-gesture-required", "--window-size=1920,1080", f"--force-device-scale-factor={dpr:g}",
              "--disable-frame-rate-limit", "--disable-gpu-vsync", *KEEP_AWAKE, "--remote-debugging-port=0",
              f"--user-data-dir={profile}"]

@@ -124,3 +124,9 @@ def test_a_silent_browser_stalls_out_before_the_timeout(capsys):
     code = wc.watch(queue.Queue(), lambda: None, lambda: None, ["PROFILE visual done"], wc.re.compile("FAIL"), 3600,
                     now=lambda: next(clock), sleep=lambda s: None, stall=120)
     assert code == 1 and "STALLED" in capsys.readouterr().out
+
+
+def test_chrome_keeps_its_page_content_agent_quiet_so_it_cannot_split_a_console_line():
+    # Chrome 153's --v=1 log of ai_page_content_agent.cc ("GetAIPageContent SYNC MainFrame") was written into the middle of
+    # an 8000-character SHOT line on stderr, so that part failed to parse (Task 10: hero06judea 165-166 of 167, three runs).
+    assert "--vmodule=ai_page_content_agent=0" in wc.chrome_flags("/tmp/p", swiftshader=False)
