@@ -250,4 +250,59 @@ public class UiLayoutTests
         }
         Assert.IsEmpty(problems, string.Join("\n", problems));
     }
+
+    /// <summary>Task 24 review I2: every real event, the tallest included, fits its card above the minimap at every window
+    /// shape, wide and short ones included: the card never overlaps the minimap and its option buttons stay inside it.</summary>
+    [UnityTest]
+    public IEnumerator EveryEventCardStaysAboveTheMinimap()
+    {
+        var problems = new List<string>();
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (2560, 1080), (1920, 900), (1366, 657), (1280, 1024) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("LayoutTest");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+            // The real portraits: a minister's portrait adds the 200 px image row, so the tallest card is a portrait card.
+            var portraits = AssetDatabase.LoadAssetAtPath<PortraitCatalog>("Assets/UI/Portraits/PortraitCatalog.asset");
+            Assert.IsNotNull(portraits);
+            var card = new EventCardPresenter(root, bridge, Text, portraits);
+            float tallest = 0; string tallestId = "";
+            try
+            {
+                for (int i = 0; i < 20 && float.IsNaN(root.Q("minimap").worldBound.width); i++) yield return null;
+                foreach (var e in C.Events)
+                {
+                    var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+                    g.State.Date = e.From;                       // the text names the office holders of the event's own time
+                    g.State.PendingEvents.Clear(); g.State.PendingEvents.Add(e.Id);
+                    bridge.Replace(g);
+                    for (int i = 0; i < 3; i++) yield return null;
+                    var c = root.Q("event-card").worldBound;
+                    var mini = root.Q("minimap").worldBound;
+                    if (c.height > tallest) { tallest = c.height; tallestId = e.Id; }
+                    if (c.yMax > mini.yMin + 0.5f && c.xMax > mini.xMin && c.xMin < mini.xMax)
+                        problems.Add($"{w}x{h}: {e.Id}: card {c} overlaps the minimap {mini}");
+                    foreach (var b in root.Q("event-options").Query<Button>().ToList())
+                        if (b.worldBound.yMax > c.yMax + 0.5f || b.worldBound.yMin < c.yMin - 0.5f)
+                            problems.Add($"{w}x{h}: {e.Id}: option '{b.text}' {b.worldBound} is cut off by the card {c}");
+                }
+                Debug.Log($"I2 {w}x{h}: tallest card {tallestId} {tallest:0} px");
+                Assert.Greater(tallest, 400f, $"{w}x{h}: the cards were laid out (a short window shrinks the tallest to fit)");
+            }
+            finally
+            {
+                card.Dispose();
+                Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+            }
+        }
+        Assert.IsEmpty(problems, string.Join("\n", problems));
+    }
 }

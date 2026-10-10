@@ -48,14 +48,24 @@
                 <ui:Button name="end-turn" text="End Turn" class="end-turn" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="event-card" class="panel event-card">
-            <ui:VisualElement name="event-image" class="event-image" />
-            <ui:Label name="event-draft" text="DRAFT" class="draft" />
-            <ui:Label name="event-title" class="title event-title" />
-            <ui:Label name="event-office" class="muted" />
-            <ui:Label name="event-text" class="event-text" />
-            <ui:VisualElement name="event-options" />
-            <ui:Label name="event-count" class="muted" />
+        <!-- The right-hand column (Task 24 review I2): the event card above the minimap, so the two can never overlap; a tall
+             card shrinks its text, which scrolls, and keeps its option buttons. -->
+        <ui:VisualElement name="right-column" class="right-column" picking-mode="Ignore">
+            <ui:VisualElement name="event-card" class="panel event-card">
+                <ui:VisualElement name="event-image" class="event-image" />
+                <ui:Label name="event-draft" text="DRAFT" class="draft" />
+                <ui:Label name="event-title" class="title event-title" />
+                <ui:Label name="event-office" class="muted" />
+                <ui:ScrollView name="event-scroll" class="event-scroll"><ui:Label name="event-text" class="event-text" /></ui:ScrollView>
+                <ui:VisualElement name="event-options" />
+                <ui:Label name="event-count" class="muted" />
+            </ui:VisualElement>
+            <ui:VisualElement class="right-gap" picking-mode="Ignore" />
+            <ui:VisualElement name="minimap" class="panel minimap">
+                <ui:VisualElement name="minimap-image" class="minimap-image">
+                    <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="info-panel" class="panel info-panel">
             <ui:Label name="info-title" class="title" />
@@ -67,11 +77,6 @@
                 <ui:Button name="build-housing" />
             </ui:VisualElement>
             <ui:Label name="info-reason" class="reason" />
-        </ui:VisualElement>
-        <ui:VisualElement name="minimap" class="panel minimap">
-            <ui:VisualElement name="minimap-image" class="minimap-image">
-                <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
-            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="screen-cabinet" class="panel screen">
             <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>

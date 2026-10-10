@@ -75,13 +75,21 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .end-turn { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 22px; border-color: var(--gold); }
 
 /* Event card at the right, info panel at the bottom-left, minimap at the bottom-right. */
-.event-card { position: absolute; right: 16px; top: 112px; width: 420px; max-height: 560px; overflow: hidden; }
+/* The event card and the minimap share one column (Task 24 review I2): the card can never reach the minimap; when the
+   window is short the portrait and then the text (it scrolls) give way, never the option buttons. */
+.right-column { position: absolute; right: 16px; top: 112px; bottom: 16px; width: 420px; }
+.right-gap { flex-grow: 1; flex-shrink: 0; min-height: 16px; }
+.event-card { flex-shrink: 1; min-height: 0; max-height: 560px; overflow: hidden; }
+.event-card > * { flex-shrink: 0; }
+.event-card > .event-image { flex-shrink: 1; min-height: 0; }
+.event-card > .event-scroll { flex-shrink: 1; min-height: 48px; }
+#event-options { flex-shrink: 0; }
 .event-image { height: 200px; margin-bottom: 8px; -unity-background-scale-mode: scale-and-crop; background-color: var(--navy-deep); }
 .event-title { -unity-text-align: middle-center; margin-bottom: 6px; }
 .event-text { white-space: normal; margin-bottom: 8px; }
 .draft { color: var(--down); -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); -unity-text-align: middle-center; }
 .info-panel { position: absolute; left: 16px; bottom: 16px; width: 520px; min-height: 160px; }
-.minimap { position: absolute; right: 16px; bottom: 16px; width: 300px; height: 340px; padding: 6px; }
+.minimap { align-self: flex-end; flex-shrink: 0; width: 300px; height: 340px; padding: 6px; }
 .minimap-image { align-self: center; -unity-background-scale-mode: stretch-to-fill; }   /* the element is sized to the picture's aspect by MinimapPresenter */
 .minimap-view { position: absolute; border-color: var(--ink); border-width: 1px; }
 
