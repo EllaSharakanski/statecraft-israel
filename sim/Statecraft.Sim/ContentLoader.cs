@@ -130,6 +130,7 @@ namespace Statecraft.Sim
             readFile = rel =>
             {
                 var text = inner(rel);
+                if (text != null && text.Length > 0 && text[0] == '\uFEFF') text = text.Substring(1);   // a byte-order mark is not content
                 if (text != null) read.Add((rel, text));
                 return text;
             };

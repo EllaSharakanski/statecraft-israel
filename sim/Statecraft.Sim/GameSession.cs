@@ -44,10 +44,13 @@ namespace Statecraft.Sim
             bool sameContent = saved.ContentHash == c.Hash;
             if (!sameContent) list.Add("This save was made with different game content; the replayed game may differ.");
             var session = New(c, saved.Seed, saved.Mode);
-            foreach (var turn in saved.Turns) session.Step(turn);
+            int turnNo = 0;
+            try { foreach (var turn in saved.Turns) { session.Step(turn); turnNo++; } }
+            catch (SaveException) { throw; }
+            catch (Exception e) { throw new SaveException(0, $"turn {turnNo + 1}: {e.Message}"); }
             if (session.State.Hash() != saved.FinalHash)
             {
-                if (sameContent) throw new SaveException(0, "The replay did not reproduce the saved game (determinism bug): please report it with the save file.");
+                if (sameContent) throw new SaveException(0, "The replay does not match the saved game: the save is damaged or was edited, or the game has a bug.");
                 list.Add("The replayed game differs from the saved one.");
             }
             warnings = list;

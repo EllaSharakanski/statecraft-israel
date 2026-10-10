@@ -60,7 +60,8 @@ namespace Statecraft.Sim
             if (shares.Values.Any(v => double.IsNaN(v) || double.IsInfinity(v))) return "Budget shares must be finite numbers";
             if (!new HashSet<string>(shares.Keys).SetEquals(c.Rules.BudgetStart.Keys))
                 return "Budget shares must cover exactly: " + string.Join(", ", c.Rules.BudgetStart.Keys.OrderBy(k => k, StringComparer.Ordinal));
-            if (Math.Abs(shares.Values.Sum() - 1.0) > 1e-6) return "Budget shares must sum to 1";
+            // Summed in key order, not dictionary order, so play and replay agree to the bit whatever order the caller built the map in.
+            if (Math.Abs(shares.OrderBy(kv => kv.Key, StringComparer.Ordinal).Sum(kv => kv.Value) - 1.0) > 1e-6) return "Budget shares must sum to 1";
             if (shares.Values.Any(v => v < 0)) return "Budget shares cannot be negative";
             s.Budget = new Dictionary<string, double>(shares);
             return null;

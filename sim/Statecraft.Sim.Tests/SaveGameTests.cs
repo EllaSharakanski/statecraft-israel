@@ -7,7 +7,14 @@ using Statecraft.Sim;
 /// <summary>Saves: seed + command log + content hash + schema version; loading replays to the same state hash.</summary>
 public class SaveGameTests
 {
-    static Content Fixture1() => ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event }));
+    /// <summary>The fixture with a two-office budget, so a saved AllocateBudget has more than one share.</summary>
+    static string Rules(string treasury = "100") =>
+        Fixture.Files["rules.yaml"].Replace("budget_start: { finance_minister: 1.0 }", "budget_start: { finance_minister: 0.6, defense_minister: 0.4 }")
+            .Replace("treasury_start: 100", "treasury_start: " + treasury);
+
+    static Content Fixture1(string treasury = "100") => ContentLoader.Load(Fixture.Write(
+        new Dictionary<string, string> { ["rules.yaml"] = Rules(treasury) },
+        new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event }));
 
     /// <summary>Ten turns using every command kind, including ones the sim rejects.</summary>
     static GameSession Played(Content c)
@@ -17,7 +24,7 @@ public class SaveGameTests
         {
             new Command[] { new SetMobilization(0.9), new SecurityOrder(-2) },
             new Command[] { new ChooseEventOption("drought", "ration"), new SetPolicy("rationing", 1.0 / 3) },
-            new Command[] { new AllocateBudget(new Dictionary<string, double> { ["finance_minister"] = 1.0 }) },
+            new Command[] { new AllocateBudget(new Dictionary<string, double> { ["finance_minister"] = 0.75, ["defense_minister"] = 0.25 }) },
             new Command[] { new Appoint("finance_minister", "pm_one"), new MapAction("housing", 2, 0) },
             new Command[] { new SetPolicy("odd id with spaces%", 0.5), new MapAction("transit_camp", 4, 0) },
             new Command[0], new Command[0], new Command[] { new SecurityOrder(1) }, new Command[0], new Command[0],
@@ -52,7 +59,7 @@ public class SaveGameTests
         Assert.Equal("mode Historical", lines[3]);
         Assert.Contains("policy rationing 3FD5555555555555", lines);       // 1/3, bit for bit
         Assert.Contains("policy odd%20id%20with%20spaces%25 3FE0000000000000", lines);
-        Assert.Contains("budget finance_minister=3FF0000000000000", lines);
+        Assert.Contains("budget defense_minister=3FD0000000000000,finance_minister=3FE8000000000000", lines);
         Assert.Contains("map housing 2 0", lines);
         Assert.Contains("security -2", lines);
         Assert.StartsWith("end ", lines[lines.Length - 2]);
@@ -74,9 +81,7 @@ public class SaveGameTests
     public void OtherContentLoadsWithAWarning()
     {
         var text = Played(Fixture1()).Save.Write();
-        var other = ContentLoader.Load(Fixture.Write(
-            new Dictionary<string, string> { ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("treasury_start: 100", "treasury_start: 90") },
-            new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event }));
+        var other = Fixture1("90");
         GameSession.Load(other, text, out var warnings);
         Assert.Equal(new[] { "This save was made with different game content; the replayed game may differ.", "The replayed game differs from the saved one." }, warnings);
     }
@@ -89,7 +94,7 @@ public class SaveGameTests
         var lines = text.Split('\n');
         lines[2] = "seed 100";                                                // same content, different game
         var ex = Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
-        Assert.Contains("did not reproduce the saved game", ex.Message);
+        Assert.Contains("The replay does not match the saved game", ex.Message);
     }
 
     [Theory]
@@ -148,5 +153,226 @@ public class SaveGameTests
         var all = typeof(Command).Assembly.GetTypes().Where(t => t.IsSubclassOf(typeof(Command)) && !t.IsAbstract).Select(t => t.Name).OrderBy(x => x).ToList();
         var used = Played(Fixture1()).Save.Turns.SelectMany(x => x).Select(x => x.GetType().Name).Distinct().OrderBy(x => x).ToList();
         Assert.Equal(all, used);
+    }
+
+    // ---- fix round 1: immutability, null/surrogate ids, hostile input, damaged saves, encoding ----
+
+    static string Lines(GameSession g, Func<string[], string[]> edit) => string.Join("\n", edit(g.Save.Write().Split('\n')));
+    static string Hex64(char c) => new string(c, 64);
+
+    [Fact]
+    public void ARecordedTurnDoesNotChangeWhenTheCallerMutatesItsOrders()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var shares = c.Rules.BudgetStart.ToDictionary(kv => kv.Key, kv => kv.Value);
+        var g = GameSession.New(c, 5, Mode.Historical);
+        g.Step(new Command[] { new AllocateBudget(shares) });
+        g.Step(new Command[0]);
+        var before = g.Save.Write();
+        shares.Remove(shares.Keys.First());                         // the caller reuses its own dictionary afterwards
+        shares["prime_minister"] = 99;
+        Assert.Equal(before, g.Save.Write());
+        var loaded = GameSession.Load(c, g.Save.Write(), out var warnings);
+        Assert.Empty(warnings);
+        Assert.Equal(g.State.Hash(), loaded.State.Hash());
+    }
+
+    [Fact]
+    public void ANullIdIsRefusedAtStepSoTheSaveStaysWritable()
+    {
+        var g = GameSession.New(Fixture1(), 1, Mode.Historical);
+        Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new SetPolicy(null!, 1) }));
+        Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new ChooseEventOption("drought", null!) }));
+        Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new Appoint(null!, "pm_one") }));
+        Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new MapAction(null!, 1, 1) }));
+        Assert.Empty(g.Save.Turns);                                  // nothing half-recorded
+        Assert.StartsWith("statecraft-save 1", g.Save.Write());
+    }
+
+    [Fact]
+    public void ALoneSurrogateIsRefusedAtStep()
+    {
+        var g = GameSession.New(Fixture1(), 1, Mode.Historical);
+        Assert.Throws<ArgumentException>(() => g.Step(new Command[] { new SetPolicy("bad\uD800id", 1) }));
+        g.Step(new Command[] { new SetPolicy("fine\uD83D\uDE00id", 1) });          // a valid pair is fine and round-trips
+        var loaded = GameSession.Load(Fixture1(), g.Save.Write(), out _);
+        Assert.Equal(g.State.Hash(), loaded.State.Hash());
+    }
+
+    [Fact]
+    public void ANullBudgetReplaysWithTheSameRejectionReason()
+    {
+        var c = Fixture1();
+        var g = GameSession.New(c, 1, Mode.Historical);
+        g.Step(new Command[] { new AllocateBudget(null!) });
+        var live = g.Last!.Rejected.Single().Reason;
+        var loaded = GameSession.Load(c, g.Save.Write(), out _);
+        Assert.Equal(live, loaded.Last!.Rejected.Single().Reason);
+        Assert.Equal("Budget shares are required", live);
+        var empty = GameSession.New(c, 1, Mode.Historical);
+        empty.Step(new Command[] { new AllocateBudget(new Dictionary<string, double>()) });
+        Assert.NotEqual(live, empty.Last!.Rejected.Single().Reason);   // an empty map is a different mistake
+        Assert.Equal(empty.Last.Rejected.Single().Reason, GameSession.Load(c, empty.Save.Write(), out _).Last!.Rejected.Single().Reason);
+    }
+
+    [Theory]
+    [InlineData("mode Open", 4, "mode Open is not supported")]
+    [InlineData("mode 0", 4, "bad mode")]
+    [InlineData("mode Foo", 4, "bad mode")]
+    [InlineData("mode ", 4, "bad mode")]
+    public void ModesMustBeNamesTheGameCanStart(string mode, int line, string message)
+    {
+        var g = Played(Fixture1());
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(Fixture1(), Lines(g, l => { l[3] = mode; return l; }), out _));
+        Assert.Equal((line, "line 4: " + message), (ex.Line, ex.Message));
+    }
+
+    [Fact]
+    public void AHugeTurnCountIsRefusedBeforeReplay()
+    {
+        var text = "statecraft-save 1\ncontent " + Hex64('a') + "\nseed 1\nmode Historical\n" + string.Concat(Enumerable.Repeat("turn\n", 400000)) + "end " + Hex64('b') + "\n";
+        var ex = Assert.Throws<SaveException>(() => SaveGame.Parse(text));
+        Assert.Equal("save has 400000 turns; the most this game plays is 2000", ex.Message);
+        var ok = "statecraft-save 1\ncontent " + Hex64('a') + "\nseed 1\nmode Historical\n" + string.Concat(Enumerable.Repeat("turn\n", 2000)) + "end " + Hex64('b') + "\n";
+        Assert.Equal(2000, SaveGame.Parse(ok).Turns.Count);
+    }
+
+    /// <summary>The replay runs under content whose step throws (a MapAction with no attention cost line): the exception
+    /// must surface as a SaveException that names the turn.</summary>
+    [Fact]
+    public void AReplayThatThrowsIsASaveExceptionNamingTheTurn()
+    {
+        var text = Played(Fixture1()).Save.Write();
+        var broken = Fixture1();
+        broken.Rules.AttentionCost.Remove("map_action");
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(broken, text, out _));
+        Assert.StartsWith("turn 4: ", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("content xyz", 2, "bad content hash")]
+    [InlineData("end 12", -1, "bad end hash")]
+    [InlineData("end ZZZZ", -1, "bad end hash")]
+    public void DamagedHashesAreNamedAsSuch(string replacement, int lineIndex, string message)
+    {
+        var g = Played(Fixture1());
+        var lines = g.Save.Write().Split('\n');
+        var idx = lineIndex < 0 ? lines.Length - 2 : lineIndex - 1;
+        lines[idx] = replacement;
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(Fixture1(), string.Join("\n", lines), out _));
+        Assert.Equal("line " + (idx + 1) + ": " + message, ex.Message);
+    }
+
+    [Fact]
+    public void AnEditedCommandWithTheSameContentSaysTheSaveIsDamagedNotThatTheGameHasABug()
+    {
+        var c = Fixture1();
+        var lines = Played(c).Save.Write().Split('\n');
+        var i = Array.FindIndex(lines, l => l.StartsWith("policy rationing "));
+        lines[i] = "policy rationing 3FE0000000000000";
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
+        Assert.Equal("The replay does not match the saved game: the save is damaged or was edited, or the game has a bug.", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("policy bad%ZZ 3FE0000000000000", "bad text 'bad%ZZ'")]
+    [InlineData("policy bad%4 3FE0000000000000", "bad text 'bad%4'")]
+    [InlineData("policy bad%FF 3FE0000000000000", "bad text 'bad%FF'")]
+    public void MalformedEscapesAreSaveExceptionsWithALine(string command, string message)
+    {
+        var c = Fixture1();
+        var lines = Played(c).Save.Write().Split('\n').ToList();
+        lines.Insert(5, command);
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
+        Assert.Equal("line 6: " + message, ex.Message);
+    }
+
+    [Fact]
+    public void TheEscapingIsOurOwnAndMatchesRfc3986()
+    {
+        var g = GameSession.New(Fixture1(), 1, Mode.Historical);
+        g.Step(new Command[] { new SetPolicy("A-z_0.9~ \u00E9\u20AC\uD83D\uDE00/", 1) });
+        Assert.Contains("policy A-z_0.9~%20%C3%A9%E2%82%AC%F0%9F%98%80%2F 3FF0000000000000", g.Save.Write().Split('\n'));
+    }
+
+    [Fact]
+    public void ABudgetSummedInAnyInsertionOrderIsJudgedAlike()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var v = new[] { 0.37466668006693443, 0.1119292744233292, 0.016696259782142436, 0.014296586668015622, 0.010296855346174184, 0.19600249013696078, 0.12343932175585436, 0.152673531820589 };
+        var keys = c.Rules.BudgetStart.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+        var forward = new Dictionary<string, double>(); var backward = new Dictionary<string, double>();
+        for (int i = 0; i < keys.Count; i++) forward[keys[i]] = v[i];
+        for (int i = keys.Count - 1; i >= 0; i--) backward[keys[i]] = v[i];
+        var s1 = Simulation.NewGame(c, 1, Mode.Historical); var s2 = Simulation.NewGame(c, 1, Mode.Historical);
+        var r1 = Simulation.Step(c, s1, new Command[] { new AllocateBudget(forward) });
+        var r2 = Simulation.Step(c, s2, new Command[] { new AllocateBudget(backward) });
+        Assert.Equal(r1.Rejected.Select(x => x.Reason), r2.Rejected.Select(x => x.Reason));
+        Assert.Equal(r1.State.Hash(), r2.State.Hash());
+    }
+
+    [Fact]
+    public void ABomOnContentOrOnASaveChangesNothing()
+    {
+        var plain = ContentLoader.Load(Fixture.Write());
+        var dir = Fixture.Write();
+        var withBom = ContentLoader.Load(rel =>
+        {
+            var path = Path.Combine(dir, rel);
+            return File.Exists(path) ? "\uFEFF" + File.ReadAllText(path) : null;
+        }, new string[0]);
+        Assert.Equal(plain.Hash, withBom.Hash);
+        var c = Fixture1();
+        var text = Played(c).Save.Write();
+        var loaded = GameSession.Load(c, "\uFEFF" + text, out var warnings);
+        Assert.Empty(warnings);
+        Assert.Equal(Played(c).State.Hash(), loaded.State.Hash());
+    }
+
+    [Fact]
+    public void TheContentHashChangesWithEventsAndSettlements()
+    {
+        var a = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event }));
+        var b = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string> { ["drought.yaml"] = ValidationTests.Event + "# edited\n" }));
+        Assert.NotEqual(a.Hash, b.Hash);
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/settlements_1948.yaml"] = Fixture.Files["map/settlements_1948.yaml"] + "# note\n" }));
+        Assert.NotEqual(ContentLoader.Load(Fixture.Write()).Hash, c.Hash);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("statecraft-save 1\ncontent x\n")]
+    [InlineData("statecraft-save 0")]
+    public void ShortInputsAreSaveExceptions(string text) => Assert.Throws<SaveException>(() => SaveGame.Parse(text));
+
+    [Fact]
+    public void AMissingOrShortEndLineIsReportedAsDamage()
+    {
+        var c = Fixture1();
+        var lines = Played(c).Save.Write().Split('\n').ToList();
+        lines.RemoveAt(lines.Count - 2);                                    // drop "end <hash>"
+        Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
+    }
+
+    [Theory]
+    [InlineData("statecraft-save 0", "unknown save schema version 0")]
+    [InlineData("statecraft-save 2", "save schema version 2 is newer than this game (1)")]
+    [InlineData("statecraft-save -1", "bad schema version")]
+    public void SchemaVersionsOutsideOneAreRefused(string first, string message)
+    {
+        var lines = Played(Fixture1()).Save.Write().Split('\n');
+        lines[0] = first;
+        var ex = Assert.Throws<SaveException>(() => SaveGame.Parse(string.Join("\n", lines)));
+        Assert.Equal("line 1: " + message, ex.Message);
+    }
+
+    [Fact]
+    public void CrLfLoadsAndALoneCrIsNotASave()
+    {
+        var c = Fixture1();
+        var text = Played(c).Save.Write();
+        GameSession.Load(c, text.Replace("\n", "\r\n"), out var warnings);
+        Assert.Empty(warnings);
+        Assert.Throws<SaveException>(() => SaveGame.Parse(text.Replace("\n", "\r")));
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Statecraft.Sim
@@ -69,5 +70,29 @@ namespace Statecraft.Sim
         public IReadOnlyList<Cause> Why { get; }
         public IReadOnlyList<Rejection> Rejected { get; }
         public StepResult(GameState state, IReadOnlyList<Cause> why, IReadOnlyList<Rejection> rejected) { State = state; Why = why; Rejected = rejected; }
+    }
+
+    /// <summary>Checks that every text an order carries can be saved: a null id or a lone surrogate would make the save
+    /// unwritable or lossy, so Step refuses the whole batch before anything happens (a programmer error, like a null Command).</summary>
+    static class CommandText
+    {
+        public static void Validate(IReadOnlyList<Command> commands)
+        {
+            foreach (var cmd in commands)
+                switch (cmd)
+                {
+                    case SetPolicy p: Text(p.Policy, "Policy"); break;
+                    case AllocateBudget b: if (b.Shares != null) foreach (var k in b.Shares.Keys) Text(k, "Shares key"); break;
+                    case ChooseEventOption e: Text(e.EventId, "EventId"); Text(e.OptionId, "OptionId"); break;
+                    case Appoint a: Text(a.Office, "Office"); Text(a.Person, "Person"); break;
+                    case MapAction m: Text(m.Action, "Action"); break;
+                }
+        }
+
+        static void Text(string? s, string field)
+        {
+            if (s == null) throw new ArgumentNullException("commands", $"{field} cannot be null.");
+            if (!SaveText.IsEncodable(s)) throw new ArgumentException($"{field} is not valid text (a lone surrogate).", "commands");
+        }
     }
 }

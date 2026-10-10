@@ -28,6 +28,8 @@ namespace Statecraft.Sim
     public sealed class SaveGame
     {
         public const int SchemaVersion = 1;
+        /// <summary>Turns are at least a week long, so 2000 turns is 38 years, far past any content; a save with more is hostile or damaged.</summary>
+        public const int MaxTurns = 2000;
         const string Magic = "statecraft-save";
 
         readonly List<IReadOnlyList<Command>> turns = new List<IReadOnlyList<Command>>();
@@ -47,11 +49,12 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Appends one turn: the commands passed to Simulation.Step and the state it returned.</summary>
-        public void Record(IReadOnlyList<Command> commands, GameState after)
+        internal void Record(IReadOnlyList<Command> commands, GameState after)
         {
             if (commands == null) throw new ArgumentNullException(nameof(commands));
             if (after == null) throw new ArgumentNullException(nameof(after));
-            turns.Add(commands.ToList());
+            // A recorded turn is immutable: the caller keeps its own objects (an AllocateBudget's dictionary is theirs to reuse).
+            turns.Add(commands.Select(Snapshot).ToList());
             FinalHash = after.Hash();
         }
 
@@ -71,14 +74,17 @@ namespace Statecraft.Sim
             return sb.ToString();
         }
 
-        static string Esc(string s) => Uri.EscapeDataString(s);
+        static Command Snapshot(Command cmd) =>
+            cmd is AllocateBudget b && b.Shares != null ? new AllocateBudget(new Dictionary<string, double>(b.Shares)) : cmd;
+
+        static string Esc(string s) => SaveText.Escape(s);
         static string Num(double v) => BitConverter.DoubleToInt64Bits(v).ToString("X16", CultureInfo.InvariantCulture);
         static string Int(int v) => v.ToString(CultureInfo.InvariantCulture);
 
         static string Format(Command cmd) => cmd switch
         {
             SetPolicy p => $"policy {Esc(p.Policy)} {Num(p.Level)}",
-            AllocateBudget b => "budget " + (b.Shares == null || b.Shares.Count == 0 ? "-" :
+            AllocateBudget b => "budget " + (b.Shares == null ? "~" : b.Shares.Count == 0 ? "-" :
                 string.Join(",", b.Shares.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => Esc(kv.Key) + "=" + Num(kv.Value)))),
             ChooseEventOption e => $"event {Esc(e.EventId)} {Esc(e.OptionId)}",
             SetMobilization m => $"mobilize {Num(m.Level)}",
@@ -92,10 +98,13 @@ namespace Statecraft.Sim
         public static SaveGame Parse(string text)
         {
             if (text == null) throw new ArgumentNullException(nameof(text));
+            if (text.Length > 0 && text[0] == '\uFEFF') text = text.Substring(1);   // a byte-order mark is not part of the save
             var lines = text.Replace("\r\n", "\n").Split('\n');
             int n = lines.Length;
             while (n > 0 && lines[n - 1] == "") n--;
             if (n < 5) throw new SaveException(0, "Not a Statecraft save (too short)");
+            if (lines.Take(n).Count(l => l == "turn") > MaxTurns)
+                throw new SaveException(0, FormattableString.Invariant($"save has {lines.Take(n).Count(l => l == "turn")} turns; the most this game plays is {MaxTurns}"));
             string[] Head(int i, string key, int parts)
             {
                 var f = lines[i].Split(' ');
@@ -107,9 +116,14 @@ namespace Statecraft.Sim
             if (version > SchemaVersion) throw new SaveException(1, FormattableString.Invariant($"save schema version {version} is newer than this game ({SchemaVersion})"));
             if (version < 1) throw new SaveException(1, FormattableString.Invariant($"unknown save schema version {version}"));
             var content = Head(1, "content", 2)[1];
+            if (!IsHash(content)) throw new SaveException(2, "bad content hash");
             if (!ulong.TryParse(Head(2, "seed", 2)[1], NumberStyles.None, CultureInfo.InvariantCulture, out var seed)) throw new SaveException(3, "bad seed");
-            if (!Enum.TryParse<Mode>(Head(3, "mode", 2)[1], false, out var mode) || !Enum.IsDefined(typeof(Mode), mode)) throw new SaveException(4, "bad mode");
+            var modeName = Head(3, "mode", 2)[1];
+            if (!Enum.GetNames(typeof(Mode)).Contains(modeName)) throw new SaveException(4, "bad mode");   // names only: Enum.TryParse would accept "0"
+            var mode = (Mode)Enum.Parse(typeof(Mode), modeName);
+            if (mode == Mode.Open) throw new SaveException(4, "mode Open is not supported");   // Simulation.NewGame cannot start it before M4
             var end = Head(n - 1, "end", 2)[1];
+            if (!IsHash(end)) throw new SaveException(n, "bad end hash");
             var save = new SaveGame(content, seed, mode, end);
             List<Command>? current = null;
             for (int i = 4; i < n - 1; i++)
@@ -121,14 +135,15 @@ namespace Statecraft.Sim
             return save;
         }
 
+        static bool IsHash(string s) => s.Length == 64 && s.All(ch => (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'));
+
         static Command ParseCommand(int line, string text)
         {
             var f = text.Split(' ');
             void Arity(int count) { if (f.Length != count) throw new SaveException(line, $"'{f[0]}' needs {count - 1} values"); }
             string Str(string s)
             {
-                try { return Uri.UnescapeDataString(s); }
-                catch (UriFormatException) { throw new SaveException(line, $"bad text '{s}'"); }
+                return SaveText.Unescape(s) ?? throw new SaveException(line, $"bad text '{s}'");
             }
             double Dbl(string s) => long.TryParse(s, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var bits) && s.Length == 16
                 ? BitConverter.Int64BitsToDouble(bits) : throw new SaveException(line, $"bad number '{s}'");
@@ -138,6 +153,7 @@ namespace Statecraft.Sim
                 case "policy": Arity(3); return new SetPolicy(Str(f[1]), Dbl(f[2]));
                 case "budget":
                     Arity(2);
+                    if (f[1] == "~") return new AllocateBudget(null!);          // a null budget: replays with the same rejection reason
                     var shares = new Dictionary<string, double>();
                     if (f[1] != "-")
                         foreach (var pair in f[1].Split(','))
@@ -155,5 +171,51 @@ namespace Statecraft.Sim
                 default: throw new SaveException(line, $"unknown command '{f[0]}'");
             }
         }
+    }
+
+    /// <summary>The save format's own percent-encoding (RFC 3986: unreserved characters stay, everything else is %XX of its
+    /// UTF-8 bytes), so a save does not depend on the runtime's Uri class (Mono and .NET differ).</summary>
+    internal static class SaveText
+    {
+        static readonly System.Text.UTF8Encoding Strict = new System.Text.UTF8Encoding(false, true);
+
+        static bool Unreserved(byte b) => (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '-' || b == '.' || b == '_' || b == '~';
+
+        /// <summary>False for a string that is not valid Unicode text (a lone surrogate), which cannot be saved losslessly.</summary>
+        public static bool IsEncodable(string s)
+        {
+            try { Strict.GetBytes(s); return true; }
+            catch (System.Text.EncoderFallbackException) { return false; }
+        }
+
+        public static string Escape(string s)
+        {
+            var sb = new StringBuilder();
+            foreach (var b in Strict.GetBytes(s))
+            {
+                if (Unreserved(b)) sb.Append((char)b);
+                else sb.Append('%').Append("0123456789ABCDEF"[b >> 4]).Append("0123456789ABCDEF"[b & 15]);
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>Null when the text has a malformed escape or is not valid UTF-8.</summary>
+        public static string? Unescape(string s)
+        {
+            var bytes = new List<byte>();
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] != '%') { if (s[i] > 127) return null; bytes.Add((byte)s[i]); continue; }
+                if (i + 2 >= s.Length) return null;
+                int hi = HexVal(s[i + 1]), lo = HexVal(s[i + 2]);
+                if (hi < 0 || lo < 0) return null;
+                bytes.Add((byte)(hi * 16 + lo));
+                i += 2;
+            }
+            try { return Strict.GetString(bytes.ToArray()); }
+            catch (System.Text.DecoderFallbackException) { return null; }
+        }
+
+        static int HexVal(char c) => c >= '0' && c <= '9' ? c - '0' : c >= 'A' && c <= 'F' ? c - 'A' + 10 : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
     }
 }

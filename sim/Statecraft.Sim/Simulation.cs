@@ -31,6 +31,7 @@ namespace Statecraft.Sim
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (commands == null) throw new ArgumentNullException(nameof(commands));
             if (commands.Any(x => x == null)) throw new ArgumentException("Commands cannot contain null.", nameof(commands));
+            CommandText.Validate(commands);
 
             var s = state.Clone();
             var why = new List<Cause>();
