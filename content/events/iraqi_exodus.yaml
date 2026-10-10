@@ -1,0 +1,25 @@
+id: iraqi_exodus
+title: The Jews of Iraq
+text: 'Iraq has frozen the assets of the Jews who gave up their citizenship to leave, and some 64,000 people are still waiting to fly. The transit camps are already crowded. {immigration_minister} asks whether to bring everyone at once.'
+anchor: soft
+office: immigration_minister
+# The asset-freeze law of 10 March 1951; the mass airlift ran through 1951.
+from: 1951-03-10
+to: 1951-07-01
+options:
+  - id: airlift
+    text: Bring everyone as fast as aircraft allow
+    historical: true
+    recommended: true
+    effects:
+      - { target: housing, delta: -0.04 }
+      - { target: morale, delta: 0.03 }
+  - id: pace
+    text: Pace arrivals to the places in the camps
+    effects:
+      - { target: morale, delta: -0.05 }
+      - { target: intl_standing, delta: -0.02 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Ezra_and_Nehemiah", checked: 2026-10-10 }
+  - { url: "https://in.bgu.ac.il/bgi/iyunim/40/Meir-Glitzenstein.pdf", checked: 2026-10-10 }
+status: fact-checked

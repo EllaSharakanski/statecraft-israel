@@ -1,0 +1,28 @@
+id: clothing_rationing_1950
+title: Rationing Clothes and Shoes
+text: 'Prices on the black market are climbing. {rationing_minister} proposes extending rationing to clothing and footwear and fighting the black market.'
+anchor: hard
+office: rationing_minister
+# Extended on 31 July 1950; retailers' strike 1-14 August; no-confidence motion defeated 57-36 on 8 August.
+from: 1950-07-01
+to: 1950-09-01
+options:
+  - id: extend
+    text: Ration clothing and footwear
+    historical: true
+    recommended: true
+    set_policy: { rationing: 1.0 }
+    effects:
+      - { target: food_supply, delta: 0.02 }
+      - { target: morale, delta: -0.05 }
+  - id: relax
+    text: Ease rationing and let imports fill the shops
+    set_policy: { rationing: 0.5 }
+    effects:
+      - { target: morale, delta: 0.03 }
+      - { target: fx_reserves, delta: -8 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Austerity_in_Israel", checked: 2026-10-10 }
+  - { url: "https://he.wikipedia.org/wiki/תקופת_הצנע", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1950_in_Israel", checked: 2026-10-10 }
+status: fact-checked

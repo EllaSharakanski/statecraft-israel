@@ -1,0 +1,26 @@
+id: hula_drainage
+title: Draining the Hula
+text: 'Drainage works south of Lake Hula, under the concession Israel holds, reach into the demilitarised zone with Syria. Syria has complained, and the chairman of the armistice commission asks that work stop pending agreement. {prime_minister} must decide.'
+anchor: soft
+tags: [security]
+office: prime_minister
+# Works began about 14 February 1951; Syria complained on 21 February; General Riley recommended a halt on 7 March.
+from: 1951-02-14
+to: 1951-05-18
+options:
+  - id: continue_works
+    text: Continue the works and assert Israel's rights in the zone
+    historical: true
+    recommended: true
+    effects:
+      - { target: security, delta: 0.03 }
+      - { target: intl_standing, delta: -0.05 }
+  - id: halt
+    text: Halt the works until there is agreement
+    effects:
+      - { target: security, delta: -0.03 }
+      - { target: intl_standing, delta: 0.03 }
+sources:
+  - { url: "https://history.state.gov/historicaldocuments/frus1951v05/d288", checked: 2026-10-10 }
+  - { url: "https://www.jta.org/archive/israel-resumes-drainage-of-huleh-swamps-syria-concentrates-troops-situation-tense", checked: 2026-10-10 }
+status: fact-checked

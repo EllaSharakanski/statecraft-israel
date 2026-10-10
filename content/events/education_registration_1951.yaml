@@ -1,0 +1,24 @@
+id: education_registration_1951
+title: Schools in the Transit Camps
+text: 'The coalition is split over schooling for immigrant children in the transit camps: the religious parties oppose a religious stream run by the labour movement. {education_minister} brings a registration plan to the Knesset.'
+anchor: hard
+office: education_minister
+# Dispute from 29 November 1950; the Knesset rejected the proposals and the government resigned on 14 February 1951.
+from: 1950-11-29
+to: 1951-02-14
+options:
+  - id: press_plan
+    text: Press the registration plan and go to early elections if it fails
+    historical: true
+    recommended: true
+    effects:
+      - { target: morale, delta: -0.02 }
+  - id: concede
+    text: Leave camp children in the religious stream
+    effects:
+      - { target: morale, delta: -0.01 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }
+  - { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }
+  - { url: "https://he.wikipedia.org/wiki/הכנסת_הראשונה", checked: 2026-10-10 }
+status: fact-checked
