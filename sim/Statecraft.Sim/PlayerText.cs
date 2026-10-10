@@ -44,27 +44,48 @@ namespace Statecraft.Sim
 
         static MoneyAccount Account(Content c, string id) => c.Money.FirstOrDefault(m => m.Id == id) ?? throw Unknown("money", id);
 
-        /// <summary>An amount in millions with its currency: "IL 18.6m", "$41.5m".</summary>
-        public static string Money(Content c, string id, double millions) =>
-            Account(c, id).Prefix + millions.ToString("0.0", CultureInfo.InvariantCulture) + "m";
+        static double Finite(double v, string name) =>
+            double.IsNaN(v) || double.IsInfinity(v) ? throw new ArgumentOutOfRangeException(name, v, "not a finite number (a programmer error)") : v;
 
-        /// <summary>A signed change in millions with its currency, sign first: "+IL 1.2m", "-$0.4m" (a change that rounds to
-        /// zero reads "+IL 0.0m", never "-IL 0.0m").</summary>
+        static string Fixed(double abs, int decimals) => abs.ToString(decimals == 0 ? "0" : "0.0", CultureInfo.InvariantCulture);
+
+        /// <summary>The one sign style: the sign goes before the currency or number, and a value that rounds to zero prints
+        /// unsigned. <paramref name="signed"/> adds "+" to positive values (changes).</summary>
+        static string Signed(double rounded, string prefix, string body, bool signed) =>
+            rounded == 0 ? prefix + body : (rounded < 0 ? "-" : signed ? "+" : "") + prefix + body;
+
+        /// <summary>An amount in millions with its currency: "IL 18.6m", "-IL 3.0m", "$41.5m"; zero is "IL 0.0m".</summary>
+        public static string Money(Content c, string id, double millions)
+        {
+            var r = Math.Round(Finite(millions, nameof(millions)), 1, MidpointRounding.AwayFromZero);
+            return Signed(r, Account(c, id).Prefix, Fixed(Math.Abs(r), 1) + "m", signed: false);
+        }
+
+        /// <summary>A change in millions with its currency, sign first: "+IL 1.2m", "-$0.4m"; zero is "IL 0.0m".</summary>
         public static string MoneyChange(Content c, string id, double millions)
         {
-            var abs = Math.Abs(millions).ToString("0.0", CultureInfo.InvariantCulture);
-            var sign = millions < 0 && abs != "0.0" ? "-" : "+";
-            return sign + Account(c, id).Prefix + abs + "m";
+            var r = Math.Round(Finite(millions, nameof(millions)), 1, MidpointRounding.AwayFromZero);
+            return Signed(r, Account(c, id).Prefix, Fixed(Math.Abs(r), 1) + "m", signed: true);
         }
 
         /// <summary>An indicator level (0..1) or a share on the scale the player sees: 0..100.</summary>
-        public static double Scale(double level) => level * 100;
+        public static double Scale(double level) => Finite(level, nameof(level)) * 100;
 
-        /// <summary>"55%" for a level of 0.55.</summary>
-        public static string Percent(double level) => Scale(level).ToString("0", CultureInfo.InvariantCulture) + "%";
+        /// <summary>"55%" for a level of 0.55; zero is "0%".</summary>
+        public static string Percent(double level)
+        {
+            var r = Math.Round(Scale(level), 0, MidpointRounding.AwayFromZero);
+            return Signed(r, "", Fixed(Math.Abs(r), 0) + "%", signed: false);
+        }
 
-        /// <summary>"+4.1%" for a change of 0.041 (points on the 0-100 scale).</summary>
-        public static string PercentChange(double change) => Scale(change).ToString("+0.0;-0.0;+0.0", CultureInfo.InvariantCulture) + "%";
+        /// <summary>"+4.1%" for a change of 0.041 (points on the 0-100 scale, <paramref name="decimals"/> 0 or 1); zero is
+        /// "0.0%" (or "0%").</summary>
+        public static string PercentChange(double change, int decimals = 1)
+        {
+            if (decimals != 0 && decimals != 1) throw new ArgumentOutOfRangeException(nameof(decimals), decimals, "0 or 1");
+            var r = Math.Round(Scale(change), decimals, MidpointRounding.AwayFromZero);
+            return Signed(r, "", Fixed(Math.Abs(r), decimals) + "%", signed: true);
+        }
 
         /// <summary>"Morale +4.1%" or "Treasury -IL 2.0m": the name and the change, in the target's unit.</summary>
         public static string Change(Content c, string id, double change) =>

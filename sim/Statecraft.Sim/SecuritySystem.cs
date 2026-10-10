@@ -45,7 +45,7 @@ namespace Statecraft.Sim
         {
             if (!(level >= 0 && level <= 1)) return "Mobilization must be between 0 and 1";
             s.Mobilization = level;
-            why.Add(new Cause("security", "mobilization", level, FormattableString.Invariant($"reserve call-up set to {level * 100:0}%")));
+            why.Add(new Cause("security", "mobilization", level, $"reserve call-up set to {PlayerText.Percent(level)}"));
             RaiseToFloor(c, s, why);
             return null;
         }
@@ -56,7 +56,7 @@ namespace Statecraft.Sim
             var floor = MinMobilization(c, rung);
             if (s.Mobilization < floor)
             {
-                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {floor * 100:0}%, the minimum for security level {rung}")));
+                why.Add(new Cause("security", "mobilization", floor - s.Mobilization, FormattableString.Invariant($"reserve call-up raised to {PlayerText.Percent(floor)}, the minimum for security level {rung}")));
                 s.Mobilization = floor;
             }
         }

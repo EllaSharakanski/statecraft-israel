@@ -302,12 +302,17 @@ namespace Statecraft.Sim
                 if (Array.IndexOf(PlayerText.MoneyIds, a.Id) < 0)
                     throw new ContentException("model.yaml", $"money[{a.Id}].id", $"must be one of {string.Join(", ", PlayerText.MoneyIds)}");
                 Named("model.yaml", $"money[{a.Id}].name", a.Name);
-                if (a.Prefix.Length == 0) throw new ContentException("model.yaml", $"money[{a.Id}].prefix", "required (the currency the player sees, e.g. 'IL ' or '$')");
+                if (string.IsNullOrWhiteSpace(a.Prefix)) throw new ContentException("model.yaml", $"money[{a.Id}].prefix", "required (the currency the player sees, e.g. 'IL ' or '$')");
             }
             var missingMoney = PlayerText.MoneyIds.FirstOrDefault(id => c.Money.All(a => a.Id != id));
             if (missingMoney != null) throw new ContentException("model.yaml", "money", $"missing {missingMoney}");
             foreach (var p in c.Policies)
                 if (indicators.Contains(p.Id)) throw new ContentException("model.yaml", $"policies[{p.Id}].id", "same id as an indicator (effect sources would be ambiguous)");
+            // Money, indicators and policies share one namespace in Cause targets and PlayerText.Target (fix round 2, N7).
+            foreach (var i in c.Indicators)
+                if (Array.IndexOf(PlayerText.MoneyIds, i.Id) >= 0) throw new ContentException("model.yaml", $"indicators[{i.Id}].id", "same id as money (treasury, debt, fx_reserves)");
+            foreach (var p in c.Policies)
+                if (Array.IndexOf(PlayerText.MoneyIds, p.Id) >= 0) throw new ContentException("model.yaml", $"policies[{p.Id}].id", "same id as money (treasury, debt, fx_reserves)");
 
             foreach (var p in c.People) Status("people.yaml", $"people[{p.Id}].status", p.Status);
             foreach (var l in c.Legislatures) Status("legislatures.yaml", $"legislatures[{l.Id}].status", l.Status);

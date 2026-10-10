@@ -524,7 +524,7 @@ options:
         var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
         EventSystem.Trigger(c, s, why);
         Assert.Null(EventSystem.Choose(c, s, "shortage", "import", why));
-        Assert.Contains(why, w => w.Message == "Foreign currency +$0.0m (Bread lines)");
+        Assert.Contains(why, w => w.Message == "Foreign currency $0.0m (Bread lines)");
         Assert.DoesNotContain(why, w => w.Message.Contains("-+"));
     }
 
