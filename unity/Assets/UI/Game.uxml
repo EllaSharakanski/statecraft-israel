@@ -39,19 +39,88 @@
                 <ui:Button name="nav-budget" text="Budget" />
                 <ui:Button name="nav-defence" text="Defence" />
                 <ui:Button name="nav-why" text="Why?" />
+                <ui:Button name="new-game" text="New Game" />
             </ui:VisualElement>
             <ui:VisualElement class="turn-box">
                 <ui:Label name="attention" class="muted" />
                 <ui:Button name="end-turn" text="End Turn" class="end-turn" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="event-card" class="panel event-card" />
-        <ui:VisualElement name="info-panel" class="panel info-panel" />
-        <ui:VisualElement name="minimap" class="panel minimap" />
-        <ui:VisualElement name="screen-cabinet" class="panel screen" />
-        <ui:VisualElement name="screen-budget" class="panel screen" />
-        <ui:VisualElement name="screen-defence" class="panel screen" />
-        <ui:VisualElement name="screen-why" class="panel screen" />
+        <ui:VisualElement name="event-card" class="panel event-card">
+            <ui:VisualElement name="event-image" class="event-image" />
+            <ui:Label name="event-draft" text="DRAFT" class="draft" />
+            <ui:Label name="event-title" class="title event-title" />
+            <ui:Label name="event-office" class="muted" />
+            <ui:Label name="event-text" class="event-text" />
+            <ui:VisualElement name="event-options" />
+            <ui:Label name="event-count" class="muted" />
+        </ui:VisualElement>
+        <ui:VisualElement name="info-panel" class="panel info-panel">
+            <ui:Label name="info-title" class="title" />
+            <ui:Label name="info-subtitle" class="muted" />
+            <ui:Label name="info-settlements" />
+            <ui:Label name="info-placement" class="muted" />
+            <ui:VisualElement class="row">
+                <ui:Button name="build-camp" />
+                <ui:Button name="build-housing" />
+            </ui:VisualElement>
+            <ui:Label name="info-reason" class="reason" />
+        </ui:VisualElement>
+        <ui:VisualElement name="minimap" class="panel minimap">
+            <ui:VisualElement name="minimap-image" class="minimap-image">
+                <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-cabinet" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>
+            <ui:VisualElement class="row grow">
+                <ui:ScrollView name="cabinet-seats" class="grow" />
+                <ui:VisualElement name="cabinet-pick" class="grow">
+                    <ui:Label name="cabinet-pick-title" class="meter-name" />
+                    <ui:ScrollView name="cabinet-candidates" class="grow" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="cabinet-status" class="muted" />
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-budget" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Budget" class="title" /><ui:Label name="budget-vote" class="muted" /></ui:VisualElement>
+            <ui:Label name="budget-money" />
+            <ui:Label name="budget-flow" class="muted" />
+            <ui:ScrollView name="budget-rows" class="grow" />
+            <ui:VisualElement class="row">
+                <ui:Button name="budget-reset" text="Reset" />
+                <ui:Button name="budget-submit" text="Submit the budget" />
+                <ui:Label name="budget-status" class="muted grow" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-defence" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Defence" class="title" /><ui:Label name="defence-command" class="muted" /></ui:VisualElement>
+            <ui:Label text="Security level" class="meter-name" />
+            <ui:VisualElement name="ladder">
+                <ui:VisualElement name="rung-5" class="rung"><ui:Label name="rung-5-name" class="grow" /><ui:Label name="rung-5-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-4" class="rung"><ui:Label name="rung-4-name" class="grow" /><ui:Label name="rung-4-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-3" class="rung"><ui:Label name="rung-3-name" class="grow" /><ui:Label name="rung-3-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-2" class="rung"><ui:Label name="rung-2-name" class="grow" /><ui:Label name="rung-2-turn" class="muted" /></ui:VisualElement>
+                <ui:VisualElement name="rung-1" class="rung"><ui:Label name="rung-1-name" class="grow" /><ui:Label name="rung-1-turn" class="muted" /></ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="ceasefire" class="muted" />
+            <ui:VisualElement class="row">
+                <ui:Button name="de-escalate" text="Lower the level" />
+                <ui:Button name="escalate" text="Raise the level" />
+                <ui:Label name="order-pending" class="muted grow" />
+            </ui:VisualElement>
+            <ui:Label text="Reserve call-up" class="meter-name" />
+            <ui:VisualElement class="row">
+                <ui:Button name="mob-down" text="-5%" />
+                <ui:Label name="mob-level" class="grow" />
+                <ui:Button name="mob-up" text="+5%" />
+            </ui:VisualElement>
+            <ui:Label name="mob-cost" class="muted" />
+        </ui:VisualElement>
+        <ui:VisualElement name="screen-why" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Why did this happen?" class="title" /><ui:Label name="why-turn" class="muted" /></ui:VisualElement>
+            <ui:ScrollView name="why-rows" class="grow" />
+        </ui:VisualElement>
         <ui:Label name="toast" class="panel toast" />
     </ui:VisualElement>
 </ui:UXML>

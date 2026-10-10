@@ -1,0 +1,65 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using Statecraft.Sim;
+
+namespace Statecraft.Game.UI
+{
+    /// <summary>Starting a session: continue the autosave when there is one (replayed to the same state hash), else a new
+    /// Historical game. Anything the player should know (a content-change warning, an unreadable save) goes to notes.
+    /// No failure while reading or replaying the autosave stops the game from starting: the file is set aside.
+    /// <paramref name="fresh"/> is used only by tests (New Game goes through SimBridge.Replace); it ignores the autosave.</summary>
+    public static class GameStart
+    {
+        public static ulong NewSeed() => (ulong)DateTime.UtcNow.Ticks;
+
+        public static GameSession Begin(Content c, SaveStore store, Func<ulong> newSeed, List<string> notes, UiText text, bool fresh = false)
+        {
+            if (!fresh)
+            {
+                try
+                {
+                    var saved = store.ReadAutosave();
+                    if (saved == null) return GameSession.New(c, newSeed(), Mode.Historical);
+                    var loaded = GameSession.Load(c, saved, out var warnings);
+                    notes.AddRange(warnings);
+                    return loaded;
+                }
+                catch (Exception e)   // any failure (a bad save, a replay that throws): never block the start
+                {
+                    try { store.SetAsideAutosave(); } catch (Exception) { /* even this must not stop the start */ }
+                    // A SaveException's message is about the save's own text (line numbers); anything else can carry file paths, so
+                    // the player gets a short reason and the full exception goes to the log.
+                    if (!(e is SaveException)) UnityEngine.Debug.LogWarning("Autosave could not be loaded: " + e);
+                    else UnityEngine.Debug.LogWarning("Autosave rejected: " + e.Message);
+                    notes.Add(text.Format("save.unreadable", e is SaveException ? e.Message : text["save.reason_other"]));
+                }
+            }
+            return GameSession.New(c, newSeed(), Mode.Historical);
+        }
+
+        /// <summary>Writes the save after every turn. A write that fails (a full or read-only disk) never stops the game:
+        /// the reason goes to <paramref name="onError"/>. Dispose the result to stop autosaving.</summary>
+        public static IDisposable Autosave(SimBridge bridge, SaveStore store, UiText text, Action<string>? onError = null)
+        {
+            void Save(IReadOnlyList<Rejection> _)
+            {
+                try { store.WriteAutosave(bridge.Session.Save.Write()); }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogWarning("Autosave could not be written: " + e);
+                    onError?.Invoke(text["save.write_failed"]);
+                }
+            }
+            bridge.TurnEnded += Save;
+            return new Unsubscribe(() => bridge.TurnEnded -= Save);
+        }
+
+        sealed class Unsubscribe : IDisposable
+        {
+            readonly Action undo;
+            public Unsubscribe(Action undo) { this.undo = undo; }
+            public void Dispose() => undo();
+        }
+    }
+}

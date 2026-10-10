@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed9f03e67d57b4474a0fe950d8b31e60, type: 3}
+  m_Name: PortraitCatalog
+  m_EditorClassIdentifier: Statecraft.Game::Statecraft.Game.UI.PortraitCatalog
+  entries:
+  - personId: ben_gurion
+    image: {fileID: 2800000, guid: 4cfbaea3af206434584f5d663c3f617b, type: 3}
+  - personId: zisling
+    image: {fileID: 2800000, guid: 32c3dc5a870694b1db0b869b507fcf33, type: 3}
+  - personId: kaplan
+    image: {fileID: 2800000, guid: acea051ba099241b5a2ec18417c6b855, type: 3}
+  - personId: sharett
+    image: {fileID: 2800000, guid: f0ed7522ce11d4c0db50dafd321df604, type: 3}
+  - personId: shapira
+    image: {fileID: 2800000, guid: 01b0755a76e4d4a23843d26ac45b200f, type: 3}
+  - personId: gruenbaum
+    image: {fileID: 2800000, guid: d570b912751fc4c1cb3fd166a568ee10, type: 3}
+  - personId: rosen
+    image: {fileID: 2800000, guid: 939a5df99ebbf4fe9927c13dea97b145, type: 3}
+  - personId: bentov
+    image: {fileID: 2800000, guid: 8a07543ce92e7451c9496ba142d9ddad, type: 3}
+  - personId: sheetrit
+    image: {fileID: 2800000, guid: ac4fafd5b03774d24a8771d87b31f392, type: 3}
+  - personId: maimon
+    image: {fileID: 2800000, guid: 485b4273ede0249908e89cc3b2945bb7, type: 3}
+  - personId: bernstein
+    image: {fileID: 2800000, guid: 0a41c67eb7f774a0f896da33c391417a, type: 3}
+  - personId: remez
+    image: {fileID: 2800000, guid: 271cf2de1793546e284dad1440ae085e, type: 3}
+  - personId: levin
+    image: {fileID: 2800000, guid: a90c09eb271424986af44b29de55f345, type: 3}

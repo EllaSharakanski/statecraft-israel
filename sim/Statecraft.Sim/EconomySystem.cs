@@ -15,12 +15,26 @@ namespace Statecraft.Sim
             s.Budget = new Dictionary<string, double>(c.Rules.BudgetStart);
         }
 
+        /// <summary>The treasury's money in and out over <paramref name="yearFraction"/> of a year (1.0 = a year): tax,
+        /// spending and the cost of the reserve call-up. Apply uses it, and the Budget screen shows it.</summary>
+        public readonly struct TreasuryFlows
+        {
+            public readonly double Tax, Spending, Mobilization;
+            public TreasuryFlows(double tax, double spending, double mobilization) { Tax = tax; Spending = spending; Mobilization = mobilization; }
+        }
+
+        public static TreasuryFlows Flows(Content c, GameState s, double yearFraction)
+        {
+            var r = c.Rules; var pop = s.TotalPopulation;
+            return new TreasuryFlows(r.TaxPerCapitaPerYear * pop * yearFraction, r.SpendingPerCapitaPerYear * pop * yearFraction,
+                r.MobilizationCostPerYear * s.Mobilization * yearFraction);
+        }
+
         public static void Apply(Content c, GameState s, double yearFraction, List<Cause> why)
         {
             var r = c.Rules; var pop = s.TotalPopulation;
-            var revenue = r.TaxPerCapitaPerYear * pop * yearFraction;
-            var spending = r.SpendingPerCapitaPerYear * pop * yearFraction;
-            var mobilization = r.MobilizationCostPerYear * s.Mobilization * yearFraction;
+            var flows = Flows(c, s, yearFraction);
+            var revenue = flows.Tax; var spending = flows.Spending; var mobilization = flows.Mobilization;
             s.Treasury += revenue - spending - mobilization;
             why.Add(new Cause("economy", "treasury", revenue - spending - mobilization,
                 FormattableString.Invariant($"treasury {revenue - spending - mobilization:+0.00;-0.00;+0.00} (tax {revenue:0.00}, spending {spending:0.00}, reserve call-up {mobilization:0.00})")));

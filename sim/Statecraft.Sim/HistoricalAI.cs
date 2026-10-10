@@ -15,7 +15,7 @@ namespace Statecraft.Sim
                 .Select(id => c.Events.First(e => e.Id == id))
                 .Select(e => (Command)new ChooseEventOption(e.Id, (e.Options.FirstOrDefault(o => o.Historical) ?? e.Options[0]).Id))
                 .ToList();
-            var floor = c.Rules.RungMinMobilization[Math.Max(1, Math.Min(5, s.Rung)) - 1];
+            var floor = SecuritySystem.MinMobilization(c, s.Rung);
             if (s.Mobilization > floor) list.Add(new SetMobilization(floor));
             return list;
         }

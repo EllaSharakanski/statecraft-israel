@@ -97,4 +97,45 @@ public class SecurityTests
         Assert.Null(SecuritySystem.SetMobilization(C, s, 0.0, why));   // reaches RaiseToFloor
         Assert.Equal(0.8, s.Mobilization);
     }
+
+    [Theory]
+    [InlineData(-3, 1)] [InlineData(0, 1)] [InlineData(1, 1)] [InlineData(5, 5)] [InlineData(9, 5)]
+    public void ClampRungKeepsTheLadderInRange(int rung, int expected) => Assert.Equal(expected, SecuritySystem.ClampRung(rung));
+
+    [Theory]
+    [InlineData(1, 0.02)] [InlineData(4, 0.4)] [InlineData(5, 0.8)] [InlineData(9, 0.8)] [InlineData(0, 0.02)]
+    public void MinMobilizationIsTheRungsFloor(int rung, double expected) => Assert.Equal(expected, SecuritySystem.MinMobilization(C, rung));
+
+    [Fact]
+    public void EffectiveMobilizationIsNeverBelowTheFloor()
+    {
+        Assert.Equal(0.8, SecuritySystem.EffectiveMobilization(C, 5, 0.1));
+        Assert.Equal(0.9, SecuritySystem.EffectiveMobilization(C, 5, 0.9));
+        Assert.Equal(0.4, SecuritySystem.EffectiveMobilization(C, 4, 0.0));
+    }
+
+    [Fact]
+    public void EffectiveMobilizationMatchesWhatTheSimDoes()
+    {
+        foreach (var rung in new[] { 1, 3, 5 })
+            foreach (var level in new[] { 0.0, 0.3, 1.0 })
+            {
+                var s = new GameState { Rung = rung, Mobilization = 0 };
+                Assert.Null(SecuritySystem.SetMobilization(C, s, level, new List<Cause>()));
+                Assert.Equal(SecuritySystem.EffectiveMobilization(C, rung, level), s.Mobilization);
+            }
+    }
+
+    [Theory]
+    [InlineData(3, 0, 5, 4)]    // entering full war starts the clock
+    [InlineData(5, 2, 5, 2)]    // staying keeps it
+    [InlineData(5, 2, 4, 0)]    // leaving ends it
+    [InlineData(2, 0, 3, 0)]
+    public void CeasefireWeeksAfterAnOrderFollowsSetRung(int from, int left, int to, int expected)
+    {
+        Assert.Equal(expected, SecuritySystem.CeasefireWeeksAfter(C, from, left, to));
+        var s = new GameState { Rung = from, CeasefireWeeksLeft = left };
+        SecuritySystem.SetRung(C, s, to, new List<Cause>());
+        Assert.Equal(expected, s.CeasefireWeeksLeft);
+    }
 }
