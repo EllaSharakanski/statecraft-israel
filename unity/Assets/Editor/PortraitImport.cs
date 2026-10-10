@@ -21,7 +21,10 @@ namespace Statecraft.Game.EditorTools
         public const string CatalogPath = Folder + "/PortraitCatalog.asset";
         public const int MaxEdge = 512;
 
-        public static void Run()
+        public static void Run() => Import(f => File.ReadAllBytes(f));
+
+        /// <summary>Run with a different way of reading source files (tests inject a corrupt one).</summary>
+        public static void Import(System.Func<string, byte[]> readSource)
         {
             var content = ContentLoader.Load(Paths.Content);
             var people = content.People.Where(p => p.Portrait != null && p.Portrait.File != "").ToList();
@@ -33,6 +36,16 @@ namespace Statecraft.Game.EditorTools
                     throw new System.InvalidOperationException($"people.yaml: {p.Id} portrait licence '{p.Portrait.License}' is not public domain or CC0");
                 var source = Path.Combine(Paths.RepoRoot, p.Portrait.File);
                 if (!File.Exists(source)) throw new FileNotFoundException($"people.yaml: {p.Id} portrait file missing", source);
+            }
+
+            // Decode and downscale everything in memory before touching the folder or the catalog: an unreadable image
+            // must leave both exactly as they were.
+            var images = new Dictionary<string, byte[]>();
+            foreach (var p in people)
+            {
+                try { images[p.Id] = Downscale(readSource(Path.Combine(Paths.RepoRoot, p.Portrait!.File))); }
+                catch (System.Exception e) when (!(e is System.InvalidOperationException && e.Message.StartsWith("people.yaml")))
+                { throw new System.InvalidOperationException($"people.yaml: {p.Id} portrait '{p.Portrait!.File}' cannot be read: {e.Message}", e); }
             }
 
             Directory.CreateDirectory(Folder);
@@ -47,7 +60,7 @@ namespace Statecraft.Game.EditorTools
             foreach (var p in people)
             {
                 var target = $"{Folder}/{p.Id}.jpg";
-                var bytes = Downscale(File.ReadAllBytes(Path.Combine(Paths.RepoRoot, p.Portrait!.File)));
+                var bytes = images[p.Id];
                 if (!File.Exists(target) || !File.ReadAllBytes(target).SequenceEqual(bytes))
                 {
                     File.WriteAllBytes(target, bytes);

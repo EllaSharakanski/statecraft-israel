@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using NUnit.Framework;
+using Statecraft.Game;
+using Statecraft.Sim;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +13,9 @@ using UnityEngine;
 public class PortraitImportTests
 {
     const string Folder = "Assets/UI/Portraits";
+
+    static int ExpectedCount() => ContentLoader.Load(Paths.Content).People.Count(p => p.Portrait != null && p.Portrait.File != ""
+        && (p.Portrait.License == "Public domain" || p.Portrait.License == "CC0"));
 
     static void RunImport()
     {
@@ -40,7 +45,8 @@ public class PortraitImportTests
     public void NoPortraitIsLargerThan512PixelsOnAnyTarget()
     {
         var paths = Directory.GetFiles(Folder, "*.jpg");
-        Assert.AreEqual(13, paths.Length);
+        Assert.AreEqual(ExpectedCount(), paths.Length);
+        Assert.Greater(paths.Length, 0);
         foreach (var path in paths.Select(p => p.Replace('\\', '/')))
         {
             var imp = (TextureImporter)AssetImporter.GetAtPath(path);
@@ -51,5 +57,24 @@ public class PortraitImportTests
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             Assert.LessOrEqual(Mathf.Max(tex.width, tex.height), 512, path + " source size");
         }
+    }
+
+    [Test]
+    public void AnUnreadableSourceLeavesTheFolderAndCatalogUntouched()
+    {
+        var stale = Folder + "/zz_stale.jpg";
+        File.WriteAllBytes(stale, new byte[] { 1, 2, 3 });      // would be deleted by a half-run import
+        try
+        {
+            var before = Snapshot();
+            var t = Type.GetType("Statecraft.Game.EditorTools.PortraitImport, Assembly-CSharp-Editor")!;
+            int calls = 0;
+            Func<string, byte[]> corruptSecond = f => ++calls == 2 ? new byte[] { 0, 1, 2, 3, 4 } : File.ReadAllBytes(f);
+            var ex = Assert.Throws<TargetInvocationException>(() => t.GetMethod("Import", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { corruptSecond }));
+            StringAssert.Contains("cannot be read", ex!.InnerException!.Message);
+            Assert.AreEqual(before, Snapshot());
+            Assert.IsTrue(File.Exists(stale), "nothing was deleted");
+        }
+        finally { File.Delete(stale); File.Delete(stale + ".meta"); }
     }
 }

@@ -56,17 +56,22 @@ public class EventCardTests
         using var ui = new UiTestKit();
         var bridge = AtArmistice();
         var real = AssetDatabase.LoadAssetAtPath<PortraitCatalog>(CatalogPath);
-        var catalog = Object.Instantiate(real);                       // the real catalog, minus the holder's entry
+        var catalog = Object.Instantiate(real);                       // the real catalog; its entries are edited between renders
         try
         {
+            var card = new EventCardPresenter(ui.Root, bridge, Text, catalog);
+            var image = ui.Q<VisualElement>("event-image");
+            Assert.IsNotNull(catalog.Get("ben_gurion"));
+            Assert.AreEqual(catalog.Get("ben_gurion"), image.style.backgroundImage.value.texture, "with the portrait, the texture is set");
+            Assert.AreEqual(DisplayStyle.Flex, image.style.display.value);
+
             catalog.entries.RemoveAll(e => e.personId == "ben_gurion");
-            Assert.IsNull(catalog.Get("ben_gurion"));
             Assert.Greater(catalog.entries.Count, 0);
-            new EventCardPresenter(ui.Root, bridge, Text, catalog);
-            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-image").style.display.value);
-            // Unity reads a background set to StyleKeyword.None back as Null (verified in a probe); a set texture reads Undefined.
-            Assert.AreEqual(StyleKeyword.Null, ui.Q<VisualElement>("event-image").style.backgroundImage.keyword);
-            Assert.IsNull(ui.Q<VisualElement>("event-image").style.backgroundImage.value.texture);
+            card.Render();
+            // Unity reads a background set to StyleKeyword.None back as Null (verified in a probe), so Null plus no texture is the observable "cleared".
+            Assert.IsNull(image.style.backgroundImage.value.texture, "the texture is gone");
+            Assert.AreEqual(StyleKeyword.Null, image.style.backgroundImage.keyword);
+            Assert.AreEqual(DisplayStyle.None, image.style.display.value);
         }
         finally { Object.DestroyImmediate(catalog); }
     }
