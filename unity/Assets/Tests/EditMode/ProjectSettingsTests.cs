@@ -14,7 +14,15 @@ public class ProjectSettingsTests
         Assert.AreEqual(ScriptingImplementation.IL2CPP, PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone));
         Assert.AreEqual("PROJECT:Statecraft", PlayerSettings.WebGL.template);
         Assert.IsFalse(PlayerSettings.WebGL.decompressionFallback);
+        Assert.AreEqual(WebGLCompressionFormat.Disabled, PlayerSettings.WebGL.compressionFormat);
         Assert.AreEqual(new[] { "Assets/Map.unity" }, EditorBuildSettings.scenes.Select(s => s.path).ToArray());
+    }
+
+    [Test]
+    public void TheNewSceneTemplateDoesNotPointAtTheDeletedSampleScene()
+    {
+        var player = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+        Assert.AreEqual("Assets/Map.unity", player.FindProperty("templateDefaultScene").stringValue);
     }
 
     [Test]

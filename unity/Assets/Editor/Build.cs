@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -40,8 +39,10 @@ namespace Statecraft.Game.EditorTools
             ProjectSetup.Apply();
             PlayerSettings.WebGL.compressionFormat = Compression(name);
             PlayerSettings.WebGL.decompressionFallback = false;   // itch.io serves .br/.gz with Content-Encoding
-            try { Run(BuildTarget.WebGL, Arg("-out") ?? "Builds/Web-" + name); }
+            bool ok;
+            try { ok = Run(BuildTarget.WebGL, Arg("-out") ?? "Builds/Web-" + name); }
             finally { ProjectSetup.Apply(); }                      // back to the committed settings (compression Disabled)
+            ExitIfFailed(ok);
         }
 
         public static void Mac()
@@ -49,11 +50,16 @@ namespace Statecraft.Game.EditorTools
             ProjectSetup.Apply();
             // Apple clang fuses a*b+c into fmadd by default (tech notes 4.2); turn it off if the Mac golden check fails.
             PlayerSettings.SetAdditionalIl2CppArgs(Flag("-ffp-contract-off") ? "--compiler-flags=-ffp-contract=off" : "");
-            try { Run(BuildTarget.StandaloneOSX, Arg("-out") ?? "Builds/Mac/Statecraft.app"); }
+            bool ok;
+            try { ok = Run(BuildTarget.StandaloneOSX, Arg("-out") ?? "Builds/Mac/Statecraft.app"); }
             finally { PlayerSettings.SetAdditionalIl2CppArgs(""); AssetDatabase.SaveAssets(); }
+            ExitIfFailed(ok);
         }
 
-        static void Run(BuildTarget target, string location)
+        /// <summary>Exits with code 1 after the caller's settings have been restored.</summary>
+        static void ExitIfFailed(bool ok) { if (!ok) EditorApplication.Exit(1); }
+
+        static bool Run(BuildTarget target, string location)
         {
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
@@ -61,7 +67,7 @@ namespace Statecraft.Game.EditorTools
             });
             var s = report.summary;
             Debug.Log($"BUILD {s.result} {target} -> {location}: {s.totalSize / 1048576.0:0.0} MB, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s");
-            if (s.result != BuildResult.Succeeded) EditorApplication.Exit(1);
+            return s.result == BuildResult.Succeeded;
         }
     }
 }

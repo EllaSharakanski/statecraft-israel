@@ -21,6 +21,9 @@ namespace Statecraft.Game.EditorTools
             PlayerSettings.WebGL.template = WebTemplate;
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
             PlayerSettings.WebGL.decompressionFallback = false;
+            var player = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+            var template = player.FindProperty("templateDefaultScene");   // no public API; the sample scene it named is gone
+            if (template != null && template.stringValue != BootScene) { template.stringValue = BootScene; player.ApplyModifiedPropertiesWithoutUndo(); }
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(BootScene, true) };
             AssetDatabase.SaveAssets();
         }
