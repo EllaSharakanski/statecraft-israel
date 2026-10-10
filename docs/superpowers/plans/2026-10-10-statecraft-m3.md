@@ -14,25 +14,29 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-09-statecraft-israel-design.md`. **Binding scope rulings:** `docs/superpowers/plans/m3-scope-rulings.md`. **Research inputs:** `research_notes/M3 content 1950-51/facts.md` (history), `research_notes/M3 Unity tech/tech.md` (Unity facts).
 
-**How this plan was verified (2026-10-10):** every task below was run, in the track order given, in a scratch clone of this branch, and every code block was then extracted from that replay.
+**How this plan was verified (2026-10-10, after review amendments round 1):** every task below was run in a scratch clone of this branch (base `7391877`), on the branch its track uses, and every code block, total and hash below was taken from that run (observed, not computed).
 
-| Part | How | Result |
+| Part | Branch it ran on | Observed |
 |---|---|---|
-| Track A (Tasks 1–9) | Run in order; every hash below is the value the replay produced | sim **386/386** after Task 9; tools **96** after Task 7 |
-| Phase 1 tracks B and C (Tasks 10–13) | Run on `main` **without** Track A, to prove the tracks are independent | Unity edit mode **98/98** on that branch |
-| Merge point 1 | Tracks A, B, C merged | Unity **99/99**, sim 386, tools 96 |
-| Phase 2 (Tasks 14–22) | Track B (14–21) and Track C (22) on separate branches from merge point 1 | Unity **125/125** (B) and **100/100** (C); tools **98** |
-| Phase 3 (Tasks 23–24) | On the merge of both | Unity **129/129**; WebGL build (Disabled) in headless Chrome: `GOLDEN OK 1950`, `GOLDEN OK 1952`, `SMOKE OK 5 turns`, `PROFILE done`; Brotli build (23 MB, 36 files) passes the same check over `http://localhost`; macOS IL2CPP player `-golden` exits 0 with both `GOLDEN OK` lines |
+| Track A, Tasks 1–9 | `track-a` from the base | sim 318, 320, 320, 321, 335, 352, 358, 377, 391 after each task; Unity 81 (Task 1) and 82 (Task 5); tools 96 (Task 7) |
+| Track B, Task 10 | `track-b1` from the base, without Tracks A and C | Unity 88 |
+| Track C, Tasks 11–13 | `track-c1` from the base, without Tracks A and B | Unity 86, 90, 93 |
+| Merge point 1 | A + B + C | Unity 101, sim 391, tools 96 |
+| Track B, Tasks 14–21 | from merge point 1 | Unity 106, 109, 112, 114, 115, 117, 123, 128 |
+| Track C, Task 22 | from merge point 1 | Unity 108, tools 98 |
+| Merge point 2 | B + C | Unity 135, sim 391, tools 98 |
+| Tasks 23–24 | on merge point 2 | Unity 138, 141 |
+| Players, at the end | the Task 24 state | WebGL (Disabled) in headless Chrome: `GOLDEN OK 1950 404b1811…`, `GOLDEN OK 1952 4c0a6859…`, `SMOKE OK 5 turns`, `PROFILE done`; Brotli build (22.3 MB, 36 files) passes the same check over `http://localhost`; macOS IL2CPP `-golden` exits 0 with both `GOLDEN OK` lines |
 
 ## Controller questions
 
 Each question has a recommended resolution, and the plan proceeds with it.
 
-1. **Golden check in players: a URL flag on the boot scene, read by Chrome for Testing, instead of a separate "GOLDEN" scene read by Playwright.** Ruling 5 says "a `GOLDEN OK <hash>` scene read by headless Chrome/Playwright". The Playwright npm package is not installed (only its browser cache is), and the tech notes (§4.3) allow "a separate build is not needed if the main boot reads a URL flag". *Recommendation (used):* `GameBoot` runs `GoldenCheck` when the page URL contains `golden` (WebGL) or the player gets `-golden` (macOS), and `tools/web_check.py` reads the console from the cached Chrome for Testing in `--headless=new` mode (the cached `chrome-headless-shell` reports "Your browser does not support WebGL" for Unity and has no IndexedDB, so it is not used). Cost if wrong: swap the reader for Playwright later; the console lines stay the same.
-2. **Third Government portfolios the research notes do not give.** Notes §1e list no Minister of Immigration or of War Victims for the Third Government (8 Oct 1951). *Recommendation (used):* both offices are vacant from 1951-10-08 in `people.yaml`, with a comment, and a Deferred row asks for the check. No event names either office after that date, so nothing breaks; a vacant office's effects run at the "no minister" competence of 0.5.
-3. **Weizmann's first term start (17 February 1949) is not in the research notes.** Ruling 3 asks for Weizmann's re-election, which needs an office term before it. *Recommendation (used):* Task 2 takes the date from the en.wiki infobox and has a step that verifies it on the page before committing; if the page shows another date, use the page's date and change the spot-check test with it.
-4. **Maimon's resignation date conflicts (4 Jan 1951 vs after the February 1951 vote).** Notes §1d mark it [C] without ranking the sources. *Recommendation (used):* the footnoted he.wiki account, with the government's resignation (14 Feb 1951) as the date; the other date is recorded in a YAML comment (ruling 3).
-5. **The rationing fix moves an event.** The Rationing ministry now starts 1949-04-26 (ruling 3, confirmed by notes §6). `austerity_1949` names `{rationing_minister}`, and the loader requires a holder over the whole event window, so its window moves from 1949-03-10 to 1949-04-26 (the day rationing was decided, same source). The 1948–50 golden hash does not change (verified).
+1. **Golden check in players: a URL flag on the boot scene, read by Chrome for Testing, instead of a separate "GOLDEN" scene read by Playwright.** Ruling 5 says "a `GOLDEN OK <hash>` scene read by headless Chrome/Playwright". The Playwright npm package is not installed (only its browser cache is), and the tech notes (§4.3) allow "a separate build is not needed if the main boot reads a URL flag". *Recommendation (used):* `GameBoot` runs `GoldenCheck` when the page URL has the query parameter `golden` (WebGL) or the player gets `-golden` (macOS), and `tools/web_check.py` reads the console from the cached Chrome for Testing in `--headless=new` mode (the cached `chrome-headless-shell` reports "Your browser does not support WebGL" for Unity and has no IndexedDB). Cost if wrong: swap the reader for Playwright later; the console lines stay the same.
+2. **Amendment C2 (who carried rationing after 1 Nov 1950) is NOT applied: the research does not support it.** Notes §6 say the Supply ministry was abolished and "its powers spread to other ministries", with no ministry named, and that Dov Yosef was "back in charge" of rationing as Trade and Industry minister from 8 Oct 1951. Nothing names Geri (Trade and Industry, 1950–51) as responsible for rationing, so a `rationing_minister` term for him would be invented. A term for Yosef alone from 1951-10-08 would also need the office to exist again after `until: 1950-11-01`, which the model cannot express. *Effect today:* from 1 Nov 1950 `rationing_feeds` runs at the "no minister" competence (multiplier 0.5 instead of 0.85). *Options for the controller:* (a) research who administered rationing from Nov 1950 to Oct 1951, then add terms under a renamed office ("minister responsible for rationing") without `until`; (b) move the `rationing` policy and `rationing_feeds` effect to `trade_minister` as a game rule (not a historical claim), which changes both golden hashes; (c) accept the 0.5 until M4. *Recommendation:* (a), with (b) as the fallback if the research finds nothing; the plan as written does (c).
+3. **Amendment A4 narrows ruling 5.** Ruling 5 says "no camera input while the pointer is over UI". A4 (binding) keeps keyboard pan and orbit working over the UI and blocks only the wheel and the drag. The plan follows A4.
+4. **Maimon's resignation date conflicts (4 Jan 1951 vs after the February 1951 vote).** Notes §1d mark it [C] without ranking the sources. *Used:* the footnoted he.wiki account, with the government's resignation (14 Feb 1951) as the date; the other date is in a YAML comment (ruling 3).
+5. **Resolved by the research addendum (7391877):** the Third Government had no Immigration or War Victims portfolio, so both offices end on 1951-10-08 (`until`, amendment C1), and the Immigration budget line moves to the Prime Minister (amendment C3); Weizmann's first term starts 17 Feb 1949 (election 16 Feb, oath 17 Feb on two of three sources).
 
 ## Global Constraints
 
@@ -45,6 +49,7 @@ Each question has a recommended resolution, and the plan proceeds with it.
 - **Determinism:** golden hashes live in `GoldenRun.cs`, `DeterminismTests.cs` and `docs/determinism.md`; any change is deliberate, made in all three in one commit, with the reason in the history table and the commit message.
 - **Strings:** UI text lives outside code: static labels in UXML, formatted strings in `unity/Assets/UI/strings.en.yaml` (`UiText`).
 - **Look (ruling 2):** dark navy panels, thin gold borders, EB Garamond serif; top resource bar with value and change; event card on the right; info panel bottom-left (no tile yields); minimap bottom-right. M2 markers stay.
+- **Commits:** stage explicit paths (never `git add -A`) and include the `.meta` files Unity creates; logs are `unity-*.log` (git-ignored).
 - **Web:** WebGL saves go to the fixed folder `/idbfs/statecraft-saves` (not `persistentDataPath`); compression Disabled for local checks, Brotli for itch.io; the itch.io upload is an **OWNER STEP**, never automated.
 - **Commits:** end every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
@@ -53,7 +58,7 @@ Each question has a recommended resolution, and the plan proceeds with it.
 These are the inputs a player will meet that the spec implies but no feature test would otherwise exercise. Each is pinned by a test in the task that owns the code.
 
 1. **A save made with other content** (the game was updated between two itch.io uploads). Expected: the save still loads, with a warning; a save that cannot be read is set aside and a new game starts, never a crash. *Tests: Task 9 `OtherContentLoadsWithAWarning`, Task 21 `AnUnreadableAutosaveIsSetAsideAndANewGameStarts`.*
-2. **Clicking or scrolling on a panel that sits over the map.** Expected: the UI gets the input; the camera does not pan, zoom or orbit and the map does not select a hex; the empty middle of the screen still reaches the map. *Tests: Task 10 `PickingFindsButtonsButNotTheTransparentRoot`, Task 11 `NothingMovesWhileThePointerIsOverTheUi`.*
+2. **Clicking or scrolling on a panel that sits over the map.** Expected: the UI gets the click and the wheel; the camera does not zoom or drag and the map does not select a hex; keys still pan and orbit; the empty middle of the screen still reaches the map. *Tests: Task 10 `PickingFindsButtonsButNotTheTransparentRoot`, Task 11 `PointerInputIsIgnoredOverTheUi` and `KeysStillPanAndOrbitWhileThePointerIsOverTheUi` (amendment A4).*
 3. **An appointee when the government changes, and in event text.** Expected: event text names whoever holds the office now; a new government arrives with its own (historical) ministers and the player's appointments end, with a cause line. *Tests: Task 6 `EventTextNamesTheAppointee`, `AppointmentsEndWhenANewGovernmentTakesOffice`.*
 4. **Orders the player cannot afford, or that the sim refuses.** Expected: refused before End Turn with the attention arithmetic, or after it with the sim's reason shown on screen; nothing else changes. *Tests: Task 14 `QueuedOrdersSpendAttentionUpFront`, `RefusedOrdersAreShownWithTheirReason`.*
 5. **A map action on the wrong hex or at the wrong time** (sea, off the map, far from any settlement, before 1950, an occupied hex). Expected: the button is disabled and the reason is shown; state is untouched. *Tests: Task 8 `IllegalPlacementsAreRejectedWithAReason`, `NothingBeforeTheStartDate`, `AnOccupiedHexIsRejected`; Task 20 `BeforeTheMaabarotTheButtonsSayWhy`.*
@@ -65,19 +70,21 @@ Branch every track from `m3` at the commit that adds this plan. Each track works
 | Phase | Track | Tasks | Worktree | Files it owns |
 |---|---|---|---|---|
 | 1 | **A: sim and content** | 1–9, in order | `m3-sim` | `sim/**`, `content/**`, `tools/settlement_hexes.py`, `tools/tests/test_settlement_hexes.py`, `tools/README.md`, `docs/determinism.md`, `unity/Assets/Tests/EditMode/SimSmokeTests.cs` |
-| 1 | **B: UI shell** | 10 | `m3-ui` | `unity/Assets/UI/**`, `unity/Assets/Scripts/UI/{UiText,UiPaths,UiPointer}.cs`, `unity/Assets/Editor/UiAssets.cs`, `unity/Assets/Tests/EditMode/{UiTestKit,UiFoundationTests}.cs`, `unity/Assets/link.xml` |
+| 1 | **B: UI shell** | 10 | `m3-ui` | `unity/Assets/UI/**`, `unity/Assets/Scripts/UI/{UiText,UiPaths,UiPointer}.cs`, `unity/Assets/Editor/UiAssets.cs`, `unity/Assets/Tests/EditMode/{UiTestKit,UiFoundationTests,UiLayoutTests}.cs`, `unity/Assets/link.xml` |
 | 1 | **C: platform** | 11, 12, 13, in order | `m3-web` | `unity/Assets/InputSystem_Actions.inputactions`, both `.asmdef` files, `unity/Assets/Scripts/Map/{CameraRig,CameraController,MapScene}.cs`, `unity/Assets/Scripts/Boot/**`, `unity/Assets/Editor/{ContentSync,MapCapture,ProjectSetup,Build}.cs`, `unity/Assets/Map.unity`, `unity/Assets/WebGLTemplates/**`, `unity/Packages/**`, `unity/ProjectSettings/**`, `.gitignore`, their tests |
-| — | **Merge point 1** | merge A, B, C | `m3` | Expected: Unity edit mode `total="99" passed="99" failed="0"`; sim `Passed:   386`; tools `96 passed` |
+| — | **Merge point 1** | merge A, B, C | `m3` | Expected: Unity edit mode `total="101" passed="101" failed="0"`; sim `Passed:   391`; tools `96 passed` |
 | 2 | **B: screens** | 14–21, in order | `m3-ui` (rebased on merge point 1) | `unity/Assets/Scripts/UI/**`, `unity/Assets/Scripts/SaveStore.cs`, `unity/Assets/Scripts/Map/{HexPicker,GeoFrame,MapBuilder,MapScene,PlacementLayer,MapPointer}.cs`, `unity/Assets/Editor/PortraitImport.cs`, `unity/Assets/UI/**`, their tests |
-| 2 | **C: players** | 22 | `m3-web` (rebased on merge point 1) | `unity/Assets/Scripts/Boot/{GameBoot,GoldenCheck}.cs`, `unity/Assets/link.xml`, `tools/web_check.py`, `tools/tests/test_web_check.py`, `tools/README.md`, `docs/determinism.md`, `GoldenCheckTests.cs` |
-| — | **Merge point 2** | merge B and C | `m3` | Expected: Unity `total="126" passed="126" failed="0"`; tools `98 passed`; sim 386 |
+| 2 | **C: players** | 22 | `m3-web` (rebased on merge point 1) | `unity/Assets/Scripts/Boot/{GameBoot,GoldenCheck,UrlFlags}.cs`, `unity/Assets/link.xml`, `tools/web_check.py`, `tools/tests/test_web_check.py`, `tools/README.md`, `docs/determinism.md`, `GoldenCheckTests.cs` |
+| — | **Merge point 2** | merge B and C | `m3` | Expected: Unity `total="135" passed="135" failed="0"`; tools `98 passed`; sim 391 |
 | 3 | **D: integration** | 23, 24, in order | `m3` | `unity/Assets/Scripts/UI/GameRoot.cs`, `unity/Assets/Editor/MapCapture.cs`, `unity/Assets/Map.unity`, `unity/Assets/Scripts/Map/PixelErrorProfile.cs`, `docs/m3-release.md`, `docs/dev-setup.md`, their tests |
 
 Notes for the controller:
 - Track B's Phase 2 needs `GameSession` (Task 9), `Cabinet` (Task 6) and `MapActions` (Task 8), and Task 20 needs Task 11's Input System reference and Task 12's `MapScene.Build(MapInputs)`; that is why Phase 2 waits for merge point 1.
 - Track A's long chain (9 tasks) is the critical path. Tracks B and C in Phase 1 are short; their implementers can be reused for review.
 - Unity locks a project while it runs: two worktrees are two projects, so their Unity runs can overlap.
-- Expected Unity totals in each task are for that track's branch (Phase 1 branches start at `main`'s 81 edit-mode tests).
+- Expected Unity totals in each task are the observed totals on that track's branch (Phase 1 branches start at the base's 81 edit-mode tests).
+- **Staging (amendment R5):** tasks stage explicit paths, never `git add -A`; build and check logs are named `unity-*.log`, which `.gitignore` already covers.
+- **Builds and settings (amendment R1):** a step that builds a player later runs `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` to drop Unity's build-time rewrites. `git checkout --` restores from the index, so a task that changes real settings stages them first (only Task 13 does).
 
 ## File structure (new files)
 
@@ -87,7 +94,7 @@ sim/Statecraft.Sim.Tests/  PeriodValidationTests.cs  EconomyCalibrationTests.cs 
                            MapContentTests.cs  MapActionTests.cs  SaveGameTests.cs
 content/events/            11 events (1950-51)        content/map/settlement_hexes.yaml (generated)
 tools/                     settlement_hexes.py  web_check.py  (+ tests)
-unity/Assets/Scripts/Boot/ ContentManifest.cs  GameInputs.cs  GameBoot.cs  GoldenCheck.cs
+unity/Assets/Scripts/Boot/ ContentManifest.cs  GameInputs.cs  GameBoot.cs  GoldenCheck.cs  UrlFlags.cs
 unity/Assets/Scripts/Map/  CameraController.cs  HexPicker.cs  PlacementLayer.cs  MapPointer.cs  PixelErrorProfile.cs
 unity/Assets/Scripts/UI/   UiText  UiPaths  UiPointer  SimBridge  HudModel  HudPresenter  ToastPresenter  ScreenNav
                            PortraitCatalog  EventCardPresenter  DefencePresenter  BudgetPresenter  WhyPresenter
@@ -105,7 +112,7 @@ Each task here runs `dotnet test` from the repository root. Tasks 1 and 5 also r
 
 ### Task 1: GoldenRun, and period, office and death validation
 
-*Track A.* Ruling 3 moves the Deferred row "validation that legislature periods do not overlap, and that government periods do not overlap" into M3, before the Second Knesset and two more governments arrive. The same task adds two fields the 1950–51 content needs: an office's abolition date (`until`, for the Ministry of Rationing and Supply) and a person's death date (`died`, for David Remez, who died in office). It also moves the golden playthrough into the sim library (`GoldenRun`), so Unity players (Task 22) and the editor tests compare against the constants .NET pins (tech notes §4.3, blocker 6).
+*Track A.* Ruling 3 moves the Deferred row "validation that legislature periods do not overlap, and that government periods do not overlap" into M3, before the Second Knesset and two more governments arrive. The same task adds two fields the 1950–51 content needs: an office's abolition date (`until`, for the Ministry of Rationing and Supply) and a person's death date (`died`, for David Remez, who died in office). A budget line for an abolished office would silently stop mattering, so the loader refuses one (plan amendment C3; Task 2 moves the Immigration line). It also moves the golden playthrough into the sim library (`GoldenRun`), so Unity players (Task 22) and the editor tests compare against the constants .NET pins (tech notes §4.3, blocker 6).
 
 **Files:**
 - Create: `sim/Statecraft.Sim.Tests/PeriodValidationTests.cs`, `sim/Statecraft.Sim/GoldenRun.cs`
@@ -116,7 +123,7 @@ Each task here runs `dotnet test` from the repository root. Tasks 1 and 5 also r
 - Produces:
   - `public static class GoldenRun { public const ulong Seed = 1948; public const string Hash1950; public static readonly DateTime Until1950; public static GameState Play(Content c, DateTime until); }` (Task 5 adds `Hash1952`, `Until1952`).
   - `Office.Until : DateTime?` (YAML `until`, exclusive like a term's `to`) and `Person.Died : DateTime?` (YAML `died`).
-  - Load errors: `legislatures.yaml` / `governments.yaml`, field `legislatures[<id>].from` / `governments[<id>].from`, message `overlaps <id> (<from> to <to|open>)`; `people.yaml`, field `people[<id>].offices.<office>.to`, message `must be on or before <yyyy-MM-dd>, when the office was abolished` or `..., the date of death`.
+  - Load errors: `legislatures.yaml` / `governments.yaml`, field `legislatures[<id>].from` / `governments[<id>].from`, message `overlaps <id> (<from> to <to|open>)`; `people.yaml`, field `people[<id>].offices.<office>.to`, message `must be on or before <yyyy-MM-dd>, when the office was abolished` or `..., the date of death`; `rules.yaml`, field `budget_start.<office>`, message `office '<office>' is abolished on <yyyy-MM-dd>: give its budget line to the office that took over`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -179,9 +186,21 @@ public class PeriodValidationTests
     {
         var offices = Fixture.Files["offices.yaml"].Replace("title: Minister of Finance", "title: Minister of Finance\n    until: 1949-01-01");
         var people = Fixture.Files["people.yaml"].Replace("      - office: finance_minister\n        from: 1948-05-14", "      - office: finance_minister\n        from: 1948-05-14\n        to: 1949-01-01");
-        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["offices.yaml"] = offices, ["people.yaml"] = people }));
+        var rules = Fixture.Files["rules.yaml"].Replace("budget_start: { finance_minister: 1.0 }", "budget_start: { prime_minister: 1.0 }");
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["offices.yaml"] = offices, ["people.yaml"] = people, ["rules.yaml"] = rules }));
         Assert.Equal(new DateTime(1949, 1, 1), c.Offices.Find(o => o.Id == "finance_minister")!.Until);
         Assert.Null(Offices.Holder(c, "finance_minister", new DateTime(1949, 1, 1)));
+    }
+
+    [Fact]
+    public void ABudgetLineForAnAbolishedOfficeIsALoadError()
+    {
+        var offices = Fixture.Files["offices.yaml"].Replace("title: Minister of Finance", "title: Minister of Finance\n    until: 1949-01-01");
+        var people = Fixture.Files["people.yaml"].Replace("      - office: finance_minister\n        from: 1948-05-14", "      - office: finance_minister\n        from: 1948-05-14\n        to: 1949-01-01");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["offices.yaml"] = offices, ["people.yaml"] = people })));
+        Assert.Equal("rules.yaml", ex.File);
+        Assert.Equal("budget_start.finance_minister", ex.Field);
+        Assert.Contains("is abolished on 1949-01-01: give its budget line to the office that took over", ex.Message);
     }
 
     [Fact]
@@ -426,6 +445,25 @@ In `sim/Statecraft.Sim/ContentLoader.cs`:
             foreach (var i in c.Indicators)
 ```
 
+4. Replace
+
+```csharp
+                if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                Unit("rules.yaml", $"budget_start.{kv.Key}", kv.Value);
+```
+
+   with
+
+```csharp
+                if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                // A budget line must not silently stop mattering when its office is abolished: move it to the office that
+                // took over (plan amendment C3).
+                var until = c.Offices.First(o => o.Id == kv.Key).Until;
+                if (until.HasValue)
+                    throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", FormattableString.Invariant($"office '{kv.Key}' is abolished on {until:yyyy-MM-dd}: give its budget line to the office that took over"));
+                Unit("rules.yaml", $"budget_start.{kv.Key}", kv.Value);
+```
+
 Replace the whole of `docs/determinism.md` with:
 
 ```markdown
@@ -480,7 +518,7 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   317, Skipped:     0, Total:   317` (309 before; 7 new period tests and 1 new constant test). The golden hash is unchanged: `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9`.
+Expected: `Passed!  - Failed:     0, Passed:   318, Skipped:     0, Total:   318` (309 before; 8 new period-validation tests and 1 new constant test). The golden hash is unchanged: `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9`.
 
 - [ ] **Step 5: Run the Unity edit-mode tests**
 
@@ -495,8 +533,14 @@ Expected: `exit=0` and `total="81" passed="81" failed="0"` (SimSmokeTests still 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add docs/determinism.md \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/PeriodValidationTests.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  sim/Statecraft.Sim/GoldenRun.cs \
+  unity/Assets/Tests/EditMode/SimSmokeTests.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): GoldenRun; reject overlapping legislatures and governments, terms past abolition or death
 
 Ruling 3 moves the overlap validation to M3. Golden hash unchanged.
@@ -506,14 +550,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 2: 1950–51 governments, Knesset, ministers and President
 
-*Track A.* Ruling 3: the end of the First Government, the Second (1 Nov 1950) and Third (8 Oct 1951) Governments with every minister, portfolio, date and dated party; the Second Knesset (30 Jul 1951, 120 seats); Weizmann's re-election; and the Rationing fix (26 Apr 1949 to 1 Nov 1950). Every value comes from `research_notes/M3 content 1950-51/facts.md` §1–3 and §6, with the notes' conflicts resolved in YAML comments. Deputy ministers and Kaplan's Deputy Prime Minister title are not modelled (notes §1c and §1e allow skipping them; Deferred).
+*Track A.* Ruling 3: the end of the First Government, the Second (1 Nov 1950) and Third (8 Oct 1951) Governments with every minister, portfolio, date and dated party; the Second Knesset (30 Jul 1951, 120 seats); Weizmann's re-election; the Rationing fix (26 Apr 1949 to 1 Nov 1950); and the end of the Ministries of Immigration and of War Victims on 8 Oct 1951 (the research addendum finds no such portfolio in the Third Government). The Immigration budget line moves to the Prime Minister, who with the Jewish Agency handled absorption (addendum (a)); Task 1's loader rule refuses a budget line for an abolished office. Every value comes from `research_notes/M3 content 1950-51/facts.md` §1–3 and §6, with the notes' conflicts resolved in YAML comments. Deputy ministers and Kaplan's Deputy Prime Minister title are not modelled (notes §1c and §1e allow skipping them; Deferred).
 
 **Files:**
-- Modify: `content/events/austerity_1949.yaml`, `content/governments.yaml`, `content/legislatures.yaml`, `content/offices.yaml`, `content/parties.yaml`, `content/people.yaml`, `sim/Statecraft.Sim.Tests/RealContentTests.cs`
+- Modify: `content/events/austerity_1949.yaml`, `content/governments.yaml`, `content/legislatures.yaml`, `content/offices.yaml`, `content/parties.yaml`, `content/people.yaml`, `content/rules.yaml`, `docs/determinism.md`, `sim/Statecraft.Sim.Tests/DeterminismTests.cs`, `sim/Statecraft.Sim.Tests/RealContentTests.cs`, `sim/Statecraft.Sim/GoldenRun.cs`
 
 **Interfaces:**
 - Consumes: Task 1's `Office.Until`, `Person.Died`, overlap validation; `Offices.Holder(Content, string, DateTime)`, `Offices.Government/Legislature(Content, DateTime)`, `Offices.PartyOf(Content, Person, DateTime)`, `PoliticsSystem.CoalitionSeats(Content, DateTime)`.
-- Produces (content ids later tasks use): offices `president`, `minister_without_portfolio`, `rationing_minister` with `until: 1950-11-01`; parties `democratic_list_israeli_arabs`, `progress_and_work`, `agriculture_and_development`; governments `second_government`, `third_government`; legislature `second_knesset`; people `lavon`, `geri`, `eshkol`, `dinur`, `burg`, `pinkas`, `naftali`, `weizmann`; `remez` has `died: 1951-05-19`.
+- Produces (content ids later tasks use): offices `president`, `minister_without_portfolio`, `rationing_minister` with `until: 1950-11-01`, `immigration_minister` and `war_victims_minister` with `until: 1951-10-08`; `rules.yaml` `budget_start.prime_minister: 0.15` (was `immigration_minister`); parties `democratic_list_israeli_arabs`, `progress_and_work`, `agriculture_and_development`; governments `second_government`, `third_government`; legislature `second_knesset`; people `lavon`, `geri`, `eshkol`, `dinur`, `burg`, `pinkas`, `naftali`, `weizmann`; `remez` has `died: 1951-05-19`. `GoldenRun.Hash1950` becomes `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -598,6 +642,10 @@ In `sim/Statecraft.Sim.Tests/RealContentTests.cs`:
         Assert.Equal("weizmann", Who("president", 1951, 11, 19));
         Assert.Equal("yadin", Who("chief_of_staff", 1951, 12, 31));
         Assert.Equal(new DateTime(1950, 11, 1), C.Offices.Single(o => o.Id == "rationing_minister").Until);
+        Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "immigration_minister").Until);
+        Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "war_victims_minister").Until);
+        Assert.Equal("shapira", Who("immigration_minister", 1951, 10, 7));
+        Assert.Equal(0.15, C.Rules.BudgetStart["prime_minister"]);
         var sheetrit = C.People.Single(p => p.Id == "sheetrit");
         Assert.Equal("sephardim", Offices.PartyOf(C, sheetrit, new DateTime(1951, 1, 1)));
         Assert.Equal("mapai", Offices.PartyOf(C, sheetrit, new DateTime(1951, 10, 8)));
@@ -614,9 +662,9 @@ dotnet test sim/Statecraft.sln
 ```
 Expected: `RealContentTests.GovernmentsAndKnessetsOf1950And1951` fails (`Expected: "first_government"` is fine, then `second_government` is missing: NullReferenceException on `Offices.Government(...)!`), `CabinetChangesOf1950And1951` fails, and `OpenQuestionsAreExactlyTheKnownOnes` fails (no `second_knesset.budget_approval`).
 
-- [ ] **Step 3: Verify the one date the research notes do not give**
+- [ ] **Step 3: Confirm the death dates**
 
-Open https://en.wikipedia.org/wiki/Chaim_Weizmann and read the infobox: "1st President of Israel, In office 17 February 1949 – 9 November 1952". If the page shows a different start date, use the page's date in `people.yaml` below. Also confirm a death date on the en.wiki page of each person added below (Lavon, Geri, Eshkol, Dinur, Burg, Pinkas, Naftali, Weizmann): `living: false` is set only after that check (the existing convention at the top of `people.yaml`).
+Confirm a death date on the en.wiki page of each person added below (Lavon, Geri, Eshkol, Dinur, Burg, Pinkas, Naftali, Weizmann): `living: false` is set only after that check (the existing convention at the top of `people.yaml`). Weizmann's first-term start (17 Feb 1949) is sourced in the research addendum, Q3.
 
 - [ ] **Step 4: Write the content**
 
@@ -629,7 +677,9 @@ offices:
   - { id: finance_minister, title: Minister of Finance }
   - { id: foreign_minister, title: Minister of Foreign Affairs }
   - { id: health_minister, title: Minister of Health }
-  - { id: immigration_minister, title: Minister of Immigration }
+  # No Immigration or War Victims portfolio in the Third Government (8 Oct 1951): research_notes/M3 content 1950-51/facts.md,
+  # Addendum (2026-10-10) (a) and (b), after en.wiki, he.wiki and JVL. Re-add a term if a source shows the portfolio.
+  - { id: immigration_minister, title: Minister of Immigration, until: 1951-10-08 }
   - { id: interior_minister, title: Minister of Internal Affairs }
   - { id: justice_minister, title: Minister of Justice }
   - { id: agriculture_minister, title: Minister of Agriculture }
@@ -637,7 +687,7 @@ offices:
   - { id: police_minister, title: Minister of Police }
   - { id: minority_affairs_minister, title: Minister of Minority Affairs }
   - { id: religions_minister, title: Minister of Religions }
-  - { id: war_victims_minister, title: Minister of War Victims }
+  - { id: war_victims_minister, title: Minister of War Victims, until: 1951-10-08 }
   - { id: trade_minister, title: Minister of Trade and Industry }
   - { id: transportation_minister, title: Minister of Transportation }
   - { id: welfare_minister, title: Minister of Welfare }
@@ -880,7 +930,8 @@ people:
       - { office: health_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
       - { office: immigration_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
       - { office: interior_minister, from: 1950-11-01, to: 1951-10-08, party: united_religious_front, sources: *second }
-      # The United Religious Front dissolved in 1951; Shapira sat for Hapoel HaMizrachi (the person's party).
+      # The United Religious Front dissolved in 1951; Shapira sat for Hapoel HaMizrachi (the person's party). The Third
+      # Government had no Immigration portfolio (notes, Addendum (a)): offices.yaml ends that office on 1951-10-08.
       - { office: interior_minister, from: 1951-10-08, sources: *third }
       - { office: religions_minister, from: 1951-10-08, sources: *third }
     status: fact-checked
@@ -1098,9 +1149,12 @@ people:
     competence: 8
     loyalty: 7
     offices:
-      # First term start: en.wiki infobox (verify on the page before committing). Re-elected by the Second Knesset on
-      # 19 November 1951, 85 for, 11 against, 3 blank; the only candidate.
-      - { office: president, from: 1949-02-17, to: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/Chaim_Weizmann", checked: 2026-10-10 }] }
+      # Elected 16 February 1949, declared president and sworn in 17 February 1949 (2 sources; the MFA page gives the oath
+      # on 16 February): research notes, Addendum Q3. Re-elected by the Second Knesset on 19 November 1951, 85 for,
+      # 11 against, 3 blank; the only candidate.
+      - { office: president, from: 1949-02-17, to: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/Chaim_Weizmann", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1949_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://weizmann.ac.il/WeizmannCompass/node/914", checked: 2026-10-10 }] }
+      # The second term starts on the election date (notes section 3); he was sworn in at Rehovot on 25 November 1951
+      # (single source, IDI via search), which is not used as a date.
       - { office: president, from: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/1951_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1951_in_Israel", checked: 2026-10-10 }] }
     status: fact-checked
   - id: dori
@@ -1154,22 +1208,107 @@ sources:
 status: fact-checked
 ```
 
-- [ ] **Step 5: Run the tests and confirm they pass**
+Replace the whole of `content/rules.yaml` with:
+
+```yaml
+# Game rules. Values are game balance, except where a comment cites a source.
+start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
+start_rung: 5                     # the war is under way when the slice opens
+attention_per_turn: 4
+attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+rung_attention_step: 0.25
+rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
+ceasefire_weeks: 52               # long enough that the historical armistice events end the war first
+treasury_start: 20
+fx_start: 40
+tax_per_capita_per_year: 0.00012
+spending_per_capita_per_year: 0.00016
+exports_per_year: 30
+imports_per_capita_per_year: 0.00008
+mobilization_cost_per_year: 60
+# Derived from CBS table 2.1 (1949): (end-1949 1,013.9k - end-1948 758.7k - 1949 immigrants 239,954) / average 1949 population 901.0k.
+natural_increase_per_year: 0.0169
+# Derived: CBS end-1948 Jewish population 758,700 minus 101,828 immigrants (15 May-31 Dec 1948) minus natural increase over
+# 7.5 months at the rate above. Checked against the 8 Nov 1948 census by the calibration test.
+# Arithmetic: 758,700 - 101,828 = 656,872. Natural-increase base = average of 656,872 and 758,700 = 707,786.
+# Natural increase = 707,786 x 0.0169 x 7.5/12 = 7,476. 656,872 - 7,476 = 649,396, rounded to the nearest hundred = 649,400.
+initial_population: { veterans: 649400 }
+budget_start:
+  defense_minister: 0.45
+  finance_minister: 0.05
+  # Absorption was handled by the Jewish Agency and the Prime Minister's office (notes, Addendum (a)); the Ministry of
+  # Immigration ends on 1951-10-08, so its budget line sits with the Prime Minister (the loader refuses a line for an
+  # abolished office).
+  prime_minister: 0.15
+  labour_minister: 0.10
+  health_minister: 0.07
+  education_minister: 0.06
+  agriculture_minister: 0.07
+  interior_minister: 0.05
+```
+
+- [ ] **Step 5: Rebaseline the 1948–50 golden hash (deliberate content change)**
+
+Moving `austerity_1949` to 1949-04-26 alone would not move the hash (verified). Renaming the budget key `immigration_minister` to `prime_minister` does, because budget keys are hashed. Run the sim tests: `GoldenPlaythroughHashIsFixed` fails with `Actual: "d46ce5ffd442f6b47f515fe2497b1db3e262217b5"···`; the full value (also `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 45`, line `State hash ...`) is `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd`. Replace `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` with it in `sim/Statecraft.Sim/GoldenRun.cs` (`Hash1950`) and `sim/Statecraft.Sim.Tests/DeterminismTests.cs` (`GoldenHash`), and update `docs/determinism.md`:
+
+In `docs/determinism.md`:
+
+1. Replace
+
+```markdown
+|---|---|---|
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` |
+
+```
+
+   with
+
+```markdown
+|---|---|---|
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd` |
+
+```
+
+2. Replace
+
+```markdown
+|---|---|---|---|
+```
+
+   with
+
+```markdown
+|---|---|---|---|
+| M3 Task 2 | 1950 | `d46ce5ff` | the Immigration budget line moves to the Prime Minister (the Ministry of Immigration ends on 1951-10-08), which renames a key in the hashed budget |
+```
+
+- [ ] **Step 6: Run the tests and confirm they pass**
 
 Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   319`. `DeterminismTests.GoldenPlaythroughHashIsFixed` still passes: moving `austerity_1949` to 1949-04-26 does not change the 1948–50 run (the event fires in a later weekly turn, and the rationing effect converges to the same bits). Ruling 4 allows keeping the golden as is.
+Expected: `Passed!  - Failed:     0, Passed:   320`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
-git commit -m "content: 1950-51 governments, Second Knesset, ministers, President; Rationing ministry from 1949-04-26
+git add content/events/austerity_1949.yaml \
+  content/governments.yaml \
+  content/legislatures.yaml \
+  content/offices.yaml \
+  content/parties.yaml \
+  content/people.yaml \
+  content/rules.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/RealContentTests.cs \
+  sim/Statecraft.Sim/GoldenRun.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
+git commit -m "content: 1950-51 governments, Second Knesset, ministers, President; Rationing from 1949-04-26; Immigration ends 1951-10-08
 
-Sources: research_notes/M3 content 1950-51/facts.md sections 1-3 and 6. Conflicts recorded in YAML comments.
+Sources: research_notes/M3 content 1950-51/facts.md sections 1-3 and 6, and its Addendum. Conflicts recorded in YAML comments.
+Golden 1950 hash moves to d46ce5ff: the Immigration budget line moves to the Prime Minister.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1183,7 +1322,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `CalibrationTests` (M1), `PopulationSystem.Arrivals`, `GoldenRun` (Task 1).
-- Produces: aliyah periods 1950-01-01..1950-12-31 (170,563) and 1951-01-01..1951-12-31 (175,279); population anchors 1950-12-31 (1,203,000) and 1951-12-31 (1,404,400). `GoldenRun.Hash1950` becomes `6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3a6b6892f336fe959e0eb15d`.
+- Produces: aliyah periods 1950-01-01..1950-12-31 (170,563) and 1951-01-01..1951-12-31 (175,279); population anchors 1950-12-31 (1,203,000) and 1951-12-31 (1,404,400). `GoldenRun.Hash1950` becomes `3d360deb200945776a9ae1ae5faea8cd075900d0b9cd7d2bab715b309e3f0b91`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1355,7 +1494,7 @@ Temporarily set `const double Tolerance = 0.0;` in `CalibrationTests.cs` and run
 
 - [ ] **Step 5: Rebaseline the 1948–50 golden hash (deliberate content change)**
 
-The 1950 immigration series adds January–February 1950 arrivals inside the 1948–50 run, so its hash moves. Run the sim tests: `DeterminismTests.GoldenPlaythroughHashIsFixed` fails with `Actual: "6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3"···`. The full new value (also printed by `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 45` as `State hash ...`) is `6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3a6b6892f336fe959e0eb15d`. Replace `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` with it in `sim/Statecraft.Sim/GoldenRun.cs` (`Hash1950`) and `sim/Statecraft.Sim.Tests/DeterminismTests.cs` (`GoldenHash`), and update `docs/determinism.md`:
+The 1950 immigration series adds January–February 1950 arrivals inside the 1948–50 run, so its hash moves. Run the sim tests: `DeterminismTests.GoldenPlaythroughHashIsFixed` fails with `Actual: "3d360deb200945776a9ae1ae5faea8cd075900d0b"···`. The full new value (also printed by `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 45` as `State hash ...`) is `3d360deb200945776a9ae1ae5faea8cd075900d0b9cd7d2bab715b309e3f0b91`. Replace `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd` with it in `sim/Statecraft.Sim/GoldenRun.cs` (`Hash1950`) and `sim/Statecraft.Sim.Tests/DeterminismTests.cs` (`GoldenHash`), and update `docs/determinism.md`:
 
 In `docs/determinism.md`:
 
@@ -1363,7 +1502,7 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd` |
 
 ```
 
@@ -1371,21 +1510,21 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3a6b6892f336fe959e0eb15d` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `3d360deb200945776a9ae1ae5faea8cd075900d0b9cd7d2bab715b309e3f0b91` |
 
 ```
 
 2. Replace
 
 ```markdown
-|---|---|---|---|
+| M3 Task 2 | 1950 | `d46ce5ff` | the Immigration budget line moves to the Prime Minister (the Ministry of Immigration ends on 1951-10-08), which renames a key in the hashed budget |
 ```
 
    with
 
 ```markdown
-|---|---|---|---|
-| M3 Task 3 | 1950 | `6eaa2981` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
+| M3 Task 2 | 1950 | `d46ce5ff` | the Immigration budget line moves to the Prime Minister (the Ministry of Immigration ends on 1951-10-08), which renames a key in the hashed budget |
+| M3 Task 3 | 1950 | `3d360deb` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
 ```
 
 - [ ] **Step 6: Run the tests and confirm they pass**
@@ -1394,16 +1533,21 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   319`.
+Expected: `Passed!  - Failed:     0, Passed:   320`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/aliyah.yaml \
+  content/population.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/CalibrationTests.cs \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim/GoldenRun.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "content: CBS immigration and population for 1950 and 1951
 
-Golden 1950 hash moves to 6eaa2981: the 1950 series adds Jan-Feb 1950 arrivals inside the run.
+Golden 1950 hash moves to 3d360deb: the 1950 series adds Jan-Feb 1950 arrivals inside the run.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1418,7 +1562,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: event schema (`GameEvent`, `EventOption`, `set_policy`, `effects`), Task 2's office holders (placeholder coverage is checked over each event's window).
-- Produces: event ids `frumkin_commission`, `maabarot_policy`, `law_of_return`, `clothing_rationing_1950`, `ministry_supply_crisis`, `education_registration_1951`, `israel_bonds`, `hula_drainage`, `reparations_claim`, `iraqi_exodus`, `forex_crisis_1951`; policy `maabarot` (default 0, office `immigration_minister`). `GoldenRun.Hash1950` becomes `3d3b3b554df450fed4642df4ce9dd6df0c401c908de74ac1e91a8cf61e5ae8e5`.
+- Produces: event ids `frumkin_commission`, `maabarot_policy`, `law_of_return`, `clothing_rationing_1950`, `ministry_supply_crisis`, `education_registration_1951`, `israel_bonds`, `hula_drainage`, `reparations_claim`, `iraqi_exodus`, `forex_crisis_1951`; policy `maabarot` (default 0, office `prime_minister`: the Ministry of Immigration ends on 1951-10-08). `GoldenRun.Hash1950` becomes `e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1474,8 +1618,9 @@ effects:
 ```yaml
   - { id: border_settlement, default: 0.2, office: agriculture_minister }
   # 1 = transit camps (ma'abarot) where residents earn their own living replace the free-board immigrant camps.
-  # Transit-camp map actions need it at 0.5 or above (MapActions). The event maabarot_policy sets it.
-  - { id: maabarot, default: 0.0, office: immigration_minister }
+  # Transit-camp map actions need it at 0.5 or above (MapActions). The event maabarot_policy sets it. Office: the Prime
+  # Minister, who decided it with the Jewish Agency (and the Ministry of Immigration ends on 1951-10-08).
+  - { id: maabarot, default: 0.0, office: prime_minister }
 effects:
 ```
 
@@ -1812,7 +1957,7 @@ status: fact-checked
 
 - [ ] **Step 4: Rebaseline the 1948–50 golden hash**
 
-`frumkin_commission` (window from 1950-01-01) fires inside the 1948–50 run. `GoldenPlaythroughHashIsFixed` fails with `Actual: "3d3b3b554df450fed4642df4ce9dd6df0c401c908"···`; the full value is `3d3b3b554df450fed4642df4ce9dd6df0c401c908de74ac1e91a8cf61e5ae8e5`. Replace `6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3a6b6892f336fe959e0eb15d` with it in `GoldenRun.cs` and `DeterminismTests.cs`, and update `docs/determinism.md`:
+`frumkin_commission` (window from 1950-01-01) fires inside the 1948–50 run. `GoldenPlaythroughHashIsFixed` fails with `Actual: "e2fa38969b15171a95d6ab7e3d3236d135a6b7af9"···`; the full value is `e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0`. Replace `3d360deb200945776a9ae1ae5faea8cd075900d0b9cd7d2bab715b309e3f0b91` with it in `GoldenRun.cs` and `DeterminismTests.cs`, and update `docs/determinism.md`:
 
 In `docs/determinism.md`:
 
@@ -1820,7 +1965,7 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `6eaa2981977e7c79ceba4e8f28ec364ba74cab2e3a6b6892f336fe959e0eb15d` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `3d360deb200945776a9ae1ae5faea8cd075900d0b9cd7d2bab715b309e3f0b91` |
 
 ```
 
@@ -1828,21 +1973,21 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `3d3b3b554df450fed4642df4ce9dd6df0c401c908de74ac1e91a8cf61e5ae8e5` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 3 | 1950 | `6eaa2981` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
+| M3 Task 3 | 1950 | `3d360deb` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
 ```
 
    with
 
 ```markdown
-| M3 Task 3 | 1950 | `6eaa2981` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
-| M3 Task 4 | 1950 | `3d3b3b55` | frumkin_commission (window from 1950-01-01) fires inside the run |
+| M3 Task 3 | 1950 | `3d360deb` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
+| M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
 ```
 
 - [ ] **Step 5: Run the tests and confirm they pass**
@@ -1851,23 +1996,38 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   320`. A loader error here names the event file and field (for example a placeholder whose office has no holder inside the window); fix the YAML, not the loader.
+Expected: `Passed!  - Failed:     0, Passed:   321`. A loader error here names the event file and field (for example a placeholder whose office has no holder inside the window); fix the YAML, not the loader.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/events/clothing_rationing_1950.yaml \
+  content/events/education_registration_1951.yaml \
+  content/events/forex_crisis_1951.yaml \
+  content/events/frumkin_commission.yaml \
+  content/events/hula_drainage.yaml \
+  content/events/iraqi_exodus.yaml \
+  content/events/israel_bonds.yaml \
+  content/events/law_of_return.yaml \
+  content/events/maabarot_policy.yaml \
+  content/events/ministry_supply_crisis.yaml \
+  content/events/reparations_claim.yaml \
+  content/model.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/RealContentTests.cs \
+  sim/Statecraft.Sim/GoldenRun.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "content: eleven sourced events for 1950-51
 
-Golden 1950 hash moves to 3d3b3b55: frumkin_commission fires inside the run.
+Golden 1950 hash moves to e2fa3896: frumkin_commission fires inside the run.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Task 5: Economy calibration, the foreign-currency consequence, and the 1952 golden
 
-*Track A.* Ruling 4 moves economy calibration to M3: today the historical autoplay ends 1953 with reserves at -230 and no consequence. Three changes, each pinned by a test: (1) `rules.yaml` gets units (IL millions; US$ millions for foreign currency) and parameters derived from sourced anchors (the IL 60m 1950/51 budget, Michaely's internal-debt rise of IL 98.4m over 1950–51, exports covering under a third of imports, and reserves running out in autumn 1951); (2) a new `capital_inflow_per_year` (donations and loans) and a consequence: while reserves are exhausted, food imports are cut (`fx_crisis_food_per_year`); (3) `HistoricalAI` sends reserves home to the security level's minimum, as the army demobilised after the armistices (the autoplay kept 80% called up forever). The second golden run, to 1952-01-01, is added here, after all historical content exists (ruling 4).
+*Track A.* Ruling 4 moves economy calibration to M3: today the historical autoplay ends 1953 with reserves at -230 and no consequence. Three changes, each pinned by a test: (1) `rules.yaml` gets units (IL millions; US$ millions for foreign currency) and parameters derived from sourced anchors (the IL 60m 1950/51 budget, Michaely's internal-debt rise of IL 98.4m over 1950–51, exports covering under a third of imports, and reserves running out in autumn 1951); (2) a new `capital_inflow_per_year` (donations and loans) and a consequence: while reserves are exhausted, food imports are cut (`fx_crisis_food_per_year`); (3) `HistoricalAI` sends reserves home to the security level's minimum, as the army demobilised after the armistices (the autoplay kept 80% called up forever). The calibration test labels each anchor the way M1's population test does: the four the parameters were derived or tuned from are consistency checks, so M3 has no fully independent economy anchor; one loose independent check compares the 1950–51 rise in external debt (Michaely: IL 65.7m) with the model's foreign inflow. `EffectsSystem.BudgetFactor` gains an overload over any shares, so the Budget screen (Task 17) uses the sim's rule instead of copying it (amendment A1). The second golden run, to 1952-01-01, is added here, after all historical content exists (ruling 4).
 
 **Files:**
 - Create: `sim/Statecraft.Sim.Tests/EconomyCalibrationTests.cs`, `sim/Statecraft.Sim.Tests/EconomyM3Tests.cs`
@@ -1878,8 +2038,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Produces:
   - `Rules.CapitalInflowPerYear` (`capital_inflow_per_year`), `Rules.FxCrisisFoodPerYear` (`fx_crisis_food_per_year`, must be <= 0 and needs a `food_supply` indicator).
   - `public static double EffectsSystem.Shift(Content c, GameState s, string indicator, double delta)` returns the visible change; `EventSystem` uses it (no behaviour change) and Task 8 reuses it.
+  - `public static double EffectsSystem.BudgetFactor(IReadOnlyDictionary<string, double> budget, string office)` (the `GameState` overload calls it).
   - `HistoricalAI.Commands` appends `SetMobilization(rung minimum)` when the call-up is above it.
-  - `GoldenRun.Hash1952 = "49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca"`, `GoldenRun.Until1952 = 1952-01-01`; `Hash1950` becomes `69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f`.
+  - `GoldenRun.Hash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00"`, `GoldenRun.Until1952 = 1952-01-01`; `Hash1950` becomes `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1949,6 +2110,17 @@ public class EconomyM3Tests
     }
 
     [Fact]
+    public void TheBudgetFactorRuleWorksOnAnyShares()
+    {
+        var draft = new Dictionary<string, double> { ["a"] = 0.5, ["b"] = 0.3, ["c"] = 0.2 };
+        Assert.Equal(1.25, EffectsSystem.BudgetFactor(draft, "a"), 9);     // 0.5 + 0.5 * 3 / 2
+        Assert.Equal(0.8, EffectsSystem.BudgetFactor(draft, "c"), 9);
+        Assert.Equal(1.0, EffectsSystem.BudgetFactor(draft, "z"), 9);      // no line: neutral
+        var s = new GameState { Budget = draft };
+        Assert.Equal(EffectsSystem.BudgetFactor(draft, "b"), EffectsSystem.BudgetFactor(s, "b"));
+    }
+
+    [Fact]
     public void HistoricalAiSendsReservesHomeToTheRungMinimum()
     {
         var c = ContentLoader.Load(Fixture.Write());
@@ -1971,12 +2143,17 @@ using System.Linq;
 using Statecraft.Sim;
 
 /// <summary>
-/// Plays the historical choices to 1952 and compares the economy with sourced anchors (rules.yaml cites each):
-/// - internal debt rose IL 98.4m over 1950-51 (Michaely 1975, Table 5-2: 65.4 + 33.0);
-/// - the ordinary budget for FY 1950/51 was IL 60m, financed by taxes in this model (en.wiki "1950 in Israel");
-/// - exports covered under a third of imports (spec section 3);
-/// - foreign currency ran out in autumn 1951 (FRUS 1951 v.V doc 513, 19 October 1951).
-/// Tolerances are wide on purpose: M3 needs a plausible economy, M4 recalibrates against the full series.
+/// Plays the historical choices to 1952 and compares the economy with sourced anchors (rules.yaml cites each).
+///
+/// ANCHOR INDEPENDENCE (as in CalibrationTests): rules.yaml derives or tunes a parameter from each of the first four
+/// anchors, so they are CONSISTENCY checks that the derivation holds in play:
+/// - internal debt rose IL 98.4m over 1950-51 (Michaely 1975, Table 5-2: 65.4 + 33.0): spending_per_capita is derived from it;
+/// - the FY 1950/51 ordinary budget was IL 60m (en.wiki "1950 in Israel"): tax_per_capita is derived from it;
+/// - exports covered under a third of imports (spec section 3): exports and imports were chosen to satisfy it;
+/// - foreign currency ran out in autumn 1951 (FRUS 1951 v.V doc 513): capital_inflow_per_year is tuned to it.
+/// M3 has NO fully independent economy anchor. The one loose INDEPENDENT check: external debt rose IL 65.7m over 1950-51
+/// (Michaely Table 5-2: 22.6 + 43.1), which nothing in rules.yaml was derived from (see its test for the tolerance).
+/// M4 adds independent anchors (GNP +25% 1950 to 1951, the FY1951/52 instalments).
 /// </summary>
 public class EconomyCalibrationTests
 {
@@ -2021,14 +2198,16 @@ public class EconomyCalibrationTests
     {
         const double michaely = 65.4 + 33.0;
         var rise = On(new DateTime(1952, 1, 1), s => s.Debt) - On(new DateTime(1950, 1, 1), s => s.Debt);
-        Assert.True(Math.Abs(rise - michaely) / michaely <= DebtTolerance, $"debt rose {F(rise)}m in 1950-51; Michaely: {F(michaely)}m");
+        Assert.True(Math.Abs(rise - michaely) / michaely <= DebtTolerance,
+            $"[consistency: spending_per_capita_per_year is derived from this anchor] debt rose {F(rise)}m in 1950-51; Michaely: {F(michaely)}m");
     }
 
     [Fact]
     public void TaxesAtMidFiscalYear1950_51FundTheIl60mBudget()
     {
         var perYear = C.Rules.TaxPerCapitaPerYear * On(new DateTime(1950, 10, 1), s => s.TotalPopulation);
-        Assert.True(Math.Abs(perYear - 60) / 60 <= DebtTolerance, $"tax revenue {F(perYear)}m a year; budget IL 60m");
+        Assert.True(Math.Abs(perYear - 60) / 60 <= DebtTolerance,
+            $"[consistency: tax_per_capita_per_year is derived from this anchor] tax revenue {F(perYear)}m a year; budget IL 60m");
     }
 
     [Fact]
@@ -2037,7 +2216,7 @@ public class EconomyCalibrationTests
         foreach (var s in History.Where(s => s.Date.Year == 1950 || s.Date.Year == 1951))
         {
             var ratio = C.Rules.ExportsPerYear / (C.Rules.ImportsPerCapitaPerYear * s.TotalPopulation);
-            Assert.True(ratio < 1.0 / 3, $"{s.Date:yyyy-MM-dd}: exports cover {ratio:P0} of imports");
+            Assert.True(ratio < 1.0 / 3, $"[consistency: exports and imports were chosen to satisfy this] {s.Date:yyyy-MM-dd}: exports cover {ratio:P0} of imports");
         }
     }
 
@@ -2045,10 +2224,34 @@ public class EconomyCalibrationTests
     public void ForeignCurrencyRunsOutInTheLastHalfOf1951()
     {
         var first = History.FirstOrDefault(s => s.ActiveSituations.Contains(EconomySystem.FxCrisis));
-        Assert.True(first != null, "reserves never ran out");
+        Assert.True(first != null, "[consistency: capital_inflow_per_year is tuned to this anchor] reserves never ran out");
         Assert.True(first!.Date > new DateTime(1951, 7, 1) && first.Date <= new DateTime(1952, 1, 1),
-            $"reserves ran out on {first.Date:yyyy-MM-dd}; historically in October 1951");
+            $"[consistency: capital_inflow_per_year is tuned to this anchor] reserves ran out on {first.Date:yyyy-MM-dd}; historically in October 1951");
         Assert.All(History.Where(s => s.Date < first.Date), s => Assert.True(s.FxReserves >= 0, $"{s.Date:yyyy-MM-dd}: fx {F(s.FxReserves)}"));
+    }
+
+    /// <summary>[independent, loose] External debt rose IL 22.6m + 43.1m = 65.7m over 1950-51 (Michaely Table 5-2), which
+    /// at the formal IL 0.36 per dollar is $182.5m. The model does not split loans from donations: its foreign currency
+    /// from abroad (capital_inflow_per_year plus the event grants and bond sales in the run) is loans + donations, and
+    /// donations (the UJA, transfers) are not debt. So Michaely's loans must be covered by the model's inflow
+    /// (ratio >= 1), and the inflow must stay within three times the loans (ratio <= 3): the research notes give no
+    /// donation total, so the band only guards the order of magnitude. Tightening it needs the donation series (M4).</summary>
+    [Fact]
+    public void ForeignInflowIsOfTheOrderOfTheRiseInExternalDebt()
+    {
+        const double externalDebtUsd = (22.6 + 43.1) / 0.36;
+        double inflow = 0;
+        for (int i = 1; i < History.Count; i++)
+        {
+            var (a, b) = (History[i - 1], History[i]);
+            if (a.Date < new DateTime(1950, 1, 1) || a.Date >= new DateTime(1952, 1, 1)) continue;
+            var yf = SimTime.YearFraction(SecuritySystem.TurnLengthFor(a.Rung));
+            var trade = C.Rules.ExportsPerYear * yf - C.Rules.ImportsPerCapitaPerYear * a.TotalPopulation * yf;
+            inflow += (b.FxReserves - a.FxReserves) - trade;     // everything that reached the reserves except trade
+        }
+        var ratio = inflow / externalDebtUsd;
+        Assert.True(ratio >= 1 && ratio <= 3,
+            $"[independent, loose] foreign inflow {F(inflow)} $m in 1950-51 is {ratio:0.00}x the rise in external debt ({F(externalDebtUsd)} $m); expected 1-3x");
     }
 
     [Fact]
@@ -2085,7 +2288,7 @@ public class DeterminismTests
 
     /// <summary>Any change to this value is a deliberate rules or content change: update it here, in
     /// GoldenRun.Hash1950 and in docs/determinism.md in the same commit.</summary>
-    public const string GoldenHash = "69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f";
+    public const string GoldenHash = "9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb";
 
     /// <summary>Real content, seed 1948, Historical mode, HistoricalAI until the date reaches 1950-01-01.</summary>
     public static GameState GoldenPlaythrough(Content c) => GoldenRun.Play(c, GoldenRun.Until1950);
@@ -2100,7 +2303,7 @@ public class DeterminismTests
     }
 
     /// <summary>Same rule for the second golden run, which covers the M3 content range (to 1952-01-01).</summary>
-    public const string GoldenHash1952 = "49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca";
+    public const string GoldenHash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00";
 
     [Fact]
     public void GoldenPlaythroughTo1952HashIsFixed()
@@ -2220,6 +2423,31 @@ In `sim/Statecraft.Sim/ContentLoader.cs`:
 In `sim/Statecraft.Sim/EffectsSystem.cs`:
 
 1. Replace
+
+```csharp
+        /// treating it as unfunded would halve its effects permanently with no way to fix it.</summary>
+        public static double BudgetFactor(GameState s, string office)
+        {
+            if (!s.Budget.TryGetValue(office, out var share)) return 1.0;
+            return Math.Min(1.5, 0.5 + share * s.Budget.Count / 2.0);
+        }
+```
+
+   with
+
+```csharp
+        /// treating it as unfunded would halve its effects permanently with no way to fix it.</summary>
+        public static double BudgetFactor(GameState s, string office) => BudgetFactor(s.Budget, office);
+
+        /// <summary>The same rule for any set of shares (the Budget screen shows the factor of a draft budget).</summary>
+        public static double BudgetFactor(IReadOnlyDictionary<string, double> budget, string office)
+        {
+            if (!budget.TryGetValue(office, out var share)) return 1.0;
+            return Math.Min(1.5, 0.5 + share * budget.Count / 2.0);
+        }
+```
+
+2. Replace
 
 ```csharp
 
@@ -2386,7 +2614,10 @@ initial_population: { veterans: 649400 }
 budget_start:
   defense_minister: 0.45
   finance_minister: 0.05
-  immigration_minister: 0.15
+  # Absorption was handled by the Jewish Agency and the Prime Minister's office (notes, Addendum (a)); the Ministry of
+  # Immigration ends on 1951-10-08, so its budget line sits with the Prime Minister (the loader refuses a line for an
+  # abolished office).
+  prime_minister: 0.15
   labour_minister: 0.10
   health_minister: 0.07
   education_minister: 0.06
@@ -2414,12 +2645,12 @@ namespace Statecraft.Sim
 
         /// <summary>Final hash of Play(content, Until1950). Changing it is a deliberate rules or content change:
         /// update it, DeterminismTests and docs/determinism.md in the same commit and say why in the message.</summary>
-        public const string Hash1950 = "69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f";
+        public const string Hash1950 = "9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb";
 
         public static readonly DateTime Until1950 = new DateTime(1950, 1, 1);
 
         /// <summary>Final hash of Play(content, Until1952): the M3 content range (to 31 December 1951).</summary>
-        public const string Hash1952 = "49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca";
+        public const string Hash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00";
 
         public static readonly DateTime Until1952 = new DateTime(1952, 1, 1);
 
@@ -2442,7 +2673,7 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `3d3b3b554df450fed4642df4ce9dd6df0c401c908de74ac1e91a8cf61e5ae8e5` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0` |
 
 ```
 
@@ -2450,23 +2681,24 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 4 | 1950 | `3d3b3b55` | frumkin_commission (window from 1950-01-01) fires inside the run |
+| M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
 ```
 
    with
 
 ```markdown
-| M3 Task 4 | 1950 | `3d3b3b55` | frumkin_commission (window from 1950-01-01) fires inside the run |
-| M3 Task 5 | 1950 | `69de8521` | economy calibrated (rules.yaml) and HistoricalAI sends reserves home after the armistices |
-| M3 Task 5 | 1952 | `49523c90` | new run covering the M3 content range |
+| M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
+| M3 Task 5 | 1950 | `9cd2f4b5` | economy calibrated (rules.yaml) and HistoricalAI sends reserves home after the armistices |
+| M3 Task 5 | 1952 | `7de4faba` | same |
+| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
 ```
 
 - [ ] **Step 6: Run the tests and confirm they pass**
@@ -2475,9 +2707,9 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   332`. The calibration margins (verified): debt rises 99m over 1950–51 (Michaely 98.4m), taxes 63m a year at mid FY1950/51 (budget 60m), exports cover 12–15% of imports, reserves first run out in the turn ending 1951-11-26.
+Expected: `Passed!  - Failed:     0, Passed:   335`. The calibration margins (verified): debt rises 99m over 1950–51 (Michaely 98.4m), taxes 63m a year at mid FY1950/51 (budget 60m), exports cover 12–15% of imports, reserves first run out in the turn ending 1951-11-26, and foreign inflow over 1950–51 falls inside the 1–3 band against the rise in external debt (about 2.5 times).
 
-If you change a parameter, `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 53` prints the end state: `End 1952-02-26: population 1,402,478, level 2, treasury 0.0, debt 202.3, fx -21.4, stability 0.47` and `State hash 49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca`.
+If you change a parameter, `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 53` prints the end state: `End 1952-02-26: population 1,402,478, level 2, treasury 0.0, debt 202.3, fx -21.4, stability 0.47` and `State hash 7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00`.
 
 - [ ] **Step 7: Run the Unity edit-mode tests**
 
@@ -2492,18 +2724,30 @@ Expected: `exit=0` and `total="82" passed="82" failed="0"` (the new 1952 golden 
 - [ ] **Step 8: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/rules.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/EconomyCalibrationTests.cs \
+  sim/Statecraft.Sim.Tests/EconomyM3Tests.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  sim/Statecraft.Sim/EconomySystem.cs \
+  sim/Statecraft.Sim/EffectsSystem.cs \
+  sim/Statecraft.Sim/EventSystem.cs \
+  sim/Statecraft.Sim/GoldenRun.cs \
+  sim/Statecraft.Sim/HistoricalAI.cs \
+  unity/Assets/Tests/EditMode/SimSmokeTests.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): calibrate the 1950-51 economy; currency crisis cuts food imports; reserves go home; 1952 golden
 
-Golden 1950 hash moves to 69de8521 (rules and HistoricalAI demobilisation); new 1952 golden 49523c90.
+Golden 1950 hash moves to 9cd2f4b5 (rules and HistoricalAI demobilisation); new 1952 golden 7de4faba.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ### Task 6: Appoint
 
-*Track A.* Ruling 4: change a minister in a portfolio, at an Attention cost, with coalition and party effects, rejected with a reason when illegal. The player's appointments override the historical holder until the government changes (a new government arrives with its own ministers). Everything that asks "who holds this office" during play (effects' competence, delegation, event text) now asks `Cabinet.Holder`, so an appointee's competence and name take effect. Legality, in order: the office exists and is not abolished; it is not the Prime Minister's (the player) or the President's; the person exists, is alive and does not already hold it; a government is in office; a Chief of Staff must have held the post before; a minister's party, if any, must be in the coalition.
+*Track A.* Ruling 4: change a minister in a portfolio, at an Attention cost, with coalition and party effects, rejected with a reason when illegal. The player's appointments override the historical holder until the government changes (a new government arrives with its own ministers). Everything that asks "who holds this office" during play (effects' competence, delegation, event text) now asks `Cabinet.Holder`, so an appointee's competence and name take effect. Legality, in order: the office exists and is not abolished; it is not the Prime Minister's (the player) or the President's; the person exists, is alive, is not the sitting President, is not the serving Chief of Staff (for any other office), and does not already hold it; a government is in office; a Chief of Staff must have held the post before; a minister's party, if any, must be in the coalition.
 
 **Files:**
 - Create: `sim/Statecraft.Sim.Tests/CabinetTests.cs`, `sim/Statecraft.Sim/Cabinet.cs`
@@ -2518,7 +2762,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `public static string EventSystem.Render(Content c, GameState s, GameEvent e)` (text as the player sees it now).
   - `GameState.Appointments : Dictionary<string, Appointment>`, `GameState.AppointedUnder : string`, both in `Hash()`.
   - Rules: `attention_cost.appoint`, `appoint_stability_cost_other_party`, `appoint_stability_cost_same_party` (0..1).
-  - Hashes: `Hash1950 = f643643181dd364d52610f794b0f1733a2c5a10c4ca426c621cad48304dae9db`, `Hash1952 = 270867e29234b695f8ca1ca8218334837a6917305ad988cd7fc928e33db82429` (the hash format gains the appointment fields).
+  - Refusal texts (in check order): `Unknown office '<id>'`, `The office of <title> was abolished on <date>`, `You are the Prime Minister: that office is not yours to fill`, `The President is elected by the Knesset, not appointed`, `Unknown person '<id>'`, `<name> died on <date>`, `<name> is the President`, `<name> is the serving Chief of Staff`, `<name> already holds the office of <title>`, `No government is in office`, `<name> is not an IDF career officer`, `<name>'s party (<party>) is not in the coalition`.
+  - An appointee who dies leaves office on the date of death (`Cabinet.Holder` falls back to the historical holder).
+  - Hashes: `Hash1950 = 9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35`, `Hash1952 = 02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` (the hash format gains the appointment fields).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2554,6 +2800,14 @@ public class CabinetTests
     party: alpha
     competence: 6
     loyalty: 9
+    offices: []
+  - id: late
+    name: Late Comer
+    living: false
+    died: 1948-07-01
+    party: alpha
+    competence: 5
+    loyalty: 5
     offices: []
   - id: gone
     name: Gone Early
@@ -2640,6 +2894,15 @@ public class CabinetTests
     }
 
     [Fact]
+    public void AnAppointeeWhoDiesLeavesOfficeOnTheDateOfDeath()
+    {
+        var s = Simulation.NewGame(C, 42, Mode.Historical);
+        Assert.Null(Cabinet.Appoint(C, s, "finance_minister", "late", new List<Cause>()));
+        Assert.Equal("late", Cabinet.Holder(C, s, "finance_minister", new DateTime(1948, 6, 30))!.Id);
+        Assert.Equal("def_two", Cabinet.Holder(C, s, "finance_minister", new DateTime(1948, 7, 1))!.Id);
+    }
+
+    [Fact]
     public void TheAppointeesCompetenceDrivesTheMinistrysEffects()
     {
         var s = Simulation.NewGame(C, 42, Mode.Historical);
@@ -2689,6 +2952,8 @@ public class CabinetTests
         Assert.Equal("Aharon Zisling's party (Mapam) is not in the coalition", Cabinet.Check(c, s, "agriculture_minister", "zisling"));
         Assert.Equal("The President is elected by the Knesset, not appointed", Cabinet.Check(c, s, "president", "sharett"));
         Assert.Null(Cabinet.Check(c, s, "agriculture_minister", "eshkol"));
+        Assert.Equal("Chaim Weizmann is the President", Cabinet.Check(c, s, "finance_minister", "weizmann"));
+        Assert.Equal("Yigael Yadin is the serving Chief of Staff", Cabinet.Check(c, s, "finance_minister", "yadin"));
         s.Date = new DateTime(1951, 6, 1);
         Assert.Equal("David Remez died on 1951-05-19", Cabinet.Check(c, s, "transportation_minister", "remez"));
     }
@@ -2759,9 +3024,13 @@ namespace Statecraft.Sim
     {
         public const string Kind = "appoint";
 
+        /// <summary>The player's appointee for the office on the date: appointed by then, same government, and alive (an
+        /// appointee who dies leaves office on the date of death, and the historical holder applies again).</summary>
         static Appointment? Active(Content c, GameState s, string office, DateTime date)
         {
             if (!s.Appointments.TryGetValue(office, out var a) || date < a.From) return null;
+            var died = c.People.First(p => p.Id == a.Person).Died;
+            if (died.HasValue && date >= died.Value) return null;
             return Offices.Government(c, date)?.Id == s.AppointedUnder ? a : null;
         }
 
@@ -2787,9 +3056,10 @@ namespace Statecraft.Sim
 
         /// <summary>Null when <paramref name="personId"/> may be appointed to <paramref name="officeId"/> now, else the
         /// reason shown to the player. Checks, in order: the office exists and has not been abolished; it is not the
-        /// Prime Minister's (the player) or the President's (elected by the Knesset); the person exists, is alive and does
-        /// not already hold it; a government is in office; a Chief of Staff must be a career officer (has held the post
-        /// in people.yaml); a minister's party, if any, must be in the coalition.</summary>
+        /// Prime Minister's (the player) or the President's (elected by the Knesset); the person exists, is alive, is not
+        /// the sitting President, is not the serving Chief of Staff (for any other office) and does not already hold it; a
+        /// government is in office; a Chief of Staff must be a career officer (has held the post in people.yaml); a
+        /// minister's party, if any, must be in the coalition.</summary>
         public static string? Check(Content c, GameState s, string officeId, string personId)
         {
             var office = c.Offices.FirstOrDefault(o => o.Id == officeId);
@@ -2802,6 +3072,8 @@ namespace Statecraft.Sim
             if (person == null) return $"Unknown person '{personId}'";
             if (person.Died.HasValue && s.Date >= person.Died.Value)
                 return FormattableString.Invariant($"{person.Name} died on {person.Died:yyyy-MM-dd}");
+            if (Holder(c, s, "president")?.Id == personId) return $"{person.Name} is the President";
+            if (officeId != "chief_of_staff" && Holder(c, s, "chief_of_staff")?.Id == personId) return $"{person.Name} is the serving Chief of Staff";
             if (Holder(c, s, officeId)?.Id == personId) return $"{person.Name} already holds the office of {office.Title}";
             var gov = Offices.Government(c, s.Date);
             if (gov == null) return "No government is in office";
@@ -3187,7 +3459,10 @@ initial_population: { veterans: 649400 }
 budget_start:
   defense_minister: 0.45
   finance_minister: 0.05
-  immigration_minister: 0.15
+  # Absorption was handled by the Jewish Agency and the Prime Minister's office (notes, Addendum (a)); the Ministry of
+  # Immigration ends on 1951-10-08, so its budget line sits with the Prime Minister (the loader refuses a line for an
+  # abolished office).
+  prime_minister: 0.15
   labour_minister: 0.10
   health_minister: 0.07
   education_minister: 0.06
@@ -3197,7 +3472,7 @@ budget_start:
 
 - [ ] **Step 4: Rebaseline both golden hashes (hash format change)**
 
-The canonical hash text gains `appt{...}under=...;`, so both runs move although no appointment is made in them. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f` → `f643643181dd364d52610f794b0f1733a2c5a10c4ca426c621cad48304dae9db` and `49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca` → `270867e29234b695f8ca1ca8218334837a6917305ad988cd7fc928e33db82429`. Then:
+The canonical hash text gains `appt{...}under=...;`, so both runs move although no appointment is made in them. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` → `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` and `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` → `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354`. Then:
 
 In `docs/determinism.md`:
 
@@ -3205,8 +3480,8 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `69de8521f27563bce008e71265650846820a203f98e2d3b13b8027fec492505f` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `49523c9005406ac83544671630d7ee51d508c92ca861f0ef95713aa56660f4ca` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` |
 
 ```
 
@@ -3214,23 +3489,23 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `f643643181dd364d52610f794b0f1733a2c5a10c4ca426c621cad48304dae9db` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `270867e29234b695f8ca1ca8218334837a6917305ad988cd7fc928e33db82429` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 5 | 1952 | `49523c90` | new run covering the M3 content range |
+| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
 ```
 
    with
 
 ```markdown
-| M3 Task 5 | 1952 | `49523c90` | new run covering the M3 content range |
-| M3 Task 6 | 1950 | `f6436431` | hash format adds the player's appointments (empty in the run) |
-| M3 Task 6 | 1952 | `270867e2` | same |
+| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
+| M3 Task 6 | 1950 | `9a546a6f` | hash format adds the player's appointments (empty in the run) |
+| M3 Task 6 | 1952 | `02dd846a` | same |
 ```
 
 - [ ] **Step 5: Run the tests and confirm they pass**
@@ -3239,13 +3514,27 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   348`.
+Expected: `Passed!  - Failed:     0, Passed:   352`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/rules.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/CabinetTests.cs \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/Fixture.cs \
+  sim/Statecraft.Sim/AttentionSystem.cs \
+  sim/Statecraft.Sim/Cabinet.cs \
+  sim/Statecraft.Sim/Commands.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  sim/Statecraft.Sim/EffectsSystem.cs \
+  sim/Statecraft.Sim/EventSystem.cs \
+  sim/Statecraft.Sim/GameState.cs \
+  sim/Statecraft.Sim/GoldenRun.cs \
+  sim/Statecraft.Sim/Simulation.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): Appoint command with coalition costs; appointees drive effects, delegation and event text
 
 Both golden hashes move: the hash format gains the appointment fields.
@@ -3260,7 +3549,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `content/map/settlement_hexes.yaml`, `sim/Statecraft.Sim.Tests/MapContentTests.cs`, `tools/settlement_hexes.py`, `tools/tests/test_settlement_hexes.py`
 - Modify: `docs/determinism.md`, `sim/Statecraft.Sim.Tests/Fixture.cs`, `sim/Statecraft.Sim/Content.cs`, `sim/Statecraft.Sim/ContentLoader.cs`, `tools/README.md`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `content/map/settlement_hexes.yaml`
+- Generated by a command in this task (commit the output): `content/map/settlement_hexes.yaml`
 
 **Interfaces:**
 - Consumes: `tools/hexgrid.py` (`settlement_hex`, `NEIGHBOURS`), `content/map/hexes.json`, `content/map/settlements_1948.yaml`; `ContentLoader.Read<T>`, `ContentLoader.Unique`.
@@ -3710,13 +3999,21 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   354`. Golden hashes unchanged (loading the map adds no state).
+Expected: `Passed!  - Failed:     0, Passed:   358`. Golden hashes unchanged (loading the map adds no state).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/map/settlement_hexes.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/Fixture.cs \
+  sim/Statecraft.Sim.Tests/MapContentTests.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  tools/README.md \
+  tools/settlement_hexes.py \
+  tools/tests/test_settlement_hexes.py
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(tools,sim): settlement hexes by the hexgrid rule; the sim loads the hex map
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -3724,7 +4021,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 8: MapAction: transit camps and housing
 
-*Track A.* Ruling 4: transit camps (ma'abarot) and permanent housing on a land hex near settlements, from 1950, costing budget and Attention, moving immigrant absorption (the `housing` indicator) and public support (`morale`, which voter groups weigh). Transit camps also need the `maabarot` policy that Task 4's historical decision sets (the first ma'abara opened in May 1950). A shortfall in the treasury is borrowed, as everywhere else in the economy. Housing may replace a transit camp on the same hex; any other second build on a hex is refused.
+*Track A.* Ruling 4: transit camps (ma'abarot) and permanent housing on a land hex near settlements, from 1950, costing budget and Attention, moving immigrant absorption (the `housing` indicator) and public support (`morale`, which voter groups weigh). Transit camps also need the `maabarot` policy that Task 4's historical decision sets (the first ma'abara opened in May 1950). A shortfall in the treasury is borrowed, as everywhere else in the economy. Housing may replace a transit camp on the same hex; any other second build on a hex is refused. At most two map actions are built per turn (`map_actions_per_turn`, amendment A6); upkeep and camp capacity are M4.
 
 **Files:**
 - Create: `sim/Statecraft.Sim.Tests/MapActionTests.cs`, `sim/Statecraft.Sim/MapActions.cs`
@@ -3736,8 +4033,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `public sealed class MapAction : Command { MapAction(string action, int q, int r); string Action; int Q; int R; Kind == "map_action" }`.
   - `public sealed class Placement { string Action; int Q; int R; DateTime Date; }`; `GameState.Placements : List<Placement>` (in `Hash()`).
   - `public static class MapActions { const string Kind = "map_action", TransitCamp = "transit_camp", Housing = "housing", MaabarotPolicy = "maabarot"; IReadOnlyList<string> Actions; int Distance(int q1, int r1, int q2, int r2); Placement? At(GameState, int q, int r); string? Check(Content, GameState, string action, int q, int r); string? Apply(Content, GameState, string action, int q, int r, List<Cause>); }`.
-  - `public sealed class MapActionRule { double Cost; double Housing; double Morale; }`; rules `map_actions_from`, `map_action_max_distance`, `map_actions: {transit_camp, housing}`, `attention_cost.map_action`.
-  - Hashes: `Hash1950 = d862e403228d6dd1cabc908443cd246a9ca8161f495a2e277f6f11fe6cb39d84`, `Hash1952 = 0be1fd2f4356eeb1c378c8dcbabfa70c5f28fbf277ad659704157a2a4624f89a`.
+  - `public sealed class MapActionRule { double Cost; double Housing; double Morale; }`; rules `map_actions_from`, `map_action_max_distance`, `map_actions_per_turn` (refusal `No more than <n> map actions in one turn`), `map_actions: {transit_camp, housing}`, `attention_cost.map_action`.
+  - Hashes: `Hash1950 = 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `Hash1952 = 4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3833,6 +4130,17 @@ public class MapActionTests
     }
 
     [Fact]
+    public void AtMostTwoMapActionsInOneTurn()
+    {
+        var s = Ready();
+        Assert.Null(MapActions.Apply(C, s, "housing", 2, 0, new List<Cause>()));
+        Assert.Null(MapActions.Apply(C, s, "housing", 1, 1, new List<Cause>()));
+        Assert.Equal("No more than 2 map actions in one turn", MapActions.Check(C, s, "housing", 0, 1));
+        s.Date = s.Date.AddMonths(3);                                      // the next turn
+        Assert.Null(MapActions.Check(C, s, "housing", 0, 1));
+    }
+
+    [Fact]
     public void AnOccupiedHexIsRejected()
     {
         var s = Ready();
@@ -3919,6 +4227,7 @@ appoint_stability_cost_other_party: 0.1
 appoint_stability_cost_same_party: 0.03
 map_actions_from: 1948-06-01
 map_action_max_distance: 1
+map_actions_per_turn: 2
 map_actions:
   transit_camp: { cost: 2, housing: 0.05, morale: -0.02 }
   housing: { cost: 8, housing: 0.08, morale: 0.01 }
@@ -3956,7 +4265,8 @@ namespace Statecraft.Sim
 
     /// <summary>Map actions (M3 scope: absorption from 1950). A transit camp (ma'abara) or a housing project goes on a land
     /// hex within rules map_action_max_distance of a hex that owns a settlement (content/map/settlement_hexes.yaml). It
-    /// costs treasury (a shortfall is borrowed, as in EconomySystem) and moves housing (absorption) and morale (support).</summary>
+    /// costs treasury (a shortfall is borrowed, as in EconomySystem) and moves housing (absorption) and morale (support).
+    /// At most rules map_actions_per_turn are built in one turn (upkeep and camp capacity are M4).</summary>
     public static class MapActions
     {
         public const string Kind = "map_action";
@@ -3980,6 +4290,10 @@ namespace Statecraft.Sim
             if (!Actions.Contains(action)) return $"Unknown map action '{action}'";
             var rule = c.Rules.MapActions.TryGetValue(action, out var x) ? x : null;
             if (rule == null) return $"Map action '{action}' is not available in this content";
+            // Placements carry the date they were built, and the date only advances at the end of a turn.
+            var built = s.Placements.Count(p => p.Date == s.Date);
+            if (built >= c.Rules.MapActionsPerTurn)
+                return FormattableString.Invariant($"No more than {c.Rules.MapActionsPerTurn} map actions in one turn");
             if (s.Date < c.Rules.MapActionsFrom)
                 return FormattableString.Invariant($"Transit camps and housing projects can be placed from {c.Rules.MapActionsFrom:yyyy-MM-dd}");
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
@@ -4171,6 +4485,8 @@ In `sim/Statecraft.Sim/Content.cs`:
         public DateTime MapActionsFrom { get; set; }
         /// <summary>How far (in hexes) a map action may be from a hex that owns a settlement.</summary>
         public int MapActionMaxDistance { get; set; } = 1;
+        /// <summary>How many map actions may be built in one turn.</summary>
+        public int MapActionsPerTurn { get; set; } = 2;
         public Dictionary<string, MapActionRule> MapActions { get; set; } = new Dictionary<string, MapActionRule>();
         public double NaturalIncreasePerYear { get; set; }
         public Dictionary<string, double> InitialPopulation { get; set; } = new Dictionary<string, double>();
@@ -4203,6 +4519,7 @@ In `sim/Statecraft.Sim/ContentLoader.cs`:
 ```csharp
             Unit("rules.yaml", "appoint_stability_cost_same_party", r.AppointStabilityCostSameParty);
             if (r.MapActionMaxDistance < 0) throw new ContentException("rules.yaml", "map_action_max_distance", "must be >= 0");
+            if (r.MapActionsPerTurn < 1) throw new ContentException("rules.yaml", "map_actions_per_turn", "must be >= 1");
             foreach (var kv in r.MapActions)
             {
                 if (!MapActions.Actions.Contains(kv.Key)) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}", "unknown map action (transit_camp or housing)");
@@ -4216,12 +4533,23 @@ In `sim/Statecraft.Sim/ContentLoader.cs`:
             if (r.FxCrisisFoodPerYear > 0) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "must be <= 0 (a crisis cuts food imports)");
 ```
 
-Replace the whole of `content/rules.yaml` with:
+In `content/rules.yaml`:
+
+1. Replace
 
 ```yaml
-# Game rules. Values are game balance, except where a comment cites a source.
-start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
-start_rung: 5                     # the war is under way when the slice opens
+attention_per_turn: 4
+attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 2 }
+# Coalition stability lost by replacing a minister (Cabinet.Appoint): a seat taken from the minister's party, or a
+# reshuffle within it.
+appoint_stability_cost_other_party: 0.06
+appoint_stability_cost_same_party: 0.02
+rung_attention_step: 0.25
+```
+
+   with
+
+```yaml
 attention_per_turn: 4
 attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 2, map_action: 1 }
 # Coalition stability lost by replacing a minister (Cabinet.Appoint): a seat taken from the minister's party, or a
@@ -4233,55 +4561,16 @@ appoint_stability_cost_same_party: 0.02
 # Costs (IL millions) and effects are game balance: a camp is cheap and grim, permanent housing dear and welcome.
 map_actions_from: 1950-01-01
 map_action_max_distance: 1
+map_actions_per_turn: 2
 map_actions:
   transit_camp: { cost: 1.5, housing: 0.02, morale: -0.005 }
   housing: { cost: 6, housing: 0.03, morale: 0.01 }
 rung_attention_step: 0.25
-rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
-ceasefire_weeks: 52               # long enough that the historical armistice events end the war first
-# ---- Economy (calibrated in M3; checked by sim/Statecraft.Sim.Tests/EconomyCalibrationTests.cs) ----
-# Units: treasury and debt in IL millions; fx_start, exports, donations/loans and imports in US$ millions.
-# Formal rate 1950-51: IL 0.36 per US$ (IL 1 = $2.80), Michaely, Foreign Trade Regimes and Economic Development: Israel
-# (NBER 1975) Table 5-1, https://www.nber.org/system/files/chapters/c4560/c4560.pdf (checked 2026-10-10).
-treasury_start: 20
-fx_start: 40
-# Taxes finance the ordinary budget: FY 1950/51 IL 60 million, approved 29 June 1950
-# (https://en.wikipedia.org/wiki/1950_in_Israel, checked 2026-10-10). 60m / ~1.10m Jews (CBS average 1950) = 0.0000545.
-tax_per_capita_per_year: 0.0000545
-# Spending above taxes is borrowed. The gap is set so 1950-51 borrowing matches the rise in internal debt, IL 65.4m (1950)
-# + 33.0m (1951) = 98.4m (Michaely Table 5-2, same chapter). The 1951 fiscal tightening is not modelled, so the model
-# matches the two-year total, not each year: (98.4m - 6m reserve call-up) / ~2.40m person-years = 0.0000385 per person.
-spending_per_capita_per_year: 0.000093
-# Exports cover under a third of imports (spec section 3; EconomyCalibrationTests checks it every turn of 1950-51).
-exports_per_year: 40
-imports_per_capita_per_year: 0.00025
-# Donations, loans and transfers, set so reserves run out in the last quarter of 1951: the October 1951 crisis
-# (FRUS 1951 v.V doc 513, https://history.state.gov/historicaldocuments/frus1951v05/d513, checked 2026-10-10).
-capital_inflow_per_year: 192
-# While reserves are exhausted, food imports are cut: food_supply falls by this much per year.
-fx_crisis_food_per_year: -0.2
-mobilization_cost_per_year: 60
-# Derived from CBS table 2.1 (1949): (end-1949 1,013.9k - end-1948 758.7k - 1949 immigrants 239,954) / average 1949 population 901.0k.
-natural_increase_per_year: 0.0169
-# Derived: CBS end-1948 Jewish population 758,700 minus 101,828 immigrants (15 May-31 Dec 1948) minus natural increase over
-# 7.5 months at the rate above. Checked against the 8 Nov 1948 census by the calibration test.
-# Arithmetic: 758,700 - 101,828 = 656,872. Natural-increase base = average of 656,872 and 758,700 = 707,786.
-# Natural increase = 707,786 x 0.0169 x 7.5/12 = 7,476. 656,872 - 7,476 = 649,396, rounded to the nearest hundred = 649,400.
-initial_population: { veterans: 649400 }
-budget_start:
-  defense_minister: 0.45
-  finance_minister: 0.05
-  immigration_minister: 0.15
-  labour_minister: 0.10
-  health_minister: 0.07
-  education_minister: 0.06
-  agriculture_minister: 0.07
-  interior_minister: 0.05
 ```
 
 - [ ] **Step 4: Rebaseline both golden hashes (hash format change)**
 
-The hash text gains `map[...]`. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `f643643181dd364d52610f794b0f1733a2c5a10c4ca426c621cad48304dae9db` → `d862e403228d6dd1cabc908443cd246a9ca8161f495a2e277f6f11fe6cb39d84` and `270867e29234b695f8ca1ca8218334837a6917305ad988cd7fc928e33db82429` → `0be1fd2f4356eeb1c378c8dcbabfa70c5f28fbf277ad659704157a2a4624f89a`. Then:
+The hash text gains `map[...]`. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` → `404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88` and `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` → `4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`. Then:
 
 In `docs/determinism.md`:
 
@@ -4289,8 +4578,8 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `f643643181dd364d52610f794b0f1733a2c5a10c4ca426c621cad48304dae9db` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `270867e29234b695f8ca1ca8218334837a6917305ad988cd7fc928e33db82429` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` |
 
 ```
 
@@ -4298,23 +4587,23 @@ In `docs/determinism.md`:
 
 ```markdown
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `d862e403228d6dd1cabc908443cd246a9ca8161f495a2e277f6f11fe6cb39d84` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `0be1fd2f4356eeb1c378c8dcbabfa70c5f28fbf277ad659704157a2a4624f89a` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 6 | 1952 | `270867e2` | same |
+| M3 Task 6 | 1952 | `02dd846a` | same |
 ```
 
    with
 
 ```markdown
-| M3 Task 6 | 1952 | `270867e2` | same |
-| M3 Task 8 | 1950 | `d862e403` | hash format adds map placements (empty in the run) |
-| M3 Task 8 | 1952 | `0be1fd2f` | same |
+| M3 Task 6 | 1952 | `02dd846a` | same |
+| M3 Task 8 | 1950 | `404b1811` | hash format adds map placements (empty in the run) |
+| M3 Task 8 | 1952 | `4c0a6859` | same |
 ```
 
 - [ ] **Step 5: Run the tests and confirm they pass**
@@ -4323,13 +4612,25 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   372`.
+Expected: `Passed!  - Failed:     0, Passed:   377`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add content/rules.yaml \
+  docs/determinism.md \
+  sim/Statecraft.Sim.Tests/DeterminismTests.cs \
+  sim/Statecraft.Sim.Tests/Fixture.cs \
+  sim/Statecraft.Sim.Tests/MapActionTests.cs \
+  sim/Statecraft.Sim/AttentionSystem.cs \
+  sim/Statecraft.Sim/Commands.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  sim/Statecraft.Sim/GameState.cs \
+  sim/Statecraft.Sim/GoldenRun.cs \
+  sim/Statecraft.Sim/MapActions.cs \
+  sim/Statecraft.Sim/Simulation.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): MapAction for transit camps and housing near settlements from 1950
 
 Both golden hashes move: the hash format gains map placements.
@@ -4817,13 +5118,17 @@ Run:
 ```bash
 dotnet test sim/Statecraft.sln
 ```
-Expected: `Passed!  - Failed:     0, Passed:   386`. Golden hashes unchanged.
+Expected: `Passed!  - Failed:     0, Passed:   391`. Golden hashes unchanged.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add sim/Statecraft.Sim.Tests/SaveGameTests.cs \
+  sim/Statecraft.Sim/Content.cs \
+  sim/Statecraft.Sim/ContentLoader.cs \
+  sim/Statecraft.Sim/GameSession.cs \
+  sim/Statecraft.Sim/SaveGame.cs
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): saves (seed, command log, content hash, schema version) that replay to the same hash
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -4833,12 +5138,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 10: UI foundation: theme, fonts, panel settings, strings, the test harness
 
-*Track B.* Ruling 2's look and ruling 5's panel settings, and the edit-mode harness every later UI task uses (tech notes §1.6, blocker 1: run the UIDocument + NavigationSubmitEvent pattern early). One UXML (`Game.uxml`) holds the whole screen: the top bar now, and empty, named containers for the event card, info panel, minimap and the four screens that Tasks 15–20 fill. Fonts are EB Garamond (OFL), static TTFs pinned to a commit; USS's `-unity-font-definition: url(...ttf)` takes a Font directly (verified: the resolved style is the TTF). The PanelSettings asset is made by an editor script so its theme and shaders ship in builds (tech notes §1.3–1.4). `UiPointer` answers "is the pointer over the UI?" for Task 11's camera and Task 20's map clicks.
+*Track B.* Ruling 2's look and ruling 5's panel settings, and the edit-mode harness every later UI task uses (tech notes §1.6, blocker 1: run the UIDocument + NavigationSubmitEvent pattern early). One UXML (`Game.uxml`) holds the whole screen: the top bar now, and empty, named containers for the event card, info panel, minimap and the four screens that Tasks 15–20 fill. Fonts are EB Garamond (OFL), static TTFs pinned to a commit; USS's `-unity-font-definition: url(...ttf)` takes a Font directly (verified: the resolved style is the TTF). The PanelSettings asset is made by an editor script so its theme and shaders ship in builds (tech notes §1.3–1.4). `UiPointer` answers "is the pointer over the UI?" for Task 11's camera and Task 20's map clicks. A layout test renders the panel into 1920×1080 and 1280×720 targets and checks that no region overlaps another and the six meters fit (amendment A5: meters have a 130 px minimum and may shrink; centre screens sit between the info panel and the event card).
 
 **Files:**
-- Create: `unity/Assets/Editor/UiAssets.cs`, `unity/Assets/Scripts/UI/UiPaths.cs`, `unity/Assets/Scripts/UI/UiPointer.cs`, `unity/Assets/Scripts/UI/UiText.cs`, `unity/Assets/Tests/EditMode/UiFoundationTests.cs`, `unity/Assets/Tests/EditMode/UiTestKit.cs`, `unity/Assets/UI/Fonts/EBGaramond-Regular.ttf`, `unity/Assets/UI/Fonts/EBGaramond-SemiBold.ttf`, `unity/Assets/UI/Fonts/OFL.txt`, `unity/Assets/UI/Fonts/SOURCE.txt`, `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/Statecraft.uss`, `unity/Assets/UI/StatecraftPanel.asset`, `unity/Assets/UI/StatecraftTheme.tss`, `unity/Assets/UI/strings.en.yaml`
+- Create: `unity/Assets/Editor/UiAssets.cs`, `unity/Assets/Scripts/UI/UiPaths.cs`, `unity/Assets/Scripts/UI/UiPointer.cs`, `unity/Assets/Scripts/UI/UiText.cs`, `unity/Assets/Tests/EditMode/UiFoundationTests.cs`, `unity/Assets/Tests/EditMode/UiLayoutTests.cs`, `unity/Assets/Tests/EditMode/UiTestKit.cs`, `unity/Assets/UI/Fonts/EBGaramond-Regular.ttf`, `unity/Assets/UI/Fonts/EBGaramond-SemiBold.ttf`, `unity/Assets/UI/Fonts/OFL.txt`, `unity/Assets/UI/Fonts/SOURCE.txt`, `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/Statecraft.uss`, `unity/Assets/UI/StatecraftPanel.asset`, `unity/Assets/UI/StatecraftTheme.tss`, `unity/Assets/UI/strings.en.yaml`
 - Modify: `unity/Assets/link.xml`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Assets/UI/Fonts/EBGaramond-Regular.ttf`, `unity/Assets/UI/Fonts/EBGaramond-SemiBold.ttf`, `unity/Assets/UI/Fonts/OFL.txt`, `unity/Assets/UI/StatecraftPanel.asset`
+- Generated by a command in this task (commit the output): `unity/Assets/UI/Fonts/EBGaramond-Regular.ttf`, `unity/Assets/UI/Fonts/EBGaramond-SemiBold.ttf`, `unity/Assets/UI/Fonts/OFL.txt`, `unity/Assets/UI/StatecraftPanel.asset`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Editor/UiAssets.cs.meta`, `unity/Assets/Scripts/UI.meta`, `unity/Assets/Scripts/UI/UiPaths.cs.meta`, `unity/Assets/Scripts/UI/UiPointer.cs.meta`, `unity/Assets/Scripts/UI/UiText.cs.meta`, `unity/Assets/Tests/EditMode/UiFoundationTests.cs.meta`, `unity/Assets/Tests/EditMode/UiLayoutTests.cs.meta`, `unity/Assets/Tests/EditMode/UiTestKit.cs.meta`, `unity/Assets/UI.meta`, `unity/Assets/UI/Fonts.meta`, `unity/Assets/UI/Fonts/EBGaramond-Regular.ttf.meta`, `unity/Assets/UI/Fonts/EBGaramond-SemiBold.ttf.meta`, `unity/Assets/UI/Fonts/OFL.txt.meta`, `unity/Assets/UI/Fonts/SOURCE.txt.meta`, `unity/Assets/UI/Game.uxml.meta`, `unity/Assets/UI/Statecraft.uss.meta`, `unity/Assets/UI/StatecraftPanel.asset.meta`, `unity/Assets/UI/StatecraftTheme.tss.meta`, `unity/Assets/UI/strings.en.yaml.meta`
 
 **Interfaces:**
 - Consumes: nothing from other M3 tasks (runs on `main`).
@@ -4992,6 +5298,60 @@ public class UiFoundationTests
 }
 ```
 
+Create `unity/Assets/Tests/EditMode/UiLayoutTests.cs`:
+
+```csharp
+using System.Collections;
+using NUnit.Framework;
+using Statecraft.Game.UI;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+
+/// <summary>The screen layout at 1920x1080 and 1280x720 (the panel scales with the screen against a 1080p reference,
+/// so both resolve to the same logical layout): no fixed region overlaps another, no centre screen covers a fixed region,
+/// and the six top-bar meters fit before the screen buttons at their minimum width.</summary>
+public class UiLayoutTests
+{
+    static readonly string[] Fixed = { "top-bar", "event-card", "info-panel", "minimap" };
+    static readonly string[] Screens = { "screen-cabinet", "screen-budget", "screen-defence", "screen-why" };
+
+    [UnityTest]
+    public IEnumerator NothingOverlapsAt1080pAnd720p()
+    {
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("LayoutTest");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            for (int i = 0; i < 20 && float.IsNaN(root.Q("minimap").worldBound.width); i++) yield return null;
+            try
+            {
+                Rect R(string name) => root.Q(name).worldBound;
+                foreach (var a in Fixed)
+                    foreach (var b in Fixed)
+                        if (string.CompareOrdinal(a, b) < 0) Assert.IsFalse(R(a).Overlaps(R(b)), $"{w}x{h}: {a} {R(a)} overlaps {b} {R(b)}");
+                foreach (var s in Screens)
+                    foreach (var f in Fixed)
+                        Assert.IsFalse(R(s).Overlaps(R(f)), $"{w}x{h}: {s} {R(s)} overlaps {f} {R(f)}");
+                Assert.LessOrEqual(R("meters").xMax, R("nav").xMin + 0.5f, $"{w}x{h}: the meters run into the screen buttons");
+                foreach (var m in root.Q("meters").Children())
+                    Assert.GreaterOrEqual(m.worldBound.width, 128.5f, $"{w}x{h}: {m.name} is squeezed below its minimum width");   // 130 less pixel rounding at 2/3 scale
+            }
+            finally { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+}
+```
+
 - [ ] **Step 2: Run them and confirm they fail**
 
 Run:
@@ -5096,7 +5456,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .date-box { width: 190px; border-right-width: 1px; border-color: var(--gold-dim); padding-right: 12px; }
 .year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 36px; }
 .meters { flex-direction: row; flex-grow: 1; }
-.meter { min-width: 150px; padding: 0 16px; border-right-width: 1px; border-color: var(--gold-dim); }
+.meter { min-width: 130px; flex-shrink: 1; padding: 0 12px; border-right-width: 1px; border-color: var(--gold-dim); }
 .meter-name { font-size: 18px; color: var(--ink-dim); }
 .meter-row { flex-direction: row; align-items: flex-end; }
 .meter-value { font-size: 26px; }
@@ -5107,7 +5467,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .end-turn { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 22px; border-color: var(--gold); }
 
 /* Event card at the right, info panel at the bottom-left, minimap at the bottom-right. */
-.event-card { position: absolute; right: 16px; top: 112px; width: 420px; }
+.event-card { position: absolute; right: 16px; top: 112px; width: 420px; max-height: 560px; overflow: hidden; }
 .event-image { height: 200px; margin-bottom: 8px; -unity-background-scale-mode: scale-and-crop; background-color: var(--navy-deep); }
 .event-title { -unity-text-align: middle-center; margin-bottom: 6px; }
 .event-text { white-space: normal; margin-bottom: 8px; }
@@ -5118,7 +5478,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .minimap-view { position: absolute; border-color: var(--ink); border-width: 1px; }
 
 /* Full screens (Cabinet, Budget, Defence, Why) open in the centre, one at a time. */
-.screen { position: absolute; left: 320px; right: 460px; top: 112px; bottom: 120px; }
+.screen { position: absolute; left: 552px; right: 452px; top: 112px; bottom: 16px; }
 .screen-header { flex-direction: row; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 8px; }
 .row { flex-direction: row; align-items: center; }
 .rung { flex-direction: row; padding: 4px 8px; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); }
@@ -5357,13 +5717,25 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="87" passed="87" failed="0"` (81 + 6). `TextUsesTheSerifFaces` proves the TTF reaches the resolved style; `ASubmittedButtonFiresClickedSynchronously` proves the harness.
+Expected: `exit=0` and `total="88" passed="88" failed="0"` (81 + 7). `TextUsesTheSerifFaces` proves the TTF reaches the resolved style; `ASubmittedButtonFiresClickedSynchronously` proves the harness.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Editor/UiAssets.cs \
+  unity/Assets/Editor/UiAssets.cs.meta \
+  unity/Assets/Scripts/UI.meta \
+  unity/Assets/Scripts/UI \
+  unity/Assets/Tests/EditMode/UiFoundationTests.cs \
+  unity/Assets/Tests/EditMode/UiFoundationTests.cs.meta \
+  unity/Assets/Tests/EditMode/UiLayoutTests.cs \
+  unity/Assets/Tests/EditMode/UiLayoutTests.cs.meta \
+  unity/Assets/Tests/EditMode/UiTestKit.cs \
+  unity/Assets/Tests/EditMode/UiTestKit.cs.meta \
+  unity/Assets/UI.meta \
+  unity/Assets/UI \
+  unity/Assets/link.xml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): theme, EB Garamond, 1080p panel settings, strings, layout skeleton, UI test harness
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -5373,12 +5745,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 11: Camera input on the Input System
 
-*Track C.* Ruling 5: add the Input System reference to `Statecraft.Game.asmdef` (tech notes blocker 4), a `Camera` action map (pan, zoom, orbit) in the project-wide actions, and no camera input while the pointer is over UI. `CameraController.Step` is a static function of the rig and one frame of input, so it is tested without devices; the controller's `Update` only reads the actions. Orbit is yaw around the look-at point (`CameraRig.Yaw`; pitch stays 50°). Scroll deltas differ by browser (100–120 per notch), so zoom is normalised and clamped (tech notes §5).
+*Track C.* Ruling 5: add the Input System reference to `Statecraft.Game.asmdef` (tech notes blocker 4), a `Camera` action map (pan, zoom, orbit) in the project-wide actions, and no camera input while the pointer is over UI. Amendment A4 narrows that: over the UI the wheel and the right-drag belong to the UI, while keyboard pan and orbit still move the camera. `CameraController.Step` is a static function of the rig and one frame of input, so it is tested without devices; the controller's `Update` only reads the actions. Orbit is yaw around the look-at point (`CameraRig.Yaw`; pitch stays 50°). Scroll deltas differ by browser (100–120 per notch), so zoom is normalised and clamped (tech notes §5).
 
 **Files:**
 - Create: `unity/Assets/Scripts/Map/CameraController.cs`, `unity/Assets/Tests/EditMode/CameraInputTests.cs`
 - Modify: `unity/Assets/InputSystem_Actions.inputactions`, `unity/Assets/Scripts/Map/CameraRig.cs`, `unity/Assets/Scripts/Statecraft.Game.asmdef`, `unity/Assets/Tests/EditMode/Statecraft.Tests.EditMode.asmdef`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Assets/InputSystem_Actions.inputactions`
+- Generated by a command in this task (commit the output): `unity/Assets/InputSystem_Actions.inputactions`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/Map/CameraController.cs.meta`, `unity/Assets/Tests/EditMode/CameraInputTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `CameraRig` (`LookAt`, `Distance`, `Apply()`), the project-wide `InputSystem.actions`.
@@ -5452,14 +5825,28 @@ public class CameraInputTests
     }
 
     [Test]
-    public void NothingMovesWhileThePointerIsOverTheUi()
+    public void PointerInputIsIgnoredOverTheUi()
     {
         var rig = NewRig();
         try
         {
             var before = (rig.LookAt, rig.Distance, rig.Yaw);
-            CameraController.Step(rig, new CameraInput { Pan = Vector2.one, Zoom = 1, Orbit = 1, DragPan = Vector2.one * 50, OverUi = true }, 1f, Map);
+            CameraController.Step(rig, new CameraInput { Zoom = 1, DragPan = Vector2.one * 50, OverUi = true }, 1f, Map);
             Assert.AreEqual(before, (rig.LookAt, rig.Distance, rig.Yaw));
+        }
+        finally { Object.DestroyImmediate(rig.gameObject); }
+    }
+
+    [Test]
+    public void KeysStillPanAndOrbitWhileThePointerIsOverTheUi()
+    {
+        var rig = NewRig();
+        try
+        {
+            CameraController.Step(rig, new CameraInput { Pan = Vector2.up, Orbit = 1, Zoom = 1, OverUi = true }, 0.5f, Map);
+            Assert.AreEqual(100000f, rig.Distance, 1e-3);                 // the wheel was over the UI
+            Assert.AreEqual(30f, rig.Yaw, 1e-3);
+            Assert.Greater(rig.LookAt.z, 50000f);
         }
         finally { Object.DestroyImmediate(rig.gameObject); }
     }
@@ -5582,12 +5969,13 @@ namespace Statecraft.Game.Map
     public struct CameraInput
     {
         public Vector2 Pan, DragPan; public float Zoom, Orbit;
-        /// <summary>True while the pointer is over the UI: the camera ignores all input then.</summary>
+        /// <summary>True while the pointer is over the UI: the camera then ignores pointer input (wheel zoom, drag).</summary>
         public bool OverUi;
     }
 
     /// <summary>Pans, zooms and orbits the diorama camera from the project-wide "Camera" action map (Input System only).
-    /// No input reaches the camera while the pointer is over the UI (IsOverUi, wired by the scene). Pan speed scales with
+    /// While the pointer is over the UI (IsOverUi, wired by the scene) the wheel and the drag belong to the UI; keyboard pan
+    /// and orbit still move the camera (plan amendment A4). Pan speed scales with
     /// distance, zoom is clamped to [MinDistance, MaxDistance], and the look-at point stays on the map.</summary>
     [RequireComponent(typeof(CameraRig))]
     public sealed class CameraController : MonoBehaviour
@@ -5635,11 +6023,12 @@ namespace Statecraft.Game.Map
         /// <summary>Applies one frame of input to the rig and calls rig.Apply(). Pure apart from the rig, so it is testable.</summary>
         public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds)
         {
-            if (input.OverUi) return;
+            var zoom = input.OverUi ? 0f : input.Zoom;
+            var drag = input.OverUi ? Vector2.zero : input.DragPan;
             rig.Yaw = Mathf.Repeat(rig.Yaw + input.Orbit * OrbitDegreesPerSecond * dt, 360f);
-            rig.Distance = Mathf.Clamp(rig.Distance * (1f - input.Zoom * ZoomPerStep), MinDistance, MaxDistance);
+            rig.Distance = Mathf.Clamp(rig.Distance * (1f - zoom * ZoomPerStep), MinDistance, MaxDistance);
             var yaw = Quaternion.Euler(0, rig.Yaw, 0);
-            var move = input.Pan * (PanPerSecond * dt) - input.DragPan * DragPanPerPixel;
+            var move = input.Pan * (PanPerSecond * dt) - drag * DragPanPerPixel;
             var delta = yaw * new Vector3(move.x, 0, move.y) * rig.Distance;
             var p = rig.LookAt + delta;
             rig.LookAt = new Vector3(Mathf.Clamp(p.x, bounds.xMin, bounds.xMax), p.y, Mathf.Clamp(p.z, bounds.yMin, bounds.yMax));
@@ -5657,13 +6046,20 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="85" passed="85" failed="0"` on this branch (81 + 4).
+Expected: `exit=0` and `total="86" passed="86" failed="0"` on this branch (81 at the base, + 5).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/InputSystem_Actions.inputactions \
+  unity/Assets/Scripts/Map/CameraController.cs \
+  unity/Assets/Scripts/Map/CameraController.cs.meta \
+  unity/Assets/Scripts/Map/CameraRig.cs \
+  unity/Assets/Scripts/Statecraft.Game.asmdef \
+  unity/Assets/Tests/EditMode/CameraInputTests.cs \
+  unity/Assets/Tests/EditMode/CameraInputTests.cs.meta \
+  unity/Assets/Tests/EditMode/Statecraft.Tests.EditMode.asmdef
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity): Input System camera (pan, zoom, orbit) that ignores input over the UI
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -5676,7 +6072,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Editor/ContentSync.cs`, `unity/Assets/Scripts/Boot/ContentManifest.cs`, `unity/Assets/Scripts/Boot/GameBoot.cs`, `unity/Assets/Scripts/Boot/GameInputs.cs`, `unity/Assets/Tests/EditMode/GameInputsTests.cs`
 - Modify: `.gitignore`, `unity/Assets/Editor/MapCapture.cs`, `unity/Assets/Map.unity`, `unity/Assets/Scripts/Map/MapScene.cs`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Assets/Map.unity`
+- Generated by a command in this task (commit the output): `unity/Assets/Map.unity`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Editor/ContentSync.cs.meta`, `unity/Assets/Scripts/Boot.meta`, `unity/Assets/Scripts/Boot/ContentManifest.cs.meta`, `unity/Assets/Scripts/Boot/GameBoot.cs.meta`, `unity/Assets/Scripts/Boot/GameInputs.cs.meta`, `unity/Assets/Tests/EditMode/GameInputsTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `ContentLoader.Load(Func<string,string?> readFile, IEnumerable<string> eventFiles)`, `HeightmapLoader.Load(string, byte[], string)`, `MapBuilder.LoadHexes(string, string)`, `SettlementPlacer.Parse/DefaultFileName`, `Paths.Content/StreamingMap`.
@@ -6161,13 +6558,22 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="89" passed="89" failed="0"` on this branch (85 + 4). The map tests still pass: `MapScene.Build()` reads the same files as before.
+Expected: `exit=0` and `total="90" passed="90" failed="0"` on this branch (+4). The map tests still pass: `MapScene.Build()` reads the same files as before.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add .gitignore \
+  unity/Assets/Editor/ContentSync.cs \
+  unity/Assets/Editor/ContentSync.cs.meta \
+  unity/Assets/Editor/MapCapture.cs \
+  unity/Assets/Map.unity \
+  unity/Assets/Scripts/Boot.meta \
+  unity/Assets/Scripts/Boot \
+  unity/Assets/Scripts/Map/MapScene.cs \
+  unity/Assets/Tests/EditMode/GameInputsTests.cs \
+  unity/Assets/Tests/EditMode/GameInputsTests.cs.meta
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity): content manifest in StreamingAssets, UnityWebRequest loader, GameBoot
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -6181,7 +6587,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Create: `unity/Assets/Editor/Build.cs`, `unity/Assets/Tests/EditMode/ProjectSettingsTests.cs`, `unity/Assets/WebGLTemplates/Statecraft/index.html`
 - Modify: `.gitignore`, `unity/Assets/Editor/ProjectSetup.cs`, `unity/Packages/manifest.json`, `unity/Packages/packages-lock.json`, `unity/ProjectSettings/ProjectSettings.asset`
 - Delete: `unity/Assets/Scenes/SampleScene.unity`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Packages/packages-lock.json`, `unity/ProjectSettings/ProjectSettings.asset`
+- Generated by a command in this task (commit the output): `unity/Packages/packages-lock.json`, `unity/ProjectSettings/ProjectSettings.asset`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Editor/Build.cs.meta`, `unity/Assets/Tests/EditMode/ProjectSettingsTests.cs.meta`, `unity/Assets/WebGLTemplates.meta`, `unity/Assets/WebGLTemplates/Statecraft.meta`, `unity/Assets/WebGLTemplates/Statecraft/index.html.meta`
 
 **Interfaces:**
 - Consumes: `MapCapture.MakeScene` output `Assets/Map.unity` (Task 12), `ContentSync` (runs before every build).
@@ -6469,8 +6876,9 @@ git rm -q unity/Assets/Scenes/SampleScene.unity unity/Assets/Scenes/SampleScene.
 printf 'unity/Builds/\n' >> .gitignore
 "$UNITY" -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.ProjectSetup.Apply -logFile unity-setup.log; echo exit=$?
 grep -E "webGLTemplate|webGLCompressionFormat" unity/ProjectSettings/ProjectSettings.asset
+git add unity/ProjectSettings/ProjectSettings.asset unity/Packages/manifest.json unity/Packages/packages-lock.json
 ```
-Expected: `exit=0`, `webGLTemplate: PROJECT:Statecraft`, `webGLCompressionFormat: 2`. Unity also rewrites `unity/Packages/packages-lock.json` for the pruned packages; commit it.
+Expected: `exit=0`, `webGLTemplate: PROJECT:Statecraft`, `webGLCompressionFormat: 2`. Unity also rewrites `unity/Packages/packages-lock.json` for the pruned packages. `git checkout --` restores from the index, so stage real settings changes before any build: the build step below discards build-time rewrites with `git checkout --`, which would otherwise also throw away these settings.
 
 - [ ] **Step 4: Run the tests and confirm they pass**
 
@@ -6480,14 +6888,14 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="92" passed="92" failed="0"` on this branch (89 + 3).
+Expected: `exit=0` and `total="93" passed="93" failed="0"` on this branch (+3).
 
 - [ ] **Step 5: Build once and check the output**
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log; echo exit=$?
-grep "BUILD " build-web.log; ls unity/Builds/Web-disabled unity/Builds/Web-disabled/StreamingAssets/content | head
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log; echo exit=$?
+grep "BUILD " unity-build-web.log; ls unity/Builds/Web-disabled unity/Builds/Web-disabled/StreamingAssets/content | head
 grep -c "autoSyncPersistentDataPath: true" unity/Builds/Web-disabled/index.html
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
 ```
@@ -6496,8 +6904,20 @@ Expected: `exit=0`; `BUILD Succeeded WebGL -> Builds/Web-disabled: ...` (about 7
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add .gitignore \
+  unity/Assets/Editor/Build.cs \
+  unity/Assets/Editor/Build.cs.meta \
+  unity/Assets/Editor/ProjectSetup.cs \
+  unity/Assets/Tests/EditMode/ProjectSettingsTests.cs \
+  unity/Assets/Tests/EditMode/ProjectSettingsTests.cs.meta \
+  unity/Assets/WebGLTemplates.meta \
+  unity/Assets/WebGLTemplates/Statecraft.meta \
+  unity/Assets/WebGLTemplates/Statecraft/index.html \
+  unity/Assets/WebGLTemplates/Statecraft/index.html.meta \
+  unity/Packages/manifest.json \
+  unity/Packages/packages-lock.json \
+  unity/ProjectSettings/ProjectSettings.asset
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity): Statecraft WebGL template, headless Web/Mac build script, Map.unity boot scene, package prune
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -6515,7 +6935,7 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `Passed:   386`, `96 passed`, `exit=0` and `total="99" passed="99" failed="0"`.
+Expected: `Passed:   391`, `96 passed`, `exit=0` and `total="101" passed="101" failed="0"`.
 
 Phase 2 branches start here: Track B (Tasks 14–21) and Track C (Task 22).
 
@@ -6529,6 +6949,7 @@ Every task in this track adds one presenter: a plain class that takes the UI roo
 
 **Files:**
 - Create: `unity/Assets/Scripts/UI/HudModel.cs`, `unity/Assets/Scripts/UI/HudPresenter.cs`, `unity/Assets/Scripts/UI/ScreenNav.cs`, `unity/Assets/Scripts/UI/SimBridge.cs`, `unity/Assets/Scripts/UI/ToastPresenter.cs`, `unity/Assets/Tests/EditMode/HudTests.cs`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/HudModel.cs.meta`, `unity/Assets/Scripts/UI/HudPresenter.cs.meta`, `unity/Assets/Scripts/UI/ScreenNav.cs.meta`, `unity/Assets/Scripts/UI/SimBridge.cs.meta`, `unity/Assets/Scripts/UI/ToastPresenter.cs.meta`, `unity/Assets/Tests/EditMode/HudTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `GameSession` (Task 9: `New`, `Step`, `State`, `Previous`, `Last`), `AttentionSystem.Cost/IsCommandKind`, `EffectsSystem.Approval`, `UiText`, `UiTestKit`.
@@ -6929,13 +7350,24 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="104" passed="104" failed="0"` (99 + 5).
+Expected: `exit=0` and `total="106" passed="106" failed="0"` (+5).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/UI/HudModel.cs \
+  unity/Assets/Scripts/UI/HudModel.cs.meta \
+  unity/Assets/Scripts/UI/HudPresenter.cs \
+  unity/Assets/Scripts/UI/HudPresenter.cs.meta \
+  unity/Assets/Scripts/UI/ScreenNav.cs \
+  unity/Assets/Scripts/UI/ScreenNav.cs.meta \
+  unity/Assets/Scripts/UI/SimBridge.cs \
+  unity/Assets/Scripts/UI/SimBridge.cs.meta \
+  unity/Assets/Scripts/UI/ToastPresenter.cs \
+  unity/Assets/Scripts/UI/ToastPresenter.cs.meta \
+  unity/Assets/Tests/EditMode/HudTests.cs \
+  unity/Assets/Tests/EditMode/HudTests.cs.meta
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): SimBridge, top bar with changes since last turn, refusal messages, screen navigation
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -6948,7 +7380,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Editor/PortraitImport.cs`, `unity/Assets/Scripts/UI/EventCardPresenter.cs`, `unity/Assets/Scripts/UI/PortraitCatalog.cs`, `unity/Assets/Tests/EditMode/EventCardTests.cs`, `unity/Assets/UI/Portraits/PORTRAITS.txt`, `unity/Assets/UI/Portraits/PortraitCatalog.asset`, `unity/Assets/UI/Portraits/ben_gurion.jpg`, `unity/Assets/UI/Portraits/bentov.jpg`, `unity/Assets/UI/Portraits/bernstein.jpg`, `unity/Assets/UI/Portraits/gruenbaum.jpg`, `unity/Assets/UI/Portraits/kaplan.jpg`, `unity/Assets/UI/Portraits/levin.jpg`, `unity/Assets/UI/Portraits/maimon.jpg`, `unity/Assets/UI/Portraits/remez.jpg`, `unity/Assets/UI/Portraits/rosen.jpg`, `unity/Assets/UI/Portraits/shapira.jpg`, `unity/Assets/UI/Portraits/sharett.jpg`, `unity/Assets/UI/Portraits/sheetrit.jpg`, `unity/Assets/UI/Portraits/zisling.jpg`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Assets/UI/Portraits/PORTRAITS.txt`, `unity/Assets/UI/Portraits/PortraitCatalog.asset`, `unity/Assets/UI/Portraits/ben_gurion.jpg`, `unity/Assets/UI/Portraits/bentov.jpg`, `unity/Assets/UI/Portraits/bernstein.jpg`, `unity/Assets/UI/Portraits/gruenbaum.jpg`, `unity/Assets/UI/Portraits/kaplan.jpg`, `unity/Assets/UI/Portraits/levin.jpg`, `unity/Assets/UI/Portraits/maimon.jpg`, `unity/Assets/UI/Portraits/remez.jpg`, `unity/Assets/UI/Portraits/rosen.jpg`, `unity/Assets/UI/Portraits/shapira.jpg`, `unity/Assets/UI/Portraits/sharett.jpg`, `unity/Assets/UI/Portraits/sheetrit.jpg`, `unity/Assets/UI/Portraits/zisling.jpg`
+- Generated by a command in this task (commit the output): `unity/Assets/UI/Portraits/PORTRAITS.txt`, `unity/Assets/UI/Portraits/PortraitCatalog.asset`, `unity/Assets/UI/Portraits/ben_gurion.jpg`, `unity/Assets/UI/Portraits/bentov.jpg`, `unity/Assets/UI/Portraits/bernstein.jpg`, `unity/Assets/UI/Portraits/gruenbaum.jpg`, `unity/Assets/UI/Portraits/kaplan.jpg`, `unity/Assets/UI/Portraits/levin.jpg`, `unity/Assets/UI/Portraits/maimon.jpg`, `unity/Assets/UI/Portraits/remez.jpg`, `unity/Assets/UI/Portraits/rosen.jpg`, `unity/Assets/UI/Portraits/shapira.jpg`, `unity/Assets/UI/Portraits/sharett.jpg`, `unity/Assets/UI/Portraits/sheetrit.jpg`, `unity/Assets/UI/Portraits/zisling.jpg`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Editor/PortraitImport.cs.meta`, `unity/Assets/Scripts/UI/EventCardPresenter.cs.meta`, `unity/Assets/Scripts/UI/PortraitCatalog.cs.meta`, `unity/Assets/Tests/EditMode/EventCardTests.cs.meta`, `unity/Assets/UI/Portraits.meta`, `unity/Assets/UI/Portraits/PORTRAITS.txt.meta`, `unity/Assets/UI/Portraits/PortraitCatalog.asset.meta`, `unity/Assets/UI/Portraits/ben_gurion.jpg.meta`, `unity/Assets/UI/Portraits/bentov.jpg.meta`, `unity/Assets/UI/Portraits/bernstein.jpg.meta`, `unity/Assets/UI/Portraits/gruenbaum.jpg.meta`, `unity/Assets/UI/Portraits/kaplan.jpg.meta`, `unity/Assets/UI/Portraits/levin.jpg.meta`, `unity/Assets/UI/Portraits/maimon.jpg.meta`, `unity/Assets/UI/Portraits/remez.jpg.meta`, `unity/Assets/UI/Portraits/rosen.jpg.meta`, `unity/Assets/UI/Portraits/shapira.jpg.meta`, `unity/Assets/UI/Portraits/sharett.jpg.meta`, `unity/Assets/UI/Portraits/sheetrit.jpg.meta`, `unity/Assets/UI/Portraits/zisling.jpg.meta`
 
 **Interfaces:**
 - Consumes: `SimBridge`, `ToastPresenter.Refuse`, `Cabinet.Holder/Fill`, `EventSystem.FillDate/Render(Content, GameState, GameEvent)`, `Person.Portrait`.
@@ -7263,13 +7696,24 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="107" passed="107" failed="0"`.
+Expected: `exit=0` and `total="109" passed="109" failed="0"`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Editor/PortraitImport.cs \
+  unity/Assets/Editor/PortraitImport.cs.meta \
+  unity/Assets/Scripts/UI/EventCardPresenter.cs \
+  unity/Assets/Scripts/UI/EventCardPresenter.cs.meta \
+  unity/Assets/Scripts/UI/PortraitCatalog.cs \
+  unity/Assets/Scripts/UI/PortraitCatalog.cs.meta \
+  unity/Assets/Tests/EditMode/EventCardTests.cs \
+  unity/Assets/Tests/EditMode/EventCardTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/Portraits.meta \
+  unity/Assets/UI/Portraits \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): event card with the minister's public-domain portrait and option buttons
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -7282,6 +7726,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Scripts/UI/DefencePresenter.cs`, `unity/Assets/Tests/EditMode/DefenceScreenTests.cs`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/DefencePresenter.cs.meta`, `unity/Assets/Tests/EditMode/DefenceScreenTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `SimBridge.Queue/QueuedLike/Withdraw`, `SecurityOrder`, `SetMobilization`, `SecuritySystem.TurnLengthFor`, `Rules.RungMinMobilization/MobilizationCostPerYear`, `Cabinet.Holder`.
@@ -7537,13 +7982,18 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="110" passed="110" failed="0"`.
+Expected: `exit=0` and `total="112" passed="112" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/UI/DefencePresenter.cs \
+  unity/Assets/Scripts/UI/DefencePresenter.cs.meta \
+  unity/Assets/Tests/EditMode/DefenceScreenTests.cs \
+  unity/Assets/Tests/EditMode/DefenceScreenTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): Defence screen: escalation ladder, ceasefire clock, security orders, reserve call-up
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -7551,11 +8001,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 17: The Budget screen
 
-*Track B.* Ruling 1: Budget. Each budgeted ministry's share, its minister, and the effect multiplier the share buys (`EffectsSystem.BudgetFactor`'s formula); the money position; and whether the legislature must approve (per-era `budget_approval`, spec §3). ± moves a ministry by 5 points and rescales the others proportionally; the largest other share absorbs rounding, so the total is exactly 1 and the sim never refuses the allocation for its sum.
+*Track B.* Ruling 1: Budget. Each budgeted ministry's share, its minister, and the effect multiplier the share buys (the sim's own `EffectsSystem.BudgetFactor(shares, office)`, Task 5); the money position; and whether the legislature must approve (per-era `budget_approval`, spec §3). ± moves a ministry by 5 points and rescales the others proportionally; the largest other share absorbs rounding, so the total is exactly 1 and the sim never refuses the allocation for its sum.
 
 **Files:**
 - Create: `unity/Assets/Scripts/UI/BudgetPresenter.cs`, `unity/Assets/Tests/EditMode/BudgetScreenTests.cs`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/BudgetPresenter.cs.meta`, `unity/Assets/Tests/EditMode/BudgetScreenTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `AllocateBudget`, `Rules.BudgetStart`, `Offices.Legislature`, `PoliticsSystem.CoalitionSeats`, `Cabinet.Holder`.
@@ -7645,7 +8096,7 @@ using UnityEngine.UIElements;
 namespace Statecraft.Game.UI
 {
     /// <summary>The Budget screen: each budgeted ministry's share of spending, its minister and the effect multiplier the
-    /// share gives (EffectsSystem.BudgetFactor), the money position, and whether the legislature must approve. +/- moves
+    /// share gives (the sim's own EffectsSystem.BudgetFactor), the money position, and whether the legislature must approve. +/- moves
     /// a ministry by 5 points and rescales the others so shares always sum to 1. Submit queues AllocateBudget.</summary>
     public sealed class BudgetPresenter
     {
@@ -7711,7 +8162,7 @@ namespace Statecraft.Game.UI
                 row.Add(new Button(() => Change(office, -Step)) { name = "budget-" + office + "-down", text = "-" });
                 row.Add(new Label(text.Format("budget.share", share * 100)) { name = "budget-" + office + "-share" });
                 row.Add(new Button(() => Change(office, +Step)) { name = "budget-" + office + "-up", text = "+" });
-                var factor = Math.Min(1.5, 0.5 + share * draft.Count / 2.0);
+                var factor = EffectsSystem.BudgetFactor(draft, office);
                 row.Add(new Label(text.Format("budget.factor", factor)) { name = "budget-" + office + "-factor" });
                 row[4].AddToClassList("muted");
                 rows.Add(row);
@@ -7789,13 +8240,18 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="112" passed="112" failed="0"`.
+Expected: `exit=0` and `total="114" passed="114" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/UI/BudgetPresenter.cs \
+  unity/Assets/Scripts/UI/BudgetPresenter.cs.meta \
+  unity/Assets/Tests/EditMode/BudgetScreenTests.cs \
+  unity/Assets/Tests/EditMode/BudgetScreenTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): Budget screen with shares that always sum to one
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -7808,6 +8264,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Scripts/UI/WhyPresenter.cs`, `unity/Assets/Tests/EditMode/WhyScreenTests.cs`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/WhyPresenter.cs.meta`, `unity/Assets/Tests/EditMode/WhyScreenTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `GameSession.Last.Why` (`Cause.System`, `Cause.Message`), `GameSession.Previous`.
@@ -7969,13 +8426,18 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="113" passed="113" failed="0"`.
+Expected: `exit=0` and `total="115" passed="115" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/UI/WhyPresenter.cs \
+  unity/Assets/Scripts/UI/WhyPresenter.cs.meta \
+  unity/Assets/Tests/EditMode/WhyScreenTests.cs \
+  unity/Assets/Tests/EditMode/WhyScreenTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): Why did this happen? panel grouped by system
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -7988,6 +8450,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Scripts/UI/CabinetPresenter.cs`, `unity/Assets/Tests/EditMode/CabinetScreenTests.cs`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/CabinetPresenter.cs.meta`, `unity/Assets/Tests/EditMode/CabinetScreenTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `Cabinet.Lineup/Candidates/Holder`, `Appoint` command, `Offices.Government/PartyOf`, `PoliticsSystem.CoalitionSeats`, `PortraitCatalog`.
@@ -8221,13 +8684,18 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="115" passed="115" failed="0"`.
+Expected: `exit=0` and `total="117" passed="117" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/UI/CabinetPresenter.cs \
+  unity/Assets/Scripts/UI/CabinetPresenter.cs.meta \
+  unity/Assets/Tests/EditMode/CabinetScreenTests.cs \
+  unity/Assets/Tests/EditMode/CabinetScreenTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): Cabinet screen: lineup, candidates with reasons, Appoint
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -8240,6 +8708,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Create: `unity/Assets/Scripts/Map/HexPicker.cs`, `unity/Assets/Scripts/Map/MapPointer.cs`, `unity/Assets/Scripts/Map/PlacementLayer.cs`, `unity/Assets/Scripts/UI/InfoPanelPresenter.cs`, `unity/Assets/Scripts/UI/MinimapPresenter.cs`, `unity/Assets/Tests/EditMode/MapActionUiTests.cs`
 - Modify: `unity/Assets/Scripts/Map/GeoFrame.cs`, `unity/Assets/Scripts/Map/MapBuilder.cs`, `unity/Assets/Scripts/Map/MapScene.cs`, `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/Map/HexPicker.cs.meta`, `unity/Assets/Scripts/Map/MapPointer.cs.meta`, `unity/Assets/Scripts/Map/PlacementLayer.cs.meta`, `unity/Assets/Scripts/UI/InfoPanelPresenter.cs.meta`, `unity/Assets/Scripts/UI/MinimapPresenter.cs.meta`, `unity/Assets/Tests/EditMode/MapActionUiTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `MapActions.Check/At/Kind`, `MapAction`, `Content.HexAt/SettlementHexes`, `Rules.MapActions`, `MapScene.Frame/Terrain/MarkerMaterial`, `MapBuilder.LoadHexes`, `SettlementPlacer.Parse`, Task 10's `UiPointer`, Task 11's Input System reference, Task 12's `MapScene.Build(MapInputs)`.
@@ -8833,13 +9302,29 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="121" passed="121" failed="0"`.
+Expected: `exit=0` and `total="123" passed="123" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/Map/GeoFrame.cs \
+  unity/Assets/Scripts/Map/HexPicker.cs \
+  unity/Assets/Scripts/Map/HexPicker.cs.meta \
+  unity/Assets/Scripts/Map/MapBuilder.cs \
+  unity/Assets/Scripts/Map/MapPointer.cs \
+  unity/Assets/Scripts/Map/MapPointer.cs.meta \
+  unity/Assets/Scripts/Map/MapScene.cs \
+  unity/Assets/Scripts/Map/PlacementLayer.cs \
+  unity/Assets/Scripts/Map/PlacementLayer.cs.meta \
+  unity/Assets/Scripts/UI/InfoPanelPresenter.cs \
+  unity/Assets/Scripts/UI/InfoPanelPresenter.cs.meta \
+  unity/Assets/Scripts/UI/MinimapPresenter.cs \
+  unity/Assets/Scripts/UI/MinimapPresenter.cs.meta \
+  unity/Assets/Tests/EditMode/MapActionUiTests.cs \
+  unity/Assets/Tests/EditMode/MapActionUiTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui,map): info panel with transit camps and housing, minimap, placement markers, map clicks
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -8847,11 +9332,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 21: Autosave, continue, and New Game
 
-*Track B.* Ruling 4 and spec §7: autosave every turn, and load that replays to the same state hash. On WebGL the autosave goes to the fixed folder `/idbfs/statecraft-saves`, not `Application.persistentDataPath`, which hashes the page URL and so changes with every itch.io upload (ruling 6, tech notes §3); the template's `autoSyncPersistentDataPath` persists the file when it is closed. Writes go to a `.tmp` file first. The next start continues the autosave; an unreadable one is set aside (`autosave.bad.txt`) with a message and a new game starts. New Game asks for a second press (the browser frame shows no confirm dialogs).
+*Track B.* Ruling 4 and spec §7: autosave every turn, and load that replays to the same state hash. On WebGL the autosave goes to the fixed folder `/idbfs/statecraft-saves`, not `Application.persistentDataPath`, which hashes the page URL and so changes with every itch.io upload (ruling 6, tech notes §3); the template's `autoSyncPersistentDataPath` persists the file when it is closed. Writes go to a `.tmp` file first. The next start continues the autosave; any failure while reading or replaying it (not only `SaveException`) sets it aside (`autosave.bad.txt`) with a message, and a new game starts. New Game asks for a second press (the browser frame shows no confirm dialogs).
 
 **Files:**
 - Create: `unity/Assets/Scripts/SaveStore.cs`, `unity/Assets/Scripts/UI/GameStart.cs`, `unity/Assets/Scripts/UI/NewGamePresenter.cs`, `unity/Assets/Tests/EditMode/SaveUiTests.cs`
 - Modify: `unity/Assets/UI/Game.uxml`, `unity/Assets/UI/strings.en.yaml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/SaveStore.cs.meta`, `unity/Assets/Scripts/UI/GameStart.cs.meta`, `unity/Assets/Scripts/UI/NewGamePresenter.cs.meta`, `unity/Assets/Tests/EditMode/SaveUiTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `GameSession.New/Load`, `SaveGame.Write`, `SaveException`, `SimBridge.TurnEnded/Replace`, `ToastPresenter.Show`.
@@ -8907,6 +9393,20 @@ public class SaveUiTests
         Assert.AreEqual(0, session.State.Turn);
         StringAssert.StartsWith("Your saved game could not be loaded (line 1: save schema version 9 is newer", notes[0]);
         Assert.IsFalse(File.Exists(store.AutosavePath));
+        Assert.IsTrue(File.Exists(Path.Combine(store.Directory, "autosave.bad.txt")));
+    }
+
+    [Test]
+    public void ASaveThatThrowsWhileReplayingIsSetAsideToo()
+    {
+        var store = TempStore();
+        // Parses (a valid header), but Open mode makes the replay throw NotSupportedException, not SaveException.
+        var good = GameSession.New(C, 9, Mode.Historical).Save.Write();
+        store.WriteAutosave(good.Replace("mode Historical", "mode Open"));
+        var notes = new List<string>();
+        var session = GameStart.Begin(C, store, () => 6UL, notes);
+        Assert.AreEqual(0, session.State.Turn);
+        StringAssert.StartsWith("Your saved game could not be loaded (Open mode arrives with milestone M4.)", notes[0]);
         Assert.IsTrue(File.Exists(Path.Combine(store.Directory, "autosave.bad.txt")));
     }
 
@@ -9009,7 +9509,8 @@ using Statecraft.Sim;
 namespace Statecraft.Game.UI
 {
     /// <summary>Starting a session: continue the autosave when there is one (replayed to the same state hash), else a new
-    /// Historical game. Anything the player should know (a content-change warning, an unreadable save) goes to notes.</summary>
+    /// Historical game. Anything the player should know (a content-change warning, an unreadable save) goes to notes.
+    /// No failure while reading or replaying the autosave stops the game from starting: the file is set aside.</summary>
     public static class GameStart
     {
         public static ulong NewSeed() => (ulong)DateTime.UtcNow.Ticks;
@@ -9025,7 +9526,7 @@ namespace Statecraft.Game.UI
                     notes.AddRange(warnings);
                     return loaded;
                 }
-                catch (SaveException e)
+                catch (Exception e)   // any failure (a bad save, a replay that throws): never block the start
                 {
                     store.SetAsideAutosave();
                     notes.Add($"Your saved game could not be loaded ({e.Message}). A new game has started.");
@@ -9118,13 +9619,22 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="125" passed="125" failed="0"`.
+Expected: `exit=0` and `total="128" passed="128" failed="0"`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Scripts/SaveStore.cs \
+  unity/Assets/Scripts/SaveStore.cs.meta \
+  unity/Assets/Scripts/UI/GameStart.cs \
+  unity/Assets/Scripts/UI/GameStart.cs.meta \
+  unity/Assets/Scripts/UI/NewGamePresenter.cs \
+  unity/Assets/Scripts/UI/NewGamePresenter.cs.meta \
+  unity/Assets/Tests/EditMode/SaveUiTests.cs \
+  unity/Assets/Tests/EditMode/SaveUiTests.cs.meta \
+  unity/Assets/UI/Game.uxml \
+  unity/Assets/UI/strings.en.yaml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(ui): autosave every turn to a URL-independent folder, continue on start, New Game
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -9134,16 +9644,18 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 22: The golden hash in WebGL and macOS IL2CPP players
 
-*Track C.* Ruling 5 and the M0–M2 Deferred row "golden hash asserted in a macOS IL2CPP player and a WebGL player". `GameBoot` runs both golden playthroughs when asked (URL query `golden` on WebGL; `-golden` on desktop, which quits with exit code 0 or 1) and logs `GOLDEN OK <year> <hash>` or `GOLDEN FAIL ...`. `tools/web_check.py` serves a build on `http://localhost` (a secure context, so Brotli works) with the right `Content-Encoding` and MIME types, opens it in Chrome for Testing (`--headless=new`), and reads the console from Chrome's stderr; Unity's `Debug.Log` adds a stack trace on following lines, so only each message's first line is matched. See Controller question 1 for why this replaces a separate scene and Playwright. Verified results: WebGL `GOLDEN OK` for both runs; macOS IL2CPP `-golden` exits 0 without `-ffp-contract=off`.
+*Track C.* Ruling 5 and the M0–M2 Deferred row "golden hash asserted in a macOS IL2CPP player and a WebGL player". `GameBoot` runs both golden playthroughs when asked (URL query parameter `golden` on WebGL, matched as `[?&]golden` so a path word never turns it on; `-golden` on desktop, which quits with exit code 0 or 1) and logs `GOLDEN OK <year> <hash>` or `GOLDEN FAIL ...`. `tools/web_check.py` serves a build on `http://localhost` (a secure context, so Brotli works) with the right `Content-Encoding` and MIME types, opens it in Chrome for Testing (`--headless=new`), and reads the console from Chrome's stderr; Unity's `Debug.Log` adds a stack trace on following lines, so only each message's first line is matched. See Controller question 1 for why this replaces a separate scene and Playwright. Verified results: WebGL `GOLDEN OK` for both runs; macOS IL2CPP `-golden` exits 0 without `-ffp-contract=off`.
 
 **Files:**
-- Create: `tools/tests/test_web_check.py`, `tools/web_check.py`, `unity/Assets/Scripts/Boot/GoldenCheck.cs`, `unity/Assets/Tests/EditMode/GoldenCheckTests.cs`
+- Create: `tools/tests/test_web_check.py`, `tools/web_check.py`, `unity/Assets/Scripts/Boot/GoldenCheck.cs`, `unity/Assets/Scripts/Boot/UrlFlags.cs`, `unity/Assets/Tests/EditMode/GoldenCheckTests.cs`
 - Modify: `docs/determinism.md`, `tools/README.md`, `unity/Assets/Scripts/Boot/GameBoot.cs`, `unity/Assets/link.xml`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/Boot/GoldenCheck.cs.meta`, `unity/Assets/Scripts/Boot/UrlFlags.cs.meta`, `unity/Assets/Tests/EditMode/GoldenCheckTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `GoldenRun.Play/Hash1950/Hash1952/Until1950/Until1952` (Tasks 1, 5), `GameBoot` (Task 12), `Build.Web/Mac` (Task 13), `Content.Hash` (Task 9).
 - Produces:
   - `Statecraft.Game.Boot.GoldenCheck { static bool Requested(); static (bool ok, List<string> lines) Run(Content); }`.
+  - `Statecraft.Game.Boot.UrlFlags { static bool Has(string? url, string name); static int Int(string? url, string name); }` (Tasks 23 and 24 use it for `smoke` and `profile`).
   - `tools/web_check.py BUILD [--query Q] [--expect TEXT]... [--fail REGEX] [--timeout S] [--swiftshader]`: exit 0 when every expected text appears in the console, 1 on a failure line (default `GOLDEN FAIL|SMOKE FAIL|BOOT FAIL`) or timeout; functions `serve(root) -> ThreadingHTTPServer`, `CONSOLE` regex.
   - `link.xml` preserves `Statecraft.Game.Boot.*` (JsonUtility's manifest type).
 
@@ -9201,6 +9713,21 @@ public class GoldenCheckTests
         Assert.IsTrue(ok, string.Join("\n", lines));
         Assert.AreEqual(new[] { "GOLDEN OK 1950 " + GoldenRun.Hash1950, "GOLDEN OK 1952 " + GoldenRun.Hash1952 }, lines);
     }
+
+    [TestCase("http://localhost:8000/index.html?golden", true)]
+    [TestCase("http://localhost:8000/index.html?smoke=5&golden", true)]
+    [TestCase("https://html.itch.zone/html/123/golden-project/index.html", false)]
+    [TestCase("http://localhost:8000/index.html?goldenrod=1", false)]
+    [TestCase("http://localhost:8000/index.html", false)]
+    public void TheGoldenFlagIsAQueryParameterNotAPathWord(string url, bool expected) =>
+        Assert.AreEqual(expected, UrlFlags.Has(url, "golden"));
+
+    [Test]
+    public void IntegerFlagsReadTheirValue()
+    {
+        Assert.AreEqual(5, UrlFlags.Int("http://x/index.html?golden&smoke=5", "smoke"));
+        Assert.AreEqual(0, UrlFlags.Int("http://x/smoke=5/index.html", "smoke"));
+    }
 }
 ```
 
@@ -9240,10 +9767,10 @@ Verified on .NET, Unity editor Mono, a macOS IL2CPP player (Apple clang, no `-ff
 IL2CPP player in Chrome (M3 Task 22). Re-check with:
 
 ```
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952"
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile build-mac.log
-"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile golden-mac.log; echo exit=$?
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile unity-build-mac.log
+"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile unity-golden-mac.log; echo exit=$?
 ```
 
 ````
@@ -9476,7 +10003,7 @@ namespace Statecraft.Game.Boot
     public static class GoldenCheck
     {
         public static bool Requested() => Application.platform == RuntimePlatform.WebGLPlayer
-            ? Application.absoluteURL.Contains("golden")
+            ? UrlFlags.Has(Application.absoluteURL, "golden")
             : Environment.GetCommandLineArgs().Contains("-golden");
 
         public static (bool ok, List<string> lines) Run(Content c)
@@ -9491,6 +10018,31 @@ namespace Statecraft.Game.Boot
                 else { ok = false; lines.Add($"GOLDEN FAIL {year} {hash} expected {expected}"); }
             }
             return (ok, lines);
+        }
+    }
+}
+```
+
+Create `unity/Assets/Scripts/Boot/UrlFlags.cs`:
+
+```csharp
+#nullable enable
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace Statecraft.Game.Boot
+{
+    /// <summary>Flags in the WebGL page URL's query: "?golden", "&amp;smoke=5", "?profile". A flag must start a query
+    /// parameter and end at a word boundary, so a path such as ".../golden-project/..." never turns one on.</summary>
+    public static class UrlFlags
+    {
+        public static bool Has(string? url, string name) => Regex.IsMatch(url ?? "", @"[?&]" + Regex.Escape(name) + @"\b");
+
+        /// <summary>The flag's integer value ("smoke=5" -> 5), or 0 when absent.</summary>
+        public static int Int(string? url, string name)
+        {
+            var m = Regex.Match(url ?? "", @"[?&]" + Regex.Escape(name) + @"=(\d+)");
+            return m.Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
         }
     }
 }
@@ -9520,33 +10072,44 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="100" passed="100" failed="0"` on this branch (99 + 1).
+Expected: `exit=0` and `total="108" passed="108" failed="0"` on this branch (merge point 1 + 7: one golden check and six flag cases).
 
 - [ ] **Step 5: Check the golden hash in a WebGL player**
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log; grep "BUILD " build-web.log
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log; grep "BUILD " unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "BOOT OK"
 ```
-Expected: `BUILD Succeeded WebGL ...`, then `console: GOLDEN OK 1950 d862e403228d6dd1cabc908443cd246a9ca8161f495a2e277f6f11fe6cb39d84`, `console: GOLDEN OK 1952 0be1fd2f4356eeb1c378c8dcbabfa70c5f28fbf277ad659704157a2a4624f89a`, `console: BOOT OK content <64 hex>`, `PASS: saw ...`, exit 0. If the page reports `BOOT FAIL Your browser does not support WebGL`, the machine has no GPU for headless Chrome: add `--swiftshader`. A `GOLDEN FAIL` line is a determinism bug, not a reason to change a constant.
+Expected: `BUILD Succeeded WebGL ...`, then `console: GOLDEN OK 1950 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `console: GOLDEN OK 1952 4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`, `console: BOOT OK content <64 hex>`, `PASS: saw ...`, exit 0. If the page reports `BOOT FAIL Your browser does not support WebGL`, the machine has no GPU for headless Chrome: add `--swiftshader`. A `GOLDEN FAIL` line is a determinism bug, not a reason to change a constant.
 
 - [ ] **Step 6: Check the golden hash in a macOS IL2CPP player**
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile build-mac.log; grep "BUILD " build-mac.log
-"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile golden-mac.log; echo exit=$?
-grep GOLDEN golden-mac.log
-git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile unity-build-mac.log; grep "BUILD " unity-build-mac.log
+"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile unity-golden-mac.log; echo exit=$?
+grep GOLDEN unity-golden-mac.log
+git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset   # build caches only: this task stages no settings
 ```
 Expected: `BUILD Succeeded StandaloneOSX ...` (about 2.5 minutes), `exit=0`, and both `GOLDEN OK` lines with the hashes above. If the Mac player prints `GOLDEN FAIL`, rebuild with `-ffp-contract-off` (Apple clang may fuse multiply-adds, tech notes §4.2), rerun, and record the outcome in `docs/determinism.md`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add docs/determinism.md \
+  tools/README.md \
+  tools/tests/test_web_check.py \
+  tools/web_check.py \
+  unity/Assets/Scripts/Boot/GameBoot.cs \
+  unity/Assets/Scripts/Boot/GoldenCheck.cs \
+  unity/Assets/Scripts/Boot/GoldenCheck.cs.meta \
+  unity/Assets/Scripts/Boot/UrlFlags.cs \
+  unity/Assets/Scripts/Boot/UrlFlags.cs.meta \
+  unity/Assets/Tests/EditMode/GoldenCheckTests.cs \
+  unity/Assets/Tests/EditMode/GoldenCheckTests.cs.meta \
+  unity/Assets/link.xml
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity,tools): golden check in players; web_check.py reads a WebGL build's console in headless Chrome
 
 Verified: WebGL and macOS IL2CPP players reproduce both golden hashes.
@@ -9566,23 +10129,24 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `Passed:   386`, `98 passed`, `exit=0` and `total="126" passed="126" failed="0"`.
+Expected: `Passed:   391`, `98 passed`, `exit=0` and `total="135" passed="135" failed="0"`.
 
 ## Phase 3, Track D: integration (Tasks 23–24)
 
 ### Task 23: Scene wiring, GameRoot, and the scripted 5-turn smoke test
 
-*Track D.* Everything meets in `Map.unity`: `GameBoot` loads the inputs and builds the map; `GameRoot` then continues the autosave or starts a new game, creates every presenter, autosaves each turn, and wires the camera (`IsOverUi`, map bounds), map clicks, placements and the minimap. The scene is regenerated by `MapCapture.MakeScene` (no hand-edited scene YAML). Ruling 6's "scripted 5-turn smoke test" runs in the real player: with `?smoke=5` (or `-smoke 5`) `GameRoot` plays five turns by pressing the event card's first option and End Turn through `NavigationSubmitEvent`, starting a fresh game with the golden seed, and logs `SMOKE OK 5 turns <date> <hash>`.
+*Track D.* Everything meets in `Map.unity`: `GameBoot` loads the inputs and builds the map; `GameRoot` then continues the autosave or starts a new game, creates every presenter, autosaves each turn, and wires the camera (`IsOverUi`, map bounds), map clicks, placements and the minimap. The scene is regenerated by `MapCapture.MakeScene` (no hand-edited scene YAML). Ruling 6's "scripted 5-turn smoke test" runs in the real player: with `?smoke=5` (or `-smoke 5`) `GameRoot` plays five turns by pressing the event card's first option and End Turn through `NavigationSubmitEvent`, starting a fresh game with the golden seed, and logs `SMOKE OK 5 turns <date> <hash>`. The smoke loop is a static coroutine, so an edit-mode test also drives it from a turn with a pending event and proves the card's option button was pressed (amendment A2).
 
 **Files:**
 - Create: `unity/Assets/Scripts/UI/GameRoot.cs`, `unity/Assets/Tests/EditMode/GameSceneTests.cs`
 - Modify: `unity/Assets/Editor/MapCapture.cs`, `unity/Assets/Map.unity`
-- Generated by a command in this task (commit the output and Unity's `.meta` files): `unity/Assets/Map.unity`
+- Generated by a command in this task (commit the output): `unity/Assets/Map.unity`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/UI/GameRoot.cs.meta`, `unity/Assets/Tests/EditMode/GameSceneTests.cs.meta`
 
 **Interfaces:**
 - Consumes: every presenter (Tasks 14–21), `GameBoot.Ready`, `GameInputs`, `CameraController`, `MapPointer`, `PlacementLayer`, `MinimapPresenter`, `UiPointer`, `SaveStore`, `GameStart`, `UiAssets.Create`, `PortraitImport.CatalogPath`.
 - Produces:
-  - `GameRoot : MonoBehaviour { SimBridge? Bridge; void Configure(GameBoot, UIDocument, TextAsset strings, PortraitCatalog, MapScene, PlacementLayer, MapPointer, CameraController); void Begin(GameInputs); static int SmokeTurns(); }`; logs `GAME OK <date> turn <n>`, `SMOKE turn <n> <date> refused <k>`, `SMOKE OK <n> turns <date> <hash>` or `SMOKE FAIL <message>`.
+  - `GameRoot : MonoBehaviour { SimBridge? Bridge; void Configure(GameBoot, UIDocument, TextAsset strings, PortraitCatalog, MapScene, PlacementLayer, MapPointer, CameraController); void Begin(GameInputs); static int SmokeTurns(); static IEnumerator Smoke(VisualElement root, SimBridge, EventCardPresenter, int turns, Action<string> log); }`; logs `GAME OK <date> turn <n>`, `SMOKE turn <n> <date> refused <k>`, `SMOKE OK <n> turns <date> <hash>` or `SMOKE FAIL <message>`.
   - `Map.unity`: Main Camera (+`CameraRig`, `CameraController`), Directional Light, `MapScene`, `Boot` (`GameBoot`), `Placements`, `MapPointer`, `UI` (`UIDocument` with `StatecraftPanel.asset` and `Game.uxml`, `GameRoot`).
 
 - [ ] **Step 1: Write the failing tests**
@@ -9590,11 +10154,14 @@ Expected: `Passed:   386`, `98 passed`, `exit=0` and `total="126" passed="126" f
 Create `unity/Assets/Tests/EditMode/GameSceneTests.cs`:
 
 ```csharp
+using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game;
 using Statecraft.Game.Boot;
 using Statecraft.Game.Map;
 using Statecraft.Game.UI;
+using Statecraft.Sim;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -9632,6 +10199,25 @@ public class GameSceneTests
         var doc = Object.FindFirstObjectByType<UIDocument>();
         Assert.AreEqual(root.Bridge!.State.Date.Year.ToString(), doc.rootVisualElement.Q<Label>("year").text);
         Assert.AreEqual("Click the map to inspect a hex", doc.rootVisualElement.Q<Label>("info-title").text);
+    }
+
+    [Test]
+    public void TheSmokeRunAnswersAPendingEventThroughTheCard()
+    {
+        using var ui = new UiTestKit();
+        var c = ContentLoader.Load(Paths.Content);
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        var bridge = new SimBridge(g);
+        var text = UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
+        var toast = new ToastPresenter(ui.Root, bridge, text);
+        new HudPresenter(ui.Root, bridge, text);                         // wires the End Turn button
+        var card = new EventCardPresenter(ui.Root, bridge, text, null, toast);
+        var log = new List<string>();
+        var run = GameRoot.Smoke(ui.Root, bridge, card, 1, log.Add);
+        while (run.MoveNext()) { }
+        StringAssert.StartsWith("SMOKE OK 1 turns", log[log.Count - 1]);
+        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "chosen: Sign the armistice"), "the card's option was pressed, not delegated");
     }
 }
 ```
@@ -9776,11 +10362,7 @@ namespace Statecraft.Game.UI
         /// <summary>Smoke-test turn count from the URL (?smoke=N) or the command line (-smoke N); 0 when not asked.</summary>
         public static int SmokeTurns()
         {
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-            {
-                var m = System.Text.RegularExpressions.Regex.Match(Application.absoluteURL, @"[?&]smoke=(\d+)");
-                return m.Success ? int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : 0;
-            }
+            if (Application.platform == RuntimePlatform.WebGLPlayer) return UrlFlags.Int(Application.absoluteURL, "smoke");
             var args = Environment.GetCommandLineArgs();
             var i = Array.IndexOf(args, "-smoke");
             return i >= 0 && i + 1 < args.Length && int.TryParse(args[i + 1], out var n) ? n : 0;
@@ -9799,7 +10381,7 @@ namespace Statecraft.Game.UI
             var toast = new ToastPresenter(root, bridge, text);
             new HudPresenter(root, bridge, text);
             new ScreenNav(root);
-            card = new EventCardPresenter(root, bridge, text, portraits, toast);
+            var eventCard = card = new EventCardPresenter(root, bridge, text, portraits, toast);
             new DefencePresenter(root, bridge, text, toast);
             new BudgetPresenter(root, bridge, text, toast);
             new WhyPresenter(root, bridge, text);
@@ -9823,7 +10405,7 @@ namespace Statecraft.Game.UI
             placements.Render(bridge.State.Placements, bridge.Content, map);
             if (notes.Count > 0) toast.Show(notes);
             Debug.Log($"GAME OK {bridge.State.Date:yyyy-MM-dd} turn {bridge.State.Turn}");
-            if (smoke > 0) StartCoroutine(Smoke(smoke));
+            if (smoke > 0) StartCoroutine(Smoke(root, bridge, eventCard, smoke, Debug.Log));
         }
 
         void Update()
@@ -9836,35 +10418,35 @@ namespace Statecraft.Game.UI
         void OnDestroy() => minimap?.Dispose();
 
         /// <summary>Plays turns the way a player does: answers each event with the card's first option button, then
-        /// presses End Turn. Logs one line per turn.</summary>
-        IEnumerator Smoke(int turns)
+        /// presses End Turn. Logs one line per turn through <paramref name="log"/>, then "SMOKE OK ..." (or "SMOKE FAIL ...").
+        /// Static, so an edit-mode test can drive it step by step.</summary>
+        public static IEnumerator Smoke(VisualElement root, SimBridge bridge, EventCardPresenter card, int turns, Action<string> log)
         {
-            var root = document.rootVisualElement;
             for (int t = 0; t < turns; t++)
             {
                 yield return null;
-                for (int guard = 0; guard < 10 && card?.Shown != null; guard++)
+                for (int guard = 0; guard < 10 && card.Shown != null; guard++)
                 {
                     var option = root.Q<VisualElement>("event-options").Q<Button>();
                     if (option == null) break;
-                    if (!Press(option)) yield break;
+                    if (!Press(option, log)) yield break;
                     yield return null;
                 }
-                if (!Press(root.Q<Button>("end-turn"))) yield break;
-                var s = Bridge!.State;
-                Debug.Log($"SMOKE turn {s.Turn} {s.Date:yyyy-MM-dd} refused {Bridge.Session.Last!.Rejected.Count}");
+                if (!Press(root.Q<Button>("end-turn"), log)) yield break;
+                var s = bridge.State;
+                log($"SMOKE turn {s.Turn} {s.Date:yyyy-MM-dd} refused {bridge.Session.Last!.Rejected.Count}");
             }
-            Debug.Log($"SMOKE OK {turns} turns {Bridge!.State.Date:yyyy-MM-dd} {Bridge.State.Hash()}");
+            log($"SMOKE OK {turns} turns {bridge.State.Date:yyyy-MM-dd} {bridge.State.Hash()}");
         }
 
-        static bool Press(Button b)
+        static bool Press(Button b, Action<string> log)
         {
             try
             {
                 using (var e = NavigationSubmitEvent.GetPooled()) { e.target = b; b.SendEvent(e); }
                 return true;
             }
-            catch (Exception e) { Debug.LogError("SMOKE FAIL " + e.Message); return false; }
+            catch (Exception e) { log("SMOKE FAIL " + e.Message); return false; }
         }
     }
 }
@@ -9887,17 +10469,17 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="128" passed="128" failed="0"`.
+Expected: `exit=0` and `total="138" passed="138" failed="0"`.
 
 - [ ] **Step 6: Play five turns in the WebGL player**
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log; grep "BUILD " build-web.log
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log; grep "BUILD " unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5" --expect "GOLDEN OK 1952" --expect "GAME OK" --expect "SMOKE OK 5 turns"
-git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
+git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset   # build caches only: this task stages no settings
 ```
-Expected: `console: GAME OK 1948-05-15 turn 0`, five `SMOKE turn` lines ending `SMOKE turn 5 1948-06-19 refused 0`, `console: SMOKE OK 5 turns 1948-06-19 8028ae07c16c895099f70baec863252c80399c1c07ea347ca89f0c8ac8405af6`, `PASS`. (The smoke game is reproducible: fresh, golden seed; the five opening weekly turns have no events, so End Turn is pressed each time.)
+Expected: `console: GAME OK 1948-05-15 turn 0`, five `SMOKE turn` lines ending `SMOKE turn 5 1948-06-19 refused 0`, `console: SMOKE OK 5 turns 1948-06-19 85cf952f0d5db0501c749b8b0c61658488760431d09ddb8b35dc5245794ff1d3`, `PASS`. (The smoke game is reproducible: fresh, golden seed; the five opening weekly turns have no events, so End Turn is pressed each time.)
 
 - [ ] **Step 7: Play it yourself in Chrome (manual check)**
 
@@ -9906,8 +10488,13 @@ Serve the build with `python3 -m http.server 8000 --directory unity/Builds/Web-d
 - [ ] **Step 8: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add unity/Assets/Editor/MapCapture.cs \
+  unity/Assets/Map.unity \
+  unity/Assets/Scripts/UI/GameRoot.cs \
+  unity/Assets/Scripts/UI/GameRoot.cs.meta \
+  unity/Assets/Tests/EditMode/GameSceneTests.cs \
+  unity/Assets/Tests/EditMode/GameSceneTests.cs.meta
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity): wire the boot scene (map, UI, camera, saves) and a scripted 5-turn smoke test
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -9915,11 +10502,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 24: Web profiling, the release build, local verification and the owner's itch.io steps
 
-*Track D.* Ruling 5: profile `heightmapPixelError` on WebGL (M2 left it at 1 so the hex overlay stays draped, measured only on macOS). Ruling 6: a release-ready WebGL folder (Brotli, for itch.io) verified locally with the golden check and the 5-turn smoke; the itch.io upload as a documented **OWNER STEP**; and the save-path fix with its two-upload test plan. `PixelErrorProfile` measures 300 frames at pixel error 1 and 5 from the diorama camera (`web_check.py` passes `--disable-frame-rate-limit --disable-gpu-vsync`, so frame times are not capped at the display rate). Verified on this Mac: `pixelError=1 avg 4.57 ms, p95 6.00 ms`; `pixelError=5 avg 1.99 ms, p95 4.00 ms`; 1 stays (well under the 33 ms of 30 fps).
+*Track D.* Ruling 5: profile `heightmapPixelError` on WebGL (M2 left it at 1 so the hex overlay stays draped, measured only on macOS). Ruling 6: a release-ready WebGL folder (Brotli, for itch.io) verified locally with the golden check and the 5-turn smoke; the itch.io upload as a documented **OWNER STEP**; and the save-path fix with its two-upload test plan. `PixelErrorProfile` measures 300 frames at pixel error 1 and 5 from the diorama camera (`web_check.py` passes `--disable-frame-rate-limit --disable-gpu-vsync`, so frame times are not capped at the display rate). Verified on this Mac: `pixelError=1 avg 4.70 ms, p95 6.00 ms`; `pixelError=5 avg 1.79 ms, p95 4.00 ms`; 1 stays (well under the 33 ms of 30 fps).
 
 **Files:**
 - Create: `docs/m3-release.md`, `unity/Assets/Scripts/Map/PixelErrorProfile.cs`, `unity/Assets/Tests/EditMode/PixelErrorProfileTests.cs`
 - Modify: `docs/dev-setup.md`, `unity/Assets/Scripts/UI/GameRoot.cs`
+- Unity `.meta` files Unity creates on import (stage them with their assets): `unity/Assets/Scripts/Map/PixelErrorProfile.cs.meta`, `unity/Assets/Tests/EditMode/PixelErrorProfileTests.cs.meta`
 
 **Interfaces:**
 - Consumes: `GameRoot.Begin` (Task 23), `MapBuilder.TerrainPixelError`, `Build.Web`, `web_check.py`.
@@ -9943,6 +10531,11 @@ public class PixelErrorProfileTests
         for (int i = 1; i <= 100; i++) frames.Add(i);
         Assert.AreEqual("PROFILE pixelError=1 frames=100 avg_ms=50.50 p95_ms=95.00", PixelErrorProfile.Line(1f, frames));
     }
+
+    [TestCase("http://localhost:8000/index.html?profile", true)]
+    [TestCase("https://html.itch.zone/html/123/profile-pics/index.html", false)]
+    public void TheProfileFlagIsAQueryParameter(string url, bool expected) =>
+        Assert.AreEqual(expected, Statecraft.Game.Boot.UrlFlags.Has(url, "profile"));
 }
 ```
 
@@ -9980,7 +10573,7 @@ namespace Statecraft.Game.Map
         public const int WarmupFrames = 60, MeasuredFrames = 300;
 
         public static bool Requested() => Application.platform == RuntimePlatform.WebGLPlayer
-            ? Application.absoluteURL.Contains("profile")
+            ? Boot.UrlFlags.Has(Application.absoluteURL, "profile")
             : Environment.GetCommandLineArgs().Contains("-profile");
 
         public static string Line(float pixelError, List<float> frameMs)
@@ -10013,14 +10606,14 @@ In `unity/Assets/Scripts/UI/GameRoot.cs`:
 1. Replace
 
 ```csharp
-            if (smoke > 0) StartCoroutine(Smoke(smoke));
+            if (smoke > 0) StartCoroutine(Smoke(root, bridge, eventCard, smoke, Debug.Log));
         }
 ```
 
    with
 
 ```csharp
-            if (smoke > 0) StartCoroutine(Smoke(smoke));
+            if (smoke > 0) StartCoroutine(Smoke(root, bridge, eventCard, smoke, Debug.Log));
             if (PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
         }
 ```
@@ -10033,13 +10626,13 @@ tools/build_sim_for_unity.sh
 "$UNITY" -batchmode -projectPath unity -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log; echo exit=$?
 grep -o 'total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' unity-editmode.xml | head -1
 ```
-Expected: `exit=0` and `total="129" passed="129" failed="0"`.
+Expected: `exit=0` and `total="141" passed="141" failed="0"`.
 
 - [ ] **Step 5: Profile the terrain on WebGL**
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query "profile" --expect "PROFILE done"
 ```
 Expected: two `PROFILE pixelError=...` lines and `PROFILE done`. Copy both lines into `docs/m3-release.md` (next step) in place of the verified values if yours differ. Decision rule: keep `TerrainPixelError = 1` while its p95 stays under 33 ms; otherwise raise a controller question (the hex overlay sinks into valleys above 1, M2 ruling K2).
@@ -10048,13 +10641,13 @@ Expected: two `PROFILE pixelError=...` lines and `PROFILE done`. Copy both lines
 
 Run:
 ```bash
-"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile build-web-br.log; grep "BUILD " build-web-br.log
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile unity-build-web-br.log; grep "BUILD " unity-build-web-br.log
 find unity/Builds/Web-brotli -type f | wc -l; du -sh unity/Builds/Web-brotli
 uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"
 (cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip . && ls -la ../statecraft-m3-web.zip)
-git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
+git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset   # build caches only: this task stages no settings
 ```
-Expected: `BUILD Succeeded WebGL -> Builds/Web-brotli: 22.2 MB` (about); `36` files (itch.io allows 1,000); `23M`; `PASS: saw GOLDEN OK 1950, GOLDEN OK 1952, SMOKE OK 5 turns`; the zip's size. `web_check.py` serves `*.br` with `Content-Encoding: br` over `http://localhost`, as itch.io does over HTTPS.
+Expected: `BUILD Succeeded WebGL -> Builds/Web-brotli: 22.3 MB` (about); `36` files (itch.io allows 1,000); `23M`; `PASS: saw GOLDEN OK 1950, GOLDEN OK 1952, SMOKE OK 5 turns`; the zip's size. `web_check.py` serves `*.br` with `Content-Encoding: br` over `http://localhost`, as itch.io does over HTTPS.
 
 - [ ] **Step 7: Write the release notes, the owner steps and the build commands**
 
@@ -10068,17 +10661,17 @@ Create `docs/m3-release.md`:
 ## What ships
 - **Folder:** `unity/Builds/Web-brotli/` (Brotli, no decompression fallback), zipped as `unity/Builds/statecraft-m3-web.zip`
   with `index.html` at the zip root. Both are build output and are not committed.
-- **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile build-web-br.log`
+- **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile unity-build-web-br.log`
 - **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`
   (both golden hashes in the WebGL IL2CPP player, then five turns played through the UI's own buttons).
-- **Size:** about 23 MB in 36 files. `StreamingAssets/map/heightmap.r16` (8 MB) is served as it is, outside Unity's
+- **Size:** about 23 MB (22.3 MB reported by the build) in 36 files. `StreamingAssets/map/heightmap.r16` (8 MB) is served as it is, outside Unity's
   compression (Deferred: M5).
 
 ## WebGL terrain profile
 | `heightmapPixelError` | avg ms | p95 ms |
 |---|---|---|
-| 1 (shipped; keeps the hex overlay draped) | 4.57 | 6.00 |
-| 5 (Unity's default) | 1.99 | 4.00 |
+| 1 (shipped; keeps the hex overlay draped) | 4.70 | 6.00 |
+| 5 (Unity's default) | 1.79 | 4.00 |
 
 Measured 2026-10-10 with `?profile` in Chrome for Testing (Playwright cache, chromium-1228, `--headless=new
 --disable-frame-rate-limit --disable-gpu-vsync`) on the development Mac (arm64): 300 frames each after 60 warm-up frames,
@@ -10137,9 +10730,9 @@ In `docs/dev-setup.md`:
 - Run `tools/build_sim_for_unity.sh` before opening `unity/`. The sim DLLs are build output and are git-ignored.
 
 ## Builds and browser checks (M3)
-- Web build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile build-web.log`
+- Web build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log`
   (`-compression` is `disabled`, `gzip` or `brotli`; output in `unity/Builds/Web-<compression>/`, about 2 minutes).
-- macOS IL2CPP build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile build-mac.log`
+- macOS IL2CPP build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile unity-build-mac.log`
   (output `unity/Builds/Mac/Statecraft.app`).
 - Browser check: `uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`.
   It uses Chrome for Testing from the Playwright cache (`~/Library/Caches/ms-playwright/chromium-1228` on this Mac;
@@ -10154,11 +10747,17 @@ In `docs/dev-setup.md`:
 - [ ] **Step 8: Commit**
 
 ```bash
-git status --short   # only the files listed above (and their .meta files) should appear
-git add -A
+git add docs/dev-setup.md \
+  docs/m3-release.md \
+  unity/Assets/Scripts/Map/PixelErrorProfile.cs \
+  unity/Assets/Scripts/Map/PixelErrorProfile.cs.meta \
+  unity/Assets/Scripts/UI/GameRoot.cs \
+  unity/Assets/Tests/EditMode/PixelErrorProfileTests.cs \
+  unity/Assets/Tests/EditMode/PixelErrorProfileTests.cs.meta
+git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(unity): WebGL terrain profile; release build and the owner's itch.io steps
 
-pixelError 1 vs 5 on WebGL: 4.57 vs 1.99 ms avg, 6 vs 4 ms p95; 1 stays.
+pixelError 1 vs 5 on WebGL: 4.70 vs 1.79 ms avg, 6.00 vs 4.00 ms p95; 1 stays.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -10182,8 +10781,10 @@ Every spec item M3 does not finish has a home. The M3 rows of the M0–M2 Deferr
 | Map actions beyond absorption: new towns, kibbutzim, water and roads | M4 | Ruling 4 scopes M3 to transit camps and housing |
 | Content 1952–56 (New Economic Policy, the reparations Knesset vote of January 1952, the 1955 election, the Czech–Egyptian arms deal, Suez) | M4 | M3 content ends 31 Dec 1951 |
 | Deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title | Content work before M4 | Notes §1c/§1e allow skipping them in M3 |
-| Third Government Ministers of Immigration and of War Victims (vacant from 1951-10-08 here) | Content work before M4 | Controller question 2 |
-| Economy calibration v2: GNP and national accounts (+25% 1950→51), each year's fiscal stance (the 1951 tightening), unemployment, the official and black-market price index | M4 | M3 matches the two-year debt total, the budget scale, the export/import ratio and the crisis date |
+| Ministers of Immigration and of War Victims after 8 Oct 1951 | Content work before M4 | Both offices end on 1951-10-08 (research addendum: no such portfolio in the Third Government); re-add a term if a source shows the portfolio |
+| Who administered rationing from 1 Nov 1950 to 8 Oct 1951 (amendment C2, not applied) | Content work before M4 | Controller question 2: the notes say only that the powers were spread to other ministries |
+| Economy calibration v2: GNP and national accounts (+25% 1950→51), each year's fiscal stance (the 1951 tightening), unemployment, the official and black-market price index | M4 | M3 matches the two-year debt total, the budget scale, the export/import ratio and the crisis date (all consistency anchors) and checks foreign inflow against external debt loosely; first independent anchors: GNP +25% 1950→51, FY1951/52 instalments |
+| Map-action upkeep, camp capacity and occupancy (camps that fill and empty) | M4 | M3 caps map actions at two per turn |
 | Military or economic collapse ends the state (spec §4) | M4 | Carried from M0–M2; the currency crisis now cuts food but ends nothing |
 | Save migrations between schema versions | When schema v2 appears (M4) | v1 is the only schema; a newer save is refused with its version |
 | Save export and import (backstop if the itch.io save folder ever fails) | M5 | Task 24's two-upload test decides whether it is needed sooner |
@@ -10210,10 +10811,11 @@ Run against the spec, the rulings and the code on 2026-10-10.
 - Ruling 5 platform: web input provider and manifest 12, template with 100% canvas and autosync 13, PanelSettings 10, Input System and the camera map 11, golden in WebGL and macOS IL2CPP 22, heightmapPixelError profile 24, package prune 13, Map.unity boot scene 13 and 23, Brotli 13 and 24, headless build script 13.
 - Ruling 6 hosting: release folder and local verification 24; owner upload and the save-path test plan 24 (fix in 21).
 - Spec §7 errors: refused commands show their reason (14 onward); content errors name file and field (1, 7); saves are versioned, a content mismatch warns (9, 21), autosave every turn (21).
+- Review amendments round 1: R1 (stage settings before builds, Task 13), R2 (anchor labels and a loose independent check, Task 5), R3 (President and serving Chief of Staff cannot be appointed; a dead appointee leaves office, Task 6), R4 (any autosave failure starts a new game, Task 21), R5 (explicit staging, `.meta` files listed, `unity-*.log` names), R6 (every total observed on its own branch), C1 (offices end with `until`, Task 2), C3 (no budget line for an abolished office, Tasks 1–2), C4 (Weizmann comments, Task 2), A1–A6 (Tasks 5/17, 23, 22–24, 11, 10, 8). C2 is not applied (Controller question 2).
 - Gaps found and closed while writing: the `austerity_1949` window had to follow the Rationing fix (Task 2); deleting `SampleSceneProfile.asset` would have changed the URP look (kept, Task 13); a player build rewrites settings (Build restores compression, and the steps discard build caches).
 
 **2. Placeholder scan.** No TBD/TODO, no "similar to Task N", no step without its code. The only values left to the implementer are measurements recorded as evidence (the profile lines in Task 24, if the machine differs) and the owner's itch.io URL and test result; each has a verified value or an explicit owner field.
 
-**3. Type consistency.** Names were checked against the replay that compiled them: `GoldenRun.Play/Hash1950/Hash1952/Until1950/Until1952`; `Cabinet.Holder/Fill/Check/Candidates/Appoint/Lineup`; `MapActions.Check/Apply/At/Distance`, `MapActions.TransitCamp/Housing`; `GameSession.New/Load/Step/State/Previous/Last/Save`; `SaveGame.Write/Parse/Record`; `SimBridge.Queue/QueuedLike/Withdraw/EndTurn/Replace/AttentionLeft/Changed/TurnEnded`; `ToastPresenter.Show/Refuse/Clear`; `GameInputs.FromDisk/FetchAsync/MapFromDisk`; `MapScene.Build(MapInputs)`; `GameBoot.Ready`; `GameRoot.Begin`. Every Interfaces block uses the same names.
+**3. Type consistency.** Names were checked against the replay that compiled them (`UrlFlags.Has/Int`, `GameRoot.Smoke`, `EffectsSystem.BudgetFactor(shares, office)` added in round 1): `GoldenRun.Play/Hash1950/Hash1952/Until1950/Until1952`; `Cabinet.Holder/Fill/Check/Candidates/Appoint/Lineup`; `MapActions.Check/Apply/At/Distance`, `MapActions.TransitCamp/Housing`; `GameSession.New/Load/Step/State/Previous/Last/Save`; `SaveGame.Write/Parse/Record`; `SimBridge.Queue/QueuedLike/Withdraw/EndTurn/Replace/AttentionLeft/Changed/TurnEnded`; `ToastPresenter.Show/Refuse/Clear`; `GameInputs.FromDisk/FetchAsync/MapFromDisk`; `MapScene.Build(MapInputs)`; `GameBoot.Ready`; `GameRoot.Begin`. Every Interfaces block uses the same names.
 
 **4. Review Focus.** Five uncovered input classes, each now pinned by a named test in its owning task (see Review Focus).
