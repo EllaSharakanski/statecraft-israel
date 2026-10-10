@@ -1,0 +1,101 @@
+/* Statecraft UI language (target: promo/final/03-gameplay-1936.png): dark navy panels, thin gold borders, serif type. */
+:root {
+    --navy: rgba(14, 22, 38, 0.94);
+    --navy-deep: rgb(9, 14, 26);
+    --gold: rgb(196, 160, 92);
+    --gold-dim: rgba(196, 160, 92, 0.45);
+    --ink: rgb(236, 228, 210);
+    --ink-dim: rgb(170, 164, 150);
+    --up: rgb(126, 196, 120);
+    --down: rgb(222, 120, 104);
+}
+
+.root {
+    flex-grow: 1;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-Regular.ttf");
+    color: var(--ink);
+    font-size: 20px;
+}
+
+.panel {
+    background-color: var(--navy);
+    border-color: var(--gold-dim);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.title {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf");
+    font-size: 30px;
+    color: var(--ink);
+}
+
+.muted { color: var(--ink-dim); }
+.delta-up { color: var(--up); }
+.delta-down { color: var(--down); }
+
+.button, Button {
+    background-color: var(--navy-deep);
+    border-color: var(--gold-dim);
+    border-width: 1px;
+    border-radius: 3px;
+    color: var(--ink);
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-Regular.ttf");
+    font-size: 19px;
+    padding: 6px 12px;
+    margin: 3px 0;
+    -unity-text-align: middle-left;
+}
+Button:hover { border-color: var(--gold); }
+Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4); }
+
+/* Top bar: date box, national indicators with value and change, screen buttons, attention and End turn. */
+.top-bar {
+    position: absolute; left: 0; right: 0; top: 0; height: 96px;
+    flex-direction: row; align-items: center;
+    border-width: 0 0 1px 0; border-radius: 0; padding: 0 16px;
+}
+.date-box { width: 190px; flex-shrink: 1; min-width: 150px; border-right-width: 1px; border-color: var(--gold-dim); padding-right: 12px; }
+.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 36px; }
+.meters { flex-direction: row; flex-grow: 1; }
+.meter { min-width: 130px; flex-shrink: 1; padding: 0 8px; border-right-width: 1px; border-color: var(--gold-dim); }
+.meter-name { font-size: 18px; color: var(--ink-dim); white-space: normal; }   /* wraps in a narrow meter */
+.meter-row { flex-direction: row; align-items: flex-end; }
+.meter-value { font-size: 26px; }
+.meter-delta { font-size: 18px; margin-left: 8px; }
+.nav { flex-direction: row; flex-shrink: 0; }
+.nav Button { margin: 0 4px; -unity-text-align: middle-center; }
+.turn-box { width: 190px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
+.end-turn { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 22px; border-color: var(--gold); }
+
+/* Event card at the right, info panel at the bottom-left, minimap at the bottom-right. */
+.event-card { position: absolute; right: 16px; top: 112px; width: 420px; max-height: 560px; overflow: hidden; }
+.event-image { height: 200px; margin-bottom: 8px; -unity-background-scale-mode: scale-and-crop; background-color: var(--navy-deep); }
+.event-title { -unity-text-align: middle-center; margin-bottom: 6px; }
+.event-text { white-space: normal; margin-bottom: 8px; }
+.draft { color: var(--down); -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); -unity-text-align: middle-center; }
+.info-panel { position: absolute; left: 16px; bottom: 16px; width: 520px; min-height: 160px; }
+.minimap { position: absolute; right: 16px; bottom: 16px; width: 300px; height: 340px; padding: 6px; }
+.minimap-image { flex-grow: 1; -unity-background-scale-mode: scale-to-fit; }
+.minimap-view { position: absolute; border-color: var(--ink); border-width: 1px; }
+
+/* Full screens (Cabinet, Budget, Defence, Why) open in the centre, one at a time. */
+.screen { position: absolute; left: 552px; right: 452px; top: 112px; bottom: 16px; }
+.screen-header { flex-direction: row; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 8px; }
+.row { flex-direction: row; align-items: center; }
+.rung { flex-direction: row; padding: 4px 8px; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); }
+.rung-current { border-color: var(--gold); background-color: rgba(196, 160, 92, 0.15); }
+.grow { flex-grow: 1; }
+
+.toast { position: absolute; left: 30%; right: 30%; top: 112px; -unity-text-align: middle-center; white-space: normal; }
+
+.why-group { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); color: var(--gold); margin-top: 8px; }
+.why-line { white-space: normal; padding-left: 12px; }
+
+.seat { flex-direction: row; align-items: center; }
+.seat-portrait { width: 40px; height: 48px; margin-right: 8px; -unity-background-scale-mode: scale-and-crop; background-color: var(--navy-deep); }
+.seat-selected { border-color: var(--gold); }
+.appointed { color: var(--gold); }
+.candidate { flex-direction: row; align-items: center; }
+.reason { color: var(--ink-dim); font-size: 16px; white-space: normal; flex-shrink: 1; }
