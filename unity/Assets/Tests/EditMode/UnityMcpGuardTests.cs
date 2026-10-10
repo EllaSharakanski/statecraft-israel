@@ -191,7 +191,7 @@ namespace Statecraft.Tests.EditMode
             {
                 // A plugin bump that renames ConnectionMode/AuthOption must not take the batch protections down with it.
                 var status = (string)Guard().GetMethod("Hold", BindingFlags.Public | BindingFlags.Static)!
-                    .Invoke(null, new object?[] { true, "simulated override failure" })!;
+                    .Invoke(null, new object?[] { true, "simulated override failure", null })!;
                 StringAssert.Contains("simulated override failure", status);
                 Assert.IsFalse((bool)keep.GetValue(config)!, "no connection even when the Custom/token override failed");
                 Assert.IsFalse((bool)server.GetValue(config)!, "no local server even when the Custom/token override failed");
@@ -200,7 +200,44 @@ namespace Statecraft.Tests.EditMode
             {
                 keep.SetValue(config, false);
                 server.SetValue(config, false);
-                Guard().GetMethod("Hold", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object?[] { true, null });
+                Guard().GetMethod("Hold", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object?[] { true, null, null });
+            }
+        }
+
+        [Test]
+        public void EveryBatchProtectionStillAppliesWhenAnEarlierStepThrows()
+        {
+            var editor = PluginEditor();
+            if (!Application.isBatchMode || editor == null) { CollectionAssert.Contains(new[] { "held local", "plugin not loaded" }, Status()); return; }
+            var instance = editor.GetProperty("Instance", Any)!.GetValue(null);
+            var config = editor.GetField("unityConnectionConfig", Any)!.GetValue(instance)!;
+            var keep = config.GetType().GetProperty("KeepConnected")!;
+            var server = config.GetType().GetProperty("KeepServerRunning")!;
+            var unhooked = (List<string>)Guard().GetField("Unhooked", Any)!.GetValue(null)!;
+            var hold = Guard().GetMethod("Hold", BindingFlags.Public | BindingFlags.Static)!;
+            try
+            {
+                foreach (var step in new[] { "KeepConnected", "MainWindowInitializer" })
+                {
+                    keep.SetValue(config, true);
+                    server.SetValue(config, true);
+                    unhooked.Clear();
+                    var status = (string)hold.Invoke(null, new object?[] { true, null, step })!;
+                    StringAssert.Contains("simulated throw in " + step, status, step);
+                    if (step != "KeepConnected") Assert.IsFalse((bool)keep.GetValue(config)!, step + ": KeepConnected still forced off");
+                    Assert.IsFalse((bool)server.GetValue(config)!, step + ": KeepServerRunning still forced off");
+                    CollectionAssert.Contains(unhooked, "UpdateChecker.CheckForUpdatesOnStartup", step + ": the update check is still unhooked");
+                    if (step != "MainWindowInitializer")
+                        CollectionAssert.Contains(unhooked, "MainWindowInitializer.PerformInitialization", step + ": the first-run window is still unhooked");
+                    var mode = config.GetType().GetProperty("ConnectionMode")!;
+                    Assert.AreEqual(Knob("UNITY_MCP_CONNECTION_MODE", null, mode.PropertyType) ?? "Custom", mode.GetValue(config)!.ToString(), step + ": still held to Custom");
+                }
+            }
+            finally
+            {
+                keep.SetValue(config, false);
+                server.SetValue(config, false);
+                hold.Invoke(null, new object?[] { true, null, null });
             }
         }
 
@@ -214,15 +251,28 @@ namespace Statecraft.Tests.EditMode
             var record = editor.GetProperty("RuntimeOverrides", Any)!.GetValue(instance)!;
             var baselines = (System.Collections.IDictionary)record.GetType().GetProperty("BaselineValues")!.GetValue(record)!;
             var path = (string)editor.GetProperty("AssetsFileAbsolutePath", Any)!.GetValue(null)!;
-            // The plugin's own Save: it writes the baselines and keeps the overrides in memory.
-            instance.GetType().GetMethod("Save", Any)!.Invoke(instance, new object[] { false });
-            var json = System.IO.File.ReadAllText(path);
-            string OnDisk(string key) => System.Text.RegularExpressions.Regex.Match(json, "\"" + key + "\":\\s*\"(\\w+)\"").Groups[1].Value;
-            foreach (var (field, key) in new[] { ("ConnectionMode", "connectionMode"), ("AuthOption", "authOption") })
+            // The test writes through the plugin's real Save, so it snapshots the user's file (or its absence) and puts it
+            // back byte for byte afterwards, also when an assertion fails.
+            var before = System.IO.File.Exists(path) ? System.IO.File.ReadAllBytes(path) : null;
+            try
             {
-                if (!baselines.Contains(field)) continue;   // the plugin's own knob is in charge of this field
-                Assert.AreEqual(baselines[field]!.ToString(), OnDisk(key), field + " on disk is the user's own value");
+                // The plugin's own Save: it writes the baselines and keeps the overrides in memory.
+                instance.GetType().GetMethod("Save", Any)!.Invoke(instance, new object[] { false });
+                var json = System.IO.File.ReadAllText(path);
+                string OnDisk(string key) => System.Text.RegularExpressions.Regex.Match(json, "\"" + key + "\":\\s*\"(\\w+)\"").Groups[1].Value;
+                foreach (var (field, key) in new[] { ("ConnectionMode", "connectionMode"), ("AuthOption", "authOption") })
+                {
+                    if (!baselines.Contains(field)) continue;   // the plugin's own knob is in charge of this field
+                    Assert.AreEqual(baselines[field]!.ToString(), OnDisk(key), field + " on disk is the user's own value");
+                }
             }
+            finally
+            {
+                if (before == null) System.IO.File.Delete(path);
+                else System.IO.File.WriteAllBytes(path, before);
+            }
+            if (before == null) Assert.IsFalse(System.IO.File.Exists(path), "no settings file is left behind");
+            else CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(path), "the user's settings file is restored byte-identical");
             var modeKnob = Knob("UNITY_MCP_CONNECTION_MODE", null, config.GetType().GetProperty("ConnectionMode")!.PropertyType);
             Assert.AreEqual(modeKnob ?? "Custom", config.GetType().GetProperty("ConnectionMode")!.GetValue(config)!.ToString(), "still held in memory after Save");
         }

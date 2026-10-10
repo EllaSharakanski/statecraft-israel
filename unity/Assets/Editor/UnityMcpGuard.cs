@@ -102,66 +102,87 @@ namespace Statecraft.Game.EditorTools
             return d;
         }
 
-        public static string Hold(bool batch, string? simulateOverrideFailure = null)
+        /// <summary>Applies the hold and returns the status. Every step runs on its own (a throw or a "plugin internals
+        /// changed" result in one step never skips a later one) and the failures are joined. In batch mode the protections
+        /// (no connection, no server, no window, no update check) come before the Custom/token override. The two simulate
+        /// parameters exist for the tests only.</summary>
+        public static string Hold(bool batch, string? simulateOverrideFailure = null, string? simulateThrowInStep = null)
         {
             var editor = LoadedPluginEditorType();
             if (editor == null) return "plugin not loaded";
-            try
+            var failures = new List<string>();
+
+            void Step(string name, Func<string?> body)
             {
-                var instance = editor.GetProperty("Instance", Any)?.GetValue(null);
-                var config = editor.GetField("unityConnectionConfig", Any)?.GetValue(instance);
-                var record = editor.GetProperty("RuntimeOverrides", Any)?.GetValue(instance);
-                var track = record?.GetType().GetMethod("Track", Any);
-                var baselines = record?.GetType().GetProperty("BaselineValues")?.GetValue(record) as System.Collections.IDictionary;
-                if (config == null || record == null || track == null) return "plugin internals changed";
-
-                string? Override(string name, Func<Type, object> value)
+                try
                 {
-                    var p = config.GetType().GetProperty(name);
-                    if (p == null) return "plugin internals changed: no " + name;
-                    var target = value(p.PropertyType);
-                    // Keep the on-disk value as the baseline the plugin saves, even if an env var already overrode it.
-                    var baseline = baselines != null && baselines.Contains(name) ? baselines[name] : p.GetValue(config);
-                    track.Invoke(record, new[] { name, baseline, target });
-                    p.SetValue(config, target);
-                    return null;
+                    if (name == simulateThrowInStep) throw new InvalidOperationException("simulated throw in " + name);
+                    var f = body();
+                    if (f != null) failures.Add(f);
                 }
-
-                var failures = new List<string>();
-                if (batch)
+                catch (Exception e)
                 {
-                    // Batch protections first and on their own: a failed Custom/token override must not skip them.
-                    var f = Override("KeepConnected", _ => false) ?? Override("KeepServerRunning", _ => false);
-                    if (f != null) failures.Add(f);
-                    // Run each static constructor first (it queues the callback), or the unhook could come before the queueing.
-                    f = Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowInitializer", "PerformInitialization", runCctorOf: null, update: true);
-                    if (f != null) failures.Add(f);
-                    f = Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.Utils.UpdateChecker", "CheckForUpdatesOnStartup",
-                               runCctorOf: "com.IvanMurzak.Unity.MCP.Editor.Startup", update: false);
-                    if (f != null) failures.Add(f);
+                    var inner = e is TargetInvocationException t && t.InnerException != null ? t.InnerException : e;
+                    failures.Add($"{name}: {inner.GetType().Name}: {inner.Message}");
+                }
+            }
+
+            object? instance = null, config = null, record = null;
+            MethodInfo? track = null;
+            System.Collections.IDictionary? baselines = null;
+            Step("plugin config", () =>
+            {
+                instance = editor.GetProperty("Instance", Any)?.GetValue(null);
+                config = editor.GetField("unityConnectionConfig", Any)?.GetValue(instance);
+                record = editor.GetProperty("RuntimeOverrides", Any)?.GetValue(instance);
+                track = record?.GetType().GetMethod("Track", Any);
+                baselines = record?.GetType().GetProperty("BaselineValues")?.GetValue(record) as System.Collections.IDictionary;
+                return config == null || record == null || track == null ? "plugin internals changed: config or RuntimeOverrides" : null;
+            });
+
+            string? Override(string name, Func<Type, object> value)
+            {
+                if (config == null || record == null || track == null) return "plugin internals changed: cannot override " + name;
+                var p = config.GetType().GetProperty(name);
+                if (p == null) return "plugin internals changed: no " + name;
+                var target = value(p.PropertyType);
+                // Keep the on-disk value as the baseline the plugin saves, even if an env var already overrode it.
+                var baseline = baselines != null && baselines.Contains(name) ? baselines[name] : p.GetValue(config);
+                track.Invoke(record, new[] { name, baseline, target });
+                p.SetValue(config, target);
+                return null;
+            }
+
+            if (batch)
+            {
+                Step("KeepConnected", () => Override("KeepConnected", _ => false));
+                Step("KeepServerRunning", () => Override("KeepServerRunning", _ => false));
+                // Run each static constructor first (it queues the callback), or the unhook could come before the queueing.
+                Step("MainWindowInitializer", () => Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowInitializer",
+                                                            "PerformInitialization", runCctorOf: null, update: true));
+                Step("UpdateChecker", () => Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.Utils.UpdateChecker",
+                                                    "CheckForUpdatesOnStartup", runCctorOf: "com.IvanMurzak.Unity.MCP.Editor.Startup", update: false));
+                Step("plugin windows", () =>
+                {
                     foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>().Where(w => w.GetType().Assembly == editor.Assembly).ToList())
                         w.Close();
-                }
-                if (simulateOverrideFailure != null) failures.Add(simulateOverrideFailure);
-                else
-                {
-                    foreach (var (name, knob, alias, value) in new[] { ("ConnectionMode", "UNITY_MCP_CONNECTION_MODE", (string?)null, "Custom"),
-                                                                        ("AuthOption", "UNITY_MCP_AUTH_OPTION", "auth", "token") })
-                    {
-                        var type = config.GetType().GetProperty(name)?.PropertyType;
-                        if (type == null) { failures.Add("plugin internals changed: no " + name); continue; }
-                        if (ExplicitKnob(knob, alias, type) != null) continue;   // the plugin's own opt-out, respected
-                        var f = Override(name, t => Enum.Parse(t, value));
-                        if (f != null) failures.Add(f);
-                    }
-                }
-                if (failures.Count > 0) return string.Join("; ", failures);
-                return batch ? "held offline" : "held local";
+                    return null;
+                });
             }
-            catch (Exception e)
+            if (simulateOverrideFailure != null) failures.Add(simulateOverrideFailure);
+            else
             {
-                return e.GetType().Name + ": " + e.Message;
+                foreach (var (name, knob, alias, value) in new[] { ("ConnectionMode", "UNITY_MCP_CONNECTION_MODE", (string?)null, "Custom"),
+                                                                    ("AuthOption", "UNITY_MCP_AUTH_OPTION", "auth", "token") })
+                    Step(name, () =>
+                    {
+                        var type = config?.GetType().GetProperty(name)?.PropertyType;
+                        if (type == null) return "plugin internals changed: no " + name;
+                        return ExplicitKnob(knob, alias, type) != null ? null : Override(name, t => Enum.Parse(t, value));   // the plugin's own opt-out is respected
+                    });
             }
+            if (failures.Count > 0) return string.Join("; ", failures);
+            return batch ? "held offline" : "held local";
         }
 
         /// <summary>Takes a plugin callback off EditorApplication.update (or delayCall), after running the static
