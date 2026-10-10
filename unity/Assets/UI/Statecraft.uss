@@ -2,6 +2,7 @@
 :root {
     --navy: rgba(14, 22, 38, 0.94);
     --navy-deep: rgb(9, 14, 26);
+    --navy-solid: rgb(14, 22, 38);   /* --navy without its transparency */
     --gold: rgb(196, 160, 92);
     --gold-dim: rgba(196, 160, 92, 0.45);
     --ink: rgb(236, 228, 210);
@@ -55,6 +56,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     position: absolute; left: 0; right: 0; top: 0; height: 96px;
     flex-direction: row; align-items: center;
     border-width: 0 0 1px 0; border-radius: 0; padding: 0 16px;
+    background-color: var(--navy-solid);   /* opaque: map labels must not show through it (Task 24 review M7) */
 }
 /* Everything in the bar must fit its 96px (EB Garamond lines are about 1.55 x the font size): labels lose their default
    vertical padding and margin, the year is 32px, and turn and date share one line. */

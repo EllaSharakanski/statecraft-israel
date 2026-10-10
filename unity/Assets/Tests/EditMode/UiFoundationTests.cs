@@ -102,4 +102,14 @@ public class UiFoundationTests
         var e = Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { var _ = text["x"]; });
         StringAssert.Contains("other.yaml", e.Message);
     }
+
+    /// <summary>Task 24 review M7: world-space settlement labels must not show through the top bar.</summary>
+    [UnityTest]
+    public IEnumerator TheTopBarIsOpaque()
+    {
+        using var ui = new UiTestKit();
+        var bar = ui.Q<VisualElement>("top-bar");
+        for (int i = 0; i < 10 && bar.resolvedStyle.backgroundColor.a < 0.5f; i++) yield return null;
+        Assert.AreEqual(1f, bar.resolvedStyle.backgroundColor.a, 1e-3f);
+    }
 }
