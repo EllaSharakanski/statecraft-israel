@@ -39,7 +39,7 @@ These were run with a small Chrome DevTools Protocol driver: `uv run --with webs
 ### Rendering
 - The terrain, hex overlay, settlement markers and labels, all UI Toolkit panels and the minimap render. Nothing is magenta.
 - WebGL reports `ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro)`.
-- Three hidden URP utility shaders report "not supported on this GPU": `Hidden/CoreSRP/CoreCopy`, `Hidden/Universal Render Pipeline/StencilDitherMaskSeed` and `Hidden/Universal/HDRDebugView`. They report the same in headless Chrome. They serve features this build does not use (HDR debug view, LOD cross-fade dither, a render-graph copy path), and the frame renders correctly without them.
+- Three hidden URP utility shaders (`Hidden/CoreSRP/CoreCopy`, `Hidden/Universal Render Pipeline/StencilDitherMaskSeed`, `Hidden/Universal/HDRDebugView`) need shader target 4.5, which WebGL 2 (ES 3.0) lacks, so the browser reported them "not supported on this GPU". URP loads them up front (Blitter, UniversalRenderer, DebugHandler), but this build never draws with them: the render-graph copy needs framebuffer-fetch emulation, which Core RP disables on WebGL; stencil LOD cross-fade is off (Blue Noise, no LOD groups); the HDR debug view belongs to the Rendering Debugger. `Assets/Editor/WebShaderStripping.cs` strips them from WebGL builds only (playtest 1, item 12). The console no longer shows the three errors, and the goldens and the 5-turn smoke give the same hashes as before.
 - The only 404 is `/favicon.ico`.
 
 ### Wheel zoom
@@ -105,6 +105,5 @@ Result: (owner fills in)
 - No Diplomacy screen or legacy report (M4).
 - English only.
 - The headless smoke plays five turns; a full-slice smoke is M4.
-- Three hidden URP utility shaders are unsupported on WebGL 2 (see above).
 - The wheel-zoom step (one notch = 10%) was measured in Chrome on macOS only. Firefox reports wheel deltas in lines and
   Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's itch.io check.
