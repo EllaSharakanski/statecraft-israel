@@ -8,6 +8,12 @@ namespace Statecraft.Game.UI
     {
         readonly VisualElement root; readonly SimBridge bridge; readonly UiText text;
         readonly Button endTurn; readonly System.Action onEndTurn;
+        readonly VisualElement bar;
+
+        /// <summary>Below this top-bar width (logical px) the meters drop their icons (Statecraft.uss .top-bar--compact): six
+        /// meters with icons, the date badge, the screen buttons and End Turn need about this much.</summary>
+        public const float CompactBelowPx = 1800f;
+        public const string CompactClass = "top-bar--compact";
 
         public HudPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
@@ -15,12 +21,30 @@ namespace Statecraft.Game.UI
             endTurn = root.Q<Button>("end-turn");
             onEndTurn = () => bridge.EndTurn();
             endTurn.clicked += onEndTurn;
+            endTurn.generateVisualContent += PaintHourglass;
+            bar = root.Q<VisualElement>("top-bar");
+            bar.RegisterCallback<GeometryChangedEvent>(OnBarGeometry);
+            SetCompact(bar.layout.width);   // the bar may already be laid out (the loading screen shows it) and never resize
             bridge.Changed += Render;
             Render();
         }
 
         /// <summary>Unsubscribes from the bridge and the button (the owner calls this when it is disabled).</summary>
-        public void Dispose() { bridge.Changed -= Render; endTurn.clicked -= onEndTurn; }
+        public void Dispose()
+        {
+            bridge.Changed -= Render; endTurn.clicked -= onEndTurn; endTurn.generateVisualContent -= PaintHourglass;
+            bar.UnregisterCallback<GeometryChangedEvent>(OnBarGeometry);
+        }
+
+        // The bar's width does not depend on the class, so this settles in one pass.
+        void OnBarGeometry(GeometryChangedEvent e) => SetCompact(e.newRect.width);
+
+        void SetCompact(float width) { if (width > 0) bar.EnableInClassList(CompactClass, width < CompactBelowPx); }   // NaN before layout: wait for it
+
+        /// <summary>End Turn's hourglass, in the button's left padding (Statecraft.uss .end-turn), painted into the button so it
+        /// stays a leaf sized by its text (UiIcon.Paint).</summary>
+        static void PaintHourglass(MeshGenerationContext m) =>
+            UiIcon.Paint(m, "hourglass", new UnityEngine.Rect(10f, (m.visualElement.layout.height - 22f) / 2f, 22f, 22f));
 
         void Set(string name, string value) => root.Q<Label>(name).text = value;
 
