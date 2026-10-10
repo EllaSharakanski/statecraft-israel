@@ -22,3 +22,6 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
+- The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
+  planes, one zlib stream) replaces the raw 8.4 MB `heightmap.r16`, which was served outside Unity's build compression.
+  It decodes to the same bytes, so the terrain is unchanged (#44).

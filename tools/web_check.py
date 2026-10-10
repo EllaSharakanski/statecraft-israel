@@ -92,7 +92,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return "application/wasm"
         if base.endswith(".js"):
             return "application/javascript"
-        if base.endswith((".data", ".r16")):
+        if base.endswith((".data", ".r16z")):
             return "application/octet-stream"
         return super().guess_type(base)
 

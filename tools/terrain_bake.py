@@ -5,7 +5,7 @@
 """Heightmap -> the baked shading textures of the terrain and sea shaders (no network: reads only the committed heightmap).
 
 Usage: uv run tools/terrain_bake.py   (about 10 seconds)
-Reads unity/Assets/StreamingAssets/map/heightmap.r16 + heightmap.json; writes, 2048 x 2048, row 0 = north:
+Reads unity/Assets/StreamingAssets/map/heightmap.r16z (heightmap_codec) + heightmap.json; writes, 2048 x 2048, row 0 = north:
   unity/Assets/Textures/Map/terrain_bake.png  RGB8: R ambient occlusion (horizon search to AO_RADIUS_M; 1 = open),
       G curvature (0.5 flat, > 0.5 convex), B sky-view factor (horizon search to SKY_RADIUS_M)
   unity/Assets/Textures/Map/ao.png            L8: the same ambient occlusion as terrain_bake.png's R, on its own so Unity
@@ -26,6 +26,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+import heightmap_codec
+
 ROOT = Path(__file__).resolve().parents[1]
 MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 OUT_DIR = ROOT / "unity" / "Assets" / "Textures" / "Map"
@@ -45,7 +47,7 @@ COAST_RANGE_M = 12000.0        # StatecraftMap.hlsl ScCoastRangeM
 
 def load_heightmap(map_dir: Path) -> tuple[np.ndarray, dict]:
     meta = json.loads((map_dir / "heightmap.json").read_text())
-    raw = np.fromfile(map_dir / "heightmap.r16", dtype="<u2").reshape(meta["height"], meta["width"])
+    raw = heightmap_codec.read(map_dir, meta)
     elev = meta["elev_min_m"] + raw.astype(np.float64) / 65535.0 * (meta["elev_max_m"] - meta["elev_min_m"])
     return elev.astype(np.float32), meta
 

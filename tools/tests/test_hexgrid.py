@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import hexgrid as hg
+import heightmap_codec as hc
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -69,7 +70,7 @@ def test_build_hexes_on_synthetic_map(tmp_path):
             "elev_min_m": 0.0, "elev_max_m": 300.0,
             "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
-    np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
+    hc.write(tmp_path, np.round(elev / 300.0 * 65535).astype("<u2"))
     write_uniform_precip(tmp_path, meta, 500.0)
     out = hg.build(tmp_path, 5.0, precip_dir=tmp_path)
     assert out["layout"] == "pointy" and out["hex_size_km"] == 5.0
@@ -86,7 +87,7 @@ def synthetic_inputs(d):
     meta = {"width": n, "height": n, "lon0": 35.0, "lon1": 35.5, "lat0": 32.2, "lat1": 32.7,
             "elev_min_m": 0.0, "elev_max_m": 300.0, "attribution": "dem-credit"}
     (d / "heightmap.json").write_text(json.dumps(meta))
-    np.full((n, n), 65535, dtype="<u2").tofile(d / "heightmap.r16")
+    hc.write(d, np.full((n, n), 65535, dtype="<u2"))
     write_uniform_precip(d, meta, 500.0)
 
 
@@ -133,7 +134,7 @@ def test_build_marks_dry_land_desert_wherever_it_is(tmp_path):
             "elev_min_m": 0.0, "elev_max_m": 300.0,
             "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
-    np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
+    hc.write(tmp_path, np.round(elev / 300.0 * 65535).astype("<u2"))
     cell = 0.01
     w = round(0.5 / cell) + 2; h = round(0.5 / cell) + 2
     mm = np.full((h, w), 600.0); mm[h // 2:, :] = 120.0          # dry southern half, far north of any old lat rule
@@ -157,7 +158,7 @@ def test_hex_precip_averages_only_land_cells(tmp_path):
             "elev_min_m": 0.0, "elev_max_m": 300.0,
             "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
-    np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
+    hc.write(tmp_path, np.round(elev / 300.0 * 65535).astype("<u2"))
     cell = 0.01
     w = round(0.5 / cell) + 2; h = round(0.5 / cell) + 2
     lons = 35.0 - cell + (np.arange(w) + 0.5) * cell

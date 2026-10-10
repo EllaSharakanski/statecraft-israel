@@ -41,11 +41,12 @@ public class MapTests
         System.IO.Directory.CreateDirectory(dir);
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "heightmap.json"),
             "{\"width\":3,\"height\":3,\"lon0\":34.2,\"lon1\":35.9,\"lat0\":29.45,\"lat1\":33.35,\"elev_min_m\":-427,\"elev_max_m\":2367,\"width_km\":161.5,\"length_km\":431.2,\"attribution\":\"x\"}");
-        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[10]); // 3x3 needs 18 bytes
+        var twoByTwo = HeightmapCodec.Encode(new ushort[4], 2, 2);   // a valid stream of 8 bytes; 3x3 needs 18
+        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, HeightmapCodec.FileName), twoByTwo);
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
-        StringAssert.Contains("expected 18", ex.Message);
+        StringAssert.Contains("heightmap.r16z: 8 bytes after inflating, expected 18", ex.Message);
         var metaPath = System.IO.Path.Combine(dir, "heightmap.json");
-        var fromBytes = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(System.IO.File.ReadAllText(metaPath), new byte[10], metaPath));
+        var fromBytes = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(System.IO.File.ReadAllText(metaPath), twoByTwo, metaPath));
         Assert.AreEqual(ex.Message, fromBytes.Message);
     }
 
@@ -235,10 +236,11 @@ public class MapTests
     {
         var meta = TempFile("heightmap.json", json);
         var dir = System.IO.Path.GetDirectoryName(meta);
-        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "heightmap.r16"), new byte[18]);
+        var packed = HeightmapCodec.Encode(new ushort[9], 3, 3);
+        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, HeightmapCodec.FileName), packed);
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(dir));
         StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains(problem, ex.Message);
-        var fromText = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(json, new byte[18], meta));
+        var fromText = Assert.Throws<System.IO.InvalidDataException>(() => HeightmapLoader.Load(json, packed, meta));
         Assert.AreEqual(ex.Message, fromText.Message);
     }
 
@@ -258,7 +260,7 @@ public class MapTests
     // --- Text/bytes inputs, for the WebGL build that cannot use System.IO on streamingAssetsPath (final fix 3, I2) ---
 
     static string MetaPath => System.IO.Path.Combine(Paths.StreamingMap, "heightmap.json");
-    static string R16Path => System.IO.Path.Combine(Paths.StreamingMap, "heightmap.r16");
+    static string R16Path => System.IO.Path.Combine(Paths.StreamingMap, HeightmapCodec.FileName);
 
     [Test]
     public void HeightmapFromBytesMatchesHeightmapFromPath()
@@ -295,6 +297,57 @@ public class MapTests
             Assert.AreEqual(ta.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution), tb.terrainData.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution));
         }
         finally { Object.DestroyImmediate(a); Object.DestroyImmediate(b); }
+    }
+
+    // --- The packed heightmap (issue #44): smaller download, the same terrain ---
+
+    /// <summary>SHA-256 of the raw heightmap.r16 (8,396,802 bytes) shipped before issue #44 packed it.</summary>
+    const string RawHeightmapSha256 = "b6882a77420efa90217cc65a9c353147569094cf16656d4d53c30abe0f41ac9e";
+
+    [Test]
+    public void ThePackedHeightmapDecodesToTheOldRawFileByteForByte()
+    {
+        var meta = HeightmapLoader.Load(Paths.StreamingMap).meta;
+        var packed = System.IO.File.ReadAllBytes(R16Path);
+        var raw = HeightmapCodec.Decode(packed, meta.width, meta.height);
+        var bytes = new byte[raw.Length * 2];
+        System.Buffer.BlockCopy(raw, 0, bytes, 0, bytes.Length);   // little-endian, as the raw file was
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        Assert.AreEqual(RawHeightmapSha256, System.BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant());
+        Assert.Less(packed.Length, 0.55 * bytes.Length, "the packed file is about half the raw grid");
+        Assert.IsFalse(System.IO.File.Exists(System.IO.Path.Combine(Paths.StreamingMap, "heightmap.r16")), "the raw file is not shipped beside it");
+    }
+
+    [Test]
+    public void TheCodecRoundTripsWraparoundDeltasAndRejectsACorruptStream()
+    {
+        var rng = new System.Random(44);
+        foreach (var (w, h) in new[] { (1, 1), (3, 3), (5, 7), (64, 64) })
+        {
+            var raw = new ushort[w * h];
+            for (int i = 0; i < raw.Length; i++) raw[i] = (ushort)rng.Next(0, 65536);
+            raw[0] = 65535; raw[raw.Length - 1] = 0;
+            CollectionAssert.AreEqual(raw, HeightmapCodec.Decode(HeightmapCodec.Encode(raw, w, h), w, h), $"{w}x{h}");
+        }
+        var packed = HeightmapCodec.Encode(new ushort[] { 1, 3, 0x0102, 0x0101 }, 2, 2);
+        Assert.AreEqual(1u, HeightmapCodec.Adler32(new byte[0]));
+        Assert.AreEqual(0x11E60398u, HeightmapCodec.Adler32(System.Text.Encoding.ASCII.GetBytes("Wikipedia")), "the RFC 1950 example");
+        var corrupt = (byte[])packed.Clone(); corrupt[corrupt.Length - 1] ^= 1;
+        StringAssert.Contains("checksum", Assert.Throws<System.IO.InvalidDataException>(() => HeightmapCodec.Decode(corrupt, 2, 2)).Message);
+        StringAssert.Contains("not a zlib stream", Assert.Throws<System.IO.InvalidDataException>(() => HeightmapCodec.Decode(new byte[18], 3, 3)).Message);
+        StringAssert.Contains("more than 2 bytes", Assert.Throws<System.IO.InvalidDataException>(() => HeightmapCodec.Decode(packed, 1, 1)).Message);
+    }
+
+    [Test]
+    public void TheCodecReadsWhatThePythonToolWrites()
+    {
+        // tools/tests/test_heightmap_codec.py pins the same layout: row deltas, low-byte plane then high-byte plane.
+        var packed = HeightmapCodec.Encode(new ushort[] { 1, 3, 0x0102, 0x0101 }, 2, 2);
+        using var body = new System.IO.MemoryStream(packed, 2, packed.Length - 6);
+        using var inflate = new System.IO.Compression.DeflateStream(body, System.IO.Compression.CompressionMode.Decompress);
+        var planes = new byte[8]; int got = 0, r;
+        while ((r = inflate.Read(planes, got, planes.Length - got)) > 0) got += r;
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 0x02, 0xFF, 0, 0, 0x01, 0xFF }, planes);
     }
 
     // --- hexes.json and the heightmap must cover the same area (final fix 3, M3) ---

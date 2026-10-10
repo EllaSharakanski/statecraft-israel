@@ -13,24 +13,23 @@ namespace Statecraft.Game.Map
 
     public static class HeightmapLoader
     {
-        /// <summary>Reads heightmap.json and heightmap.r16 from <paramref name="dir"/> with System.IO (editor and desktop).</summary>
+        /// <summary>Reads heightmap.json and heightmap.r16z (HeightmapCodec) from <paramref name="dir"/> with System.IO (editor
+        /// and desktop).</summary>
         public static (HeightmapMeta meta, float[,] heights) Load(string dir)
         {
             var metaPath = Path.Combine(dir, "heightmap.json");
-            return Load(File.ReadAllText(metaPath), File.ReadAllBytes(Path.Combine(dir, "heightmap.r16")), metaPath);
+            return Load(File.ReadAllText(metaPath), File.ReadAllBytes(Path.Combine(dir, HeightmapCodec.FileName)), metaPath);
         }
 
         /// <summary>Parses already-read heightmap inputs (no System.IO, so a WebGL build can pass what UnityWebRequest
-        /// fetched). Errors name <paramref name="metaSource"/> for the meta, as the path overload names the file.</summary>
-        public static (HeightmapMeta meta, float[,] heights) Load(string metaJson, byte[] r16, string metaSource = "heightmap.json")
+        /// fetched): the meta, then the packed grid (heightmap.r16z), decoded to exactly the raw heights. Errors name
+        /// <paramref name="metaSource"/> for the meta, as the path overload names the file.</summary>
+        public static (HeightmapMeta meta, float[,] heights) Load(string metaJson, byte[] r16z, string metaSource = "heightmap.json")
         {
             var meta = ParseMeta(metaSource, metaJson);
             if (meta.width != meta.height) throw new InvalidDataException($"heightmap.json: width {meta.width} != height {meta.height}");
-            if (r16 == null) throw new ArgumentNullException(nameof(r16));
-            if (r16.Length != meta.width * meta.height * 2) throw new InvalidDataException($"heightmap.r16: {r16.Length} bytes, expected {meta.width * meta.height * 2}");
-            var raw = new ushort[meta.width * meta.height];
-            Buffer.BlockCopy(r16, 0, raw, 0, r16.Length); // little-endian on all our targets
-            return (meta, ToUnityHeights(raw, meta.width));
+            if (r16z == null) throw new ArgumentNullException(nameof(r16z));
+            return (meta, ToUnityHeights(HeightmapCodec.Decode(r16z, meta.width, meta.height), meta.width));
         }
 
         static HeightmapMeta ParseMeta(string path, string text)

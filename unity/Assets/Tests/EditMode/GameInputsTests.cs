@@ -42,7 +42,7 @@ public class GameInputsTests
         var site = Path.Combine(Path.GetTempPath(), "statecraft-site-" + System.Guid.NewGuid().ToString("N"));
         ContentManifest.Copy(Paths.Content, Path.Combine(site, "content"));
         Directory.CreateDirectory(Path.Combine(site, "map"));
-        foreach (var f in new[] { "heightmap.json", "heightmap.r16" }) File.Copy(Path.Combine(Paths.StreamingMap, f), Path.Combine(site, "map", f));
+        foreach (var f in new[] { "heightmap.json", "heightmap.r16z" }) File.Copy(Path.Combine(Paths.StreamingMap, f), Path.Combine(site, "map", f));
         return site;
     }
 
@@ -56,7 +56,7 @@ public class GameInputsTests
         Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         var fetched = fetch.GetResult();
         var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
-        CollectionAssert.AreEqual(disk.Map.HeightmapR16, fetched.Map.HeightmapR16);
+        CollectionAssert.AreEqual(disk.Map.HeightmapR16z, fetched.Map.HeightmapR16z);
         Assert.AreEqual(disk.Map.HeightmapJson, fetched.Map.HeightmapJson);
         Assert.AreEqual(disk.Map.SettlementsYaml, fetched.Map.SettlementsYaml);
         Assert.AreEqual(disk.Map.HexesJson, fetched.Map.HexesJson);
@@ -194,7 +194,7 @@ public class GameInputsTests
                 var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
                 Assert.AreEqual(disk.Content.Hash, fetched.Content.Hash);
                 Assert.AreEqual(Simulation.NewGame(disk.Content, 7, Mode.Historical).Hash(), Simulation.NewGame(fetched.Content, 7, Mode.Historical).Hash());
-                CollectionAssert.AreEqual(disk.Map.HeightmapR16, fetched.Map.HeightmapR16);
+                CollectionAssert.AreEqual(disk.Map.HeightmapR16z, fetched.Map.HeightmapR16z);
                 Assert.AreEqual(0, GameInputs.OpenRequests);
                 check(server);
             }
@@ -209,11 +209,11 @@ public class GameInputsTests
 
     [UnityTest]
     public IEnumerator AServerErrorIsRetried() =>
-        FetchesTheDiskContentDespite(new Dictionary<string, (string, int)> { ["content/people.yaml"] = ("503", 1), ["map/heightmap.r16"] = ("500", 2) },
+        FetchesTheDiskContentDespite(new Dictionary<string, (string, int)> { ["content/people.yaml"] = ("503", 1), ["map/heightmap.r16z"] = ("500", 2) },
             server =>
             {
                 Assert.AreEqual(2, server.Hits("content/people.yaml"));
-                Assert.AreEqual(3, server.Hits("map/heightmap.r16"));
+                Assert.AreEqual(3, server.Hits("map/heightmap.r16z"));
             });
 
     [UnityTest]

@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["rasterio==1.5.2", "numpy==2.5.3", "requests==2.32.5"]
 # ///
-"""Copernicus GLO-30 DEM -> Unity heightmap (16-bit RAW, row 0 = north) + metadata JSON.
+"""Copernicus GLO-30 DEM -> Unity heightmap (16-bit grid, row 0 = north, packed by heightmap_codec) + metadata JSON.
 
 Usage: uv run tools/dem_to_heightmap.py
 Tiles are cached in tools/.cache/dem/ (not committed). A tile that returns 404 is open sea."""
@@ -16,6 +16,7 @@ import requests
 from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject
 
+import heightmap_codec
 from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,7 +70,7 @@ def write_heightmap(elev: np.ndarray, b: dict, out: Path) -> dict:
     lo, hi = float(elev.min()), float(elev.max())
     raw = np.round((elev - lo) / (hi - lo) * 65535).astype("<u2")
     out.mkdir(parents=True, exist_ok=True)
-    raw.tofile(out / "heightmap.r16")
+    heightmap_codec.write(out, raw)   # packed, lossless (issue #44): the raw grid is never written
     meta = {"width": int(elev.shape[1]), "height": int(elev.shape[0]), **b,
             "elev_min_m": lo, "elev_max_m": hi,
             "width_km": (b["lon1"] - b["lon0"]) * KM_PER_DEG_LON_EQ
@@ -88,7 +89,7 @@ def main() -> None:
         if p:
             paths.append(p)
     meta = write_heightmap(mosaic(paths, BOUNDS, SIZE), BOUNDS, OUT)
-    print(f"wrote {OUT / 'heightmap.r16'}: elev {meta['elev_min_m']:.1f}..{meta['elev_max_m']:.1f} m, "
+    print(f"wrote {OUT / heightmap_codec.FILE}: elev {meta['elev_min_m']:.1f}..{meta['elev_max_m']:.1f} m, "
           f"{meta['width_km']:.1f} x {meta['length_km']:.1f} km")
 
 

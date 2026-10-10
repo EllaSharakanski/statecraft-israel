@@ -109,7 +109,7 @@ namespace Statecraft.Game.Map
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
             Clear();
-            var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16, MetaPath);
+            var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16z, MetaPath);
             DiagLog.BootPhase("heightmap decoded");
             Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
             DiagLog.BootPhase("hexes parsed");

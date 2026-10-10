@@ -32,6 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
+import heightmap_codec
 from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -236,7 +237,7 @@ def hex_precip_means(pr: dict, elev: np.ndarray, meta: dict, size: float) -> dic
 
 def load_elevation(map_dir: Path) -> tuple[np.ndarray, dict]:
     meta = json.loads((map_dir / "heightmap.json").read_text())
-    raw = np.fromfile(map_dir / "heightmap.r16", dtype="<u2").reshape(meta["height"], meta["width"])
+    raw = heightmap_codec.read(map_dir, meta)
     elev = meta["elev_min_m"] + raw.astype("float64") / 65535 * (meta["elev_max_m"] - meta["elev_min_m"])
     return elev, meta
 

@@ -21,7 +21,35 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 - **Size (merge candidate, a099655):**
   - The folder is 23 MB (`du -sh`) in 51 files. itch.io allows 1,000 files.
   - The zip is 20 MB (20,941,435 bytes).
-  - `StreamingAssets/map/heightmap.r16` (8 MB) is served as is, outside Unity's compression. Making it smaller is deferred to M5.
+  - `StreamingAssets/map/heightmap.r16` (8 MB) was served as is, outside Unity's compression. Issue #44 packed it (below).
+- **Smaller download: the packed heightmap (issue #44, 2026-10-10).** StreamingAssets files are served as they are, so
+  the raw 16-bit grid cost 8,396,802 bytes on every load. It is now `heightmap.r16z` (4,062,705 bytes): the grid's row
+  deltas split into a low-byte and a high-byte plane, in one zlib stream (`tools/heightmap_codec.py` writes it,
+  `HeightmapCodec.cs` decodes it with `System.IO.Compression.DeflateStream`, which IL2CPP backs with its bundled zlib on
+  WebGL too, then checks the size and the Adler-32). It decodes to the old file byte for byte: `MapTests` and
+  `test_heightmap_codec.py` pin the SHA-256 of the raw file (`b6882a77…`), and the terrain tests, goldens and smoke are
+  unchanged.
+  - **Options weighed (same grid, bytes):** raw 8,396,802; zlib of the raw grid 6,284,586; Brotli 11 of the raw grid
+    (what moving it into the `.data` file would give: Unity's Brotli build matches quality 11, 10,988,872 against
+    10,953,925 for the same `.data`) 4,982,506; row deltas in byte planes + zlib (chosen) 4,062,705; the same planes
+    under Brotli 11 3,822,573. Moving it into `.data` saves less (3.4 MB on the wire against 4.3 MB; 1.3 MB of zip
+    against 2.2 MB), puts the bytes in the file the engine must load before it starts (the StreamingAssets fetch runs
+    beside the content fetches), grows the uncompressed build used for local and CI checks by 8 MB, and moves the file
+    every map tool reads. The Brotli-planes variant would save 0.24 MB more but needs the same decoder plus all of that.
+  - **Size, fb31ce1 -> issue #44 (Brotli build, measured on the folders; the zip is `tools/package_release.py`'s
+    deflate zip of the same files, made without the release gate):** folder 28,310,337 -> 23,954,695 bytes (-4.36 MB,
+    -15%; this is what a browser downloads), zip 25,782,074 -> 23,535,021 bytes (-2.25 MB, -9%; the old zip already
+    deflated the raw grid to about 6.3 MB), 51 files both. The wasm grows by 14 KB (`.wasm.br` 8,622,716 ->
+    8,636,749: DeflateStream). The zip has grown since a099655 (20.9 MB) with visual v1's baked textures.
+  - **Boot (`uv run tools/headed.py boot --runs 3`, Disabled build, fb31ce1 -> #44; load average 6-12 from other
+    sessions):** `--cpu 1`: `BOOT map_build_ms median=432` -> `480`, `BOOT first_frame_ms median=3580` -> `3646`;
+    `--cpu 4`: `map_build_ms median=1897` -> `2035`, `first_frame_ms median=7320` -> `7401`. The decode is the "heightmap
+    decoded" phase: 7 -> 41 ms at `--cpu 1`, 34 -> 184 ms at `--cpu 4`. Every span stays within the visual v1 boot
+    budget (Task 1 baselines 443 / 3547 ms at `--cpu 1` and 1813 / 6963 ms at `--cpu 4`, plus max(300 ms, 50%)); the
+    tool exits 0 on each. Served from localhost the download is free, so these runs show only the decode's cost; on a
+    real connection 4.3 MB less to fetch is worth far more (3.5 s at 10 Mbit/s).
+  - **Goldens:** `uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5"` with the three `--expect`
+    values from `docs/determinism.md`: PASS on both builds (the Brotli build too).
 - **Play it locally:** serve the folder with web_check's handler, which sends `Content-Encoding: br` for `*.br`. Plain `python3 -m http.server` does not, so the Brotli build would not load. Then open http://localhost:8000/.
   ```
   python3 -c "import sys,functools,http.server; sys.path.insert(0,'tools'); import web_check as w; http.server.ThreadingHTTPServer(('127.0.0.1',8000), functools.partial(w.Handler, directory='unity/Builds/Web-brotli')).serve_forever()"

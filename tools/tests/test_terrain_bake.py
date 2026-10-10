@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 import terrain_bake as tb
+import heightmap_codec as hc
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -149,7 +150,7 @@ def test_main_writes_both_textures_one_texel_smaller_and_deterministically(tmp_p
     elev = np.where(x < 8, 0.0, 40.0 + 30.0 * np.sin(y / 3.0) + 20.0 * x).astype(np.float32)
     lo, hi = float(elev.min()), float(elev.max())
     map_dir = tmp_path / "map"; map_dir.mkdir()
-    np.round((elev - lo) / (hi - lo) * 65535).astype("<u2").tofile(map_dir / "heightmap.r16")
+    hc.write(map_dir, np.round((elev - lo) / (hi - lo) * 65535).astype("<u2"))
     (map_dir / "heightmap.json").write_text(json.dumps({**meta_for(n, n, 79.0, 211.0), "elev_min_m": lo, "elev_max_m": hi}))
     tb.main(map_dir, tmp_path / "a"); tb.main(map_dir, tmp_path / "b")
     bake = png(tmp_path / "a" / "terrain_bake.png"); coast = png(tmp_path / "a" / "coast.png")

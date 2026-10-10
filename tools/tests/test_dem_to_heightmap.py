@@ -6,6 +6,7 @@ import rasterio
 from rasterio.transform import from_origin
 
 import dem_to_heightmap as dem
+import heightmap_codec as hc
 
 
 def make_tile(path, lat, lon, value, size=60):
@@ -40,7 +41,8 @@ def test_missing_tile_is_sea_and_mosaic_keeps_north_up(tmp_path):
 def test_write_heightmap_normalises_and_writes_metadata(tmp_path):
     elev = np.array([[-430.0, 0.0], [570.0, 1000.0]], dtype="float32")
     meta = dem.write_heightmap(elev, dem.BOUNDS, tmp_path)
-    raw = np.fromfile(tmp_path / "heightmap.r16", dtype="<u2").reshape(2, 2)
+    assert not (tmp_path / "heightmap.r16").exists(), "only the packed heightmap is written (issue #44)"
+    raw = hc.read(tmp_path, {"width": 2, "height": 2})
     assert raw[0, 0] == 0 and raw[1, 1] == 65535
     assert raw[1, 0] == round((570 + 430) / 1430 * 65535)
     on_disk = json.loads((tmp_path / "heightmap.json").read_text())

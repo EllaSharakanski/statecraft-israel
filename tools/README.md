@@ -3,7 +3,9 @@
 Offline data tools (uv inline-script Python). Run from the repo root.
 
 - `dem_to_heightmap.py` downloads Copernicus GLO-30 tiles into `tools/.cache/dem/` (not committed) and writes
-  `unity/Assets/StreamingAssets/map/heightmap.r16` + `heightmap.json`.
+  `unity/Assets/StreamingAssets/map/heightmap.r16z` + `heightmap.json`. The `.r16z` is the 16-bit grid packed losslessly
+  by `heightmap_codec.py` (row deltas in byte planes, one zlib stream: 4.1 MB instead of 8.4 MB, issue #44); every tool
+  reads it through `heightmap_codec.read`, and the game decodes the same layout (`HeightmapCodec.cs`).
 - `precip_clip.py` reads the map window of CHELSA V2.1 bio12 (mean annual precipitation 1981-2010) in place over HTTP and
   writes `content/map/precip_bio12.u16` + `precip_bio12.json` (committed).
 - `ims_normals.py` downloads Israel Meteorological Service rain-gauge records from data.gov.il into `tools/.cache/ims/`

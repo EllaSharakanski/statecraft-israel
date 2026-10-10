@@ -14,7 +14,8 @@ namespace Statecraft.Game.Boot
     public sealed class MapInputs
     {
         public string HeightmapJson = "", HexesJson = "", SettlementsYaml = "";
-        public byte[] HeightmapR16 = new byte[0];
+        /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
+        public byte[] HeightmapR16z = new byte[0];
     }
 
     /// <summary>Everything the game loads at start: the sim content and the map inputs. Desktop and the editor read
@@ -28,7 +29,7 @@ namespace Statecraft.Game.Boot
         public static MapInputs MapFromDisk(string contentDir, string mapDir) => new MapInputs
         {
             HeightmapJson = File.ReadAllText(Path.Combine(mapDir, "heightmap.json")),
-            HeightmapR16 = File.ReadAllBytes(Path.Combine(mapDir, "heightmap.r16")),
+            HeightmapR16z = File.ReadAllBytes(Path.Combine(mapDir, HeightmapCodec.FileName)),
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
         };
@@ -36,8 +37,8 @@ namespace Statecraft.Game.Boot
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
             new GameInputs { Content = ContentLoader.Load(contentDir), Map = MapFromDisk(contentDir, mapDir) };
 
-        /// <summary>Builds the inputs from fetched texts (keys are manifest paths) and heightmap bytes.</summary>
-        public static GameInputs FromTexts(IReadOnlyDictionary<string, string> texts, IEnumerable<string> manifest, string heightmapJson, byte[] r16)
+        /// <summary>Builds the inputs from fetched texts (keys are manifest paths) and the packed heightmap's bytes.</summary>
+        public static GameInputs FromTexts(IReadOnlyDictionary<string, string> texts, IEnumerable<string> manifest, string heightmapJson, byte[] r16z)
         {
             var events = manifest.Where(f => f.StartsWith("events/", StringComparison.Ordinal)).ToList();
             var content = ContentLoader.Load(rel => texts.TryGetValue(rel, out var t) ? t : null, events);
@@ -46,7 +47,7 @@ namespace Statecraft.Game.Boot
                 Content = content,
                 Map = new MapInputs
                 {
-                    HeightmapJson = heightmapJson, HeightmapR16 = r16,
+                    HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
                 },
             };
@@ -132,22 +133,22 @@ namespace Statecraft.Game.Boot
             var manifest = ContentManifest.Parse(await Text(Start(baseUrl + "/content/" + ContentManifest.FileName), ContentManifest.FileName));
             var requests = manifest.Select(f => (file: f, request: Start(baseUrl + "/content/" + f))).ToList();
             var meta = Start(baseUrl + "/map/heightmap.json");
-            var r16 = Start(baseUrl + "/map/heightmap.r16");
+            var r16z = Start(baseUrl + "/map/" + HeightmapCodec.FileName);
             try
             {
                 var texts = new Dictionary<string, string>();
                 foreach (var (file, request) in requests) texts[file] = await Text(request, file);
                 var metaText = await Text(meta, "heightmap.json");
-                var r16Bytes = await Bytes(r16, "heightmap.r16");
+                var r16zBytes = await Bytes(r16z, HeightmapCodec.FileName);
                 DiagLog.BootPhase($"downloaded {texts.Count + 3} files");
-                var inputs = FromTexts(texts, manifest, metaText, r16Bytes);
+                var inputs = FromTexts(texts, manifest, metaText, r16zBytes);
                 DiagLog.BootPhase("content parsed and validated");
                 return inputs;
             }
             finally
             {
                 foreach (var (_, request) in requests) Release(request);
-                Release(meta); Release(r16);
+                Release(meta); Release(r16z);
             }
         }
     }

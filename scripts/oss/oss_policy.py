@@ -51,7 +51,7 @@ REQUIRED_FILES: tuple[str, ...] = (
 # Files whose provenance ASSETS.yaml must record (check "assets"). Any file git itself treats as binary counts too.
 BINARY_EXTENSIONS = frozenset({
     ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff", ".tga", ".psd", ".exr", ".hdr", ".svg",
-    ".mp4", ".mov", ".webm", ".r16", ".u16", ".raw",
+    ".mp4", ".mov", ".webm", ".r16", ".r16z", ".u16", ".raw",
     ".ttf", ".otf", ".woff", ".woff2",
     ".wav", ".ogg", ".mp3", ".flac", ".aiff", ".m4a",
     ".fbx", ".obj", ".blend", ".glb", ".gltf",

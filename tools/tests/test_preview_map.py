@@ -5,6 +5,7 @@ from PIL import Image
 
 import hexgrid as hg
 import preview_map as pm
+import heightmap_codec as hc
 
 
 def test_preview_renders_expected_size_and_marks_settlement(tmp_path):
@@ -14,7 +15,7 @@ def test_preview_renders_expected_size_and_marks_settlement(tmp_path):
             "elev_min_m": 0.0, "elev_max_m": 300.0,
             "attribution": "dem-credit"}
     (tmp_path / "heightmap.json").write_text(json.dumps(meta))
-    np.round(elev / 300.0 * 65535).astype("<u2").tofile(tmp_path / "heightmap.r16")
+    hc.write(tmp_path, np.round(elev / 300.0 * 65535).astype("<u2"))
     cell = 0.01
     hg.write_precip(np.full((52, 52), 500.0), 35.0 - cell, 32.7 + cell, cell, tmp_path, {"source": "synthetic", "attribution": "chelsa-credit"})
     (tmp_path / "precip_stations.json").write_text(json.dumps({"attribution": "ims-credit", "stations": []}))
