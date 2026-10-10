@@ -155,8 +155,6 @@ namespace Statecraft.Game.Map
         public static readonly float[] SkirtRings = { 0f, 4000f, 20000f, 60000f, 600000f };
         /// <summary>Share of the fall to sea level reached at each ring (land samples only).</summary>
         static readonly float[] SkirtFall = { 0f, 0.4f, 0.85f, 1f, 1f };
-        /// <summary>Edge samples per side of the border skirt (the heightmap has 2048 intervals per side).</summary>
-        public const int SkirtSamplesPerEdge = 1024;
         /// <summary>A heightmap sample this close to 0 m is sea (tools/dem_to_heightmap.py writes open sea as exactly 0 m).</summary>
         public const float SeaToleranceM = 0.5f;
 
@@ -169,6 +167,9 @@ namespace Statecraft.Game.Map
         {
             var size = data.size;
             float seaY = (0f - elevMinM) * VerticalExaggeration;
+            // One spoke per terrain vertex along each edge (the heightmap's own resolution), so the skirt's inner edge follows
+            // the terrain's edge exactly; sampling every second vertex left slivers up to 36 m (fix round 3, m-4).
+            int samples = data.heightmapResolution - 1;
             var verts = new List<Vector3>(); var sea = new List<int>(); var land = new List<int>();
             bool IsLand(float h) => Mathf.Abs(h / VerticalExaggeration + elevMinM) > SeaToleranceM;
             // One ring of vertices outward from an edge point; returns the index of its first vertex.
@@ -211,9 +212,9 @@ namespace Statecraft.Game.Map
             foreach (var (a, b, n) in edges)
             {
                 int prev = -1; bool prevLand = false;
-                for (int i = 0; i <= SkirtSamplesPerEdge; i++)
+                for (int i = 0; i <= samples; i++)
                 {
-                    var p = Vector2.Lerp(a, b, (float)i / SkirtSamplesPerEdge);
+                    var p = Vector2.Lerp(a, b, (float)i / samples);
                     bool isLand = IsLand(Height(p));
                     int spoke = Spoke(p, n, isLand);
                     if (prev >= 0) Quad(prevLand || isLand ? land : sea, prev, spoke);

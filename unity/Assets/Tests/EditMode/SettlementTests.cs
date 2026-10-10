@@ -224,11 +224,34 @@ public class MapSceneTests
                 Assert.IsFalse(c.x > 1f && c.x < size.x - 1f && c.z > 1f && c.z < size.z - 1f, $"skirt triangle over the terrain at {c}");
             }
         }
-        // Its inner edge meets the terrain's edge (no gap, no step).
-        var edge = System.Array.FindAll(verts, v => Mathf.Abs(v.x - size.x) < 0.5f && v.z > 1000f && v.z < size.z - 1000f);
-        Assert.Greater(edge.Length, 100);
-        foreach (var v in edge)
-            Assert.AreEqual(map.Terrain.SampleHeight(new Vector3(v.x - 0.5f, 0, v.z)), v.y, 2f, $"east edge at z={v.z}");
+        // Fix round 3 (m-4): on all four edges, at every heightmap sample (the terrain's own vertices), the skirt's inner edge
+        // is at the terrain's height: no sliver between them. The skirt's inner height between its ring-0 vertices is linear.
+        var data = map.Terrain.terrainData;
+        int res = data.heightmapResolution;
+        var ring0 = System.Array.FindAll(verts, v => v.x <= 0.5f || v.x >= size.x - 0.5f || v.z <= 0.5f || v.z >= size.z - 0.5f);
+        foreach (var (name, onEdge, along, at) in new (string, System.Func<Vector3, bool>, System.Func<Vector3, float>, System.Func<float, Vector2>)[] {
+            ("south", v => Mathf.Abs(v.z) < 0.5f, v => v.x, t => new Vector2(t, 0)),
+            ("north", v => Mathf.Abs(v.z - size.z) < 0.5f, v => v.x, t => new Vector2(t, size.z)),
+            ("west", v => Mathf.Abs(v.x) < 0.5f, v => v.z, t => new Vector2(0, t)),
+            ("east", v => Mathf.Abs(v.x - size.x) < 0.5f, v => v.z, t => new Vector2(size.x, t)) })
+        {
+            var line = System.Array.FindAll(ring0, v => onEdge(v)); System.Array.Sort(line, (p, q) => along(p).CompareTo(along(q)));
+            float worst = 0; float worstAt = 0;
+            for (int i = 0; i < res; i++)
+            {
+                float t = (name == "south" || name == "north" ? size.x : size.z) * i / (res - 1);
+                int k = System.Array.FindLastIndex(line, v => along(v) <= t + 0.01f);
+                if (k < 0 || k >= line.Length - 1) continue;
+                var a0 = line[k]; var a1 = line[k + 1];
+                float f = (t - along(a0)) / Mathf.Max(1e-3f, along(a1) - along(a0));
+                var p2 = at(t);
+                float terrain = data.GetInterpolatedHeight(p2.x / size.x, p2.y / size.z);
+                float d = Mathf.Abs(Mathf.Lerp(a0.y, a1.y, f) - terrain);
+                if (d > worst) { worst = d; worstAt = t; }
+            }
+            TestContext.WriteLine($"{name} edge: largest gap to the terrain {worst:0.00} m (at {worstAt:0} m)");
+            Assert.Less(worst, 0.5f, $"{name} edge: a sliver of {worst:0.00} m at {worstAt:0} m along it");
+        }
         // Facing up (seen from the camera's side).
         var used = new HashSet<int>();
         for (int sm = 0; sm < mesh.subMeshCount; sm++) used.UnionWith(mesh.GetTriangles(sm));
@@ -414,6 +437,13 @@ public class MapSceneTests
         Assert.AreEqual("Statecraft/HexSelection", selection.shader.name);
         StringAssert.IsMatch(@"(?m)^\s*Offset\s+-\d+\s*,\s*-\d+", File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader)));
         Assert.Greater(selection.renderQueue, Load(OverlayMatPath).renderQueue, "drawn after the overlay lines");
+        // Fix round 3 (m-2): every pass declares the same UnityPerMaterial CBUFFER, as the SRP Batcher requires.
+        var source = File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader));
+        var buffers = System.Text.RegularExpressions.Regex.Matches(source, @"CBUFFER_START\(UnityPerMaterial\)(.*?)CBUFFER_END", System.Text.RegularExpressions.RegexOptions.Singleline);
+        var passes = System.Text.RegularExpressions.Regex.Matches(source, @"HLSLPROGRAM").Count;
+        Assert.AreEqual(passes, buffers.Count, "a UnityPerMaterial CBUFFER in every pass");
+        foreach (System.Text.RegularExpressions.Match b in buffers)
+            Assert.AreEqual(System.Text.RegularExpressions.Regex.Replace(buffers[0].Groups[1].Value, @"\s+", " "), System.Text.RegularExpressions.Regex.Replace(b.Groups[1].Value, @"\s+", " "), "the same layout in every pass");
         // Fix round 2 (N6): the band is in the depth prepass / camera depth texture too, so depth of field sees its depth.
         Assert.GreaterOrEqual(selection.FindPass("DepthOnly"), 0, "a DepthOnly pass");
         Assert.AreEqual("DepthOnly", selection.shader.FindPassTagValue(selection.FindPass("DepthOnly"), new UnityEngine.Rendering.ShaderTagId("LightMode")).name);
