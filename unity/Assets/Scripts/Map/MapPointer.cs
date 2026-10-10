@@ -31,6 +31,7 @@ namespace Statecraft.Game.Map
             // only the terrain's own collider: other colliders (markers, future props) never decide which hex is clicked
             if (cam == null || collider == null || !collider.Raycast(cam.ScreenPointToRay(pos), out var hit, 1_000_000f)) return false;
             var hex = Pick(Map, hit.point);
+            Map.Select(hex.q, hex.r);                                   // the map marks the hex the info panel describes
             HexClicked?.Invoke(hex.q, hex.r);
             return true;
         }

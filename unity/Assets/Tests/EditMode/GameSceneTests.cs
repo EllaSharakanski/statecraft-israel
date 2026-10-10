@@ -169,6 +169,17 @@ public class GameSceneTests
         var pointer = Object.FindFirstObjectByType<MapPointer>();
         Assert.IsTrue(pointer.HandleClick(AimAtTelAviv()), "the ray hit the terrain");
         Assert.AreEqual("Tel Aviv", Ui.Q<Label>("info-title").text);
+        // Playtest 1, item 10: the map marks the hex the info panel describes.
+        var map = Object.FindFirstObjectByType<MapScene>();
+        var sel = map.Terrain.transform.Find(MapScene.SelectionName);
+        Assert.IsNotNull(sel, "the clicked hex is outlined");
+        Assert.IsTrue(sel.GetComponent<MeshRenderer>().enabled);
+        var tlv = Inputs.Content.SettlementHexes.Single(s => s.Id == "tel_aviv");
+        var hex = Inputs.Content.HexAt(tlv.Q, tlv.R)!;
+        var ground = map.Frame.ToWorld(hex.Lon, hex.Lat, 0);
+        var b = sel.GetComponent<MeshFilter>().sharedMesh.bounds;
+        Assert.AreEqual(ground.x, b.center.x, 100f, "the outline is on the clicked hex");
+        Assert.AreEqual(ground.z, b.center.z, 100f);
     }
 
     /// <summary>Points the main camera straight down at Tel Aviv and returns the screen centre.</summary>

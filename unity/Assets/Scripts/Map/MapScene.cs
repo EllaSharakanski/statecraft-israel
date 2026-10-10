@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Statecraft.Game.Boot;
 using UnityEngine;
@@ -17,6 +18,67 @@ namespace Statecraft.Game.Map
         public HexFile Hexes { get; private set; }
         public Terrain Terrain { get; private set; }
         public Material MarkerMaterial => markerMaterial;
+
+        /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
+        public const string SelectionName = "HexSelection";
+        /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome).</summary>
+        public static readonly Color SelectionColour = new Color(1f, 0.84f, 0.38f);
+        /// <summary>Width of the outline band, as a fraction of the hex circumradius (about 600 m on a 5 km hex).</summary>
+        public const float SelectionWidth = 0.12f;
+        /// <summary>Height of the band above the hex overlay's lines, which it covers.</summary>
+        public const float SelectionLiftM = 20f;
+        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+
+        /// <summary>Outlines hex (q, r) with a band draped on the terrain in <see cref="SelectionColour"/>: the hex overlay's
+        /// geometry (MapBuilder.DrapedRing, HexMath corners) and its editor-made material, coloured through a
+        /// MaterialPropertyBlock (no runtime material). A hex that is not on the map hides the outline.</summary>
+        public void Select(int q, int r)
+        {
+            if (Terrain == null || Hexes == null) return;
+            var found = Terrain.transform.Find(SelectionName);
+            var go = found != null ? found.gameObject : null;
+            if (go == null)
+            {
+                go = new GameObject(SelectionName);
+                go.transform.SetParent(Terrain.transform, false);
+                var mesh = Terrain.GetComponent<MapRuntimeAssets>().Own(new Mesh { name = SelectionName });
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var renderer = go.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = overlayMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var block = new MaterialPropertyBlock();
+                block.SetColor(BaseColor, SelectionColour);
+                renderer.SetPropertyBlock(block);
+            }
+            var mr = go.GetComponent<MeshRenderer>();
+            HexJson hex = null;
+            foreach (var h in Hexes.hexes) if (h.q == q && h.r == r) { hex = h; break; }
+            if (hex == null) { mr.enabled = false; return; }
+            var c = Frame.ToWorld(hex.lon, hex.lat, 0);
+            var centre = new Vector2(c.x, c.z);
+            float size = Hexes.hex_size_km * 1000f, clearance = MapBuilder.OverlayClearanceM + SelectionLiftM;
+            var verts = new List<Vector3>(2 * MapBuilder.RingVertices);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size, clearance, verts);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size * (1f - SelectionWidth), clearance, verts);
+            int n = MapBuilder.RingVertices;
+            var tris = new List<int>(12 * n);
+            for (int j = 0; j < n; j++)
+            {
+                // Both rings at the higher of the two, so the band clears the ground between them too.
+                float y = Mathf.Max(verts[j].y, verts[n + j].y);
+                verts[j] = new Vector3(verts[j].x, y, verts[j].z); verts[n + j] = new Vector3(verts[n + j].x, y, verts[n + j].z);
+            }
+            for (int j = 0; j < n; j++)
+            {
+                int a = j, b = (j + 1) % n, ai = n + j, bi = n + (j + 1) % n;
+                tris.AddRange(new[] { a, ai, b, b, ai, bi, a, b, ai, b, bi, ai });   // both windings: seen from any yaw
+            }
+            var m = go.GetComponent<MeshFilter>().sharedMesh;
+            m.Clear();
+            m.SetVertices(verts); m.SetTriangles(tris, 0);
+            m.RecalculateBounds();
+            mr.enabled = true;
+        }
 
         public void Configure(Material terrain, Material overlay, Material marker)
         { terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; }

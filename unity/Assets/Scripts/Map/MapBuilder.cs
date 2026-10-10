@@ -147,40 +147,54 @@ namespace Statecraft.Game.Map
             data.SetAlphamaps(0, 0, a);
         }
 
+        /// <summary>Vertices of one draped hex ring (<see cref="DrapedRing"/>).</summary>
+        public const int RingVertices = 6 * OverlaySegmentsPerEdge;
+
+        /// <summary>Appends the <see cref="RingVertices"/> vertices of a hex outline of circumradius <paramref name="size"/>
+        /// around <paramref name="centre"/> (world x, z), corners from HexMath. Each edge is split into OverlaySegmentsPerEdge
+        /// sub-segments, clamped to the terrain bounds; each vertex sits <paramref name="clearance"/> above the highest
+        /// terrain sampled along its two adjacent sub-segments, so the straight line between two vertices clears any ridge.
+        /// The hex overlay and the selection outline share it.</summary>
+        public static void DrapedRing(GeoFrame frame, TerrainData data, Vector2 centre, float size, float clearance, List<Vector3> verts)
+        {
+            int n = RingVertices;
+            var corners = new Vector2[6]; var ground = new Vector2[n]; var segMax = new float[n];
+            for (int i = 0; i < 6; i++) corners[i] = HexMath.Corner(centre, size, i);
+            for (int i = 0; i < 6; i++)
+                for (int s = 0; s < OverlaySegmentsPerEdge; s++)
+                {
+                    var k = Vector2.Lerp(corners[i], corners[(i + 1) % 6], (float)s / OverlaySegmentsPerEdge);
+                    k.x = Mathf.Clamp(k.x, 0f, frame.WidthM); k.y = Mathf.Clamp(k.y, 0f, frame.LengthM);
+                    ground[i * OverlaySegmentsPerEdge + s] = k;
+                }
+            for (int j = 0; j < n; j++)
+            {
+                float m = float.MinValue;
+                for (int t = 0; t <= OverlaySamplesPerSegment; t++)
+                {
+                    var p = Vector2.Lerp(ground[j], ground[(j + 1) % n], (float)t / OverlaySamplesPerSegment);
+                    m = Mathf.Max(m, data.GetInterpolatedHeight(p.x / frame.WidthM, p.y / frame.LengthM));
+                }
+                segMax[j] = m;
+            }
+            for (int j = 0; j < n; j++)
+                verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + clearance, ground[j].y));
+        }
+
         /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments; vertices
         /// are clamped to the terrain bounds. Each vertex sits OverlayClearanceM above the highest terrain sampled along its
         /// two adjacent sub-segments, so the straight line between two vertices clears any ridge between them.</summary>
         static GameObject BuildHexOverlay(GeoFrame frame, HexFile hexes, TerrainData data, Material material, MapRuntimeAssets assets)
         {
             float size = hexes.hex_size_km * 1000f;
-            int n = 6 * OverlaySegmentsPerEdge;
+            int n = RingVertices;
             var verts = new List<Vector3>(); var idx = new List<int>();
-            var corners = new Vector2[6]; var ground = new Vector2[n]; var segMax = new float[n];
             foreach (var h in hexes.hexes)
             {
                 if (!h.land) continue;
                 var c = frame.ToWorld(h.lon, h.lat, 0);
-                for (int i = 0; i < 6; i++) corners[i] = HexMath.Corner(new Vector2(c.x, c.z), size, i);
-                for (int i = 0; i < 6; i++)
-                    for (int s = 0; s < OverlaySegmentsPerEdge; s++)
-                    {
-                        var k = Vector2.Lerp(corners[i], corners[(i + 1) % 6], (float)s / OverlaySegmentsPerEdge);
-                        k.x = Mathf.Clamp(k.x, 0f, frame.WidthM); k.y = Mathf.Clamp(k.y, 0f, frame.LengthM);
-                        ground[i * OverlaySegmentsPerEdge + s] = k;
-                    }
-                for (int j = 0; j < n; j++)
-                {
-                    float m = float.MinValue;
-                    for (int t = 0; t <= OverlaySamplesPerSegment; t++)
-                    {
-                        var p = Vector2.Lerp(ground[j], ground[(j + 1) % n], (float)t / OverlaySamplesPerSegment);
-                        m = Mathf.Max(m, data.GetInterpolatedHeight(p.x / frame.WidthM, p.y / frame.LengthM));
-                    }
-                    segMax[j] = m;
-                }
                 int start = verts.Count;
-                for (int j = 0; j < n; j++)
-                    verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + OverlayClearanceM, ground[j].y));
+                DrapedRing(frame, data, new Vector2(c.x, c.z), size, OverlayClearanceM, verts);
                 for (int i = 0; i < n; i++) { idx.Add(start + i); idx.Add(start + (i + 1) % n); }
             }
             var mesh = assets.Own(new Mesh { name = "HexOverlay", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
