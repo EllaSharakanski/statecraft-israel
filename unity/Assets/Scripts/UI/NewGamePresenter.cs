@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using Statecraft.Sim;
 using UnityEngine.UIElements;
 
@@ -17,15 +16,16 @@ namespace Statecraft.Game.UI
             this.root = root; this.bridge = bridge; this.store = store; this.toast = toast; this.text = text; this.seed = seed;
             button = root.Q<Button>("new-game");
             button.clicked += Press;
-            bridge.TurnEnded += Disarm;
+            bridge.Changed += Disarm;
         }
 
         readonly Button button;
 
-        void Disarm(IReadOnlyList<Rejection> _) => Armed = false;
+        // Any change (an order, a turn, a new session) means the prompt no longer describes what is on screen.
+        void Disarm() => Armed = false;
 
         /// <summary>Unsubscribes from the bridge and the button (the owner calls this when disabled).</summary>
-        public void Dispose() { button.clicked -= Press; bridge.TurnEnded -= Disarm; }
+        public void Dispose() { button.clicked -= Press; bridge.Changed -= Disarm; }
 
         public bool Armed { get; private set; }
 
@@ -33,9 +33,11 @@ namespace Statecraft.Game.UI
         {
             if (!Armed) { Armed = true; toast.Show(text["newgame.confirm"]); return; }
             Armed = false;
-            store.DeleteAutosave();
+            bool deleted = true;
+            // An old autosave that cannot be deleted is overwritten by the next turn's autosave anyway, so the new game still starts.
+            try { store.DeleteAutosave(); } catch (Exception e) { deleted = false; UnityEngine.Debug.LogWarning("Autosave could not be deleted: " + e); }
             bridge.Replace(GameSession.New(bridge.Content, seed(), Mode.Historical));
-            toast.Clear();
+            if (deleted) toast.Clear(); else toast.Show(text["newgame.delete_failed"]);
         }
     }
 }
