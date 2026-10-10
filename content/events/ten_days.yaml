@@ -1,0 +1,32 @@
+id: ten_days
+title: The Ten Days
+text: 'The first truce is ending and Egypt has renewed the fighting. The General Staff asks where the main effort should go. In the centre, Operation Dani under Yigal Allon would take Lydda airport and secure the road to Jerusalem. {defense_minister} must decide.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# Start [C]: 8 July (en.wiki "1948 Arab-Israeli War", "8-18 July") vs 9 July (en.wiki "Operation Danny", he.wiki); the
+# window covers both. Operation Dani ran 9-19 July 1948 under Yigal Allon, Yitzhak Rabin his deputy; Lydda airport was
+# taken on 10 July; the attacks on Latrun on 15-16 and 18 July failed. Owner ruling: the text describes the military
+# operation only. Research notes facts-1948.md section 4.
+from: 1948-07-08
+to: 1948-07-11
+options:
+  - id: central_front
+    text: Strike in the centre with Operation Dani, toward Lydda airport and the Jerusalem road
+    historical: true
+    recommended: true
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.05 }
+  - id: southern_front
+    # Game assumption: a design alternative. The notes found no cabinet debate in July; Ben-Gurion's diary of 11 July
+    # records Yadin asking where forces should go next [S].
+    text: Strike against Egypt in the south first
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.03 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Danny", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+status: fact-checked

@@ -1,0 +1,30 @@
+id: altalena
+title: The Altalena
+text: 'The Altalena, a ship carrying arms for the Irgun, has reached Kfar Vitkin. The government agreed that a fifth of the arms would go to the Irgun''s battalion in Jerusalem, but Menachem Begin asks that the rest equip Irgun battalions inside the IDF. The government demands that all the weapons be handed over. {defense_minister} must decide.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# 20 June 1948: the ship reached Kfar Vitkin and the government empowered the army to use force if necessary. 21 June:
+# Dan Even's ultimatum and fighting at Kfar Vitkin; the ship ran aground off Tel Aviv. 22 June: Ben-Gurion ordered it
+# shelled; Yitzhak Rabin commanded on shore. 16 Irgun and 3 IDF dead; Irgun units in the IDF were disbanded and their men
+# dispersed (en.wiki "Altalena Affair" and "1948 in Israel" agree). Research notes facts-1948.md section 2.
+from: 1948-06-20
+to: 1948-06-23
+options:
+  - id: enforce
+    text: Order the army to take the arms, by force if necessary
+    historical: true
+    recommended: true
+    effects:
+      - { target: security, delta: 0.03 }
+      - { target: morale, delta: -0.05 }
+  - id: compromise
+    # Begin's second request, put on the table and rejected as an army within an army (en.wiki "Altalena Affair").
+    text: Give the remaining arms to Irgun battalions inside the IDF
+    effects:
+      - { target: security, delta: -0.05 }
+      - { target: morale, delta: 0.02 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Altalena_Affair", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+status: fact-checked

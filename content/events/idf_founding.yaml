@@ -1,0 +1,29 @@
+id: idf_founding
+title: One Army
+text: 'The Haganah is becoming the Israel Defense Forces, while the Irgun and Lehi still keep their own units. {defense_minister} proposes an order that forbids any armed force other than the IDF.'
+anchor: hard
+tags: [security]
+office: defense_minister
+# Date of the order [C]: Ben-Gurion signed it on 26 May 1948 (MoD/IDF Archives; en.wiki "1948 in Israel"), the date used
+# here; JVL says it was issued on 28 May 1948. Both agree it was published in Official Gazette No. 3 of 31 May 1948, so the
+# window ends then. The Irgun agreed with the government on 1 June 1948 to dissolve into the IDF, Jerusalem excepted
+# (en.wiki "1948 in Israel" [S]; JVL). Research notes facts-1948.md section 3a.
+from: 1948-05-26
+to: 1948-06-01
+options:
+  - id: one_army
+    text: Issue the order and bring every armed force into the IDF
+    historical: true
+    recommended: true
+    effects:
+      - { target: security, delta: 0.03 }
+  - id: separate_units
+    # Game assumption: the notes name no one who argued for this; it is the status quo the order ended.
+    text: Leave the Irgun and Lehi units outside the IDF for now
+    effects:
+      - { target: security, delta: -0.03 }
+sources:
+  - { url: "https://archives.mod.gov.il/sites/English/Exhibitions/David_Ben_Gurion_and_the_IDF/Pages/The-establishment-of-the-IDF.aspx", checked: 2026-10-10 }
+  - { url: "https://jewishvirtuallibrary.org/the-founding-of-the-israel-defense-forces", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+status: fact-checked

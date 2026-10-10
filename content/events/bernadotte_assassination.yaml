@@ -1,0 +1,34 @@
+id: bernadotte_assassination
+title: The Mediator Assassinated
+text: 'Lehi gunmen have assassinated the UN mediator, Count Folke Bernadotte, in Jerusalem, a day after he completed his second plan. {prime_minister} must decide how the government answers the armed groups still outside the IDF: Lehi, and the Irgun battalions in Jerusalem.'
+anchor: hard
+tags: [security, terror]
+office: prime_minister
+# Assassinated 17 September 1948 in Katamon, Jerusalem, by Lehi (en.wiki "Folke Bernadotte", "1948 in Israel"; a footnote
+# on en.wiki "Lehi" gives 16 September, an outlier). His second plan was completed on 16 September. About 200 Lehi members
+# were arrested; Yellin-Mor and Shmuelevitz on 29 September. Dates [C]: emergency regulations about 20 September (a UN cable
+# of 21 September; an en.wiki photo caption), the Prevention of Terrorism Ordinance No. 33 on 23 September (en.wiki "Prevention
+# of Terror Ordinance", used here; en.wiki "Lehi" says three days after). The IDF gave the Jerusalem Irgun 24 hours to disband
+# from 12:00 on 20 September (daat.ac.il [S]); JVL says its battalions disbanded on 20 September, a US consul's report says
+# the Irgun agreed on 21 September (FRUS [S]). Research notes facts-1948.md section 6.
+from: 1948-09-17
+to: 1948-09-24
+options:
+  - id: outlaw
+    text: Outlaw Lehi, arrest its members and order the Irgun in Jerusalem to disband into the IDF
+    historical: true
+    recommended: true
+    effects:
+      - { target: intl_standing, delta: 0.03 }
+      - { target: security, delta: 0.02 }
+  - id: investigate_only
+    # Game assumption: the notes name no advocate for this option.
+    text: Investigate the killing without a general crackdown
+    effects:
+      - { target: intl_standing, delta: -0.10 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Folke_Bernadotte", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/Lehi_(militant_group)", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/Prevention_of_Terror_Ordinance", checked: 2026-10-10 }
+  - { url: "https://jewishvirtuallibrary.org/the-founding-of-the-israel-defense-forces", checked: 2026-10-10 }
+status: fact-checked

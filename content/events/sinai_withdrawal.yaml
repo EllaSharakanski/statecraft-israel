@@ -1,0 +1,34 @@
+id: sinai_withdrawal
+title: The British Ultimatum
+text: 'Israeli forces have crossed into Sinai and reached the outskirts of El-Arish airfield. The Security Council has called for a cease-fire, the United States has added its pressure, and Britain threatens to act against Israel under its 1936 treaty with Egypt. {prime_minister} must decide whether to pull back to the Negev frontier.'
+anchor: hard
+tags: [security]
+office: prime_minister
+# The Negev Brigade crossed the border on the night of 28 December and reached El-Arish airfield by 30 December; the
+# Security Council called for a cease-fire on 29 December (en.wiki "Operation Horev"). The State Department's message of
+# 30 December was read to Ben-Gurion by McDonald; Ben-Gurion said the forces had been ordered back to the Negev frontier
+# and that Britain threatened action under the 1936 treaty (FRUS 1949 v.VI doc 341, 1 January 1949). Withdrawal by
+# 2 January 1949 (FRUS doc 371 [S]). The date of the British note is a gap. Afterwards: the RAF clash [C] 7 January 1949
+# (JVL, en.wiki "1949 in Israel" and "1948 Arab-Israeli War") vs 6 January (en.wiki "Operation Horev"); Israel accepted the
+# cease-fire on 7 January. The alternative (holding El-Arish to cut off the Egyptian army) is in Avnery's commentary [S].
+# Research notes facts-1948.md section 9.
+from: 1948-12-31
+to: 1949-01-03
+options:
+  - id: withdraw
+    text: Withdraw from Sinai to the Negev frontier
+    historical: true
+    recommended: true
+    effects:
+      - { target: intl_standing, delta: 0.05 }
+      - { target: security, delta: -0.02 }
+  - id: hold_el_arish
+    text: Hold the positions around El-Arish
+    effects:
+      - { target: intl_standing, delta: -0.12 }
+      - { target: security, delta: 0.05 }
+sources:
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d341", checked: 2026-10-10 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d371", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
+status: fact-checked

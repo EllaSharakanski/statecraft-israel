@@ -1,0 +1,34 @@
+id: first_truce
+title: The First Truce
+text: 'The Security Council has called for a four-week cease-fire, supervised by the UN mediator, Count Folke Bernadotte. Neither side may bring fighting men or war material into the country during the truce, and the Council has raised Chapter VII if its terms are broken. {prime_minister} must decide whether Israel accepts.'
+anchor: hard
+office: prime_minister
+# Security Council Resolution 50, 29 May 1948. Israel's acceptance went to the UN on 10 June (Eban's letter, S/834), with
+# reservations on immigration, food for Jerusalem and blockades; the truce took effect on 11 June and lasted 28 days.
+# End date [C]: 8 July (en.wiki "1948 Arab-Israeli War") vs 9 July (JVL/IDF, he.wiki); both agree Egypt renewed fighting
+# on 8 July. Research notes facts-1948.md section 1.
+# Accepting does not lower the security level: the truce lasted four weeks, and keeping weekly turns puts the Altalena
+# and the Ten Days on their own weeks (game design).
+from: 1948-06-01
+to: 1948-06-11
+options:
+  - id: accept
+    text: Accept the truce from 11 June
+    historical: true
+    recommended: true
+    effects:
+      # The IDF reorganised and trained, and arms arrived from Europe, especially Czechoslovakia (JVL/IDF).
+      - { target: security, delta: 0.04 }
+      - { target: intl_standing, delta: 0.03 }
+  - id: refuse
+    # Game assumption: the notes found no Israeli voice for refusing. The morale cost (an army short of arms, under the
+    # Chapter VII warning) is a design inference.
+    text: Refuse the truce and keep fighting
+    effects:
+      - { target: intl_standing, delta: -0.08 }
+      - { target: morale, delta: -0.03 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_50", checked: 2026-10-10 }
+  - { url: "https://www.jewishvirtuallibrary.org/israel-accepts-the-truce-letter-from-ambassador-eban-to-the-secretary-general-s-834", checked: 2026-10-10 }
+  - { url: "https://www.jewishvirtuallibrary.org/the-first-truce-1948", checked: 2026-10-10 }
+status: fact-checked

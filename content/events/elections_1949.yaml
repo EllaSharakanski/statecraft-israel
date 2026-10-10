@@ -1,0 +1,31 @@
+id: elections_1949
+title: Electing the Constituent Assembly
+text: 'The Declaration of Independence called for elected institutions by 1 October, and the war has already forced the vote to be postponed. The Provisional State Council has set the assembly at 120 seats, elected nationwide by proportional representation. A national registration, taken under curfew on 8 November, will build the voters'' roll. {prime_minister} must decide whether the vote goes ahead on 25 January.'
+anchor: hard
+office: prime_minister
+# 5 November 1948: the Provisional State Council set the assembly at 120 seats with nationwide PR (en.wiki and he.wiki
+# election pages). The vote was postponed twice because of the war; the dates of those decisions are a gap. Registration
+# date [C]: 8 November 1948 (CBS, population.yaml; en.wiki and he.wiki election pages) vs "8 or 11" (en.wiki "1948 in
+# Israel"); it ran under a seven-hour curfew (he.wiki). The registration has no sourced alternative, so it is folded in
+# here, not a choice of its own (notes section 10). The vote: 25 January 1949, turnout 86.9% (en.wiki).
+# Research notes facts-1948.md sections 10 and 11.
+from: 1948-11-05
+to: 1949-01-26
+options:
+  - id: hold
+    text: Hold the election on 25 January
+    historical: true
+    recommended: true
+    effects:
+      - { target: morale, delta: 0.03 }
+      - { target: intl_standing, delta: 0.03 }
+  - id: postpone
+    # Game assumption: a plausible alternative given the two real postponements, but no one is recorded arguing for it.
+    # The legislatures in legislatures.yaml are fixed, so postponing does not move the Knesset's first sitting.
+    text: Postpone the election again until the armistices are signed
+    effects:
+      - { target: intl_standing, delta: -0.05 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-10 }
+  - { url: "https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת", checked: 2026-10-10 }
+status: fact-checked

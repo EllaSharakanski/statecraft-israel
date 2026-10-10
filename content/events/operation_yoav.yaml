@@ -1,0 +1,36 @@
+id: operation_yoav
+title: Operation Yoav
+text: 'Supply convoys to the Negev must pass the Egyptian positions. {defense_minister} asks the cabinet to approve an offensive in the south under Yigal Allon, commander of the Southern Front.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# Approved at the cabinet session of 6 October 1948; launched after a supply convoy was fired on as it passed Egyptian
+# positions on 14 October; 15-22 October 1948; Beersheba taken by the Negev Brigade on 21 October; cease-fire 22 October
+# (en.wiki "Operation Yoav", "1948 Arab-Israeli War"). At the end Allon asked to push into the Hebron hills and the Jericho
+# valley; Ben-Gurion refused, mainly fearing British involvement (en.wiki "Operation Yoav"). That request came at the end of
+# the operation; it is offered here as the third option. Research notes facts-1948.md section 7.
+from: 1948-10-06
+to: 1948-10-16
+options:
+  - id: launch
+    text: Approve the offensive in the south
+    historical: true
+    recommended: true
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.05 }
+  - id: push_to_hebron
+    text: Approve it, and let Allon push on into the Hebron hills
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.06 }
+      - { target: intl_standing, delta: -0.08 }
+  - id: wait
+    # Game assumption: the notes name no advocate for waiting; the cost (the Negev convoys stay blocked) is a design effect.
+    text: Keep the truce and supply the Negev as before
+    effects:
+      - { target: security, delta: -0.03 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
+status: fact-checked

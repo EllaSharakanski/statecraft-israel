@@ -1,0 +1,29 @@
+id: jerusalem_military_government
+title: Jerusalem
+text: 'Count Bernadotte has suggested demilitarising Jerusalem. The alternative is to declare the part of Jerusalem held by the IDF Israel-occupied territory, under a military governor, Dov Yosef. {prime_minister} must decide.'
+anchor: hard
+tags: [security]
+office: prime_minister
+# 2 August 1948: the government rejected Bernadotte's suggestion, declared the Jerusalem area under its control
+# Israel-occupied territory and appointed Dov Yosef Military Governor (Official Gazette No. 12; JVL, en.wiki "Dov Yosef").
+# Research notes facts-1948.md section 5 (companion events) and 13b.
+from: 1948-08-02
+to: 1948-08-03
+options:
+  - id: military_government
+    text: Declare military government and appoint Dov Yosef governor
+    historical: true
+    recommended: true
+    # Effects are game assumptions: the notes give none for this event.
+    effects:
+      - { target: security, delta: 0.02 }
+      - { target: intl_standing, delta: -0.02 }
+  - id: accept_demilitarisation
+    text: Accept the demilitarisation of Jerusalem
+    effects:
+      - { target: security, delta: -0.03 }
+      - { target: intl_standing, delta: 0.02 }
+sources:
+  - { url: "https://www.jewishvirtuallibrary.org/jerusalem-declared-israel-occupied-city-government-proclamation", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/Dov_Yosef", checked: 2026-10-10 }
+status: fact-checked
