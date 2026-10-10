@@ -41,6 +41,7 @@ namespace Statecraft.Game.Boot
                 Error = e.Message;
                 Debug.LogError("BOOT FAIL " + e.Message);
                 Debug.LogException(e);
+                if (GoldenCheck.QuitCodeOnError(GoldenCheck.Requested(), Application.platform == RuntimePlatform.WebGLPlayer) is int code) Application.Quit(code);
             }
         }
     }

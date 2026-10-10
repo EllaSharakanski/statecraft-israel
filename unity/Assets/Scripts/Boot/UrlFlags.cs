@@ -14,7 +14,7 @@ namespace Statecraft.Game.Boot
         public static int Int(string? url, string name)
         {
             var m = Regex.Match(url ?? "", @"[?&]" + Regex.Escape(name) + @"=(\d+)");
-            return m.Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
+            return m.Success && int.TryParse(m.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var v) ? v : 0;
         }
     }
 }

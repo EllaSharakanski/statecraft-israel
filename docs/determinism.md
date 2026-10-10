@@ -40,8 +40,11 @@ IL2CPP player in Chrome (M3 Task 22). Re-check with:
 "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952"
 "$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile unity-build-mac.log
-"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile unity-golden-mac.log; echo exit=$?
+"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile "$PWD/unity-golden-mac.log"; echo exit=$?
 ```
+
+The player needs an absolute `-logFile` path: with a relative one it wrote no log file in the check run. The editor
+commands are fine with relative paths.
 
 **Any change to a golden hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
 content in `content/`, or the hash format. When it happens, update every place above in the same commit, add a row to

@@ -27,4 +27,16 @@ public class GoldenCheckTests
         Assert.AreEqual(5, UrlFlags.Int("http://x/index.html?golden&smoke=5", "smoke"));
         Assert.AreEqual(0, UrlFlags.Int("http://x/smoke=5/index.html", "smoke"));
     }
+
+    [Test]
+    public void AnOverflowingIntegerFlagReadsAsAbsent() =>
+        Assert.AreEqual(0, UrlFlags.Int("http://x/index.html?smoke=99999999999999999999", "smoke"));
+
+    [Test]
+    public void ABootErrorQuitsWithCode1OnlyForADesktopGoldenRun()
+    {
+        Assert.AreEqual(1, GoldenCheck.QuitCodeOnError(requested: true, webgl: false));
+        Assert.IsNull(GoldenCheck.QuitCodeOnError(requested: true, webgl: true));
+        Assert.IsNull(GoldenCheck.QuitCodeOnError(requested: false, webgl: false));
+    }
 }

@@ -3,8 +3,9 @@
 # dependencies = []
 # ///
 """Serve a Unity WebGL build on http://localhost and open it in headless Chrome; pass when the console shows every
-expected line, fail on a failure line or a timeout. Uses the Playwright-cached chrome-headless-shell (no npm needed):
-console messages reach stderr with --enable-logging=stderr --v=1 as  INFO:CONSOLE... "text", source: ...
+expected line, fail on a failure line or a timeout. Uses Chrome for Testing from the Playwright cache (macOS only, no npm needed) in --headless=new mode (the cached
+chrome-headless-shell has no WebGL for Unity): console messages reach stderr with --enable-logging=stderr --v=1 as
+INFO:CONSOLE... "text", source: ...
 
 Usage (from the repo root):
   uv run tools/web_check.py unity/Builds/Web-disabled --query "golden" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952"
@@ -19,6 +20,9 @@ import os
 import re
 import subprocess
 import sys
+import queue
+import shutil
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -26,7 +30,7 @@ from pathlib import Path
 # A console message's first line; Unity's Debug.Log adds a stack trace on later lines, so the closing quote and
 # ", source:" may be far below. Only the first line is matched.
 CONSOLE = re.compile(r'INFO:CONSOLE[^\]]*\] "(.*?)(?:", source: .*)?$')
-CHROME_GLOB = "ms-playwright/chromium-*/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+CHROME_GLOB = "ms-playwright/chromium-*/chrome-mac*/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -55,16 +59,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def find_chrome() -> Path:
-    found = sorted(Path.home().joinpath("Library", "Caches").glob(CHROME_GLOB))
+    """The newest Chrome for Testing in the Playwright cache (macOS, arm64 or x64), by numeric revision."""
+    found = list(Path.home().joinpath("Library", "Caches").glob(CHROME_GLOB))
     if not found:
-        sys.exit("Chrome for Testing not found under ~/Library/Caches/ms-playwright (npx playwright install chromium)")
-    return found[-1]
+        sys.exit("Chrome for Testing not found under ~/Library/Caches/ms-playwright/chromium-<rev>/chrome-mac*"
+                 " (macOS only; install with: npx playwright install chromium)")
+
+    def revision(path: Path) -> int:
+        m = re.search(r"chromium-(\d+)", str(path))
+        return int(m.group(1)) if m else -1
+    return max(found, key=revision)
 
 
 def serve(root: Path) -> http.server.ThreadingHTTPServer:
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(root)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
+
+
+def scan(lines, expect, fail):
+    """Reads stderr lines: returns (status, pending, texts). status is "fail" at the first failure message, "pass" when
+    every expected text has been seen, else "pending". texts are the console messages found (first lines only)."""
+    pending, texts = list(expect), []
+    for raw in lines:
+        m = CONSOLE.search(raw)
+        if not m:
+            continue
+        text = m.group(1)
+        texts.append(text)
+        if fail.search(text):
+            return "fail", pending, texts
+        pending = [p for p in pending if p not in text]
+    return ("pass" if not pending else "pending"), pending, texts
 
 
 def main() -> int:
@@ -78,41 +104,57 @@ def main() -> int:
     a = ap.parse_args()
     if not (a.build / "index.html").exists():
         sys.exit(f"{a.build}/index.html not found")
-    server = serve(a.build)
-    url = f"http://localhost:{server.server_address[1]}/index.html" + (f"?{a.query}" if a.query else "")
-    flags = ["--headless=new", "--enable-logging=stderr", "--v=1", "--no-first-run", "--no-default-browser-check",
-             "--autoplay-policy=no-user-gesture-required", "--window-size=1920,1080",
-             "--disable-frame-rate-limit", "--disable-gpu-vsync",
-             f"--user-data-dir={a.build.resolve()}/../.web-check-profile"]
-    if a.swiftshader:
-        flags += ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
-    proc = subprocess.Popen([str(find_chrome()), *flags, url], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="replace")
-    pending, fail, deadline = list(a.expect), re.compile(a.fail), time.time() + a.timeout
-    lines: list[str] = []
-    reader = threading.Thread(target=lambda: lines.extend(iter(proc.stderr.readline, "")), daemon=True)
-    reader.start()
-    seen = 0
+    server, proc, profile = None, None, tempfile.mkdtemp(prefix="web-check-")
     try:
+        chrome = find_chrome()
+        server = serve(a.build)
+        url = f"http://localhost:{server.server_address[1]}/index.html" + (f"?{a.query}" if a.query else "")
+        flags = ["--headless=new", "--enable-logging=stderr", "--v=1", "--no-first-run", "--no-default-browser-check",
+                 "--autoplay-policy=no-user-gesture-required", "--window-size=1920,1080",
+                 "--disable-frame-rate-limit", "--disable-gpu-vsync", f"--user-data-dir={profile}"]
+        if a.swiftshader:
+            flags += ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
+        proc = subprocess.Popen([str(chrome), *flags, url], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="replace")
+        fail, pending, deadline = re.compile(a.fail), list(a.expect), time.time() + a.timeout
+        inbox: queue.Queue = queue.Queue()
+        threading.Thread(target=lambda: [inbox.put(l) for l in iter(proc.stderr.readline, "")], daemon=True).start()
+        idle = 0
         while time.time() < deadline:
-            while seen < len(lines):
-                m = CONSOLE.search(lines[seen]); seen += 1
-                if not m:
-                    continue
-                text = m.group(1)
-                print("console:", text)
-                if fail.search(text):
-                    print(f"FAIL: {text}")
-                    return 1
-                pending = [p for p in pending if p not in text]
-            if not pending:
+            batch = []
+            while True:       # lines are dropped once scanned: only the batch is held
+                try:
+                    batch.append(inbox.get_nowait())
+                except queue.Empty:
+                    break
+            status, pending, texts = scan(batch, pending, fail)
+            for t in texts:
+                print("console:", t)
+            if status == "fail":
+                print(f"FAIL: {texts[-1]}")
+                return 1
+            if status == "pass":
                 print("PASS: saw " + ", ".join(a.expect))
                 return 0
+            if proc.poll() is not None and not batch:
+                idle += 1      # two idle polls after exit: the reader thread has drained stderr
+            else:
+                idle = 0
+            if idle >= 2:
+                print(f"BROWSER EXITED code {proc.returncode}; never saw " + ", ".join(pending))
+                return 1
             time.sleep(0.2)
         print("TIMEOUT: never saw " + ", ".join(pending))
         return 1
     finally:
-        proc.terminate()
-        server.shutdown()
+        if proc is not None:
+            proc.terminate()
+            try:
+                proc.wait(5)
+            except subprocess.TimeoutExpired:
+                proc.kill(); proc.wait()
+        if server is not None:
+            server.shutdown(); server.server_close()
+        shutil.rmtree(profile, ignore_errors=True)
 
 
 if __name__ == "__main__":

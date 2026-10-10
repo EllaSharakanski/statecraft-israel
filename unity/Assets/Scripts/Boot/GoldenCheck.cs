@@ -16,6 +16,9 @@ namespace Statecraft.Game.Boot
             ? UrlFlags.Has(Application.absoluteURL, "golden")
             : Environment.GetCommandLineArgs().Contains("-golden");
 
+        /// <summary>The exit code a boot error must quit with: 1 for a desktop -golden run (so it never hangs), else null.</summary>
+        public static int? QuitCodeOnError(bool requested, bool webgl) => requested && !webgl ? 1 : (int?)null;
+
         public static (bool ok, List<string> lines) Run(Content c)
         {
             var lines = new List<string>();
