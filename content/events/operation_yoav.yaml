@@ -1,0 +1,32 @@
+id: operation_yoav
+title: Operation Yoav
+text: 'An Israeli supply convoy was fired on as it passed the Egyptian positions on 14 October, and the offensive the cabinet approved on 6 October is under way under Yigal Allon. {defense_minister} must decide how far it goes.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# Approved at the cabinet session of 6 October 1948; launched after a supply convoy was fired on as it passed Egyptian
+# positions on 14 October; 15-22 October 1948; Beersheba taken by the Negev Brigade on 21 October; cease-fire 22 October
+# (en.wiki "Operation Yoav", "1948 Arab-Israeli War"). At the end Allon asked to push into the Hebron hills and the Jericho
+# valley; Ben-Gurion refused, mainly fearing British involvement (en.wiki "Operation Yoav"). This card is that decision
+# (yoav_hebron in notes section 7). The window is the operation, 15-22 October; on the monthly grid of the second truce
+# the card comes on 17 October, and the turn it opens covers Allon's request.
+from: 1948-10-15
+to: 1948-10-23
+options:
+  - id: stop_at_ceasefire
+    text: Stop at the cease-fire and stay out of the Hebron hills
+    historical: true
+    recommended: true
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.025 }
+  - id: push_to_hebron
+    text: Let Allon push on into the Hebron hills and the Jericho valley
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.03 }
+      - { target: intl_standing, delta: -0.08 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
+status: fact-checked

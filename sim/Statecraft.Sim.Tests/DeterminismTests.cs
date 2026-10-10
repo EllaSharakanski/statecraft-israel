@@ -19,7 +19,7 @@ public class DeterminismTests
 
     /// <summary>Any change to this value is a deliberate rules or content change: update it here, in
     /// GoldenRun.Hash1950 and in docs/determinism.md in the same commit.</summary>
-    public const string GoldenHash = "ee5d0826cdca5aef578e48c6273bc1453fa7745bd5ba1adf6f4a946ade828590";
+    public const string GoldenHash = "71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07";
 
     /// <summary>Real content, seed 1948, Historical mode, HistoricalAI until the date reaches 1950-01-01.</summary>
     public static GameState GoldenPlaythrough(Content c) => GoldenRun.Play(c, GoldenRun.Until1950);
@@ -34,14 +34,14 @@ public class DeterminismTests
     }
 
     /// <summary>Same rule for the second golden run, which covers the M3 content range (to 1952-01-01).</summary>
-    public const string GoldenHash1952 = "91bb6fb5f1295cee033998093651f4f303d1a61881a25a9015a8291798a35d80";
+    public const string GoldenHash1952 = "73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767";
 
     [Fact]
     public void GoldenPlaythroughTo1952HashIsFixed()
     {
         var s = GoldenRun.Play(ContentLoader.Load(RealContentTests.ContentRoot()), GoldenRun.Until1952);
         Assert.Null(s.GameOver);
-        Assert.Equal(new DateTime(1952, 2, 26), s.Date);
+        Assert.Equal(new DateTime(1952, 2, 27), s.Date);
         Assert.Equal(GoldenHash1952, s.Hash());
     }
 

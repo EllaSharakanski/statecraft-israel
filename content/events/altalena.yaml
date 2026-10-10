@@ -1,0 +1,32 @@
+id: altalena
+title: The Altalena
+text: 'The Altalena, a ship carrying arms for the Irgun, is due at Kfar Vitkin. Begin asks that a fifth of the arms go to the Irgun''s battalion in Jerusalem and the rest to Irgun battalions inside the IDF. {defense_minister} must decide.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# 20 June 1948: the ship reached Kfar Vitkin; the government agreed to Begin's first request (a fifth to the Jerusalem
+# battalion), rejected his second as an army within an army, demanded all the weapons and empowered the army to use force
+# if necessary. 21 June: Dan Even's ultimatum and fighting at Kfar Vitkin; the ship ran aground off Tel Aviv. 22 June:
+# Ben-Gurion ordered it shelled; Yitzhak Rabin commanded on shore. 16 Irgun and 3 IDF dead; Irgun units in the IDF were
+# disbanded and their men dispersed (en.wiki "Altalena Affair" and "1948 in Israel" agree). Research notes section 2.
+# The window opens on 19 June, the turn date before the arrival (game timing), so the card comes before 20-22 June.
+from: 1948-06-19
+to: 1948-06-23
+options:
+  - id: enforce
+    text: Grant the Jerusalem share, demand the rest for the IDF, and use force if necessary
+    historical: true
+    recommended: true
+    effects:
+      - { target: security, delta: 0.015 }
+      - { target: morale, delta: -0.05 }
+  - id: compromise
+    # Begin's second request, put on the table and rejected (en.wiki "Altalena Affair").
+    text: Grant both requests, arming Irgun battalions inside the IDF
+    effects:
+      - { target: security, delta: -0.025 }
+      - { target: morale, delta: 0.02 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Altalena_Affair", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+status: fact-checked

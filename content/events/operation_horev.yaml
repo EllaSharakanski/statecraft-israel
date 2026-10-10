@@ -1,0 +1,29 @@
+id: operation_horev
+title: Operation Horev
+text: '{defense_minister} proposes an offensive against the Egyptian army in the south, under Yigal Allon, with five brigades.'
+anchor: hard
+tags: [security, war-casualties]
+office: defense_minister
+# Start [C]: 22 December 1948 (en.wiki "Operation Horev"; JVL [S]), used here, vs 27 December (en.wiki "1948 in Israel",
+# the date of the attack on al-Auja). Ended 7 January 1949. Commander Yigal Allon, five brigades. Research notes
+# facts-1948.md section 9.
+# The window opens on 19 December, the turn date before the launch (game timing).
+from: 1948-12-19
+to: 1948-12-23
+options:
+  - id: launch
+    text: Launch Operation Horev
+    historical: true
+    recommended: true
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.02 }
+  - id: hold
+    # Game assumption: the notes give no alternative to launching; this one names no advocate.
+    text: Hold the lines and wait for talks with Egypt
+    effects:
+      - { target: security, delta: -0.01 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
+  - { url: "https://www.jewishvirtuallibrary.org/jsource/History/horev.html", checked: 2026-10-10 }
+status: fact-checked

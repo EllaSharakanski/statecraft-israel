@@ -43,9 +43,11 @@ imports_per_capita_per_year: 0.00025
 # knife-edged (valid range about 0.12 wide) because the model left out the documented drain of Q4 1951: about $45m of
 # short-term credit matured Oct-Dec 1951 (FRUS d513), now applied by both options of forex_crisis_1951. With that drain the
 # anchor (reserves not exhausted before the turn covering 19 Oct 1951; at its end below $45m; exhausted by the turn that
-# covers the end of 1951) holds for 193.78 to 206.62 (measured by bisection); 200 is the centre. Margins at 200: reserves
-# $18.9m at the turn after May 1951 and $21.6m at the turn covering 19 Oct (against $45m falling due); first crisis in the
-# turn ending 1952-02-26 (the one covering 31 Dec 1951); reserves -36.1 at the end of the run.
+# covers the end of 1951) held for 193.78 to 206.62 (measured by bisection); 200 is the centre. Re-measured after the 1948
+# war-period events (playtest 1 E, which moved the turn grid by a day): the range is 194.00 to 206.83 (bisection), and the
+# margins at 200 are reserves $18.2m at the turn ending 1951-05-27 and $20.9m at the turn covering 19 Oct (against $45m
+# falling due); first crisis in the turn ending 1952-02-27 (the one covering 31 Dec 1951); reserves -36.8 at the end of
+# the run. The value was not retuned.
 capital_inflow_per_year: 200
 # While reserves are exhausted, food imports are cut: food_supply falls by this much per year.
 fx_crisis_food_per_year: -0.2

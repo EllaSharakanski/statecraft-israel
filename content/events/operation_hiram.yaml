@@ -1,0 +1,35 @@
+id: operation_hiram
+title: Operation Hiram
+text: 'In breach of the truce, the Arab Liberation Army has attacked the Sheikh Abd position above Kibbutz Manara, and Qawuqji refuses to withdraw. Israel has told the UN that it feels free to act. {defense_minister} must decide whether Moshe Carmel''s forces clear the Upper Galilee.'
+anchor: soft
+tags: [security, war-casualties]
+office: defense_minister
+# Trigger: the attack on 22 October 1948 and sniping at Manara on 24-25 October (en.wiki "Operation Hiram"). Dates [C]:
+# 29-31 October, launched on the night of 28-29 October (en.wiki "Operation Hiram", used here); 28-31 October per PalQuest
+# and the original order of 28 October [S]; en.wiki "1948 Arab-Israeli War" gives 24 October, an outlier not used.
+# Cease-fire 31 October at 11:00. Ben-Gurion declined to authorise an advance further into Lebanon, fearing international
+# condemnation (same page): the third option. Owner ruling: the text stays military. Research notes facts-1948.md section 8.
+from: 1948-10-24
+to: 1948-10-29
+options:
+  - id: launch
+    text: Launch Operation Hiram and drive the Arab Liberation Army out of the Galilee
+    historical: true
+    recommended: true
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.02 }
+  - id: advance_into_lebanon
+    text: Launch it, and advance further into Lebanon
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.025 }
+      - { target: intl_standing, delta: -0.08 }
+  - id: protest_to_un
+    # Game assumption: the notes name no advocate for this option.
+    text: Protest to the UN and hold the line
+    effects:
+      - { target: security, delta: -0.02 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Operation_Hiram", checked: 2026-10-10 }
+status: fact-checked

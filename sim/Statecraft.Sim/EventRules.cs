@@ -33,6 +33,14 @@ namespace Statecraft.Sim
                     if (cond.Max.HasValue) { ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); ContentLoader.Unit(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); }
                     if (cond.Min > cond.Max) throw new ContentException(e.File, F($"conditions.{cond.Indicator}.min"), "must not exceed max");
                 }
+                if (e.Requires != null)
+                {
+                    if (e.Requires.Event == e.Id) throw new ContentException(e.File, F("requires.event"), "an event cannot require itself");
+                    var required = c.Events.FirstOrDefault(x => x.Id == e.Requires.Event)
+                        ?? throw new ContentException(e.File, F("requires.event"), $"unknown event '{e.Requires.Event}'");
+                    if (required.Options.All(o => o.Id != e.Requires.Option))
+                        throw new ContentException(e.File, F("requires.option"), $"event '{required.Id}' has no option '{e.Requires.Option}'");
+                }
                 if (e.Options.Count == 0) throw new ContentException(e.File, F("options"), "at least one option required");
                 if (e.Options.Count(o => o.Historical) > 1) throw new ContentException(e.File, F("options"), "at most one option can be historical");
                 if (e.Anchor == "hard" && !e.Options.Any(o => o.Historical)) throw new ContentException(e.File, F("options"), "hard anchor needs a historical option");
@@ -57,6 +65,29 @@ namespace Statecraft.Sim
                         if (sensitive && (fx.Target == "treasury" || fx.Target == "fx_reserves") && fx.Delta > 0)
                             throw new ContentException(e.File, F($"options[{o.Id}].effects.{fx.Target}"), $"sensitive events cannot reward {fx.Target}");
                     }
+                }
+            }
+            CheckRequirementCycles(c);
+        }
+
+        /// <summary>Re-review N4: a cycle of `requires` (A needs B, B needs A, ...) could never fire. Called after every
+        /// requirement's ids are known to exist; the error names the files around the cycle, starting from the first event
+        /// (in load order) that lies on it.</summary>
+        static void CheckRequirementCycles(Content c)
+        {
+            var byId = c.Events.ToDictionary(e => e.Id);
+            foreach (var start in c.Events)
+            {
+                var path = new List<GameEvent> { start };
+                var seen = new HashSet<string> { start.Id };
+                for (var e = start; e.Requires != null; )
+                {
+                    e = byId[e.Requires.Event];
+                    path.Add(e);
+                    if (e.Id == start.Id)
+                        throw new ContentException(start.File, $"events[{start.Id}].requires",
+                            "requirements form a cycle: " + string.Join(" -> ", path.Select(x => x.File)));
+                    if (!seen.Add(e.Id)) break;   // a cycle that does not pass through start; reported from its own member
                 }
             }
         }

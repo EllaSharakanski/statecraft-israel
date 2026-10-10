@@ -10,7 +10,7 @@ namespace Statecraft.Sim
 
         static GameEvent Get(Content c, string id) => c.Events.First(e => e.Id == id);
 
-        /// <summary>Fires every unfired event whose window [From, To) overlaps the turn just played,
+        /// <summary>Fires every unfired event whose `requires` (if any) is met, whose window [From, To) overlaps the turn just played,
         /// [<paramref name="turnStart"/>, s.Date), or contains s.Date; <paramref name="turnStart"/> defaults to s.Date
         /// (game start). Every eligible hard anchor fires; MaxSoftEventsPerTurn caps only the non-hard events per turn,
         /// which fill the slots that remain (max(0, cap - hard count)) in the usual order (From, then id). The fired
@@ -23,6 +23,7 @@ namespace Statecraft.Sim
             var start = turnStart ?? s.Date;
             var eligible = c.Events
                 .Where(e => !s.FiredEvents.Contains(e.Id) && e.From <= s.Date && (e.To == null || start < e.To.Value))
+                .Where(e => e.Requires == null || (s.ChosenOptions.TryGetValue(e.Requires.Event, out var picked) && picked == e.Requires.Option))
                 .Where(e => e.Conditions.All(k => (!k.Min.HasValue || s.Indicators[k.Indicator] >= k.Min.Value)
                                                && (!k.Max.HasValue || s.Indicators[k.Indicator] <= k.Max.Value)))
                 .OrderBy(e => e.From).ThenBy(e => e.Id, StringComparer.Ordinal)
@@ -55,6 +56,7 @@ namespace Statecraft.Sim
         static void Resolve(Content c, GameState s, string eventId, EventOption o, string how, List<Cause> why)
         {
             s.PendingEvents.Remove(eventId);
+            s.ChosenOptions[eventId] = o.Id;
             var fillDate = FillDate(Get(c, eventId), s.Date);
             var title = Cabinet.Fill(c, s, Get(c, eventId).Title, fillDate);
             why.Add(new Cause("events", eventId, 0, $"{how}: {Cabinet.Fill(c, s, o.Text, fillDate)}"));

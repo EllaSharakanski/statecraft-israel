@@ -1,0 +1,37 @@
+id: latrun_proposal
+title: Latrun
+text: '{prime_minister} proposes to the cabinet that the IDF break the truce to attack and take Latrun. Most ministers, among them {finance_minister}, {justice_minister} and {immigration_minister}, oppose it.'
+anchor: hard
+tags: [security]
+office: prime_minister
+# Ben-Gurion's diary, 26 September 1948 (Ben-Gurion Archive, primary): the cabinet rejected the proposal. Vote [C]: 7-5 in
+# the diary (against: Rosen, Moshe Shapira, Levin, Bernstein, Kaplan, Remez and "Sharett (Sheetrit?)"; for: Maimon,
+# Gruenbaum, Zisling, Bentov and Ben-Gurion) vs "by a majority of one" (Lior Lavid, BGU, citing Bar-Zohar). The diary,
+# a primary source, is used. The text names offices whose 1948 holders are on the diary's list without a question mark:
+# Finance (Kaplan), Justice (Rosen) and Immigration (Shapira); with player appointments it names the appointees.
+# On 29 September he told the General Staff an attack was possible but not at this time [S]. Research notes section 13a.
+# The window opens on 17 September, the turn date before the vote on the monthly grid of the second truce (game timing).
+# Only a player who complied with the second truce sees this card (it is about breaking the truce).
+from: 1948-09-17
+to: 1948-09-27
+requires: { event: second_truce, option: comply }
+options:
+  - id: accept_vote
+    text: Accept the cabinet's vote and keep the truce
+    historical: true
+    recommended: true
+    effects:
+      - { target: intl_standing, delta: 0.01 }
+  - id: press_offensive
+    # Effects are game assumptions; the morale cost stands in for the ministers who voted against (the sim has no direct
+    # lever on coalition stability from events).
+    text: Press the attack on Latrun despite the vote
+    set_rung: 5
+    effects:
+      - { target: security, delta: 0.025 }
+      - { target: intl_standing, delta: -0.10 }
+      - { target: morale, delta: -0.02 }
+sources:
+  - { url: "https://bengurionarchive.bgu.ac.il/en/node/6251", checked: 2026-10-10 }
+  - { url: "https://in.bgu.ac.il/bgi/israelis/DocLib/Pages/2012/ליאור-לביד.pdf", checked: 2026-10-10 }
+status: fact-checked

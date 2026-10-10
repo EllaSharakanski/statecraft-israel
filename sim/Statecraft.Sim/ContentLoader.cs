@@ -168,6 +168,19 @@ namespace Statecraft.Sim
             c.Hexes = Read<MapFile>(readFile, HexesFile).Hexes;
             c.SettlementHexes = Read<SettlementHexesFile>(readFile, SettlementHexesFileName).Settlements;
             var settlementIds = ReadSettlementIds(readFile);
+            // Event files (content/events/*.yaml), one GameEvent each. Keys, for content authors:
+            //   id, title, text            text may name office holders only through {office_id} placeholders, which
+            //                              must have a holder on every day of the window
+            //   anchor: hard | soft        hard needs a historical option; in Historical mode it resolves to it
+            //   tags: [...]                holocaust, terror, massacre, war-casualties are sensitive (no money reward)
+            //   office                     the minister the event is delegated to
+            //   from, to                   the window [from, to); it fires on the first turn that overlaps it
+            //   conditions: [{ indicator, min, max }]   indicator bounds that must hold when it fires
+            //   requires: { event, option }   fires only once that other event was resolved (chosen or delegated)
+            //                              with that option; both ids must exist, an event cannot require itself and
+            //                              requirements cannot form a cycle (EventRules)
+            //   options: [{ id, text, historical, recommended, effects: [{ target, delta }], set_rung, set_policy }]
+            //   sources: [{ url, checked }], status
             foreach (var rel in eventFiles.OrderBy(p => p, StringComparer.Ordinal))
             {
                 var e = Read<GameEvent>(readFile, rel);
