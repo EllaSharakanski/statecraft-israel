@@ -52,7 +52,11 @@
 
 סצנת המשחק היא <span dir="ltr">`Assets/Map.unity`</span>, והיא נפתחת אוטומטית. אם זה לא קרה (רואים סצנה ריקה בשם Untitled), לחצו פעמיים על Map בתיקיית Assets בחלון Project. אחר כך לחצו Play.
 
-פתרון בעיות: אם בקונסולה מופיעות שגיאות קומפילציה מחבילה שאינה ב־<span dir="ltr">`Packages/manifest.json`</span> שלנו (למשל מחבר של בינה מלאכותית או MCP כמו <span dir="ltr">`com.ivanmurzak.unity.mcp`</span> שהוסיף את עצמו), הסירו את החבילה מקובץ ה־manifest המקומי שלכם או עדכנו אותה. Unity אינו יכול לרוץ כל עוד יש שגיאת קומפילציה.
+פתרון בעיות:
+
+- השגיאה <span dir="ltr">`error CS0246 'PlayerPrefsBool'`</span> פירושה שחבילת Unity-MCP (<span dir="ltr">`com.ivanmurzak.unity.mcp`</span>) הותקנה בלי מאגר OpenUPM שלה (<span dir="ltr">`https://package.openupm.com`</span>), ולכן חסרה התלות <span dir="ltr">`extensions.unity.playerprefsex`</span>. שחזרו מ־git את <span dir="ltr">`Packages/manifest.json`</span> ואת <span dir="ltr">`Packages/packages-lock.json`</span>; החבילה והמאגר כבר מוגדרים בהם.
+- שגיאות קומפילציה מחבילה שאינה ב־<span dir="ltr">`Packages/manifest.json`</span> שלנו: הסירו את החבילה מקובץ ה־manifest המקומי שלכם או עדכנו אותה. Unity אינו יכול לרוץ כל עוד יש שגיאת קומפילציה.
+- ב־macOS מופיעה ההודעה "Unity is damaged and can't be opened. Move to Trash": זה יכול לקרות כשמפעילים את העורך מחוץ ל־Unity Hub אחרי ש־Hub התקין מודולים (כמו Mac Build Support) בתוך האפליקציה. לחצו **Cancel**, ולעולם לא Move to Trash. פתחו את הפרויקט דרך Unity Hub. אם גם Hub מסרב, התקינו מחדש את גרסת העורך (6000.3.25f1) דרך Unity Hub.
 
 ## היסטוריה, מקורות ודיוק
 
@@ -65,6 +69,18 @@
 ## איך משתתפים
 
 מתכנתים, היסטוריונים, אמנים, מעצבי משחק, כותבים ומתרגמים: התחילו ב־[<span dir="ltr">CONTRIBUTING.md</span>](CONTRIBUTING.md) (באנגלית). אפשר לעבוד גם עם בינה מלאכותית, בתנאי שמצהירים על כך ושכל טענה היסטורית נבדקה מול מקור. אין הסכם CLA: תרומות נכנסות תחת הרישיונות של המאגר. מחפשים משימה ראשונה? ראו את הסינון [good first issue](https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue), את [help wanted](https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted) ואת [הבעיות הפתוחות](https://github.com/eyalgolan/statecraft-israel/issues).
+
+### עבודה עם סוכן בינה מלאכותית ב־Unity (<span dir="ltr">Unity-MCP</span>)
+
+[Unity-MCP](https://github.com/IvanMurzak/Unity-MCP) (רישיון Apache-2.0) היא הדרך המקובלת בפרויקט לתת לסוכן בינה מלאכותית (Claude Code, Cursor, Copilot ואחרים) לעבוד בעורך של Unity. היא רצה מקומית, בלי חשבון ובלי ענן. הפירוט המלא (באנגלית) ב־[<span dir="ltr">CONTRIBUTING.md</span>](CONTRIBUTING.md).
+
+- **התקנה:** אין מה להתקין. החבילה (<span dir="ltr">`com.ivanmurzak.unity.mcp`</span> בגרסה 0.93.3) ומאגר OpenUPM שהיא צריכה כבר נמצאים ב־<span dir="ltr">`unity/Packages/manifest.json`</span>. בפתיחה הראשונה התוסף מוריד את קובצי ה־DLL שלו מ־nuget.org ואת השרת המקומי שלו, ו־Unity מקמפל פעם נוספת.
+- **פתיחה:** <span dir="ltr">Window → AI Game Developer — MCP</span>.
+- **חיבור:** בחרו Connection ← Custom (מקומי), כתובת השרת <span dir="ltr">`http://localhost:27766`</span> ותעבורה http. לעולם אל תבחרו Cloud ואל תתחברו לשום חשבון. ההגדרות האלה אישיות ונשמרות ב־<span dir="ltr">`unity/UserSettings/AI-Game-Developer-Config.json`</span> (מחוץ ל־git, ויש בו גם הטוקן המקומי שלכם), ולכן כל תורם מגדיר אותן פעם אחת.
+- **הסוכן:** בחרו את הסוכן שלכם ולחצו Configure, או לחצו Generate כדי ליצור קובצי skills. הקבצים שנוצרים (<span dir="ltr">`.mcp.json`</span> ותיקיות הסוכנים) נמצאים מחוץ ל־git; אל תוסיפו אותם.
+- **הכללים בתוקף:** כללי המשחק נשארים בסימולציה ולא ב־Unity, בדיקות קודם, מקור לכל עובדה, ומצהירים בבקשת המיזוג על הסיוע של בינה מלאכותית.
+- **אבטחה:** השרת המקומי מאפשר לסוכן להריץ פעולות בעורך, כולל עריכת קבצים והרצת קוד. השאירו אותו מקומי ולעולם אל תחשפו את הפורט 27766 החוצה.
+- **שינוי שלא מוסיפים ל־git:** אחרי שקובצי ה־DLL במקומם, התוסף מוסיף את <span dir="ltr">`UNITY_MCP_READY;UNITY_MCP_DEPS_7`</span> להגדרות הסקריפטים ב־<span dir="ltr">`unity/ProjectSettings/ProjectSettings.asset`</span>. אל תוסיפו את השינוי הזה ל־commit: בשכפול חדש ההגדרות יגיעו לפני קובצי ה־DLL והתוסף לא יתקמפל. בדיקת מדיניות חוסמת אותו.
 
 ## שימוש בבינה מלאכותית
 

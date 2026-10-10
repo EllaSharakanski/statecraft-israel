@@ -27,6 +27,17 @@ and Python packages declared inline in `tools/*.py` and `scripts/oss/*.py`.
 
 You need your own Unity licence (Unity Personal is free within Unity's eligibility terms) to open or build `unity/`.
 
+The AI-agent bridge used in the editor (see `CONTRIBUTING.md`) is also fetched, not vendored, and is editor-only:
+
+| Component | Fetched from | Licence | Where it goes |
+|---|---|---|---|
+| Unity-MCP, `com.ivanmurzak.unity.mcp` 0.93.3 (Ivan Murzak, https://github.com/IvanMurzak/Unity-MCP) | OpenUPM (`https://package.openupm.com`), pinned in `unity/Packages/manifest.json` and `packages-lock.json` | Apache-2.0 | `unity/Library/PackageCache/` |
+| `extensions.unity.playerprefsex` 2.1.5 (Ivan Murzak), a dependency of the above | OpenUPM | MIT | `unity/Library/PackageCache/` |
+| NuGet DLLs the plugin's resolver downloads on first open: com.IvanMurzak.McpPlugin and McpPlugin.Common 8.7.0 and com.IvanMurzak.ReflectorNet 5.4.1 (Apache-2.0), R3 1.3.0 (MIT), and Microsoft.AspNetCore.SignalR.\*, Microsoft.Extensions.\*, Microsoft.CodeAnalysis.\*, System.\* and Microsoft.Bcl.\* packages (.NET Foundation and Microsoft, MIT) | nuget.org | Apache-2.0 or MIT, per package | `unity/Assets/Plugins/NuGet/` (git-ignored) |
+| GameDev-MCP-Server 9.2.10, the local MCP server binary (https://github.com/IvanMurzak/GameDev-MCP-Server) | that repository's GitHub releases, SHA-256 checked by the plugin | Apache-2.0 | `unity/Library/mcp-server/` |
+
+None of these is redistributed by this repository or shipped in a build: `UnityMcpGuard` (`unity/Assets/Editor/UnityMcpGuard.cs`) drops the plugin's assemblies and its NuGet DLLs from every player build. Their licence texts come with each download.
+
 ## Builds (what a WebGL or desktop build carries)
 
 A build is a different artefact. It contains the Unity runtime, `YamlDotNet.dll`, the fonts, the portraits and the map

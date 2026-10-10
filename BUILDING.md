@@ -34,7 +34,24 @@ Unity Hub → **Add** → select `unity/`. Run `tools/build_sim_for_unity.sh` ag
 
 The game scene is `Assets/Map.unity`, and it opens automatically. If it doesn't (you see an empty "Untitled" scene), double-click `Map` in the Project window's Assets folder. Then press Play.
 
-Troubleshooting: if the Console shows compile errors from a package that isn't in our `Packages/manifest.json` (for example an AI or MCP connector such as `com.ivanmurzak.unity.mcp` that added itself), remove that package from your local manifest or update it. Unity can't run while there is any compile error.
+Troubleshooting:
+
+- `error CS0246: The type or namespace name 'PlayerPrefsBool' could not be found`: the Unity-MCP package (`com.ivanmurzak.unity.mcp`) was installed without its OpenUPM registry (`https://package.openupm.com`), so its dependency `extensions.unity.playerprefsex` is missing. Restore `Packages/manifest.json` and `Packages/packages-lock.json` from git (`git checkout -- unity/Packages`); they already carry the package and the registry.
+- Compile errors from a package that isn't in our `Packages/manifest.json`: remove that package from your local manifest or update it. Unity can't run while there is any compile error.
+- macOS says "Unity is damaged and can't be opened. Move to Trash": this can happen when the editor is launched outside Unity Hub after Hub installed modules (such as Mac Build Support) inside the app. Click **Cancel**, never Move to Trash. Open the project through Unity Hub. If Hub refuses too, reinstall that editor version (6000.3.25f1) through Unity Hub.
+
+## Working with an AI agent in Unity (Unity-MCP)
+
+[Unity-MCP](https://github.com/IvanMurzak/Unity-MCP) (Apache-2.0) is the project's standard way to let an AI agent (Claude Code, Cursor, Copilot and others) work in the Unity editor: read the Console, inspect scenes, run tests. It runs locally, with no account and no cloud.
+
+- **Install:** nothing to do. The package (`com.ivanmurzak.unity.mcp` 0.93.3) and the OpenUPM registry it needs are already in `unity/Packages/manifest.json`. On the first open, the plugin downloads its NuGet DLLs from nuget.org into `Assets/Plugins/NuGet/` (git-ignored) and its local server from the plugin's GitHub releases into `Library/`. Then Unity compiles once more.
+- **Open** Window → AI Game Developer — MCP.
+- **Connection → Custom** (local). Set the Server URL to `http://localhost:27766` and the transport to `http`. Never choose Cloud, and never sign in: nothing in this project needs an ai-game.dev account. These settings are per user, in `unity/UserSettings/AI-Game-Developer-Config.json` (git-ignored, and it holds your local token), so every contributor sets them once.
+- **Choose your agent** and click **Configure**, or click **Generate** to write skill files instead. The files these steps write (`.mcp.json`, `unity/.claude/` and the other agent folders) are git-ignored; don't commit them.
+- **The rules still apply:** no game rules in Unity (they live in the sim), tests first, sources for every fact in `content/`, and disclose the AI assistance in your pull request (see "Rules every change follows" and "AI-assisted contributions" in [CONTRIBUTING.md](CONTRIBUTING.md)).
+- **Security:** the local server lets the agent run editor actions, including editing files and executing code in the editor. Keep it local: never expose port 27766 (no port forwarding, tunnels or `0.0.0.0` binds), and stop the server when you're done.
+- **Batch mode and builds:** `UnityMcpGuard` (`unity/Assets/Editor/UnityMcpGuard.cs`) keeps the plugin from connecting or starting its server in batch mode (tests and builds), and drops its assemblies from every player build. The browser build's golden hashes don't change.
+- **Leave one change uncommitted:** the plugin adds `UNITY_MCP_READY;UNITY_MCP_DEPS_7` to the scripting defines in `unity/ProjectSettings/ProjectSettings.asset` once its DLLs are in place. Don't commit that change: on a fresh clone the defines would arrive before the DLLs, and the plugin wouldn't compile. A policy test refuses it. The post-build cleanup (`git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset`) drops the defines too; the plugin adds them back on the next open, at the cost of one extra compile.
 
 ## Tests
 

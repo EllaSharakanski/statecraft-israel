@@ -82,7 +82,7 @@ The exact commands are in [BUILDING.md](BUILDING.md).
 
 **First open in Unity.** The game scene is `Assets/Map.unity`, and it opens automatically. If it doesn't (you see an empty "Untitled" scene), double-click `Map` in the Project window's Assets folder. Then press Play.
 
-Troubleshooting: if the Console shows compile errors from a package that isn't in our `Packages/manifest.json` (for example an AI or MCP connector such as `com.ivanmurzak.unity.mcp` that added itself), remove that package from your local manifest or update it. Unity can't run while there is any compile error.
+Troubleshooting: `error CS0246 'PlayerPrefsBool'` means the Unity-MCP package (`com.ivanmurzak.unity.mcp`) is missing its OpenUPM registry (`https://package.openupm.com`); restore `Packages/manifest.json` and `Packages/packages-lock.json` from git. If the Console shows compile errors from a package that isn't in our `Packages/manifest.json`, remove that package from your local manifest or update it. Unity can't run while there is any compile error. More in [BUILDING.md](BUILDING.md).
 
 ## History, sources and accuracy
 
@@ -106,6 +106,7 @@ Before you start:
 - Read [docs/dev-setup.md](docs/dev-setup.md).
 - Run the tests listed in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Keep game rules in the sim, not in Unity.
+- Working in Unity with an AI agent? Use the bundled Unity-MCP plugin in local Custom mode; the steps are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Start with **[CONTRIBUTING.md](CONTRIBUTING.md)**. There's no CLA: contributions come in under the repo's licences.
 

@@ -53,3 +53,12 @@ def test_downloads_and_generated_agent_files_are_ignored():
     for rule in ("unity/Assets/Plugins/NuGet/", "unity/Assets/Plugins/NuGet.meta", ".mcp.json", "unity/.claude/",
                  "unity/UserSettings/", "unity/Library/"):
         assert rule in ignore, rule
+
+
+def test_notices_and_licensing_name_the_plugin_and_its_dependencies():
+    notices = (ROOT / "THIRD-PARTY-NOTICES.md").read_text(encoding="utf-8")
+    for fact in (PKG, "Apache-2.0", "extensions.unity.playerprefsex", "ReflectorNet", "GameDev-MCP-Server", "nuget.org",
+                 "UnityMcpGuard"):
+        assert fact in notices, fact
+    row = next(l for l in (ROOT / "LICENSING.md").read_text(encoding="utf-8").splitlines() if "`unity/Packages/`" in l)
+    assert "OpenUPM" in row and PKG in row and "Apache-2.0" in row
