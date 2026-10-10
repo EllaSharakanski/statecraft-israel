@@ -17,6 +17,7 @@ series:
     status: fact-checked
   # 1950 and 1951 rows parsed from the raw HTML of the JVL table (right-to-left; the row label follows the data). Each
   # row sums exactly to the CBS total: 170,563 (1950) and 175,279 (1951), as in CBS Publication 1365, Table 1.
+  # The totals come from CBS 1365; the regional split comes from the JVL table.
   - from: 1950-01-01
     to: 1950-12-31
     origins: { asia: 57565, africa: 26162, europe: 81195, america_oceania: 1954, unknown: 3687 }

@@ -12,6 +12,8 @@ anchors:
     jews: 1013900       # end of year
     sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-09 }]
     status: fact-checked
+  # The 1950 anchor inherits the simulated 1949 state, including the -0.5% end-1949 consistency drift; no parameter was
+  # fitted to it.
   - date: 1950-12-31
     jews: 1203000       # end of year (1,203.0 thousand)
     sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-10 }]

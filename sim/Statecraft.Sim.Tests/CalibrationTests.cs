@@ -14,6 +14,8 @@ using Statecraft.Sim;
 /// </summary>
 public class CalibrationTests
 {
+    // The M1 value. The largest observed margin is 2.3%, at the 1948-11-08 anchor. The 1951 undershoot (-1.2%) is a known
+    // limit of a constant natural-increase rate with no emigration.
     const double Tolerance = 0.03;
     static readonly Content C = ContentLoader.Load(RealContentTests.ContentRoot());
 
@@ -29,8 +31,9 @@ public class CalibrationTests
 
     static readonly DateTime End = new DateTime(1952, 1, 1);
 
-    static string Kind(DateTime d) =>
-        d == new DateTime(1948, 11, 8) || d.Year >= 1950 ? "independent" : "consistency";
+    static readonly DateTime[] IndependentAnchors = { new DateTime(1948, 11, 8), new DateTime(1950, 12, 31), new DateTime(1951, 12, 31) };
+
+    static string Kind(DateTime d) => IndependentAnchors.Contains(d) ? "independent" : "consistency";
 
     [Fact]
     public void HistoricalPlaythroughMatchesCbsPopulationAnchors()
