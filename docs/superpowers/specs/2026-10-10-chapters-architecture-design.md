@@ -173,7 +173,8 @@ weeks shift the grid. So the turn that would pass the next era's `from` is adjus
   ceasefire clock takes `days / 7` whole weeks (integer division). Whole turns keep today's fixed values (13, 4 or 1
   weeks; 0.25, 1/12 or 7/365 of a year).
 - Attention, the event cap per turn and the map-action cap are per turn as today. The 14-day rule keeps an adjusted
-  turn between 14 days and a quarter plus 14 days.
+  turn no shorter than the smaller of its normal length and 14 days, and no longer than its normal length plus
+  14 days (so a weekly turn stays between 7 and 21 days, a quarterly one at most a quarter plus 14 days).
 
 With these rules, a game that played into a chapter and a game that started fresh at it share the same calendar from
 the boundary on, so per-era goldens and event windows line up. **Golden safety:** there is no boundary inside
