@@ -112,6 +112,7 @@ public static class MapCapture
         int at = System.Array.IndexOf(args, "-captureDir");
         var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "editor");
         var map = OpenAndBuild();
+        Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);   // the unit art slice, as the ?shot screenshots show it
         var rig = Camera.main.GetComponent<CameraRig>();
         int saved = QualitySettings.GetQualityLevel();
         try

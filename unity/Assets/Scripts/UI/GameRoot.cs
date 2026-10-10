@@ -200,6 +200,10 @@ namespace Statecraft.Game.UI
             if (Application.isPlaying && FrameProfile.Requested())
                 StartCoroutine(FrameProfile.Run(camRig, map.Frame, Debug.Log, Application.platform != RuntimePlatform.WebGLPlayer));
             else if (Application.isPlaying && VisualShots.Requested()) StartCoroutine(VisualShots.Run(camRig, map.Frame, Debug.Log));
+            // The unit art slice at gameplay03 (a showcase, never in normal play; war mode's units are issue #104).
+            if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
+                Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
+                    Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
         }
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }
