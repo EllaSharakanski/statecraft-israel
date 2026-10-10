@@ -86,6 +86,6 @@ rules:
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
-    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png) and coast distance (Map/coast.png); attribution in NOTICE"
+    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"
     status: verified
 removed: []

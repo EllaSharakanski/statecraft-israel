@@ -232,3 +232,13 @@ def test_the_committed_ao_texture_is_the_bake_ao_uncompressed_on_its_own():
     ao = png(ROOT / "unity/Assets/Textures/Map/ao.png")
     b = np.asarray(png(ROOT / "unity/Assets/Textures/Map/terrain_bake.png"))
     assert ao.mode == "L" and np.array_equal(np.asarray(ao), b[..., 0])
+
+
+def test_constants_duplicated_in_csharp_and_hlsl_match_the_bake():
+    import re
+    cs = (ROOT / "unity/Assets/Scripts/Map/MapBuilder.cs").read_text()
+    hlsl = (ROOT / "unity/Assets/Shaders/StatecraftMap.hlsl").read_text()
+    ve = float(re.search(r"const float VerticalExaggeration\s*=\s*([0-9.]+)f", cs).group(1))
+    cr = float(re.search(r"static const float ScCoastRangeM\s*=\s*([0-9.]+)", hlsl).group(1))
+    assert tb.VERTICAL_EXAGGERATION == ve
+    assert tb.COAST_RANGE_M == cr

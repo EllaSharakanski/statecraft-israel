@@ -40,7 +40,7 @@ Run from the repo root; this installs every pinned dependency (rasterio included
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 ```
 
-Expected: `173 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
+Expected: `177 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
 
 ## Required attribution (Copernicus DEM licence, modified data)
 

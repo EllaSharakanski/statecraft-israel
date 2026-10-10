@@ -47,7 +47,7 @@ public static class ShaderChecks
         foreach (Match r in Require.Matches(glsl ?? ""))
             if (!allowedRequires.Contains(r.Groups[1].Value))
                 errors.Add($"requires {r.Groups[1].Value}, which is not in ShaderChecks.AllowedRequires: if WebGL 2 supports it, " +
-                           "verify it in headless Chrome (plan Task 3 Step 0) and add it there with a comment saying so");
+                           "verify it in headless Chrome (docs/visual-v1.md, \"Probe page and command\") and add it there with a comment saying so");
         return errors;
     }
 

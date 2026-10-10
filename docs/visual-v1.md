@@ -53,7 +53,7 @@ entry is added only after a WebGL 2 `compileShader` of a shader carrying that li
   serialized one, so the report threw. The loop now uses `SerializedSubshaderCount`.
 - **Probe (corrected in Task 3 fix round 1).** In WebGL 2, `#extension GL_X : require` compiles only after the page has
   called `gl.getExtension("<WebGL name>")`. The first probe never called it, so it could only ever say FAILS. The procedure
-  (page and command in `.superpowers/sdd/2026-10-11-statecraft-visual-v1/task-3-carry.md`):
+  (page and command: see "Probe page and command" below):
   1. Run Playwright's `chrome-headless-shell` (Chrome for Testing 149.0.7827.55) with `--use-angle=swiftshader
      --enable-unsafe-swiftshader --dump-dom` under a timeout. Full Chrome's `--headless=new --dump-dom` never exits on this
      Mac. Match the output with `grep -E`, because BSD grep ignores `\|`.
@@ -83,6 +83,65 @@ entry is added only after a WebGL 2 `compileShader` of a shader carrying that li
   - `AllowedRequires` stays empty, because none of our shaders requires anything. An extension is added only when one of
     our shaders needs it and its probe prints OK. Note that SwiftShader's list is not every GPU's list: a desktop-GPU run
     can list more.
+
+### Probe page and command
+Save the page as `$S/probe2/probe.html`, outside the repo. Pass the GLSL names under test in the URL hash, comma-separated,
+and take each name verbatim from the shader report's `#extension ... : require` line (or the Gles3 error text), never from
+the WebGL extension name. To map a WebGL name to its GLSL name when you add a target to `GLSL`: `OVR_multiview2` ->
+`GL_OVR_multiview2`, `WEBGL_multi_draw` -> `GL_ANGLE_multi_draw`, `WEBGL_clip_cull_distance` -> `GL_ANGLE_clip_cull_distance`.
+A target FAIL for a name that is not in the page's `GLSL` table only counts if a mapped positive control passed in the
+same run.
+
+```html
+<html><body><script>
+// WebGL extension name -> the GLSL #extension name it unlocks (null: a WebGL-only extension with no GLSL directive)
+const GLSL = { OVR_multiview2: 'GL_OVR_multiview2', WEBGL_clip_cull_distance: 'GL_ANGLE_clip_cull_distance',
+  WEBGL_multi_draw: 'GL_ANGLE_multi_draw', EXT_conservative_depth: 'GL_EXT_conservative_depth',
+  WEBGL_draw_instanced_base_vertex_base_instance: 'GL_ANGLE_base_vertex_base_instance_shader_builtin',
+  WEBGL_shader_pixel_local_storage: 'GL_ANGLE_shader_pixel_local_storage', NV_shader_noperspective_interpolation: 'GL_NV_shader_noperspective_interpolation',
+  OES_sample_variables: 'GL_OES_sample_variables', OES_shader_multisample_interpolation: 'GL_OES_shader_multisample_interpolation',
+  EXT_texture_shadow_lod: 'GL_EXT_texture_shadow_lod', WEBGL_blend_func_extended: 'GL_EXT_blend_func_extended' };
+const gl = document.createElement('canvas').getContext('webgl2');
+const lines = [];
+function compile(ext, stage) {
+  const sh = gl.createShader(stage === 'v' ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
+  const body = stage === 'v' ? 'void main() { gl_Position = vec4(0.0); }' : 'precision highp float;\nout vec4 o;\nvoid main() { o = vec4(1.0); }';
+  gl.shaderSource(sh, '#version 300 es\n#extension ' + ext + ' : require\n' + body);
+  gl.compileShader(sh);
+  const ok = gl.getShaderParameter(sh, gl.COMPILE_STATUS);
+  return ok ? 'OK' : 'FAILS(' + (gl.getShaderInfoLog(sh) || '').trim().split('\n')[0] + ')';
+}
+if (!gl) lines.push('NO WEBGL2'); else {
+  const sup = gl.getSupportedExtensions();
+  lines.push('SUPPORTED ' + sup.join(' '));
+  const targets = (location.hash.slice(1) || 'GL_EXT_shader_non_constant_global_initializers,GL_EXT_texture_buffer').split(',');
+  // before getExtension: everything must fail (control that the require gate is real)
+  for (const w of sup) if (GLSL[w]) lines.push('BEFORE ' + w + ' ' + GLSL[w] + ' v=' + compile(GLSL[w], 'v') + ' f=' + compile(GLSL[w], 'f'));
+  for (const w of sup) if (GLSL[w]) { gl.getExtension(w); lines.push('AFTER ' + w + ' ' + GLSL[w] + ' v=' + compile(GLSL[w], 'v') + ' f=' + compile(GLSL[w], 'f')); }
+  // the GLSL names under test: enable every supported WebGL extension first, then compile
+  for (const w of sup) gl.getExtension(w);
+  for (const t of targets) lines.push('TARGET ' + t + ' v=' + compile(t, 'v') + ' f=' + compile(t, 'f'));
+}
+document.body.textContent = lines.join('\n');
+</script></body></html>
+```
+
+```bash
+S=<scratch dir outside the repo>
+HS=$(find ~/Library/Caches/ms-playwright/chromium_headless_shell-1228 -name chrome-headless-shell -type f | head -1)
+perl -e 'alarm 60; exec @ARGV' "$HS" --user-data-dir=$S/probe2/prof --use-angle=swiftshader --enable-unsafe-swiftshader \
+  --dump-dom "file://$S/probe2/probe.html#GL_EXT_foo,GL_EXT_bar" 2>/dev/null | sed -e 's/<[^>]*>//g' \
+  | grep -E "^(SUPPORTED|BEFORE|AFTER|TARGET|NO)"
+grep -oE 'getSupportedExtensions\(\)\|\|\[\];exts.forEach[^}]*' unity/Builds/Web-disabled/Build/*.framework.js   # the loader's enable-all
+```
+
+Read the output as follows:
+- At least one `AFTER ... v=OK f=OK` line (the control) is required; without it, the probe is broken.
+- `TARGET <name> v=OK f=OK` means the extension may be added to `ShaderChecks.AllowedRequires`, with the comment
+  `// <name>: verified to work in WebGL 2 in headless Chrome (Chrome for Testing 149.0.7827.55, <date>)`, but only if one
+  of our shaders actually requires it.
+- `TARGET ... FAILS` means that shader cannot run on the web tier.
+- Re-check the loader `grep` after a Unity upgrade.
 
 ## Baseline (Task 1, before any visual change; re-recorded in fix round 1)
 Viewport fixed to 1920x1080 at DPR 1 over CDP; Chrome kept awake; build from `0b6058e` (harness only).
@@ -221,7 +280,7 @@ Cost `median(all) - median(-tiltshift)`, all within the 1.5 ms budget and within
 ## Task 4: grade
 `MapGrade` adds the following to the rig's runtime `VolumeProfile`, all behind the `grade` toggle, with LDR grading on both tiers:
 - a Neutral tonemapper;
-- post exposure +0.15, contrast 14, saturation 16;
+- post exposure +0.15, contrast 14, saturation 16 (superseded at the Merge point: `MapGrade.Saturation` is 0, see "Merge point");
 - white balance temperature **5** (the plan says 9; see the merge arithmetic below) and tint 2;
 - split toning: teal shadows (0.36, 0.52, 0.60), amber highlights (0.96, 0.78, 0.55), balance −15;
 - a dark-navy vignette: 0.26, smoothness 0.45.
@@ -235,7 +294,7 @@ So the build was not "without a tonemapper". The `grade` toggle off falls back t
 - The control in `TheSunlitDesertDoesNotClip` sets the grade's tonemapper to None. That overrides the template's Neutral, and the graded Negev then clips 2.3% of its pixels, against 0.00% with Neutral.
 - URP strips the tonemapper's uber variants unless some VolumeProfile *asset* has a Tonemapping component. The runtime profile is not an asset, so it does not count. `TheGradeIsWarmLandTealShadowsAndAGentleVignette` checks that such an asset exists. Today two assets carry one: the template's `SampleSceneProfile` and the global settings' `DefaultVolumeProfile`. The check fails only if both lose their Tonemapping component. If Task 10 drops the template profile (the bloom decision), it should add a project-owned VolumeProfile with Neutral, so the guarantee no longer rests on URP template leftovers.
 
-Bloom is the template's, not this plan's; Task 10 should decide whether the web tier keeps it.
+Bloom is the template's, not this plan's; Task 10 decided: bloom ships off on both tiers (see "Tier decisions").
 
 **Readability (review I9), from edit mode at 960x540, with the tilt-shift off for these detail checks.**
 - ΔE76 between the selection band and the land 1 km inside the hex:
@@ -317,7 +376,7 @@ PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=9.74 spread_ms
 The grade costs +0.02 ms at gameplay03 and 0.00 ms at diorama02, inside the noise. The tonemapper and the vignette were already in the uber pass (the template profile), and the LUT pass ran before too.
 
 ## Baked textures (Task 5)
-`tools/terrain_bake.py` regenerates `unity/Assets/Textures/Map/terrain_bake.png` and `coast.png` from the committed
+`tools/terrain_bake.py` regenerates `unity/Assets/Textures/Map/terrain_bake.png`, `coast.png` and `ao.png` from the committed
 heightmap in about 10 s. The output is deterministic per toolchain: re-running it with the pinned numpy 2.5.3 and
 pillow 12.3.0 on the same machine gives byte-identical PNGs. Another platform may differ in its zlib build or in
 1-ulp `sin`/`arctan` results. Compare decoded pixels (`np.array_equal`), not file bytes; R and B may then differ by
@@ -429,7 +488,8 @@ faint low-contrast banding remains there at grazing angles.
 ## Task 8: grid
 The hex grid is drawn by the terrain graph and by the skirt's `Sea.shader` from one distance field (`ScHexEdgeDistance`,
 tools/hexgrid.py's layout; `HexGrid` is the C# twin), anti-aliased with `fwidth`, 1.5 px wide, light on land (0.25) and
-water (0.35), fading to 0.6 of that from 40 km to 240 km camera distance. The `MeshTopology.Lines` overlay, its material,
+water (0.35), fading to 0.6 of that from 40 km to 240 km camera distance (superseded: land 0.35, water 0.10, fade to
+0.35 plus a footprint fade; see "Task 8 fix round 1" and "Merge point"). The `MeshTopology.Lines` overlay, its material,
 `OverlayClearanceM` and its boot phase are gone; the selected-hex band sits 30 m above the ground (was 140 m). Toggle
 `grid`, registered in `MapShaderGlobals.Apply` through `assets.OnTeardown`. All numbers here are pre-grade (Track A's grade
 and tilt-shift are not in this worktree).
@@ -626,7 +686,8 @@ first_frame 3585 ms (budgets 743 / 5321); `--cpu 4` 1863 / 6952 ms (budgets 2720
   south-west slab at (0.69, 0.58, 0.37), against (0.56, 0.50, 0.37) before. The terrain next to it renders (0.82, 0.69,
   0.43), so the step shrank. But the skirt is 17% of diorama02, and its saturation rose 0.34 -> 0.47. That added +0.021
   to the frame, which reached 0.488 against the 0.48 bar (warmth 0.129). Reverted. A lower-chroma colour of the same
-  luma is the next candidate.
+  luma is NOT the next step: the final ruling is in "Open items for the art track" (fix the table/frame and the skirt in
+  the terrain's own look, not a colour patch).
 
 ## Tier decisions (Task 10)
 Measured under `machine_lock.py --exclusive --wait-unity`, each run started at a 1-minute load average of 3.0 or less
@@ -850,3 +911,42 @@ Final macOS player (SSAO, copies and bloom off):
 
 macOS `-golden`, both builds: `GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07`,
 `GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767`.
+
+## Open items for the art track
+Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
+
+1. **Border skirt look.** The skirt (the slab around the map) reads as a different material from the terrain next to it.
+   The fix is the table or frame and the skirt in the terrain's own look (promo 02), not a colour patch. A patch,
+   `BorderLandColour` (0.76, 0.66, 0.47), was measured and rejected: the south-west slab rendered (0.69, 0.58, 0.37) against
+   the terrain's (0.82, 0.69, 0.43), so the step shrank, but the skirt is 17% of diorama02 and its saturation rose 0.34 ->
+   0.47. That took the frame to saturation 0.488 against the 0.48 bar (warmth 0.129). Do not move the bar to exclude the
+   skirt. The earlier line saying a lower-chroma colour is the next candidate is withdrawn.
+2. **Settlement markers float.** At the web shadow texel (about 100 m at 60 km with a 2048 map) the markers (symbolic
+   scale, 300-700 m) show long detached shadows, so they look as if they hover. Set the sun's shadow bias (depth and normal
+   bias) at kit scale: offsets of about 100-150 m at that texel. Do not just turn marker shadows off.
+3. **Saturation of gameplay03 and warmth of diorama02.** gameplay03 saturation is +0.18 over promo 03, mostly the sea (0.83
+   against 0.51) and the gold `hills` biome. Measure the `SeaTests` margins before any sea change. diorama02 warmth
+   (0.1038) sits near its 0.087 floor, so any sea desaturation must re-check it.
+4. **Tilt-shift bottom band.** The bottom blurred band measures 17-22% of the frame against about 15% in the promo. It
+   awaits the owner's verdict on the offer `BottomHalfWidth` 0.16 / `BottomFeather` 0.19.
+5. **Olive plain against gold hills.** The seam between the olive `coastal_plain`/`valley` palette and the gold `hills`
+   biome is for the owner to judge.
+6. **Overview shadow overrun.** The shadow pass overruns the budget by 0.1-0.4 ms at the overview pose; the levers are in
+   "Tier decisions".
+
+### Rulings digest
+One line each: ruling - reason.
+- White balance Temperature 5 (plan: 9) - the merged diorama warmth must land below the promo's 0.145 (measured 0.127-0.133 at 9).
+- `AmbientProbe` removed - dead code: Trilight ambient replaces any assigned probe, so it never rendered.
+- Sea glint 0.06 (was 0.25) - at 0.25 the lobe lit a warm patch over 6 km of open sea at yaw 180 and broke the seam test.
+- Skirt hold smoothing (running mean, 8 km beyond the brief) - the skirt follows the coast without steps.
+- Grid opacities land 0.35 / water 0.10, plus a 30 -> 10 px footprint fade and fade to 0.35 - the sea lattice was about 5x
+  the promo's weight; land lines were invisible at 0.25 once graded.
+- Grade `Saturation` 0 (plan: 16) - the palette now carries the colour; graded/ungraded saturation x1.042 (bar 0.98-1.12).
+- Selection ring ivory (promo ring g/r 0.915, b/r 0.785) - matches the promo and passes the colour-blind separation tests.
+- Olive `coastal_plain`/`valley` palette - gameplay03 was one flat mustard; warmth 0.108 -> 0.077, saturation 0.582 -> 0.565.
+- Web shadow map stays 2048 - 1024 measured equal cost, so shrinking would lose quality for nothing.
+- Web render scale 1.0 - measured WebGL tier decision (see "Tier decisions").
+- Bloom, SSAO and the depth/opaque copies off - bloom changed at most 2/255 of any pixel; see "Tier decisions" for the costs.
+- NOT taken: dropping the bake's R channel - zero memory gain (BC1 either way) and it churns the assets; R stays as the AO reference.
+- NOT taken: deduplicating the `OpenMap` helper across `SeaTests` and `TerrainShaderTests` - test-only duplication; refactor risk with no behaviour gain.

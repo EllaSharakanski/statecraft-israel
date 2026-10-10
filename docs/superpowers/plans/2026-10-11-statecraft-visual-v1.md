@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Historical plan.** The code is authoritative; `docs/visual-v1.md` records what shipped. Interfaces lines below that name values later changed carry a "(shipped: ...)" note.
+
 **Goal:** Close the cheapest, largest gaps between the M3 map and the promo art bar (`promo/final/03-gameplay-1936.png`, `02-map-diorama.png`) without touching the simulation: map-scale shadows from a low warm sun, a real two-band tilt-shift, a stylised Terrain Lit Shader Graph fed by baked AO/curvature/sky-view, a coast-graded sea with foam, a colour grade with vignette and aerial/height haze, an anti-aliased shader hex grid, EB Garamond map labels, and a measured WebGL/desktop quality-tier decision.
 
 **Architecture:**
@@ -2070,7 +2072,7 @@ Why `ShadowFit.CoverFactor = 1.75`: at pitch 50° and FOV 35°, with the top bar
 
 **Interfaces:**
 - Consumes: `CameraRig.TeardownActions`, `VisualToggles.Register`, `PromoPose`, `RenderSample` (Task 1).
-- Produces: `MapLighting { const float SunElevation = 30f, SunAzimuth = 285f, SunIntensity = 1.6f; static readonly Color SunColour, AmbientSky, AmbientEquator, AmbientGround; static Light? FindSun(); static void Apply(Light? sun); }` (Task 4 removed `AmbientProbe()`: Trilight ambient replaces any assigned probe, so it never rendered); `ShadowFit { const float CoverFactor = 1.75f, MinDistanceM = 3000f, MaxDistanceM = 450000f; static float Distance(float cameraDistance); static void Apply(float cameraDistance); static void Restore(); }`; toggle `"shadows"`; `CameraController.MinDistance = 6000f`.
+- Produces: `MapLighting { const float SunElevation = 30f, SunAzimuth = 285f, SunIntensity = 1.6f; static readonly Color SunColour, AmbientSky, AmbientEquator, AmbientGround; static Light? FindSun(); static void Apply(Light? sun); }` (Task 4 removed `AmbientProbe()`: Trilight ambient replaces any assigned probe, so it never rendered); `ShadowFit { const float CoverFactor = 1.75f, MinDistanceM = 3000f, MaxDistanceM = 450000f /* shipped: corner fit and MaxDistanceM 1,000,000; see docs/visual-v1.md */; static float Distance(float cameraDistance); static void Apply(float cameraDistance); static void Restore(); }`; toggle `"shadows"`; `CameraController.MinDistance = 6000f`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3090,7 +3092,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `CameraRig.Init` (the runtime `VolumeProfile`), `VisualToggles`, `RenderSample`, `PromoPose`.
-- Produces: `MapGrade { const TonemappingMode Tonemapper = TonemappingMode.Neutral; const float PostExposure = 0.15f, Contrast = 14f, Saturation = 16f, Temperature = 5f, VignetteIntensity = 0.26f; static readonly Color SplitShadows, SplitHighlights, VignetteColour; static void Apply(VolumeProfile profile); static void SetActive(VolumeProfile profile, bool on); }`; toggle `"grade"` (grade, tonemapper and vignette together).
+- Produces: `MapGrade { const TonemappingMode Tonemapper = TonemappingMode.Neutral; const float PostExposure = 0.15f, Contrast = 14f, Saturation = 16f /* shipped: 0, set at the merge point */, Temperature = 5f, VignetteIntensity = 0.26f; static readonly Color SplitShadows, SplitHighlights, VignetteColour; static void Apply(VolumeProfile profile); static void SetActive(VolumeProfile profile, bool on); }`; toggle `"grade"` (grade, tonemapper and vignette together).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -5178,7 +5180,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `_ScMap`, `_ScMapOrigin.w` (hex size) from Task 6; `ScWaterShade`, `ScHazeWater` and `Sea.shader` from Task 7; `hexes.json` layout (R15).
-- Produces: HLSL `float4 _ScGrid` (x land opacity, y water opacity, z width px, w on), `ScGridLandSrgb`, `ScGridWaterSrgb`, `float ScHexEdgeDistance(float2 p, float size)`, `float ScGridLine(float2 mapM, float widthPx)`, `float ScGridAmount(float2 mapM, float3 positionWS)`; C# `HexGrid { static Vector2 Centre(int q, int r, float size); static Vector2 NearestCentre(Vector2 p, float size); static Vector2 FromWorld(Vector3 world, Vector3 origin, float lengthM); static Vector3 ToWorld(Vector2 p, Vector3 origin, float lengthM); static float EdgeDistance(Vector2 p, float size); }`; `MapShaderGlobals.Grid`, `GridLandOpacity = 0.25f`, `GridWaterOpacity = 0.35f`, `GridWidthPx = 1.5f`; toggle `"grid"`; `MapScene.SelectionClearanceM = 30f` (replacing `SelectionLiftM` and `MapBuilder.OverlayClearanceM`); `MapBuilder.Build(HeightmapMeta, float[,], HexFile, Material terrain)` and `Build(string mapDir, string hexesJson, Material terrain)`; `MapScene.Configure(Material terrain, Material marker, Material selection, Material sea, Material borderLand)`.
+- Produces: HLSL `float4 _ScGrid` (x land opacity, y water opacity, z width px, w on), `ScGridLandSrgb`, `ScGridWaterSrgb`, `float ScHexEdgeDistance(float2 p, float size)`, `float ScGridLine(float2 mapM, float widthPx)`, `float ScGridAmount(float2 mapM, float3 positionWS)`; C# `HexGrid { static Vector2 Centre(int q, int r, float size); static Vector2 NearestCentre(Vector2 p, float size); static Vector2 FromWorld(Vector3 world, Vector3 origin, float lengthM); static Vector3 ToWorld(Vector2 p, Vector3 origin, float lengthM); static float EdgeDistance(Vector2 p, float size); }`; `MapShaderGlobals.Grid`, `GridLandOpacity = 0.25f`, `GridWaterOpacity = 0.35f` (shipped: 0.35 / 0.10 plus a footprint fade, Task 8 fix round 1 and merge point), `GridWidthPx = 1.5f`; toggle `"grid"`; `MapScene.SelectionClearanceM = 30f` (replacing `SelectionLiftM` and `MapBuilder.OverlayClearanceM`); `MapBuilder.Build(HeightmapMeta, float[,], HexFile, Material terrain)` and `Build(string mapDir, string hexesJson, Material terrain)`; `MapScene.Configure(Material terrain, Material marker, Material selection, Material sea, Material borderLand)`.
 
 - [ ] **Step 1: Write the failing tests and remove the overlay from the existing ones**
 
