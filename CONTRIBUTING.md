@@ -61,7 +61,7 @@ AI-assisted work is welcome. Say so in the pull request: which parts, and how yo
 
 ## Security
 
-Never commit keys, tokens or `.env` files. Secret scanning and push protection are on. To report a vulnerability, use **Security → Report a vulnerability** on the repository page (GitHub private reporting); don't open a public issue.
+Never commit keys, tokens or `.env` files. Secret scanning and push protection are on. To report a vulnerability, use **Security → Report a vulnerability** on the repository page (GitHub private reporting); don't open a public issue. What is in scope and what to expect: [SECURITY.md](SECURITY.md). How the maintainer reviews outside pull requests without running their code: [docs/UNTRUSTED_PR_REVIEW.md](docs/UNTRUSTED_PR_REVIEW.md).
 
 ## Conduct
 
