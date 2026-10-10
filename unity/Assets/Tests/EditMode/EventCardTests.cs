@@ -5,6 +5,7 @@ using Statecraft.Game.UI;
 using Statecraft.Sim;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 
 public class EventCardTests
@@ -38,8 +39,7 @@ public class EventCardTests
         using var ui = new UiTestKit();
         var bridge = AtArmistice();
         var catalog = AssetDatabase.LoadAssetAtPath<PortraitCatalog>(CatalogPath);
-        var toast = new ToastPresenter(ui.Root, bridge, Text);
-        var card = new EventCardPresenter(ui.Root, bridge, Text, catalog, toast);
+        var card = new EventCardPresenter(ui.Root, bridge, Text, catalog);
         Assert.AreEqual("armistice_egypt", card.Shown!.Id);
         Assert.AreEqual(DisplayStyle.Flex, ui.Q<VisualElement>("event-card").style.display.value);
         Assert.AreEqual("Armistice with Egypt", ui.Q<Label>("event-title").text);
@@ -55,8 +55,30 @@ public class EventCardTests
     {
         using var ui = new UiTestKit();
         var bridge = AtArmistice();
-        new EventCardPresenter(ui.Root, bridge, Text, null, new ToastPresenter(ui.Root, bridge, Text));
-        Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-image").style.display.value);
+        var real = AssetDatabase.LoadAssetAtPath<PortraitCatalog>(CatalogPath);
+        var catalog = Object.Instantiate(real);                       // the real catalog, minus the holder's entry
+        try
+        {
+            catalog.entries.RemoveAll(e => e.personId == "ben_gurion");
+            Assert.IsNull(catalog.Get("ben_gurion"));
+            Assert.Greater(catalog.entries.Count, 0);
+            new EventCardPresenter(ui.Root, bridge, Text, catalog);
+            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-image").style.display.value);
+            // Unity reads a background set to StyleKeyword.None back as Null (verified in a probe); a set texture reads Undefined.
+            Assert.AreEqual(StyleKeyword.Null, ui.Q<VisualElement>("event-image").style.backgroundImage.keyword);
+            Assert.IsNull(ui.Q<VisualElement>("event-image").style.backgroundImage.value.texture);
+        }
+        finally { Object.DestroyImmediate(catalog); }
+    }
+
+    [UnityTest]
+    public System.Collections.IEnumerator TheTitleIsCentred()
+    {
+        using var ui = new UiTestKit();
+        var bridge = AtArmistice();
+        new EventCardPresenter(ui.Root, bridge, Text, null);
+        for (int i = 0; i < 10 && ui.Q<Label>("event-title").resolvedStyle.unityTextAlign == TextAnchor.UpperLeft; i++) yield return null;
+        Assert.AreEqual(TextAnchor.MiddleCenter, ui.Q<Label>("event-title").resolvedStyle.unityTextAlign);
     }
 
     [Test]
@@ -69,7 +91,7 @@ public class EventCardTests
         try
         {
             ev.Status = "draft";
-            new EventCardPresenter(ui.Root, bridge, Text, null, new ToastPresenter(ui.Root, bridge, Text));
+            new EventCardPresenter(ui.Root, bridge, Text, null);
             Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("event-draft").style.display.value);
             Assert.AreEqual("DRAFT", ui.Q<Label>("event-draft").text);
         }
@@ -81,7 +103,7 @@ public class EventCardTests
     {
         using var ui = new UiTestKit();
         var bridge = AtArmistice();
-        var card = new EventCardPresenter(ui.Root, bridge, Text, null, new ToastPresenter(ui.Root, bridge, Text));
+        var card = new EventCardPresenter(ui.Root, bridge, Text, null);
         Assert.IsNotNull(card.Shown);
         card.Dispose();
         ui.Q<Label>("event-title").text = "untouched";
@@ -89,6 +111,7 @@ public class EventCardTests
         bridge.EndTurn();
         Assert.AreEqual("untouched", ui.Q<Label>("event-title").text);
         Assert.IsNull(ui.Root.Q<Button>("option-sign"), "option buttons are removed with the card");
+        Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-card").style.display.value, "a disposed card is hidden");
     }
 
     [Test]
@@ -96,8 +119,7 @@ public class EventCardTests
     {
         using var ui = new UiTestKit();
         var bridge = AtArmistice();
-        var toast = new ToastPresenter(ui.Root, bridge, Text);
-        var card = new EventCardPresenter(ui.Root, bridge, Text, null, toast);
+        var card = new EventCardPresenter(ui.Root, bridge, Text, null);
         UiTestKit.Press(ui.Q<Button>("option-sign"));
         var queued = (ChooseEventOption)bridge.Queued.Single();
         Assert.AreEqual(("armistice_egypt", "sign"), (queued.EventId, queued.OptionId));
