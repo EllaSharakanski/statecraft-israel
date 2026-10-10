@@ -14,6 +14,9 @@ namespace Statecraft.Game.Map
         /// <summary>Share of the screen height (0..1) the UI covers at the top. The view is shifted so LookAt sits in the
         /// middle of the map area below it (an off-centre frustum: picking rays and WorldToScreenPoint follow it).</summary>
         public float TopInset;
+        /// <summary>The largest inset the projection applies (TopInset is clamped to it); at this pitch and FOV the top of
+        /// the view still looks down, so the sky never shows (MapSceneTests.TheCameraClearsToTheSeaColour).</summary>
+        public const float MaxTopInset = 0.5f;
         DepthOfField _dof;
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
@@ -54,7 +57,7 @@ namespace Statecraft.Game.Map
             if (TopInset <= 0f) return;
             // NDC y = (m11 y + m12 z) / -z, so m12 = s moves every point down by s: the centre of the area below the bar
             // (NDC y from -1 to 1 - 2 TopInset) is at -TopInset.
-            var p = cam.projectionMatrix; p[1, 2] = Mathf.Clamp(TopInset, 0f, 0.5f); cam.projectionMatrix = p;
+            var p = cam.projectionMatrix; p[1, 2] = Mathf.Clamp(TopInset, 0f, MaxTopInset); cam.projectionMatrix = p;
         }
     }
 }

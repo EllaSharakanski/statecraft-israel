@@ -169,8 +169,14 @@ public class MapSceneTests
         var cam = Camera.main;
         Assert.AreEqual(CameraClearFlags.SolidColor, cam.clearFlags);
         Assert.AreEqual(MapBuilder.BiomeColours["sea"], cam.backgroundColor);
-        Assert.Less(CameraRig.Pitch - CameraRig.Fov / 2, 90f);
-        Assert.Greater(CameraRig.Pitch - CameraRig.Fov / 2, 0f, "the top of the view looks down: no sky to show");
+        // Fix round 1 (review M5): the top-bar inset shifts the frustum up, so check the worst case the rig allows: the
+        // top ray rises to atan((1 + inset) tan(Fov/2)) above the axis. Analytically, and on the camera's own rays.
+        var worst = Mathf.Rad2Deg * Mathf.Atan((1 + CameraRig.MaxTopInset) * Mathf.Tan(Mathf.Deg2Rad * CameraRig.Fov / 2));
+        Assert.Greater(CameraRig.Pitch - worst, 0f, "the top of the view looks down at the largest inset: no sky to show");
+        var rig = cam.GetComponent<CameraRig>();
+        rig.TopInset = 1f; rig.Apply();                                    // clamped to MaxTopInset
+        foreach (var x in new[] { 0f, 0.5f, 1f })
+            Assert.Less(cam.ViewportPointToRay(new Vector3(x, 1f, 0)).direction.y, 0f, $"top edge at x={x} looks down");
     }
 
     /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is
