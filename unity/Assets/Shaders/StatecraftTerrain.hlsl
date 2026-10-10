@@ -22,8 +22,14 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     float3 land = SAMPLE_TEXTURE2D(Land.tex, Land.samplerstate, UV).rgb;
     float2 track = SAMPLE_TEXTURE2D(Tracks.tex, Tracks.samplerstate, UV).rg;
     float3 ground = ScGroundBase(UV, mapM, n, PositionWS);
-    // The "land" visual toggle: a uniform, so the branch is coherent and its derivatives stay defined.
-    [branch] if (_ScLandOn > 0.5) ground = ScLandUse(ground, land, track, mapM, n, (PositionWS.y - _ScMap.z) / _ScMap.w, coast);
+    // Land use only where there is any (not the sea, the desert or the "land" toggle off): its derivatives are taken here, in
+    // uniform control flow, so the branch may skip it per pixel.
+    float landElevM = (PositionWS.y - _ScMap.z) / _ScMap.w;
+    float landFp = max(length(ddx(mapM)), length(ddy(mapM)));
+    float terraceFp = fwidth(landElevM / ScTerraceStepM);
+    bool nearTrack = dot(track * 255.0 - 127.0, track * 255.0 - 127.0) < 127.0 * 127.0;   // within ScTrackRangeM
+    [branch] if (_ScLandOn > 0.5 && coast > 0.5 && (land.r + land.g + land.b > 0.004 || nearTrack))
+        ground = ScLandUse(ground, land, track, mapM, n, landElevM, coast, landFp, terraceFp);
     ground = ScGroundShade(ground, mapM, bake);
     float h = _ScHaze.a * ScHazeAmount(PositionWS);                 // land haze, applied after lighting via Emission
     float ao = bake.r * lerp(0.6, 1.0, bake.b);

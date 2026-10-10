@@ -44,16 +44,20 @@ float ScLine(float dM, float halfM, float fpM) { return saturate((halfM - dM) / 
 // Strength (0..1) of a pattern with period periodM at footprint fpM: full up to 0.15 period per pixel, gone from 0.5.
 float ScDetail(float periodM, float fpM) { return 1.0 - smoothstep(periodM * 0.15, periodM * 0.5, fpM); }
 
-float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 n, float elevM, float coast)
+// fp is the pixel footprint in metres and terraceFp the terrace steps per pixel, both taken by the caller in uniform
+// control flow, so this can run inside a branch (derivatives there are undefined).
+float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 n, float elevM, float coast, float fp,
+    float terraceFp)
 {
-    float fp = max(length(ddx(mapM)), length(ddy(mapM)));            // metres per pixel
     float terraceU = elevM / ScTerraceStepM;
-    float terraceFp = fwidth(terraceU);                               // terrace steps per pixel
     float shore = smoothstep(0.503, 0.52, coast);                     // the beach band stays the sea's (promo-sea)
     float slope = 1.0 - saturate(n.y);
 
-    // Farm blocks: a wobbled grid, each block turned by up to +-20 degrees about its own centre.
-    float2 warp = float2(ScNoise(mapM / 9000.0), ScNoise(mapM / 9000.0 + 17.3)) - 0.5;
+    // One shared low-frequency noise drives every patch below (fields, hill soil and grass, terraces, mottle): one lookup
+    // instead of six (the first cut cost 4.8 ms at gameplay03, WebGL).
+    float patch = ScNoise(mapM / 2600.0 + 3.1);
+    // Farm blocks: a wobbled grid (cheap sines), each block turned by up to +-20 degrees about its own centre.
+    float2 warp = 0.5 * float2(sin(mapM.y / 4100.0 + sin(mapM.x / 6700.0)), sin(mapM.x / 3900.0 + sin(mapM.y / 5300.0)));
     float2 bp = mapM / ScBlockM + warp * 0.55;
     float2 bi = floor(bp), bf = frac(bp);
     float bh = ScHash(bi + 0.37);
@@ -73,16 +77,17 @@ float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 
     // The parcel's crop (0.30 green, 0.20 ochre, 0.17 ploughed, 0.13 fallow, 0.20 left as the base grass), with rows.
     float rowsAmp = ScDetail(ScRowM, fp);
     float rows = sin(l.x * (6.2831853 / ScRowM)) * rowsAmp;
-    float3 crop = g; float cropOn = 1.0;
-    if (ph < 0.30)      crop = ScCropGreen * (1.0 + 0.10 * rows);
-    else if (ph < 0.50) crop = ScCropOchre * (1.0 + 0.04 * rows);
-    else if (ph < 0.67) crop = ScPlough * (1.0 + 0.12 * rows);
-    else if (ph < 0.80) crop = ScFallow;
+    // Linear colours (constants: the compiler folds the conversions); rows shade them in linear light.
+    float3 crop = g; float cropOn = 1.0, rowGain = 0.0;
+    if (ph < 0.30)      { crop = SRGBToLinear(ScCropGreen * ScPaletteBrightness); rowGain = 0.20; }
+    else if (ph < 0.50) { crop = SRGBToLinear(ScCropOchre * ScPaletteBrightness); rowGain = 0.08; }
+    else if (ph < 0.67) { crop = SRGBToLinear(ScPlough * ScPaletteBrightness); rowGain = 0.24; }
+    else if (ph < 0.80) crop = SRGBToLinear(ScFallow * ScPaletteBrightness);
     else cropOn = 0.0;
     // In the citrus belt a share of the parcels (up to 55%) are groves: orchard earth (the trees are the kits').
-    float orchardParcel = step(ScHash(float2(pv * 91.7, ph * 37.3)), land.g * 0.55);
-    if (orchardParcel > 0.5) { crop = ScOrchardEarth * (1.0 + 0.06 * rows); cropOn = 1.0; }
-    crop = SRGBToLinear(crop * ScPaletteBrightness) * (0.92 + 0.16 * pv);
+    if (ScHash(float2(pv * 91.7, ph * 37.3)) < land.g * 0.55)
+    { crop = SRGBToLinear(ScOrchardEarth * ScPaletteBrightness); rowGain = 0.12; cropOn = 1.0; }
+    crop *= (1.0 + rowGain * rows) * (0.92 + 0.16 * pv);
     // The mean of the crop mix (the same weights), for the far zoom where single parcels would shimmer.
     float3 cropMean = SRGBToLinear((ScCropGreen * 0.30 + ScCropOchre * 0.20 + ScPlough * 0.17 + ScFallow * 0.13) / 0.80 * ScPaletteBrightness);
     float parcelDetail = ScDetail(ScStripM * 1.2, fp);
@@ -92,18 +97,19 @@ float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 
     float hedge = ScLine(edgeM, 18.0, fp) * ScDetail(220.0, fp) * step(0.45, pv);
     farmed = lerp(farmed, SRGBToLinear(ScHedge), hedge * 0.7);
 
-    float fields = land.r * shore * smoothstep(0.08, 0.22, ScNoise(mapM / 5200.0 + 3.1) * 0.6 + land.r * 0.5);
+    float fields = land.r * shore * smoothstep(0.08, 0.22, patch * 0.6 + land.r * 0.5);
     float3 c = lerp(g, farmed, fields);
 
     // Garrigue: the wet unfarmed hills turn from the biome's gold to patches of stony soil and grass (promo 03's hills).
     float garrigue = land.b * shore * (1.0 - fields) * smoothstep(80.0, 250.0, elevM);
-    float3 hillGround = lerp(ScHillSoil, ScHillGrass, smoothstep(0.35, 0.65, ScNoise(mapM / 2200.0 + 2.3)));
-    c = lerp(c, SRGBToLinear(hillGround * ScPaletteBrightness), garrigue * 0.7);
+    float3 hillGround = lerp(SRGBToLinear(ScHillSoil * ScPaletteBrightness), SRGBToLinear(ScHillGrass * ScPaletteBrightness),
+        smoothstep(0.35, 0.65, patch));
+    c = lerp(c, hillGround, garrigue * 0.7);
 
     // Terraces on the wet hill slopes (in patches): a light stone riser every ScTerraceStepM of real rise, each tread darker
     // at its foot.
     float hill = land.b * shore * smoothstep(0.05, 0.10, slope) * (1.0 - smoothstep(0.45, 0.65, slope))
-               * smoothstep(120.0, 320.0, elevM) * (1.0 - fields) * smoothstep(0.30, 0.45, ScNoise(mapM / 2800.0 + 7.7));
+               * smoothstep(120.0, 320.0, elevM) * (1.0 - fields) * smoothstep(0.55, 0.70, 1.0 - patch);
     float terraceAmp = 1.0 - smoothstep(0.35, 0.8, terraceFp);
     float tf = frac(terraceU);
     float riser = smoothstep(0.72, 0.72 + max(terraceFp, 0.1), tf);
@@ -118,7 +124,7 @@ float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 
     float bushM = length(frac(sc) - (float2(sh, ScHash(si + 77.0)) * 0.5 + 0.25)) * 130.0;
     float bush = ScLine(bushM, 16.0 + 12.0 * sh, fp) * step(0.45, ScHash(si * 1.7 + 3.0));
     float speck = lerp(0.14, bush, ScDetail(130.0, fp));
-    float mottle = smoothstep(0.40, 0.70, ScNoise(mapM / 1400.0 + 5.0));
+    float mottle = smoothstep(0.55, 0.85, patch);
     float scrub = land.b * shore * (1.0 - fields) * (0.8 * speck + 0.2 * mottle) * (1.0 - smoothstep(0.5, 0.8, slope));
     c = lerp(c, SRGBToLinear(ScScrub * ScPaletteBrightness), scrub);
 
@@ -126,7 +132,7 @@ float3 ScLandUse(float3 g, float3 land, float2 trackOffset, float2 mapM, float3 
     float dTrack = length((trackOffset * 255.0 - 127.0) / 127.0) * ScTrackRangeM;   // tools/land_bake.py encode_offsets
     float edgeOn = step(0.65, ScHash(floor(bp + 0.5) + bi.yx * 0.31)) * fields;
     float track = max(ScLine(dTrack, ScTrackHalfM, fp), ScLine(blockEdgeM, 30.0, fp) * edgeOn * ScDetail(300.0, fp)) * shore;
-    c = lerp(c, SRGBToLinear(ScDust * ScPaletteBrightness) * (0.94 + 0.08 * ScNoise(mapM / 90.0)), track * 0.85);
+    c = lerp(c, SRGBToLinear(ScDust * ScPaletteBrightness) * (0.96 + 0.06 * pv), track * 0.85);
     return c;
 }
 
