@@ -13,6 +13,9 @@ Do not open a public issue for a security problem. Use GitHub's private vulnerab
 Please include what the issue is and what an attacker gets from it, the steps to reproduce, the commit SHA you
 tested, and your OS and browser (for the WebGL build) or Unity and .NET versions.
 
+Conduct reports are not security reports: send them privately to the maintainer by email, using the
+email on the maintainer's GitHub profile (see CODE_OF_CONDUCT.md), not through this form.
+
 ## What to expect
 
 Acknowledgement within 5 business days, and an assessment with a rough fix timeline within 15. This is a
@@ -38,6 +41,6 @@ Out of scope:
 
 ## Credentials
 
-This repository holds no credentials and never should. Tools that need one (for example `promo/gen.py`) read it from an
-environment variable. If you find one in this repository or its history, report it privately as above. It will be
+This repository holds no credentials and never should. A tool that needs one must read it from an environment
+variable, never from a file in the repository. If you find one in this repository or its history, report it privately as above. It will be
 revoked at its provider; history is not rewritten.

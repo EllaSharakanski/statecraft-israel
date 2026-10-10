@@ -75,7 +75,8 @@ def test_content_policy_states_the_owner_rules_and_only_real_mechanisms():
 def test_code_of_conduct_has_a_private_contact_and_the_history_section():
     text = read("CODE_OF_CONDUCT.md")
     assert "[INSERT" not in text and "getnohuman" not in text
-    assert "Conduct:" in text and "security/advisories/new" in text
+    # Fix round 1: conduct reports do not go through the security-advisory form (a report there becomes a draft advisory).
+    assert "email on the maintainer's GitHub profile" in text and "security/advisories/new" not in text
     assert "## Historical content and political discussion" in text
     assert "Contributor Covenant" in text and "version 2.1" in text
 
@@ -92,3 +93,46 @@ def test_content_policy_claims_no_mechanism_that_does_not_exist():
     for phrase in ("excluded from release builds", "share-alike sources are refused", "A separate verifier",
                    "any mismatch blocks the text", "marked AI-generated in `ASSETS.yaml`"):
         assert phrase not in text, phrase
+
+
+def test_conduct_reports_do_not_use_the_security_form_and_no_address_is_written():
+    sec = read("SECURITY.md")
+    assert "Conduct reports" in sec and "email on the maintainer's GitHub profile" in sec
+    import yaml
+    cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
+    conduct = [c for c in cfg["contact_links"] if "onduct" in c["name"]]
+    assert conduct and all("security/advisories" not in c["url"] for c in conduct)
+    assert not any("security/advisories" in c["url"] for c in cfg["contact_links"] if "ulnerab" not in c["name"])
+    assert "Conduct:" not in read(".github/ISSUE_TEMPLATE/config.yml")
+
+
+def test_docs_describe_only_what_is_live_today():
+    # Review I2: main-review (code-owner review, squash-only) is not applied yet; Task 13 updates these when it is.
+    c = read("CONTRIBUTING.md")
+    assert "fresh approval" not in c and "squash-merged" not in c
+    o = read(".github/CODEOWNERS")
+    assert "main-review" not in o
+
+
+def test_contributing_uses_the_check_that_passes_today():
+    # Review I6: the full check_repo run fails until Task 14; CI's own command is what a contributor can run.
+    c = read("CONTRIBUTING.md")
+    assert "uv run scripts/oss/check_repo.py --only secrets,emails,home-paths,sizes,symlinks" in c
+
+
+def test_untrusted_review_profile_restores_with_network_then_runs_without():
+    # Review I3: --network none cannot restore packages, and a read-only root-owned mount cannot build.
+    text = read("docs/UNTRUSTED_PR_REVIEW.md")
+    assert "Stage 1" in text and "Stage 2" in text and '--user "$(id -u):$(id -g)"' in text
+    assert "-e HOME=/tmp" in text and "cp -a /src /cache/work" in text and text.count("--network none") >= 1
+    stage1 = text.split("Stage 1")[1].split("Stage 2")[0]
+    assert "--network none" not in stage1
+
+
+def test_small_doc_fixes_from_review():
+    assert "promo/gen.py" not in read("SECURITY.md")  # M5: it reads a file today; Task 11 changes that
+    coc = read("CODE_OF_CONDUCT.md")
+    assert coc.index("## Historical content and political discussion") < coc.index("## Attribution")  # M6
+    assert "](docs/CONTENT_POLICY.md)" in coc
+    form = read(".github/ISSUE_TEMPLATE/historical_accuracy.yml")
+    assert "https://github.com/eyalgolan/statecraft-israel/blob/main/docs/CONTENT_POLICY.md" in form  # M7

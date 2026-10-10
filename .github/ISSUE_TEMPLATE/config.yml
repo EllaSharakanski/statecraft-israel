@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security vulnerability or conduct report
+  - name: Security vulnerability
     url: https://github.com/eyalgolan/statecraft-israel/security/advisories/new
-    about: Report privately. For a conduct report, start the title with "Conduct:". Do not open a public issue.
+    about: Report privately. Do not open a public issue.
+  - name: Conduct report
+    url: https://github.com/eyalgolan
+    about: Email the maintainer privately, using the email on the maintainer's GitHub profile. Do not open a public issue.

@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Read docs/CONTENT_POLICY.md first. Facts are open to correction with sources. The game's Israeli perspective is a
+        Read https://github.com/eyalgolan/statecraft-israel/blob/main/docs/CONTENT_POLICY.md first. Facts are open to correction with sources. The game's Israeli perspective is a
         stated design decision and is not changed through issues (section 1).
   - type: input
     id: where

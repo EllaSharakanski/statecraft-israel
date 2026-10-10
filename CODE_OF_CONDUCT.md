@@ -36,7 +36,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement privately, through this repository's Security tab: choose "Report a vulnerability" and start the title with "Conduct:" (https://github.com/eyalgolan/statecraft-israel/security/advisories/new). Only the maintainers can read it. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement privately to the maintainer, by email, using the email on the maintainer's GitHub profile (https://github.com/eyalgolan). Do not use the vulnerability-reporting form for conduct reports. All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
 
@@ -68,6 +68,20 @@ Community leaders will follow these Community Impact Guidelines in determining t
 
 **Consequence**: A permanent ban from any sort of public interaction within the community.
 
+## Historical content and political discussion
+
+This project depicts the history of Israel, including its wars, with real people and an Israeli perspective (see
+[docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md)). People who take part will disagree about that history. In every project space:
+
+- Discuss sources, not people. Argue with evidence, and link to it.
+- Personal or political attacks on anyone, including on public figures as people, are unacceptable, and so are slurs,
+  dehumanising language, denial or celebration of atrocities, and calls for violence against any group.
+- The game's perspective is a stated design decision. Repeatedly re-opening it, in issues, pull requests or reviews,
+  after the maintainer has pointed to [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md) is disruptive conduct.
+- Fact disputes follow [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md) section 3. The maintainer's decision closes a dispute; a new source
+  re-opens it.
+- Moderators may lock threads that have turned into political argument, and will say why.
+
 ## Attribution
 
 This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.1, available at [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
@@ -81,17 +95,3 @@ For answers to common questions about this code of conduct, see the FAQ at [http
 [Mozilla CoC]: https://github.com/mozilla/diversity
 [FAQ]: https://www.contributor-covenant.org/faq
 [translations]: https://www.contributor-covenant.org/translations
-
-## Historical content and political discussion
-
-This project depicts the history of Israel, including its wars, with real people and an Israeli perspective (see
-`docs/CONTENT_POLICY.md`). People who take part will disagree about that history. In every project space:
-
-- Discuss sources, not people. Argue with evidence, and link to it.
-- Personal or political attacks on anyone, including on public figures as people, are unacceptable, and so are slurs,
-  dehumanising language, denial or celebration of atrocities, and calls for violence against any group.
-- The game's perspective is a stated design decision. Repeatedly re-opening it, in issues, pull requests or reviews,
-  after the maintainer has pointed to `docs/CONTENT_POLICY.md` is disruptive conduct.
-- Fact disputes follow `docs/CONTENT_POLICY.md` section 3. The maintainer's decision closes a dispute; a new source
-  re-opens it.
-- Moderators may lock threads that have turned into political argument, and will say why.
