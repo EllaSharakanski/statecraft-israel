@@ -43,15 +43,26 @@ namespace Statecraft.Game.EditorTools
                 : "a shareable build needs the owner's sensitivity review of: " + string.Join(", ", open) + " (set status: sensitivity-reviewed; see docs/m3-release.md)";
         }
 
+        /// <summary>The gate for a build made with these command-line args: a -shareable build (Web or Mac) is refused
+        /// until the review is done; a dev build is never gated (web_check and the golden checks need them).</summary>
+        public static string? GateRefusal(string[] args, Statecraft.Sim.Content c) =>
+            Array.IndexOf(args, "-shareable") >= 0 ? ShareableRefusal(c) : null;
+
+        /// <summary>Logs "BUILD REFUSED ..." and exits 1 when the gate refuses this build; true if it did.</summary>
+        static bool RefuseUnlessShareable()
+        {
+            var args = Environment.GetCommandLineArgs();
+            if (Array.IndexOf(args, "-shareable") < 0) return false;
+            if (!(GateRefusal(args, Statecraft.Sim.ContentLoader.Load(Paths.Content)) is string refusal)) return false;
+            Debug.LogError("BUILD REFUSED " + refusal);
+            EditorApplication.Exit(1);
+            return true;
+        }
+
         public static void Web()
         {
+            if (RefuseUnlessShareable()) return;
             var name = Arg("-compression") ?? "disabled";
-            if (Flag("-shareable") && ShareableRefusal(Statecraft.Sim.ContentLoader.Load(Paths.Content)) is string refusal)
-            {
-                Debug.LogError("BUILD REFUSED " + refusal);
-                EditorApplication.Exit(1);
-                return;
-            }
             ProjectSetup.Apply();
             PlayerSettings.WebGL.compressionFormat = Compression(name);
             PlayerSettings.WebGL.decompressionFallback = false;   // itch.io serves .br/.gz with Content-Encoding
@@ -63,6 +74,7 @@ namespace Statecraft.Game.EditorTools
 
         public static void Mac()
         {
+            if (RefuseUnlessShareable()) return;
             ProjectSetup.Apply();
             // Apple clang fuses a*b+c into fmadd by default (tech notes 4.2); turn it off if the Mac golden check fails.
             PlayerSettings.SetAdditionalIl2CppArgs(Flag("-ffp-contract-off") ? "--compiler-flags=-ffp-contract=off" : "");

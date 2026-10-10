@@ -5,7 +5,7 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
-- **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `(cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip .)`.
+- **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses until the sensitivity review below is done). Never zip by hand.
 - **After building:** drop the build's rewrites of the settings with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
   build-cache change gets committed.
@@ -83,9 +83,12 @@ war-casualties). The seven events below are only `fact-checked`. The owner revie
 by moving the event's `status:` in its YAML file to `sensitivity-reviewed` and committing it (the loader accepts that
 value). Nothing else counts as a sign-off.
 
-- **Gate:** `Build.Web ... -shareable` refuses to build while any sensitive event is not `sensitivity-reviewed`, and names
-  them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). Use `-shareable` for every build that leaves this machine,
-  including the M4 private Draft once it is shared with anyone. Local builds (no flag) are not gated.
+- **Gate:** `Build.Web ... -shareable` and `Build.Mac ... -shareable` refuse to build while any sensitive event is not
+  `sensitivity-reviewed`, and name them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). `tools/package_release.py`
+  makes the shareable zip and runs the same check (`Statecraft.Cli --release-gate`) on the content inside the build, so
+  it prints `PACKAGE REFUSED ...` and exits 1 until the review is done. Use `-shareable` and the script for every build
+  that leaves this machine, including the M4 private Draft once it is shared with anyone. Local dev builds (no flag)
+  are not gated, because web_check and the golden checks need them.
 - **Pinned set:** `FinalWaveTests.TheSensitiveEventsArePinned` lists the seven ids, and
   `TheOwnerTableListsEverySensitiveEvent` fails if a sensitive event is missing from this table, so a new one cannot
   skip the review.
@@ -105,7 +108,7 @@ Deferred to the start of M4, as a private Draft (owner ruling, 2026-10-10). The 
 owner's itch.io account and is never automated, and the build must pass the sensitivity gate above (`-shareable`).
 1. Sign in at https://itch.io. Go to Dashboard, then **Create new project**.
 2. Set the title to "Statecraft: Israel (M3 preview)", Kind of project to **HTML**, and Classification to Games.
-3. Under Uploads, upload `unity/Builds/statecraft-m3-web.zip` and tick **This file will be played in the browser**.
+3. Under Uploads, upload `unity/Builds/statecraft-m3-web.zip` (made by `python3 tools/package_release.py`) and tick **This file will be played in the browser**.
 4. Embed options:
    - Viewport **1280 × 720**. It fits a 1366×768 or 1440×900 laptop page without scrolling, and under the UI's
      ScaleWithScreenSize (reference 1920×1080) it lays out exactly like 1920×1080; `UiLayoutTests` covers 1280×720.
