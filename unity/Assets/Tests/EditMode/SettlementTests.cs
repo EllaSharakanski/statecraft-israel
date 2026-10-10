@@ -350,12 +350,12 @@ public class MapSceneTests
             // Visual v1 Task 8: the terrain shader draws the grid, light and faint as in the promo; the line shows if the
             // corner's neighbourhood changes when the grid is switched off (tilt-shift off: a colour test, task-3 carry m6).
             var cam = Camera.main; var px = new Vector2[1];
-            HexGridTests.TiltShift(false);
+            RenderSample.TiltShift(false);
             var on = RenderSample.Render(cam, 1600, 900, new[] { corner }, px);
             VisualToggles.Set("grid", false);
             var off = RenderSample.Render(cam, 1600, 900, new[] { corner }, px);
             VisualToggles.Set("grid", true);
-            HexGridTests.TiltShift(true);
+            RenderSample.TiltShift(true);
             float change = 0f;
             for (int dx = -2; dx <= 2; dx++)
                 for (int dy = -2; dy <= 2; dy++)
@@ -403,10 +403,13 @@ public class MapSceneTests
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var size = map.Terrain.terrainData.size;
         // Visual v1 Task 8 (review I3): both sides draw the same hex grid; the lattice runs on past the edge and is
-        // mirror-symmetric about it (x = 0 is a hex edge on odd rows). With the grid off, Task 7's check runs unchanged. With
-        // it on, the same pairs and strip are checked, except the close strip at yaw 90/270 (logged, not asserted): there the
-        // edge runs along the view, foreshortened, so the x = 0 hex line falls unequally into the two +-600 m patches (seen:
-        // 0.014 at yaw 270, the near patch lighter). As in Task 7's re-review, yaw 0/180 test the strip at full sensitivity.
+        // mirror-symmetric about it. Every pair is checked with the grid off and on, at four yaws. Task 8 fix round 1 (M1):
+        // the close strips are centred on even hex rows, where x = 0 is a hex centre, so their +-600 m patches (five, 2 km
+        // apart along the edge) all lie over 2.2 km from any line; on an odd row the x = 0 hex line itself fell unequally
+        // into the two foreshortened patches at yaw 90/270.
+        float rowM = 1.5f * map.Hexes.hex_size_km * 1000f;
+        float EvenRowZ(float fromNorthM) => size.z - 2f * Mathf.Round(fromNorthM / rowM / 2f) * rowM;
+        float midZ = EvenRowZ(0.45f * size.z), northZ = EvenRowZ(2f * rowM);
         // (The plan's one-row hex-centre pairs at x = +-4330 m were tried and dropped: at yaw 180 the middle-row pair differs
         // by 0.027 with the grid off too, a warm view-dependent sun glint on the terrain side, not a grid or seam effect.)
         try
@@ -417,8 +420,8 @@ public class MapSceneTests
                 var cases = new[] {
                     (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
                     (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)),
-                    (new Vector3(3000, 0, size.z * 0.55f), new Vector3(600, 0, size.z * 0.55f), new Vector3(-600, 0, size.z * 0.55f)),
-                    (new Vector3(3000, 0, size.z - 8000), new Vector3(600, 0, size.z - 8000), new Vector3(-600, 0, size.z - 8000)) };
+                    (new Vector3(3000, 0, midZ), new Vector3(600, 0, midZ), new Vector3(-600, 0, midZ)),
+                    (new Vector3(3000, 0, northZ), new Vector3(600, 0, northZ), new Vector3(-600, 0, northZ)) };
                 foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
                     foreach (var (look, inside, beyond) in cases)
                     {
@@ -436,9 +439,8 @@ public class MapSceneTests
                         Color a = Color.clear, b = Color.clear;
                         for (int r = 0; r < rows; r++) { a += s.Mean((int)px[2 * r].x, (int)px[2 * r].y, 3) / rows; b += s.Mean((int)px[2 * r + 1].x, (int)px[2 * r + 1].y, 3) / rows; }
                         var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
-                        bool logged = grid && close && (yaw == 90f || yaw == 270f);
-                        TestContext.WriteLine($"seam grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000}{(logged ? " (logged only)" : "")}");
-                        if (!logged) Assert.Less(diff, 0.012f, $"seam grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}");
+                        TestContext.WriteLine($"seam grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
+                        Assert.Less(diff, 0.012f, $"seam grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}");
                     }
             }
         }
@@ -462,15 +464,15 @@ public class MapSceneTests
         Assert.AreEqual(0.5f, cam.WorldToViewportPoint(rig.LookAt).y, 1e-3f, "the inset is undone");
     }
 
-    /// <summary>Playtest 1, item 10: the selected hex gets an outline in the highlight colour, draped on the terrain like
-    /// the hex overlay (HexMath corners), drawn with the editor-made overlay material (no runtime material).</summary>
+    /// <summary>Playtest 1, item 10: the selected hex gets an outline in the highlight colour, draped on the terrain
+    /// (HexMath corners), drawn with its own editor-made material (no runtime material).</summary>
     [Test]
     public void SelectingAHexOutlinesItOnTheTerrain()
     {
         var map = NewMap(); map.Build();
         var selection = Load(SelectionMatPath);
         // Fix round 1, M2: its own editor-made material, whose shader pulls the band towards the camera in depth (Offset), so
-        // the overlay lines under its edge cannot z-fight with it at long range.
+        // it cannot z-fight with the ground at long range.
         Assert.AreEqual("Statecraft/HexSelection", selection.shader.name);
         StringAssert.IsMatch(@"(?m)^\s*Offset\s+-\d+\s*,\s*-\d+", File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader)));
         Assert.Greater(selection.renderQueue, 2000, "drawn after the opaque terrain (queue Geometry+10)");

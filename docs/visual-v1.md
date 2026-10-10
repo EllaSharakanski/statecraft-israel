@@ -214,6 +214,30 @@ and tilt-shift are not in this worktree).
 - **Look (t08-grid).** The sea lattice runs on past the map's edge with no step. At the 250 km overview the sea lattice is
   dense and reads strongly; land lines are faint, nearly invisible on the desert.
 
+### Task 8 fix round 1
+- **Line anti-aliasing (review I1).** `fwidth` of the V-shaped edge distance collapsed on the line itself. The fix projects
+  the derivatives of the continuous grid coordinate on the nearest edge's normal (metres per pixel across the edge) and
+  box-filters: `saturate(0.5 * widthPx + 0.5 - d / aa)`.
+  - New rendered test `GridLinesAreUnbrokenAndAboutTheirWidthAtGameplay03` (1920x1080, opacities forced to 1, linear luma).
+    - Red at b409955: sea peak ratio 0.41 along one edge, FWHM 2.74 px.
+    - Green: sea ratio 0.85, FWHM 1.66 px (1.51-1.95); land FWHM 1.62 px (1.37-1.97).
+- **Weights (review I2).** `GridWaterOpacity` 0.35 -> 0.10. The distance fade is now lerp(1, 0.35). Lines also fade out as a hex
+  shrinks from 30 to 10 px on screen (circumradius over the pixel footprint). Land stays 0.25 until the grade merges.
+  - Sea line in `gameplay03` (x 120-170, y 480-560): background 49, peak 83, +34, ratio 1.69, 2 px wide. Before: +86,
+    2.75, 4 px. Promo (x 470-520, y 550-580): background 109, peak 151, +43, ratio 1.39. Our ratio is higher only
+    because our sea is darker (pre-grade).
+  - diorama02 near sea line: +6 over 73 (before +50). Grid coverage at 1920x1080: 0.74% at 20 km, 0.76% at 250 km
+    (was 3.1% / 18.2% at 960x540).
+- **Seam (M1).** The close strips sit on even hex rows (x = 0 a hex centre); all 32 lines (grid off and on, four yaws)
+  are asserted, max 0.004.
+- **Rift.** Arava line change 0.015 (bound 0.012, land opacity unchanged).
+- **Profile** (machine load average about 7, spreads up to 1 ms):
+  - `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.71 spread_ms=0.97 median_p95_ms=3.00`
+  - `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=2.22 spread_ms=0.99 median_p95_ms=4.00`
+  - `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=7.23 spread_ms=0.67 median_p95_ms=8.00`
+  - `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=7.22 spread_ms=0.54 median_p95_ms=8.00`
+- **Build.** WebGL, no `Shader error`; golden values OK in the checkpoint run.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
@@ -223,3 +247,4 @@ and tilt-shift are not in this worktree).
 | 7 | t07-sea | captures/visual/t07-sea/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 7 (fix 1) | t07-sea-r1 | captures/visual/t07-sea-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 8 | t08-grid | captures/visual/t08-grid/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
+| 8 (fix 1) | t08-grid-r1 | captures/visual/t08-grid-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |

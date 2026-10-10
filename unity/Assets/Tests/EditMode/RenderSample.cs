@@ -45,6 +45,13 @@ public sealed class RenderSample
         return sum / n;
     }
 
+    /// <summary>Track A's tilt-shift blurs the top and bottom bands of every render; width and colour renders must not see
+    /// it (task-3 carry, merge note m6). A no-op while the switch does not exist.</summary>
+    public static void TiltShift(bool on)
+    {
+        if (System.Linq.Enumerable.Contains(Statecraft.Game.Map.VisualToggles.Names, "tiltshift")) Statecraft.Game.Map.VisualToggles.Set("tiltshift", on);
+    }
+
     public static float Luma(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
 
     /// <summary>Mean |dL/dx| + |dL/dy| over the rows from y0 to y1 (fractions of the height, 0 = bottom): local contrast,

@@ -27,9 +27,10 @@ namespace Statecraft.Game.Map
         /// <summary>Real elevations between which the haze thickens, low in the Jordan rift.</summary>
         public const float RiftHazeTopM = -100f, RiftHazeFullM = -400f;
 
-        /// <summary>Hex line opacity on land and water, and width in pixels (anti-aliased, the same at every zoom). Light,
-        /// faint lines on land as in the promo.</summary>
-        public const float GridLandOpacity = 0.25f, GridWaterOpacity = 0.35f, GridWidthPx = 1.5f;
+        /// <summary>Hex line opacity on land and water, and width in pixels (box-filtered, the same at every zoom). Light,
+        /// faint lines as in the promo: water 0.10 (Task 8 review I2: 0.35 gave sea lines 2.6x their background's luma
+        /// against the promo's 1.4x).</summary>
+        public const float GridLandOpacity = 0.25f, GridWaterOpacity = 0.10f, GridWidthPx = 1.5f;
 
         static Vector4 haze, hazeWater;
 

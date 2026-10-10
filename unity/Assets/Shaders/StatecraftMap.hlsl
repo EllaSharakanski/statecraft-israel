@@ -116,8 +116,9 @@ float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake
 }
 
 // Distance (m) from p to the nearest edge of its hex: tools/hexgrid.py's pointy-top axial layout, (0, 0) at the north-west
-// corner, p.x east and p.y south (HexGrid.EdgeDistance is the C# twin).
-float ScHexEdgeDistance(float2 p, float size)
+// corner, p.x east and p.y south (HexGrid.EdgeDistance is the C# twin). n is that edge's outward unit normal (constant over
+// each sixth of a hex).
+float ScHexEdgeDistance(float2 p, float size, out float2 n)
 {
     float qf = (0.57735027 * p.x - p.y / 3.0) / size;
     float rf = 0.66666667 * p.y / size;
@@ -126,28 +127,42 @@ float ScHexEdgeDistance(float2 p, float size)
     float dq = abs(q - qf), dr = abs(r - rf), ds = abs(s - sf);
     if (dq > dr && dq > ds) q = -r - s; else if (dr > ds) r = -q - s;
     float2 v = p - float2(size * (1.7320508 * q + 0.8660254 * r), size * 1.5 * r);
-    float m = max(abs(v.x), max(abs(0.5 * v.x + 0.8660254 * v.y), abs(0.5 * v.x - 0.8660254 * v.y)));
+    float a = v.x, b = 0.5 * v.x + 0.8660254 * v.y, c = 0.5 * v.x - 0.8660254 * v.y;
+    float m = abs(a); n = float2(a < 0.0 ? -1.0 : 1.0, 0.0);
+    if (abs(b) > m) { m = abs(b); n = (b < 0.0 ? -1.0 : 1.0) * float2(0.5, 0.8660254); }
+    if (abs(c) > m) { m = abs(c); n = (c < 0.0 ? -1.0 : 1.0) * float2(0.5, -0.8660254); }
     return 0.8660254 * size - m;
 }
 
-// Anti-aliased coverage (0..1) of a hex line widthPx pixels wide at mapM (metres east and north of the south-west corner):
-// fwidth turns the metre distance into pixels, so the line keeps its width at every zoom. Call it in uniform control flow
-// (outside any [branch]): fwidth needs the neighbouring pixels.
-float ScGridLine(float2 mapM, float widthPx)
+float ScHexEdgeDistance(float2 p, float size) { float2 n; return ScHexEdgeDistance(p, size, n); }
+
+// Box-filtered coverage (0..1) of a hex line widthPx pixels wide at mapM (metres east and north of the south-west corner);
+// footprintM returns the metres per pixel (the larger screen axis). The pixel's extent across the edge comes from the
+// derivatives of the continuous grid coordinate, projected on the edge's normal (Task 8 review I1: fwidth of the V-shaped
+// distance collapses on the line itself and broke it into dashes). Call it in uniform control flow (outside any [branch]).
+float ScGridLine(float2 mapM, float widthPx, out float footprintM)
 {
-    float d = ScHexEdgeDistance(float2(mapM.x, _ScMap.y - mapM.y), _ScMapOrigin.w);
-    float aa = max(fwidth(d), 1e-3);
-    return 1.0 - smoothstep(0.5 * widthPx * aa, (0.5 * widthPx + 1.0) * aa, d);
+    float2 p = float2(mapM.x, _ScMap.y - mapM.y);
+    float2 px = ddx(p), py = ddy(p);
+    footprintM = max(length(px), length(py));
+    float2 n;
+    float d = ScHexEdgeDistance(p, _ScMapOrigin.w, n);
+    float aa = max(length(float2(dot(px, n), dot(py, n))), 1e-3);   // metres per pixel across the edge
+    return saturate(0.5 * widthPx + 0.5 - d / aa);
 }
 
-// The grid as drawn on both the terrain and the skirt's sea: on/off, thinner towards the overview. Light lines on land and
-// water, as in the promo (ruling 2: the promo wins over M2's dark lines).
+// The grid as drawn on both the terrain and the skirt's sea: on/off, thinner towards the overview, and gone where a hex
+// is under about 10 px on screen (full from 30 px), so far hexes never form a wash. Light lines on land and water, as in
+// the promo (ruling 2: the promo wins over M2's dark lines).
 static const float3 ScGridLandSrgb = float3(0.93, 0.90, 0.80);
 static const float3 ScGridWaterSrgb = float3(0.82, 0.90, 0.95);
 float ScGridAmount(float2 mapM, float3 positionWS)
 {
-    float fade = lerp(1.0, 0.6, saturate((length(_WorldSpaceCameraPos - positionWS) - 40000.0) / 200000.0));
-    return ScGridLine(mapM, _ScGrid.z) * _ScGrid.w * fade;
+    float footprintM;
+    float cover = ScGridLine(mapM, _ScGrid.z, footprintM);
+    float fade = lerp(1.0, 0.35, saturate((length(_WorldSpaceCameraPos - positionWS) - 40000.0) / 200000.0));
+    fade *= saturate((_ScMapOrigin.w / max(footprintM, 1e-3) - 10.0) / 20.0);
+    return cover * _ScGrid.w * fade;
 }
 
 #endif

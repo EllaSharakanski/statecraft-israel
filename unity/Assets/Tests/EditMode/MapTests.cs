@@ -105,9 +105,10 @@ public class MapTests
     }
 
     [Test]
-    public void TerrainUsesFineLodSoTheCoarseSurfaceDoesNotCoverTheOverlay()
+    public void TerrainUsesFineLodSoTheCoarseSurfaceDoesNotCoverTheSelectionBand()
     {
-        // At the default heightmapPixelError (5) far cameras get a coarse LOD whose surface sits above the draped lines (K2).
+        // At the default heightmapPixelError (5) far cameras get a coarse LOD whose surface sits above draped geometry (K2);
+        // since visual v1 Task 8 that is the selection band (the hex grid is drawn by the terrain shader itself).
         var terrainMat = TerrainMaterial();
         var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         try { Assert.AreEqual(MapBuilder.TerrainPixelError, go.GetComponent<Terrain>().heightmapPixelError); Assert.AreEqual(1f, MapBuilder.TerrainPixelError); }

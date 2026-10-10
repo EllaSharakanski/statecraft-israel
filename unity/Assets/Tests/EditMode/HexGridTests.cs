@@ -12,15 +12,8 @@ public class HexGridTests
 {
     const float Size = 5000f;
 
-    /// <summary>Track A's tilt-shift (merged later) blurs the top and bottom bands of every render; the width and colour
-    /// renders here must not see it (task-3 carry, merge note m6). A no-op while the switch does not exist.</summary>
-    internal static void TiltShift(bool on)
-    {
-        if (System.Linq.Enumerable.Contains(VisualToggles.Names, "tiltshift")) VisualToggles.Set("tiltshift", on);
-    }
-
     [TearDown]
-    public void Reset() { TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
+    public void Reset() { RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
 
     [Test]
     public void CentresAreTheInradiusFromEveryEdgeAndCornersAndEdgesAreZero()
@@ -66,7 +59,7 @@ public class HexGridTests
         var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
         var cam = Camera.main;
         var rig = cam.GetComponent<CameraRig>();
-        TiltShift(false);
+        RenderSample.TiltShift(false);
         return (map, cam, rig);
     }
 
@@ -111,14 +104,95 @@ public class HexGridTests
         foreach (var distance in new[] { CameraController.MinDistance, CameraController.MaxDistance })
         {
             rig.LookAt = edgeMid; rig.Distance = distance; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
-            var on = RenderSample.Render(cam, 960, 540);
+            // At the game's 1920x1080: lines fade out by their hexes' size in pixels (Task 8 fix round 1, I2).
+            var on = RenderSample.Render(cam, 1920, 1080);
             VisualToggles.Set("grid", false);
-            var off = RenderSample.Render(cam, 960, 540);
+            var off = RenderSample.Render(cam, 1920, 1080);
             VisualToggles.Set("grid", true);
             float covered = RenderSample.FractionDarker(on, off, 0.02f) + RenderSample.FractionDarker(off, on, 0.02f);
             TestContext.WriteLine($"{distance} m: grid covers {covered:P2}");
             Assert.That(covered, Is.InRange(0.0005f, 0.25f), $"{distance} m");
         }
+    }
+
+    /// <summary>Task 8 review I1, rendered at the gameplay03 pose (1920x1080): along one straight hex edge on the sea and one
+    /// on land, the line is about GridWidthPx wide (median full width at half maximum, across the line, 1 to 2.5 px; no
+    /// sample under 1 px) and, on the sea, never breaks (each sample's peak at least 0.7 of the edge's strongest). Both
+    /// opacities are set to 1 for the measurement, so the line's profile is measured, not its colour; differences are in
+    /// linear luma. The break check is on the sea only: its background is even, while a land line's peak also follows
+    /// the lit ground under it (0.54 along a land edge whose widths all lie in 1.4-2.0 px). Land and sea share ScGridLine.</summary>
+    [UnityTest]
+    public IEnumerator GridLinesAreUnbrokenAndAboutTheirWidthAtGameplay03()
+    {
+        var (map, cam, rig) = Open();
+        yield return null;
+        PromoPose.Gameplay03.Apply(rig, map.Frame);
+        rig.TopInset = 0; rig.Apply();
+        float size = map.Hexes.hex_size_km * 1000f, inradius = Mathf.Sqrt(3f) / 2f * size;
+        var origin = map.Terrain.transform.position;
+        HexJson? Find(double lon, double lat, System.Func<HexJson, bool> ok)
+        {
+            HexJson? best = null; double bestD = double.MaxValue;
+            foreach (var h in map.Hexes.hexes)
+            {
+                var east = System.Array.Find(map.Hexes.hexes, e => e.q == h.q + 1 && e.r == h.r);
+                if (east == null || !ok(h) || !ok(east)) continue;
+                double dd = (h.lon - lon) * (h.lon - lon) + (h.lat - lat) * (h.lat - lat);
+                if (dd < bestD) { bestD = dd; best = h; }
+            }
+            return best;
+        }
+        var edges = new[] { ("sea", Find(34.72, 32.02, h => h.biome == "sea")), ("land", Find(34.95, 32.0, h => h.land && h.biome != "lake")) };
+        const int W = 1920, H = 1080, N = 25;
+        try
+        {
+            foreach (var (what, hex) in edges)
+            {
+                Assert.IsNotNull(hex, what);
+                var c = HexGrid.Centre(hex!.q, hex.r, size);
+                var world = new Vector3[N + 2]; var px = new Vector2[N + 2];
+                Vector3 At(float t)
+                {
+                    var w = HexGrid.ToWorld(new Vector2(c.x + inradius, c.y - size / 2f + t * size), origin, map.Frame.LengthM);
+                    w.y = map.Terrain.SampleHeight(w) + origin.y;
+                    return w;
+                }
+                for (int i = 0; i < N; i++) world[i] = At(0.1f + 0.8f * i / (N - 1));
+                world[N] = At(0f); world[N + 1] = At(1f);
+                Shader.SetGlobalVector(MapShaderGlobals.Grid, new Vector4(1f, 1f, MapShaderGlobals.GridWidthPx, 1f));
+                var on = RenderSample.Render(cam, W, H, world, px);
+                VisualToggles.Set("grid", false);
+                var off = RenderSample.Render(cam, W, H, world, px);
+                VisualToggles.Set("grid", true);
+                // Across the line: a horizontal profile is 1 / |n.x| times as wide as the line, n the line's screen normal.
+                var dir = (px[N + 1] - px[N]).normalized; float nx = Mathf.Abs(dir.y);
+                float Lin(Color s) => RenderSample.Luma(new Color(Mathf.GammaToLinearSpace(s.r), Mathf.GammaToLinearSpace(s.g), Mathf.GammaToLinearSpace(s.b)));
+                var peaks = new float[N]; var widths = new float[N];
+                for (int i = 0; i < N; i++)
+                {
+                    int x0 = Mathf.RoundToInt(px[i].x), y0 = Mathf.RoundToInt(px[i].y);
+                    var prof = new float[17];
+                    for (int k = 0; k < 17; k++) prof[k] = Mathf.Max(0f, Lin(on.At(x0 + k - 8, y0)) - Lin(off.At(x0 + k - 8, y0)));
+                    int m = 0; for (int k = 1; k < 17; k++) if (prof[k] > prof[m]) m = k;
+                    float peak = prof[m], half = peak / 2f;
+                    int l = m; while (l > 0 && prof[l - 1] >= half) l--;
+                    int r = m; while (r < 16 && prof[r + 1] >= half) r++;
+                    // Linear interpolation of the two half-maximum crossings.
+                    float left = l > 0 ? l - (prof[l] - half) / Mathf.Max(prof[l] - prof[l - 1], 1e-6f) : l - 0.5f;
+                    float right = r < 16 ? r + (prof[r] - half) / Mathf.Max(prof[r] - prof[r + 1], 1e-6f) : r + 0.5f;
+                    peaks[i] = peak; widths[i] = (right - left) * nx;
+                }
+                float max = Mathf.Max(peaks), min = Mathf.Min(peaks);
+                var sorted = (float[])widths.Clone(); System.Array.Sort(sorted);
+                float median = sorted[N / 2];
+                TestContext.WriteLine($"{what} edge of ({hex.q}, {hex.r}): peak min {min:0.000} max {max:0.000} ratio {min / max:0.00}; FWHM median {median:0.00} px, range {sorted[0]:0.00}-{sorted[N - 1]:0.00} (|n.x| {nx:0.00})");
+                Assert.Greater(max, 0.02f, $"{what}: a line is drawn");
+                if (what == "sea") Assert.GreaterOrEqual(min / max, 0.7f, $"{what}: the line never breaks along the edge");
+                Assert.GreaterOrEqual(sorted[0], 1f, $"{what}: no sample along the edge is under a pixel wide");
+                Assert.That(median, Is.InRange(1f, 2.5f), $"{what}: the line is about {MapShaderGlobals.GridWidthPx} px wide");
+            }
+        }
+        finally { VisualToggles.Set("grid", true); }
     }
 
     [Test]
