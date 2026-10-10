@@ -86,7 +86,7 @@ public class LandUseTests
 
     /// <summary>Rendered at the gameplay pose: the fields, hedges and tracks add local detail to the plain (the flat
     /// mustard ground had little): the gradient energy of the frame's lower half rises by at least 15% against an empty
-    /// mask, and the mean colour stays the same ground (saturation within 0.06). Terrain.mat changes in memory only.</summary>
+    /// mask (the "land" toggle off), and the mean colour stays the same ground (saturation within 0.06).</summary>
     [UnityTest]
     public IEnumerator TheFieldsAddDetailToThePlainWithoutChangingItsColour()
     {
@@ -96,17 +96,12 @@ public class LandUseTests
         yield return null;
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
-        var mat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath); var real = mat.GetTexture("_ScLandTex"); var realTracks = mat.GetTexture("_ScTrackTex");
-        try
-        {
-            var farmed = RenderSample.Render(cam, 960, 540);
-            mat.SetTexture("_ScLandTex", Texture2D.blackTexture); mat.SetTexture("_ScTrackTex", Texture2D.blackTexture);
-            var bare = RenderSample.Render(cam, 960, 540);
-            TestContext.WriteLine($"gradient {bare.GradientEnergy(0f, 0.5f):0.0000} -> {farmed.GradientEnergy(0f, 0.5f):0.0000}; " +
-                                  $"saturation {bare.MeanSaturation():0.000} -> {farmed.MeanSaturation():0.000}");
-            Assert.Greater(farmed.GradientEnergy(0f, 0.5f), bare.GradientEnergy(0f, 0.5f) * 1.15f);
-            Assert.AreEqual(bare.MeanSaturation(), farmed.MeanSaturation(), 0.06f);
-        }
-        finally { mat.SetTexture("_ScLandTex", real); mat.SetTexture("_ScTrackTex", realTracks); }
+        var farmed = RenderSample.Render(cam, 960, 540);
+        VisualToggles.Set("land", false);
+        var bare = RenderSample.Render(cam, 960, 540);
+        TestContext.WriteLine($"gradient {bare.GradientEnergy(0f, 0.5f):0.0000} -> {farmed.GradientEnergy(0f, 0.5f):0.0000}; " +
+                              $"saturation {bare.MeanSaturation():0.000} -> {farmed.MeanSaturation():0.000}");
+        Assert.Greater(farmed.GradientEnergy(0f, 0.5f), bare.GradientEnergy(0f, 0.5f) * 1.15f);
+        Assert.AreEqual(bare.MeanSaturation(), farmed.MeanSaturation(), 0.06f);
     }
 }

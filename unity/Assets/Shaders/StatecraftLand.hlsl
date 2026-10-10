@@ -14,6 +14,7 @@
 // - scrub: bushes of maquis (jittered dots) on the wet unfarmed ground, a faint mottle further out.
 // Every pattern fades to its mean as its period nears the pixel footprint, so the overview never shimmers.
 
+float _ScLandOn;                                     // 1 = land use drawn, 0 = the bare biome ground (the "land" toggle)
 static const float ScPaletteBrightness = 1.107;     // MapPalette.Brightness (LandUseTests checks they agree)
 static const float ScBlockM = 5200.0;          // a farm block (one angle per block)
 static const float ScStripM = 1000.0;          // strip width across the block

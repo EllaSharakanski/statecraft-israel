@@ -11,7 +11,7 @@ namespace Statecraft.Game.Map
         public static readonly int Map = Shader.PropertyToID("_ScMap"), MapOrigin = Shader.PropertyToID("_ScMapOrigin"),
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
             HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn"), Grid = Shader.PropertyToID("_ScGrid"),
-            WaterTime = Shader.PropertyToID("_ScWaterTime");
+            WaterTime = Shader.PropertyToID("_ScWaterTime"), LandOn = Shader.PropertyToID("_ScLandOn");
 
         /// <summary>Pins the water's clock (waves, surf) to the given seconds, or back to Unity's time with null: for tests and
         /// frame captures that must render chosen moments (promo-sea review I2, M5).</summary>
@@ -57,6 +57,9 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, HazeStartM));
             Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, 1f));
             assets.OnTeardown(VisualToggles.Register("grid", on => Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, on ? 1f : 0f))));
+            // Land use (issue #33, StatecraftLand.hlsl): fields, tracks, terraces and scrub; off = the bare biome ground.
+            Shader.SetGlobalFloat(LandOn, 1f);
+            assets.OnTeardown(VisualToggles.Register("land", on => Shader.SetGlobalFloat(LandOn, on ? 1f : 0f)));
             Shader.SetGlobalFloat(WaterOn, 1f);
             assets.OnTeardown(VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f)));
             assets.OnTeardown(VisualToggles.Register("haze", on =>
