@@ -14,7 +14,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-09-statecraft-israel-design.md`. **Binding scope rulings:** `docs/superpowers/plans/m3-scope-rulings.md`. **Research inputs:** `research_notes/M3 content 1950-51/facts.md` (history), `research_notes/M3 Unity tech/tech.md` (Unity facts).
 
-**How this plan was verified (2026-10-10, after review amendments round 1):** every task below was run in a scratch clone of this branch (base `7391877`), on the branch its track uses, and every code block, total and hash below was taken from that run (observed, not computed).
+**How this plan was verified (2026-10-10, after review amendments round 1):** every task below was run in a scratch clone of this branch (base `5643d4e`), on the branch its track uses, and every code block, total and hash below was taken from that run (observed, not computed).
 
 | Part | Branch it ran on | Observed |
 |---|---|---|
@@ -26,14 +26,14 @@
 | Track C, Task 22 | from merge point 1 | Unity 108, tools 98 |
 | Merge point 2 | B + C | Unity 135, sim 391, tools 98 |
 | Tasks 23–24 | on merge point 2 | Unity 138, 141 |
-| Players, at the end | the Task 24 state | WebGL (Disabled) in headless Chrome: `GOLDEN OK 1950 404b1811…`, `GOLDEN OK 1952 4c0a6859…`, `SMOKE OK 5 turns`, `PROFILE done`; Brotli build (22.3 MB, 36 files) passes the same check over `http://localhost`; macOS IL2CPP `-golden` exits 0 with both `GOLDEN OK` lines |
+| Players, at the end | the Task 24 state | WebGL (Disabled) in headless Chrome: `GOLDEN OK 1950 404b1811…`, `GOLDEN OK 1952 36640b59…`, `SMOKE OK 5 turns`, `PROFILE done`; Brotli build (22.3 MB, 36 files) passes the same check over `http://localhost`; macOS IL2CPP `-golden` exits 0 with both `GOLDEN OK` lines |
 
 ## Controller questions
 
 Each question has a recommended resolution, and the plan proceeds with it.
 
 1. **Golden check in players: a URL flag on the boot scene, read by Chrome for Testing, instead of a separate "GOLDEN" scene read by Playwright.** Ruling 5 says "a `GOLDEN OK <hash>` scene read by headless Chrome/Playwright". The Playwright npm package is not installed (only its browser cache is), and the tech notes (§4.3) allow "a separate build is not needed if the main boot reads a URL flag". *Recommendation (used):* `GameBoot` runs `GoldenCheck` when the page URL has the query parameter `golden` (WebGL) or the player gets `-golden` (macOS), and `tools/web_check.py` reads the console from the cached Chrome for Testing in `--headless=new` mode (the cached `chrome-headless-shell` reports "Your browser does not support WebGL" for Unity and has no IndexedDB). Cost if wrong: swap the reader for Playwright later; the console lines stay the same.
-2. **Amendment C2 (who carried rationing after 1 Nov 1950) is NOT applied: the research does not support it.** Notes §6 say the Supply ministry was abolished and "its powers spread to other ministries", with no ministry named, and that Dov Yosef was "back in charge" of rationing as Trade and Industry minister from 8 Oct 1951. Nothing names Geri (Trade and Industry, 1950–51) as responsible for rationing, so a `rationing_minister` term for him would be invented. A term for Yosef alone from 1951-10-08 would also need the office to exist again after `until: 1950-11-01`, which the model cannot express. *Effect today:* from 1 Nov 1950 `rationing_feeds` runs at the "no minister" competence (multiplier 0.5 instead of 0.85). *Options for the controller:* (a) research who administered rationing from Nov 1950 to Oct 1951, then add terms under a renamed office ("minister responsible for rationing") without `until`; (b) move the `rationing` policy and `rationing_feeds` effect to `trade_minister` as a game rule (not a historical claim), which changes both golden hashes; (c) accept the 0.5 until M4. *Recommendation:* (a), with (b) as the fallback if the research finds nothing; the plan as written does (c).
+2. **Resolved by the controller's C2 ruling and research Addendum 2:** `rationing_minister` is "Minister responsible for rationing", with no abolition date: Dov Yosef (Minister of Rationing and Supply) 26 Apr 1949 to 1 Nov 1950; Pinhas Lavon (Agriculture took most rationing and supply functions; he.wiki read directly, Weitz 2014 and Schiffman & Goldstein by search summary; Trade and Industry under Geri took some supply departments) 1 Nov 1950 to 8 Oct 1951; vacant from 8 Oct 1951 (no source names the minister; Deferred). Task 1 (already implemented on `m3-sim`) is unchanged: these changes live in Task 2, and Task 6's abolished-office test now uses the Ministry of War Victims.
 3. **Amendment A4 narrows ruling 5.** Ruling 5 says "no camera input while the pointer is over UI". A4 (binding) keeps keyboard pan and orbit working over the UI and blocks only the wheel and the drag. The plan follows A4.
 4. **Maimon's resignation date conflicts (4 Jan 1951 vs after the February 1951 vote).** Notes §1d mark it [C] without ranking the sources. *Used:* the footnoted he.wiki account, with the government's resignation (14 Feb 1951) as the date; the other date is in a YAML comment (ruling 3).
 5. **Resolved by the research addendum (7391877):** the Third Government had no Immigration or War Victims portfolio, so both offices end on 1951-10-08 (`until`, amendment C1), and the Immigration budget line moves to the Prime Minister (amendment C3); Weizmann's first term starts 17 Feb 1949 (election 16 Feb, oath 17 Feb on two of three sources).
@@ -550,14 +550,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 2: 1950–51 governments, Knesset, ministers and President
 
-*Track A.* Ruling 3: the end of the First Government, the Second (1 Nov 1950) and Third (8 Oct 1951) Governments with every minister, portfolio, date and dated party; the Second Knesset (30 Jul 1951, 120 seats); Weizmann's re-election; the Rationing fix (26 Apr 1949 to 1 Nov 1950); and the end of the Ministries of Immigration and of War Victims on 8 Oct 1951 (the research addendum finds no such portfolio in the Third Government). The Immigration budget line moves to the Prime Minister, who with the Jewish Agency handled absorption (addendum (a)); Task 1's loader rule refuses a budget line for an abolished office. Every value comes from `research_notes/M3 content 1950-51/facts.md` §1–3 and §6, with the notes' conflicts resolved in YAML comments. Deputy ministers and Kaplan's Deputy Prime Minister title are not modelled (notes §1c and §1e allow skipping them; Deferred).
+*Track A.* Ruling 3: the end of the First Government, the Second (1 Nov 1950) and Third (8 Oct 1951) Governments with every minister, portfolio, date and dated party; the Second Knesset (30 Jul 1951, 120 seats); Weizmann's re-election; the minister responsible for rationing (C2 ruling, research Addendum 2): `rationing_minister` is retitled "Minister responsible for rationing" with no abolition date; Dov Yosef holds it as Minister of Rationing and Supply from 26 Apr 1949 (the Rationing fix) to 1 Nov 1950, Pinhas Lavon (Agriculture, which took most rationing functions) from 1 Nov 1950 to 8 Oct 1951, and it is vacant afterwards because no source names the minister; Task 1's validation is unchanged (this office simply has no `until`); and the end of the Ministries of Immigration and of War Victims on 8 Oct 1951 (the research addendum finds no such portfolio in the Third Government). The Immigration budget line moves to the Prime Minister, who with the Jewish Agency handled absorption (addendum (a)); Task 1's loader rule refuses a budget line for an abolished office. Every value comes from `research_notes/M3 content 1950-51/facts.md` §1–3 and §6, with the notes' conflicts resolved in YAML comments. Deputy ministers and Kaplan's Deputy Prime Minister title are not modelled (notes §1c and §1e allow skipping them; Deferred).
 
 **Files:**
 - Modify: `content/events/austerity_1949.yaml`, `content/governments.yaml`, `content/legislatures.yaml`, `content/offices.yaml`, `content/parties.yaml`, `content/people.yaml`, `content/rules.yaml`, `docs/determinism.md`, `sim/Statecraft.Sim.Tests/DeterminismTests.cs`, `sim/Statecraft.Sim.Tests/RealContentTests.cs`, `sim/Statecraft.Sim/GoldenRun.cs`
 
 **Interfaces:**
 - Consumes: Task 1's `Office.Until`, `Person.Died`, overlap validation; `Offices.Holder(Content, string, DateTime)`, `Offices.Government/Legislature(Content, DateTime)`, `Offices.PartyOf(Content, Person, DateTime)`, `PoliticsSystem.CoalitionSeats(Content, DateTime)`.
-- Produces (content ids later tasks use): offices `president`, `minister_without_portfolio`, `rationing_minister` with `until: 1950-11-01`, `immigration_minister` and `war_victims_minister` with `until: 1951-10-08`; `rules.yaml` `budget_start.prime_minister: 0.15` (was `immigration_minister`); parties `democratic_list_israeli_arabs`, `progress_and_work`, `agriculture_and_development`; governments `second_government`, `third_government`; legislature `second_knesset`; people `lavon`, `geri`, `eshkol`, `dinur`, `burg`, `pinkas`, `naftali`, `weizmann`; `remez` has `died: 1951-05-19`. `GoldenRun.Hash1950` becomes `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd`.
+- Produces (content ids later tasks use): offices `president`, `minister_without_portfolio`, `rationing_minister` retitled "Minister responsible for rationing" (no `until`; holders dov_yosef 1949-04-26 to 1950-11-01, lavon 1950-11-01 to 1951-10-08, vacant from 1951-10-08), `immigration_minister` and `war_victims_minister` with `until: 1951-10-08`; `rules.yaml` `budget_start.prime_minister: 0.15` (was `immigration_minister`); parties `democratic_list_israeli_arabs`, `progress_and_work`, `agriculture_and_development`; governments `second_government`, `third_government`; legislature `second_knesset`; people `lavon`, `geri`, `eshkol`, `dinur`, `burg`, `pinkas`, `naftali`, `weizmann`; `remez` has `died: 1951-05-19`. `GoldenRun.Hash1950` becomes `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -629,7 +629,8 @@ In `sim/Statecraft.Sim.Tests/RealContentTests.cs`:
         Assert.Equal("remez", Who("education_minister", 1950, 11, 1));
         Assert.Equal("ben_gurion", Who("education_minister", 1951, 5, 19));
         Assert.Equal("dinur", Who("education_minister", 1951, 10, 8));
-        Assert.Equal("(vacant)", Who("rationing_minister", 1950, 11, 1));
+        Assert.Equal("lavon", Who("rationing_minister", 1950, 11, 1));
+        Assert.Equal("(vacant)", Who("rationing_minister", 1951, 10, 8));
         Assert.Equal("dov_yosef", Who("transportation_minister", 1951, 1, 1));
         Assert.Equal("pinkas", Who("transportation_minister", 1951, 10, 8));
         Assert.Equal("lavon", Who("agriculture_minister", 1951, 1, 1));
@@ -641,7 +642,7 @@ In `sim/Statecraft.Sim.Tests/RealContentTests.cs`:
         Assert.Equal("burg", Who("health_minister", 1951, 10, 8));
         Assert.Equal("weizmann", Who("president", 1951, 11, 19));
         Assert.Equal("yadin", Who("chief_of_staff", 1951, 12, 31));
-        Assert.Equal(new DateTime(1950, 11, 1), C.Offices.Single(o => o.Id == "rationing_minister").Until);
+        Assert.Null(C.Offices.Single(o => o.Id == "rationing_minister").Until);   // the responsibility outlived the ministry (Addendum 2)
         Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "immigration_minister").Until);
         Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "war_victims_minister").Until);
         Assert.Equal("shapira", Who("immigration_minister", 1951, 10, 7));
@@ -692,8 +693,11 @@ offices:
   - { id: transportation_minister, title: Minister of Transportation }
   - { id: welfare_minister, title: Minister of Welfare }
   - { id: education_minister, title: Minister of Education and Culture }
-  # Abolished when the Second Government took office (https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel, checked 2026-10-10).
-  - { id: rationing_minister, title: Minister of Rationing and Supply, until: 1950-11-01 }
+  # The minister responsible for rationing: the rationing policy's effects and events look this office up. Until
+  # 1 November 1950 that was the Minister of Rationing and Supply (Dov Yosef). The ministry was then abolished and its
+  # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
+  # notes, Addendum 2). From 8 October 1951 no source names the responsible minister, so the office is vacant (people.yaml).
+  - { id: rationing_minister, title: Minister responsible for rationing }
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
   - { id: minister_without_portfolio, title: Minister without Portfolio }
   - { id: president, title: President of Israel }
@@ -1047,7 +1051,8 @@ people:
     loyalty: 8
     offices:
       - { office: agriculture_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
-      # The ministry was created on 26 April 1949, the day rationing was decided, and abolished on 1 November 1950.
+      # As Minister of Rationing and Supply: the ministry was created on 26 April 1949, the day rationing was decided,
+      # and abolished on 1 November 1950.
       - { office: rationing_minister, from: 1949-04-26, to: 1950-11-01, sources: &rationing [{ url: "https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/תקופת_הצנע", checked: 2026-10-10 }] }
       - { office: transportation_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
       # en.wiki lists Trade and Industry and Justice; he.wiki lists only Trade and Industry clearly (research notes 1e).
@@ -1082,6 +1087,11 @@ people:
     loyalty: 7
     offices:
       - { office: agriculture_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
+      # Agriculture took most of the rationing and supply functions of the abolished Ministry of Rationing and Supply;
+      # Trade and Industry (Geri) took some supply departments (commodities and stock). Research notes, Addendum 2 (A1):
+      # he.wiki (read directly); Weitz 2014 and Schiffman and Goldstein (search summaries).
+      - { office: rationing_minister, from: 1950-11-01, to: 1951-10-08, sources: [{ url: "https://he.wikipedia.org/wiki/משרד_האספקה_והקיצוב", checked: 2026-10-10 }, { url: "https://in.bgu.ac.il/bgi/iyunim/24/Yechiam-Weitz.pdf", checked: 2026-10-10 }, { url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6351358", checked: 2026-10-10 }] }
+      # From 8 October 1951: no source names the responsible minister (Addendum 2: not found), so the office is vacant.
     status: fact-checked
   - id: geri
     name: Ya'akov Geri
@@ -1305,7 +1315,7 @@ git add content/events/austerity_1949.yaml \
   sim/Statecraft.Sim.Tests/RealContentTests.cs \
   sim/Statecraft.Sim/GoldenRun.cs
 git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
-git commit -m "content: 1950-51 governments, Second Knesset, ministers, President; Rationing from 1949-04-26; Immigration ends 1951-10-08
+git commit -m "content: 1950-51 governments, Second Knesset, ministers, President; rationing responsibility (Yosef, then Lavon); Immigration ends 1951-10-08
 
 Sources: research_notes/M3 content 1950-51/facts.md sections 1-3 and 6, and its Addendum. Conflicts recorded in YAML comments.
 Golden 1950 hash moves to d46ce5ff: the Immigration budget line moves to the Prime Minister.
@@ -2040,7 +2050,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `public static double EffectsSystem.Shift(Content c, GameState s, string indicator, double delta)` returns the visible change; `EventSystem` uses it (no behaviour change) and Task 8 reuses it.
   - `public static double EffectsSystem.BudgetFactor(IReadOnlyDictionary<string, double> budget, string office)` (the `GameState` overload calls it).
   - `HistoricalAI.Commands` appends `SetMobilization(rung minimum)` when the call-up is above it.
-  - `GoldenRun.Hash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00"`, `GoldenRun.Until1952 = 1952-01-01`; `Hash1950` becomes `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb`.
+  - `GoldenRun.Hash1952 = "970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a"`, `GoldenRun.Until1952 = 1952-01-01`; `Hash1950` becomes `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2303,7 +2313,7 @@ public class DeterminismTests
     }
 
     /// <summary>Same rule for the second golden run, which covers the M3 content range (to 1952-01-01).</summary>
-    public const string GoldenHash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00";
+    public const string GoldenHash1952 = "970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a";
 
     [Fact]
     public void GoldenPlaythroughTo1952HashIsFixed()
@@ -2650,7 +2660,7 @@ namespace Statecraft.Sim
         public static readonly DateTime Until1950 = new DateTime(1950, 1, 1);
 
         /// <summary>Final hash of Play(content, Until1952): the M3 content range (to 31 December 1951).</summary>
-        public const string Hash1952 = "7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00";
+        public const string Hash1952 = "970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a";
 
         public static readonly DateTime Until1952 = new DateTime(1952, 1, 1);
 
@@ -2682,7 +2692,7 @@ In `docs/determinism.md`:
 ```markdown
 |---|---|---|
 | to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a` |
 
 ```
 
@@ -2697,8 +2707,8 @@ In `docs/determinism.md`:
 ```markdown
 | M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
 | M3 Task 5 | 1950 | `9cd2f4b5` | economy calibrated (rules.yaml) and HistoricalAI sends reserves home after the armistices |
-| M3 Task 5 | 1952 | `7de4faba` | same |
-| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
+| M3 Task 5 | 1952 | `970ef315` | same |
+| M3 Task 5 | 1952 | `970ef315` | new run covering the M3 content range |
 ```
 
 - [ ] **Step 6: Run the tests and confirm they pass**
@@ -2709,7 +2719,7 @@ dotnet test sim/Statecraft.sln
 ```
 Expected: `Passed!  - Failed:     0, Passed:   335`. The calibration margins (verified): debt rises 99m over 1950–51 (Michaely 98.4m), taxes 63m a year at mid FY1950/51 (budget 60m), exports cover 12–15% of imports, reserves first run out in the turn ending 1951-11-26, and foreign inflow over 1950–51 falls inside the 1–3 band against the rise in external debt (about 2.5 times).
 
-If you change a parameter, `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 53` prints the end state: `End 1952-02-26: population 1,402,478, level 2, treasury 0.0, debt 202.3, fx -21.4, stability 0.47` and `State hash 7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00`.
+If you change a parameter, `dotnet run --project sim/Statecraft.Cli -- --auto historical --turns 53` prints the end state: `End 1952-02-26: population 1,402,478, level 2, treasury 0.0, debt 202.3, fx -21.4, stability 0.48` and `State hash 970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a`.
 
 - [ ] **Step 7: Run the Unity edit-mode tests**
 
@@ -2740,7 +2750,7 @@ git add content/rules.yaml \
 git status --short   # nothing else should be staged; build output and logs (unity-*.log) are git-ignored
 git commit -m "feat(sim): calibrate the 1950-51 economy; currency crisis cuts food imports; reserves go home; 1952 golden
 
-Golden 1950 hash moves to 9cd2f4b5 (rules and HistoricalAI demobilisation); new 1952 golden 7de4faba.
+Golden 1950 hash moves to 9cd2f4b5 (rules and HistoricalAI demobilisation); new 1952 golden 970ef315.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -2764,7 +2774,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - Rules: `attention_cost.appoint`, `appoint_stability_cost_other_party`, `appoint_stability_cost_same_party` (0..1).
   - Refusal texts (in check order): `Unknown office '<id>'`, `The office of <title> was abolished on <date>`, `You are the Prime Minister: that office is not yours to fill`, `The President is elected by the Knesset, not appointed`, `Unknown person '<id>'`, `<name> died on <date>`, `<name> is the President`, `<name> is the serving Chief of Staff`, `<name> already holds the office of <title>`, `No government is in office`, `<name> is not an IDF career officer`, `<name>'s party (<party>) is not in the coalition`.
   - An appointee who dies leaves office on the date of death (`Cabinet.Holder` falls back to the historical holder).
-  - Hashes: `Hash1950 = 9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35`, `Hash1952 = 02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` (the hash format gains the appointment fields).
+  - Hashes: `Hash1950 = 9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35`, `Hash1952 = 8db2b892cae1c4462fef93cb6a25096b953db0dd259f18551de496774722cf08` (the hash format gains the appointment fields).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2948,7 +2958,8 @@ public class CabinetTests
         var c = ContentLoader.Load(RealContentTests.ContentRoot());
         var s = new GameState { Date = new DateTime(1951, 1, 1) };
         Assert.Equal("Golda Meir is not an IDF career officer", Cabinet.Check(c, s, "chief_of_staff", "golda_meir"));
-        Assert.Equal("The office of Minister of Rationing and Supply was abolished on 1950-11-01", Cabinet.Check(c, s, "rationing_minister", "dov_yosef"));
+        Assert.Equal("The office of Minister of War Victims was abolished on 1951-10-08",
+            Cabinet.Check(c, new GameState { Date = new DateTime(1951, 11, 1) }, "war_victims_minister", "maimon"));
         Assert.Equal("Aharon Zisling's party (Mapam) is not in the coalition", Cabinet.Check(c, s, "agriculture_minister", "zisling"));
         Assert.Equal("The President is elected by the Knesset, not appointed", Cabinet.Check(c, s, "president", "sharett"));
         Assert.Null(Cabinet.Check(c, s, "agriculture_minister", "eshkol"));
@@ -3472,7 +3483,7 @@ budget_start:
 
 - [ ] **Step 4: Rebaseline both golden hashes (hash format change)**
 
-The canonical hash text gains `appt{...}under=...;`, so both runs move although no appointment is made in them. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` → `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` and `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` → `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354`. Then:
+The canonical hash text gains `appt{...}under=...;`, so both runs move although no appointment is made in them. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` → `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` and `970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a` → `8db2b892cae1c4462fef93cb6a25096b953db0dd259f18551de496774722cf08`. Then:
 
 In `docs/determinism.md`:
 
@@ -3481,7 +3492,7 @@ In `docs/determinism.md`:
 ```markdown
 |---|---|---|
 | to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9cd2f4b5dc01cf4f6159b958eac9e815e7635f4589d2822793c20c527a3333fb` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `7de4faba2a48568a812f66891db44a5035bbd4caf5a52d143b84ea3c3c4fce00` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `970ef315880c5044433c1e5b8334c92741f91b337c6d8746b50a8ef61778a43a` |
 
 ```
 
@@ -3490,22 +3501,22 @@ In `docs/determinism.md`:
 ```markdown
 |---|---|---|
 | to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `8db2b892cae1c4462fef93cb6a25096b953db0dd259f18551de496774722cf08` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
+| M3 Task 5 | 1952 | `970ef315` | new run covering the M3 content range |
 ```
 
    with
 
 ```markdown
-| M3 Task 5 | 1952 | `7de4faba` | new run covering the M3 content range |
+| M3 Task 5 | 1952 | `970ef315` | new run covering the M3 content range |
 | M3 Task 6 | 1950 | `9a546a6f` | hash format adds the player's appointments (empty in the run) |
-| M3 Task 6 | 1952 | `02dd846a` | same |
+| M3 Task 6 | 1952 | `8db2b892` | same |
 ```
 
 - [ ] **Step 5: Run the tests and confirm they pass**
@@ -4034,7 +4045,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - `public sealed class Placement { string Action; int Q; int R; DateTime Date; }`; `GameState.Placements : List<Placement>` (in `Hash()`).
   - `public static class MapActions { const string Kind = "map_action", TransitCamp = "transit_camp", Housing = "housing", MaabarotPolicy = "maabarot"; IReadOnlyList<string> Actions; int Distance(int q1, int r1, int q2, int r2); Placement? At(GameState, int q, int r); string? Check(Content, GameState, string action, int q, int r); string? Apply(Content, GameState, string action, int q, int r, List<Cause>); }`.
   - `public sealed class MapActionRule { double Cost; double Housing; double Morale; }`; rules `map_actions_from`, `map_action_max_distance`, `map_actions_per_turn` (refusal `No more than <n> map actions in one turn`), `map_actions: {transit_camp, housing}`, `attention_cost.map_action`.
-  - Hashes: `Hash1950 = 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `Hash1952 = 4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`.
+  - Hashes: `Hash1950 = 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `Hash1952 = 36640b59df6535c7f9e9aec94bc41ed62e65505544a91cbbe131bb7b5ca86bea`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4570,7 +4581,7 @@ rung_attention_step: 0.25
 
 - [ ] **Step 4: Rebaseline both golden hashes (hash format change)**
 
-The hash text gains `map[...]`. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` → `404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88` and `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` → `4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`. Then:
+The hash text gains `map[...]`. Replace in `GoldenRun.cs` and `DeterminismTests.cs`: `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` → `404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88` and `8db2b892cae1c4462fef93cb6a25096b953db0dd259f18551de496774722cf08` → `36640b59df6535c7f9e9aec94bc41ed62e65505544a91cbbe131bb7b5ca86bea`. Then:
 
 In `docs/determinism.md`:
 
@@ -4579,7 +4590,7 @@ In `docs/determinism.md`:
 ```markdown
 |---|---|---|
 | to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `9a546a6f62acdec3d3acc1621d90e9863e8689f9a199a792a458bc8f1b6a3f35` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `02dd846a0779d108937c1bbf8e7d39435f666e2443fd9178015a52c1cb2ad354` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `8db2b892cae1c4462fef93cb6a25096b953db0dd259f18551de496774722cf08` |
 
 ```
 
@@ -4588,22 +4599,22 @@ In `docs/determinism.md`:
 ```markdown
 |---|---|---|
 | to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `36640b59df6535c7f9e9aec94bc41ed62e65505544a91cbbe131bb7b5ca86bea` |
 
 ```
 
 2. Replace
 
 ```markdown
-| M3 Task 6 | 1952 | `02dd846a` | same |
+| M3 Task 6 | 1952 | `8db2b892` | same |
 ```
 
    with
 
 ```markdown
-| M3 Task 6 | 1952 | `02dd846a` | same |
+| M3 Task 6 | 1952 | `8db2b892` | same |
 | M3 Task 8 | 1950 | `404b1811` | hash format adds map placements (empty in the run) |
-| M3 Task 8 | 1952 | `4c0a6859` | same |
+| M3 Task 8 | 1952 | `36640b59` | same |
 ```
 
 - [ ] **Step 5: Run the tests and confirm they pass**
@@ -6135,8 +6146,10 @@ public class GameInputsTests
     {
         var site = StagedSite();
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish in 600 editor frames");
+        // Wall-clock budget, not a frame count: editor frames in batch mode come at an uneven rate under load.
+        var start = Time.realtimeSinceStartup;
+        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
+        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         var fetched = fetch.GetResult();
         var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
         Assert.AreEqual(disk.Map.HeightmapR16.Length, fetched.Map.HeightmapR16.Length);
@@ -6152,8 +6165,10 @@ public class GameInputsTests
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish in 600 editor frames");
+        // Wall-clock budget, not a frame count: editor frames in batch mode come at an uneven rate under load.
+        var start = Time.realtimeSinceStartup;
+        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
+        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         var ex = Assert.Throws<IOException>(() => fetch.GetResult());
         StringAssert.StartsWith("people.yaml: ", ex.Message);
         Directory.Delete(site, true);
@@ -10081,7 +10096,7 @@ Run:
 "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log; grep "BUILD " unity-build-web.log
 uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "BOOT OK"
 ```
-Expected: `BUILD Succeeded WebGL ...`, then `console: GOLDEN OK 1950 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `console: GOLDEN OK 1952 4c0a685985726cc853faf386eed35d0a79750e5063687c8f24060d999fc3254f`, `console: BOOT OK content <64 hex>`, `PASS: saw ...`, exit 0. If the page reports `BOOT FAIL Your browser does not support WebGL`, the machine has no GPU for headless Chrome: add `--swiftshader`. A `GOLDEN FAIL` line is a determinism bug, not a reason to change a constant.
+Expected: `BUILD Succeeded WebGL ...`, then `console: GOLDEN OK 1950 404b181105e6a2085ec26d10cff4e9d0ac6f8802a1e20b3a91e8fe554e1d5c88`, `console: GOLDEN OK 1952 36640b59df6535c7f9e9aec94bc41ed62e65505544a91cbbe131bb7b5ca86bea`, `console: BOOT OK content <64 hex>`, `PASS: saw ...`, exit 0. If the page reports `BOOT FAIL Your browser does not support WebGL`, the machine has no GPU for headless Chrome: add `--swiftshader`. A `GOLDEN FAIL` line is a determinism bug, not a reason to change a constant.
 
 - [ ] **Step 6: Check the golden hash in a macOS IL2CPP player**
 
@@ -10782,7 +10797,7 @@ Every spec item M3 does not finish has a home. The M3 rows of the M0–M2 Deferr
 | Content 1952–56 (New Economic Policy, the reparations Knesset vote of January 1952, the 1955 election, the Czech–Egyptian arms deal, Suez) | M4 | M3 content ends 31 Dec 1951 |
 | Deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title | Content work before M4 | Notes §1c/§1e allow skipping them in M3 |
 | Ministers of Immigration and of War Victims after 8 Oct 1951 | Content work before M4 | Both offices end on 1951-10-08 (research addendum: no such portfolio in the Third Government); re-add a term if a source shows the portfolio |
-| Who administered rationing from 1 Nov 1950 to 8 Oct 1951 (amendment C2, not applied) | Content work before M4 | Controller question 2: the notes say only that the powers were spread to other ministries |
+| Who held rationing responsibility from 8 Oct 1951 | Content work before M4 | Vacant in M3 (Addendum 2: not found). Dov Yosef as Trade and Industry minister is plausible but unsourced; next sources: Knesset plenary records 1951-52, Orit Rozin, the State Archives |
 | Economy calibration v2: GNP and national accounts (+25% 1950→51), each year's fiscal stance (the 1951 tightening), unemployment, the official and black-market price index | M4 | M3 matches the two-year debt total, the budget scale, the export/import ratio and the crisis date (all consistency anchors) and checks foreign inflow against external debt loosely; first independent anchors: GNP +25% 1950→51, FY1951/52 instalments |
 | Map-action upkeep, camp capacity and occupancy (camps that fill and empty) | M4 | M3 caps map actions at two per turn |
 | Military or economic collapse ends the state (spec §4) | M4 | Carried from M0–M2; the currency crisis now cuts food but ends nothing |
@@ -10806,12 +10821,12 @@ Run against the spec, the rulings and the code on 2026-10-10.
 - §9 M3 "HUD, Cabinet, Event and Defence screens, delivered as a browser link": Tasks 14, 19, 15, 16, then 22–24 (browser build, local verification, owner upload steps).
 - Ruling 1 screens: HUD 14, Cabinet with Appoint 19 (sim 6), Budget 17, Event card 15, Defence 16, Why 18. Diplomacy and legacy report: Deferred.
 - Ruling 2 look: Task 10 (navy, gold, serif, top bar), 15 (event card right), 20 (info panel bottom-left without yields, minimap bottom-right); M2 markers kept.
-- Ruling 3 content: governments and ministers 2, Knesset and President 2, aliyah and population 3, events 4, the Rationing fix 2, overlap validation 1; every fact sourced with `checked: 2026-10-10`; conflicts in comments.
+- Ruling 3 content: governments and ministers 2, Knesset and President 2, aliyah and population 3, events 4, the rationing responsibility 2 (Yosef, Lavon, then vacant: C2 ruling), overlap validation 1; every fact sourced with `checked: 2026-10-10`; conflicts in comments.
 - Ruling 4 sim: Appoint 6, MapAction 8 (hex rule 7), saves 9 (autosave 21), economy calibration 5, the two goldens and their sync procedure 1–8.
 - Ruling 5 platform: web input provider and manifest 12, template with 100% canvas and autosync 13, PanelSettings 10, Input System and the camera map 11, golden in WebGL and macOS IL2CPP 22, heightmapPixelError profile 24, package prune 13, Map.unity boot scene 13 and 23, Brotli 13 and 24, headless build script 13.
 - Ruling 6 hosting: release folder and local verification 24; owner upload and the save-path test plan 24 (fix in 21).
 - Spec §7 errors: refused commands show their reason (14 onward); content errors name file and field (1, 7); saves are versioned, a content mismatch warns (9, 21), autosave every turn (21).
-- Review amendments round 1: R1 (stage settings before builds, Task 13), R2 (anchor labels and a loose independent check, Task 5), R3 (President and serving Chief of Staff cannot be appointed; a dead appointee leaves office, Task 6), R4 (any autosave failure starts a new game, Task 21), R5 (explicit staging, `.meta` files listed, `unity-*.log` names), R6 (every total observed on its own branch), C1 (offices end with `until`, Task 2), C3 (no budget line for an abolished office, Tasks 1–2), C4 (Weizmann comments, Task 2), A1–A6 (Tasks 5/17, 23, 22–24, 11, 10, 8). C2 is not applied (Controller question 2).
+- Review amendments round 1: R1 (stage settings before builds, Task 13), R2 (anchor labels and a loose independent check, Task 5), R3 (President and serving Chief of Staff cannot be appointed; a dead appointee leaves office, Task 6), R4 (any autosave failure starts a new game, Task 21), R5 (explicit staging, `.meta` files listed, `unity-*.log` names), R6 (every total observed on its own branch), C1 (offices end with `until`, Task 2), C3 (no budget line for an abolished office, Tasks 1–2), C4 (Weizmann comments, Task 2), A1–A6 (Tasks 5/17, 23, 22–24, 11, 10, 8), and the controller's C2 ruling (rationing responsibility: Yosef, Lavon, then vacant; Task 2, with Task 6's abolished-office test moved to War Victims). Task 1, already implemented, is unchanged.
 - Gaps found and closed while writing: the `austerity_1949` window had to follow the Rationing fix (Task 2); deleting `SampleSceneProfile.asset` would have changed the URP look (kept, Task 13); a player build rewrites settings (Build restores compression, and the steps discard build caches).
 
 **2. Placeholder scan.** No TBD/TODO, no "similar to Task N", no step without its code. The only values left to the implementer are measurements recorded as evidence (the profile lines in Task 24, if the machine differs) and the owner's itch.io URL and test result; each has a verified value or an explicit owner field.
