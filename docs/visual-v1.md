@@ -1065,9 +1065,9 @@ What still differs:
 
 | Check | Task 7 | Round 1 | Bound |
 |---|---|---|---|
-| Foam over shallows (luma) | 0.154 | 0.196 | 0.02 |
-| Shallows over the open sea | 0.345 | 0.241 | 0.05 |
-| Dead Sea over the Mediterranean | 0.46 | 0.30 | 0.1 |
+| Foam over shallows (luma) | 0.154 | 0.180 | 0.02 |
+| Shallows over the open sea | 0.344 | 0.211 | 0.05 |
+| Dead Sea over the Mediterranean | 0.46 | 0.27 | 0.1 |
 | Diorama open sea b - r | 0.299 | 0.230 | 0.15 |
 | Haze luma shift | 0.069 | 0.034 | 0.01 |
 | Open sea pre-grade HSV saturation | 0.91 | 0.49 | < 0.7 |
