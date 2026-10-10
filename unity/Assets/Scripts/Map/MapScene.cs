@@ -152,10 +152,19 @@ namespace Statecraft.Game.Map
         /// owned by the terrain's MapRuntimeAssets, so destroying the terrain destroys it.</summary>
         void Clear()
         {
+            if (Application.isPlaying) Clear(go => { go.transform.SetParent(null); Destroy(go); });
+            else Clear(go => DestroyImmediate(go));
+        }
+
+        /// <summary>Clear with the destroy step given (test seam for the play-mode path, whose Destroy is deferred): each
+        /// child's MapRuntimeAssets teardown runs first, so it has run by the time Clear returns (review I1).</summary>
+        internal void Clear(Action<GameObject> destroy)
+        {
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
                 var go = transform.GetChild(i).gameObject;
-                if (Application.isPlaying) { go.transform.SetParent(null); Destroy(go); } else DestroyImmediate(go);
+                foreach (var assets in go.GetComponentsInChildren<MapRuntimeAssets>(true)) assets.RunTeardown();
+                destroy(go);
             }
             Terrain = null;
             Hexes = null;

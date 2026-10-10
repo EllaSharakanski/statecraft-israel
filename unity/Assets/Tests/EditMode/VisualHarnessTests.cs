@@ -4,7 +4,9 @@ using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
 using UnityEditor;
+using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 /// <summary>The visual track's instruments (plan Task 1): profile lines, flags, toggles, screenshot chunks, poses,
 /// teardown hand-off, the colour metrics and the GLES3 compile check.</summary>
@@ -103,6 +105,89 @@ public class VisualHarnessTests
         assets.OnTeardown(() => order.Add(1)); assets.OnTeardown(() => order.Add(2));
         Object.DestroyImmediate(go);
         CollectionAssert.AreEqual(new[] { 2, 1 }, order);
+    }
+
+    /// <summary>Review I1: in play mode Clear destroys the old map with a deferred Destroy, so its teardown must run before
+    /// Clear returns (not at the end of the frame, after the new map's Init has saved state); running it again on
+    /// OnDestroy does nothing (idempotent).</summary>
+    [Test]
+    public void ClearRunsTheOldMapsTeardownBeforeDestroyingItAndOnlyOnce()
+    {
+        var root = new GameObject("map"); var scene = root.AddComponent<MapScene>();
+        var child = new GameObject("terrain"); child.transform.SetParent(root.transform);
+        var assets = child.AddComponent<MapRuntimeAssets>();
+        var log = new List<string>();
+        assets.OnTeardown(() => log.Add("teardown"));
+        try
+        {
+            scene.Clear(go => log.Add("destroy " + go.name));   // the play-mode path's deferred destroy, recorded
+            CollectionAssert.AreEqual(new[] { "teardown", "destroy terrain" }, log);
+            assets.RunTeardown();
+        }
+        finally { Object.DestroyImmediate(root); }
+        CollectionAssert.AreEqual(new[] { "teardown", "destroy terrain" }, log, "RunTeardown and OnDestroy do not run it again");
+    }
+
+    /// <summary>Review M2: a throwing teardown action is logged, and the others and the owned objects are still released.</summary>
+    [Test]
+    public void AThrowingTeardownActionDoesNotStopTheOthers()
+    {
+        var go = new GameObject("assets"); var assets = go.AddComponent<MapRuntimeAssets>();
+        var owned = assets.Own(new Texture2D(1, 1));
+        var order = new List<int>();
+        assets.OnTeardown(() => order.Add(1));
+        assets.OnTeardown(() => throw new System.InvalidOperationException("boom"));
+        assets.OnTeardown(() => order.Add(3));
+        LogAssert.Expect(LogType.Exception, new Regex("boom"));
+        Object.DestroyImmediate(go);
+        CollectionAssert.AreEqual(new[] { 3, 1 }, order);
+        Assert.IsTrue(owned == null, "the owned texture is destroyed");
+    }
+
+    /// <summary>Review I2: a map's token removes only its own switch, so an old map's late teardown cannot unregister the
+    /// switch a rebuilt map registered under the same name.</summary>
+    [Test]
+    public void ARemovalTokenRemovesOnlyItsOwnSwitch()
+    {
+        var log = new List<string>();
+        var oldToken = VisualToggles.Register("grid", on => log.Add("old " + on));
+        var newToken = VisualToggles.Register("grid", on => log.Add("new " + on));
+        oldToken();
+        CollectionAssert.AreEqual(new[] { "grid" }, VisualToggles.Names.ToArray());
+        VisualToggles.Set("grid", false);
+        Assert.AreEqual("new False", log.Last());
+        newToken(); newToken();
+        CollectionAssert.IsEmpty(VisualToggles.Names);
+    }
+
+    [Test]
+    public void TheMapOwnsItsTogglesThroughItsTeardown()
+    {
+        var go = new GameObject("assets"); var assets = go.AddComponent<MapRuntimeAssets>();
+        assets.OnTeardown(VisualToggles.Register("haze", _ => { }));
+        Object.DestroyImmediate(go);
+        CollectionAssert.IsEmpty(VisualToggles.Names);
+    }
+
+    /// <summary>Review M8: undo actions an earlier Init left behind (Init called outside MapScene.Build) run on the next
+    /// Init instead of piling up.</summary>
+    [Test]
+    public void InitRunsAndClearsUndoActionsLeftByAnEarlierInit()
+    {
+        var go = new GameObject("cam", typeof(Camera)); var rig = go.AddComponent<CameraRig>();
+        int ran = 0;
+        rig.TeardownActions.Add(() => ran++);
+        try
+        {
+            rig.Init();
+            Assert.AreEqual(1, ran);
+            CollectionAssert.IsEmpty(rig.TeardownActions);
+        }
+        finally
+        {
+            if (rig.Volume != null) { Object.DestroyImmediate(rig.Volume.profile); Object.DestroyImmediate(rig.Volume.gameObject); }
+            Object.DestroyImmediate(go);
+        }
     }
 
     [Test]
