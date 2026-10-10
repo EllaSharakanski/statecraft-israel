@@ -280,15 +280,17 @@ public class HudTests
         using var ui = new UiTestKit();
         var bridge = NewBridge();
         var portraits = ScriptableObject.CreateInstance<PortraitCatalog>();
+        var owned = new System.Collections.Generic.List<System.IDisposable>();   // fix round 1: nothing outlives the test
+        T Own<T>(T d) where T : System.IDisposable { owned.Add(d); return d; }
         try
         {
-            new HudPresenter(ui.Root, bridge, Text);
-            var nav = new ScreenNav(ui.Root);
-            new EventCardPresenter(ui.Root, bridge, Text, portraits);
-            new DefencePresenter(ui.Root, bridge, Text);
-            new BudgetPresenter(ui.Root, bridge, Text);
-            new WhyPresenter(ui.Root, bridge, Text);
-            new CabinetPresenter(ui.Root, bridge, Text, portraits);
+            Own(new HudPresenter(ui.Root, bridge, Text));
+            var nav = Own(new ScreenNav(ui.Root));
+            Own(new EventCardPresenter(ui.Root, bridge, Text, portraits));
+            Own(new DefencePresenter(ui.Root, bridge, Text));
+            Own(new BudgetPresenter(ui.Root, bridge, Text));
+            Own(new WhyPresenter(ui.Root, bridge, Text));
+            Own(new CabinetPresenter(ui.Root, bridge, Text, portraits));
             DisplayStyle Shown(string screen) => ui.Q<VisualElement>("screen-" + screen).style.display.value;
             for (int turn = 0; turn < 4; turn++)
             {
@@ -310,7 +312,27 @@ public class HudTests
                 Assert.AreEqual(DisplayStyle.None, Shown(open), $"turn {turn}: {open} did not close after End Turn");
             }
         }
-        finally { Object.DestroyImmediate(portraits); }
+        finally
+        {
+            DisposeAll(owned);
+            Object.DestroyImmediate(portraits);
+        }
+        // Every presenter let go of the bridge and the buttons: a later turn writes nothing and End Turn does nothing.
+        ui.Q<Label>("turn").text = "untouched";
+        ui.Q<Label>("cabinet-coalition").text = "untouched";
+        bridge.EndTurn();
+        var turnAfter = bridge.State.Turn;
+        ui.Press("end-turn");
+        Assert.AreEqual("untouched", ui.Q<Label>("turn").text, "HudPresenter still listens");
+        Assert.AreEqual("untouched", ui.Q<Label>("cabinet-coalition").text, "CabinetPresenter still listens");
+        Assert.AreEqual(turnAfter, bridge.State.Turn, "End Turn is still wired");
+    }
+
+    /// <summary>Disposes test-owned presenters newest first, as GameRoot does.</summary>
+    static void DisposeAll(System.Collections.Generic.List<System.IDisposable> owned)
+    {
+        for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
+        owned.Clear();
     }
 
     /// <summary>Fix round 1, I2: the top-bar changes carry their unit: IL for the treasury, $ for foreign currency, % for
