@@ -10,7 +10,7 @@ namespace Statecraft.Game.Map
     {
         public const double KmPerDegLat = 110.57, KmPerDegLonEq = 111.32;   // tools/geo.py
 
-        public static double KmPerDegLon(double lat0, double lat1) => KmPerDegLonEq * Math.Cos((lat0 + lat1) / 2 * Math.PI / 180);
+        public static double KmPerDegLon(double lat0, double lat1) => KmPerDegLonEq * Math.Cos((lat0 + lat1) / 2 * (Math.PI / 180));   // x * (pi/180) is how Python's math.radians computes it, bit for bit
 
         public static (int q, int r) FromLonLat(double lon, double lat, HexBounds b, double hexSizeKm)
         {

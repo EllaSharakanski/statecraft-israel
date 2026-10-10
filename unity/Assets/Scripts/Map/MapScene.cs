@@ -68,6 +68,7 @@ namespace Statecraft.Game.Map
                 if (Application.isPlaying) { go.transform.SetParent(null); Destroy(go); } else DestroyImmediate(go);
             }
             Terrain = null;
+            Hexes = null;
         }
     }
 }

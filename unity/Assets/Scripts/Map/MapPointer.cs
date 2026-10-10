@@ -24,10 +24,12 @@ namespace Statecraft.Game.Map
         /// uses), otherwise the hex under the pointer is raised as HexClicked. Returns whether a hex was picked.</summary>
         public bool HandleClick(Vector2 pos)
         {
+            if (IsOverUi != null && IsOverUi(pos)) return false;       // the UI is asked first, whatever else is missing
             if (Map == null || Map.Terrain == null) return false;
-            if (IsOverUi != null && IsOverUi(pos)) return false;
             var cam = Camera.main;
-            if (cam == null || !Physics.Raycast(cam.ScreenPointToRay(pos), out var hit, 1_000_000f)) return false;
+            var collider = Map.Terrain.GetComponent<TerrainCollider>();
+            // only the terrain's own collider: other colliders (markers, future props) never decide which hex is clicked
+            if (cam == null || collider == null || !collider.Raycast(cam.ScreenPointToRay(pos), out var hit, 1_000_000f)) return false;
             var hex = Pick(Map, hit.point);
             HexClicked?.Invoke(hex.q, hex.r);
             return true;

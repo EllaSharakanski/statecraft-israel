@@ -9,6 +9,7 @@ using Statecraft.Sim;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 
 public class MapActionUiTests
@@ -169,21 +170,164 @@ public class MapActionUiTests
         Assert.AreEqual(MapActions.Check(C, bridge.State, MapActions.Housing, tlv.Q, tlv.R), ui.Q<Label>("info-reason").text);
     }
 
-    [Test]
-    public void TheMinimapClicksAndFramesTheView()
+    [UnityTest]
+    public System.Collections.IEnumerator AClickOnTheMinimapMapsToTheDrawnMapNotTheLetterbox()
     {
         using var ui = new UiTestKit();
         using var mini = new MinimapPresenter(ui.Root, Hexes);
+        var image = ui.Q<VisualElement>("minimap-image");
+        for (int i = 0; i < 30 && !(image.layout.width > 0 && Mathf.Abs(image.layout.width / image.layout.height - (float)mini.Texture.width / mini.Texture.height) < 0.01f); i++) yield return null;
+        Assert.Greater(image.layout.width, 0f);
+        // the element is exactly as big as the picture (aspect of the texture), so there is no unused strip inside it
+        Assert.AreEqual((float)mini.Texture.width / mini.Texture.height, image.layout.width / image.layout.height, 0.01f);
         (double lon, double lat)? clicked = null;
         mini.Clicked += (lon, lat) => clicked = (lon, lat);
-        var (lon0, lat0) = mini.ToLonLat(0, 0);
-        Assert.AreEqual(Hexes.bounds.lon0, lon0, 1e-9); Assert.AreEqual(Hexes.bounds.lat1, lat0, 1e-9);   // top-left is north-west
-        var (lon1, lat1) = mini.ToLonLat(1, 1);
-        Assert.AreEqual(Hexes.bounds.lon1, lon1, 1e-9); Assert.AreEqual(Hexes.bounds.lat0, lat1, 1e-9);
-        var f = new GeoFrame(Hexes.bounds.lon0, Hexes.bounds.lon1, Hexes.bounds.lat0, Hexes.bounds.lat1, 161530f, 431220f);
+        var b = Hexes.bounds;
+        // a click a quarter of the way across and a quarter of the way down the visible map
+        var local = new Vector2(image.layout.width * 0.25f, image.layout.height * 0.25f);
+        using (var e = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 0, mousePosition = image.LocalToWorld(local) }))
+        { e.target = image; image.SendEvent(e); }
+        Assert.IsNotNull(clicked);
+        Assert.AreEqual(b.lon0 + 0.25 * (b.lon1 - b.lon0), clicked!.Value.lon, 1e-6);
+        Assert.AreEqual(b.lat1 - 0.25 * (b.lat1 - b.lat0), clicked.Value.lat, 1e-6);
+        clicked = null;
+        using (var e = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 1, mousePosition = image.LocalToWorld(local) }))
+        { e.target = image; image.SendEvent(e); }
+        Assert.IsNull(clicked, "only the left button clicks");
+    }
+
+    [UnityTest]
+    public System.Collections.IEnumerator TheViewFrameLiesInsideTheDrawnMap()
+    {
+        using var ui = new UiTestKit();
+        using var mini = new MinimapPresenter(ui.Root, Hexes);
+        var image = ui.Q<VisualElement>("minimap-image");
+        for (int i = 0; i < 30 && !(image.layout.width > 0); i++) yield return null;
+        var b = Hexes.bounds;
+        var f = new GeoFrame(b.lon0, b.lon1, b.lat0, b.lat1, 161530f, 431220f);
         mini.SetView(f, f.ToWorld(34.95, 31.95, 0), 20000f);
-        Assert.AreEqual(LengthUnit.Percent, ui.Q<VisualElement>("minimap-view").style.left.value.unit);
-        Assert.IsNull(clicked);
+        yield return null;
+        var view = ui.Q<VisualElement>("minimap-view");
+        Assert.AreEqual(LengthUnit.Percent, view.style.left.value.unit);
+        Assert.GreaterOrEqual(view.style.left.value.value, 0f);
+        Assert.GreaterOrEqual(view.style.top.value.value, 0f);
+        Assert.LessOrEqual(view.style.left.value.value + view.style.width.value.value, 100f);
+        Assert.LessOrEqual(view.style.top.value.value + view.style.height.value.value, 100f);
+        // a view at the very edge stays inside the picture
+        mini.SetView(f, f.ToWorld(b.lon0, b.lat0, 0), 20000f);
+        Assert.GreaterOrEqual(view.style.left.value.value, 0f);
+        Assert.GreaterOrEqual(view.style.top.value.value, 0f);
+        Assert.AreSame(image, view.parent, "the frame is positioned in the picture's own coordinates");
+    }
+
+    static MapScene BuildMap()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
+        var map = new GameObject("MapScene").AddComponent<MapScene>();
+        map.Configure(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"),
+            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"),
+            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"));
+        map.Build();
+        Physics.SyncTransforms();
+        return map;
+    }
+
+    static bool Down(MapScene map, double lon, double lat, out RaycastHit hit)
+    {
+        var from = map.Frame.ToWorld(lon, lat, 100_000f);
+        return map.Terrain.GetComponent<TerrainCollider>().Raycast(new Ray(from, Vector3.down), out hit, 200_000f);
+    }
+
+    [Test]
+    public void RaysDownOntoTheTerrainPickTheRightHexes()
+    {
+        var map = BuildMap();
+        try
+        {
+            var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
+            var a = C.HexAt(tlv.Q, tlv.R)!;
+            Assert.IsTrue(Down(map, a.Lon, a.Lat, out var hit));
+            Assert.AreEqual((tlv.Q, tlv.R), MapPointer.Pick(map, hit.point), "Tel Aviv's hex centre");
+
+            // two points 200 m either side of the middle of the edge Tel Aviv's hex shares with its eastern neighbour
+            var b = C.HexAt(tlv.Q + 1, tlv.R)!;
+            var wa = map.Frame.ToWorld(a.Lon, a.Lat, 0); var wb = map.Frame.ToWorld(b.Lon, b.Lat, 0);
+            var mid = (wa + wb) / 2; var dir = (wb - wa).normalized;
+            foreach (var (side, expected) in new[] { (-1f, (tlv.Q, tlv.R)), (1f, (tlv.Q + 1, tlv.R)) })
+            {
+                var (lon, lat) = map.Frame.ToLonLat(mid + dir * 200f * side);
+                Assert.IsTrue(Down(map, lon, lat, out hit));
+                Assert.AreEqual(expected, MapPointer.Pick(map, hit.point), "side " + side);
+            }
+
+            Assert.IsTrue(Down(map, 34.30, 32.60, out hit));
+            var seaHex = MapPointer.Pick(map, hit.point);
+            Assert.IsFalse(C.HexAt(seaHex.q, seaHex.r)!.Land, "the Mediterranean");
+
+            var f = map.Frame; const double inset = 0.005;
+            foreach (var (lon, lat) in new[] { (f.Lon0 + inset, f.Lat0 + inset), (f.Lon1 - inset, f.Lat0 + inset), (f.Lon0 + inset, f.Lat1 - inset), (f.Lon1 - inset, f.Lat1 - inset) })
+            {
+                Assert.IsTrue(Down(map, lon, lat, out hit), $"a ray reaches the terrain at ({lon}, {lat})");
+                var corner = MapPointer.Pick(map, hit.point);
+                Assert.AreEqual(HexPicker.FromLonLat(lon, lat, map.Hexes.bounds, map.Hexes.hex_size_km), corner);
+            }
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); }
+    }
+
+    [Test]
+    public void AClickOverTheUiNeverReachesTheMapAndOtherwiseHitsTheHexUnderTheCamera()
+    {
+        var map = BuildMap();
+        try
+        {
+            var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
+            var hex = C.HexAt(tlv.Q, tlv.R)!;
+            var ground = map.Frame.ToWorld(hex.Lon, hex.Lat, 0);
+            var cam = Camera.main!;
+            cam.transform.position = new Vector3(ground.x, 50_000f, ground.z);
+            cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.farClipPlane = 200_000f;
+            var pointer = new GameObject("Pointer").AddComponent<MapPointer>();
+            pointer.Map = map;
+            var picked = new System.Collections.Generic.List<(int, int)>();
+            pointer.HexClicked += (q, r) => picked.Add((q, r));
+            var centre = new Vector2(cam.pixelWidth / 2f, cam.pixelHeight / 2f);
+
+            pointer.IsOverUi = _ => false;
+            Assert.IsTrue(pointer.HandleClick(centre));
+            Assert.AreEqual(new[] { (tlv.Q, tlv.R) }, picked);
+
+            picked.Clear();
+            pointer.IsOverUi = _ => true;
+            Assert.IsFalse(pointer.HandleClick(centre));
+            Assert.IsEmpty(picked);
+
+            pointer.Map = null;                                          // the UI is asked first, even with no map
+            bool asked = false; pointer.IsOverUi = _ => { asked = true; return true; };
+            Assert.IsFalse(pointer.HandleClick(centre));
+            Assert.IsTrue(asked);
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); }
+    }
+
+    [Test]
+    public void AMissingRuleShowsNoFalseCost()
+    {
+        using var ui = new UiTestKit();
+        var bridge = At(new DateTime(1950, 8, 1));
+        var info = Panel(ui, bridge);
+        var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
+        var rule = C.Rules.MapActions[MapActions.Housing];
+        C.Rules.MapActions.Remove(MapActions.Housing);
+        try
+        {
+            info.Show(tlv.Q, tlv.R);
+            Assert.AreEqual("Build housing", ui.Q<Button>("build-housing").text);
+            Assert.IsFalse(ui.Q<Button>("build-housing").enabledSelf);
+        }
+        finally { C.Rules.MapActions[MapActions.Housing] = rule; }
     }
 
     [Test]
@@ -202,23 +346,5 @@ public class MapActionUiTests
         var tex = mini.Texture;
         mini.Dispose();
         Assert.IsTrue(tex == null, "the texture is destroyed");
-    }
-
-    [Test]
-    public void AClickOverTheUiNeverReachesTheMap()
-    {
-        var go = new GameObject("PointerTest");
-        try
-        {
-            var pointer = go.AddComponent<MapPointer>();
-            int hexClicks = 0;
-            pointer.HexClicked += (q, r) => hexClicks++;
-            pointer.IsOverUi = _ => true;
-            Assert.IsFalse(pointer.HandleClick(new Vector2(10, 10)));
-            Assert.AreEqual(0, hexClicks);
-            pointer.IsOverUi = _ => false;
-            Assert.IsFalse(pointer.HandleClick(new Vector2(10, 10)), "no map, camera or terrain: nothing is picked");
-        }
-        finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 }
