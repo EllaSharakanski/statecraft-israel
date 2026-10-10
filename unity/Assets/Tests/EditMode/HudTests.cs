@@ -377,4 +377,28 @@ public class HudTests
         Assert.AreEqual(Title(PlayerText.Target(C, "intl_standing")), Caption("meter-standing"));
         Assert.AreEqual(Title(PlayerText.Target(C, "fx_reserves")), Caption("meter-fx"));
     }
+
+    /// <summary>Fix round 2 (R2-3, playtest 1 item 11): two Submit events on the Defence button within one frame (a
+    /// double click, or a click plus Enter) each toggle the screen, as ScreenNav documents: no debounce. From closed the
+    /// result is closed, from open it is open; the same input always gives the same state.</summary>
+    [Test]
+    public void TwoPressesInOneFrameToggleTwice()
+    {
+        using var ui = new UiTestKit();
+        var nav = new ScreenNav(ui.Root);
+        try
+        {
+            var defence = ui.Q<Button>("nav-defence");
+            var frame = Time.frameCount;
+            UiTestKit.Press(defence); UiTestKit.Press(defence);
+            Assert.AreEqual(frame, Time.frameCount, "both presses in the same frame");
+            Assert.IsNull(nav.Current, "closed -> open -> closed");
+            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("screen-defence").style.display.value);
+            UiTestKit.Press(defence);                                   // open it
+            UiTestKit.Press(defence); UiTestKit.Press(defence);
+            Assert.AreEqual("defence", nav.Current, "open -> closed -> open");
+            Assert.AreEqual(DisplayStyle.Flex, ui.Q<VisualElement>("screen-defence").style.display.value);
+        }
+        finally { nav.Dispose(); }
+    }
 }
