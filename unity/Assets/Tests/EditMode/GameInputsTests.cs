@@ -255,15 +255,18 @@ public class GameInputsTests
     {
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
-        using (var server = new FlakySite(site, new Dictionary<string, (string, int)>()))
+        try
         {
-            var fetch = GameInputs.FetchAsync(server.BaseUrl).GetAwaiter();
-            yield return Await(fetch);
-            StringAssert.StartsWith("people.yaml: ", Assert.Throws<IOException>(() => fetch.GetResult()).Message);
-            Assert.AreEqual(1, server.Hits("content/people.yaml"));
-            Assert.AreEqual(0, GameInputs.OpenRequests);
+            using (var server = new FlakySite(site, new Dictionary<string, (string, int)>()))
+            {
+                var fetch = GameInputs.FetchAsync(server.BaseUrl).GetAwaiter();
+                yield return Await(fetch);
+                StringAssert.StartsWith("people.yaml: ", Assert.Throws<IOException>(() => fetch.GetResult()).Message);
+                Assert.AreEqual(1, server.Hits("content/people.yaml"));
+                Assert.AreEqual(0, GameInputs.OpenRequests);
+            }
         }
-        Directory.Delete(site, true);
+        finally { Directory.Delete(site, true); }
     }
 
     [Test]
