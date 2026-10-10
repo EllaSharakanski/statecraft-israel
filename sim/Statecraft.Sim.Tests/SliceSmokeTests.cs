@@ -240,18 +240,7 @@ public class SliceSmokeTests
         var clock = Stopwatch.StartNew();
         var run = Play(Real, Historical, reload: true, PlayerTextTests.LeakGuard(Real));
         AssertClean("historical", run, Play(Real, Historical, reload: false, guard: null));
-        // HistoricalAI does not check attention: on 27 May 1949 it orders a call-up it cannot afford. The UI's queue refuses
-        // that order (the golden run hands it to Step, which refunds and refuses it, changing nothing), so the hash agrees.
-        Assert.Equal(new[] { "turn 33 (27 May 1949): set_mobilization needs 1.3 attention, 0.3 left" }, run.QueueRefusals.ToArray());
-        var golden = Simulation.NewGame(Real, GoldenRun.Seed, Mode.Historical);
-        var stepRefusals = new List<string>();
-        while (golden.Date < GoldenRun.Until1952 && golden.GameOver == null)
-        {
-            var r = Simulation.Step(Real, golden, HistoricalAI.Commands(Real, golden));
-            stepRefusals.AddRange(r.Rejected.Select(x => $"turn {r.State.Turn}: {x.Command.Kind}: {x.Reason}"));
-            golden = r.State;
-        }
-        Assert.Equal(new[] { "turn 33: set_mobilization: Not enough attention (need 1.3, have 0.3)" }, stepRefusals.ToArray());
+        Assert.True(run.QueueRefusals.Count == 0, "HistoricalAI sent an order the UI would refuse:\n" + string.Join("\n", run.QueueRefusals));
         Assert.Equal(GoldenRun.Hash1952, run.Final.Hash());
         Assert.True(clock.Elapsed < TimeSpan.FromMinutes(1), $"took {clock.Elapsed}");
     }

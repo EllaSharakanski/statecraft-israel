@@ -18,3 +18,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Unity-MCP 0.93.3 (`com.ivanmurzak.unity.mcp`, from OpenUPM) as the standard AI-agent bridge in the editor, local
   Custom mode with token auth only (held by `UnityMcpGuard`). It stays offline in batch mode, opens no window there, and is
   left out of player builds.
+
+### Changed
+- The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
+  so the sim never has to refuse one; the golden playthroughs are unchanged.

@@ -251,6 +251,10 @@ options:
         var c = WithEvents();
         var s = Simulation.NewGame(c, 42, Mode.Historical);
         Assert.Equal(new[] { "raid", "shortage" }, s.PendingEvents);
+        // 3 attention and each choice costs 2: like the UI's queue, it sends only the choice it can afford.
+        var affordable = HistoricalAI.Commands(c, s).Cast<ChooseEventOption>().ToList();
+        Assert.Equal(new[] { ("raid", "hold") }, affordable.Select(x => (x.EventId, x.OptionId)));
+        s.Attention = 10;
         var cmds = HistoricalAI.Commands(c, s).Cast<ChooseEventOption>().ToList();
         Assert.Equal(new[] { ("raid", "hold"), ("shortage", "import") }, cmds.Select(x => (x.EventId, x.OptionId)));
     }
@@ -260,7 +264,8 @@ options:
     {
         var c = WithEvents();
         var s0 = Simulation.NewGame(c, 42, Mode.Historical);
-        var r = Simulation.Step(c, s0, HistoricalAI.Commands(c, s0));   // 3 attention, each choice costs 2
+        var both = new Command[] { new ChooseEventOption("raid", "hold"), new ChooseEventOption("shortage", "import") };
+        var r = Simulation.Step(c, s0, both);   // 3 attention, each choice costs 2
         Assert.StartsWith("Not enough attention", r.Rejected.Single().Reason);
         Assert.Empty(r.State.PendingEvents);
         Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Chosen: "));
