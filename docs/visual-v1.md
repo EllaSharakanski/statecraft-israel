@@ -44,6 +44,18 @@ Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DP
 - boot: each span (`map_build_ms` and `first_frame_ms`, median of 3, at `--cpu 1` and at `--cpu 4`) grows by at most
   max(300 ms, 50% of its Task 1 baseline): the tool's default when `--budget` is not given (controller ruling 3).
 
+## GLES3 check: the `require` allowlist (Task 3 Step 0)
+`ShaderChecks.GlslErrors` fails any `#extension X : require` not in `ShaderChecks.AllowedRequires` (default-deny). An
+entry is added only after a WebGL 2 `compileShader` of a shader carrying that line succeeds in headless Chrome.
+- Report (`-executeMethod Gles3Report.Run`, 2026-10-10): URP Lit, URP Terrain Lit and `Statecraft/HexSelection` show
+  **0 errors and no `require` line**, so `AllowedRequires` stays **empty**. Running the report exposed a harness bug, fixed
+  here: `Gles3Errors` looped over `SubshaderCount` but indexed `GetSerializedSubshader`. URP Lit has 2 subshaders and 1
+  serialized one, so the report threw. The loop now uses `SerializedSubshaderCount`.
+- Probe: full Chrome 153's `--headless=new --dump-dom` never exits on this Mac, so the probe runs in Playwright's
+  `chrome-headless-shell` (Chrome for Testing 149.0.7827.55, `--use-angle=swiftshader`). Two references both returned
+  `REQUIRE FAILS ... extension is not supported`: `GL_EXT_shader_non_constant_global_initializers` (the plan's example)
+  and `GL_EXT_texture_buffer`. So a shader that requires either cannot run on the web tier.
+
 ## Baseline (Task 1, before any visual change; re-recorded in fix round 1)
 Viewport fixed to 1920x1080 at DPR 1 over CDP; Chrome kept awake; build from `0b6058e` (harness only).
 

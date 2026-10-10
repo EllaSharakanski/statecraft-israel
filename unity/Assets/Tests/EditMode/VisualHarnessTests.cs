@@ -265,6 +265,21 @@ public class VisualHarnessTests
         finally { Object.DestroyImmediate(shader); }
     }
 
+    [Test]
+    public void AnAllowedRequireIsAcceptedAndAnUnknownOneFailsWithHowToAddIt()
+    {
+        const string glsl = "#version 300 es\n#extension GL_EXT_demo_allowed : require\nvoid main() {}";
+        Assert.IsEmpty(ShaderChecks.GlslErrors(glsl, new HashSet<string> { "GL_EXT_demo_allowed" }), "an allowed require passes");
+        var errors = ShaderChecks.GlslErrors(glsl, new HashSet<string>());
+        Assert.AreEqual(1, errors.Count, string.Join("\n", errors));
+        StringAssert.Contains("GL_EXT_demo_allowed", errors[0]);
+        StringAssert.Contains("AllowedRequires", errors[0], "the message says where to add it");
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_other : require\nvoid main() {}",
+            new HashSet<string> { "GL_EXT_demo_allowed" }), "allowing one extension allows no other");
+        Assert.IsEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_demo_allowed : enable\nvoid main() {}", new HashSet<string>()),
+            "enable and warn never fail");
+    }
+
     /// <summary>Review M6: the first pose's first runs were noisier (a cold start), so before the first pose every
     /// configuration runs once for WarmupFrames, unmeasured; then each pose runs every configuration Repeats times.</summary>
     [Test]
