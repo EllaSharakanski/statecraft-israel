@@ -19,7 +19,10 @@ namespace Statecraft.Game.Map
         /// diorama at the promo's 0.145 with nothing left for Track B's later haze and palette work. Each unit is about 0.003
         /// of frame warmth, so 5 aims the merge at about 0.133.</summary>
         public const float Temperature = 5f;
-        public const float PostExposure = 0.15f, Contrast = 14f, Saturation = 16f, Tint = 2f;
+        /// <summary>Saturation 0, not Task 4's 16 (merge-point carry, review I1): with Track B's palette the merged WebGL
+        /// diorama02 measured 0.53 against the promo's 0.43 at 16; the bar is promo + 0.05 (docs/visual-v1.md "Merge point").</summary>
+        public const float Saturation = 0f;
+        public const float PostExposure = 0.15f, Contrast = 14f, Tint = 2f;
         public const float SplitBalance = -15f, VignetteIntensity = 0.26f, VignetteSmoothness = 0.45f;
         public static readonly Color SplitShadows = new Color(0.36f, 0.52f, 0.60f);
         public static readonly Color SplitHighlights = new Color(0.96f, 0.78f, 0.55f);
