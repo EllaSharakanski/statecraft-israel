@@ -36,3 +36,4 @@ unity-*.log
 captures/
 unity/Assets/StreamingAssets/content/
 unity/Assets/StreamingAssets/content.meta
+unity/Builds/
