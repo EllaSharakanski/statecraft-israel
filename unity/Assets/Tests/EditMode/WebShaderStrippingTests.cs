@@ -1,13 +1,15 @@
 #nullable enable
-using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using NUnit.Framework;
 using UnityEditor.Build;
-using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 
-/// <summary>Playtest 1, item 12: the three hidden URP utility shaders that WebGL 2 cannot run, and that this build never
-/// draws with, are stripped from WebGL builds only; every other shader and every other platform is left alone.</summary>
+/// <summary>Playtest 1, item 12 (fix round 1, M1): the three hidden URP utility shaders that GLES3 (WebGL 2) cannot run,
+/// and that this build never draws with, lose their GLES3 variants only; other graphics APIs (WebGPU, Metal) and every
+/// other shader keep theirs.</summary>
 public class WebShaderStrippingTests
 {
     // Editor code lives in Assembly-CSharp-Editor, which a test assembly cannot reference (as in PortraitImportTests).
@@ -21,8 +23,15 @@ public class WebShaderStrippingTests
         }
     }
 
-    static bool Strips(BuildTarget target, string name) =>
-        (bool)Stripper.GetMethod("Strips", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { target, name })!;
+    /// <summary>Runs the stripper's own filter (the method OnProcessShader calls) over variants given by platform.</summary>
+    static List<ShaderCompilerPlatform> Filter(string shader, params ShaderCompilerPlatform[] variants)
+    {
+        var data = new List<ShaderCompilerPlatform>(variants);
+        var filter = Stripper.GetMethod("Filter", BindingFlags.Public | BindingFlags.Static)!.MakeGenericMethod(typeof(ShaderCompilerPlatform));
+        Func<ShaderCompilerPlatform, ShaderCompilerPlatform> platform = p => p;
+        filter.Invoke(null, new object[] { shader, data, platform });
+        return data;
+    }
 
     [Test]
     public void ItIsAShaderPreprocessor() => Assert.IsTrue(typeof(IPreprocessShaders).IsAssignableFrom(Stripper));
@@ -30,16 +39,20 @@ public class WebShaderStrippingTests
     [TestCase("Hidden/CoreSRP/CoreCopy")]
     [TestCase("Hidden/Universal Render Pipeline/StencilDitherMaskSeed")]
     [TestCase("Hidden/Universal/HDRDebugView")]
-    public void TheUnsupportedUtilityShadersAreStrippedForWebGLOnly(string name)
+    public void OnlyTheGles3VariantsOfTheUnsupportedShadersAreStripped(string name)
     {
         Assert.IsNotNull(Shader.Find(name), name + " exists (URP renamed it?)");
-        Assert.IsTrue(Strips(BuildTarget.WebGL, name));
-        Assert.IsFalse(Strips(BuildTarget.StandaloneOSX, name));
+        var left = Filter(name, ShaderCompilerPlatform.GLES3x, ShaderCompilerPlatform.WebGPU, ShaderCompilerPlatform.GLES3x, ShaderCompilerPlatform.Metal);
+        CollectionAssert.AreEqual(new[] { ShaderCompilerPlatform.WebGPU, ShaderCompilerPlatform.Metal }, left);
     }
 
     [TestCase("Hidden/Universal Render Pipeline/Blit")]
     [TestCase("Hidden/Universal/CoreBlit")]
     [TestCase("Universal Render Pipeline/Unlit")]
     [TestCase("Universal Render Pipeline/Terrain/Lit")]
-    public void EveryOtherShaderIsKept(string name) => Assert.IsFalse(Strips(BuildTarget.WebGL, name));
+    public void EveryOtherShaderIsKept(string name)
+    {
+        var all = new[] { ShaderCompilerPlatform.GLES3x, ShaderCompilerPlatform.WebGPU, ShaderCompilerPlatform.Metal };
+        CollectionAssert.AreEqual(all, Filter(name, all));
+    }
 }
