@@ -8,7 +8,13 @@ namespace Statecraft.Sim
 
     public sealed class Source { public string Url { get; set; } = ""; public DateTime Checked { get; set; } }
 
-    public sealed class Office { public string Id { get; set; } = ""; public string Title { get; set; } = ""; }
+    public sealed class Office
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        /// <summary>Day the office was abolished (exclusive end, like a term's `to`); null while it still exists.</summary>
+        public DateTime? Until { get; set; }
+    }
 
     public sealed class Party { public string Id { get; set; } = ""; public string Name { get; set; } = ""; }
 
@@ -31,6 +37,8 @@ namespace Statecraft.Sim
         public string NameHe { get; set; } = "";
         /// <summary>Required (null only when missing, which is a load error): a living person is excluded from release builds.</summary>
         public bool? Living { get; set; }
+        /// <summary>Date of death, when it falls inside the content range: every term must end by then.</summary>
+        public DateTime? Died { get; set; }
         public int Competence { get; set; }
         public int Loyalty { get; set; }
         public string Party { get; set; } = "";

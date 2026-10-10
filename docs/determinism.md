@@ -12,24 +12,32 @@ The simulation must produce the same state, bit for bit, on .NET, Unity Mono and
 - **Canonical hash:** `GameState.Hash()` is SHA-256 over a canonical text. Keys are sorted ordinally. Doubles are
   written as IEEE bit patterns, with -0.0 written as 0.0. Culture is invariant.
 
-## Golden playthrough
+## Golden playthroughs
 
-The playthrough loads the real `content/` and calls `Simulation.NewGame(content, 1948, Mode.Historical)`. It then
-steps with `HistoricalAI.Commands` until `Date >= 1950-01-01`; with the current rules this ends on 1950-02-26 at
-turn 45. The final `GameState.Hash()` must equal:
+`Statecraft.Sim.GoldenRun.Play(content, until)` starts `Simulation.NewGame(content, GoldenRun.Seed, Mode.Historical)`
+with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `HistoricalAI.Commands` until `Date >= until`
+(or the game ends, or 1000 turns pass). Each run's final `GameState.Hash()` is pinned:
 
-```
-eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9
-```
+| Run | Ends | Hash |
+|---|---|---|
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` |
 
-The constant is asserted in two places:
-- `sim/Statecraft.Sim.Tests/DeterminismTests.cs` (`GoldenHash`), on .NET.
-- `unity/Assets/Tests/EditMode/SimSmokeTests.cs` (`GoldenHash`), inside Unity (plan Task 23).
+Each constant is written in three places that must agree:
+- `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
+- `sim/Statecraft.Sim.Tests/DeterminismTests.cs`, which pins the value on .NET and asserts the library constant equals it;
+- this file.
 
-So far the hash is verified on .NET and Unity editor Mono; IL2CPP/WebGL pending M3 (the first player build asserts it
-in a macOS IL2CPP player and a WebGL player).
+`unity/Assets/Tests/EditMode/SimSmokeTests.cs` runs the same playthroughs inside Unity against `GoldenRun`'s constants
+(run `tools/build_sim_for_unity.sh` first so Unity has the current DLLs).
 
-**Any change to this hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
-content in `content/`, or the hash format. When it happens, update the constant here, in `DeterminismTests.cs` and in
-`SimSmokeTests.cs`, all in the same commit, and say in the commit message why the hash moved. If the hash changes and
-you did not mean to change rules or content, treat it as a determinism bug.
+Verified on .NET and Unity editor Mono. IL2CPP and WebGL: pending (M3 Task 22 checks both players).
+
+**Any change to a golden hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
+content in `content/`, or the hash format. When it happens, update every place above in the same commit, add a row to
+the history below, and say in the commit message why the hash moved. If a hash changes and you did not mean to change
+rules or content, treat it as a determinism bug.
+
+## Rebaseline history
+
+| Plan task | Run | New hash (first 8) | Why |
+|---|---|---|---|

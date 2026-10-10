@@ -172,6 +172,21 @@ namespace Statecraft.Sim
             if (to.HasValue && to.Value <= from) throw new ContentException(file, path + ".to", FormattableString.Invariant($"must be after from ({from:yyyy-MM-dd})"));
         }
 
+        /// <summary>Only one legislature sits, and one government holds office, on any date: "which body sat on this
+        /// date" must never be ambiguous. Periods are [from, to); sorted by from, each must end on or before the next
+        /// one starts (an open-ended period can only be the last).</summary>
+        static void NoOverlap(string file, string list, IEnumerable<(string id, DateTime from, DateTime? to)> periods)
+        {
+            var sorted = periods.OrderBy(p => p.from).ThenBy(p => p.id, StringComparer.Ordinal).ToList();
+            for (int i = 1; i < sorted.Count; i++)
+            {
+                var (prev, next) = (sorted[i - 1], sorted[i]);
+                if (!prev.to.HasValue || prev.to.Value > next.from)
+                    throw new ContentException(file, $"{list}[{next.id}].from", FormattableString.Invariant(
+                        $"overlaps {prev.id} ({prev.from:yyyy-MM-dd} to {(prev.to.HasValue ? prev.to.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "open")})"));
+            }
+        }
+
         static void Validate(Content c)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
@@ -213,6 +228,15 @@ namespace Statecraft.Sim
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
             }
+            foreach (var o in c.Offices.Where(o => o.Until.HasValue))
+                foreach (var p in c.People)
+                    foreach (var t in p.Offices.Where(t => t.Office == o.Id))
+                        if (!t.To.HasValue || t.To.Value > o.Until!.Value)
+                            throw new ContentException("people.yaml", $"people[{p.Id}].offices.{o.Id}.to", FormattableString.Invariant($"must be on or before {o.Until:yyyy-MM-dd}, when the office was abolished"));
+            foreach (var p in c.People.Where(p => p.Died.HasValue))
+                foreach (var t in p.Offices)
+                    if (!t.To.HasValue || t.To.Value > p.Died!.Value)
+                        throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}.to", FormattableString.Invariant($"must be on or before {p.Died:yyyy-MM-dd}, the date of death"));
             foreach (var p in c.People)
                 for (int i = 0; i < p.Offices.Count; i++)
                     for (int j = i + 1; j < p.Offices.Count; j++)
@@ -248,6 +272,8 @@ namespace Statecraft.Sim
                 foreach (var p in g.Coalition)
                     if (!parties.Contains(p)) throw new ContentException("governments.yaml", $"governments[{g.Id}].coalition.{p}", "unknown party");
             }
+            NoOverlap("legislatures.yaml", "legislatures", c.Legislatures.Select(l => (l.Id, l.From, l.To)));
+            NoOverlap("governments.yaml", "governments", c.Governments.Select(g => (g.Id, g.From, g.To)));
             foreach (var i in c.Indicators)
             {
                 Finite("model.yaml", $"indicators[{i.Id}].base", i.Base);
@@ -311,6 +337,11 @@ namespace Statecraft.Sim
             foreach (var kv in r.BudgetStart)
             {
                 if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                // A budget line must not silently stop mattering when its office is abolished: move it to the office that
+                // took over (plan amendment C3).
+                var until = c.Offices.First(o => o.Id == kv.Key).Until;
+                if (until.HasValue)
+                    throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", FormattableString.Invariant($"office '{kv.Key}' is abolished on {until:yyyy-MM-dd}: give its budget line to the office that took over"));
                 Unit("rules.yaml", $"budget_start.{kv.Key}", kv.Value);
             }
             // The same rule EconomySystem.Allocate applies to every later allocation.
