@@ -34,7 +34,7 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
   worktree's build target WebGL -> OSXUniversal (editor renders) and back at the next build, a reimport each way: budget
   a few minutes per checkpoint.
 
-## Budgets (proposed; ratified in Task 10)
+## Budgets (proposed; ratified in Task 10: see "Tier decisions")
 Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DPR 1, Chrome for Testing:
 - headless, all features on: median p95 <= 16.7 ms at both poses, and median(all) - median(none) <= 8 ms;
 - each feature: median(all) - median(-feature) <= 2.5 ms (tilt-shift <= 1.5 ms, labels <= 1 ms); a cost counts as over only
@@ -493,6 +493,7 @@ and tilt-shift are not in this worktree).
 | 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
 | merge | t-merge | captures/visual/t-merge/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png (before the grade re-tune: t-merge-pre, t-merge-r1) | (owner) Note: the land is one dry-grass gold with no fields, orchards or cities yet; that gap is content (art track), not the grade. |
 | merge (fix 1) | t-merge-r3 | captures/visual/t-merge-r3/*-compare*.png (t-merge-r2 = with the rejected border colour) | (owner) Note: olive coastal plain and valleys; the selected hex is now the promo's ivory ring colour, gold stays the UI chrome's. |
+| 10 | t10-tiers | captures/visual/t10-tiers/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png; weak GPU: captures/visual/t10-swiftshader | (owner) Note: render scale 1.0 on the web (sharper lines and pills); bloom, SSAO and the depth/opaque copies off; the colour is unchanged within 0.001. |
 
 ## Task 9: labels
 
@@ -626,3 +627,219 @@ first_frame 3585 ms (budgets 743 / 5321); `--cpu 4` 1863 / 6952 ms (budgets 2720
   0.43), so the step shrank. But the skirt is 17% of diorama02, and its saturation rose 0.34 -> 0.47. That added +0.021
   to the frame, which reached 0.488 against the 0.48 bar (warmth 0.129). Reverted. A lower-chroma colour of the same
   luma is the next candidate.
+
+## Tier decisions (Task 10)
+Measured under `machine_lock.py --exclusive --wait-unity`, each run started at a 1-minute load average of 3.0 or less
+(the machine idles at 3-4: other sessions; every run's before/after load is in the Task 10 report). Step 1 is the merged
+build at render scale 0.8 (`8d45a93`, which adds the `bloom` toggle); the candidates are that build with one URP value
+changed; "final" is the build with the decisions applied. A cost is `median(all) - median(-name)`; over budget only
+beyond budget + the larger spread.
+
+| Setting | Web | Desktop | Evidence |
+|---|---|---|---|
+| Path | Forward | Forward+ | research notes 2.1 (Forward+ on WebGL reported unstable) |
+| Depth / opaque copies | off / off | off / off (were on) | no visual v1 effect samples them; the Gaussian DoF that did is retired (Task 3) |
+| Render scale | 1.0 (was 0.8) | 1.0 | all three rules hold at 1.0 (headless p95 <= 16.7 ms, headed <= 20 ms, DPR 2 <= 33 ms): headless `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.58 spread_ms=0.18 median_p95_ms=5.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.96 spread_ms=0.05 median_p95_ms=11.00`; headed `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.39 spread_ms=0.10 median_p95_ms=5.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.14 spread_ms=0.20 median_p95_ms=11.00`; DPR 2 `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=4.01 spread_ms=0.00 median_p95_ms=5.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.59 spread_ms=0.36 median_p95_ms=19.00` |
+| Fill-rate stress (DPR 2, headed, final at 1.0) | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=3.78 spread_ms=0.05 median_p95_ms=5.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.08 spread_ms=0.06 median_p95_ms=20.00` | — | a stand-in for a GPU with a quarter of the fill rate; under the 33 ms floor with 13 ms to spare |
+| Boot | `BOOT map_build_ms median=432 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3563 runs=3 cpu=1`<br>`BOOT map_build_ms median=1751 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6797 runs=3 cpu=4`<br>`BOOT map_build_ms median=426 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3477 runs=3 cpu=1`<br>`BOOT map_build_ms median=1746 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6696 runs=3 cpu=4` (Step 1, then final) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms); both runs exit 0 |
+| Shadows | 1 cascade, 2048, hard | 4 cascades, 2048, soft | `-shadows` at diorama02: Step 1 headless 10.32 - 7.36 = **2.96 ms** (spread 0.32: over 2.82), headed 2.90 (0.41: within), DPR 2 4.99 (0.23); final headless 2.89 (0.41: within 2.91), headed 2.92 (0.29: **over** 2.79), DPR 2 4.80. A 1024 build measured 2.84 (headless, spread 0.09), 2.94 (headed) and 5.03 (DPR 2): the map's resolution is not the cost (the caster pass redraws the whole map's geometry at the overview), so 1024 would blur the relief for nothing. **2048 kept; the overrun (about 0.1-0.4 ms beyond budget + spread at the 250 km overview only) is named here.** gameplay03: 0.33 ms final |
+| Tilt-shift | downsample 2 | downsample 2 | `-tiltshift` cost: Step 1 headless 0.09 / 0.09 ms (gameplay03 / diorama02), final headless 0.03 / -0.04, DPR 2 0.29 / -0.04: far under 1.5 ms |
+| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19); no owner verdict yet, so not changed |
+| Bloom | off (was the URP template's 0.25 above 1) | off | rendered on both tiers at both poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003, `GradeTests.TheBloomToggleSwitchesThePipelineBloom`); `-bloom` cost Step 1 headless 0.37 ms (diorama02), headed 0.18, macOS 0.17 / 0.13. Off in the pipeline profile (`Settings/SampleSceneProfile`), which keeps its Neutral tonemapper (the stripping guarantee, GradeTests) |
+| SSAO | none | off (was on) | metre radius cannot reach km relief; baked AO replaces it (Tasks 5-6) |
+| Grade, vignette, haze, grid, water, labels | on | on | Step 1 headless costs (gameplay03 / diorama02, ms): grade -0.02 / 0.27, haze 0.08 / 0.11, grid 0.07 / -0.14, water 0.04 / 0.14, labels -0.14 / -0.02; final headless: grade 0.00 / -0.03, haze -0.03 / -0.10, grid 0.00 / -0.01, water -0.05 / -0.06, labels -0.01 / 0.01; all within budget. The grid, unmeasured on a quiet machine since Task 8, costs nothing measurable |
+| Baked shading texture | block-compressed | block-compressed | review minor 9: recorded, not changed (mobile browsers are outside the 1920x1080 target) |
+| WebGPU, GPU Resident Drawer, compute | not used | not used | research notes 2.1 (an M5 evaluation) |
+| Weak GPU | SwiftShader run passes golden and shots | — | `captures/visual/t10-swiftshader` (both GOLDEN OK lines and SHOT done; gameplay03 saturation / contrast / warmth 0.5656 / 0.1960 / 0.0773 against the GPU's 0.5655 / 0.1960 / 0.0771) |
+
+Colour after the decisions (WebGL `?shot`, t10-tiers against t-merge-r3): diorama02 saturation 0.4694 -> 0.4686, contrast
+0.2034 -> 0.2032, warmth 0.1045 -> 0.1038 (bars: warmth 0.087-0.145, saturation <= 0.48); gameplay03 saturation 0.5646 ->
+0.5655 (+0.0009, away from the promo's 0.382 by a rounding-level step: the 1:1 render), contrast 0.1959 -> 0.1960, warmth
+0.0774 -> 0.0771. The sea, palette and grade are untouched.
+
+The macOS player does not run in the background (`runInBackground` is off): its `-vprofile` waits at `GAME OK` until its
+window is in front.
+
+### Final measurements
+Step 1 headless (scale 0.80):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.03 spread_ms=0.16 median_p95_ms=3.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=2.51 spread_ms=0.58 median_p95_ms=5.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=2.05 spread_ms=0.25 median_p95_ms=3.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=1.96 spread_ms=0.27 median_p95_ms=3.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=1.95 spread_ms=0.53 median_p95_ms=3.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=2.17 spread_ms=0.31 median_p95_ms=4.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.40 spread_ms=0.03 median_p95_ms=4.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.94 spread_ms=0.21 median_p95_ms=3.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=1.99 spread_ms=0.09 median_p95_ms=3.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.40 spread_ms=0.09 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.32 spread_ms=0.19 median_p95_ms=11.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=9.95 spread_ms=0.02 median_p95_ms=11.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=10.05 spread_ms=0.51 median_p95_ms=11.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=10.46 spread_ms=0.84 median_p95_ms=12.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=10.21 spread_ms=0.06 median_p95_ms=11.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=10.34 spread_ms=0.47 median_p95_ms=12.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.36 spread_ms=0.32 median_p95_ms=10.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=10.23 spread_ms=0.21 median_p95_ms=11.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=10.18 spread_ms=0.08 median_p95_ms=11.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.16 spread_ms=0.33 median_p95_ms=9.00`
+
+Run line: `PROFILE visual=all pose=gameplay03 res=1920x1080 scale=0.80 rep=0 frames=300 avg_ms=2.05 p95_ms=3.00`
+
+Step 1 headed, DPR 1 (scale 0.80):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.85 spread_ms=0.08 median_p95_ms=3.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=2.34 spread_ms=0.48 median_p95_ms=4.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=2.00 spread_ms=0.17 median_p95_ms=3.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=1.85 spread_ms=0.04 median_p95_ms=3.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=1.86 spread_ms=0.02 median_p95_ms=3.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=1.84 spread_ms=0.35 median_p95_ms=3.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.37 spread_ms=0.02 median_p95_ms=4.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.85 spread_ms=0.86 median_p95_ms=3.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=1.86 spread_ms=0.11 median_p95_ms=3.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.24 spread_ms=0.04 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.27 spread_ms=0.41 median_p95_ms=11.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=10.09 spread_ms=0.47 median_p95_ms=11.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=10.18 spread_ms=0.09 median_p95_ms=11.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=10.70 spread_ms=0.64 median_p95_ms=12.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=10.51 spread_ms=0.52 median_p95_ms=12.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=10.60 spread_ms=0.49 median_p95_ms=12.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.37 spread_ms=0.09 median_p95_ms=10.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=10.52 spread_ms=0.33 median_p95_ms=12.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=10.55 spread_ms=0.22 median_p95_ms=12.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.15 spread_ms=0.11 median_p95_ms=9.00`
+
+Step 1 headed, DPR 2 (scale 0.80):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=3.49 spread_ms=0.15 median_p95_ms=5.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=3.28 spread_ms=0.02 median_p95_ms=5.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=3.41 spread_ms=0.09 median_p95_ms=5.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=3.36 spread_ms=0.21 median_p95_ms=5.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=3.49 spread_ms=0.23 median_p95_ms=5.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=3.47 spread_ms=0.01 median_p95_ms=5.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=3.11 spread_ms=0.07 median_p95_ms=5.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=3.36 spread_ms=0.09 median_p95_ms=5.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=3.48 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.57 spread_ms=0.21 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.24 spread_ms=0.23 median_p95_ms=19.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=18.12 spread_ms=1.06 median_p95_ms=20.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=18.35 spread_ms=0.27 median_p95_ms=19.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=18.27 spread_ms=0.11 median_p95_ms=19.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=18.24 spread_ms=0.11 median_p95_ms=19.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=18.23 spread_ms=0.11 median_p95_ms=19.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.25 spread_ms=0.16 median_p95_ms=14.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=18.23 spread_ms=0.19 median_p95_ms=19.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=18.28 spread_ms=0.17 median_p95_ms=19.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=13.05 spread_ms=0.07 median_p95_ms=14.00`
+
+Step 1 macOS IL2CPP player (PC tier as merged: SSAO, depth and opaque copies, bloom on):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=0.01 median_p95_ms=1.48`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=1.32 spread_ms=0.03 median_p95_ms=1.34`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=0.00 median_p95_ms=1.47`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=0.00 median_p95_ms=1.47`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=0.00 median_p95_ms=1.48`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=1.45 spread_ms=0.00 median_p95_ms=1.47`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=1.16 spread_ms=0.00 median_p95_ms=1.19`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.38 spread_ms=0.00 median_p95_ms=1.40`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=1.35 spread_ms=0.00 median_p95_ms=1.37`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=0.88 spread_ms=0.00 median_p95_ms=0.90`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=3.73 spread_ms=0.01 median_p95_ms=3.98`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=3.56 spread_ms=0.05 median_p95_ms=3.70`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=3.71 spread_ms=0.06 median_p95_ms=3.82`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=3.70 spread_ms=0.04 median_p95_ms=3.82`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=3.72 spread_ms=0.04 median_p95_ms=3.90`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=3.69 spread_ms=0.03 median_p95_ms=3.81`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=2.34 spread_ms=0.02 median_p95_ms=2.41`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=3.66 spread_ms=0.02 median_p95_ms=3.79`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=3.68 spread_ms=0.04 median_p95_ms=3.81`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=2.18 spread_ms=0.02 median_p95_ms=2.30`
+
+Final headless (scale 1.00):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.70 spread_ms=0.02 median_p95_ms=5.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=2.72 spread_ms=0.03 median_p95_ms=5.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=2.70 spread_ms=0.10 median_p95_ms=5.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=2.70 spread_ms=0.07 median_p95_ms=5.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=2.73 spread_ms=0.11 median_p95_ms=5.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=2.71 spread_ms=0.04 median_p95_ms=5.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.37 spread_ms=0.02 median_p95_ms=4.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=2.67 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=2.75 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.34 spread_ms=0.05 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.06 spread_ms=0.41 median_p95_ms=11.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=10.05 spread_ms=0.34 median_p95_ms=11.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=10.09 spread_ms=0.27 median_p95_ms=11.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=10.07 spread_ms=0.25 median_p95_ms=11.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=10.16 spread_ms=0.07 median_p95_ms=11.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=10.05 spread_ms=0.07 median_p95_ms=11.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.17 spread_ms=0.01 median_p95_ms=8.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=10.10 spread_ms=0.04 median_p95_ms=11.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=10.12 spread_ms=0.07 median_p95_ms=11.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.17 spread_ms=0.05 median_p95_ms=9.00`
+
+Run line: `PROFILE visual=all pose=gameplay03 res=1920x1080 scale=1.00 rep=0 frames=300 avg_ms=2.71 p95_ms=5.00`
+
+Final headed, DPR 1:
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.72 spread_ms=0.06 median_p95_ms=5.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=2.66 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=2.68 spread_ms=0.01 median_p95_ms=5.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=2.70 spread_ms=0.01 median_p95_ms=5.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=2.71 spread_ms=0.07 median_p95_ms=5.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=2.67 spread_ms=0.03 median_p95_ms=5.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.37 spread_ms=0.01 median_p95_ms=4.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=2.69 spread_ms=0.09 median_p95_ms=5.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=2.67 spread_ms=0.10 median_p95_ms=5.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.31 spread_ms=0.01 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.98 spread_ms=0.29 median_p95_ms=10.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=10.03 spread_ms=0.33 median_p95_ms=11.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=9.95 spread_ms=0.31 median_p95_ms=11.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=9.97 spread_ms=0.28 median_p95_ms=10.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=10.03 spread_ms=0.07 median_p95_ms=11.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=10.00 spread_ms=0.04 median_p95_ms=11.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.06 spread_ms=0.04 median_p95_ms=8.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=10.01 spread_ms=0.04 median_p95_ms=11.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=10.06 spread_ms=0.06 median_p95_ms=11.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.01 spread_ms=0.02 median_p95_ms=9.00`
+
+Final headed, DPR 2:
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=3.78 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=3.78 spread_ms=0.06 median_p95_ms=5.00`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=3.75 spread_ms=0.04 median_p95_ms=5.00`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=3.75 spread_ms=0.02 median_p95_ms=5.00`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=3.76 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=3.75 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=3.50 spread_ms=0.02 median_p95_ms=5.00`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=3.49 spread_ms=0.05 median_p95_ms=5.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=3.54 spread_ms=0.06 median_p95_ms=5.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=3.08 spread_ms=0.01 median_p95_ms=4.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.08 spread_ms=0.06 median_p95_ms=20.00`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=18.11 spread_ms=0.15 median_p95_ms=19.00`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=18.13 spread_ms=0.10 median_p95_ms=19.00`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=18.12 spread_ms=0.10 median_p95_ms=19.00`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=18.13 spread_ms=0.07 median_p95_ms=19.00`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=18.14 spread_ms=0.14 median_p95_ms=19.00`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.28 spread_ms=0.09 median_p95_ms=14.00`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=18.12 spread_ms=0.08 median_p95_ms=19.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=18.12 spread_ms=0.19 median_p95_ms=20.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=13.21 spread_ms=0.08 median_p95_ms=14.00`
+
+Final macOS player (SSAO, copies and bloom off):
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.02 spread_ms=0.02 median_p95_ms=1.05`
+- `PROFILE summary visual=-bloom pose=gameplay03 runs=3 median_avg_ms=1.03 spread_ms=0.00 median_p95_ms=1.05`
+- `PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=1.02 spread_ms=0.00 median_p95_ms=1.05`
+- `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=1.02 spread_ms=0.00 median_p95_ms=1.05`
+- `PROFILE summary visual=-haze pose=gameplay03 runs=3 median_avg_ms=1.03 spread_ms=0.00 median_p95_ms=1.05`
+- `PROFILE summary visual=-labels pose=gameplay03 runs=3 median_avg_ms=1.02 spread_ms=0.00 median_p95_ms=1.05`
+- `PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=0.73 spread_ms=0.00 median_p95_ms=0.74`
+- `PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=0.95 spread_ms=0.00 median_p95_ms=0.98`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=0.91 spread_ms=0.00 median_p95_ms=0.94`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=0.59 spread_ms=0.00 median_p95_ms=0.61`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=2.72 spread_ms=0.01 median_p95_ms=2.81`
+- `PROFILE summary visual=-bloom pose=diorama02 runs=3 median_avg_ms=2.73 spread_ms=0.01 median_p95_ms=2.81`
+- `PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=2.72 spread_ms=0.05 median_p95_ms=2.81`
+- `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=2.72 spread_ms=0.00 median_p95_ms=2.81`
+- `PROFILE summary visual=-haze pose=diorama02 runs=3 median_avg_ms=2.73 spread_ms=0.03 median_p95_ms=2.81`
+- `PROFILE summary visual=-labels pose=diorama02 runs=3 median_avg_ms=2.72 spread_ms=0.04 median_p95_ms=2.81`
+- `PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=1.41 spread_ms=0.01 median_p95_ms=1.51`
+- `PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=2.70 spread_ms=0.03 median_p95_ms=2.81`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=2.73 spread_ms=0.01 median_p95_ms=2.81`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=1.38 spread_ms=0.01 median_p95_ms=1.41`
+
+macOS `-golden`, both builds: `GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07`,
+`GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767`.

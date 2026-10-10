@@ -171,8 +171,8 @@ public class GradeTests
         Assert.That(ratio, Is.InRange(0.98f, 1.12f));
     }
 
-    /// <summary>Task 10: the "bloom" toggle prices the pipeline assets' own bloom (Settings/SampleSceneProfile: intensity 0.25
-    /// above 1), so the profile can measure it like every other feature. Off, the map's runtime profile overrides it with
+    /// <summary>Task 10: the "bloom" toggle prices the pipeline assets' own bloom (Settings/SampleSceneProfile: the template's
+    /// 0.25 above 1; off on both tiers since this measurement, QualityTierValues.Bloom), so the profile can measure it like every other feature. Off, the map's runtime profile overrides it with
     /// intensity 0; on, that override is inactive and the pipeline profile decides. Rendered at both promo poses on both
     /// tiers (0 web, 1 desktop), the bloom's whole effect on the frame is logged for the tier decision (docs/visual-v1.md
     /// "Tier decisions"); bloom only ever adds light.</summary>

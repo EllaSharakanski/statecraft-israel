@@ -43,7 +43,7 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>The "grade" toggle. Off falls back to the pipeline assets' own profile (Settings/SampleSceneProfile: Neutral
-        /// tonemapping, bloom 0.25 above 1, a 0.2 black vignette), which every frame had before Task 4, not to a raw image.</summary>
+        /// tonemapping and a 0.2 black vignette; its bloom is off on both tiers since Task 10), which every frame had before Task 4, not to a raw image.</summary>
         public static void SetActive(VolumeProfile profile, bool on)
         {
             foreach (var c in profile.components)
