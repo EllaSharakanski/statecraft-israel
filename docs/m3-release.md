@@ -3,6 +3,9 @@
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
 - **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `(cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip .)`.
+- **After building:** drop the build's rewrites of the settings with
+  `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
+  build-cache change gets committed.
 - **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`. This runs both golden hashes in the WebGL IL2CPP player, then plays five turns through the UI's own buttons.
   - Result, 2026-10-10: `GOLDEN OK 1950 ee5d0826…`, `GOLDEN OK 1952 91bb6fb5…`, `SMOKE OK 5 turns 1948-06-19 7004c29a…`, then PASS.
 - **Size:**
