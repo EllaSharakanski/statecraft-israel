@@ -13,9 +13,9 @@
 - Run `tools/build_sim_for_unity.sh` before opening `unity/`. The sim DLLs are build output and are git-ignored.
 
 ## Builds and browser checks (M3)
-- Web build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"`
+- Web build: `"$UNITY" -batchmode -CI false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"`
   (`-compression` is `disabled`, `gzip` or `brotli`; output in `unity/Builds/Web-<compression>/`, about 2 minutes).
-- macOS IL2CPP build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile "$PWD/unity-build-mac.log"`
+- macOS IL2CPP build: `"$UNITY" -batchmode -CI false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile "$PWD/unity-build-mac.log"`
   (output `unity/Builds/Mac/Statecraft.app`).
 - Browser check: `uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5"` with the three full `--expect`
   values pinned in `docs/determinism.md` (both goldens and the smoke line).

@@ -16,4 +16,5 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and art, CC0 for AI-only images), asset provenance (`ASSETS.yaml`), contributor
   and content policies, CI for the sim, tools and repository policy.
 - Unity-MCP 0.93.3 (`com.ivanmurzak.unity.mcp`, from OpenUPM) as the standard AI-agent bridge in the editor, local
-  Custom mode only. It stays offline in batch mode and is left out of player builds (`UnityMcpGuard`).
+  Custom mode with token auth only (held by `UnityMcpGuard`). It stays offline in batch mode, opens no window there, and is
+  left out of player builds.

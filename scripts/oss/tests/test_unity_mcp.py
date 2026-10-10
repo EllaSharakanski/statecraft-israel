@@ -54,14 +54,50 @@ def test_downloads_and_generated_agent_files_are_ignored():
     # local token) was already ignored.
     ignore = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
     for rule in ("unity/Assets/Plugins/NuGet/", "unity/Assets/Plugins/NuGet.meta", ".mcp.json", "unity/.claude/",
-                 "unity/UserSettings/", "unity/Library/"):
+                 "unity/UserSettings/", "unity/Library/", "unity/Assets/packages-merged-link/",
+                 "unity/Assets/packages-merged-link.meta", "unity/.agent/", "unity/.agents/", "unity/.cline/",
+                 "unity/.codex/", "unity/.cursor/", "unity/.gemini/", "unity/.github/", "unity/.junie/",
+                 "unity/.kilocode/", "unity/.opencode/", "unity/.roo/", "unity/opencode.json"):
         assert rule in ignore, rule
 
 
 def test_notices_and_licensing_name_the_plugin_and_its_dependencies():
     notices = (ROOT / "THIRD-PARTY-NOTICES.md").read_text(encoding="utf-8")
     for fact in (PKG, "Apache-2.0", "extensions.unity.playerprefsex", "ReflectorNet", "GameDev-MCP-Server", "nuget.org",
-                 "UnityMcpGuard"):
+                 "UnityMcpGuard", "integrity, not authenticity", "no hash or signature check",
+                 "with each package on nuget.org"):
         assert fact in notices, fact
     row = next(l for l in (ROOT / "LICENSING.md").read_text(encoding="utf-8").splitlines() if "`unity/Packages/`" in l)
     assert "OpenUPM" in row and PKG in row and "Apache-2.0" in row
+
+
+def test_update_popup_is_off_for_the_team():
+    # The plugin's own team kill-switch (ProjectSettings, meant to be committed): no update popup in any editor, batch
+    # runs included, and no OpenUPM ping. Version bumps come by pull request.
+    text = (ROOT / "unity/ProjectSettings/AI-Game-Developer-UpdateSettings.asset").read_text(encoding="utf-8")
+    assert "UnityMcpUpdateProjectSettings" in text and "disableUpdateNotificationsForTeam: 1" in text
+
+
+def test_every_documented_batch_unity_command_turns_the_plugins_ci_mode_off():
+    # With CI=true in the environment the plugin's resolver skips its NuGet download but still adds its gate defines,
+    # so a fresh clone fails to compile (2026-10-10, fix round 1). "-CI false" wins over the environment.
+    files = [f for f in subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z", "*.md", "tools/*.sh", "scripts/*.sh"],
+                                       capture_output=True, check=True, text=True).stdout.split("\0") if f]
+    files = [f for f in files if not f.startswith(("docs/superpowers/", "reports/", "research_notes/", "spikes/"))]
+    seen = 0
+    for rel in files:
+        for n, line in enumerate((ROOT / rel).read_text(encoding="utf-8").splitlines(), 1):
+            if '"$UNITY" -batchmode' in line:
+                seen += 1
+                assert "-CI false" in line, f"{rel}:{n}"
+    assert seen >= 8
+
+
+def test_ci_section_says_a_unity_job_must_turn_ci_mode_off():
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8").split("## What CI runs", 1)[1].split("\n## ", 1)[0]
+    assert "-CI false" in text
+
+
+def test_upstream_feature_request_draft_is_kept_for_the_owner():
+    text = (ROOT / "docs/unity-mcp-upstream-request.md").read_text(encoding="utf-8")
+    assert "versionDefines" in text and "ProjectSettings.asset" in text and "not filed" in text
