@@ -33,6 +33,8 @@ namespace Statecraft.Sim
         /// <summary>The placement on (q, r), or null.</summary>
         public static Placement? At(GameState s, int q, int r) => s.Placements.FirstOrDefault(p => p.Q == q && p.R == r);
 
+        static int ActionsThisTurn(GameState s) => s.MapActionsTurnDate == s.Date ? s.MapActionsThisTurn : 0;
+
         static string Name(string action) => action == TransitCamp ? "a transit camp" : "a housing project";
 
         /// <summary>Null when <paramref name="action"/> may be placed on (q, r) now, else the reason shown to the player.</summary>
@@ -41,10 +43,6 @@ namespace Statecraft.Sim
             if (!Actions.Contains(action)) return $"Unknown map action '{action}'";
             var rule = c.Rules.MapActions.TryGetValue(action, out var x) ? x : null;
             if (rule == null) return $"Map action '{action}' is not available in this content";
-            // Placements carry the date they were built, and the date only advances at the end of a turn.
-            var built = s.Placements.Count(p => p.Date == s.Date);
-            if (built >= c.Rules.MapActionsPerTurn)
-                return FormattableString.Invariant($"No more than {c.Rules.MapActionsPerTurn} map actions in one turn");
             if (s.Date < c.Rules.MapActionsFrom)
                 return FormattableString.Invariant($"Transit camps and housing projects can be placed from {c.Rules.MapActionsFrom:yyyy-MM-dd}");
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
@@ -57,6 +55,10 @@ namespace Statecraft.Sim
             var here = At(s, q, r);
             if (here != null && !(action == Housing && here.Action == TransitCamp))
                 return FormattableString.Invariant($"({q}, {r}) already has {Name(here.Action)}");
+            // The cap comes last so a player who is over it still sees the specific reason an order is illegal. It counts
+            // accepted actions (not surviving placements): housing on a camp removes the camp but still used an action.
+            if (ActionsThisTurn(s) >= c.Rules.MapActionsPerTurn)
+                return FormattableString.Invariant($"No more than {c.Rules.MapActionsPerTurn} map actions in one turn");
             return null;
         }
 
@@ -66,6 +68,8 @@ namespace Statecraft.Sim
             var reason = Check(c, s, action, q, r);
             if (reason != null) return reason;
             var rule = c.Rules.MapActions[action];
+            if (s.MapActionsTurnDate != s.Date) { s.MapActionsTurnDate = s.Date; s.MapActionsThisTurn = 0; }
+            s.MapActionsThisTurn++;
             s.Placements.RemoveAll(p => p.Q == q && p.R == r);
             s.Placements.Add(new Placement(action, q, r, s.Date));
             s.Treasury -= rule.Cost;

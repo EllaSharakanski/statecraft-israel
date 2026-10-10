@@ -39,6 +39,10 @@ namespace Statecraft.Sim
         public string AppointedUnder = "";
         /// <summary>Map actions built so far, in order (MapActions).</summary>
         public List<Placement> Placements = new List<Placement>();
+        /// <summary>The turn (its date) the map-action counter belongs to, and the actions accepted in it. Counted on
+        /// acceptance, so replacing a camp with housing cannot reopen the per-turn cap; a new date starts from zero.</summary>
+        public DateTime MapActionsTurnDate;
+        public int MapActionsThisTurn;
         public string? GameOver;
 
         public double TotalPopulation => Population.Values.Sum();
@@ -90,6 +94,7 @@ namespace Statecraft.Sim
             foreach (var p in Placements)
                 sb.Append(p.Action).Append('@').Append(p.Q).Append(',').Append(p.R).Append('@').Append(p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
             sb.Append(']');
+            sb.Append("mapturn=").Append(MapActionsTurnDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':').Append(MapActionsThisTurn).Append(';');
             sb.Append("over=").Append(GameOver ?? "");
             using var sha = SHA256.Create();
             var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));

@@ -98,6 +98,78 @@ public class MapActionTests
     }
 
     [Fact]
+    public void UpgradingACampDoesNotEscapeTheTurnCap()
+    {
+        var s = Ready();
+        Assert.Null(MapActions.Apply(C, s, "transit_camp", 2, 0, new List<Cause>()));
+        Assert.Null(MapActions.Apply(C, s, "housing", 2, 0, new List<Cause>()));     // replaces the camp: still a second action
+        Assert.Equal("No more than 2 map actions in one turn", MapActions.Apply(C, s, "housing", 1, 1, new List<Cause>()));
+        Assert.Null(MapActions.At(s, 1, 1));
+    }
+
+    [Fact]
+    public void SpecificReasonsComeBeforeTheTurnCap()
+    {
+        var s = Ready();
+        MapActions.Apply(C, s, "housing", 2, 0, new List<Cause>());
+        MapActions.Apply(C, s, "housing", 1, 1, new List<Cause>());
+        Assert.Equal("There is no land hex at (7, 7)", MapActions.Check(C, s, "housing", 7, 7));
+        Assert.Equal("(4, 0) is more than 1 hex from a settlement", MapActions.Check(C, s, "housing", 4, 0));
+        Assert.Equal("(2, 0) already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
+        Assert.Equal("Unknown map action 'airport'", MapActions.Check(C, s, "airport", 0, 1));
+        Assert.Equal("No more than 2 map actions in one turn", MapActions.Check(C, s, "housing", 0, 1));
+    }
+
+    [Fact]
+    public void AnActionTheContentDoesNotDefineIsNotAvailable()
+    {
+        var rules = Fixture.Files["rules.yaml"].Replace("  housing: { cost: 8, housing: 0.08, morale: 0.01 }\n", "");
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = rules }));
+        var s = Simulation.NewGame(c, 42, Mode.Historical);
+        s.Date = new DateTime(1948, 6, 1);
+        Assert.Equal("Map action 'housing' is not available in this content", MapActions.Check(c, s, "housing", 2, 0));
+    }
+
+    [Fact]
+    public void ALakeHexIsRefused()
+    {
+        var hexes = Fixture.Files["map/hexes.json"].Replace(@"{""q"":2,""r"":0,""lon"":34.38,""lat"":33.35,""elev_m"":250.0,""land"":true,""biome"":""hills""}",
+                                                              @"{""q"":2,""r"":0,""lon"":34.38,""lat"":33.35,""elev_m"":0.0,""land"":false,""biome"":""lake""}");
+        Assert.NotEqual(Fixture.Files["map/hexes.json"], hexes);
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/hexes.json"] = hexes }));
+        var s = Simulation.NewGame(c, 42, Mode.Historical);
+        s.Date = new DateTime(1948, 6, 1);
+        Assert.Equal("There is no land hex at (2, 0)", MapActions.Check(c, s, "housing", 2, 0));
+    }
+
+    [Fact]
+    public void AHexBesideTwoSettlementsAndAHexTwoSettlementsShareAreAccepted()
+    {
+        // town_b shares town_a's hex (1, 0), as Jaffa and Tel Aviv share (-3, 19); town_c sits on (3, 0), so (2, 0) touches two settlement hexes.
+        var hexes = Fixture.Files["map/settlement_hexes.yaml"] + "  - { id: town_b, q: 1, r: 0 }\n  - { id: town_c, q: 3, r: 0 }\n";
+        var towns = Fixture.Files["map/settlements_1948.yaml"]
+            + "  - { id: town_b, name: Town B, lon: 34.29, lat: 33.35, type: town, founded: 1900, pre_modern: false }\n"
+            + "  - { id: town_c, name: Town C, lon: 34.47, lat: 33.35, type: town, founded: 1900, pre_modern: false }\n";
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/settlement_hexes.yaml"] = hexes, ["map/settlements_1948.yaml"] = towns }));
+        var s = Simulation.NewGame(c, 42, Mode.Historical);
+        s.Date = new DateTime(1948, 6, 1);
+        Assert.Null(MapActions.Check(c, s, "housing", 2, 0));
+        Assert.Null(MapActions.Check(c, s, "housing", 1, 0));
+    }
+
+    [Fact]
+    public void JaffaAndTelAvivShareAHexAndBuildingThereWorks()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var jaffa = c.SettlementHexes.Single(x => x.Id == "jaffa");
+        var tlv = c.SettlementHexes.Single(x => x.Id == "tel_aviv");
+        Assert.Equal((-3, 19), (tlv.Q, tlv.R));
+        Assert.Equal((tlv.Q, tlv.R), (jaffa.Q, jaffa.R));
+        var s = GoldenRun.Play(c, new DateTime(1950, 9, 1));
+        Assert.Null(MapActions.Check(c, s, "housing", tlv.Q, tlv.R));
+    }
+
+    [Fact]
     public void AnOccupiedHexIsRejected()
     {
         var s = Ready();
