@@ -21,3 +21,4 @@ research	0e8a16	Find and cite sources (no code needed)
 translation	fbca04	Translations and right-to-left support
 M4	b60205	Milestone M4: full 1948-1956 slice
 in progress (maintainer)	ededed	Being built in the maintainer's pipeline; comment, but please don't open a competing PR
+roadmap	5319e7	A tracker for a milestone or era; detailed issues follow its design
