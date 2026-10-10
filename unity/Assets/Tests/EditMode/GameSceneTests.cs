@@ -421,6 +421,10 @@ public class GameSceneTests
         Assert.AreEqual(0, Desk("Statecraft", "-smoke", "0"), "explicitly off");
         Assert.AreEqual(GameRoot.DefaultSmokeTurns, Desk("Statecraft", "-smoke"));
         Assert.AreEqual(GameRoot.DefaultSmokeTurns, Desk("Statecraft", "-smoke", "-golden"));
+        Assert.AreEqual(0, Desk("Statecraft", "-smoke", "99999999999"), "unparseable (too big) is off, as on the web");
+        Assert.AreEqual(0, Desk("Statecraft", "-smoke", "-1"), "negative is off");
+        Assert.AreEqual(0, Desk("Statecraft", "-smoke", "five"), "not a number is off, as ?smoke=five");
+        Assert.AreEqual(0, Web("http://localhost:8000/?smoke=99999999999"), "the web agrees");
         Assert.AreEqual(0, Desk("Statecraft"));
         Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost/?smoke=5", new[] { "Statecraft" }, false), "desktop reads only the command line");
     }

@@ -72,7 +72,8 @@ namespace Statecraft.Game.UI
         static readonly Regex SmokeQuery = new Regex(@"[?&]smoke(?:=(\d*))?(?=&|#|$)", RegexOptions.CultureInvariant);
 
         /// <summary>Smoke-test turn count: from the page URL on WebGL, else from the command line. "?smoke=N" / "-smoke N"
-        /// play N turns (0 = off); a bare "?smoke" / "-smoke" plays DefaultSmokeTurns. 0 when not asked.</summary>
+        /// play N turns (0 = off); a bare "?smoke" / "-smoke" (or "-smoke" followed by another flag) plays DefaultSmokeTurns;
+        /// a value that is not a non-negative int (too big, negative, not a number) is off on both. 0 when not asked.</summary>
         internal static int SmokeTurns(string? url, string[] args, bool webgl)
         {
             if (webgl)
@@ -84,7 +85,10 @@ namespace Statecraft.Game.UI
             }
             var i = Array.IndexOf(args, "-smoke");
             if (i < 0) return 0;
-            return i + 1 < args.Length && int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : DefaultSmokeTurns;
+            if (i + 1 >= args.Length) return DefaultSmokeTurns;
+            var value = args[i + 1];
+            if (value.StartsWith("-", StringComparison.Ordinal) && !Regex.IsMatch(value, @"^-\d")) return DefaultSmokeTurns;   // the next flag
+            return int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0;
         }
 
         public static int SmokeTurns() =>
