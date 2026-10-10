@@ -19,24 +19,31 @@ namespace Statecraft.Game.EditorTools
     [InitializeOnLoad]
     public sealed class UnityMcpGuard : IFilterBuildAssemblies
     {
-        const string PluginEditorType = "com.IvanMurzak.Unity.MCP.UnityMcpPluginEditor, com.IvanMurzak.Unity.MCP.Editor";
+        const string PluginEditorAssembly = "com.IvanMurzak.Unity.MCP.Editor";
+        const string PluginEditorType = "com.IvanMurzak.Unity.MCP.UnityMcpPluginEditor";
         static readonly string[] Overrides = { "KeepConnected", "KeepServerRunning" };
         const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
 
-        /// <summary>What the batch-mode hold did: "held offline", "interactive editor", "plugin not compiled" or why it failed.</summary>
+        /// <summary>What the batch-mode hold did: "held offline", "interactive editor", "plugin not loaded" or why it failed.</summary>
         public static string Status = "not run";
 
         static UnityMcpGuard()
         {
             Status = Application.isBatchMode ? HoldOffline() : "interactive editor";
-            if (Status != "held offline" && Status != "interactive editor" && Status != "plugin not compiled")
+            if (Status != "held offline" && Status != "interactive editor" && Status != "plugin not loaded")
                 Debug.LogWarning("UnityMcpGuard: could not hold Unity-MCP offline in batch mode: " + Status);
         }
 
+        /// <summary>The plugin's editor type if its assembly is loaded in this domain, else null. Never Type.GetType: that
+        /// would load a just-compiled plugin assembly on demand into a domain where its [InitializeOnLoad] never ran (the
+        /// first batch run of a fresh clone compiles the plugin after its resolver, then runs the tests without a reload).</summary>
+        public static Type? LoadedPluginEditorType() =>
+            AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == PluginEditorAssembly)?.GetType(PluginEditorType);
+
         static string HoldOffline()
         {
-            var editor = Type.GetType(PluginEditorType);
-            if (editor == null) return "plugin not compiled";
+            var editor = LoadedPluginEditorType();
+            if (editor == null) return "plugin not loaded";
             try
             {
                 var instance = editor.GetProperty("Instance", Any)?.GetValue(null);

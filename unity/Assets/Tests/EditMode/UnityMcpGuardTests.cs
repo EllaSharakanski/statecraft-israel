@@ -45,11 +45,14 @@ namespace Statecraft.Tests.EditMode
         [Test]
         public void InBatchModeThePluginStaysOfflineForThisProcessOnly()
         {
-            var editor = Type.GetType("com.IvanMurzak.Unity.MCP.UnityMcpPluginEditor, com.IvanMurzak.Unity.MCP.Editor");
-            Assume.That(Application.isBatchMode, "only batch mode is held offline");
-            Assume.That(editor, Is.Not.Null, "the plugin compiles once its resolver has downloaded its DLLs");
             const BindingFlags any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
-            Assert.AreEqual("held offline", Guard().GetField("Status", any)!.GetValue(null));
+            var status = (string)Guard().GetField("Status", any)!.GetValue(null)!;
+            var editor = (Type?)Guard().GetMethod("LoadedPluginEditorType", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null);
+            // Not Assume: Unity's runner exits 2 on an inconclusive test. The interactive editor is left alone, and on a
+            // fresh clone's first run the plugin compiles after its resolver, so the tests run before a reload loads it.
+            if (!Application.isBatchMode) { Assert.AreEqual("interactive editor", status); return; }
+            if (editor == null) { Assert.AreEqual("plugin not loaded", status); return; }
+            Assert.AreEqual("held offline", status);
             var instance = editor!.GetProperty("Instance", any)!.GetValue(null);
             var config = editor.GetField("unityConnectionConfig", any)!.GetValue(instance)!;
             Assert.IsFalse((bool)config.GetType().GetProperty("KeepConnected")!.GetValue(config)!, "no connection");
