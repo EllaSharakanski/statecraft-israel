@@ -39,6 +39,7 @@
                 <ui:Button name="nav-budget" text="Budget" />
                 <ui:Button name="nav-defence" text="Defence" />
                 <ui:Button name="nav-why" text="Why?" />
+                <ui:Button name="new-game" text="New Game" />
             </ui:VisualElement>
             <ui:VisualElement class="turn-box">
                 <ui:Label name="attention" class="muted" />
