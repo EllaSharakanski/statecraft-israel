@@ -137,3 +137,13 @@ def test_small_doc_fixes_from_review():
     assert "](docs/CONTENT_POLICY.md)" in coc
     form = read(".github/ISSUE_TEMPLATE/historical_accuracy.yml")
     assert "https://github.com/eyalgolan/statecraft-israel/blob/main/docs/CONTENT_POLICY.md" in form  # M7
+
+
+def test_trademark_qualifies_the_concept_art():
+    text = read("TRADEMARK.md")
+    assert "prompted in that style" in text and "D-H" in text
+
+
+def test_contributing_requires_a_provenance_row():
+    text = read("CONTRIBUTING.md")
+    assert "**Provenance.**" in text and "[ASSETS.yaml](ASSETS.yaml)" in text

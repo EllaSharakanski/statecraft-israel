@@ -140,11 +140,11 @@ Nothing is generated live while you play.
 - **AI-generated images:** marked [CC0](LICENSES/CC0-1.0.txt), with no rights claimed.
 - **Third-party material:** fonts, public-domain portraits and the Unity engine and packages are under their own terms.
 
-Details are in [LICENSING.md](LICENSING.md).
+Details are in [LICENSING.md](LICENSING.md); attributions are in [NOTICE](NOTICE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), and every image's source is in [ASSETS.yaml](ASSETS.yaml).
 
 ## Community and credits
 
 Questions and ideas go in [Discussions](https://github.com/eyalgolan/statecraft-israel/discussions); bugs and historical errors go in the [issue tracker](https://github.com/eyalgolan/statecraft-israel/issues). Report security problems privately ([SECURITY.md](SECURITY.md)). [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies everywhere.
 
-Created by Eyal Golan. Source credits live with each fact in `content/`, and the portrait credits are in `content/people.yaml`.
+Created by Eyal Golan. Source credits live with each fact in `content/`, the portrait credits are in `content/people.yaml`, and third-party credits are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
