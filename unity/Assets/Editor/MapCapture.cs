@@ -15,13 +15,15 @@ public static class MapCapture
 
     static string CaptureDir => Path.Combine(Paths.RepoRoot, "captures");
 
-    /// <summary>Creates and saves Assets/Map.unity: default camera and light plus a MapScene wired to the material assets.</summary>
+    /// <summary>Creates and saves Assets/Map.unity: default camera and light, a MapScene wired to the material assets, and
+    /// the GameBoot that loads the inputs and builds the map in play mode and in players.</summary>
     public static void MakeScene()
     {
         MapMaterials.Create();
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-        new GameObject("MapScene").AddComponent<MapScene>().Configure(
-            Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath));
+        var map = new GameObject("MapScene").AddComponent<MapScene>();
+        map.Configure(Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath));
+        new GameObject("Boot").AddComponent<Statecraft.Game.Boot.GameBoot>().Configure(map);
         EditorSceneManager.SaveScene(scene, ScenePath);
     }
 
