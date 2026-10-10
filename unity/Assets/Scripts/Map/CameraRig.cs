@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -19,12 +21,19 @@ namespace Statecraft.Game.Map
         public const float MaxTopInset = 0.5f;
         DepthOfField _dof;
 
+        /// <summary>Undo actions for state Init changes outside the rig (the URP asset's shadow distance...). MapScene.Build hands
+        /// them to the map's MapRuntimeAssets right after Init, so destroying the map undoes them.</summary>
+        public readonly List<Action> TeardownActions = new List<Action>();
+
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
         /// (MapScene registers it with MapRuntimeAssets).</summary>
         public Volume Volume { get; private set; }
 
         public void Init()
         {
+            // Undo actions an earlier Init left behind (Init called outside MapScene.Build) run now instead of piling up.
+            for (int i = TeardownActions.Count - 1; i >= 0; i--) TeardownActions[i]();
+            TeardownActions.Clear();
             var cam = GetComponent<Camera>(); cam.fieldOfView = Fov; cam.farClipPlane = 1_000_000f; cam.nearClipPlane = 50f;
             // Beyond the terrain the view shows open sea, not a grey void (playtest 1, item 9). At this pitch the top of the
             // view still looks down, so the sky never shows and a solid clear in the sea biome colour is the whole fix.

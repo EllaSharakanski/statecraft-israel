@@ -194,6 +194,10 @@ namespace Statecraft.Game.UI
                 else Debug.LogWarning("SMOKE FAIL the smoke run needs play mode or a player");
             }
             if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
+            // The visual track's instruments (docs/visual-v1.md): both move the camera, so one per run.
+            if (Application.isPlaying && FrameProfile.Requested())
+                StartCoroutine(FrameProfile.Run(camRig, map.Frame, Debug.Log, Application.platform != RuntimePlatform.WebGLPlayer));
+            else if (Application.isPlaying && VisualShots.Requested()) StartCoroutine(VisualShots.Run(camRig, map.Frame, Debug.Log));
         }
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }

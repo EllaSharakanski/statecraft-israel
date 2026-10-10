@@ -1,0 +1,52 @@
+#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using Statecraft.Game.Boot;
+using UnityEngine;
+
+namespace Statecraft.Game.Map
+{
+    /// <summary>Screenshots of the running player at each promo pose, written to the console as base64 chunks, because a
+    /// WebGL page cannot write files: "SHOT &lt;pose&gt; begin &lt;n&gt; &lt;sha256&gt;", then n lines "SHOT &lt;pose&gt; &lt;i&gt;/&lt;n&gt; &lt;data&gt;",
+    /// and "SHOT done" at the end. tools/web_check.py --shots reassembles and checks them. Asked for by "shot" in the page
+    /// URL or -shot on desktop.</summary>
+    public static class VisualShots
+    {
+        public const int SettleFrames = 30;
+        public const int ChunkChars = 8000;   // well under any console line limit; a cut line fails the SHA-256 check
+
+        public static bool Requested() =>
+            Requested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
+
+        public static bool Requested(string? url, string[] args, bool webgl) =>
+            webgl ? UrlFlags.Has(url, "shot") : args.Contains("-shot");
+
+        public static IEnumerable<string> Lines(string name, byte[] png)
+        {
+            var b64 = Convert.ToBase64String(png);
+            int n = Math.Max(1, (b64.Length + ChunkChars - 1) / ChunkChars);
+            string hash;
+            using (var sha = SHA256.Create()) hash = string.Concat(sha.ComputeHash(png).Select(b => b.ToString("x2")));
+            yield return $"SHOT {name} begin {n} {hash}";
+            for (int i = 0; i < n; i++)
+                yield return $"SHOT {name} {i + 1}/{n} {b64.Substring(i * ChunkChars, Math.Min(ChunkChars, b64.Length - i * ChunkChars))}";
+        }
+
+        public static IEnumerator Run(CameraRig rig, GeoFrame frame, Action<string> log)
+        {
+            foreach (var pose in PromoPose.All)
+            {
+                pose.Apply(rig, frame);
+                for (int i = 0; i < SettleFrames; i++) yield return null;
+                yield return new WaitForEndOfFrame();
+                var tex = ScreenCapture.CaptureScreenshotAsTexture();
+                try { foreach (var line in Lines(pose.Name, tex.EncodeToPNG())) log(line); }
+                finally { UnityEngine.Object.Destroy(tex); }
+            }
+            log("SHOT done");
+        }
+    }
+}
