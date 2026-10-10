@@ -29,5 +29,22 @@ namespace Statecraft.Tests.EditMode
         [TestCase("", false, 1, false, false, true, TestName = "only once per editor session")]
         public void LeavesTheEditorAlone(string path, bool dirty, int loaded, bool playing, bool batch, bool done) =>
             Assert.IsFalse(ShouldOpen(path, dirty, loaded, playing, batch, done));
+
+        static bool EditorReady(bool compiling, bool updating, bool valid)
+        {
+            var t = Type.GetType("Statecraft.Game.EditorTools.OpenMapScene, Assembly-CSharp-Editor")!;
+            return (bool)t.GetMethod("EditorReady", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { compiling, updating, valid })!;
+        }
+
+        [Test]
+        public void TheDecisionWaitsUntilTheEditorHasFinishedStarting()
+        {
+            // A fresh clone's first launch loads the domain before Unity creates its starting scene; deciding then saw no
+            // valid scene, marked the session done and never opened the map (found by opening a real fresh clone).
+            Assert.IsTrue(EditorReady(false, false, true));
+            Assert.IsFalse(EditorReady(true, false, true), "still compiling");
+            Assert.IsFalse(EditorReady(false, true, true), "still importing");
+            Assert.IsFalse(EditorReady(false, false, false), "no valid scene yet");
+        }
     }
 }
