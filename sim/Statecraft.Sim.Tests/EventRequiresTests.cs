@@ -113,4 +113,38 @@ options:
         c.ChosenOptions["first"] = "stay";
         Assert.NotEqual(b.Hash(), c.Hash());
     }
+
+    static string Requiring(string id, string other) => $@"
+id: {id}
+title: {id}
+text: 'Waits.'
+from: 1948-06-01
+requires: {{ event: {other}, option: ok }}
+options:
+  - id: ok
+    text: Fine
+";
+
+    /// <summary>Re-review N4: a cycle of requirements could never fire; the loader names every file in it.</summary>
+    [Fact]
+    public void ACycleOfRequirementsIsALoadErrorNamingItsFiles()
+    {
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string>
+        {
+            ["first.yaml"] = First, ["a.yaml"] = Requiring("a", "b"), ["b.yaml"] = Requiring("b", "c"), ["c.yaml"] = Requiring("c", "a"),
+        })));
+        Assert.Equal("events/a.yaml", ex.File);
+        Assert.Equal("events[a].requires", ex.Field);
+        Assert.Contains("requirements form a cycle: events/a.yaml -> events/b.yaml -> events/c.yaml -> events/a.yaml", ex.Message);
+    }
+
+    [Fact]
+    public void AChainWithoutACycleLoads()
+    {
+        var c = ContentLoader.Load(Fixture.Write(events: new Dictionary<string, string>
+        {
+            ["first.yaml"] = First, ["follow.yaml"] = Follow, ["a.yaml"] = Requiring("a", "follow"), ["b.yaml"] = Requiring("b", "a"),
+        }));
+        Assert.Equal(4, c.Events.Count);
+    }
 }

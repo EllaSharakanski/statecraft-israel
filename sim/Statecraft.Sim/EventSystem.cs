@@ -23,7 +23,7 @@ namespace Statecraft.Sim
             var start = turnStart ?? s.Date;
             var eligible = c.Events
                 .Where(e => !s.FiredEvents.Contains(e.Id) && e.From <= s.Date && (e.To == null || start < e.To.Value))
-                .Where(e => e.Requires == null || (s.ChosenOptions.TryGetValue(e.Requires.Event, out var chosen) && chosen == e.Requires.Option))
+                .Where(e => e.Requires == null || (s.ChosenOptions.TryGetValue(e.Requires.Event, out var picked) && picked == e.Requires.Option))
                 .Where(e => e.Conditions.All(k => (!k.Min.HasValue || s.Indicators[k.Indicator] >= k.Min.Value)
                                                && (!k.Max.HasValue || s.Indicators[k.Indicator] <= k.Max.Value)))
                 .OrderBy(e => e.From).ThenBy(e => e.Id, StringComparer.Ordinal)

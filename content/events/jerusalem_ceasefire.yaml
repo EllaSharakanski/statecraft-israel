@@ -1,14 +1,15 @@
 id: jerusalem_ceasefire
 title: Cease-fire in Jerusalem
-text: 'In talks that began on 28 November, Dayan and Abdullah el-Tell have agreed a full cease-fire for the Jerusalem area, to be signed at Government House with UN observers present. {prime_minister} must decide whether Israel signs.'
+text: 'Talks began on 28 November between Dayan and Abdullah el-Tell on a full cease-fire for the Jerusalem area, with UN observers present. {prime_minister} must decide whether Israel signs it at Government House.'
 anchor: hard
 tags: [security]
 office: prime_minister
 # Signed on 30 November 1948 at Government House, UN observers present (FRUS 1948 v.V pt 2, editorial note d800 [V]);
 # talks began on 28 November (UN press release [S]). On 23 December el-Tell apparently received new orders and avoided
 # further talks (FRUS d844 [S]). Partial releases of prisoners followed [S]. Research notes facts-1948.md section 13b.
-# Only a player who put Jerusalem under military government sees this card (with a demilitarised city there would be no
-# IDF commander to sign).
+# Only a player who put Jerusalem under military government sees this card. The gating is a design inference, not in the
+# notes: with a demilitarised city there would be no IDF commander to sign. The card comes on 28 November, when the talks
+# began; it states the talks, not their outcome (re-review N1).
 from: 1948-11-28
 to: 1948-12-01
 requires: { event: jerusalem_military_government, option: military_government }

@@ -67,6 +67,29 @@ namespace Statecraft.Sim
                     }
                 }
             }
+            CheckRequirementCycles(c);
+        }
+
+        /// <summary>Re-review N4: a cycle of `requires` (A needs B, B needs A, ...) could never fire. Called after every
+        /// requirement's ids are known to exist; the error names the files around the cycle, starting from the first event
+        /// (in load order) that lies on it.</summary>
+        static void CheckRequirementCycles(Content c)
+        {
+            var byId = c.Events.ToDictionary(e => e.Id);
+            foreach (var start in c.Events)
+            {
+                var path = new List<GameEvent> { start };
+                var seen = new HashSet<string> { start.Id };
+                for (var e = start; e.Requires != null; )
+                {
+                    e = byId[e.Requires.Event];
+                    path.Add(e);
+                    if (e.Id == start.Id)
+                        throw new ContentException(start.File, $"events[{start.Id}].requires",
+                            "requirements form a cycle: " + string.Join(" -> ", path.Select(x => x.File)));
+                    if (!seen.Add(e.Id)) break;   // a cycle that does not pass through start; reported from its own member
+                }
+            }
         }
 
         static void CheckPlaceholders(Content c, GameEvent e, string field, string text, HashSet<string> offices)
