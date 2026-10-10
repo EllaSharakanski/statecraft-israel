@@ -75,8 +75,9 @@ def test_content_policy_states_the_owner_rules_and_only_real_mechanisms():
 def test_code_of_conduct_has_a_private_contact_and_the_history_section():
     text = read("CODE_OF_CONDUCT.md")
     assert "[INSERT" not in text and "getnohuman" not in text
-    # Fix round 1: conduct reports do not go through the security-advisory form (a report there becomes a draft advisory).
-    assert "email on the maintainer's GitHub profile" in text and "security/advisories/new" not in text
+    # Fix round 2: the owner's profile has no public email, so that channel is dead; private reporting works today.
+    assert "profile" not in text.lower().replace("profile of", "")
+    assert "security/advisories/new" in text and 'title with "Conduct:"' in text and "private between" in text
     assert "## Historical content and political discussion" in text
     assert "Contributor Covenant" in text and "version 2.1" in text
 
@@ -95,15 +96,15 @@ def test_content_policy_claims_no_mechanism_that_does_not_exist():
         assert phrase not in text, phrase
 
 
-def test_conduct_reports_do_not_use_the_security_form_and_no_address_is_written():
-    sec = read("SECURITY.md")
-    assert "Conduct reports" in sec and "email on the maintainer's GitHub profile" in sec
+def test_conduct_reports_use_private_reporting_and_no_profile_email():
     import yaml
+    sec = read("SECURITY.md")
+    assert 'start the title with "Conduct:"' in sec and "profile" not in sec
     cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
-    conduct = [c for c in cfg["contact_links"] if "onduct" in c["name"]]
-    assert conduct and all("security/advisories" not in c["url"] for c in conduct)
-    assert not any("security/advisories" in c["url"] for c in cfg["contact_links"] if "ulnerab" not in c["name"])
-    assert "Conduct:" not in read(".github/ISSUE_TEMPLATE/config.yml")
+    assert any("security/advisories/new" in c["url"] and "onduct" in c["about"] for c in cfg["contact_links"])
+    assert "profile" not in read(".github/ISSUE_TEMPLATE/config.yml")
+    d7 = next(l for l in read("docs/oss/DECISIONS.md").splitlines() if "D7" in l)
+    assert d7.startswith("- [x] D7") and "dedicated contact" in d7
 
 
 def test_docs_describe_only_what_is_live_today():

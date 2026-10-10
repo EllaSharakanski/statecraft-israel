@@ -13,8 +13,8 @@ Do not open a public issue for a security problem. Use GitHub's private vulnerab
 Please include what the issue is and what an attacker gets from it, the steps to reproduce, the commit SHA you
 tested, and your OS and browser (for the WebGL build) or Unity and .NET versions.
 
-Conduct reports are not security reports: send them privately to the maintainer by email, using the
-email on the maintainer's GitHub profile (see CODE_OF_CONDUCT.md), not through this form.
+Conduct reports use the same private form: start the title with "Conduct:" (see CODE_OF_CONDUCT.md). Only you and
+the maintainer can read it.
 
 ## What to expect
 

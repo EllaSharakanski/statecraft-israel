@@ -16,7 +16,7 @@ are already public. If a check fails, the file is removed from the tip with the 
 - [ ] D4 Keep publishing `research_notes/` and `docs/superpowers/` in future commits. Recommended: yes; `research_notes/open source/` is never committed. Decided:
 - [ ] D5 The ElevenLabs Terms of Service for the account's plan on 2026-10-08/09, and the image models' output terms, allow public redistribution of the AI promo images and the hero. Owner verifies. Decided:
 - [ ] D6 The data.gov.il terms allow redistribution of the IMS station normals (`content/map/precip_stations.json`). Owner verifies. Decided:
-- [ ] D7 Security and conduct contact. Recommended: GitHub private vulnerability reporting only. Decided:
+- [x] D7 Security and conduct contact. Decided (2026-10-11): GitHub private reporting for both security and conduct (conduct reports start the title with "Conduct:"); the profile has no public email. The owner may later add a dedicated contact, and then updates SECURITY.md, CODE_OF_CONDUCT.md and the issue-form config together.
 - [ ] D8 Name clearance for "Statecraft: Israel" (USPTO, EUIPO, Steam). Owner checks. Decided:
 - [ ] D9 Unity edit-mode tests stay out of CI. Recommended: yes, local gate with pasted evidence. Decided:
 - [ ] D10 I know that my personal email (commit d42bd6b, `promo/fetch_portraits.py`) and the internal plans, specs and research notes in history are public and cannot be removed (owner ruling: no history rewriting); key rotation is the only remedy for a secret. Decided:
