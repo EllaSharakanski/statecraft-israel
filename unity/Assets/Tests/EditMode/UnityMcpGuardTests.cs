@@ -62,6 +62,13 @@ namespace Statecraft.Tests.EditMode
             var contains = record.GetType().GetMethod("Contains")!;
             Assert.IsTrue((bool)contains.Invoke(record, new object[] { "KeepConnected" })!);
             Assert.IsTrue((bool)contains.Invoke(record, new object[] { "KeepServerRunning" })!);
+            // The plugin's first-run window would otherwise open on screen in batch mode, and its server panel starts
+            // the local server (seen in a fresh clone's test run, 2026-10-10).
+            var window = editor.Assembly.GetType("com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowEditor")!;
+            Assert.IsEmpty(Resources.FindObjectsOfTypeAll(window), "no plugin window in batch mode");
+            var server = editor.Assembly.GetType("com.IvanMurzak.Unity.MCP.Editor.McpServerManager")!;
+            Assert.IsFalse((bool)server.GetProperty("IsRunning")!.GetValue(null)!, "no local server process");
+            Assert.IsFalse((bool)server.GetProperty("IsStarting")!.GetValue(null)!, "no local server starting");
         }
     }
 }

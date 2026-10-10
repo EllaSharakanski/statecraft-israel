@@ -187,7 +187,8 @@ def test_unity_mcp_section_is_in_contributing_and_building_with_the_same_facts()
                      "Generate", "Cloud", "sign in", "UserSettings/AI-Game-Developer-Config.json",
                      "no game rules in Unity", "tests first", "sources", "AI assistance",
                      "editor actions", "never expose", "batch mode", "UnityMcpGuard", "player build",
-                     "ProjectSettings.asset", "UNITY_MCP_READY", "nuget.org"):
+                     "ProjectSettings.asset", "UNITY_MCP_READY", "nuget.org", "Not connecting?", "gamedev-mcp-server",
+                     "PID"):
             assert fact in text, (rel, fact)
 
 
@@ -195,7 +196,7 @@ def test_hebrew_readme_carries_the_unity_mcp_facts():
     he = section(read("README.he.md"), "## איך משתתפים")
     for fact in ("Unity-MCP", "0.93.3", "Window → AI Game Developer", "Custom", "http://localhost:27766", "http",
                  "Configure", "Generate", "Cloud", "UserSettings/AI-Game-Developer-Config.json", "ProjectSettings.asset",
-                 "UNITY_MCP_READY", "nuget.org"):
+                 "UNITY_MCP_READY", "nuget.org", "gamedev-mcp-server", "PID", "batch"):
         assert fact in he, fact
     for idea in ("כללי המשחק", "בדיקות", "מקור", "בינה מלאכותית", "פורט"):
         assert idea in he, idea

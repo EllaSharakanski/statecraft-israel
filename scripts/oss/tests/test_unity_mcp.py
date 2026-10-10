@@ -2,6 +2,7 @@
 how it is installed, so a fresh clone resolves it with no manual steps (a missing OpenUPM scope gave contributors
 `error CS0246 'PlayerPrefsBool'`)."""
 import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -40,8 +41,10 @@ def test_lock_resolves_the_pinned_plugin_from_openupm():
 def test_project_settings_do_not_commit_the_plugin_gate_defines():
     # The plugin's resolver downloads its NuGet DLLs, then adds UNITY_MCP_READY and UNITY_MCP_DEPS_<n> on each
     # machine. Committed, the defines reach a fresh clone before the DLLs do, and the plugin fails to compile
-    # (error CS0234 'System.Text.Json', ...), which stops batch mode. Leave that local change uncommitted.
-    text = (ROOT / "unity/ProjectSettings/ProjectSettings.asset").read_text(encoding="utf-8")
+    # (error CS0234 'System.Text.Json', ...), which stops batch mode. Leave that local change uncommitted: this reads
+    # the committed file, so a contributor's own working copy (which has the defines) still passes.
+    text = subprocess.run(["git", "-C", str(ROOT), "show", "HEAD:unity/ProjectSettings/ProjectSettings.asset"],
+                          capture_output=True, check=True, text=True).stdout
     assert "UNITY_MCP_" not in text
 
 

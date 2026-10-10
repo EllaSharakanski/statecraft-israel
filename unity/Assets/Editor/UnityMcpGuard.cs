@@ -12,7 +12,9 @@ namespace Statecraft.Game.EditorTools
     /// - Batch mode (tests, builds): the plugin would otherwise connect on every domain reload (by default to its cloud
     ///   service, whose refusal is logged as an error and fails whichever test is running) or start its local server.
     ///   This sets KeepConnected and KeepServerRunning to false for this process only, recorded as the plugin's own
-    ///   runtime overrides so they never reach the user's UserSettings/AI-Game-Developer-Config.json. Reflection, not a
+    ///   runtime overrides so they never reach the user's UserSettings/AI-Game-Developer-Config.json, and stops the
+    ///   plugin's first-run window from opening (it appears on screen even in batch mode, and its server panel starts
+    ///   the local server). Reflection, not a
     ///   reference: on a fresh clone the plugin compiles only after its resolver has fetched its NuGet DLLs.
     /// - Player builds: drops the plugin's runtime assemblies and the NuGet DLLs its resolver put in Assets/Plugins/NuGet
     ///   (IFilterBuildAssemblies). The game never calls them; the plugin offers no switch of its own for this.</summary>
@@ -61,6 +63,17 @@ namespace Statecraft.Game.EditorTools
                     track.Invoke(record, new[] { name, baseline, (object)false });
                     p.SetValue(config, false);
                 }
+                // The plugin's first-run window (MainWindowInitializer, queued on EditorApplication.update) opens on screen
+                // even in batch mode, and its server panel starts the local server. Unhook it, and close any already open.
+                var initializer = editor.Assembly.GetType("com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowInitializer");
+                var perform = initializer?.GetMethod("PerformInitialization", Any);
+                if (perform == null) return "plugin internals changed: no MainWindowInitializer.PerformInitialization";
+                // Run its static constructor first (it queues the window), or the unhook could come before the queueing.
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(initializer!.TypeHandle);
+                EditorApplication.update -= (EditorApplication.CallbackFunction)Delegate.CreateDelegate(typeof(EditorApplication.CallbackFunction), perform);
+                var window = editor.Assembly.GetType("com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowEditor");
+                if (window != null)
+                    foreach (var w in Resources.FindObjectsOfTypeAll(window)) ((EditorWindow)w).Close();
                 return "held offline";
             }
             catch (Exception e)
