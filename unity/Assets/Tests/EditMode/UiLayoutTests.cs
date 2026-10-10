@@ -197,9 +197,18 @@ public class UiLayoutTests
         var c = ContentLoader.Load(Paths.Content);
         var text = UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
         var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
-        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        // Bounded (Task 24 review M5): content that no longer raises these events fails the test instead of hanging the run.
+        for (int t = 0; !g.State.PendingEvents.Contains("armistice_egypt"); t++)
+        {
+            if (t >= 500) Assert.Fail("armistice_egypt was not raised within 500 turns");
+            g.Step(new Command[0]);
+        }
         g.Step(new Command[0]);                                         // a Why report to show
-        while (g.State.PendingEvents.Count == 0) g.Step(new Command[0]);
+        for (int t = 0; g.State.PendingEvents.Count == 0; t++)
+        {
+            if (t >= 500) Assert.Fail("no event was raised within 500 turns of the armistice");
+            g.Step(new Command[0]);
+        }
         var problems = new List<string>();
         foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1920, 960), (1600, 757), (1366, 657) })
         {
