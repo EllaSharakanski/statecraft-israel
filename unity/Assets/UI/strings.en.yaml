@@ -1,0 +1,13 @@
+# UI strings (English). Code looks strings up by key (Statecraft.Game.UI.UiText); placeholders are string.Format
+# arguments ({0}, {1}) formatted with the invariant culture. Static labels live in the UXML files.
+hud.turn: "Turn {0}"
+hud.date: "{0:d MMMM yyyy}"
+hud.attention: "Attention {0:0.0} of {1:0.0}"
+hud.money: "{0:0.0}m"
+hud.people: "{0:N0}"
+hud.percent: "{0:0}"
+hud.fx: "${0:0.0}m"
+hud.level: "Level {0} of 5"
+hud.delta: "{0:+0;-0}"
+hud.delta_money: "{0:+0.0;-0.0}"
+toast.refused: "Not done: {0}"

@@ -1,0 +1,57 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="Statecraft.uss" />
+    <ui:VisualElement name="root" class="root" picking-mode="Ignore">
+        <ui:VisualElement name="top-bar" class="panel top-bar">
+            <ui:VisualElement class="date-box">
+                <ui:Label name="year" class="year" />
+                <ui:Label name="turn" class="muted" />
+                <ui:Label name="date" class="muted" />
+            </ui:VisualElement>
+            <ui:VisualElement name="meters" class="meters">
+                <ui:VisualElement name="meter-treasury" class="meter">
+                    <ui:Label text="Treasury" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="treasury-value" class="meter-value" /><ui:Label name="treasury-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-immigration" class="meter">
+                    <ui:Label text="Immigration" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="immigration-value" class="meter-value" /><ui:Label name="immigration-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-security" class="meter">
+                    <ui:Label text="Security" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="security-value" class="meter-value" /><ui:Label name="security-delta" class="meter-delta" /></ui:VisualElement>
+                    <ui:Label name="security-level" class="meter-name" />
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-support" class="meter">
+                    <ui:Label text="Public Support" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="support-value" class="meter-value" /><ui:Label name="support-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-standing" class="meter">
+                    <ui:Label text="International Standing" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="standing-value" class="meter-value" /><ui:Label name="standing-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="meter-fx" class="meter">
+                    <ui:Label text="Foreign Currency" class="meter-name" />
+                    <ui:VisualElement class="meter-row"><ui:Label name="fx-value" class="meter-value" /><ui:Label name="fx-delta" class="meter-delta" /></ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="nav" class="nav">
+                <ui:Button name="nav-cabinet" text="Cabinet" />
+                <ui:Button name="nav-budget" text="Budget" />
+                <ui:Button name="nav-defence" text="Defence" />
+                <ui:Button name="nav-why" text="Why?" />
+            </ui:VisualElement>
+            <ui:VisualElement class="turn-box">
+                <ui:Label name="attention" class="muted" />
+                <ui:Button name="end-turn" text="End Turn" class="end-turn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="event-card" class="panel event-card" />
+        <ui:VisualElement name="info-panel" class="panel info-panel" />
+        <ui:VisualElement name="minimap" class="panel minimap" />
+        <ui:VisualElement name="screen-cabinet" class="panel screen" />
+        <ui:VisualElement name="screen-budget" class="panel screen" />
+        <ui:VisualElement name="screen-defence" class="panel screen" />
+        <ui:VisualElement name="screen-why" class="panel screen" />
+        <ui:Label name="toast" class="panel toast" />
+    </ui:VisualElement>
+</ui:UXML>
