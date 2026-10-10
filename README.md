@@ -96,7 +96,7 @@ Before you start:
 - Run the tests: `dotnet test sim/Statecraft.sln`, the tools tests, and Unity EditMode.
 - Keep game rules in the sim, not in Unity.
 
-Contribution guidelines, a code of conduct and a contributor agreement are being added.
+Start with **[CONTRIBUTING.md](CONTRIBUTING.md)**. There's no CLA: contributions come in under the repo's licences.
 
 ## AI use
 
