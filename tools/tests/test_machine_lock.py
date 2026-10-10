@@ -63,3 +63,27 @@ def test_an_editor_holding_a_worktree_lockfile_counts_as_unity(tmp_path):
     assert pids == [4242]
     assert asked == [str(temp / "UnityLockfile")]
     assert ml.lockfile_holders([tmp_path / "b"], lsof=lambda files: "1\n") == []
+
+
+UNITY_EXE = "/Applications/Unity/Hub/Editor/6000.3.25f1/Unity.app/Contents/MacOS/Unity"
+
+
+def test_only_the_unity_executable_counts_never_a_wrapper_naming_it():
+    """Review C1: a queued `machine_lock.py --shared -- .../Unity -batchmode` wrapper and its `uv run` parent name Unity in
+    their arguments; selecting by argument text made an exclusive profile wait on them (a deadlock)."""
+    comm = "\n".join([
+        f"  101 {UNITY_EXE}",
+        "  102 /Users/me/.local/share/uv/python/cpython-3.13/bin/python3.13",
+        "  103 /opt/homebrew/bin/uv",
+        f"  104 {UNITY_EXE}",
+        "  105 /Applications/Unity Hub.app/Contents/MacOS/Unity Hub",
+    ])
+    args = "\n".join([
+        f"  101 {UNITY_EXE} -batchmode -projectPath unity -runTests",
+        f"  102 python3 tools/machine_lock.py --shared -- {UNITY_EXE} -batchmode -projectPath unity",
+        f"  103 uv run tools/machine_lock.py --shared -- {UNITY_EXE} -batchmode -projectPath unity",
+        f"  104 {UNITY_EXE} -projectPath unity",
+        "  105 /Applications/Unity Hub.app/Contents/MacOS/Unity Hub -batchmode",
+    ])
+    assert ml.batch_unity_pids(comm, args) == [101]
+    assert ml.batch_unity_pids(comm, args, exclude={101}) == []

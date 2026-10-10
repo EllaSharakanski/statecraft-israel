@@ -10,7 +10,12 @@ Usage: uv run tools/machine_lock.py (--shared | --exclusive) [--wait-unity] [--t
 profiles and boot budgets) and, with --wait-unity, then waits until no Unity is left running: no batch-mode Unity process,
 and no process (an interactive editor included) holding any worktree's unity/Temp/UnityLockfile. The lock file is
 ~/.cache/statecraft/machine.lock (fcntl.flock; STATECRAFT_MACHINE_LOCK overrides it), shared by every worktree of this
-user. Exit code: the command's, or 3 when --wait-unity times out."""
+user. Exit code: the command's, or 3 when --wait-unity times out.
+
+Unity processes are recognised by their executable (`ps -o comm=`), never by argument text, so queued wrappers that
+name Unity in their command line do not count (review C1). macOS flock does not queue fairly: new shared holders may
+enter while an exclusive request waits, so an exclusive profile can wait behind a stream of shared jobs; the controller
+dispatches one profiling step at a time (review M9)."""
 import argparse
 import fcntl
 import os
@@ -20,7 +25,7 @@ import time
 from pathlib import Path
 
 LOCK = Path(os.environ.get("STATECRAFT_MACHINE_LOCK", str(Path.home() / ".cache" / "statecraft" / "machine.lock")))
-UNITY_BATCH = "Unity.app/Contents/MacOS/Unity .*-batchmode"
+UNITY_EXE = "/Unity.app/Contents/MacOS/Unity"
 
 
 def parse(argv: list[str]) -> argparse.Namespace:
@@ -39,9 +44,28 @@ def parse(argv: list[str]) -> argparse.Namespace:
     return a
 
 
+def _rows(ps_text: str) -> dict[int, str]:
+    rows = {}
+    for line in ps_text.splitlines():
+        pid, _, rest = line.strip().partition(" ")
+        if pid.isdigit():
+            rows[int(pid)] = rest.strip()
+    return rows
+
+
+def batch_unity_pids(comm_text: str, args_text: str, exclude: set[int] | frozenset[int] = frozenset()) -> list[int]:
+    """Pids whose executable (`ps -o comm=`, the binary's path) is Unity.app's Unity and whose arguments include
+    -batchmode. Selected by executable, never by argument text: a queued `machine_lock.py --shared -- .../Unity
+    -batchmode` wrapper and its `uv run` parent name Unity in their arguments and must not count (review C1)."""
+    args = _rows(args_text)
+    return sorted(pid for pid, exe in _rows(comm_text).items()
+                  if exe.endswith(UNITY_EXE) and pid not in exclude and " -batchmode" in f" {args.get(pid, '')} ")
+
+
 def unity_batch_pids() -> list[int]:
-    r = subprocess.run(["pgrep", "-f", UNITY_BATCH], capture_output=True, text=True)
-    return [int(p) for p in r.stdout.split() if p.isdigit() and int(p) != os.getpid()]
+    def ps(field: str) -> str:
+        return subprocess.run(["ps", "-axo", f"pid=,{field}="], capture_output=True, text=True).stdout
+    return batch_unity_pids(ps("comm"), ps("args"), exclude={os.getpid()})
 
 
 def worktrees() -> list[Path]:
