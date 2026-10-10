@@ -56,45 +56,60 @@ namespace Statecraft.Game.Boot
         public static string StreamingUrl() =>
             Application.streamingAssetsPath.Contains("://") ? Application.streamingAssetsPath : new Uri(Application.streamingAssetsPath).AbsoluteUri;
 
+        static readonly HashSet<UnityWebRequest> open = new HashSet<UnityWebRequest>();
+        /// <summary>Requests started and not yet released (diagnostic; 0 once a fetch has ended, whether it succeeded or failed).</summary>
+        public static int OpenRequests => open.Count;
+
         static UnityWebRequest Start(string url)
         {
             var r = UnityWebRequest.Get(url);
+            open.Add(r);
             r.SendWebRequest();
             return r;
         }
 
-        /// <summary>Waits a frame at a time (no threads on WebGL; an Awaitable is never awaited twice).</summary>
-        static async Awaitable<UnityWebRequest> Done(UnityWebRequest r, string name)
+        /// <summary>Aborts (when still running) and disposes a request; safe to call twice.</summary>
+        static void Release(UnityWebRequest r)
+        {
+            if (!open.Remove(r)) return;
+            if (!r.isDone) r.Abort();
+            r.Dispose();
+        }
+
+        /// <summary>Waits a frame at a time (no threads on WebGL; an Awaitable is never awaited twice). The caller releases r.</summary>
+        static async Awaitable Done(UnityWebRequest r, string name)
         {
             while (!r.isDone) await Awaitable.NextFrameAsync();
-            if (r.result != UnityWebRequest.Result.Success)
-            {
-                var error = $"{name}: {r.error} ({r.url})";
-                r.Dispose();
-                throw new IOException(error);
-            }
-            return r;
+            if (r.result != UnityWebRequest.Result.Success) throw new IOException($"{name}: {r.error} ({r.url})");
         }
 
         static async Awaitable<string> Text(UnityWebRequest r, string name)
         {
-            using var done = await Done(r, name);
-            return done.downloadHandler.text;
+            try { await Done(r, name); return r.downloadHandler.text; }
+            finally { Release(r); }
         }
 
-        /// <summary>Fetches the manifest, then starts every download before awaiting any (parallel), then loads.</summary>
+        /// <summary>Fetches the manifest, then starts every download before awaiting any (parallel), then loads. When one
+        /// download fails, the others still running are aborted and disposed.</summary>
         public static async Awaitable<GameInputs> FetchAsync(string baseUrl)
         {
             var manifest = ContentManifest.Parse(await Text(Start(baseUrl + "/content/" + ContentManifest.FileName), ContentManifest.FileName));
             var requests = manifest.Select(f => (file: f, request: Start(baseUrl + "/content/" + f))).ToList();
             var meta = Start(baseUrl + "/map/heightmap.json");
             var r16 = Start(baseUrl + "/map/heightmap.r16");
-            var texts = new Dictionary<string, string>();
-            foreach (var (file, request) in requests) texts[file] = await Text(request, file);
-            var metaText = await Text(meta, "heightmap.json");
-            byte[] bytes;
-            using (var done = await Done(r16, "heightmap.r16")) bytes = done.downloadHandler.data;
-            return FromTexts(texts, manifest, metaText, bytes);
+            try
+            {
+                var texts = new Dictionary<string, string>();
+                foreach (var (file, request) in requests) texts[file] = await Text(request, file);
+                var metaText = await Text(meta, "heightmap.json");
+                await Done(r16, "heightmap.r16");
+                return FromTexts(texts, manifest, metaText, r16.downloadHandler.data);
+            }
+            finally
+            {
+                foreach (var (_, request) in requests) Release(request);
+                Release(meta); Release(r16);
+            }
         }
     }
 }

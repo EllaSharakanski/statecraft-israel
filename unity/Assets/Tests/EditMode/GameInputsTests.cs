@@ -48,7 +48,9 @@ public class GameInputsTests
         Assert.IsTrue(fetch.IsCompleted, "fetch did not finish in 600 editor frames");
         var fetched = fetch.GetResult();
         var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
-        Assert.AreEqual(disk.Map.HeightmapR16.Length, fetched.Map.HeightmapR16.Length);
+        CollectionAssert.AreEqual(disk.Map.HeightmapR16, fetched.Map.HeightmapR16);
+        Assert.AreEqual(disk.Map.HeightmapJson, fetched.Map.HeightmapJson);
+        Assert.AreEqual(disk.Map.SettlementsYaml, fetched.Map.SettlementsYaml);
         Assert.AreEqual(disk.Map.HexesJson, fetched.Map.HexesJson);
         Assert.AreEqual(disk.Content.Events.Count, fetched.Content.Events.Count);
         Assert.AreEqual(Simulation.NewGame(disk.Content, 7, Mode.Historical).Hash(), Simulation.NewGame(fetched.Content, 7, Mode.Historical).Hash());
@@ -66,5 +68,35 @@ public class GameInputsTests
         var ex = Assert.Throws<IOException>(() => fetch.GetResult());
         StringAssert.StartsWith("people.yaml: ", ex.Message);
         Directory.Delete(site, true);
+    }
+
+    [UnityTest]
+    public IEnumerator AFailedFetchLeavesNoRequestOpen()
+    {
+        var site = StagedSite();
+        File.Delete(Path.Combine(site, "content", "people.yaml"));
+        var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
+        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
+        Assert.IsTrue(fetch.IsCompleted);
+        Assert.Throws<IOException>(() => fetch.GetResult());
+        Assert.AreEqual(0, GameInputs.OpenRequests, "requests still in flight after a failed fetch were not disposed");
+        Directory.Delete(site, true);
+    }
+
+    [Test]
+    public void VerifyAcceptsACopyAndRejectsAMissingFileOrManifestMismatch()
+    {
+        var target = Path.Combine(Path.GetTempPath(), "statecraft-verify-" + System.Guid.NewGuid().ToString("N"));
+        try
+        {
+            ContentManifest.Copy(Paths.Content, target);
+            ContentManifest.Verify(Paths.Content, target);
+            File.Delete(Path.Combine(target, "people.yaml"));
+            StringAssert.Contains("people.yaml", Assert.Throws<InvalidDataException>(() => ContentManifest.Verify(Paths.Content, target)).Message);
+            ContentManifest.Copy(Paths.Content, target);
+            File.WriteAllText(Path.Combine(target, ContentManifest.FileName), ContentManifest.Write(new[] { "people.yaml" }));
+            StringAssert.Contains("does not match", Assert.Throws<InvalidDataException>(() => ContentManifest.Verify(Paths.Content, target)).Message);
+        }
+        finally { if (Directory.Exists(target)) Directory.Delete(target, true); }
     }
 }

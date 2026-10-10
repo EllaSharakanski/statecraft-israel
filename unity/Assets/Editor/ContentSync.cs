@@ -11,7 +11,7 @@ namespace Statecraft.Game.EditorTools
     /// Run alone: Unity -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.ContentSync.Sync</summary>
     public sealed class ContentSync : IPreprocessBuildWithReport
     {
-        public const string Target = "Assets/StreamingAssets/content";
+        public static string Target => Path.Combine(UnityEngine.Application.dataPath, "StreamingAssets", "content");
 
         public int callbackOrder => 0;
 
@@ -19,7 +19,9 @@ namespace Statecraft.Game.EditorTools
 
         public static void Sync()
         {
-            var files = ContentManifest.Copy(Path.Combine(Paths.RepoRoot, "content"), Target);
+            var files = ContentManifest.Copy(Paths.Content, Target);
+            try { ContentManifest.Verify(Paths.Content, Target); }
+            catch (InvalidDataException e) { throw new BuildFailedException("ContentSync: " + e.Message); }
             UnityEngine.Debug.Log($"ContentSync: {files.Count} files to {Target}");
         }
     }

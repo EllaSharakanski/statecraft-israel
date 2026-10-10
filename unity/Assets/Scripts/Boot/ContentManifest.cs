@@ -13,8 +13,8 @@ namespace Statecraft.Game.Boot
     public static class ContentManifest
     {
         public const string FileName = "manifest.json";
-        /// <summary>The map files players read: hexes.json and every map/*.yaml (settlements; settlement hexes for the sim).
-        /// The precipitation files are tool inputs only.</summary>
+        /// <summary>The map's hex table, always in the manifest. The map files players read are this and every map/*.yaml
+        /// (settlements); the precipitation files are tool inputs only.</summary>
         public const string HexesJson = "map/hexes.json";
 
         [Serializable] sealed class ManifestJson { public string[] files = new string[0]; }
@@ -39,6 +39,18 @@ namespace Statecraft.Game.Boot
             catch (ArgumentException e) { throw new InvalidDataException($"{FileName}: malformed JSON ({e.Message})", e); }
             if (m?.files == null || m.files.Length == 0) throw new InvalidDataException($"{FileName}: no files");
             return m.files.ToList();
+        }
+
+        /// <summary>Checks a copy made by Copy: manifest.json equals Collect(contentDir) and every listed file exists.
+        /// Throws InvalidDataException naming the problem.</summary>
+        public static void Verify(string contentDir, string targetDir)
+        {
+            var expected = Collect(contentDir);
+            var written = Parse(File.ReadAllText(Path.Combine(targetDir, FileName)));
+            if (!expected.SequenceEqual(written))
+                throw new InvalidDataException($"{FileName} in {targetDir} does not match the content files ({written.Count} listed, {expected.Count} expected)");
+            foreach (var f in written)
+                if (!File.Exists(Path.Combine(targetDir, f))) throw new InvalidDataException($"{f}: listed in {FileName} but missing from {targetDir}");
         }
 
         /// <summary>Replaces <paramref name="targetDir"/> with a copy of the collected files plus manifest.json.</summary>
