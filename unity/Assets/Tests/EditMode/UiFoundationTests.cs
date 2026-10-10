@@ -77,4 +77,29 @@ public class UiFoundationTests
         // Input System screen positions are y-up; ToPanel flips y before RuntimePanelUtils.ScreenToPanel (which does not).
         Assert.AreEqual(RuntimePanelUtils.ScreenToPanel(panel, new Vector2(10, 20)), UiPointer.ToPanel(panel, new Vector2(10, 1060), 1080f));
     }
+
+    [UnityTest]
+    public IEnumerator ButtonsUseTheStatecraftTheme()
+    {
+        using var ui = new UiTestKit();
+        var navy = new Color(9 / 255f, 14 / 255f, 26 / 255f, 1f);
+        var goldDim = new Color(196 / 255f, 160 / 255f, 92 / 255f, 0.45f);
+        var gold = new Color(196 / 255f, 160 / 255f, 92 / 255f, 1f);
+        var nav = ui.Q<Button>("nav-cabinet");
+        for (int i = 0; i < 10 && nav.resolvedStyle.backgroundColor.a < 0.5f; i++) yield return null;
+        void Near(Color e, Color a, string what) => Assert.That(Mathf.Abs(e.r - a.r) + Mathf.Abs(e.g - a.g) + Mathf.Abs(e.b - a.b) + Mathf.Abs(e.a - a.a), Is.LessThan(0.02f), $"{what}: expected {e} got {a}");
+        Near(navy, nav.resolvedStyle.backgroundColor, "nav background");
+        Near(goldDim, nav.resolvedStyle.borderTopColor, "nav border");
+        var end = ui.Q<Button>("end-turn");
+        Near(navy, end.resolvedStyle.backgroundColor, "end-turn background");
+        Near(gold, end.resolvedStyle.borderTopColor, "end-turn border");
+    }
+
+    [Test]
+    public void AMissingKeyNamesTheFileGivenToParse()
+    {
+        var text = UiText.Parse("a: b", "other.yaml");
+        var e = Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { var _ = text["x"]; });
+        StringAssert.Contains("other.yaml", e.Message);
+    }
 }
