@@ -112,7 +112,8 @@ public class MapActionUiTests
             var map = new GameObject("MapScene").AddComponent<MapScene>();
             map.Configure(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"),
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"),
-                AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"));
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"),
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSelection.mat"));
             map.Build();
             var layer = new GameObject("Placements").AddComponent<PlacementLayer>();
             var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
@@ -238,7 +239,8 @@ public class MapActionUiTests
         var map = new GameObject("MapScene").AddComponent<MapScene>();
         map.Configure(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"),
             AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"),
-            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"));
+            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"),
+            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSelection.mat"));
         map.Build();
         Physics.SyncTransforms();
         return map;

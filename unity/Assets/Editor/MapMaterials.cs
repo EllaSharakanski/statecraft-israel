@@ -12,6 +12,7 @@ namespace Statecraft.Game.EditorTools
         public const string TerrainPath = Folder + "/Terrain.mat";
         public const string OverlayPath = Folder + "/HexOverlay.mat";
         public const string MarkerPath = Folder + "/SettlementMarker.mat";
+        public const string SelectionPath = Folder + "/HexSelection.mat";
 
         public static void Create()
         {
@@ -26,6 +27,8 @@ namespace Statecraft.Game.EditorTools
             var marker = Make(MarkerPath, "Universal Render Pipeline/Lit", Color.white);
             marker.SetFloat("_Smoothness", 0f); marker.SetFloat("_Metallic", 0f);
             EditorUtility.SetDirty(marker);
+            // The selected hex's outline: its own shader (Assets/Shaders/HexSelection.shader) with a depth offset (fix round 1, M2).
+            Make(SelectionPath, "Statecraft/HexSelection", Statecraft.Game.Map.MapScene.SelectionColour);
             AssetDatabase.SaveAssets();
         }
 

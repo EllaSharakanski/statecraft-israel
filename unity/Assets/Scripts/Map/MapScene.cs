@@ -11,7 +11,7 @@ namespace Statecraft.Game.Map
     /// component calls Build(inputs) once the inputs are loaded (fetched on WebGL); editor tools call Build().</summary>
     public sealed class MapScene : MonoBehaviour
     {
-        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial;
+        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial, selectionMaterial;
 
         public GeoFrame Frame { get; private set; }
         /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
@@ -21,17 +21,18 @@ namespace Statecraft.Game.Map
 
         /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
         public const string SelectionName = "HexSelection";
-        /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome).</summary>
+        /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome); MapMaterials
+        /// bakes it into the editor-made HexSelection.mat.</summary>
         public static readonly Color SelectionColour = new Color(1f, 0.84f, 0.38f);
         /// <summary>Width of the outline band, as a fraction of the hex circumradius (about 600 m on a 5 km hex).</summary>
         public const float SelectionWidth = 0.12f;
-        /// <summary>Height of the band above the hex overlay's lines, which it covers.</summary>
+        /// <summary>Height of the band above the hex overlay's lines, which it covers (its material also has a depth offset).</summary>
         public const float SelectionLiftM = 20f;
-        static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        /// <summary>Outlines hex (q, r) with a band draped on the terrain in <see cref="SelectionColour"/>: the hex overlay's
-        /// geometry (MapBuilder.DrapedRing, HexMath corners) and its editor-made material, coloured through a
-        /// MaterialPropertyBlock (no runtime material). A hex that is not on the map hides the outline.</summary>
+        /// <summary>Outlines hex (q, r) with a band draped on the terrain: the hex overlay's geometry (MapBuilder.DrapedRing,
+        /// HexMath corners) drawn with the editor-made HexSelection.mat, whose depth offset keeps the overlay lines under it
+        /// from z-fighting (no runtime material). The band is sampled at its outer, middle and inner rings and each index
+        /// takes the highest, so terrain inside the band cannot rise through it. A hex that is not on the map hides it.</summary>
         public void Select(int q, int r)
         {
             if (Terrain == null || Hexes == null) return;
@@ -44,11 +45,8 @@ namespace Statecraft.Game.Map
                 var mesh = Terrain.GetComponent<MapRuntimeAssets>().Own(new Mesh { name = SelectionName });
                 go.AddComponent<MeshFilter>().sharedMesh = mesh;
                 var renderer = go.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = overlayMaterial;
+                renderer.sharedMaterial = selectionMaterial;
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                var block = new MaterialPropertyBlock();
-                block.SetColor(BaseColor, SelectionColour);
-                renderer.SetPropertyBlock(block);
             }
             var mr = go.GetComponent<MeshRenderer>();
             HexJson hex = null;
@@ -58,20 +56,22 @@ namespace Statecraft.Game.Map
             var centre = new Vector2(c.x, c.z);
             float size = Hexes.hex_size_km * 1000f, clearance = MapBuilder.OverlayClearanceM + SelectionLiftM;
             var verts = new List<Vector3>(2 * MapBuilder.RingVertices);
+            var middle = new List<Vector3>(MapBuilder.RingVertices);
             MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size, clearance, verts);
             MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size * (1f - SelectionWidth), clearance, verts);
+            MapBuilder.DrapedRing(Frame, Terrain.terrainData, centre, size * (1f - SelectionWidth / 2), clearance, middle);
             int n = MapBuilder.RingVertices;
-            var tris = new List<int>(12 * n);
+            var tris = new List<int>(6 * n);
             for (int j = 0; j < n; j++)
             {
-                // Both rings at the higher of the two, so the band clears the ground between them too.
-                float y = Mathf.Max(verts[j].y, verts[n + j].y);
+                // Each index at the highest of the outer, middle and inner ring, so the band clears the ground across it.
+                float y = Mathf.Max(verts[j].y, Mathf.Max(verts[n + j].y, middle[j].y));
                 verts[j] = new Vector3(verts[j].x, y, verts[j].z); verts[n + j] = new Vector3(verts[n + j].x, y, verts[n + j].z);
             }
             for (int j = 0; j < n; j++)
             {
                 int a = j, b = (j + 1) % n, ai = n + j, bi = n + (j + 1) % n;
-                tris.AddRange(new[] { a, ai, b, b, ai, bi, a, b, ai, b, bi, ai });   // both windings: seen from any yaw
+                tris.AddRange(new[] { a, ai, b, b, ai, bi });   // the shader draws both faces (Cull Off)
             }
             var m = go.GetComponent<MeshFilter>().sharedMesh;
             m.Clear();
@@ -80,8 +80,8 @@ namespace Statecraft.Game.Map
             mr.enabled = true;
         }
 
-        public void Configure(Material terrain, Material overlay, Material marker)
-        { terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; }
+        public void Configure(Material terrain, Material overlay, Material marker, Material selection)
+        { terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; selectionMaterial = selection; }
 
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
@@ -92,6 +92,7 @@ namespace Statecraft.Game.Map
             if (terrainMaterial == null) throw new InvalidOperationException("MapScene: terrainMaterial is not assigned");
             if (overlayMaterial == null) throw new InvalidOperationException("MapScene: overlayMaterial is not assigned");
             if (markerMaterial == null) throw new InvalidOperationException("MapScene: markerMaterial is not assigned");
+            if (selectionMaterial == null) throw new InvalidOperationException("MapScene: selectionMaterial is not assigned");
             var cam = Camera.main;
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 

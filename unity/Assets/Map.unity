@@ -382,6 +382,7 @@ MonoBehaviour:
   terrainMaterial: {fileID: 2100000, guid: fc63b910005e64adaaa42ba488bcc248, type: 2}
   overlayMaterial: {fileID: 2100000, guid: 29dd83b7b3b1f4a4aa5a710be0078164, type: 2}
   markerMaterial: {fileID: 2100000, guid: 7c65bbd4355344f1990495c458323a4e, type: 2}
+  selectionMaterial: {fileID: 2100000, guid: 6116b1f8c72b244e0a9556c2cdb6b1c5, type: 2}
 --- !u!4 &1195372453
 Transform:
   m_ObjectHideFlags: 0

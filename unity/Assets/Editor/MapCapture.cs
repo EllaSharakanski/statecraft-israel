@@ -29,7 +29,7 @@ public static class MapCapture
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var controller = Camera.main.gameObject.AddComponent<CameraController>();   // adds the CameraRig it requires
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath));
+        map.Configure(Load(MapMaterials.TerrainPath), Load(MapMaterials.OverlayPath), Load(MapMaterials.MarkerPath), Load(MapMaterials.SelectionPath));
         var boot = new GameObject("Boot").AddComponent<GameBoot>();
         boot.Configure(map);
         var placements = new GameObject("Placements").AddComponent<PlacementLayer>();

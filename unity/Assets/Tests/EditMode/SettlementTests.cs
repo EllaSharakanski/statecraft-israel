@@ -129,7 +129,7 @@ public class MapSceneTests
     static string RealYamlPath => Path.Combine(Paths.Content, "map", "settlements_1948.yaml");
 
     const string TerrainMatPath = "Assets/Materials/Terrain.mat", OverlayMatPath = "Assets/Materials/HexOverlay.mat",
-        MarkerMatPath = "Assets/Materials/SettlementMarker.mat";
+        MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat";
 
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -142,7 +142,7 @@ public class MapSceneTests
     {
         if (withCamera) new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath));
         return map;
     }
 
@@ -196,28 +196,32 @@ public class MapSceneTests
     public void SelectingAHexOutlinesItOnTheTerrain()
     {
         var map = NewMap(); map.Build();
-        var overlay = Load(OverlayMatPath);
+        var selection = Load(SelectionMatPath);
+        // Fix round 1, M2: its own editor-made material, whose shader pulls the band towards the camera in depth (Offset), so
+        // the overlay lines under its edge cannot z-fight with it at long range.
+        Assert.AreEqual("Statecraft/HexSelection", selection.shader.name);
+        StringAssert.IsMatch(@"(?m)^\s*Offset\s+-\d+\s*,\s*-\d+", File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader)));
+        Assert.Greater(selection.renderQueue, Load(OverlayMatPath).renderQueue, "drawn after the overlay lines");
         float size = map.Hexes.hex_size_km * 1000f;
         bool Inland(HexJson h)   // whole hex on the terrain, so no corner is clamped to the map's edge
         {
             var w = map.Frame.ToWorld(h.lon, h.lat, 0);
             return w.x > size && w.x < map.Frame.WidthM - size && w.z > size && w.z < map.Frame.LengthM - size;
         }
-        var land = System.Array.FindAll(map.Hexes.hexes, h => h.land && h.biome == "hills" && Inland(h));
+        // The roughest inland hexes: the band must clear the ground across its whole width there, not just at its edges.
+        var land = System.Array.FindAll(map.Hexes.hexes, h => h.land && (h.biome == "mountains" || h.biome == "hills") && Inland(h));
         Assert.Greater(land.Length, 2);
-        foreach (var h in new[] { land[0], land[land.Length / 2] })
+        foreach (var h in land)
         {
             map.Select(h.q, h.r);
             var sel = map.Terrain.transform.Find(MapScene.SelectionName);
             Assert.IsNotNull(sel, "the selection outline exists");
             var mr = sel.GetComponent<MeshRenderer>();
             Assert.IsTrue(mr.enabled, "the outline is shown");
-            Assert.AreSame(overlay, mr.sharedMaterial, "the editor-made overlay material, not an instance");
-            var block = new MaterialPropertyBlock(); mr.GetPropertyBlock(block);
-            var colour = block.GetColor(Shader.PropertyToID("_BaseColor"));
-            Assert.Less(Mathf.Abs(colour.r - MapScene.SelectionColour.r) + Mathf.Abs(colour.g - MapScene.SelectionColour.g)
-                + Mathf.Abs(colour.b - MapScene.SelectionColour.b), 1e-3f, $"highlight colour, got {colour}");
+            Assert.AreSame(selection, mr.sharedMaterial, "the editor-made selection material, not an instance");
             var verts = sel.GetComponent<MeshFilter>().sharedMesh.vertices;
+            int n = MapBuilder.RingVertices;
+            Assert.AreEqual(2 * n, verts.Length);
             var centre = map.Frame.ToWorld(h.lon, h.lat, 0);
             var c2 = new Vector2(centre.x, centre.z);
             for (int i = 0; i < 6; i++)
@@ -225,10 +229,12 @@ public class MapSceneTests
                 var corner = HexMath.Corner(c2, size, i);
                 Assert.IsTrue(System.Array.Exists(verts, v => (new Vector2(v.x, v.z) - corner).magnitude < 1f), $"corner {i} of ({h.q}, {h.r})");
             }
-            foreach (var v in verts)
+            for (int j = 0; j < n; j++)
             {
-                Assert.LessOrEqual((new Vector2(v.x, v.z) - c2).magnitude, size + 1f, "inside the hex");
-                Assert.Greater(v.y, map.Terrain.SampleHeight(v) + MapBuilder.OverlayClearanceM - 1f, "draped above the terrain");
+                Assert.LessOrEqual((new Vector2(verts[j].x, verts[j].z) - c2).magnitude, size + 1f, "inside the hex");
+                var mid = (verts[j] + verts[n + j]) / 2;    // the middle of the band, between its outer and inner edge
+                Assert.Greater(mid.y, map.Terrain.SampleHeight(mid) + MapBuilder.OverlayClearanceM - 1f,
+                    $"({h.q}, {h.r}) vertex {j}: the band clears the ground across its width");
             }
         }
         map.Select(-9999, -9999);
@@ -239,9 +245,12 @@ public class MapSceneTests
     public void BuildWithoutMaterialsNamesTheMissingField()
     {
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath));
         var ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("markerMaterial", ex.Message);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null);
+        ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
+        StringAssert.Contains("selectionMaterial", ex.Message);
     }
 
     [Test]
@@ -268,7 +277,7 @@ public class MapSceneTests
         var map = NewMap(); map.Build();
         var go = map.gameObject; Object.DestroyImmediate(map);
         var fresh = go.AddComponent<MapScene>();
-        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath));
+        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath));
         fresh.Build();
         AssertOneOfEach();
     }
