@@ -18,15 +18,15 @@ namespace Statecraft.Game.Map.Units
     {
         public const string RootName = "UnitShowcase", ToggleName = "units";
 
-        /// <summary>Symbolic scale, measured on the promo (docs/units.md): the promo's riflemen stand about 0.38 of a hex's
-        /// screen width tall at the gameplay zoom, which on our 5 km hexes at 60 km is about 5.5 km. So a man is drawn
-        /// <see cref="FigureScale"/> times his real size, and the aircraft and the ship are sized against him, as Civ draws
-        /// them, not against each other.</summary>
-        public const float FigureScale = 2600f;
-        public const float AircraftScale = 520f;        // span 11.2 m x 520 = 5.8 km: a little wider than a man is tall
-        public const float ShipScale = 105f;            // 62.5 m x 105 = 6.6 km: about one hex, like the promo's boats
+        /// <summary>Symbolic scale, measured on the promo against the art checkpoint (docs/units.md): at 1920 px wide the
+        /// promo's riflemen stand about 87 px tall inside a ring about 190 px across; the first checkpoint, at 2600x, drew
+        /// them 113 px tall. So a man is drawn <see cref="FigureScale"/> times his real size (about 3.6 km at 2000x), and
+        /// the aircraft and the ship are sized against him, as Civ draws them, not against each other.</summary>
+        public const float FigureScale = 2000f;
+        public const float AircraftScale = 420f;        // span 11.2 m x 420 = 4.7 km: wider than a man is tall
+        public const float ShipScale = 95f;             // 62.5 m x 95 = 5.9 km: about a hex, like the promo's boats
         /// <summary>Trio spacing and the ring, as fractions of the hex circumradius.</summary>
-        public const float TrioSpread = 0.30f, RingRadius = 0.62f, RingWidth = 0.035f, RingClearanceM = 25f;
+        public const float TrioSpread = 0.40f, RingRadius = 0.66f, RingWidth = 0.035f, RingClearanceM = 25f;
         /// <summary>The flight: a circle of <see cref="LoopRadiusM"/> about <see cref="LoopCentre"/>, at
         /// <see cref="AltitudeM"/> above the highest ground under it, once every <see cref="LoopSeconds"/>, banked inwards.</summary>
         public const float LoopRadiusM = 16000f, AltitudeM = 4200f, LoopSeconds = 48f, BankDegrees = 28f;

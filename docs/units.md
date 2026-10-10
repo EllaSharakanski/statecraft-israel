@@ -45,9 +45,9 @@ and rendered at the gameplay zoom and close up. The evidence is in the spike rep
 | (b) CC0 base meshes: Quaternius Universal Base Characters (free "Standard" kit, CC0) | A clean, rigged body, but a stylised "superhero" figure in underwear, in a T-pose. Every uniform, hat, belt and rifle would have to be modelled by hand in Blender. Kenney's characters are blocky, low-poly figures, which the spec rules out (§6, "no low-poly packs mixed in"). | CC0; fine. |
 | **(c) Code-built from primitives (chosen)** | Lathed limbs and torsos, ellipsoids, boxes and plates, painted from one palette texture with a dark wash at the feet and a dry-brushed highlight on top. One URP Lit material, made at runtime, with no texture file. About 3,600 triangles per figure. Real silhouettes for each headgear and rifle pose. The figures cast and receive shadows. | Our own code, MIT. |
 
-**Why (c):** at the gameplay zoom a figure is about 100 px tall. What reads at that size is the silhouette (hat brim,
-rifle, stance), the colour blocks (khaki shirt, dark trousers, pale webbing) and the shadow, and the code-built figures
-match the promo on all three. They are exact to the sources: each part is a sourced item, and a change is a reviewed line
+**Why (c):** at the gameplay zoom a figure is about 90 px tall. What reads at that size is the silhouette (hat brim,
+rifle, stance), the colour blocks (khaki shirt, dark trousers, pale webbing) and the shadow. The code-built figures get
+all three close to the promo (see the art checkpoint's side-by-side). They are exact to the sources: each part is a sourced item, and a change is a reviewed line
 of code. Era variants (1956 helmets, 1967 Uzis, 1973 flak vests) are parameters. Builds are deterministic, there is no
 licence question, and the build-size cost is code only.
 
@@ -58,15 +58,16 @@ as the far LOD.
 
 ## Scale
 
-Measured on the promo at the gameplay zoom, a rifleman stands about 0.38 of a hex's screen width tall. Our gameplay03 pose
-frames the same hex count as the promo (about 9 across: see `PromoPose`). With 5 km hexes, a 50-degree camera pitch and a
-35-degree field of view at 60 km, that is a figure about 5.5 km tall: `UnitShowcase.FigureScale = 2600` times a real man.
-The aircraft (x520) and the ship (x105) are sized against the figures, as Civ sizes them, not against each other.
+Measured on the promo scaled to 1920 px wide: a rifleman is about 87 px tall, inside a ring about 190 px across. Our
+gameplay03 pose frames the same hex count as the promo (about 9 across: see `PromoPose`). The first checkpoint, at 2600x,
+drew our riflemen 113 px tall. So the slice uses `UnitShowcase.FigureScale = 2000`: a man about 3.6 km tall on 5 km
+hexes, with the ring at 0.66 of a hex's circumradius. The aircraft (x420, a 4.7 km span) and the ship (x95, 5.9 km) are
+sized against the figures, as Civ sizes them, not against each other.
 
 **Open question for the owner.** This is far above the "10–25x real" ruling for buildings and trees. At 10–25x a man is
 18–45 m tall, which is under one pixel at 60 km. The promo (which wins over strict scale, by the owner's ruling) draws
 units as tokens. Options:
-1. Keep units as tokens at about 2,600x, as now.
+1. Keep units as tokens at about 2,000x, as now.
 2. Scale units with the zoom, Civ-style, so they keep a constant size on screen.
 3. Make them smaller and accept that they only read at the hero zoom.
 
