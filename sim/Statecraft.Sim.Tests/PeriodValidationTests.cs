@@ -41,6 +41,17 @@ public class PeriodValidationTests
     }
 
     [Fact]
+    public void ExactlyTouchingPeriodsAreNotAnOverlap()
+    {
+        // The fixture's legislatures meet at 1949-02-14 and its governments at 1949-03-10: prev.to == next.from.
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>()));
+        Assert.Equal(new DateTime(1949, 2, 14), c.Legislatures.Find(l => l.Id == "council")!.To);
+        Assert.Equal(new DateTime(1949, 2, 14), c.Legislatures.Find(l => l.Id == "house")!.From);
+        Assert.Equal(new DateTime(1949, 3, 10), c.Governments.Find(g => g.Id == "gov1")!.To);
+        Assert.Equal(new DateTime(1949, 3, 10), c.Governments.Find(g => g.Id == "gov2")!.From);
+    }
+
+    [Fact]
     public void ATermRunningPastTheOfficesAbolitionIsALoadError()
     {
         var ex = ValidationTests.Bad("offices.yaml", "title: Minister of Finance", "title: Minister of Finance\n    until: 1949-01-01");
