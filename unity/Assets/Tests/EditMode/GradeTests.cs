@@ -29,6 +29,7 @@ public class GradeTests
         var (_, _, profile) = Open();
         Assert.IsTrue(profile.TryGet<ColorAdjustments>(out var ca));
         Assert.AreEqual(MapGrade.Saturation, ca.saturation.value); Assert.Greater(ca.contrast.value, 0f);
+        Assert.That(MapGrade.Saturation, Is.InRange(-10f, 4f), "the grade does not lift saturation (merge point)");
         Assert.IsTrue(profile.TryGet<WhiteBalance>(out var wb)); Assert.Greater(wb.temperature.value, 0f, "warm");
         Assert.IsTrue(profile.TryGet<SplitToning>(out var st));
         Assert.Greater(st.shadows.value.b, st.shadows.value.r, "teal shadows"); Assert.Greater(st.highlights.value.r, st.highlights.value.b, "amber highlights");
@@ -151,9 +152,13 @@ public class GradeTests
         Assert.Greater(control, 0.01f, "without the tonemapper the graded desert clips");
     }
 
-    /// <summary>Rendered at the gameplay pose: the grade lifts mean saturation by at least 5%.</summary>
+    /// <summary>Rendered at the gameplay pose: the grade neither washes the colour out nor pumps it. Since the merge point
+    /// MapGrade.Saturation is 0 (merged diorama02 was over the promo's saturation at 16), so the grade's only effect on
+    /// saturation is the side effect of contrast, white balance and split toning: measured 0.568 -> 0.598 (x1.053).
+    /// The ceiling catches a return of the saturation lever (about +0.7% of frame saturation per unit here, so x1.12 is
+    /// about Saturation 10); the floor catches a milky grade.</summary>
     [UnityTest]
-    public IEnumerator TheGradeLiftsSaturation()
+    public IEnumerator TheGradeKeepsSaturationNearTheUngradedFrame()
     {
         var (map, rig, _) = Open();
         yield return null;
@@ -161,8 +166,9 @@ public class GradeTests
         var cam = Camera.main;
         VisualToggles.Set("grade", false); var flat = RenderSample.Render(cam, 480, 270);
         VisualToggles.Set("grade", true); var graded = RenderSample.Render(cam, 480, 270);
-        TestContext.WriteLine($"saturation {flat.MeanSaturation():0.000} -> {graded.MeanSaturation():0.000}");
-        Assert.Greater(graded.MeanSaturation(), flat.MeanSaturation() * 1.05f);
+        float ratio = graded.MeanSaturation() / flat.MeanSaturation();
+        TestContext.WriteLine($"saturation {flat.MeanSaturation():0.000} -> {graded.MeanSaturation():0.000} (x{ratio:0.000})");
+        Assert.That(ratio, Is.InRange(0.98f, 1.12f));
     }
 
     /// <summary>Rendered: MapGrade's vignette darkens the corners relative to the centre more than the vignette it replaces

@@ -7,7 +7,7 @@ namespace Statecraft.Game.Map
 {
     /// <summary>The map's colour grade (research notes §1, §2.2 "Colour grading"): a Neutral tonemapper owned by the map (the
     /// pipeline assets' template profile already applied one; without any, the graded Negev clips about 2.5% of its
-    /// pixels: GradeTests.TheSunlitDesertDoesNotClip), slightly brighter, more contrast and saturation, a warm white balance, teal shadows against amber
+    /// pixels: GradeTests.TheSunlitDesertDoesNotClip), slightly brighter, more contrast (saturation neutral since the merge point), a warm white balance, teal shadows against amber
     /// highlights (the promo's complementary sea and land), and a gentle dark-navy vignette. LDR grading on both tiers: the
     /// tonemapper and one LUT in the uber pass.</summary>
     public static class MapGrade
