@@ -39,12 +39,13 @@ Follow [docs/dev-setup.md](docs/dev-setup.md). In short:
    - the tools tests (they need the .NET SDK too: one runs the sim's release gate):
      `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q`;
    - the repository policy checks:
-     `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` and `uv run scripts/oss/check_repo.py --only secrets,emails,home-paths,sizes,symlinks` (the command CI runs);
+     `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` and `uv run scripts/oss/check_repo.py` (the command CI runs);
    - Unity EditMode tests, if you touched `unity/` (`-buildTarget OSXUniversal` keeps an earlier WebGL build from leaving the editor on the wrong platform):
      `"$UNITY" -batchmode -projectPath unity -buildTarget OSXUniversal -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log`. There must be 0 `warning CS` in the log.
 4. **Text the player sees** has no internal ids, gives dates as "15 May 1948", and shows money as "IL 1.2m" or "$1.2m". The tests enforce this.
 5. **Keep the pull request focused:** one change per PR, and no unrelated refactors.
 6. **Changelog.** If you change `sim/`, `content/` or `unity/` (tests excepted), add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md). CI's `Changelog` job checks it; the maintainer can add the `no-changelog` label to a change no player would notice.
+7. **Provenance.** Every new image, video, font, audio, 3D-model or map-data file gets a row in [ASSETS.yaml](ASSETS.yaml) with its source, licence and status. CI's `Repo policy` job fails on a file with no row.
 
 ## History and content rules
 

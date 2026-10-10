@@ -118,7 +118,8 @@ def test_docs_describe_only_what_is_live_today():
 def test_contributing_uses_the_check_that_passes_today():
     # Review I6: the full check_repo run fails until Task 14; CI's own command is what a contributor can run.
     c = read("CONTRIBUTING.md")
-    assert "uv run scripts/oss/check_repo.py --only secrets,emails,home-paths,sizes,symlinks" in c
+    # Task 14 landed the last required files, so CI and CONTRIBUTING both run the full check now.
+    assert "`uv run scripts/oss/check_repo.py` (the command CI runs)" in c and "check_repo.py --only" not in c
 
 
 def test_untrusted_review_profile_restores_with_network_then_runs_without():
@@ -137,3 +138,53 @@ def test_small_doc_fixes_from_review():
     assert "](docs/CONTENT_POLICY.md)" in coc
     form = read(".github/ISSUE_TEMPLATE/historical_accuracy.yml")
     assert "https://github.com/eyalgolan/statecraft-israel/blob/main/docs/CONTENT_POLICY.md" in form  # M7
+
+
+def test_trademark_qualifies_the_concept_art():
+    text = read("TRADEMARK.md")
+    assert "prompted in that style" in text and "D-H" in text
+
+
+def test_contributing_requires_a_provenance_row():
+    text = read("CONTRIBUTING.md")
+    assert "**Provenance.**" in text and "[ASSETS.yaml](ASSETS.yaml)" in text
+
+
+def test_promo_gen_reads_its_key_from_the_environment_only():
+    text = read("promo/gen.py")
+    assert "drowning" not in text and "ELEVENLABS_API_KEY" in text and "dotenv" not in text and "/.env" not in text
+    assert "read_text" not in text.split("def session", 1)[1].split("def left", 1)[0]
+
+
+def test_gitignore_covers_editor_licence_and_local_files():
+    lines = set(read(".gitignore").splitlines())
+    for rule in (".env.*", "*.alf", "Unity_v*.alf", ".claude/settings.local.json", ".pytest_cache/", ".vs/",
+                 ".idea/", "unity/obj/", "unity/MemoryCaptures/"):
+        assert rule in lines, rule
+
+
+# Batch 2 fix round 1.
+def test_trademark_says_the_logo_check_is_pending_and_d_h_covers_every_promo_image():
+    tm = " ".join(read("TRADEMARK.md").split())
+    assert "checked by the owner" not in tm and "decision D-H, open" in tm
+    d_h = next(l for l in read("docs/oss/DECISIONS.md").splitlines() if "D-H" in l)
+    assert d_h.startswith("- [ ] D-H") and "promo/final/" in d_h and "hero-concept-1936.jpg" in d_h
+
+
+def test_releasing_merges_before_the_gate_and_pins_the_full_expect_values():
+    text = read("docs/RELEASING.md")
+    assert text.index("**Merge**") < text.index("**Run the release gate**")
+    det = read("docs/determinism.md")
+    import re
+    for expect in re.findall(r'--expect "((?:GOLDEN|SMOKE) OK [^"]* [0-9a-f]{64})"', det):
+        assert f'--expect "{expect}"' in text, expect
+
+
+def test_notices_cover_shader_graph_and_spike_evidence_logs():
+    assert "StatecraftTerrain.shadergraph" in read("THIRD-PARTY-NOTICES.md")
+    assert "spikes/m0/evidence/" in read("LICENSING.md").replace("spikes/m0/evidence/*.jpg", "")
+
+
+def test_audit_says_what_changed_since_the_snapshot():
+    text = read("docs/oss/AUDIT.md")
+    assert "Snapshot as of 2026-10-10" in text and "Since then" in text and "5411f02" in text
