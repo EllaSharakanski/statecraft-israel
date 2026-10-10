@@ -401,13 +401,24 @@ There was no state, no tax law and no currency of the Yishuv's own.
 - **One lever, no legal/illegal split.**
   - The CBS period totals already include the people who came without certificates (Aliyah Bet), and no source in §2
     splits them. So the design does not model the certificate quota and Aliyah Bet as separate streams.
-  - Each series row carries the historical level of the `aliyah_bet` policy over the period (`levers: { aliyah_bet:
-    0.6 }`). Arrivals are multiplied by `1 + k × (level − historical level)`, where `k` is a rules value. At the
-    historical level the factor is exactly 1.0, so the reference run reproduces the series exactly.
-  - The White Papers of 1922, 1930 and 1939 are hard events. They move the historical levels on their dates and cost
-    `intl_standing` and `national_authority` according to the response the player chooses.
+  - The factor reads the game's own policy history, not a value on the series row. A row's period (for example
+    1939–45) spans lever changes (the 1942–44 pause), so one level per row could not match the history inside it.
+  - **The historical level** of `aliyah_bet` on a turn is computed from the state: the policy's `default`, then the
+    `set_policy` value of the `historical` option of each event that sets it and has been resolved in this game
+    (`ChosenOptions`), applied in the order `EventSystem.Trigger` uses (`from`, then id). It is derived each turn and
+    needs no new state field. The loader refuses two events with overlapping windows that both set `aliyah_bet`, so the
+    order in which a player answers them never matters.
+  - Arrivals over the turn are multiplied by `1 + k × (level − historical level)`, where `level` is the policy's
+    current value and `k` is a rules value. Before the policy's window opens (1934) the factor is 1.
+  - **Exactly 1.0 on the reference run.** The `HistoricalAI` sends no `SetPolicy` and picks each historical option, so
+    the policy's value is always the result of the same assignments as the historical level: the difference is 0.0
+    and the factor is exactly 1.0 on every turn. The reference run therefore reproduces the series exactly, whatever
+    turn an event fires on. A player who picks a non-historical option or sets the policy directly moves the factor.
+  - The White Papers of 1922, 1930 and 1939 are hard events. Their historical options set `aliyah_bet`, and their
+    options cost `intl_standing` and `national_authority` according to the response the player chooses.
   - `pioneer_selection` moves morale and employment, not totals.
-  - A loader test checks that each row's historical levels equal what the hard events set over that period.
+  - Test: on the golden-seed reference run the factor is exactly 1.0 on every turn, and the arrivals equal
+    `PopulationSystem.Arrivals` of the series.
 - **Calibration** is to the anchors: 1914, the 1922 and 1931 censuses, 1947, and the Founding start of 649,400 on
   15 May 1948 (`rules.yaml initial_population`), by the chain check of chapters design §12.
 
@@ -417,7 +428,7 @@ Actors are records in `model.yaml` with a starting standing. **`GameState` has n
 to the diplomacy design (#11). Until #11 lands:
 - costs that would fall on "British standing" fall on `intl_standing`, and on `national_authority` where the cost is
   internal;
-- actors act through hard events and through the rules they set, such as the White Papers' historical levels (§5.4).
+- actors act through hard events and through the rules they set, such as the White Papers' immigration settings (§5.4).
 
 | Actor id | Name | Window | Notes |
 |---|---|---|---|
@@ -488,8 +499,8 @@ to the diplomacy design (#11). Until #11 lands:
 | British rule and the National Home, 1918–1929 | 20 | 1 | Tel Hai; the 1920 riots; the Assembly election; San Remo; the Haganah; the Histadrut; the civil administration; 1921 riots; 1922 White Paper; the Jezreel Valley purchase; the 1926–27 crisis |
 | Riots, revolt and the White Paper, 1929–1939 | 25 | 2 | 1929 riots; Passfield; Haavara; Arlosoroff; the 1936–39 riots; Peel; tower and stockade; Kofer HaYishuv; the 1939 White Paper |
 | The world war and the Holocaust, 1939–1945 | 15 | 2 | enlistment; Palmach; Patria; Struma; Biltmore; the news from Europe; the parachutists; the Brigade; the Saison |
-| The struggle, 1945–1947 | 15 | 1 | Resistance Movement; Black Sabbath; Anglo-American Committee; the eleven Negev points; Exodus; UNSCOP; Resolution 181 |
-| The civil war, Nov 1947 – May 1948 | 15 | 2 | conscription; the convoys and Jerusalem; Plan Dalet; Nachshon; the People's Council; the decision to declare |
+| The struggle, 1945 – 29 Nov 1947 | 15 | 2 | Resistance Movement; Black Sabbath; Anglo-American Committee; the eleven Negev points; Exodus; UNSCOP; Resolution 181 |
+| The civil war, 30 Nov 1947 – 14 May 1948 | 15 | 1 | conscription; the convoys and Jerusalem; Plan Dalet; Nachshon; the People's Council; the decision to declare |
 | **Total** | **about 120** | **10** | |
 
 **The ten decision scenes** are each a real choice the record shows. Options and texts are the research's job.
@@ -622,6 +633,8 @@ Each item in §12 keeps the Founding goldens, by the chapters design's checklist
    is split:
    - `haganah_chief_of_staff` from 1947-06-01 to 1948-05-14;
    - `chief_of_staff` from 1948-05-14 to 1949-11-09, with the same sources.
+
+   The `&cos` YAML anchor stays on the first of the two entries, because Yadin's term reuses it (`*cos`).
 
    From 15 May 1948 `Cabinet` finds the same holder, so nothing hashed moves.
 4. **New switches** (`legislature: none`, the consent cost, `economy: national_funds`, `war_mode`, `turn_lengths`,
