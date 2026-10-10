@@ -372,23 +372,30 @@ public class MapSceneTests
     }
 
     /// <summary>Fix round 1 (the sea seam), rendered: at the west and north-west edges of the map, the sea on the terrain and
-    /// the sea beyond it come out the same colour (the scene's own light, camera rig and post-processing).</summary>
+    /// the sea beyond it come out the same colour under the scene's own light and camera rig, measured before the grade
+    /// (0.012): the grade is a per-pixel LUT (and a vignette that is flat this close to the centre), so it cannot open a
+    /// seam, only scale one (Task 4). The shipped, graded frame is checked too, with the bound scaled by the grade's
+    /// chroma gain of about 2 (0.024).</summary>
     [UnityTest]
     public System.Collections.IEnumerator TheSeaBeyondTheEdgeMatchesTheTerrainSea()
     {
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
+        // Visual v1 Task 4: the grade roughly doubles the sea's sub-step mismatch between the two shaders (0.008 -> 0.016
+        // here). Track B's patch-mean version of this test should keep the graded/ungraded loop at the merge.
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var size = map.Terrain.terrainData.size;
         var rt = new RenderTexture(1600, 900, 24);
         var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
         try
         {
+            foreach (var graded in new[] { false, true })
             foreach (var (look, inside, beyond) in new[] {
                 (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
                 (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)) })
             {
+                VisualToggles.Set("grade", graded);
                 rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = 0; rig.Apply();
                 cam.targetTexture = rt;
                 yield return null;
@@ -401,8 +408,8 @@ public class MapSceneTests
                 var b = Px(new Vector3(beyond.x, map.Terrain.SampleHeight(inside), beyond.z));
                 RenderTexture.active = null; cam.targetTexture = null;
                 var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
-                TestContext.WriteLine($"seam at {look}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
-                Assert.Less(diff, 0.012f, $"seam at {look}: terrain sea {a}, beyond {b}");
+                TestContext.WriteLine($"seam at {look}, graded={graded}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
+                Assert.Less(diff, graded ? 0.024f : 0.012f, $"seam at {look}, graded={graded}: terrain sea {a}, beyond {b}");
             }
         }
         finally { rt.Release(); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex); }
@@ -534,12 +541,14 @@ public class MapSceneTests
     }
 
     [Test]
-    public void RebuildingDoesNotLeakDepthOfFieldComponents()
+    public void RebuildingDoesNotLeakVolumeComponents()
     {
         var map = NewMap(); map.Build();
-        int after1 = Resources.FindObjectsOfTypeAll<DepthOfField>().Length;
+        int after1 = Resources.FindObjectsOfTypeAll<VolumeComponent>().Length;
+        int profiles1 = Resources.FindObjectsOfTypeAll<VolumeProfile>().Length;   // review m1: Init makes one per build
         map.Build(); map.Build();
-        Assert.AreEqual(after1, Resources.FindObjectsOfTypeAll<DepthOfField>().Length);
+        Assert.AreEqual(after1, Resources.FindObjectsOfTypeAll<VolumeComponent>().Length);
+        Assert.AreEqual(profiles1, Resources.FindObjectsOfTypeAll<VolumeProfile>().Length, "the runtime profile is owned by the map");
     }
 
     [Test]

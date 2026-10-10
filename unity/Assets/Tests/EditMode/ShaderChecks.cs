@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Rendering;
@@ -14,8 +15,8 @@ using UnityEngine.Rendering;
 /// pass vacuously: at least one subshader must have passes that are built for GLES3 and all compile.
 /// Each variant is compiled with forExternalTool, which returns the generated GLSL (the plain overload returns no GLES3
 /// output, so only HLSL front-end errors would show), and the GLSL is checked against WebGL 2 (GlslErrors): it must be
-/// GLSL ES 3.00 and must not require an extension, which WebGL 2 does not have for anything the translator requires
-/// (review I3: a fragment UAV write compiles for Metal and requires GL_EXT_texture_buffer here).</summary>
+/// GLSL ES 3.00 and must not require an extension outside AllowedRequires (default-deny; review I3: a fragment UAV write
+/// compiles for Metal and requires GL_EXT_texture_buffer here, which WebGL 2 does not have).</summary>
 public static class ShaderChecks
 {
     static readonly string[][] Variants = { Array.Empty<string>(), new[] { "_MAIN_LIGHT_SHADOWS" } };
@@ -24,16 +25,29 @@ public static class ShaderChecks
     static readonly Regex Version = new Regex(@"#version\s+([^\r\n]*)");
     static readonly Regex Require = new Regex(@"#extension\s+(\w+)\s*:\s*require");
 
-    /// <summary>What in generated GLES3 GLSL WebGL 2 cannot run: no GLSL, a version other than "300 es", or an extension
-    /// the code requires.</summary>
-    public static List<string> GlslErrors(string glsl)
+    /// <summary>The `#extension X : require` lines the check accepts. Default-deny: an entry needs a comment saying it was
+    /// verified to work in WebGL 2 in headless Chrome (a `compileShader` of a shader carrying that line, see plan Task 3
+    /// Step 0). An extension is never added because the check complained, only because the compile succeeded.</summary>
+    static readonly HashSet<string> AllowedRequires = new HashSet<string>
+    {
+        // (empty: add `"GL_..."` with a "verified to work in WebGL 2 in headless Chrome, <date>, <Chrome version>" comment)
+    };
+
+    public static List<string> GlslErrors(string glsl) => GlslErrors(glsl, AllowedRequires);
+
+    /// <summary>What in generated GLES3 GLSL WebGL 2 cannot run: no GLSL, a version other than "300 es", or a required
+    /// extension that is not in <paramref name="allowedRequires"/>.</summary>
+    public static List<string> GlslErrors(string glsl, ISet<string> allowedRequires)
     {
         var errors = new List<string>();
         var versions = Version.Matches(glsl ?? "");
         if (versions.Count == 0) errors.Add("no GLSL was generated");
         foreach (Match v in versions)
             if (v.Groups[1].Value.Trim() != "300 es") errors.Add($"#version {v.Groups[1].Value.Trim()}: WebGL 2 runs GLSL ES 3.00 only");
-        foreach (Match r in Require.Matches(glsl ?? "")) errors.Add($"requires {r.Groups[1].Value}, which WebGL 2 does not have");
+        foreach (Match r in Require.Matches(glsl ?? ""))
+            if (!allowedRequires.Contains(r.Groups[1].Value))
+                errors.Add($"requires {r.Groups[1].Value}, which is not in ShaderChecks.AllowedRequires: if WebGL 2 supports it, " +
+                           "verify it in headless Chrome (plan Task 3 Step 0) and add it there with a comment saying so");
         return errors;
     }
 
@@ -50,7 +64,8 @@ public static class ShaderChecks
         var errors = new List<string>();
         int usable = 0;
         var data = ShaderUtil.GetShaderData(shader);
-        for (int s = 0; s < data.SubshaderCount; s++)
+        // GetSerializedSubshader indexes the serialized subshaders, which can be fewer than SubshaderCount (URP Lit: 2 vs 1).
+        for (int s = 0; s < data.SerializedSubshaderCount; s++)
         {
             var sub = data.GetSerializedSubshader(s);
             var subErrors = new List<string>();

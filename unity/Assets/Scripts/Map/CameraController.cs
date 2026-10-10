@@ -23,7 +23,9 @@ namespace Statecraft.Game.Map
     [RequireComponent(typeof(CameraRig))]
     public sealed class CameraController : MonoBehaviour
     {
-        public const float MinDistance = 20000f, MaxDistance = 250000f;
+        /// <summary>6 km is the hero zoom (owner ruling 2026-10-11: symbolic-scale settlements need a closer view); 250 km
+        /// shows the country.</summary>
+        public const float MinDistance = 6000f, MaxDistance = 250000f;
         public const float PanPerSecond = 0.8f;        // distances per second at full key press
         public const float DragPanPerPixel = 0.0012f;  // distances per pixel of drag
         public const float ZoomPerStep = 0.1f;         // fraction of the distance per wheel notch

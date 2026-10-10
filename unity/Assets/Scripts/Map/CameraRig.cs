@@ -6,9 +6,8 @@ using UnityEngine.Rendering.Universal;
 
 namespace Statecraft.Game.Map
 {
-    /// <summary>Diorama camera: fixed 50-degree pitch, 35-degree FOV, Gaussian far blur beyond the look-at point (tilt-shift look).
-    /// Yaw turns the view around the look-at point (0 = looking north); CameraController drives LookAt, Distance and Yaw.
-    /// Gaussian, not Bokeh: physical Bokeh DoF keeps everything sharp at 100 km focus distances.</summary>
+    /// <summary>Diorama camera: fixed 50-degree pitch, 35-degree FOV, a two-band tilt-shift (TiltShiftFeature) driven from Apply.
+    /// Yaw turns the view around the look-at point (0 = looking north); CameraController drives LookAt, Distance and Yaw.</summary>
     public sealed class CameraRig : MonoBehaviour
     {
         public const float Pitch = 50f, Fov = 35f;
@@ -19,11 +18,11 @@ namespace Statecraft.Game.Map
         /// <summary>The largest inset the projection applies (TopInset is clamped to it); at this pitch and FOV the top of
         /// the view still looks down, so the sky never shows (MapSceneTests.TheCameraClearsToTheSeaColour).</summary>
         public const float MaxTopInset = 0.5f;
-        DepthOfField _dof;
 
         /// <summary>Undo actions for state Init changes outside the rig (the URP asset's shadow distance...). MapScene.Build hands
         /// them to the map's MapRuntimeAssets right after Init, so destroying the map undoes them.</summary>
         public readonly List<Action> TeardownActions = new List<Action>();
+        bool initialised;   // only a rig the map set up fits the shadow distance (bare rigs in tests must not touch the URP asset)
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
         /// (MapScene registers it with MapRuntimeAssets).</summary>
@@ -42,9 +41,18 @@ namespace Statecraft.Game.Map
             cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             var vol = new GameObject("PostFX").AddComponent<Volume>(); vol.isGlobal = true;
             vol.profile = ScriptableObject.CreateInstance<VolumeProfile>();
-            _dof = vol.profile.Add<DepthOfField>(true); _dof.mode.Override(DepthOfFieldMode.Gaussian);
-            _dof.gaussianMaxRadius.Override(1.5f);
             Volume = vol;
+            MapGrade.Apply(vol.profile);
+            var sun = MapLighting.FindSun();
+            TeardownActions.Add(MapLighting.Capture(sun));   // first, so it runs last (review M1)
+            MapLighting.Apply(sun);
+            TeardownActions.Add(VisualToggles.Register("shadows", on => { var s = MapLighting.FindSun(); if (s != null) s.shadows = on ? LightShadows.Soft : LightShadows.None; }));
+            TeardownActions.Add(ShadowFit.Restore);
+            TeardownActions.Add(TiltShift.Reset);
+            TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
+            TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
+            if (TiltShift.OffRequested()) TiltShift.Enabled = false;
+            initialised = true;
             Apply();
         }
 
@@ -52,8 +60,9 @@ namespace Statecraft.Game.Map
         {
             transform.rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.position = LookAt - transform.forward * Distance;
-            if (_dof != null) { _dof.gaussianStart.Override(Distance * 1.05f); _dof.gaussianEnd.Override(Distance * 1.8f); }
+            TiltShift.Apply(TopInset, Distance);
             ApplyProjection();
+            if (initialised) ShadowFit.Apply(GetComponent<Camera>());   // after the projection: the fit reads the corner rays
         }
 
         /// <summary>Sets the camera's projection for <see cref="TopInset"/> only (the transform is left alone). Apply calls it

@@ -170,22 +170,30 @@ public class VisualHarnessTests
     }
 
     /// <summary>Review M8: undo actions an earlier Init left behind (Init called outside MapScene.Build) run on the next
-    /// Init instead of piling up.</summary>
+    /// Init instead of piling up. (From Task 2 on, Init registers its own undo actions: the shadow fit and the toggle.)</summary>
     [Test]
     public void InitRunsAndClearsUndoActionsLeftByAnEarlierInit()
     {
         var go = new GameObject("cam", typeof(Camera)); var rig = go.AddComponent<CameraRig>();
         int ran = 0;
-        rig.TeardownActions.Add(() => ran++);
+        System.Action stale = () => ran++;
+        UnityEngine.Rendering.Volume? first = null;
         try
         {
+            rig.Init(); first = rig.Volume;
+            int own = rig.TeardownActions.Count;   // Init's own undo actions (Task 2: the lighting, the toggle, the shadow fit)
+            rig.TeardownActions.Add(stale);
             rig.Init();
             Assert.AreEqual(1, ran);
-            CollectionAssert.IsEmpty(rig.TeardownActions);
+            CollectionAssert.DoesNotContain(rig.TeardownActions, stale);
+            Assert.AreEqual(own, rig.TeardownActions.Count, "a second Init does not pile up undo actions (review M3)");
         }
         finally
         {
-            if (rig.Volume != null) { Object.DestroyImmediate(rig.Volume.profile); Object.DestroyImmediate(rig.Volume.gameObject); }
+            for (int i = rig.TeardownActions.Count - 1; i >= 0; i--) rig.TeardownActions[i]();   // the shadow fit, the toggle
+            rig.TeardownActions.Clear();
+            foreach (var vol in new[] { first, rig.Volume })
+                if (vol != null) { Object.DestroyImmediate(vol.profile); Object.DestroyImmediate(vol.gameObject); }
             Object.DestroyImmediate(go);
         }
     }
@@ -263,6 +271,21 @@ public class VisualHarnessTests
             Assert.That(errors, Has.Some.Contains("GL_EXT_texture_buffer"), string.Join("\n", errors));
         }
         finally { Object.DestroyImmediate(shader); }
+    }
+
+    [Test]
+    public void AnAllowedRequireIsAcceptedAndAnUnknownOneFailsWithHowToAddIt()
+    {
+        const string glsl = "#version 300 es\n#extension GL_EXT_demo_allowed : require\nvoid main() {}";
+        Assert.IsEmpty(ShaderChecks.GlslErrors(glsl, new HashSet<string> { "GL_EXT_demo_allowed" }), "an allowed require passes");
+        var errors = ShaderChecks.GlslErrors(glsl, new HashSet<string>());
+        Assert.AreEqual(1, errors.Count, string.Join("\n", errors));
+        StringAssert.Contains("GL_EXT_demo_allowed", errors[0]);
+        StringAssert.Contains("AllowedRequires", errors[0], "the message says where to add it");
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_other : require\nvoid main() {}",
+            new HashSet<string> { "GL_EXT_demo_allowed" }), "allowing one extension allows no other");
+        Assert.IsEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_demo_allowed : enable\nvoid main() {}", new HashSet<string>()),
+            "enable and warn never fail");
     }
 
     /// <summary>Review M6: the first pose's first runs were noisier (a cold start), so before the first pose every
