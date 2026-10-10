@@ -16,12 +16,14 @@ namespace Statecraft.Game.UI
         readonly VisualElement screen; readonly SimBridge bridge; readonly UiText text;
         readonly Button reset, submit;
         Dictionary<string, double> draft = new Dictionary<string, double>();
+        GameSession session;
 
         public BudgetPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
             screen = root.Q<VisualElement>("screen-budget"); this.bridge = bridge; this.text = text;
             reset = screen.Q<Button>("budget-reset"); submit = screen.Q<Button>("budget-submit");
             reset.clicked += Reset; submit.clicked += Submit;
+            session = bridge.Session;
             draft = Current();
             bridge.Changed += OnChanged;
             Render();
@@ -37,24 +39,34 @@ namespace Statecraft.Game.UI
 
         void Reset() { draft = Current(); Render(); }
 
-        // A new game, a loaded save or a finished turn replaces the draft unless the player has unsaved edits.
+        // A different session (a new game or a loaded save) always replaces the draft. Within a session, a draft the player
+        // has edited survives End Turn (it was never submitted, so it is never applied; the status still says "Changed");
+        // an untouched one follows the budget.
         void OnChanged()
         {
-            if (bridge.QueuedLike(new AllocateBudget(new Dictionary<string, double>())) == null && !Dirty) draft = Current();
+            if (bridge.Session != session) { session = bridge.Session; draft = Current(); }
+            else if (!Dirty && QueuedShares == null) draft = Current();
             Render();
         }
+
+        IReadOnlyDictionary<string, double>? QueuedShares => (bridge.QueuedLike(new AllocateBudget(new Dictionary<string, double>())) as AllocateBudget)?.Shares;
+
+        static bool Same(IReadOnlyDictionary<string, double> a, IReadOnlyDictionary<string, double> b) =>
+            a.Keys.Union(b.Keys).All(k => Math.Abs((a.TryGetValue(k, out var x) ? x : 0) - (b.TryGetValue(k, out var y) ? y : 0)) <= 1e-9);
 
         /// <summary>The shares the screen proposes.</summary>
         public IReadOnlyDictionary<string, double> Draft => draft;
 
         Dictionary<string, double> Current() => new Dictionary<string, double>(bridge.State.Budget);
 
-        bool Dirty => draft.Any(kv => Math.Abs(kv.Value - (bridge.State.Budget.TryGetValue(kv.Key, out var v) ? v : 0)) > 1e-9);
+        // Compares the union of the draft's and the budget's offices.
+        bool Dirty => !Same(draft, bridge.State.Budget);
 
         /// <summary>Moves <paramref name="office"/> by <paramref name="delta"/> (clamped to [0, 1]) and rescales the other
         /// shares proportionally; the largest other share absorbs rounding so the total is exactly 1.</summary>
         public static Dictionary<string, double> Adjust(IReadOnlyDictionary<string, double> shares, string office, double delta)
         {
+            if (!shares.ContainsKey(office)) return new Dictionary<string, double>(shares);   // not a budget line: nothing to move
             var target = Math.Max(0, Math.Min(1, shares[office] + delta));
             var others = shares.Keys.Where(k => k != office).OrderBy(k => k, StringComparer.Ordinal).ToList();
             var rest = others.Sum(k => shares[k]);
@@ -63,15 +75,27 @@ namespace Statecraft.Game.UI
             if (others.Count > 0)
             {
                 var largest = others.OrderByDescending(k => result[k]).ThenBy(k => k, StringComparer.Ordinal).First();
-                result[largest] = 1 - result.Where(kv => kv.Key != largest).Sum(kv => kv.Value);
+                result[largest] = Math.Max(0, 1 - result.Where(kv => kv.Key != largest).Sum(kv => kv.Value));
             }
             return result;
         }
 
-        public void Change(string office, double delta) { draft = Adjust(draft, office, delta); Render(); }
+        public void Change(string office, double delta)
+        {
+            if (!draft.ContainsKey(office)) draft = Current();   // a draft without this line is stale: start again from the budget
+            draft = Adjust(draft, office, delta);
+            Render();
+        }
 
         void Submit()
         {
+            var queued = QueuedShares;
+            if (!Dirty)
+            {
+                // Same as today's budget: nothing to put to the vote and no attention to spend; an earlier submission is withdrawn.
+                if (queued != null) bridge.Withdraw(bridge.QueuedLike(new AllocateBudget(new Dictionary<string, double>()))!);
+                return;
+            }
             // The bridge copies the shares and reports a refusal itself; the sim checks coverage and the sum.
             bridge.Queue(new AllocateBudget(new Dictionary<string, double>(draft)));
         }
@@ -104,8 +128,11 @@ namespace Statecraft.Game.UI
             screen.Q<Label>("budget-money").text = text.Format("budget.money", s.Treasury, s.Debt, s.FxReserves);
             var flows = EconomySystem.Flows(c, s, 1.0);   // the sim's own arithmetic, for a year
             screen.Q<Label>("budget-flow").text = text.Format("budget.flow", flows.Tax, flows.Spending, flows.Mobilization);
-            var queued = bridge.QueuedLike(new AllocateBudget(new Dictionary<string, double>())) != null;
-            screen.Q<Label>("budget-status").text = queued ? text["budget.queued"] : Dirty ? text["budget.unsaved"] : "";
+            var queuedShares = QueuedShares;
+            // The status says what is actually queued: edits after Submit are "Changed" again.
+            screen.Q<Label>("budget-status").text = queuedShares != null ? (Same(draft, queuedShares) ? text["budget.queued"] : text["budget.unsaved"])
+                : Dirty ? text["budget.unsaved"] : "";
+            submit.SetEnabled(Dirty || queuedShares != null);
         }
     }
 }

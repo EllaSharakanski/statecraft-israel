@@ -67,11 +67,11 @@ public class BudgetScreenTests
         var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
         var budget = new BudgetPresenter(ui.Root, bridge, Text);
         foreach (var office in C.Rules.BudgetStart.Keys)
-            Assert.AreEqual($"effect x{EffectsSystem.BudgetFactor(budget.Draft, office):0.00}", ui.Q<Label>($"budget-{office}-factor").text, office);
+            Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, office):0.00}"), ui.Q<Label>($"budget-{office}-factor").text, office);
         var f = EconomySystem.Flows(C, bridge.State, 1.0);
-        Assert.AreEqual($"Taxes {f.Tax:0.0}m, spending {f.Spending:0.0}m and reserve call-up {f.Mobilization:0.0}m a year", ui.Q<Label>("budget-flow").text);
+        Assert.AreEqual(System.FormattableString.Invariant($"Taxes {f.Tax:0.0}m, spending {f.Spending:0.0}m and reserve call-up {f.Mobilization:0.0}m a year"), ui.Q<Label>("budget-flow").text);
         UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
-        Assert.AreEqual($"effect x{EffectsSystem.BudgetFactor(budget.Draft, "education_minister"):0.00}", ui.Q<Label>("budget-education_minister-factor").text);
+        Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, "education_minister"):0.00}"), ui.Q<Label>("budget-education_minister-factor").text);
     }
 
     [Test]
@@ -98,7 +98,7 @@ public class BudgetScreenTests
         new BudgetPresenter(ui.Root, bridge, Text);
         var leg = Offices.Legislature(C, g.State.Date)!;
         var (seats, size) = PoliticsSystem.CoalitionSeats(C, g.State.Date);
-        Assert.AreEqual($"The {leg.Body} must approve it: the coalition holds {seats} of {size} seats", ui.Q<Label>("budget-vote").text);
+        Assert.AreEqual(System.FormattableString.Invariant($"The {leg.Body} must approve it: the coalition holds {seats} of {size} seats"), ui.Q<Label>("budget-vote").text);
     }
 
     [Test]
@@ -113,5 +113,95 @@ public class BudgetScreenTests
         Assert.AreEqual(0, bridge.Queued.Count);
         bridge.EndTurn();
         Assert.AreEqual("untouched", ui.Q<Label>("budget-money").text);
+    }
+
+    static (UiTestKit ui, SimBridge bridge, BudgetPresenter budget) Open()
+    {
+        var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        return (ui, bridge, new BudgetPresenter(ui.Root, bridge, Text));
+    }
+
+    [Test]
+    public void ALoadedGameNeverInheritsADirtyDraft()
+    {
+        var (ui, bridge, budget) = Open();
+        using (ui)
+        {
+            UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
+            var other = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+            bridge.Replace(other);
+            foreach (var kv in other.State.Budget) Assert.AreEqual(kv.Value, budget.Draft[kv.Key], 1e-12, kv.Key);
+            Assert.AreEqual("", ui.Q<Label>("budget-status").text);
+            Assert.AreEqual("6%", ui.Q<Label>("budget-education_minister-share").text);
+        }
+    }
+
+    [Test]
+    public void AnUnsubmittedDraftSurvivesEndTurnAndIsNeverAppliedSilently()
+    {
+        var (ui, bridge, budget) = Open();
+        using (ui)
+        {
+            var before = bridge.State.Budget["education_minister"];
+            UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
+            bridge.EndTurn();
+            Assert.AreEqual(before, bridge.State.Budget["education_minister"], 1e-12, "never submitted, so never applied");
+            Assert.AreEqual(before + 0.05, budget.Draft["education_minister"], 1e-9, "the draft is kept");
+            Assert.AreEqual("Changed: submit to put it to the vote", ui.Q<Label>("budget-status").text);
+        }
+    }
+
+    [Test]
+    public void TheStatusFollowsWhatIsActuallyQueued()
+    {
+        var (ui, bridge, budget) = Open();
+        using (ui)
+        {
+            UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
+            ui.Press("budget-submit");
+            Assert.AreEqual("Submitted: takes effect at End Turn", ui.Q<Label>("budget-status").text);
+            UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
+            Assert.AreEqual("Changed: submit to put it to the vote", ui.Q<Label>("budget-status").text);
+            ui.Press("budget-submit");
+            Assert.AreEqual("Submitted: takes effect at End Turn", ui.Q<Label>("budget-status").text);
+            var queued = (AllocateBudget)bridge.Queued.Single();
+            foreach (var kv in budget.Draft) Assert.AreEqual(kv.Value, queued.Shares[kv.Key], 1e-12);
+        }
+    }
+
+    [Test]
+    public void SubmittingAnUnchangedBudgetSpendsNothing()
+    {
+        var (ui, bridge, _) = Open();
+        using (ui)
+        {
+            ui.Press("budget-submit");
+            Assert.AreEqual(0, bridge.Queued.Count);
+            Assert.AreEqual(bridge.State.Attention, bridge.AttentionLeft, 1e-12);
+            Assert.IsFalse(ui.Q<Button>("budget-submit").enabledSelf);
+            UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
+            Assert.IsTrue(ui.Q<Button>("budget-submit").enabledSelf);
+            ui.Press("budget-submit");
+            ui.Press("budget-reset");                                 // back to today's budget: submitting now withdraws the order
+            Assert.IsTrue(ui.Q<Button>("budget-submit").enabledSelf);
+            ui.Press("budget-submit");
+            Assert.AreEqual(0, bridge.Queued.Count);
+        }
+    }
+
+    [Test]
+    public void AdjustAndChangeSurviveAMissingOffice()
+    {
+        var shares = new Dictionary<string, double> { ["a"] = 0.5, ["b"] = 0.5 };
+        var same = BudgetPresenter.Adjust(shares, "zzz", 0.05);
+        Assert.AreEqual(0.5, same["a"]); Assert.IsFalse(same.ContainsKey("zzz"));
+        foreach (var v in BudgetPresenter.Adjust(new Dictionary<string, double> { ["a"] = 0.3, ["b"] = 0.3, ["c"] = 0.4 }, "a", 0.7).Values) Assert.GreaterOrEqual(v, 0);
+        var (ui, bridge, budget) = Open();
+        using (ui)
+        {
+            Assert.DoesNotThrow(() => budget.Change("zzz", 0.05));
+            foreach (var kv in bridge.State.Budget) Assert.AreEqual(kv.Value, budget.Draft[kv.Key], 1e-12);
+        }
     }
 }
