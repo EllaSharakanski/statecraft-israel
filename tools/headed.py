@@ -23,15 +23,12 @@ import argparse
 import asyncio
 import base64
 import statistics
-import functools
-import http.server
 import json
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 from pathlib import Path
 
@@ -122,8 +119,7 @@ class Browser:
 
     async def __aenter__(self):
         import websockets  # lazy: the normal tools test run does not install it
-        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", self.port), functools.partial(web_check.Handler, directory=str(self.build)))
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.server = web_check.serve(self.build, self.port)
         self.base = f"http://localhost:{self.port}/"
         w, h = self.size
         flags = browser_flags(self.profile, w, h, self.dpr, self.uncapped, self.keep_awake)

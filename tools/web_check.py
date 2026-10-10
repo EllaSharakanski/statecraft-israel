@@ -244,8 +244,16 @@ class Page:
                 self.ready.set()
 
 
-def serve(root: Path) -> http.server.ThreadingHTTPServer:
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(root)))
+class Server(http.server.ThreadingHTTPServer):
+    """The static server. socketserver listens with a backlog of 5, and macOS resets a connection that overflows it (no
+    SYN retry). The boot fetches every StreamingAssets file at once, each over a new HTTP/1.0 connection, up to 6 at a
+    time per host in Chrome; on a loaded machine the accept thread lags, a connection is reset and the boot fails
+    (BOOT FAIL <file>: Unknown Error). 128 is macOS's kern.ipc.somaxconn."""
+    request_queue_size = 128
+
+
+def serve(root: Path, port: int = 0) -> Server:
+    server = Server(("127.0.0.1", port), functools.partial(Handler, directory=str(root)))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
 
