@@ -1,0 +1,64 @@
+#nullable enable
+using System;
+using System.Reflection;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace Statecraft.Tests.EditMode
+{
+    /// <summary>Unity-MCP (com.ivanmurzak.unity.mcp) is an interactive-editor tool. In batch mode (tests and builds) it must
+    /// not connect anywhere or start its local server, and no part of it may ship in a player build.</summary>
+    public sealed class UnityMcpGuardTests
+    {
+        static Type Guard()
+        {
+            var t = Type.GetType("Statecraft.Game.EditorTools.UnityMcpGuard, Assembly-CSharp-Editor");
+            Assert.IsNotNull(t, "the UnityMcpGuard editor hook exists");
+            return t!;
+        }
+
+        static string[] Filter(params string[] assemblies) =>
+            (string[])Guard().GetMethod("Filter", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { assemblies })!;
+
+        [Test]
+        public void PlayerBuildsDropThePluginAndTheDllsItsResolverDownloaded()
+        {
+            var kept = Filter(
+                "Library/Bee/PlayerScriptAssemblies/Statecraft.Game.dll",
+                "Library/Bee/PlayerScriptAssemblies/com.IvanMurzak.Unity.MCP.Runtime.dll",
+                "Library/Bee/PlayerScriptAssemblies/com.IvanMurzak.Unity.MCP.TestFiles.dll",
+                "Library/Bee/PlayerScriptAssemblies/Extensions.Unity.PlayerPrefsEx.dll",
+                "/abs/unity/Assets/Plugins/NuGet/McpPlugin.dll",
+                @"C:\abs\unity\Assets\Plugins\NuGet\System.Text.Json.dll",
+                "Assets/Plugins/Statecraft/Statecraft.Sim.dll",
+                "Assets/Plugins/Statecraft/YamlDotNet.dll",
+                "/Applications/Unity/Managed/UnityEngine/UnityEngine.CoreModule.dll");
+            CollectionAssert.AreEqual(new[]
+            {
+                "Library/Bee/PlayerScriptAssemblies/Statecraft.Game.dll",
+                "Assets/Plugins/Statecraft/Statecraft.Sim.dll",
+                "Assets/Plugins/Statecraft/YamlDotNet.dll",
+                "/Applications/Unity/Managed/UnityEngine/UnityEngine.CoreModule.dll",
+            }, kept);
+        }
+
+        [Test]
+        public void InBatchModeThePluginStaysOfflineForThisProcessOnly()
+        {
+            var editor = Type.GetType("com.IvanMurzak.Unity.MCP.UnityMcpPluginEditor, com.IvanMurzak.Unity.MCP.Editor");
+            Assume.That(Application.isBatchMode, "only batch mode is held offline");
+            Assume.That(editor, Is.Not.Null, "the plugin compiles once its resolver has downloaded its DLLs");
+            const BindingFlags any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
+            Assert.AreEqual("held offline", Guard().GetField("Status", any)!.GetValue(null));
+            var instance = editor!.GetProperty("Instance", any)!.GetValue(null);
+            var config = editor.GetField("unityConnectionConfig", any)!.GetValue(instance)!;
+            Assert.IsFalse((bool)config.GetType().GetProperty("KeepConnected")!.GetValue(config)!, "no connection");
+            Assert.IsFalse((bool)config.GetType().GetProperty("KeepServerRunning")!.GetValue(config)!, "no local server");
+            // Recorded as runtime overrides, so the plugin never writes them into the user's own settings file.
+            var record = editor.GetProperty("RuntimeOverrides", any)!.GetValue(instance)!;
+            var contains = record.GetType().GetMethod("Contains")!;
+            Assert.IsTrue((bool)contains.Invoke(record, new object[] { "KeepConnected" })!);
+            Assert.IsTrue((bool)contains.Invoke(record, new object[] { "KeepServerRunning" })!);
+        }
+    }
+}

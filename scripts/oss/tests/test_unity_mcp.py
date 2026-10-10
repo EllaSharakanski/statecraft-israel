@@ -45,6 +45,11 @@ def test_project_settings_do_not_commit_the_plugin_gate_defines():
     assert "UNITY_MCP_" not in text
 
 
-def test_downloaded_nuget_dlls_are_ignored():
+def test_downloads_and_generated_agent_files_are_ignored():
+    # The NuGet DLLs are third-party binaries fetched on first open; .mcp.json can carry the local server's bearer
+    # token; the generated skills change with every plugin version. UserSettings/ (the plugin's per-user config and
+    # local token) was already ignored.
     ignore = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
-    assert "unity/Assets/Plugins/NuGet/" in ignore and "unity/Assets/Plugins/NuGet.meta" in ignore
+    for rule in ("unity/Assets/Plugins/NuGet/", "unity/Assets/Plugins/NuGet.meta", ".mcp.json", "unity/.claude/",
+                 "unity/UserSettings/", "unity/Library/"):
+        assert rule in ignore, rule
