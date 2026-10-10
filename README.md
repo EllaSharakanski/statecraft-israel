@@ -1,6 +1,6 @@
 **English** · [עברית](README.he.md)
 
-https://github.com/user-attachments/assets/5d0d9b40-65eb-4db9-b951-8195ddeb1ca8
+https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
 <p align="center"><em>The cinematic trailer (1:23, with sound), made with AI video tools from our concept art; it is not in-game footage.</em></p>
 

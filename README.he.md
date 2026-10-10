@@ -2,7 +2,7 @@
 
 <div align="center">
 
-https://github.com/user-attachments/assets/5d0d9b40-65eb-4db9-b951-8195ddeb1ca8
+https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
 <em>הטריילר הקולנועי (1:23, עם קול), שנוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו; אינו צילום מתוך המשחק.</em>
 
