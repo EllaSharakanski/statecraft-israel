@@ -492,6 +492,7 @@ and tilt-shift are not in this worktree).
 | 8 (fix 1) | t08-grid-r1 | captures/visual/t08-grid-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
 | merge | t-merge | captures/visual/t-merge/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png (before the grade re-tune: t-merge-pre, t-merge-r1) | (owner) Note: the land is one dry-grass gold with no fields, orchards or cities yet; that gap is content (art track), not the grade. |
+| merge (fix 1) | t-merge-r3 | captures/visual/t-merge-r3/*-compare*.png (t-merge-r2 = with the rejected border colour) | (owner) Note: olive coastal plain and valleys; the selected hex is now the promo's ivory ring colour, gold stays the UI chrome's. |
 
 ## Task 9: labels
 
@@ -596,7 +597,7 @@ warning from `Assets/(Scripts|Editor|Tests)`. Tools 143 + 1 (main) + 29 (Track B
 | gameplay03, **`Saturation` 0** | **0.5822** | **0.2168** | **0.1078** |
 
 Diorama02 now meets both bars (warmth in [0.087, 0.145], saturation <= 0.48). `TheGradeLiftsSaturation`: 0.568 ->
-0.598 (+5.3%, bar 5%). Gameplay03 stays 0.20 over its promo in saturation and 0.04 in warmth: the promo's frame is
+0.598 (+5.3%, bar 5%; replaced in fix round 1). Gameplay03 stays 0.20 over its promo in saturation and 0.04 in warmth: the promo's frame is
 green fields and orchards, which no global grade can supply.
 
 **Grid (Task 8 N2).** Land opacity 0.25 -> 0.35: at 0.25 the graded land lines were invisible on the plain at both
@@ -606,3 +607,22 @@ thresholds unchanged.
 **Web.** `BUILD Succeeded WebGL -> Builds/Web-disabled: 77.1 MB on disk, 0 errors`; `?golden&smoke=5` PASS with all
 three values from docs/determinism.md. Boot (headed, `machine_lock --exclusive`, median of 3): `--cpu 1` map_build 456 /
 first_frame 3585 ms (budgets 743 / 5321); `--cpu 4` 1863 / 6952 ms (budgets 2720 / 10445). Both within.
+
+### Merge point fix round 1 (merge review)
+- **I1.** `TheGradeLiftsSaturation` is replaced by `TheGradeKeepsSaturationNearTheUngradedFrame`: graded/ungraded
+  saturation at gameplay03 in [0.98, 1.12], and `MapGrade.Saturation` in [-10, 4]. Measured x1.042.
+- **Palette (art gap a).** `coastal_plain` Lit(0.52, 0.54, 0.33), `valley` Lit(0.50, 0.53, 0.33). WebGL:
+
+| Shot | Saturation | Contrast | Warmth |
+|---|---|---|---|
+| promo 02 / promo 03 | 0.425 / 0.382 | 0.200 / 0.203 | 0.145 / 0.064 |
+| diorama02, t-merge -> t-merge-r3 | 0.4729 -> 0.4694 | 0.2074 -> 0.2034 | 0.1099 -> 0.1045 |
+| gameplay03, t-merge -> t-merge-r3 | 0.5822 -> 0.5646 | 0.2168 -> 0.1959 | 0.1078 -> 0.0774 |
+
+  EditMode 436/436 with no threshold change: selection vs land 33.4 / 35.5 (gameplay03), colour-blind selection-land
+  34.5 / 36.4, rift lines 0.121 / 0.104 / 0.026.
+- **Border land colour (art gap b): not taken.** `BorderLandColour` (0.76, 0.66, 0.47) (t-merge-r2) rendered the
+  south-west slab at (0.69, 0.58, 0.37), against (0.56, 0.50, 0.37) before. The terrain next to it renders (0.82, 0.69,
+  0.43), so the step shrank. But the skirt is 17% of diorama02, and its saturation rose 0.34 -> 0.47. That added +0.021
+  to the frame, which reached 0.488 against the 0.48 bar (warmth 0.129). Reverted. A lower-chroma colour of the same
+  luma is the next candidate.
