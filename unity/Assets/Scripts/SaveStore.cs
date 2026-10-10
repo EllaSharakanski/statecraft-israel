@@ -25,7 +25,7 @@ namespace Statecraft.Game
 
         public string AutosavePath => Path.Combine(Directory, AutosaveName);
 
-        public virtual void WriteAutosave(string text)
+        public void WriteAutosave(string text)
         {
             System.IO.Directory.CreateDirectory(Directory);
             var tmp = AutosavePath + ".tmp";
@@ -35,8 +35,10 @@ namespace Statecraft.Game
         }
 
         /// <summary>The autosave text, or null. WriteAutosave deletes the old file only after the .tmp is completely written, so
-        /// a crash between the delete and the move leaves just the .tmp, which is complete: it is read and promoted. When both
-        /// exist the .tmp may be partial and is ignored.</summary>
+        /// a crash between the delete and the move leaves just the .tmp, and then the .tmp is complete: it is read and promoted.
+        /// (A crash in the middle of the very first write can leave a partial .tmp and no autosave.txt; that ends safely too:
+        /// the load throws, the file is set aside and a new game starts with a note.) When both files exist the .tmp may be
+        /// partial and is ignored.</summary>
         public virtual string? ReadAutosave()
         {
             if (File.Exists(AutosavePath)) return File.ReadAllText(AutosavePath);
@@ -48,15 +50,23 @@ namespace Statecraft.Game
             return text;
         }
 
-        /// <summary>Moves an unreadable autosave aside (autosave.bad.txt) so it is kept for a bug report.</summary>
+        /// <summary>Moves an unreadable autosave aside (autosave.bad.txt) so it is kept for a bug report. With no autosave.txt it
+        /// sets aside a lingering .tmp instead (a .tmp that could not be promoted or read would otherwise be rejected, with a
+        /// note, on every start).</summary>
         public virtual void SetAsideAutosave()
         {
-            if (!File.Exists(AutosavePath)) return;
+            var source = File.Exists(AutosavePath) ? AutosavePath : File.Exists(AutosavePath + ".tmp") ? AutosavePath + ".tmp" : null;
+            if (source == null) return;
             var bad = Path.Combine(Directory, "autosave.bad.txt");
             if (File.Exists(bad)) File.Delete(bad);
-            File.Move(AutosavePath, bad);
+            File.Move(source, bad);
         }
 
-        public virtual void DeleteAutosave() { if (File.Exists(AutosavePath)) File.Delete(AutosavePath); }
+        /// <summary>Removes the autosave and any lingering .tmp (a leftover would be resurrected by the next start).</summary>
+        public virtual void DeleteAutosave()
+        {
+            if (File.Exists(AutosavePath)) File.Delete(AutosavePath);
+            if (File.Exists(AutosavePath + ".tmp")) File.Delete(AutosavePath + ".tmp");
+        }
     }
 }

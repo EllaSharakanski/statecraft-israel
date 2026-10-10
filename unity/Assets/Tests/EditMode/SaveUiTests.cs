@@ -304,4 +304,56 @@ public class SaveUiTests
         Assert.AreEqual("Turn 0", ui.Q<Label>("turn").text);
         Assert.AreEqual(DisplayStyle.None, ui.Q<Label>("toast").style.display.value);
     }
+
+    [Test]
+    public void ALingeringTmpIsSetAsideWhenThereIsNoAutosave()
+    {
+        // Promotion failed and the .tmp cannot be read: autosave.txt is missing, so the .tmp itself must be set aside,
+        // or it would be found, rejected and noted on every start.
+        var store = TempStore();
+        Directory.CreateDirectory(store.Directory);
+        File.WriteAllText(store.AutosavePath + ".tmp", "half a sav");
+        store.SetAsideAutosave();
+        Assert.IsFalse(File.Exists(store.AutosavePath + ".tmp"));
+        Assert.IsTrue(File.Exists(Path.Combine(store.Directory, "autosave.bad.txt")));
+        var notes = new List<string>();
+        Assert.AreEqual(0, GameStart.Begin(C, store, () => 1UL, notes, Text).State.Turn);
+        Assert.IsEmpty(notes, "nothing is left to reject on the next start");
+    }
+
+    [Test]
+    public void ABrokenFirstWriteEndsSafely()
+    {
+        // A crash in the middle of the very first write leaves a partial .tmp and no autosave.txt.
+        var store = TempStore();
+        var good = GameSession.New(C, 9, Mode.Historical).Save.Write();
+        Directory.CreateDirectory(store.Directory);
+        File.WriteAllText(store.AutosavePath + ".tmp", good.Substring(0, good.Length / 2));
+        var notes = new List<string>();
+        LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("Autosave rejected"));
+        var session = GameStart.Begin(C, store, () => 1UL, notes, Text);
+        Assert.AreEqual(0, session.State.Turn);
+        Assert.AreEqual(1, notes.Count);
+        Assert.IsFalse(File.Exists(store.AutosavePath + ".tmp"));
+        Assert.IsFalse(File.Exists(store.AutosavePath));
+        Assert.IsTrue(File.Exists(Path.Combine(store.Directory, "autosave.bad.txt")));
+    }
+
+    [Test]
+    public void NewGameAlsoRemovesALingeringTmp()
+    {
+        using var ui = new UiTestKit();
+        var store = TempStore();
+        var played = new SimBridge(GameSession.New(C, 3, Mode.Historical), Text);
+        played.EndTurn();
+        Directory.CreateDirectory(store.Directory);
+        File.WriteAllText(store.AutosavePath + ".tmp", played.Session.Save.Write());      // a complete save, only the .tmp
+        var toast = new ToastPresenter(ui.Root, played, Text);
+        new NewGamePresenter(ui.Root, played, store, toast, Text, () => 4UL);
+        ui.Press("new-game"); ui.Press("new-game");
+        Assert.IsFalse(File.Exists(store.AutosavePath + ".tmp"));
+        var notes = new List<string>();
+        Assert.AreEqual(0, GameStart.Begin(C, store, () => 1UL, notes, Text).State.Turn, "the next start does not resurrect the abandoned game");
+        Assert.IsEmpty(notes);
+    }
 }

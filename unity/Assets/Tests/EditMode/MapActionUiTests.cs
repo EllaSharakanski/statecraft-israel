@@ -214,9 +214,20 @@ public class MapActionUiTests
         Assert.LessOrEqual(view.style.left.value.value + view.style.width.value.value, 100f);
         Assert.LessOrEqual(view.style.top.value.value + view.style.height.value.value, 100f);
         // a view at the very edge stays inside the picture
-        mini.SetView(f, f.ToWorld(b.lon0, b.lat0, 0), 20000f);
-        Assert.GreaterOrEqual(view.style.left.value.value, 0f);
-        Assert.GreaterOrEqual(view.style.top.value.value, 0f);
+        foreach (var (lon, lat) in new[] { (b.lon0, b.lat0), (b.lon1, b.lat0), (b.lon0, b.lat1), (b.lon1, b.lat1) })
+        {
+            mini.SetView(f, f.ToWorld(lon, lat, 0), 20000f);
+            yield return null;
+            Assert.GreaterOrEqual(view.style.left.value.value, 0f);
+            Assert.GreaterOrEqual(view.style.top.value.value, 0f);
+            Assert.LessOrEqual(view.style.left.value.value + view.style.width.value.value, 100.001f, "right edge");
+            Assert.LessOrEqual(view.style.top.value.value + view.style.height.value.value, 100.001f, "bottom edge");
+            if (view.layout.width > 0)
+            {
+                Assert.LessOrEqual(view.layout.xMax, image.layout.width + 0.5f);
+                Assert.LessOrEqual(view.layout.yMax, image.layout.height + 0.5f);
+            }
+        }
         Assert.AreSame(image, view.parent, "the frame is positioned in the picture's own coordinates");
     }
 
@@ -346,5 +357,19 @@ public class MapActionUiTests
         var tex = mini.Texture;
         mini.Dispose();
         Assert.IsTrue(tex == null, "the texture is destroyed");
+    }
+
+    [Test]
+    public void AClickBeforeLayoutRaisesNothing()
+    {
+        using var ui = new UiTestKit();
+        using var mini = new MinimapPresenter(ui.Root, Hexes);
+        var image = ui.Q<VisualElement>("minimap-image");
+        Assert.IsFalse(image.layout.width > 0, "no layout has run yet");
+        int clicks = 0;
+        mini.Clicked += (lon, lat) => clicks++;
+        using (var e = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 0, mousePosition = new Vector2(10, 10) }))
+        { e.target = image; image.SendEvent(e); }
+        Assert.AreEqual(0, clicks);
     }
 }
