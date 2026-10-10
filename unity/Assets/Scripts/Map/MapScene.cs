@@ -25,9 +25,12 @@ namespace Statecraft.Game.Map
         public const string SelectionName = "HexSelection";
         /// <summary>The land and sea past the map's edge: a child of the terrain (so a rebuild destroys it).</summary>
         public const string BorderSkirtName = "BorderSkirt";
-        /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome); MapMaterials
-        /// bakes it into the editor-made HexSelection.mat.</summary>
-        public static readonly Color SelectionColour = new Color(1f, 0.84f, 0.38f);
+        /// <summary>Highlight colour of the selected hex, to read against every biome; MapMaterials bakes it into the
+        /// editor-made HexSelection.mat. Warm ivory since the visual v1 merge point: the earlier gold (1, 0.84, 0.38) shares
+        /// the hue of the terrain shader's dry-grass coastal plain (MapPalette), so at gameplay03 it stood out from the land
+        /// only by lightness (deltaE76 18.2 ungraded, under GradeTests' 20). Ivory differs in chroma too, like the promo's
+        /// white rings and lines.</summary>
+        public static readonly Color SelectionColour = new Color(1f, 0.95f, 0.80f);
         /// <summary>Width of the outline band, as a fraction of the hex circumradius (about 600 m on a 5 km hex).</summary>
         public const float SelectionWidth = 0.12f;
         /// <summary>Height of the band above the highest ground under it. 30 m since visual v1 Task 8 (it was the line mesh's

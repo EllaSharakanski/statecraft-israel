@@ -6,7 +6,7 @@ Shader "Statecraft/HexSelection"
 {
     Properties
     {
-        [MainColor] _BaseColor("Color", Color) = (1, 0.84, 0.38, 1)
+        [MainColor] _BaseColor("Color", Color) = (1, 0.95, 0.80, 1)
     }
     SubShader
     {
