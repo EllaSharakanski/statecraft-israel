@@ -353,15 +353,32 @@ public class HudTests
         Assert.AreEqual("-IL 3.0m", m.Treasury.Delta);
     }
 
-    /// <summary>Fix round 1, I2: Unity never rescales a sim number itself; 0..1 values go through PlayerText.Scale or
-    /// PlayerText.Percent (the minimap's layout percentages are not numbers the player reads).</summary>
-    [Test]
-    public void TheUiNeverMultipliesBy100Itself()
+    /// <summary>Fix round 2 (N4, N5): no script rescales a sim number for display itself: 0..1 values go through
+    /// PlayerText.Scale / Percent / PercentChange. Scans all of Assets/Scripts for "* 100", "100f", "/ 0.01" and "100.0".
+    /// Allowed, each for a reason that is not a displayed number:</summary>
+    static readonly (string file, string contains, string why)[] AllowedScale =
     {
-        foreach (var f in System.IO.Directory.GetFiles("Assets/Scripts/UI", "*.cs"))
+        ("MinimapPresenter.cs", "Length.Percent(", "the view frame's position and size in percent of the picture (layout, not text)"),
+    };
+
+    [Test]
+    public void NoScriptRescalesADisplayedNumberItself()
+    {
+        var pattern = new System.Text.RegularExpressions.Regex(@"\*\s*100\b|\b100f\b|/\s*0\.01\b|\b100\.0\b|\*\s*100f");
+        foreach (var f in System.IO.Directory.GetFiles("Assets/Scripts", "*.cs", System.IO.SearchOption.AllDirectories))
             foreach (var line in System.IO.File.ReadAllLines(f))
-                if (System.Text.RegularExpressions.Regex.IsMatch(line, @"\*\s*100\b") && !line.Contains("Length.Percent"))
+                if (pattern.IsMatch(line) && !System.Array.Exists(AllowedScale, a => System.IO.Path.GetFileName(f) == a.file && line.Contains(a.contains)))
                     Assert.Fail($"{System.IO.Path.GetFileName(f)}: {line.Trim()}");
+        foreach (var a in AllowedScale) Assert.IsNotEmpty(a.why);
+    }
+
+    /// <summary>Fix round 2 (N4): percentages have one formatter, PlayerText; no UI string formats a number as "%" itself.</summary>
+    [Test]
+    public void NoUiStringFormatsAPercentItself()
+    {
+        var yaml = AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text;
+        foreach (var line in yaml.Split('\n'))
+            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(line, @"\{\d+:[^}]*\}%"), "percent format in strings.en.yaml: " + line);
     }
 
     /// <summary>Fix round 1, M3: the top-bar captions are the content names in title case (a deliberate casing for

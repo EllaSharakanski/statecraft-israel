@@ -39,11 +39,10 @@ namespace Statecraft.Game.UI
             }
             Meter Points(double now, double? before)
             {
-                var v = Math.Round(PlayerText.Scale(now), MidpointRounding.AwayFromZero);
-                var value = t.Format("hud.percent", v);
+                var value = PlayerText.Percent(now);                   // the one formatter (fix round 2, N4)
                 if (before == null) return new Meter(value, "", 0);
-                var d = v - Math.Round(PlayerText.Scale(before.Value), MidpointRounding.AwayFromZero);
-                return d == 0 ? new Meter(value, "", 0) : new Meter(value, t.Format("hud.delta_percent", d), Math.Sign(d));
+                var delta = PlayerText.PercentChange(now - before.Value, 0);
+                return delta == "0%" ? new Meter(value, "", 0) : new Meter(value, delta, Math.Sign(now - before.Value));
             }
             Meter People(double now, double? before)
             {
