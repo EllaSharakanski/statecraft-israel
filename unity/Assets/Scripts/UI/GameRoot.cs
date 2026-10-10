@@ -152,9 +152,16 @@ namespace Statecraft.Game.UI
             mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); };
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
+            // One console line per turn, so a browser run (reload, Continue) can be checked against the hash.
+            Action<IReadOnlyList<Rejection>> onTurn = _ =>
+                Debug.Log(FormattableString.Invariant($"TURN {bridge.State.Turn} {bridge.State.Date:yyyy-MM-dd} hash {bridge.State.Hash()}"));
+            bridge.TurnEnded += onTurn;
+            logCamera = CameraLogRequested();
+            loggedDistance = loggedYaw = float.NaN;
             owned.Add(new Undo(() =>
             {
                 bridge.Changed -= onChanged;
+                bridge.TurnEnded -= onTurn;
                 pointer.HexClicked -= onHex;
                 if (pointer.IsOverUi == overUi) pointer.IsOverUi = null;
                 if (cameraController.IsOverUi == overUi) cameraController.IsOverUi = null;
@@ -166,12 +173,13 @@ namespace Statecraft.Game.UI
             SyncMinimap();
 
             if (notes.Count > 0) toast.Show(notes);
-            Debug.Log(FormattableString.Invariant($"GAME OK {bridge.State.Date:yyyy-MM-dd} turn {bridge.State.Turn}"));
+            Debug.Log(FormattableString.Invariant($"GAME OK {bridge.State.Date:yyyy-MM-dd} turn {bridge.State.Turn} hash {bridge.State.Hash()}"));
             if (smoke > 0)
             {
                 if (Application.isPlaying) StartCoroutine(Smoke(root, bridge, card, smoke, Debug.Log));
                 else Debug.LogWarning("SMOKE FAIL the smoke run needs play mode or a player");
             }
+            if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
         }
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }
@@ -182,7 +190,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; rig = null; drawn = null;
+            minimap = null; rig = null; drawn = null; logCamera = false;
         }
 
         /// <summary>Draws the placements only when State.Placements differs from what was drawn (every order and every turn
@@ -202,7 +210,26 @@ namespace Statecraft.Game.UI
             minimap.SetView(map.Frame, rig.LookAt, rig.Distance);
         }
 
-        void Update() => SyncMinimap();
+        bool logCamera;
+        float loggedDistance = float.NaN, loggedYaw = float.NaN;
+
+        /// <summary>"camlog" in the WebGL page URL (a whole query parameter) or -camlog on desktop: log the camera distance and
+        /// yaw whenever they change (checks the wheel-zoom step in a real browser).</summary>
+        internal static bool CameraLogRequested(string? url, string[] args, bool webgl) =>
+            webgl ? Regex.IsMatch(url ?? "", @"[?&]camlog(?=&|#|=|$)") : Array.IndexOf(args, "-camlog") >= 0;
+
+        static bool CameraLogRequested() =>
+            CameraLogRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
+
+        internal static string CameraLine(float distance, float yaw) => FormattableString.Invariant($"CAMERA distance={distance:0} yaw={yaw:0.0}");
+
+        void Update()
+        {
+            SyncMinimap();
+            if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
+            loggedDistance = rig.Distance; loggedYaw = rig.Yaw;
+            Debug.Log(CameraLine(rig.Distance, rig.Yaw));
+        }
 
         /// <summary>Plays turns the way a player does: answers each open event by pressing the card's first option button,
         /// then presses End Turn. Logs "SMOKE turn &lt;n&gt; &lt;date&gt; refused &lt;k&gt;" per turn through <paramref name="log"/>,

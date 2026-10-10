@@ -428,4 +428,40 @@ public class GameSceneTests
         Assert.AreEqual(0, Desk("Statecraft"));
         Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost/?smoke=5", new[] { "Statecraft" }, false), "desktop reads only the command line");
     }
+
+    // Task 24 (persistence gate, zoom check): the start and every turn are logged with the state hash, and ?camlog logs the
+    // camera distance, so a browser run can be checked from the console alone.
+    [Test]
+    public void TheStartAndEachTurnAreLoggedWithTheStateHash()
+    {
+        var lines = new List<string>();
+        Application.LogCallback capture = (m, _, __) => lines.Add(m);
+        Application.logMessageReceived += capture;
+        try
+        {
+            var root = Boot();
+            var start = root.Bridge!.State;
+            root.Bridge.EndTurn();
+            var s = root.Bridge.State;
+            CollectionAssert.Contains(lines, FormattableString.Invariant($"GAME OK {start.Date:yyyy-MM-dd} turn {start.Turn} hash {start.Hash()}"));
+            CollectionAssert.Contains(lines, FormattableString.Invariant($"TURN {s.Turn} {s.Date:yyyy-MM-dd} hash {s.Hash()}"));
+            root.enabled = false;
+            lines.Clear();
+            root.Bridge.EndTurn();
+            Assert.IsFalse(lines.Any(l => l.StartsWith("TURN ")), "a disabled GameRoot logs nothing");
+        }
+        finally { Application.logMessageReceived -= capture; }
+    }
+
+    [Test]
+    public void TheCameraLogIsAWholeQueryParameter()
+    {
+        Assert.IsTrue(GameRoot.CameraLogRequested("http://localhost/?camlog", new string[0], true));
+        Assert.IsTrue(GameRoot.CameraLogRequested("http://localhost/?golden&camlog", new string[0], true));
+        Assert.IsFalse(GameRoot.CameraLogRequested("http://localhost/?camlogs", new string[0], true));
+        Assert.IsFalse(GameRoot.CameraLogRequested("http://localhost/camlog/", new string[0], true));
+        Assert.IsTrue(GameRoot.CameraLogRequested(null, new[] { "x", "-camlog" }, false));
+        Assert.IsFalse(GameRoot.CameraLogRequested(null, new[] { "x" }, false));
+        Assert.AreEqual("CAMERA distance=120000 yaw=0.0", GameRoot.CameraLine(120000f, 0f));
+    }
 }
