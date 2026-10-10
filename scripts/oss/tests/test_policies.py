@@ -77,7 +77,7 @@ def test_code_of_conduct_has_a_private_contact_and_the_history_section():
     assert "[INSERT" not in text and "getnohuman" not in text
     # Fix round 2: the owner's profile has no public email, so that channel is dead; private reporting works today.
     assert "profile" not in text.lower().replace("profile of", "")
-    assert "security/advisories/new" in text and 'title with "Conduct:"' in text and "private between" in text
+    assert "security/advisories/new" in text and 'title with "Conduct:"' in text and "only to you and the repository's administrators" in text
     assert "## Historical content and political discussion" in text
     assert "Contributor Covenant" in text and "version 2.1" in text
 
