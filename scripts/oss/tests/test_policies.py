@@ -35,3 +35,19 @@ def test_untrusted_pr_review_forbids_running_pr_code_and_warns_about_github_diff
     text = read("docs/UNTRUSTED_PR_REVIEW.md")
     assert "--network none" in text and "Assets/Editor" in text and "Directory.Build.props" in text
     assert "Any diff under `.github/` can make every required check green" in text
+
+
+def test_contributing_names_every_ci_command_and_the_unity_gate():
+    text = read("CONTRIBUTING.md")
+    for cmd in ("dotnet test sim/Statecraft.sln",
+                "uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 "
+                "--with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q",
+                "uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q",
+                "uv run scripts/oss/check_repo.py",
+                "-buildTarget OSXUniversal -runTests -testPlatform EditMode", "## What CI runs", "CHANGELOG.md"):
+        assert cmd in text, cmd
+
+
+def test_changelog_has_unreleased_on_top():
+    text = read("CHANGELOG.md")
+    assert text.index("## [Unreleased]") == text.index("## [")

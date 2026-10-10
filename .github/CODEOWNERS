@@ -1,0 +1,3 @@
+# Every pull request needs the maintainer's approval. the `main-review` ruleset requires a code-owner review, and this
+# file makes the maintainer the owner of every path, so another collaborator's approval does not satisfy it.
+* @eyalgolan

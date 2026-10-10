@@ -36,10 +36,15 @@ Follow [docs/dev-setup.md](docs/dev-setup.md). In short:
    - Record the new values everywhere they are pinned (see [docs/determinism.md](docs/determinism.md)), with a one-line reason in its history table.
 3. **Tests first.** Add or change a test that fails without your change, then make it pass. Run:
    - `dotnet test sim/Statecraft.sln`, which must pass with 0 warnings (warnings are errors);
-   - the tools tests: the command is in `tools/README.md`;
-   - Unity EditMode tests, if you touched `unity/`. The command is in `docs/dev-setup.md`. There must be 0 `warning CS` in the log.
+   - the tools tests (they need the .NET SDK too: one runs the sim's release gate):
+     `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q`;
+   - the repository policy checks:
+     `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` and `uv run scripts/oss/check_repo.py`;
+   - Unity EditMode tests, if you touched `unity/` (`-buildTarget OSXUniversal` keeps an earlier WebGL build from leaving the editor on the wrong platform):
+     `"$UNITY" -batchmode -projectPath unity -buildTarget OSXUniversal -runTests -testPlatform EditMode -testResults "$PWD/unity-editmode.xml" -logFile unity-tests.log`. There must be 0 `warning CS` in the log.
 4. **Text the player sees** has no internal ids, gives dates as "15 May 1948", and shows money as "IL 1.2m" or "$1.2m". The tests enforce this.
 5. **Keep the pull request focused:** one change per PR, and no unrelated refactors.
+6. **Changelog.** If you change `sim/`, `content/` or `unity/` (tests excepted), add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md). CI's `Changelog` job checks it; the maintainer can add the `no-changelog` label to a change no player would notice.
 
 ## History and content rules
 
@@ -57,7 +62,13 @@ AI-assisted work is welcome. Say so in the pull request: which parts, and how yo
 
 - Base your branch on `main`. History on `main` is protected, so no force-pushes.
 - In the description, say what changed and why. Paste the test commands you ran and their output; a description of the output doesn't count.
-- The maintainer reviews every PR. CI is being set up; until then, the pasted test output is the evidence.
+- The maintainer reviews every PR (`.github/CODEOWNERS`); a push after approval needs a fresh approval. PRs are squash-merged and keep you as the author.
+
+## What CI runs
+
+Every pull request and every push to `main` runs `Sim (dotnet test)`, `Tools (pytest)`, `Repo policy`, and, on pull requests, `Changelog`. The jobs use no secrets, call no paid API, run no AI agent and push nothing.
+
+**Unity EditMode tests are not in CI.** Running Unity in CI needs the maintainer's Unity account credentials stored as repository secrets. GitHub never gives secrets to pull requests from forks, so the job could not run on the pull requests that most need it, and those credentials would sit on machines that run outside code. So the Unity tests are a local gate: paste their result in your PR, and the maintainer re-runs them before merging any change under `unity/`.
 
 ## Security
 
