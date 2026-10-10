@@ -9,11 +9,13 @@ Usage: uv run tools/art_compare.py <shots-dir> <checkpoint-name> [--log PATH]
 For every PNG under <shots-dir> whose name ends in a pose (gameplay03, diorama02), writes <name>-compare.png beside it
 (screenshot left, promo right, a caption with the numbers), <name>-compare-deuteranopia.png and
 <name>-compare-protanopia.png (Machado, Oliveira and Fernandes 2009, severity 1), and appends a row to the art log
-(default captures/visual/art-log.tsv; art_checkpoint.sh points every worktree at the main checkout's): checkpoint, image,
-saturation, contrast (luma std), warmth (mean R - B), and the palette distance to the promo (total variation between
+(default captures/visual/art-log.tsv; art_checkpoint.sh points every worktree at the main checkout's): checkpoint, branch,
+short commit (both "-" outside a git checkout), the image's absolute path, saturation, contrast (luma std), warmth
+(mean R - B), and the palette distance to the promo (total variation between
 8x8x8 RGB histograms; 0 = same palette, 1 = disjoint). The numbers inform the owner's review. Exit code 2 when a
 screenshot is near-uniform (luma std < 0.01: a black or blank WebGL capture), 1 when no screenshot matched a pose."""
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -29,6 +31,16 @@ MACHADO = {
     "deuteranopia": np.array([[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.011820, 0.042940, 0.968881]]),
     "protanopia": np.array([[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]]),
 }
+
+
+def source_identity(root: Path) -> tuple[str, str]:
+    """(branch, short commit) of the checkout at root, so rows in the shared art log say which worktree made them."""
+    def git(*args: str) -> str:
+        r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+        return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "-"
+    if git("rev-parse", "--show-toplevel") == "-" or Path(git("rev-parse", "--show-toplevel")).resolve() != root.resolve():
+        return "-", "-"
+    return git("rev-parse", "--abbrev-ref", "HEAD"), git("rev-parse", "--short", "HEAD")
 
 
 def metrics(img: Image.Image) -> dict[str, float]:
@@ -75,6 +87,7 @@ def main(argv: list[str], root: Path = ROOT, promos: dict[str, Path] = PROMOS) -
     log = a.log or root / "captures" / "visual" / "art-log.tsv"
     log.parent.mkdir(parents=True, exist_ok=True)
     rows, uniform = 0, []
+    branch, commit = source_identity(root)
     for path in sorted(a.shots.rglob("*.png")):
         if "-compare" in path.stem:
             continue
@@ -94,7 +107,7 @@ def main(argv: list[str], root: Path = ROOT, promos: dict[str, Path] = PROMOS) -
         for kind in MACHADO:
             simulate_cvd(pair, kind).save(path.with_name(f"{path.stem}-compare-{kind}.png"))
         with log.open("a") as f:
-            f.write("\t".join([a.name, str(path), f"{m['saturation']:.4f}", f"{m['contrast']:.4f}", f"{m['warmth']:.4f}", f"{d:.4f}"]) + "\n")
+            f.write("\t".join([a.name, branch, commit, str(path.resolve()), f"{m['saturation']:.4f}", f"{m['contrast']:.4f}", f"{m['warmth']:.4f}", f"{d:.4f}"]) + "\n")
         print("ART " + title)
         rows += 1
     if uniform:

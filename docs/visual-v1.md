@@ -28,7 +28,11 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
   or the profile waits.
 - Screenshots: `tools/art_checkpoint.sh [--no-build] <name>` (WebGL `?shot` + editor renders of both tiers + side-by-side
   images and their deuteranopia/protanopia copies under `captures/visual/<name>/`, git-ignored; rows in the main
-  checkout's `captures/visual/art-log.tsv`).
+  checkout's `captures/visual/art-log.tsv` with the branch, short commit and the image's absolute path). It refuses to run
+  while `QualitySettings.asset` (and, when it builds, `unity/Assets/Settings` or `ProjectSettings.asset`) has unstaged
+  changes, restores them on every exit, and takes the pose list from `PromoPose.cs`. Each checkpoint switches the
+  worktree's build target WebGL -> OSXUniversal (editor renders) and back at the next build, a reimport each way: budget
+  a few minutes per checkpoint.
 
 ## Budgets (proposed; ratified in Task 10)
 Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DPR 1, Chrome for Testing:

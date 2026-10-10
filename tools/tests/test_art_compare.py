@@ -64,3 +64,20 @@ def test_a_uniform_screenshot_fails(tmp_path):
     shots = tmp_path / "shots"; shots.mkdir()
     solid((0, 0, 0), (192, 108)).save(shots / "gameplay03.png")       # a black capture (the WebGL readback failed)
     assert ac.main(["art_compare.py", str(shots), "t"], root=tmp_path, promos={"gameplay03": promo, "diorama02": promo}) == 2
+
+
+def test_art_log_rows_name_the_branch_the_commit_and_the_absolute_image(tmp_path):
+    """Review M5: the art log is shared by every worktree, so a row says which branch and commit made it and where its
+    image is (absolute path), not a worktree-relative path."""
+    promo = tmp_path / "promo.png"; noisy().save(promo)
+    shots = tmp_path / "shots"; shots.mkdir()
+    noisy(seed=5).save(shots / "gameplay03.png")
+    log = tmp_path / "art-log.tsv"
+    assert ac.main(["art_compare.py", str(shots), "t", "--log", str(log)], root=tmp_path,
+                   promos={"gameplay03": promo, "diorama02": promo}) == 0
+    name, branch, commit, image = log.read_text().splitlines()[0].split("\t")[:4]
+    assert (name, branch, commit) == ("t", "-", "-")                     # tmp_path is not a git checkout
+    assert image == str((shots / "gameplay03.png").resolve())
+    from pathlib import Path
+    branch, commit = ac.source_identity(Path(ac.__file__).resolve().parents[1])
+    assert branch != "-" and len(commit) >= 7

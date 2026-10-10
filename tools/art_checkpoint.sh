@@ -13,11 +13,17 @@ cd "$root"
 main_root="$(cd "$(git rev-parse --path-format=absolute --git-common-dir)/.." && pwd)"
 : "${UNITY:?set UNITY as in docs/dev-setup.md}"
 shared() { uv run tools/machine_lock.py --shared -- "$@"; }
+# The build rewrites URP and player settings, and the editor capture may write QualitySettings' m_CurrentQuality; this
+# script restores them from the index, so it refuses to run while any of them has unstaged changes (review M4: never
+# discard an edit silently) and restores them on every exit, a failed build included (review M3).
+guarded=(unity/ProjectSettings/QualitySettings.asset)
+[[ $build == 1 ]] && guarded+=(unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset)
+if ! git diff --quiet -- "${guarded[@]}"; then
+  echo "art_checkpoint: stage your changes to ${guarded[*]} first (this script restores them from the index)" >&2
+  exit 2
+fi
+trap 'git checkout -- "${guarded[@]}"' EXIT
 if [[ $build == 1 ]]; then
-  if ! git diff --quiet -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset; then
-    echo "art_checkpoint: stage your changes under unity/Assets/Settings and ProjectSettings.asset first (the build rewrites them and this script restores them from the index)" >&2
-    exit 2
-  fi
   shared "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$root/unity-build-web-art.log"
   git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
   if grep -n "Shader error" "$root/unity-build-web-art.log"; then echo "art_checkpoint: shader errors in the WebGL build" >&2; exit 1; fi
@@ -25,12 +31,15 @@ fi
 [[ -f unity/Builds/Web-disabled/index.html ]] || { echo "art_checkpoint: no build at unity/Builds/Web-disabled (run without --no-build)" >&2; exit 2; }
 out="captures/visual/$name"
 rm -rf "$out"; mkdir -p "$out"
-uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&shot" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" --shots "$out" \
+uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&shot" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" --shots "$out" --stall 180 \
   --fail 'GOLDEN FAIL|SMOKE FAIL|BOOT FAIL|Statecraft/.*(not supported|Unsupported)|(not supported|Unsupported).*Statecraft/'
-for pose in gameplay03 diorama02; do
+# The poses come from PromoPose.All's source, so a new pose is checked without editing this script (review M3).
+poses=$(grep -o 'new PromoPose("[A-Za-z0-9_]*"' unity/Assets/Scripts/Map/PromoPose.cs | cut -d'"' -f2)
+[[ -n "$poses" ]] || { echo "art_checkpoint: no PromoPose found in PromoPose.cs" >&2; exit 1; }
+for pose in $poses; do
   [[ -s "$out/$pose.png" ]] || { echo "art_checkpoint: $out/$pose.png is missing" >&2; exit 1; }
 done
 shared "$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" -logFile "$root/unity-capture-promo.log"
-git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality
+git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality (no unstaged edits: checked above)
 uv run tools/art_compare.py "$out" "$name" --log "$main_root/captures/visual/art-log.tsv"
 echo "ART CHECKPOINT $name: $(ls "$out"/*-compare*.png "$out"/editor/*-compare*.png | tr '\n' ' ')"

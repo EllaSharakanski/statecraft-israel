@@ -12,7 +12,8 @@ namespace Statecraft.Game.Map
 {
     /// <summary>Prices each visual feature on the real player. At every promo pose it runs every configuration (everything on:
     /// "all"; each toggle off alone: "-name"; everything off: "none") Repeats times, in a different interleaved order each
-    /// repeat (Order), 300 frames after 60 warm-up frames each, and logs one line per run with the resolution and the URP
+    /// repeat (Order), 300 frames after 60 warm-up frames each (after one unmeasured 60-frame pass of every configuration
+    /// before the first pose), and logs one line per run with the resolution and the URP
     /// render scale, then one summary line per configuration: the median of the run averages, their spread (max - min) and
     /// the median p95. A feature costs median(all) - median(-name); it is over a budget only when that exceeds the budget
     /// plus the larger spread (docs/visual-v1.md). Asked for by "vprofile" in the WebGL page URL (a whole query parameter)
@@ -63,9 +64,22 @@ namespace Statecraft.Game.Map
             var configs = new List<(string label, string? off)> { ("all", null) };
             foreach (var name in VisualToggles.Names) configs.Add(("-" + name, name));
             configs.Add(("none", "*"));
+            bool first = true;
             foreach (var pose in PromoPose.All)
             {
                 pose.Apply(rig, frame);
+                if (first)
+                {
+                    // One discarded pass of every configuration: the first measured runs after the load were noisier
+                    // (spreads about half the median, review M6).
+                    first = false;
+                    foreach (var (_, off) in configs)
+                    {
+                        VisualToggles.SetAll(off != "*");
+                        if (off != null && off != "*") VisualToggles.Set(off, false);
+                        for (int f = 0; f < WarmupFrames; f++) yield return null;
+                    }
+                }
                 var results = configs.ToDictionary(c => c.label, c => new List<(float avg, float p95)>());
                 for (int rep = 0; rep < Repeats; rep++)
                     foreach (var i in Order(configs.Count, rep))

@@ -264,4 +264,27 @@ public class VisualHarnessTests
         }
         finally { Object.DestroyImmediate(shader); }
     }
+
+    /// <summary>Review M6: the first pose's first runs were noisier (a cold start), so before the first pose every
+    /// configuration runs once for WarmupFrames, unmeasured; then each pose runs every configuration Repeats times.</summary>
+    [Test]
+    public void TheProfileStartsWithOneDiscardedPassOfEveryConfiguration()
+    {
+        var go = new GameObject("cam", typeof(Camera)); var rig = go.AddComponent<CameraRig>();
+        var frame = new GeoFrame(34.2, 35.9, 29.45, 33.35, 161529f, 431223f);
+        VisualToggles.Register("grade", _ => { });
+        var log = new List<string>();
+        int frames = 0;
+        try
+        {
+            var run = FrameProfile.Run(rig, frame, log.Add, false);
+            while (run.MoveNext()) frames++;
+        }
+        finally { Object.DestroyImmediate(go); }
+        int configs = 3;   // all, -grade, none
+        int perRun = FrameProfile.WarmupFrames + FrameProfile.MeasuredFrames;
+        Assert.AreEqual(configs * FrameProfile.WarmupFrames + PromoPose.All.Count * FrameProfile.Repeats * configs * perRun, frames);
+        Assert.AreEqual(PromoPose.All.Count * FrameProfile.Repeats * configs, log.Count(l => l.StartsWith("PROFILE visual=")));
+        Assert.AreEqual("PROFILE visual done", log.Last());
+    }
 }
