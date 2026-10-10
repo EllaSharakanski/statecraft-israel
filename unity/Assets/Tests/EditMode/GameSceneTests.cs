@@ -1,0 +1,321 @@
+#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using NUnit.Framework;
+using Statecraft.Game;
+using Statecraft.Game.Boot;
+using Statecraft.Game.Map;
+using Statecraft.Game.UI;
+using Statecraft.Sim;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
+
+/// <summary>Map.unity as the player gets it: GameRoot wired to the boot, the map, the camera, the pointer, the placement
+/// layer and the UI document, every presenter created and disposed with it, and the scripted smoke run (plan Task 23 and
+/// the carry list to Task 23).</summary>
+public class GameSceneTests
+{
+    static GameInputs? inputs;
+    static GameInputs Inputs => inputs ??= GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+    static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
+
+    string saveDir = "";
+
+    [SetUp] public void TempSaves() => saveDir = Path.Combine(Path.GetTempPath(), "statecraft-scene-" + Guid.NewGuid().ToString("N"));
+
+    [TearDown]
+    public void DiscardScene()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        if (Directory.Exists(saveDir)) Directory.Delete(saveDir, true);
+        else if (File.Exists(saveDir)) File.Delete(saveDir);
+    }
+
+    /// <summary>Opens Map.unity, builds the map from the repository inputs and starts the game the way GameBoot.Ready does,
+    /// with the saves in a temporary folder (never the player's real autosave).</summary>
+    GameRoot Boot(SaveStore? store = null)
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var root = Object.FindFirstObjectByType<GameRoot>();
+        root.Store = store ?? new SaveStore(saveDir);
+        root.Begin(Inputs, 0);
+        return root;
+    }
+
+    static VisualElement Ui => Object.FindFirstObjectByType<UIDocument>().rootVisualElement;
+
+    [Test]
+    public void MapUnityIsTheOnlyBuildSceneAndIsFullyWired()
+    {
+        Assert.AreEqual(new[] { "Assets/Map.unity" }, Array.ConvertAll(EditorBuildSettings.scenes, s => s.path));
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var root = Object.FindFirstObjectByType<GameRoot>();
+        Assert.IsNotNull(root, "GameRoot");
+        var so = new SerializedObject(root);
+        foreach (var field in new[] { "boot", "document", "strings", "portraits", "map", "placements", "pointer", "cameraController" })
+            Assert.IsNotNull(so.FindProperty(field).objectReferenceValue, field);
+        var boot = Object.FindFirstObjectByType<GameBoot>();
+        Assert.IsNotNull(boot);
+        Assert.AreSame(Object.FindFirstObjectByType<MapScene>(), new SerializedObject(boot).FindProperty("map").objectReferenceValue, "GameBoot.map");
+        var map = new SerializedObject(Object.FindFirstObjectByType<MapScene>());
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"), map.FindProperty("terrainMaterial").objectReferenceValue);
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"), map.FindProperty("overlayMaterial").objectReferenceValue);
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"), map.FindProperty("markerMaterial").objectReferenceValue);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel), doc.panelSettings);
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml), doc.visualTreeAsset);
+        Assert.IsNotNull(Camera.main.GetComponent<CameraController>());
+        Assert.IsNotNull(Camera.main.GetComponent<CameraRig>());
+        Assert.IsNotNull(Object.FindFirstObjectByType<PlacementLayer>());
+        Assert.IsNotNull(Object.FindFirstObjectByType<MapPointer>());
+        Assert.IsNull(GameObject.Find("EventSystem"), "UI Toolkit reads the Input System directly; an EventSystem would take over");
+    }
+
+    [Test]
+    public void TheGameStartsInTheSceneOnceTheInputsAreLoaded()
+    {
+        var root = Boot();
+        Assert.IsNotNull(root.Bridge);
+        Assert.AreEqual(root.Bridge!.State.Date.Year.ToString(), Ui.Q<Label>("year").text);
+        Assert.AreEqual("Click the map to inspect a hex", Ui.Q<Label>("info-title").text);
+        Assert.AreEqual(new DateTime(1948, 5, 15), root.Bridge.State.Date, "no autosave: a new game");
+        var pointer = Object.FindFirstObjectByType<MapPointer>();
+        Assert.AreSame(Object.FindFirstObjectByType<MapScene>(), pointer.Map);
+        Assert.IsNotNull(pointer.IsOverUi);
+        Assert.IsNotNull(Camera.main.GetComponent<CameraController>().IsOverUi);
+        var size = Object.FindFirstObjectByType<MapScene>().Terrain.terrainData.size;
+        Assert.AreEqual(size.x, Camera.main.GetComponent<CameraController>().Bounds.width, 1f);
+        Assert.AreEqual(size.z, Camera.main.GetComponent<CameraController>().Bounds.height, 1f);
+    }
+
+    // Carry 2 and 8: ScreenNav hides every screen at start; the empty middle of the screen reaches the map while the
+    // panels do not (the camera and the map pointer ask the game panel); a minimap click moves the camera.
+    [UnityTest]
+    public IEnumerator AfterBootNoScreenIsOpenThePanelsBlockTheMapAndTheMinimapMovesTheCamera()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(1920, 1080, 0);
+        var ps = Object.Instantiate(doc.panelSettings);
+        ps.targetTexture = rt;
+        try
+        {
+            doc.panelSettings = ps;
+            Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+            var root = Object.FindFirstObjectByType<GameRoot>();
+            root.Store = new SaveStore(saveDir);
+            root.Begin(Inputs, 0);
+            var ui = doc.rootVisualElement;
+            for (int i = 0; i < 30 && !(ui.Q("minimap-image").worldBound.width > 0); i++) yield return null;
+            Assert.IsTrue(ui.Q("minimap-image").worldBound.width > 0, "the panel was laid out");
+
+            foreach (var s in ScreenNav.Screens)
+                Assert.AreEqual(DisplayStyle.None, ui.Q("screen-" + s).resolvedStyle.display, s + " is hidden at start");
+            var panel = ui.panel;
+            Assert.IsNull(panel.Pick(ui.worldBound.center), "the middle of the screen is map, not UI");
+
+            // A screen point for a panel point: ScreenToPanel is affine, so two probes invert it.
+            float h = Screen.height;
+            Vector2 o = UiPointer.ToPanel(panel, Vector2.zero, h), ex = UiPointer.ToPanel(panel, Vector2.right * 100, h) - o, ey = UiPointer.ToPanel(panel, Vector2.up * 100, h) - o;
+            Vector2 ScreenFor(Vector2 p) => new Vector2((p - o).x / ex.x * 100, (p - o).y / ey.y * 100);
+            var pointer = Object.FindFirstObjectByType<MapPointer>();
+            var camera = Camera.main.GetComponent<CameraController>();
+            foreach (var name in new[] { "top-bar", "info-panel", "minimap" })
+            {
+                var at = ScreenFor(ui.Q(name).worldBound.center);
+                Assert.IsTrue(pointer.IsOverUi!(at), name + " blocks map clicks");
+                Assert.IsTrue(camera.IsOverUi!(at), name + " blocks the wheel and the drag");
+            }
+            var middle = ScreenFor(ui.worldBound.center);
+            Assert.IsFalse(pointer.IsOverUi!(middle));
+            Assert.IsFalse(camera.IsOverUi!(middle));
+
+            UiTestKit.Press(ui.Q<Button>("nav-cabinet"));
+            Assert.AreEqual(DisplayStyle.Flex, ui.Q("screen-cabinet").style.display.value, "the top-bar buttons open screens");
+
+            var image = ui.Q("minimap-image");
+            using (var e = PointerDownEvent.GetPooled(new Event { type = EventType.MouseDown, button = 0, mousePosition = image.worldBound.center }))
+            { e.target = image; image.SendEvent(e); }
+            var map = Object.FindFirstObjectByType<MapScene>();
+            var rig = Camera.main.GetComponent<CameraRig>();
+            var b = map.Hexes.bounds;
+            var expected = map.Frame.ToWorld((b.lon0 + b.lon1) / 2, (b.lat0 + b.lat1) / 2, 0);
+            Assert.AreEqual(expected.x, rig.LookAt.x, map.Frame.WidthM * 0.02f, "the camera moved to the clicked point");
+            Assert.AreEqual(expected.z, rig.LookAt.z, map.Frame.LengthM * 0.02f);
+            Assert.AreEqual(rig.LookAt - rig.transform.forward * rig.Distance, rig.transform.position, "the rig was applied");
+        }
+        finally
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // NewScene unloads unreferenced assets, which may already have destroyed these
+            if (ps != null) Object.DestroyImmediate(ps);
+            if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+
+    // Carry 8: a real raycast on the built terrain picks the hex under the camera and fills the info panel.
+    [Test]
+    public void AClickOnTheTerrainFillsTheInfoPanel()
+    {
+        Boot();
+        var map = Object.FindFirstObjectByType<MapScene>();
+        var c = Inputs.Content;
+        var tlv = c.SettlementHexes.Single(s => s.Id == "tel_aviv");
+        var hex = c.HexAt(tlv.Q, tlv.R)!;
+        var ground = map.Frame.ToWorld(hex.Lon, hex.Lat, 0);
+        var cam = Camera.main!;
+        cam.transform.position = new Vector3(ground.x, 50_000f, ground.z);
+        cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+        var pointer = Object.FindFirstObjectByType<MapPointer>();
+        Assert.IsTrue(pointer.HandleClick(new Vector2(cam.pixelWidth / 2f, cam.pixelHeight / 2f)), "the ray hit the terrain");
+        Assert.AreEqual("Tel Aviv", Ui.Q<Label>("info-title").text);
+    }
+
+    // One label each presenter writes on every change: HUD, toast, info panel, Why, Budget, Defence, Cabinet.
+    static readonly string[] Watched = { "year", "toast", "info-title", "why-turn", "budget-money", "mob-level", "cabinet-coalition" };
+
+    // Carry 1, 3-7, 9: disabling GameRoot disposes every presenter, the autosave and its own hooks.
+    [Test]
+    public void ADisabledGameRootHearsNothing()
+    {
+        var root = Boot();
+        var bridge = root.Bridge!;
+        var pointer = Object.FindFirstObjectByType<MapPointer>();
+        root.enabled = false;
+        Assert.IsNull(pointer.IsOverUi, "the pointer no longer asks a disposed panel");
+        Assert.IsNull(Camera.main.GetComponent<CameraController>().IsOverUi);
+        foreach (var label in Watched)
+            Ui.Q<Label>(label).text = "untouched";
+        var turn = bridge.State.Turn;
+        UiTestKit.Press(Ui.Q<Button>("end-turn"));
+        Assert.AreEqual(turn, bridge.State.Turn, "End Turn is no longer wired (HudPresenter)");
+        UiTestKit.Press(Ui.Q<Button>("nav-budget"));
+        Assert.AreNotEqual(DisplayStyle.Flex, Ui.Q("screen-budget").style.display.value, "ScreenNav");
+        var session = bridge.Session;
+        UiTestKit.Press(Ui.Q<Button>("new-game")); UiTestKit.Press(Ui.Q<Button>("new-game"));
+        Assert.AreSame(session, bridge.Session, "NewGamePresenter");
+        Assert.AreEqual(DisplayStyle.None, Ui.Q("event-card").style.display.value, "EventCardPresenter hid its card");
+        bridge.Queue(new SetMobilization(0.1));
+        bridge.EndTurn();
+        foreach (var label in Watched)
+            Assert.AreEqual("untouched", Ui.Q<Label>(label).text, label);
+        Assert.IsFalse(File.Exists(Path.Combine(saveDir, SaveStore.AutosaveName)), "the autosave was disposed");
+    }
+
+    // Carry 9: the start goes through GameStart.Begin (an unreadable autosave is set aside, with a note in the toast);
+    // each turn is saved; the game continues from that save on the next start.
+    [Test]
+    public void TheStartNotesShowInTheToastAndEachTurnIsSaved()
+    {
+        Directory.CreateDirectory(saveDir);
+        File.WriteAllText(Path.Combine(saveDir, SaveStore.AutosaveName), "not a save");
+        var root = Boot();
+        StringAssert.StartsWith("Your saved game could not be loaded", Ui.Q<Label>("toast").text);
+        Assert.IsTrue(File.Exists(Path.Combine(saveDir, "autosave.bad.txt")));
+        root.Bridge!.EndTurn();
+        Assert.IsTrue(File.Exists(Path.Combine(saveDir, SaveStore.AutosaveName)), "the turn was autosaved");
+        var hash = root.Bridge.State.Hash();
+        root.enabled = false;
+        root.enabled = true;
+        root.Begin(Inputs, 0);
+        Assert.AreEqual(hash, root.Bridge!.State.Hash(), "the next start continues the autosave");
+    }
+
+    // Carry 11: the autosave subscribes after the toast, so a save failure is not cleared by the turn's own toast.
+    [Test]
+    public void ASaveFailureIsNotHiddenByTheTurnsToast()
+    {
+        File.WriteAllText(saveDir, "a file where the save folder should be");
+        var root = Boot(new SaveStore(saveDir));
+        LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("^Autosave could not be written"));
+        root.Bridge!.EndTurn();
+        Assert.AreEqual(Text["save.write_failed"], Ui.Q<Label>("toast").text);
+    }
+
+    // Carry 10: placements are drawn at start and redrawn only when State.Placements changes.
+    [Test]
+    public void PlacementsAreRedrawnOnlyWhenTheyChange()
+    {
+        var root = Boot();
+        var c = Inputs.Content;
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (g.State.Date < new DateTime(1950, 8, 1)) g.Step(HistoricalAI.Commands(c, g.State));
+        var bridge = root.Bridge!;
+        bridge.Replace(g);
+        var layer = Object.FindFirstObjectByType<PlacementLayer>().transform;
+        Assert.AreEqual(g.State.Placements.Count, layer.childCount);
+        var tlv = c.SettlementHexes.Single(s => s.Id == "tel_aviv");
+        Assert.IsNull(bridge.Queue(new MapAction(MapActions.TransitCamp, tlv.Q, tlv.R)));
+        Assert.AreEqual(g.State.Placements.Count, layer.childCount, "a queued order draws nothing");
+        bridge.EndTurn();
+        Assert.AreEqual(bridge.State.Placements.Count, layer.childCount);
+        var camp = layer.Cast<Transform>().Single(t => t.name == $"{MapActions.TransitCamp}_{tlv.Q}_{tlv.R}").gameObject;
+        bridge.Queue(new SetMobilization(bridge.State.Mobilization));
+        bridge.EndTurn();
+        Assert.IsTrue(camp != null, "an unchanged set of placements is not redrawn");
+        Assert.IsNull(bridge.Queue(new MapAction(MapActions.Housing, tlv.Q, tlv.R)));
+        bridge.EndTurn();
+        Assert.IsTrue(camp == null, "housing replacing the camp is redrawn");
+        Assert.IsNotNull(layer.Cast<Transform>().SingleOrDefault(t => t.name == $"{MapActions.Housing}_{tlv.Q}_{tlv.R}"));
+    }
+
+    // Amendment A2: the smoke run answers a pending event by pressing the card's option button.
+    [Test]
+    public void TheSmokeRunAnswersAPendingEventThroughTheCard()
+    {
+        using var ui = new UiTestKit();
+        var c = Inputs.Content;
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        var text = Text;
+        var bridge = new SimBridge(g, text);
+        using var toast = new ToastPresenter(ui.Root, bridge, text);
+        using var hud = new HudPresenter(ui.Root, bridge, text);          // wires the End Turn button
+        using var card = new EventCardPresenter(ui.Root, bridge, text, null);
+        var turn = g.State.Turn;
+        var log = new List<string>();
+        var run = GameRoot.Smoke(ui.Root, bridge, card, 1, log.Add);
+        while (run.MoveNext()) { }
+        StringAssert.StartsWith("SMOKE OK 1 turns", log[log.Count - 1], string.Join("\n", log));
+        StringAssert.StartsWith($"SMOKE turn {turn + 1} ", log[log.Count - 2]);
+        Assert.AreEqual(turn + 1, bridge.State.Turn);
+        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "chosen: Sign the armistice"), "the card's option was pressed, not delegated");
+        Assert.IsFalse(bridge.Session.Last.Why.Any(w => w.Target == "armistice_egypt" && w.Message.StartsWith("delegated")));
+    }
+
+    [Test]
+    public void ASmokeRunWhoseEndTurnDoesNothingFails()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(Inputs.Content, GoldenRun.Seed, Mode.Historical), Text);
+        using var card = new EventCardPresenter(ui.Root, bridge, Text, null);   // no HudPresenter: End Turn is not wired
+        var log = new List<string>();
+        var run = GameRoot.Smoke(ui.Root, bridge, card, 2, log.Add);
+        while (run.MoveNext()) { }
+        StringAssert.StartsWith("SMOKE FAIL", log[log.Count - 1]);
+        Assert.IsFalse(log.Any(l => l.StartsWith("SMOKE OK")));
+    }
+
+    // Amendment A3: the URL flag must start a query parameter and end at a word boundary.
+    [Test]
+    public void SmokeTurnsComeFromTheUrlOrTheCommandLine()
+    {
+        Assert.AreEqual(5, GameRoot.SmokeTurns("http://localhost:8000/?golden&smoke=5", new string[0], true));
+        Assert.AreEqual(3, GameRoot.SmokeTurns("http://localhost:8000/?smoke=3", new string[0], true));
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, GameRoot.SmokeTurns("http://localhost:8000/?smoke", new string[0], true));
+        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/smoke-test/index.html", new string[0], true));
+        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/?smoker=4", new string[0], true));
+        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/", new string[0], true));
+        Assert.AreEqual(4, GameRoot.SmokeTurns(null, new[] { "Statecraft", "-smoke", "4" }, false));
+        Assert.AreEqual(0, GameRoot.SmokeTurns(null, new[] { "Statecraft" }, false));
+        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost/?smoke=5", new[] { "Statecraft" }, false), "desktop reads only the command line");
+    }
+}
