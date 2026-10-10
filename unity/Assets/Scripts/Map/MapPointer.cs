@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,18 +14,48 @@ namespace Statecraft.Game.Map
         public Func<Vector2, bool>? IsOverUi;
         public event Action<int, int>? HexClicked;
 
-        void Update()
+        // Every press, at the position of its own input event (InputConfig keeps a release from merging into the next move),
+        // queued and evaluated in order in Update: several presses in one slow frame are each checked where they happened,
+        // never all at the frame's last pointer position (playtest 2, P2-4).
+        readonly Queue<Vector2> presses = new Queue<Vector2>();
+        InputAction? press;
+
+        void OnEnable()
         {
-            var mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
-            HandleClick(mouse.position.ReadValue());
+            press = new InputAction("map-press", InputActionType.Button, "<Mouse>/leftButton");
+            press.performed += OnPressed;
+            press.Enable();
         }
+
+        void OnDisable()
+        {
+            if (press != null) { press.performed -= OnPressed; press.Dispose(); press = null; }
+            presses.Clear();
+        }
+
+        void OnPressed(InputAction.CallbackContext ctx)
+        {
+            if (ctx.control.device is Pointer p) OnPress(p.position.ReadValue());   // read during the event: its own position
+        }
+
+        /// <summary>Queues a press at <paramref name="at"/> (screen pixels, y up).</summary>
+        internal void OnPress(Vector2 at) => presses.Enqueue(at);
+
+        /// <summary>Handles every queued press, in order, each at its own position.</summary>
+        internal void ProcessPresses()
+        {
+            while (presses.Count > 0) HandleClick(presses.Dequeue());
+        }
+
+        void Update() => ProcessPresses();
 
         /// <summary>A left click at <paramref name="pos"/> (screen pixels): ignored over the UI (the same IsOverUi the camera
         /// uses), otherwise the hex under the pointer is raised as HexClicked. Returns whether a hex was picked.</summary>
         public bool HandleClick(Vector2 pos)
         {
-            if (IsOverUi != null && IsOverUi(pos)) return false;       // the UI is asked first, whatever else is missing
+            var overUi = IsOverUi != null && IsOverUi(pos);
+            Boot.DiagLog.NavLine(FormattableString.Invariant($"map click at ({pos.x:0}, {pos.y:0}) overUi={overUi}"));
+            if (overUi) return false;                                    // the UI is asked first, whatever else is missing
             if (Map == null || Map.Terrain == null) return false;
             var cam = Camera.main;
             var collider = Map.Terrain.GetComponent<TerrainCollider>();
