@@ -175,6 +175,9 @@ namespace Statecraft.Sim
 
     public sealed class EventCondition { public string Indicator { get; set; } = ""; public double? Min { get; set; } public double? Max { get; set; } }
 
+    /// <summary>An event's precondition: <see cref="Event"/> must have been resolved with <see cref="Option"/>.</summary>
+    public sealed class EventRequirement { public string Event { get; set; } = ""; public string Option { get; set; } = ""; }
+
     public sealed class OptionEffect { public string Target { get; set; } = ""; public double Delta { get; set; } }
 
     public sealed class EventOption
@@ -200,6 +203,8 @@ namespace Statecraft.Sim
         public DateTime From { get; set; }
         public DateTime? To { get; set; }
         public List<EventCondition> Conditions { get; set; } = new List<EventCondition>();
+        /// <summary>Eligible only once this other event was resolved with this option (null: no requirement).</summary>
+        public EventRequirement? Requires { get; set; }
         public List<EventOption> Options { get; set; } = new List<EventOption>();
         public List<Source> Sources { get; set; } = new List<Source>();
         public string Status { get; set; } = "draft";

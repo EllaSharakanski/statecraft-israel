@@ -22,8 +22,8 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-27, turn 35 | `a540b52e10474615b703a2b14b7c742adbde84611496074b93a5116ef654899c` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-27, turn 43 | `16c16d7ec4f5419d31eb537d70924b8681b95ec94d7ed70874c0749292446e60` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-27, turn 35 | `d463d5b22c9f98cf6b604a2f31738f01ca4b72cd3b2fb3c58a6d31790f4ff26e` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-27, turn 43 | `f78fc68d91fce73bc12e31c3a6eade4e889fd7e6d3002c5b9821075e31ab1dfb` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -70,3 +70,5 @@ rules or content, treat it as a determinism bug.
 | M3 Task 8 fix | 1952 | `91bb6fb5` | same |
 | playtest 1 E | 1950 | `a540b52e` | 1948 war-period events added (playtest 1 E): thirteen events whose windows open between 26 May and 31 December 1948; the second truce puts the run on monthly turns from 17 July to 17 October 1948, so the run ends 1950-02-27 after 35 turns (was 1950-02-26, turn 45) |
 | playtest 1 E | 1952 | `16c16d7e` | same; ends 1952-02-27 after 43 turns (was 1952-02-26, turn 53) |
+| playtest 1 E fix 1 | 1950 | `d463d5b2` | events gain `requires: {event, option}`; the hash text gains chosen{event=option;...} (the options each resolved event was resolved with); no change in the run |
+| playtest 1 E fix 1 | 1952 | `f78fc68d` | same |

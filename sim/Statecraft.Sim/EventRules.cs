@@ -33,6 +33,14 @@ namespace Statecraft.Sim
                     if (cond.Max.HasValue) { ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); ContentLoader.Unit(e.File, F($"conditions.{cond.Indicator}.max"), cond.Max.Value); }
                     if (cond.Min > cond.Max) throw new ContentException(e.File, F($"conditions.{cond.Indicator}.min"), "must not exceed max");
                 }
+                if (e.Requires != null)
+                {
+                    if (e.Requires.Event == e.Id) throw new ContentException(e.File, F("requires.event"), "an event cannot require itself");
+                    var required = c.Events.FirstOrDefault(x => x.Id == e.Requires.Event)
+                        ?? throw new ContentException(e.File, F("requires.event"), $"unknown event '{e.Requires.Event}'");
+                    if (required.Options.All(o => o.Id != e.Requires.Option))
+                        throw new ContentException(e.File, F("requires.option"), $"event '{required.Id}' has no option '{e.Requires.Option}'");
+                }
                 if (e.Options.Count == 0) throw new ContentException(e.File, F("options"), "at least one option required");
                 if (e.Options.Count(o => o.Historical) > 1) throw new ContentException(e.File, F("options"), "at most one option can be historical");
                 if (e.Anchor == "hard" && !e.Options.Any(o => o.Historical)) throw new ContentException(e.File, F("options"), "hard anchor needs a historical option");

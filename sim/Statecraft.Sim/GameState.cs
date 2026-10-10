@@ -34,6 +34,8 @@ namespace Statecraft.Sim
         public double Attention;
         public SortedSet<string> FiredEvents = new SortedSet<string>(StringComparer.Ordinal);
         public List<string> PendingEvents = new List<string>();
+        /// <summary>The option each resolved event was resolved with (chosen or delegated), for events' `requires`.</summary>
+        public Dictionary<string, string> ChosenOptions = new Dictionary<string, string>();
         /// <summary>Player appointments by office id; valid while the government in AppointedUnder is in office (Cabinet).</summary>
         public Dictionary<string, Appointment> Appointments = new Dictionary<string, Appointment>();
         public string AppointedUnder = "";
@@ -59,6 +61,7 @@ namespace Statecraft.Sim
             c.Population = new Dictionary<string, double>(Population);
             c.FiredEvents = new SortedSet<string>(FiredEvents, StringComparer.Ordinal);
             c.PendingEvents = new List<string>(PendingEvents);
+            c.ChosenOptions = new Dictionary<string, string>(ChosenOptions);
             c.Appointments = new Dictionary<string, Appointment>(Appointments);
             c.Placements = new List<Placement>(Placements);
             return c;
@@ -86,6 +89,9 @@ namespace Statecraft.Sim
             Num("mob", Mobilization); Num("stab", CoalitionStability); Num("att", Attention);
             sb.Append("fired[").Append(string.Join(",", FiredEvents)).Append(']');
             sb.Append("pending[").Append(string.Join(",", PendingEvents)).Append(']');
+            sb.Append("chosen{");
+            foreach (var kv in ChosenOptions.OrderBy(k => k.Key, StringComparer.Ordinal)) sb.Append(kv.Key).Append('=').Append(kv.Value).Append(';');
+            sb.Append('}');
             sb.Append("appt{");
             foreach (var kv in Appointments.OrderBy(k => k.Key, StringComparer.Ordinal))
                 sb.Append(kv.Key).Append('=').Append(kv.Value.Person).Append('@').Append(kv.Value.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
