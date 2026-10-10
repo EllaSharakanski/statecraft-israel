@@ -67,6 +67,7 @@ namespace Statecraft.Game.UI
         readonly EventCallback<GeometryChangedEvent> onOccluderGeometry, onContainerGeometry;
         Matrix4x4 lastViewProjection; Rect lastCameraRect; Vector2 lastPanelSize, lastOrigin; float lastZoom = float.NaN;
         int lastOccluderMask = -1; float lastLabelSizes = float.NaN; bool sizesKnown, geometryDirty = true;
+        Action? removeToggle;   // the labels switch's removal token (VisualToggles.Register): a disposed presenter never removes a newer one
 
         public IReadOnlyList<Label> Labels { get; }
         public IReadOnlyList<VisualElement> Slots { get; }
@@ -272,8 +273,6 @@ namespace Statecraft.Game.UI
 
         static float Gap(Rect r, Vector2 p) =>
             new Vector2(Mathf.Max(0f, Mathf.Max(r.xMin - p.x, p.x - r.xMax)), Mathf.Max(0f, Mathf.Max(r.yMin - p.y, p.y - r.yMax))).magnitude;
-
-        Action? removeToggle;   // the labels switch's removal token (VisualToggles.Register): a disposed presenter never removes a newer one
 
         /// <summary>Removes only this presenter's own pills and callbacks, so an older presenter disposed after a newer one
         /// was made leaves the newer one's pills (review M2).</summary>

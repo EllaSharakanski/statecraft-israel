@@ -538,6 +538,9 @@ and tilt-shift are not in this worktree).
 - **Build.** WebGL, no `Shader error`; golden values OK in the checkpoint run.
 
 ## Checkpoints
+
+The images live in the owner's local `captures/visual/` folder (git-ignored); owner verdicts are filled in as the checkpoints are reviewed.
+
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
