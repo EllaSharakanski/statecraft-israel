@@ -1,11 +1,9 @@
 **English** · [עברית](README.he.md)
 
 <p align="center">
-  <img src="docs/images/hero-concept-1936.jpg"
- alt="Concept art of the target look: a tilt-shift diorama of the coast around Tel Aviv and Jaffa in 1936, with a top resource bar and an event card. This is AI-generated concept art, not the current build." width="100%">
+  <img src="docs/images/hero-concept-1936.jpg" alt="Concept art of the target look: a tilt-shift diorama of the coast around Tel Aviv and Jaffa in 1936, with a top resource bar and an event card. This is AI-generated concept art, not the current build." width="100%">
   <br>
-  <em>Concept art (AI-generated): the look we are building toward, set in 1936, before the game's 1948 start. It is not the current build, and it shows things the game does not have.
- Real screenshots of today's build are <a href="#what-it-looks-like-today">below</a>.</em>
+  <em>Concept art (AI-generated): the look we are building toward, set in 1936, before the game's 1948 start. It is not the current build, and it shows things the game does not have. Real screenshots of today's build are <a href="#what-it-looks-like-today">below</a>.</em>
 </p>
 
 # Statecraft: Israel
@@ -15,17 +13,14 @@
 [![Unity 6000.3.25f1](https://img.shields.io/badge/Unity-6000.3.25f1-black.svg)](unity/ProjectSettings/ProjectVersion.txt)
 ![Status: playable 1948–1951 prototype](https://img.shields.io/badge/status-playable%201948%E2%80%931951-orange.svg)
 
-**A turn-based grand-strategy game about governing Israel.
- You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.**
+**A turn-based grand-strategy game about governing Israel. You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.**
 
 > [!NOTE]
-> This is an independent open-source project. A commercial edition is planned.
- It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
+> This is an independent open-source project. A commercial edition is planned. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
 
 ##### [Report a bug](https://github.com/eyalgolan/statecraft-israel/issues/new?template=bug_report.yml) | [Report a historical error](https://github.com/eyalgolan/statecraft-israel/issues/new?template=historical_accuracy.yml) | [Discussions](https://github.com/eyalgolan/statecraft-israel/discussions) | [Changelog](CHANGELOG.md)
 
 ## What is this?
-
 
 You sit in the prime minister's chair from the founding of the state. Each turn you:
 
@@ -46,7 +41,6 @@ A deterministic C# simulation runs underneath. The same choices always give the 
   <img src="docs/images/build-m3-why.jpg" alt="Current build: the Why panel explaining a turn's changes" width="405">
   <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-10.</em>
 </p>
-
 
 ## Is this any good?
 
@@ -86,17 +80,18 @@ There is no hosted build yet; one is planned for M4. To run it locally:
 
 The exact commands are in [BUILDING.md](BUILDING.md).
 
+**First open in Unity.** The game scene is `Assets/Map.unity`, and it opens automatically. If it doesn't (you see an empty "Untitled" scene), double-click `Map` in the Project window's Assets folder. Then press Play.
+
+Troubleshooting: if the Console shows compile errors from a package that isn't in our `Packages/manifest.json` (for example an AI or MCP connector such as `com.ivanmurzak.unity.mcp` that added itself), remove that package from your local manifest or update it. Unity can't run while there is any compile error.
 
 ## History, sources and accuracy
 
 - Every event, minister, date and number in `content/` carries `sources:` with URLs and check dates. Wikipedia (English and Hebrew) is a primary cited source for many facts, which is why `content/` is CC BY-SA 4.0.
 - The model behind the game, and its framing, embed assumptions. It is not neutral, and this page says so.
-
 - No quotes are invented. Text paraphrases its sources.
 - The framing is Israeli. Contested narratives are not presented as parallel accounts.
 - Events about war, terror and the Holocaust are tagged sensitive. They get a sensitivity review before any build is shared, and the build tools refuse to package until it is recorded. Historian review is planned for M4.
 - Found an error? Use the [historical error form](.github/ISSUE_TEMPLATE/historical_accuracy.yml). It asks for a source, because a claim without one can't be acted on. The full rules: [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).
-
 
 ## Contributing
 
@@ -110,19 +105,17 @@ Help is very welcome:
 Before you start:
 - Read [docs/dev-setup.md](docs/dev-setup.md).
 - Run the tests listed in [CONTRIBUTING.md](CONTRIBUTING.md).
-
 - Keep game rules in the sim, not in Unity.
 
 Start with **[CONTRIBUTING.md](CONTRIBUTING.md)**. There's no CLA: contributions come in under the repo's licences.
 
-Looking for a first task? Browse the [good first issue](https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue) and [help wanted](https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted) filters, or the [open issues](https://github.com/eyalgolan/statecraft-israel/issues) (#1 to #13 are ready-to-pick tasks: research, content, design, translation and tests).
+Looking for a first task? Browse the [good first issue](https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue) and [help wanted](https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted) filters, or the [open issues](https://github.com/eyalgolan/statecraft-israel/issues) (the `help wanted` label marks tasks that are ready to pick: research, content, design, translation and tests).
 
 ## Build from source
 
 You need Unity **6000.3.25f1 (6.3 LTS)** with Web Build Support; the exact version is in [`unity/ProjectSettings/ProjectVersion.txt`](unity/ProjectSettings/ProjectVersion.txt). Clone, run `tools/build_sim_for_unity.sh`, add `unity/` in Unity Hub and open `Assets/Map.unity`. The batch build, the tests and the browser check are in [BUILDING.md](BUILDING.md).
 
 ## AI use
-
 
 This project is built with heavy AI assistance, disclosed here using itch.io's categories:
 - **Code:** written with AI coding agents and reviewed through tests and review gates.

@@ -28,8 +28,13 @@ A build rewrites some cached settings. Drop them afterwards with
 
 ## In the editor
 
-Unity Hub → **Add** → select `unity/`, then open `Assets/Map.unity` and press Play. Run `tools/build_sim_for_unity.sh`
-again after every change under `sim/`.
+Unity Hub → **Add** → select `unity/`. Run `tools/build_sim_for_unity.sh` again after every change under `sim/`.
+
+### First open in Unity
+
+The game scene is `Assets/Map.unity`, and it opens automatically. If it doesn't (you see an empty "Untitled" scene), double-click `Map` in the Project window's Assets folder. Then press Play.
+
+Troubleshooting: if the Console shows compile errors from a package that isn't in our `Packages/manifest.json` (for example an AI or MCP connector such as `com.ivanmurzak.unity.mcp` that added itself), remove that package from your local manifest or update it. Unity can't run while there is any compile error.
 
 ## Tests
 

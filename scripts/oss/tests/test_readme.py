@@ -117,7 +117,6 @@ def test_contributing_links_the_issue_filters_and_the_open_issues():
                 "https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted",
                 "https://github.com/eyalgolan/statecraft-israel/issues"):
         assert url in text, url
-    assert "#1 to #13" in text
 
 
 def test_hebrew_readme_keeps_the_english_facts():
@@ -142,3 +141,36 @@ def test_social_preview_is_1280_by_640_and_small():
             return
         i += 2 + size
     raise AssertionError("no frame header")
+
+
+def test_readme_has_no_formatting_churn():
+    text = read("README.md")
+    assert "\n\n\n" not in text, "double blank line"
+    assert not re.search(r"\n [A-Za-z<]", text), "continuation line indented by one space"
+    for block in re.findall(r"(?:^- .*\n(?:\n)?)+", text, re.M):
+        assert "\n\n- " not in block, "loose list: " + block[:40]
+    assert "#1 to #13" not in text
+
+
+def test_hebrew_readme_polish_and_alt_text():
+    he = read("README.he.md")
+    assert "`content/`" not in he  # the trailing slash jumps to the wrong side in RTL
+    for bad in ("מורשה ב־CC", "מצוטטת עם מקור", "מאסיבי", "שערי סקירה", "בזמן אמת בזמן"):
+        assert bad not in he, bad
+    alts = re.findall(r'alt="([^"]+)"', he)
+    assert len(alts) == 4 and all(re.search(r"[א-ת]", a) for a in alts)
+
+
+def test_first_open_in_unity_is_in_all_three_files():
+    for rel in ("README.md", "BUILDING.md", "README.he.md"):
+        text = read(rel)
+        for fact in ("Assets/Map.unity", "Packages/manifest.json", "com.ivanmurzak.unity.mcp"):
+            assert fact in text, (rel, fact)
+    assert "First open in Unity" in read("README.md") and "First open in Unity" in read("BUILDING.md")
+
+
+def test_hebrew_file_names_in_link_text_are_direction_isolated():
+    # GitHub strips <bdi> but keeps <span dir="ltr">.
+    he = read("README.he.md")
+    assert '[<span dir="ltr">BUILDING.md</span>]' in he and '[<span dir="ltr">CONTRIBUTING.md</span>]' in he
+    assert "<bdi>" not in he
