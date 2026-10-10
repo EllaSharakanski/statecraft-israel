@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEngine;
 
 namespace Statecraft.Game.EditorTools
 {
@@ -21,6 +22,8 @@ namespace Statecraft.Game.EditorTools
             PlayerSettings.WebGL.template = WebTemplate;
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
             PlayerSettings.WebGL.decompressionFallback = false;
+            // Debug.Log lines (GAME OK, TURN, PROFILE) without a script stack trace; warnings and errors keep theirs (Task 24 review M9).
+            PlayerSettings.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
             var player = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
             var template = player.FindProperty("templateDefaultScene");   // no public API; the sample scene it named is gone
             if (template != null && template.stringValue != BootScene) { template.stringValue = BootScene; player.ApplyModifiedPropertiesWithoutUndo(); }

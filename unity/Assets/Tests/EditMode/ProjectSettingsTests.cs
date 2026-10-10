@@ -43,4 +43,14 @@ public class ProjectSettingsTests
             StringAssert.DoesNotContain("\"" + p + "\"", manifest);
         Assert.IsFalse(File.Exists("Assets/Scenes/SampleScene.unity"));
     }
+
+    /// <summary>Task 24 review M9: Debug.Log lines (GAME OK, TURN, PROFILE) print without a script stack trace in players;
+    /// warnings, errors and exceptions keep theirs.</summary>
+    [Test]
+    public void LogLinesCarryNoStackTraceButErrorsDo()
+    {
+        Assert.AreEqual(UnityEngine.StackTraceLogType.None, PlayerSettings.GetStackTraceLogType(UnityEngine.LogType.Log));
+        foreach (var t in new[] { UnityEngine.LogType.Error, UnityEngine.LogType.Assert, UnityEngine.LogType.Warning, UnityEngine.LogType.Exception })
+            Assert.AreEqual(UnityEngine.StackTraceLogType.ScriptOnly, PlayerSettings.GetStackTraceLogType(t), t.ToString());
+    }
 }
