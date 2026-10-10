@@ -133,4 +133,22 @@ public class EventCardTests
         Assert.AreEqual(2, bridge.State.Rung);                            // signing ends full war
         Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "chosen: Sign the armistice"));
     }
+
+    // Fix round 1, I3: the 1949 elections are a one-option card; it renders one button, and pressing it answers the event.
+    [Test]
+    public void AOneOptionEventShowsOneButton()
+    {
+        using var ui = new UiTestKit();
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("elections_1949")) g.Step(new Command[0]);
+        var bridge = new SimBridge(g, Text);
+        var card = new EventCardPresenter(ui.Root, bridge, Text, null);
+        Assert.AreEqual("elections_1949", card.Shown!.Id);
+        var buttons = ui.Q<VisualElement>("event-options").Query<Button>().ToList();
+        Assert.AreEqual(1, buttons.Count);
+        Assert.AreEqual("option-hold", buttons[0].name);
+        UiTestKit.Press(buttons[0]);
+        var queued = (ChooseEventOption)bridge.Queued.Single();
+        Assert.AreEqual(("elections_1949", "hold"), (queued.EventId, queued.OptionId));
+    }
 }

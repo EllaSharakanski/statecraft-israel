@@ -5,7 +5,7 @@
 - **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `(cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip .)`.
 - **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`. This runs both golden hashes in the WebGL IL2CPP player, then plays five turns through the UI's own buttons.
   - Result, 2026-10-10: `GOLDEN OK 1950 ee5d0826…`, `GOLDEN OK 1952 91bb6fb5…`, `SMOKE OK 5 turns 1948-06-19 7004c29a…`, then PASS.
-  - Result after the 1948 war-period events (playtest 1 E), on the Disabled build: `GOLDEN OK 1950 a540b52e…`, `GOLDEN OK 1952 16c16d7e…`, `SMOKE OK 5 turns 1948-06-19 3f0f01f9…`, then PASS. The smoke run now answers two events through the card (the IDF founding order on turn 2, the first truce on turn 3).
+  - Result after the 1948 war-period events, fix round 1 (playtest 1 E), on the Disabled build: `GOLDEN OK 1950 71e9904d…`, `GOLDEN OK 1952 73590e32…`, `SMOKE OK 5 turns 1948-06-19 d3fdd459…`, then PASS. The smoke run answers two events through the card (the IDF founding order on turn 2, the first truce on turn 4). The Brotli folder, the zip and the size lines below are from the build before these events; they are re-measured when the release build is rebuilt after the merge.
 - **Size:**
   - The folder is 23 MB (`du -sh`) in 36 files. itch.io allows 1,000 files.
   - The zip is 20 MB (20,862,385 bytes).
@@ -59,6 +59,18 @@ Each step below passed:
 | (e) A private browser context (`Target.createBrowserContext`) | The game starts (a new game) and plays a turn. A second private context starts a new game again; no persistence is expected there. |
 
 Firefox is not installed on the development Mac, so the Firefox check is open.
+
+## OWNER STEP: sensitivity review before a public upload
+Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags. The six events below are only `fact-checked`. The owner reviews each and records a sign-off (in progress.md, or by moving its `status` to `sensitivity-reviewed`) before the itch.io upload.
+
+| Event | Tags | What to review |
+|---|---|---|
+| `altalena` | security, war-casualties | Jews killed by Jews: 16 Irgun and 3 IDF dead (in the YAML comment, not the card) |
+| `ten_days` | security, war-casualties | Lydda and Ramle are shown as a military operation only (Lydda airport, the Jerusalem road); leaving out the population's flight and expulsion is an editorial choice the notes flag for explicit approval |
+| `operation_yoav` | security, war-casualties | the Hebron-hills decision; military text only |
+| `operation_hiram` | security, war-casualties | military text only; the contested population figures and the 26 Sep cabinet quote are left out |
+| `operation_horev` | security, war-casualties | military text only |
+| `bernadotte_assassination` | security, terror | the `terror` tag follows the Israeli government's own Prevention of Terrorism Ordinance |
 
 ## OWNER STEP: upload to itch.io
 This needs the owner's itch.io account and is never automated.
