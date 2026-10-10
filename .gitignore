@@ -34,3 +34,5 @@ unity/*.slnx
 unity-*.xml
 unity-*.log
 captures/
+unity/Assets/StreamingAssets/content/
+unity/Assets/StreamingAssets/content.meta
