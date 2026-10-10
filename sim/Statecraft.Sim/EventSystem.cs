@@ -56,6 +56,7 @@ namespace Statecraft.Sim
         {
             s.PendingEvents.Remove(eventId);
             var fillDate = FillDate(Get(c, eventId), s.Date);
+            var title = Cabinet.Fill(c, s, Get(c, eventId).Title, fillDate);
             why.Add(new Cause("events", eventId, 0, $"{how}: {Cabinet.Fill(c, s, o.Text, fillDate)}"));
             foreach (var fx in o.Effects)
             {
@@ -63,12 +64,12 @@ namespace Statecraft.Sim
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
                 else change = EffectsSystem.Shift(c, s, fx.Target, fx.Delta);
-                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00;+0.00} ({eventId}/{o.Id})")));
+                why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{PlayerText.Target(c, fx.Target)} {change:+0.00;-0.00;+0.00} ({title})")));
             }
             foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))
             {
                 s.Policies[kv.Key] = kv.Value;
-                why.Add(new Cause("events", kv.Key, kv.Value, FormattableString.Invariant($"{kv.Key} set to {kv.Value:0.00} ({eventId}/{o.Id})")));
+                why.Add(new Cause("events", kv.Key, kv.Value, FormattableString.Invariant($"{PlayerText.Target(c, kv.Key)} set to {kv.Value:0.00} ({title})")));
             }
             if (o.SetRung.HasValue) SecuritySystem.SetRung(c, s, o.SetRung.Value, why);
         }

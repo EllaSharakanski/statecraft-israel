@@ -84,11 +84,11 @@ namespace Statecraft.Sim
                     if (legislature == null) return "No legislature is sitting";
                     if (!PassVote(c, s))
                     {
-                        why.Add(new Cause("politics", p.Policy, 0, FormattableString.Invariant($"{legislature.Body} voted down {p.Policy} {p.Level:0.00}")));
+                        why.Add(new Cause("politics", p.Policy, 0, FormattableString.Invariant($"{legislature.Body} voted down {PlayerText.Target(c, p.Policy)} {p.Level:0.00}")));
                         return null;
                     }
                     s.Policies[p.Policy] = p.Level;
-                    why.Add(new Cause("policy", p.Policy, p.Level, FormattableString.Invariant($"{p.Policy} set to {p.Level:0.00}")));
+                    why.Add(new Cause("policy", p.Policy, p.Level, FormattableString.Invariant($"{PlayerText.Target(c, p.Policy)} set to {p.Level:0.00}")));
                     return null;
                 case AllocateBudget b:
                 {

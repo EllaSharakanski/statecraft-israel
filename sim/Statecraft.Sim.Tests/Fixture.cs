@@ -79,17 +79,22 @@ governments:
 indicators:
   - id: morale
     base: 0.5
+    name: Morale
   - id: food_supply
     base: 0.4
+    name: Food supply
   - id: housing
     base: 0.3
+    name: Housing
 policies:
   - id: rationing
     default: 0.0
     office: finance_minister
+    name: Rationing
   - id: maabarot
     default: 0.0
     office: finance_minister
+    name: Transit camps
 effects:
   - id: rationing_food
     source: rationing
@@ -97,16 +102,19 @@ effects:
     k: 0.4
     inertia: 2
     office: finance_minister
+    name: Rations feed people
   - id: rationing_morale
     source: rationing
     target: morale
     k: -0.2
     inertia: 1
+    name: Rationing wears on morale
 situations:
   - id: hunger
     indicator: food_supply
     on_below: 0.3
     off_above: 0.45
+    name: Hunger
 voter_groups:
   - id: everyone
     weights: { morale: 1.0 }
@@ -166,6 +174,9 @@ settlements:
   - { id: town_a, name: Town A, lon: 34.29, lat: 33.35, type: town, founded: 1900, pre_modern: false }
 ",
         ["aliyah.yaml"] = @"
+regions:
+  - { id: europe, name: Europe }
+  - { id: asia, name: Asia }
 series:
   - from: 1948-05-15
     to: 1948-12-31

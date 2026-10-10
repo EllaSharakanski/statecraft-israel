@@ -61,7 +61,7 @@ namespace Statecraft.Sim
             {
                 var change = EffectsSystem.Shift(c, s, "food_supply", r.FxCrisisFoodPerYear * yearFraction);
                 if (change != 0)
-                    why.Add(new Cause("economy", "food_supply", change, FormattableString.Invariant($"food_supply {change:+0.000;-0.000;+0.000} (foreign currency crisis: food imports cut)")));
+                    why.Add(new Cause("economy", "food_supply", change, FormattableString.Invariant($"{PlayerText.Target(c, "food_supply")} {change:+0.000;-0.000;+0.000} (foreign currency crisis: food imports cut)")));
             }
         }
 

@@ -164,7 +164,7 @@ options:
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("rationing", 0.5) });
         Assert.Empty(r.Rejected);
         Assert.Equal(0.5, r.State.Policies["rationing"]);
-        Assert.Contains(r.Why, w => w.System == "policy" && w.Message == "rationing set to 0.50");
+        Assert.Contains(r.Why, w => w.System == "policy" && w.Message == "Rationing set to 0.50");
     }
 
     [Fact]
@@ -210,7 +210,7 @@ options:
         var r = Simulation.Step(C, s0, new Command[] { cmd, cmd, cmd });
         Assert.Equal(new[] { "Not enough attention (need 1.0, have 0.0)" }, r.Rejected.Select(x => x.Reason));
         Assert.Equal(0.0, r.State.Policies["rationing"]);
-        Assert.Equal(2, r.Why.Count(w => w.System == "politics" && w.Target == "rationing" && w.Message == "House voted down rationing 0.90"));
+        Assert.Equal(2, r.Why.Count(w => w.System == "politics" && w.Target == "rationing" && w.Message == "House voted down Rationing 0.90"));
     }
 
     [Theory]

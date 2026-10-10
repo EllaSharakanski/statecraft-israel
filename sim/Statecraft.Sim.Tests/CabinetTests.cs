@@ -78,7 +78,7 @@ public class CabinetTests
     [Theory]
     [InlineData("prime_minister", "loyalist", "You are the Prime Minister: that office is not yours to fill")]
     [InlineData("finance_minister", "outsider", "Out Sider's party (Beta) is not in the coalition")]
-    [InlineData("finance_minister", "gone", "Gone Early died on 1948-05-01")]
+    [InlineData("finance_minister", "gone", "Gone Early died on 1 May 1948")]
     [InlineData("finance_minister", "def_two", "Def Two already holds the office of Minister of Finance")]
     [InlineData("finance_minister", "nobody", "Unknown person 'nobody'")]
     [InlineData("treasurer", "loyalist", "Unknown office 'treasurer'")]
@@ -165,7 +165,7 @@ public class CabinetTests
     public void AnAbolishedOfficeCannotBeFilled()
     {
         var s = new GameState { Date = new DateTime(1948, 12, 1) };
-        Assert.Equal("The office of Old Office was abolished on 1948-12-01", Cabinet.Check(Rich, s, "old_office", "loyalist"));
+        Assert.Equal("The office of Old Office was abolished on 1 December 1948", Cabinet.Check(Rich, s, "old_office", "loyalist"));
     }
 
     /// <summary>Step refills attention at the end of the turn, so the spend is observed through what the same turn can still
@@ -268,7 +268,7 @@ public class CabinetTests
         var c = ContentLoader.Load(RealContentTests.ContentRoot());
         var s = new GameState { Date = new DateTime(1951, 1, 1) };
         Assert.Equal("Golda Meir is not an IDF career officer", Cabinet.Check(c, s, "chief_of_staff", "golda_meir"));
-        Assert.Equal("The office of Minister of War Victims was abolished on 1951-10-08",
+        Assert.Equal("The office of Minister of War Victims was abolished on 8 October 1951",
             Cabinet.Check(c, new GameState { Date = new DateTime(1951, 11, 1) }, "war_victims_minister", "maimon"));
         Assert.Equal("Aharon Zisling's party (Mapam) is not in the coalition", Cabinet.Check(c, s, "agriculture_minister", "zisling"));
         Assert.Equal("The President is elected by the Knesset, not appointed", Cabinet.Check(c, s, "president", "sharett"));
@@ -276,6 +276,6 @@ public class CabinetTests
         Assert.Equal("Chaim Weizmann is the President", Cabinet.Check(c, s, "finance_minister", "weizmann"));
         Assert.Equal("Yigael Yadin is the serving Chief of Staff", Cabinet.Check(c, s, "finance_minister", "yadin"));
         s.Date = new DateTime(1951, 6, 1);
-        Assert.Equal("David Remez died on 1951-05-19", Cabinet.Check(c, s, "transportation_minister", "remez"));
+        Assert.Equal("David Remez died on 19 May 1951", Cabinet.Check(c, s, "transportation_minister", "remez"));
     }
 }

@@ -41,7 +41,7 @@ public class EconomyM3Tests
         Assert.Contains(EconomySystem.FxCrisis, s.ActiveSituations);
         Assert.Equal(0.4 - 0.1, s.Indicators["food_supply"], 9);
         Assert.Equal(-0.1, s.IndicatorShifts["food_supply"], 9);
-        Assert.Contains(why, w => w.Target == "food_supply" && w.Message == "food_supply -0.100 (foreign currency crisis: food imports cut)");
+        Assert.Contains(why, w => w.Target == "food_supply" && w.Message == "Food supply -0.100 (foreign currency crisis: food imports cut)");
     }
 
     [Fact]

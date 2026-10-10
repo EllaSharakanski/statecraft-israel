@@ -26,7 +26,11 @@ namespace Statecraft.Sim
             public List<VoterGroup> VoterGroups { get; set; } = new List<VoterGroup>();
             public List<Actor> Actors { get; set; } = new List<Actor>();
         }
-        sealed class AliyahFile { public List<AliyahPeriod> Series { get; set; } = new List<AliyahPeriod>(); }
+        sealed class AliyahFile
+        {
+            public List<Region> Regions { get; set; } = new List<Region>();
+            public List<AliyahPeriod> Series { get; set; } = new List<AliyahPeriod>();
+        }
         sealed class PopulationFile { public List<PopulationAnchor> Anchors { get; set; } = new List<PopulationAnchor>(); }
         sealed class HexBounds { public double Lon0 { get; set; } public double Lon1 { get; set; } public double Lat0 { get; set; } public double Lat1 { get; set; } }
         /// <summary>hexes.json is JSON, which YAML 1.2 reads as a flow mapping; every key the tool writes is declared.</summary>
@@ -157,7 +161,8 @@ namespace Statecraft.Sim
             c.Indicators = m.Indicators; c.Policies = m.Policies; c.Effects = m.Effects;
             c.Situations = m.Situations; c.VoterGroups = m.VoterGroups; c.Actors = m.Actors;
             c.Rules = Read<Rules>(readFile, "rules.yaml");
-            c.Aliyah = Read<AliyahFile>(readFile, "aliyah.yaml").Series;
+            var aliyah = Read<AliyahFile>(readFile, "aliyah.yaml");
+            c.Aliyah = aliyah.Series; c.Regions = aliyah.Regions;
             c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
             c.Hexes = Read<MapFile>(readFile, HexesFile).Hexes;
             c.SettlementHexes = Read<SettlementHexesFile>(readFile, SettlementHexesFileName).Settlements;
@@ -214,6 +219,12 @@ namespace Statecraft.Sim
         }
 
         static readonly HashSet<string> Statuses = new HashSet<string> { "draft", "fact-checked", "historian-reviewed", "sensitivity-reviewed" };
+
+        /// <summary>A display name: required, and not blank.</summary>
+        static void Named(string file, string field, string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) throw new ContentException(file, field, "required (the name shown to the player)");
+        }
 
         internal static void Status(string file, string field, string status)
         {
@@ -277,6 +288,13 @@ namespace Statecraft.Sim
             Unique("model.yaml", "situations", c.Situations.Select(s => s.Id));
             Unique("model.yaml", "voter_groups", c.VoterGroups.Select(v => v.Id));
             Unique("model.yaml", "actors", c.Actors.Select(a => a.Id));
+            Unique("aliyah.yaml", "regions", c.Regions.Select(g => g.Id));
+            // Display names (spec: player-facing text): Cause messages show these, never the ids.
+            foreach (var i in c.Indicators) Named("model.yaml", $"indicators[{i.Id}].name", i.Name);
+            foreach (var p in c.Policies) Named("model.yaml", $"policies[{p.Id}].name", p.Name);
+            foreach (var e in c.Effects) Named("model.yaml", $"effects[{e.Id}].name", e.Name);
+            foreach (var s in c.Situations) Named("model.yaml", $"situations[{s.Id}].name", s.Name);
+            foreach (var g in c.Regions) Named("aliyah.yaml", $"regions[{g.Id}].name", g.Name);
             foreach (var p in c.Policies)
                 if (indicators.Contains(p.Id)) throw new ContentException("model.yaml", $"policies[{p.Id}].id", "same id as an indicator (effect sources would be ambiguous)");
 
@@ -441,7 +459,11 @@ namespace Statecraft.Sim
                 var a = c.Aliyah[i]; var path = FormattableString.Invariant($"series[{i}]");
                 if (a.From == default) throw new ContentException("aliyah.yaml", path + ".from", "required");
                 if (a.To < a.From) throw new ContentException("aliyah.yaml", path + ".to", "required, on or after from (both dates are inclusive)");
-                foreach (var kv in a.Origins) Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
+                foreach (var kv in a.Origins)
+                {
+                    if (c.Regions.All(g => g.Id != kv.Key)) throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"unknown region '{kv.Key}' (add it to regions with a name)");
+                    Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
+                }
             }
             for (int i = 0; i < c.PopulationAnchors.Count; i++)
             {

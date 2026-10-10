@@ -71,13 +71,13 @@ namespace Statecraft.Sim
             var office = c.Offices.FirstOrDefault(o => o.Id == officeId);
             if (office == null) return $"Unknown office '{officeId}'";
             if (office.Until.HasValue && s.Date >= office.Until.Value)
-                return FormattableString.Invariant($"The office of {office.Title} was abolished on {office.Until:yyyy-MM-dd}");
+                return $"The office of {office.Title} was abolished on {PlayerText.Date(office.Until.Value)}";
             if (officeId == "prime_minister") return "You are the Prime Minister: that office is not yours to fill";
             if (officeId == "president") return "The President is elected by the Knesset, not appointed";
             var person = c.People.FirstOrDefault(p => p.Id == personId);
             if (person == null) return $"Unknown person '{personId}'";
             if (person.Died.HasValue && s.Date >= person.Died.Value)
-                return FormattableString.Invariant($"{person.Name} died on {person.Died:yyyy-MM-dd}");
+                return $"{person.Name} died on {PlayerText.Date(person.Died.Value)}";
             if (Holder(c, s, "president")?.Id == personId) return $"{person.Name} is the President";
             if (officeId != "chief_of_staff" && Holder(c, s, "chief_of_staff")?.Id == personId) return $"{person.Name} is the serving Chief of Staff";
             if (Holder(c, s, officeId)?.Id == personId) return $"{person.Name} already holds the office of {office.Title}";

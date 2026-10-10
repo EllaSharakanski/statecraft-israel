@@ -50,7 +50,7 @@ namespace Statecraft.Sim
             if (l1 != null && l1 != l0)
             {
                 var (seats, size) = CoalitionSeats(c, to);
-                var elected = l1.Elected.HasValue ? FormattableString.Invariant($", elected {l1.Elected:yyyy-MM-dd}") : "";
+                var elected = l1.Elected.HasValue ? $", elected {PlayerText.Date(l1.Elected.Value)}" : "";
                 why.Add(new Cause("politics", l1.Id, 0, FormattableString.Invariant($"{l1.Body} convened ({l1.Size} seats{elected}); coalition holds {seats}/{size}")));
             }
             var g0 = Offices.Government(c, from); var g1 = Offices.Government(c, to);

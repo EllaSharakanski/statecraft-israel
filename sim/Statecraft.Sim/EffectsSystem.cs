@@ -55,9 +55,9 @@ namespace Statecraft.Sim
             {
                 var delta = s.Indicators[i.Id] - before[i.Id];
                 if (Math.Abs(delta) <= 1e-9) continue;
-                var ids = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Id).ToList();
-                var from = ids.Count > 0 ? $" ({string.Join(", ", ids)})" : "";
-                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Id} {delta:+0.000;-0.000;+0.000}{from}")));
+                var names = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Name).ToList();
+                var from = names.Count > 0 ? $" ({string.Join(", ", names)})" : "";
+                why.Add(new Cause("effects", i.Id, delta, FormattableString.Invariant($"{i.Name} {delta:+0.000;-0.000;+0.000}{from}")));
             }
             UpdateSituations(c, s, why);
         }
@@ -91,8 +91,8 @@ namespace Statecraft.Sim
                 bool on = s.ActiveSituations.Contains(sit.Id);
                 bool turnOn = sit.OnBelow.HasValue ? v < sit.OnBelow.Value : v > sit.OnAbove!.Value;
                 bool turnOff = sit.OffAbove.HasValue ? v > sit.OffAbove.Value : v < sit.OffBelow!.Value;
-                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, FormattableString.Invariant($"{sit.Id} began ({sit.Indicator} = {v:0.00})"))); }
-                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, FormattableString.Invariant($"{sit.Id} ended ({sit.Indicator} = {v:0.00})"))); }
+                if (!on && turnOn) { s.ActiveSituations.Add(sit.Id); why.Add(new Cause("situations", sit.Id, 1, FormattableString.Invariant($"{sit.Name} began ({PlayerText.Target(c, sit.Indicator)} = {v:0.00})"))); }
+                else if (on && turnOff) { s.ActiveSituations.Remove(sit.Id); why.Add(new Cause("situations", sit.Id, -1, FormattableString.Invariant($"{sit.Name} ended ({PlayerText.Target(c, sit.Indicator)} = {v:0.00})"))); }
             }
         }
 

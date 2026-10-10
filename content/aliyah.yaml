@@ -1,4 +1,12 @@
 # Immigrants by continent of origin, CBS figures as tabulated by the Jewish Virtual Library.
+# Display names of the origin groups (shown to the player; required). "unknown" is the CBS column for immigrants whose
+# country of origin was not recorded.
+regions:
+  - { id: asia, name: Asia }
+  - { id: africa, name: Africa }
+  - { id: europe, name: Europe }
+  - { id: america_oceania, name: the Americas and Oceania }
+  - { id: unknown, name: country of origin not recorded }
 series:
   - from: 1948-05-15
     to: 1948-12-31

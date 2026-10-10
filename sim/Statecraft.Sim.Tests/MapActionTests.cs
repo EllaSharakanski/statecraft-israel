@@ -75,7 +75,7 @@ public class MapActionTests
     {
         var s = Ready();
         s.Date = new DateTime(1948, 5, 31);
-        Assert.Equal("Transit camps and housing projects can be placed from 1948-06-01", MapActions.Check(C, s, "housing", 2, 0));
+        Assert.Equal("Transit camps and housing projects can be placed from 1 June 1948", MapActions.Check(C, s, "housing", 2, 0));
     }
 
     [Fact]
@@ -207,6 +207,6 @@ public class MapActionTests
         var tlv = c.SettlementHexes.Single(x => x.Id == "tel_aviv");
         Assert.Null(MapActions.Check(c, s, "transit_camp", tlv.Q, tlv.R));
         var s1949 = GoldenRun.Play(c, new DateTime(1949, 6, 1));
-        Assert.Equal("Transit camps and housing projects can be placed from 1950-01-01", MapActions.Check(c, s1949, "housing", tlv.Q, tlv.R));
+        Assert.Equal("Transit camps and housing projects can be placed from 1 January 1950", MapActions.Check(c, s1949, "housing", tlv.Q, tlv.R));
     }
 }

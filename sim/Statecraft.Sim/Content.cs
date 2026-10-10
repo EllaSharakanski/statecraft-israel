@@ -74,13 +74,21 @@ namespace Statecraft.Sim
         public string Status { get; set; } = "draft";
     }
 
-    public sealed class Indicator { public string Id { get; set; } = ""; public double Base { get; set; } }
+    public sealed class Indicator
+    {
+        public string Id { get; set; } = "";
+        public double Base { get; set; }
+        /// <summary>Display name shown to the player (Cause text); required.</summary>
+        public string Name { get; set; } = "";
+    }
 
     public sealed class Policy
     {
         public string Id { get; set; } = "";
         public double Default { get; set; }
         public string Office { get; set; } = "";
+        /// <summary>Display name shown to the player (Cause text); required.</summary>
+        public string Name { get; set; } = "";
     }
 
     /// <summary>Additive effect: its contribution to Target moves toward K * source value over Inertia turns.</summary>
@@ -92,6 +100,8 @@ namespace Statecraft.Sim
         public double K { get; set; }
         public int Inertia { get; set; } = 1;
         public string Office { get; set; } = "";
+        /// <summary>Short display name shown to the player (Cause text); required.</summary>
+        public string Name { get; set; } = "";
     }
 
     /// <summary>Turns on past one threshold and off past another (hysteresis), so it does not flicker.</summary>
@@ -103,6 +113,8 @@ namespace Statecraft.Sim
         public double? OffAbove { get; set; }
         public double? OnAbove { get; set; }
         public double? OffBelow { get; set; }
+        /// <summary>Display name shown to the player (Cause text); required.</summary>
+        public string Name { get; set; } = "";
     }
 
     public sealed class VoterGroup { public string Id { get; set; } = ""; public Dictionary<string, double> Weights { get; set; } = new Dictionary<string, double>(); }
@@ -154,6 +166,14 @@ namespace Statecraft.Sim
         public double Housing { get; set; }
         /// <summary>Change to the morale indicator (public support).</summary>
         public double Morale { get; set; }
+    }
+
+    /// <summary>An origin group of immigrants (aliyah.yaml regions): the key of AliyahPeriod.Origins.</summary>
+    public sealed class Region
+    {
+        public string Id { get; set; } = "";
+        /// <summary>Display name shown to the player (Cause text); required.</summary>
+        public string Name { get; set; } = "";
     }
 
     public sealed class AliyahPeriod
@@ -243,6 +263,8 @@ namespace Statecraft.Sim
         public List<Actor> Actors = new List<Actor>();
         public Rules Rules = new Rules();
         public List<AliyahPeriod> Aliyah = new List<AliyahPeriod>();
+        /// <summary>Origin groups of the aliyah series, with display names (aliyah.yaml regions).</summary>
+        public List<Region> Regions = new List<Region>();
         public List<PopulationAnchor> PopulationAnchors = new List<PopulationAnchor>();
         public List<GameEvent> Events = new List<GameEvent>();
         List<MapHex> _hexes = new List<MapHex>();

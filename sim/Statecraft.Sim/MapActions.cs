@@ -44,7 +44,7 @@ namespace Statecraft.Sim
             var rule = c.Rules.MapActions.TryGetValue(action, out var x) ? x : null;
             if (rule == null) return $"Map action '{action}' is not available in this content";
             if (s.Date < c.Rules.MapActionsFrom)
-                return FormattableString.Invariant($"Transit camps and housing projects can be placed from {c.Rules.MapActionsFrom:yyyy-MM-dd}");
+                return $"Transit camps and housing projects can be placed from {PlayerText.Date(c.Rules.MapActionsFrom)}";
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
                 return "Transit camps need the ma'abarot policy";
             var hex = c.HexAt(q, r);

@@ -60,7 +60,7 @@ options:
     {
         var expected = Run(CultureInfo.InvariantCulture);
         Assert.Contains(expected, m => m.Contains("9,160 immigrants"));   // grouping is exercised
-        Assert.Contains(expected, m => m.Contains("elected 1949-01-25"));  // calendar is exercised
+        Assert.Contains(expected, m => m.Contains("elected 25 January 1949"));  // calendar is exercised
         Assert.Equal(expected, Run(new CultureInfo(culture)));
     }
 }
