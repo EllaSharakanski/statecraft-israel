@@ -14,7 +14,7 @@ namespace Statecraft.Game.EditorTools
     /// originals stay in promo/ref/people), sets web-friendly import settings on every platform block, writes PORTRAITS.txt
     /// (id, licence, source) and rebuilds PortraitCatalog.asset. Every licence and file is checked before anything is
     /// written, and portraits of people who no longer have one are removed. Idempotent: a second run changes nothing.
-    /// Run headless: Unity -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.PortraitImport.Run</summary>
+    /// Run headless: Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.PortraitImport.Run</summary>
     public static class PortraitImport
     {
         public const string Folder = "Assets/UI/Portraits";

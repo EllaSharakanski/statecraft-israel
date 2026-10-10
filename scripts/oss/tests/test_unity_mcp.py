@@ -78,24 +78,37 @@ def test_update_popup_is_off_for_the_team():
     assert "UnityMcpUpdateProjectSettings" in text and "disableUpdateNotificationsForTeam: 1" in text
 
 
+CI_OFF = "-CI false -GITHUB_ACTIONS false -TF_BUILD false"
+
+
 def test_every_documented_batch_unity_command_turns_the_plugins_ci_mode_off():
-    # With CI=true in the environment the plugin's resolver skips its NuGet download but still adds its gate defines,
-    # so a fresh clone fails to compile (2026-10-10, fix round 1). "-CI false" wins over the environment.
-    files = [f for f in subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z", "*.md", "tools/*.sh", "scripts/*.sh"],
+    # The plugin treats CI, GITHUB_ACTIONS or TF_BUILD = true as CI: its resolver then skips its NuGet download but still
+    # adds its gate defines, so a fresh clone fails to compile and the batch run hangs (fix rounds 1 and 2). The plugin
+    # reads each key from the command line before the environment, so these three arguments win. Any line that starts
+    # Unity in batch mode on the project, in any form, must carry them.
+    files = [f for f in subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z", "*.md", "tools/*.sh", "scripts/*.sh",
+                                        "unity/Assets/Editor/*.cs"],
                                        capture_output=True, check=True, text=True).stdout.split("\0") if f]
     files = [f for f in files if not f.startswith(("docs/superpowers/", "reports/", "research_notes/", "spikes/"))]
     seen = 0
     for rel in files:
         for n, line in enumerate((ROOT / rel).read_text(encoding="utf-8").splitlines(), 1):
-            if '"$UNITY" -batchmode' in line:
+            if "-batchmode" in line and "-projectPath" in line:
                 seen += 1
-                assert "-CI false" in line, f"{rel}:{n}"
-    assert seen >= 8
+                assert CI_OFF in line, f"{rel}:{n}"
+    assert seen >= 17
 
 
 def test_ci_section_says_a_unity_job_must_turn_ci_mode_off():
     text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8").split("## What CI runs", 1)[1].split("\n## ", 1)[0]
-    assert "-CI false" in text
+    assert CI_OFF in text and "GITHUB_ACTIONS" in text and "TF_BUILD" in text
+
+
+def test_docs_name_all_three_ci_variables():
+    for rel in ("CONTRIBUTING.md", "BUILDING.md", "README.he.md"):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        for fact in ("GITHUB_ACTIONS", "TF_BUILD", CI_OFF):
+            assert fact in text, (rel, fact)
 
 
 def test_upstream_feature_request_draft_is_kept_for_the_owner():

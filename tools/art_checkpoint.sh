@@ -24,7 +24,7 @@ if ! git diff --quiet -- "${guarded[@]}"; then
 fi
 trap 'git checkout -- "${guarded[@]}"' EXIT
 if [[ $build == 1 ]]; then
-  shared "$UNITY" -batchmode -CI false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$root/unity-build-web-art.log"
+  shared "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$root/unity-build-web-art.log"
   git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
   if grep -n "Shader error" "$root/unity-build-web-art.log"; then echo "art_checkpoint: shader errors in the WebGL build" >&2; exit 1; fi
 fi
@@ -39,7 +39,7 @@ poses=$(grep -o 'new PromoPose("[A-Za-z0-9_]*"' unity/Assets/Scripts/Map/PromoPo
 for pose in $poses; do
   [[ -s "$out/$pose.png" ]] || { echo "art_checkpoint: $out/$pose.png is missing" >&2; exit 1; }
 done
-shared "$UNITY" -batchmode -CI false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" -logFile "$root/unity-capture-promo.log"
+shared "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" -logFile "$root/unity-capture-promo.log"
 git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality (no unstaged edits: checked above)
 uv run tools/art_compare.py "$out" "$name" --log "$main_root/captures/visual/art-log.tsv"
 echo "ART CHECKPOINT $name: $(ls "$out"/*-compare*.png "$out"/editor/*-compare*.png | tr '\n' ' ')"

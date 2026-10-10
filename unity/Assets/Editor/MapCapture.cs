@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 /// <summary>Editor capture tools. Run headless (with graphics, not -nographics):
-/// Unity -batchmode -quit -projectPath unity -executeMethod MapCapture.TopDown (or MapCapture.Flythrough).
+/// Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod MapCapture.TopDown (or MapCapture.Flythrough).
 /// Captures go to captures/ at the repo root, which git ignores.</summary>
 public static class MapCapture
 {

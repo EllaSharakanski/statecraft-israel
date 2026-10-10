@@ -188,8 +188,9 @@ def test_unity_mcp_section_is_in_contributing_and_building_with_the_same_facts()
                      "derived from your project's path", "http", "token", "Bearer", "Account sign-in",
                      "Keep server running", "Configure", "Generate", "unity/.mcp.json",
                      "no game rules in Unity", "tests first", "sources", "AI assistance",
-                     "editor actions", "never expose", "batch mode", "UnityMcpGuard", "player build", "-CI false",
-                     "CI=true", "AI-Game-Developer-UpdateSettings.asset", "UnityMcpGuardTests",
+                     "editor actions", "never expose", "batch mode", "UnityMcpGuard", "player build", "-CI false -GITHUB_ACTIONS false -TF_BUILD false",
+                     "GITHUB_ACTIONS", "TF_BUILD", "AI-Game-Developer-UpdateSettings.asset", "UnityMcpGuardTests",
+                     "reopen the window and click Start",
                      "ProjectSettings.asset", "UNITY_MCP_READY", "nuget.org", "Not connecting?", "gamedev-mcp-server",
                      "PID", "Unity-MCP.MainWindow.Initialized", "Unity_MCP_SelectedAiAgent"):
             assert fact in text, (rel, fact)
@@ -202,8 +203,9 @@ def test_hebrew_readme_carries_the_unity_mcp_facts():
     for fact in ("Unity-MCP", "0.93.3", "Window → AI Game Developer", "Custom", "Cloud", "UNITY_MCP_CONNECTION_MODE",
                  "UserSettings/AI-Game-Developer-Config.json", "http", "token", "Bearer", "Account sign-in",
                  "Keep server running", "Configure", "Generate", "unity/.mcp.json", "ProjectSettings.asset",
-                 "UNITY_MCP_READY", "nuget.org", "gamedev-mcp-server", "PID", "batch", "UnityMcpGuard", "-CI false",
-                 "CI=true", "AI-Game-Developer-UpdateSettings.asset", "git checkout -- unity/Assets/Settings",
+                 "UNITY_MCP_READY", "nuget.org", "gamedev-mcp-server", "PID", "batch", "UnityMcpGuard", "-CI false -GITHUB_ACTIONS false -TF_BUILD false",
+                 "GITHUB_ACTIONS", "TF_BUILD", "AI-Game-Developer-UpdateSettings.asset", "git checkout -- unity/Assets/Settings",
+                 "פתחו את החלון מחדש",
                  "Unity-MCP.MainWindow.Initialized", "Unity_MCP_SelectedAiAgent"):
         assert fact in he, fact
     for idea in ("כללי המשחק", "בדיקות", "מקור", "בינה מלאכותית", "פורט", "נתיב"):
@@ -228,5 +230,5 @@ def test_playerprefsbool_error_points_at_the_openupm_registry():
 def test_ci_true_troubleshooting_is_in_building_and_hebrew():
     for rel in ("BUILDING.md", "README.he.md"):
         text = read(rel)
-        for fact in ("error CS0234", "CI=true", "-CI false", "git checkout -- unity/ProjectSettings/ProjectSettings.asset"):
+        for fact in ("error CS0234", "CI=true", "GITHUB_ACTIONS=true", "-CI false -GITHUB_ACTIONS false -TF_BUILD false", "git checkout -- unity/ProjectSettings/ProjectSettings.asset"):
             assert fact in text, (rel, fact)
