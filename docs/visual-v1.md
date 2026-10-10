@@ -8,12 +8,21 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
 - Frame time: `?vprofile` (WebGL) or `-vprofile` (desktop player, quits when done), always under
   `uv run tools/machine_lock.py --exclusive --wait-unity -- ...` (no other Unity job on the machine). Per pose, every
   configuration (`all`, each toggle off alone as `-<name>`, `none`) runs 3 times in interleaved orders, 300 frames after
-  60 warm-up frames; Chrome runs with `--disable-frame-rate-limit --disable-gpu-vsync --force-device-scale-factor=1` (headless through
-  `web_check.py`, headed through `headed.py profile`), so times are not capped at the display rate and headed and headless
-  runs draw the same pixels. Every line states `res=` and
-  the render `scale=`. Read the `PROFILE summary` lines: a feature costs `median(all) - median(-name)`.
-- Boot: `uv run tools/headed.py boot --runs 3 [--baseline MS]` (three cold loads in a headed window; the map-build span is
-  heightmap decoded to map built; `--cpu 4` adds CPU throttling as a cheap low-end proxy).
+  60 warm-up frames (and, before the first pose, one discarded warm-up pass of every configuration); Chrome runs with
+  `--disable-frame-rate-limit --disable-gpu-vsync` and the anti-throttling flags (`--disable-backgrounding-occluded-windows
+  --disable-renderer-backgrounding --disable-background-timer-throttling`), headless through `web_check.py` (add
+  `--stall 120`), headed through `headed.py profile`. Both fix the page's viewport to exactly 1920x1080 CSS pixels at the
+  DPR over CDP (`Emulation.setDeviceMetricsOverride`, before the page loads), so headed and headless runs draw the same
+  pixels even when the laptop screen clamps the headed window (its final composite is then scaled; the backbuffer is not).
+  Every line states `res=` and the render `scale=`, and both tools FAIL on a `res=` other than 1920x1080 times the DPR
+  (and on a stall: no console line for 120 s). Read the `PROFILE summary` lines: a feature costs
+  `median(all) - median(-name)`. The WebGL frame clock is quantised to about 1 ms: averages are fine, but every p95 is a
+  whole millisecond, so a p95 budget is only good to about 1 ms.
+- Boot: `uv run tools/headed.py boot --runs 3 [--baseline MS] [--baseline-first-frame MS] [--cpu R]` (three cold loads in
+  a kept-awake headed window with a 1920x1080 viewport). Two spans, each the median of the runs: `map_build_ms`
+  (heightmap decoded to map built) and `first_frame_ms` (navigation start to the second animation frame after `GAME OK`:
+  download, scene load and texture uploads, map build and the first draw with its shader compiles). `--cpu 4` adds CPU
+  throttling as a cheap low-end proxy; every line states `cpu=`.
 - Headed frame time: `uv run tools/headed.py profile --dpr 1` (`--dpr 2` is the fill-rate stress proxy). `--wait-unity`
   also waits for an interactive Unity editor that has any worktree open (it holds `unity/Temp/UnityLockfile`): close it,
   or the profile waits.
@@ -28,7 +37,8 @@ Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DP
   when it exceeds the budget plus the larger of the two spreads;
 - headed numbers are recorded, plus a DPR-2 headed run in Task 10 as a fill-rate stress proxy for weaker GPUs; the 30 fps
   floor for an integrated-GPU laptop (research notes 2.3) is 33 ms p95;
-- boot: the map-build span grows by at most 1,000 ms over the Task 1 baseline (median of 3).
+- boot: each span (`map_build_ms` and `first_frame_ms`, median of 3, at `--cpu 1` and at `--cpu 4`) grows by at most
+  max(300 ms, 50% of its Task 1 baseline): the tool's default when `--budget` is not given (controller ruling 3).
 
 ## Baseline (Task 1, before any visual change)
 | Run | Lines |

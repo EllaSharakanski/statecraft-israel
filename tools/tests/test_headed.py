@@ -50,3 +50,48 @@ def test_profile_windows_are_uncapped_at_the_requested_dpr():
     for flag in ("--force-device-scale-factor=2", "--disable-frame-rate-limit", "--disable-gpu-vsync", "--window-size=1920,1080"):
         assert flag in prof
     assert prof[-1] == "about:blank"
+
+
+def test_the_default_boot_budget_is_300_ms_or_half_the_baseline():
+    """Ruling 3: baseline + max(300 ms, 50%) unless --budget is given."""
+    assert headed.over_budget([740], 450, None) == (740, False)       # 450 + 300
+    assert headed.over_budget([760], 450, None) == (760, True)
+    assert headed.over_budget([1490], 1000, None) == (1490, False)    # 1000 + 500
+    assert headed.over_budget([1510], 1000, None) == (1510, True)
+
+
+def test_measurement_windows_are_kept_awake_and_navpairs_keeps_its_flags():
+    awake = headed.browser_flags("/tmp/p", 1920, 1080, keep_awake=True)
+    for flag in ("--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+                 "--disable-background-timer-throttling"):
+        assert flag in awake
+        assert flag not in headed.browser_flags("/tmp/p", 1568, 752)
+    assert awake[-1] == "about:blank"
+
+
+def test_the_viewport_is_set_before_the_page_loads(tmp_path):
+    """Ruling 1: Emulation.setDeviceMetricsOverride (1920x1080 at the DPR, not mobile) precedes Page.navigate."""
+    b = headed.Browser(tmp_path, viewport=(1920, 1080), dpr=2)
+    sent = []
+
+    async def send(method, params=None, session=None, timeout=60):
+        sent.append((method, params))
+        return {"targetId": "t", "sessionId": "s"}
+    b.send, b.base = send, "http://localhost/"
+    asyncio.run(b.open("vprofile", init_script="window.x = 1"))
+    methods = [m for m, _ in sent]
+    assert methods.index("Emulation.setDeviceMetricsOverride") < methods.index("Page.navigate")
+    assert methods.index("Page.addScriptToEvaluateOnNewDocument") < methods.index("Page.navigate")
+    assert dict(sent)["Emulation.setDeviceMetricsOverride"] == {"width": 1920, "height": 1080, "deviceScaleFactor": 2, "mobile": False}
+    plain = headed.Browser(tmp_path)
+    plain_sent = []
+
+    async def send2(method, params=None, session=None, timeout=60):
+        plain_sent.append(method)
+        return {"targetId": "t", "sessionId": "s"}
+    plain.send, plain.base = send2, "http://localhost/"
+    asyncio.run(plain.open("navlog"))
+    assert "Emulation.setDeviceMetricsOverride" not in plain_sent       # navpairs and loadshot keep the window's size
+    import shutil
+    for browser in (b, plain):
+        shutil.rmtree(browser.profile, ignore_errors=True)

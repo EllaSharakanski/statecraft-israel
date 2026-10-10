@@ -61,3 +61,66 @@ def test_headless_chrome_runs_uncapped_at_dpr_1():
                  "--user-data-dir=/tmp/p", "--force-device-scale-factor=1"):
         assert flag in flags
     assert "--use-angle=swiftshader" in wc.chrome_flags("/tmp/p", swiftshader=True)
+
+
+def png_of_size(w: int, h: int) -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (10, 20, 30)).save(buf, "PNG")
+    return buf.getvalue()
+
+
+def test_a_shot_of_the_wrong_size_fails(tmp_path):
+    """Ruling 1: screenshots are 1920x1080; the 1920x937 headless viewport must fail, not pass silently."""
+    c = wc.ShotCollector(tmp_path, size=(1920, 1080))
+    with pytest.raises(ValueError, match="1920x937.*1920x1080"):
+        for line in shot_lines("gameplay03", png_of_size(1920, 937), chunk=4000):
+            c.feed(line)
+    ok = wc.ShotCollector(tmp_path, size=(64, 36))
+    assert all(ok.feed(line) for line in shot_lines("diorama02", png_of_size(64, 36), chunk=4000))
+
+
+@pytest.mark.parametrize("bad", ["SHOT gameplay03 0/3 AAAA", "SHOT gameplay03 4/3 AAAA", "SHOT gameplay03 1/2 AAAA"])
+def test_a_part_that_does_not_fit_its_begin_line_is_a_value_error(tmp_path, bad):
+    """Review M1: out-of-range or mismatched part numbers fail as FAIL (ValueError), never as a KeyError traceback."""
+    c = wc.ShotCollector(tmp_path)
+    c.feed("SHOT gameplay03 begin 3 " + "0" * 64)
+    with pytest.raises(ValueError, match="does not fit"):
+        c.feed(bad)
+
+
+def test_the_viewport_is_fixed_over_cdp_at_the_dpr():
+    assert wc.viewport_override(1920, 1080, 2) == {"width": 1920, "height": 1080, "deviceScaleFactor": 2, "mobile": False}
+    assert wc.expected_res(1920, 1080, 1) == "1920x1080" and wc.expected_res(1920, 1080, 2) == "3840x2160"
+
+
+def test_a_profile_line_at_another_resolution_is_an_error():
+    good = "PROFILE visual=all pose=gameplay03 res=1920x1080 scale=0.80 rep=0 frames=300 avg_ms=1.73 p95_ms=2.00"
+    assert wc.res_error(good, "1920x1080") is None
+    assert wc.res_error("GAME OK 1948-05-15 turn 0 hash 00", "1920x1080") is None
+    assert "1920x937" in wc.res_error(good.replace("1920x1080", "1920x937"), "1920x1080")
+
+
+def test_profile_errors_need_run_lines_the_right_size_and_the_done_line():
+    run = "PROFILE visual=all pose=gameplay03 res=1920x1080 scale=0.80 rep=0 frames=300 avg_ms=1.73 p95_ms=2.00"
+    assert wc.profile_errors([run, "PROFILE visual done"], "1920x1080") == []
+    assert wc.profile_errors(["GAME OK"], "1920x1080")                      # no PROFILE lines at all
+    assert wc.profile_errors([run], "1920x1080")                            # never finished
+    assert wc.profile_errors([run.replace("1920x1080", "1728x860"), "PROFILE visual done"], "1920x1080")
+
+
+def test_measurement_windows_are_kept_awake():
+    flags = wc.chrome_flags("/tmp/p", swiftshader=False)
+    for flag in ("--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+                 "--disable-background-timer-throttling", "--remote-debugging-port=0"):
+        assert flag in flags
+    assert "--force-device-scale-factor=2" in wc.chrome_flags("/tmp/p", swiftshader=False, dpr=2)
+
+
+def test_a_silent_browser_stalls_out_before_the_timeout(capsys):
+    import queue
+    clock = iter(range(0, 10000, 10))
+    code = wc.watch(queue.Queue(), lambda: None, lambda: None, ["PROFILE visual done"], wc.re.compile("FAIL"), 3600,
+                    now=lambda: next(clock), sleep=lambda s: None, stall=120)
+    assert code == 1 and "STALLED" in capsys.readouterr().out

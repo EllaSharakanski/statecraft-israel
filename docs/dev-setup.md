@@ -27,9 +27,11 @@
   profile per feature) and `?shot` (screenshots at the promo poses as `SHOT` console lines). Desktop players take `-golden`,
   `-smoke N`, `-profile`, `-camlog`, `-bootlog`, `-navlog`, `-vprofile` and `-shot`. The console also shows `GAME OK <date> turn <n> hash <h>` at start and `TURN <n> <date> hash <h>` per turn.
 - Visual checks (docs/visual-v1.md): measure only under the machine lock, which also waits for any open Unity editor:
-  `uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py <build> --query vprofile --expect "PROFILE visual done" --timeout 1800`
-  (headless), `... -- uv run tools/headed.py profile --build <build> --dpr 1` (headed; `--dpr 2` is the fill-rate stress
-  proxy) and `... -- uv run tools/headed.py boot --build <build> --runs 3 --baseline <ms>` (the boot budget); wrap Unity
+  `uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py <build> --query vprofile --expect "PROFILE visual done" --timeout 1800 --stall 120`
+  (headless), `... -- uv run tools/headed.py profile --build <build> --dpr 1` (headed; `--dpr 2` is the
+  fill-rate stress proxy) and `... -- uv run tools/headed.py boot --build <build> --runs 3 --baseline <ms>
+  --baseline-first-frame <ms>` (the boot budget: two spans, default allowance max(300 ms, 50%)); all of them fix the
+  viewport to 1920x1080 over CDP and fail on another `res=`; wrap Unity
   batch commands in `uv run tools/machine_lock.py --shared -- ...`; `tools/art_checkpoint.sh [--no-build] <name>` for the
   owner's side-by-side images.
 - A player build rewrites some URP asset and player-setting fields as build-time caches; drop them afterwards with
