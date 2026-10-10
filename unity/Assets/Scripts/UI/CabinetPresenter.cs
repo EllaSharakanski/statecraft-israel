@@ -25,6 +25,7 @@ namespace Statecraft.Game.UI
             bridge.Changed -= Render;
             screen.Q<ScrollView>("cabinet-seats")?.Clear();
             screen.Q<ScrollView>("cabinet-candidates")?.Clear();
+            screen.Q<VisualElement>("cabinet-pick").style.display = DisplayStyle.None;
         }
 
         /// <summary>The office whose candidates are listed, or null.</summary>
@@ -48,7 +49,9 @@ namespace Statecraft.Game.UI
             screen.Q<Label>("cabinet-coalition").text = text.Format("cabinet.coalition", seats, size, s.CoalitionStability * 100);
             var list = screen.Q<ScrollView>("cabinet-seats");
             list.Clear();
-            foreach (var seat in Cabinet.Lineup(c, s))
+            var lineup = Cabinet.Lineup(c, s);
+            if (Selected != null && lineup.All(x => x.Office.Id != Selected)) Selected = null;   // that office no longer exists (abolished)
+            foreach (var seat in lineup)
             {
                 var office = seat.Office.Id;
                 var row = new Button(() => Select(office)) { name = "seat-" + office };
