@@ -52,7 +52,7 @@ Follow [docs/dev-setup.md](docs/dev-setup.md). In short:
 - **No invented quotes.** Paraphrase, and never put words in a real person's mouth.
 - **Framing.** The project tells the story from the Israeli perspective. Contested narratives are not shown as parallel accounts.
 - **Sensitive events.** Events tagged `holocaust`, `terror`, `massacre` or `war-casualties` need the maintainer's sensitivity review before they can ship. A release build refuses to package until that review is done.
-- **Reporting a mistake.** Open an issue with the source that shows the correct fact.
+- **Reporting a mistake.** Use the **Historical accuracy** issue form; it asks for the source that shows the correct fact.
 
 ## AI-assisted contributions
 
@@ -76,4 +76,4 @@ Never commit keys, tokens or `.env` files. Secret scanning and push protection a
 
 ## Conduct
 
-Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated.
+Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated. The full [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies in every project space, including its section on historical and political discussion. The content rules, and how to dispute a fact, are in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).

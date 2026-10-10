@@ -62,3 +62,19 @@ def test_historical_accuracy_form_requires_a_source():
     cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
     assert cfg["blank_issues_enabled"] is False
     assert any("security/advisories/new" in c["url"] for c in cfg["contact_links"])
+
+
+def test_content_policy_states_the_owner_rules_and_only_real_mechanisms():
+    text = read("docs/CONTENT_POLICY.md")
+    for s in ("Israeli framing", "Every fact is sourced", "No invented quotes", "How to dispute a fact",
+              "Statecraft.Cli --release-gate", "Historian review is planned for M4", "Wikipedia"):
+        assert s in text, s
+    assert "DRAFT stamp" not in text and "Release builds include only fully reviewed content" not in text
+
+
+def test_code_of_conduct_has_a_private_contact_and_the_history_section():
+    text = read("CODE_OF_CONDUCT.md")
+    assert "[INSERT" not in text and "getnohuman" not in text
+    assert "Conduct:" in text and "security/advisories/new" in text
+    assert "## Historical content and political discussion" in text
+    assert "Contributor Covenant" in text and "version 2.1" in text
