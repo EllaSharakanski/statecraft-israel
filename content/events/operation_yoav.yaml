@@ -29,4 +29,4 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
-status: fact-checked
+status: sensitivity-reviewed

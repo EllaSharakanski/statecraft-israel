@@ -18,10 +18,10 @@ def fake_build(tmp_path, reviewed):
     (build / "index.html").write_text("<html></html>")
     content = build / "StreamingAssets" / "content"
     shutil.copytree(REPO / "content", content)
-    if reviewed:   # the owner's sign-off, as a fixture
-        for e in SENSITIVE:
-            f = content / "events" / f"{e}.yaml"
-            f.write_text(re.sub(r"(?m)^status: .*$", "status: sensitivity-reviewed", f.read_text()))
+    status = "sensitivity-reviewed" if reviewed else "fact-checked"   # the owner's sign-off (D11), or its absence
+    for e in SENSITIVE:
+        f = content / "events" / f"{e}.yaml"
+        f.write_text(re.sub(r"(?m)^status: .*$", f"status: {status}", f.read_text()))
     return build
 
 

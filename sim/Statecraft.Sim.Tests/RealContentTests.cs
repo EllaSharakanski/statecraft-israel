@@ -28,7 +28,11 @@ public class RealContentTests
         foreach (var g in C.Governments) { Assert.Equal("fact-checked", g.Status); Assert.NotEmpty(g.Sources); }
         foreach (var a in C.Aliyah) { Assert.Equal("fact-checked", a.Status); Assert.NotEmpty(a.Sources); }
         foreach (var a in C.PopulationAnchors) { Assert.Equal("fact-checked", a.Status); Assert.NotEmpty(a.Sources); }
-        foreach (var e in C.Events) { Assert.Equal("fact-checked", e.Status); Assert.NotEmpty(e.Sources); }
+        foreach (var e in C.Events)   // a sensitive event passes the owner's sensitivity review on top of fact-checking (D11)
+        {
+            Assert.Equal(ReleaseGate.SensitiveEvents(C).Contains(e.Id) ? ReleaseGate.ReviewedStatus : "fact-checked", e.Status);
+            Assert.NotEmpty(e.Sources);
+        }
         var all = C.People.SelectMany(p => p.Offices.SelectMany(t => t.Sources))
             .Concat(C.Legislatures.SelectMany(l => l.Sources)).Concat(C.Governments.SelectMany(g => g.Sources))
             .Concat(C.Aliyah.SelectMany(a => a.Sources)).Concat(C.PopulationAnchors.SelectMany(a => a.Sources))
