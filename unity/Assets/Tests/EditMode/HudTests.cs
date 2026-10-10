@@ -261,7 +261,9 @@ public class HudTests
     public void ABatchTheSimRefusesOutrightKeepsTheStateAndShowsTheReason(System.Type kind)
     {
         using var ui = new UiTestKit();
-        if (kind != typeof(System.ArgumentException)) LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("boom"));
+        // Every kind leaves a console trace (rereview): a refusal as a warning, anything else as the full exception.
+        if (kind == typeof(System.ArgumentException)) LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("End Turn refused.*boom"));
+        else LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("boom"));
         var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text,
             (s, cmds) => throw (System.Exception)System.Activator.CreateInstance(kind, "boom")!);
         new ToastPresenter(ui.Root, bridge, Text);

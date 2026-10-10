@@ -117,7 +117,9 @@ namespace Statecraft.Game.UI
             try { r = step(Session, batch); }
             catch (Exception e)   // any exception (M3 final review M7): never leave a queue that fails on every End Turn
             {
-                if (!(e is ArgumentException)) UnityEngine.Debug.LogException(e);   // unexpected: the full exception for the log
+                // A refusal (ArgumentException) is a clear warning, anything else the full exception: both leave a trace.
+                if (e is ArgumentException) UnityEngine.Debug.LogWarning("End Turn refused: " + e.Message);
+                else UnityEngine.Debug.LogException(e);
                 queue.Clear();
                 var reason = text.Format("order.failed", e.Message);
                 var failed = new StepResult(State, new Cause[0], batch.Select(x => new Rejection(x, reason)).ToList());
