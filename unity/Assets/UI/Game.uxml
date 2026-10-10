@@ -4,8 +4,10 @@
         <ui:VisualElement name="top-bar" class="panel top-bar">
             <ui:VisualElement class="date-box">
                 <ui:Label name="year" class="year" />
-                <ui:Label name="turn" class="muted" />
-                <ui:Label name="date" class="muted" />
+                <ui:VisualElement class="date-row">
+                    <ui:Label name="turn" class="muted" />
+                    <ui:Label name="date" class="muted" />
+                </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="meters" class="meters">
                 <ui:VisualElement name="meter-treasury" class="meter">

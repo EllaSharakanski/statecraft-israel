@@ -56,14 +56,19 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     flex-direction: row; align-items: center;
     border-width: 0 0 1px 0; border-radius: 0; padding: 0 16px;
 }
+/* Everything in the bar must fit its 96px (EB Garamond lines are about 1.55 x the font size): labels lose their default
+   vertical padding and margin, the year is 32px, and turn and date share one line. */
+.top-bar Label { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
 .date-box { width: 190px; flex-shrink: 1; min-width: 150px; border-right-width: 1px; border-color: var(--gold-dim); padding-right: 12px; }
-.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 36px; }
+.date-row { flex-direction: row; }
+.date-row Label { font-size: 17px; margin-right: 8px; }
+.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 32px; }
 .meters { flex-direction: row; flex-grow: 1; }
 .meter { min-width: 130px; flex-shrink: 1; padding: 0 8px; border-right-width: 1px; border-color: var(--gold-dim); }
-.meter-name { font-size: 18px; color: var(--ink-dim); white-space: normal; }   /* wraps in a narrow meter */
+.meter-name { font-size: 16px; color: var(--ink-dim); white-space: normal; }   /* wraps in a narrow meter */
 .meter-row { flex-direction: row; align-items: flex-end; }
-.meter-value { font-size: 26px; }
-.meter-delta { font-size: 18px; margin-left: 8px; }
+.meter-value { font-size: 24px; }
+.meter-delta { font-size: 16px; margin-left: 8px; }
 .nav { flex-direction: row; flex-shrink: 0; }
 .nav Button { margin: 0 4px; -unity-text-align: middle-center; }
 .turn-box { width: 190px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
@@ -87,6 +92,10 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .rung { flex-direction: row; padding: 4px 8px; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); }
 .rung-current { border-color: var(--gold); background-color: rgba(196, 160, 92, 0.15); }
 .grow { flex-grow: 1; }
+/* A growing row inside a screen (the Cabinet's seats and candidates) takes the height that is left and stretches its
+   lists to it, so a long list scrolls instead of growing out of the screen. */
+.screen .row.grow { align-items: stretch; flex-basis: 0; flex-shrink: 1; min-height: 0; }
+.screen .row.grow > .grow { min-height: 0; flex-shrink: 1; }
 
 .toast { position: absolute; left: 30%; right: 30%; top: 112px; -unity-text-align: middle-center; white-space: normal; }
 

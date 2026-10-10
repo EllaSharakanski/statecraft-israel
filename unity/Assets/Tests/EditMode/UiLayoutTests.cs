@@ -1,6 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
+using Statecraft.Game;
 using Statecraft.Game.UI;
+using Statecraft.Sim;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -60,5 +64,68 @@ public class UiLayoutTests
             }
             finally { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
         }
+    }
+
+    // Task 24, seen in headed Chrome: the top bar's labels were taller than the bar and, centred, ran off the top of the
+    // screen at every size; the Cabinet list grew out of its screen over the top bar. Checked with every screen filled by
+    // its presenter (an event open on the card), at 16:9 and at the wider viewports a browser window leaves.
+    [UnityTest]
+    public IEnumerator FilledScreensStayInsideTheirPanelsAndTheTopBarFits()
+    {
+        var c = ContentLoader.Load(Paths.Content);
+        var text = UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        g.Step(new Command[0]);                                         // a Why report to show
+        while (g.State.PendingEvents.Count == 0) g.Step(new Command[0]);
+        var problems = new List<string>();
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1920, 960), (1600, 757), (1366, 657) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("LayoutTest");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var bridge = new SimBridge(g, text);
+            var disposables = new List<System.IDisposable>
+            {
+                new HudPresenter(root, bridge, text), new EventCardPresenter(root, bridge, text, null),
+                new CabinetPresenter(root, bridge, text, null), new BudgetPresenter(root, bridge, text),
+                new DefencePresenter(root, bridge, text), new WhyPresenter(root, bridge, text),
+            };
+            var nav = new ScreenNav(root);
+            try
+            {
+                for (int i = 0; i < 20 && float.IsNaN(root.Q("minimap").worldBound.width); i++) yield return null;
+                yield return null;
+                Rect R(VisualElement e) => e.worldBound;
+                bool Inside(Rect inner, Rect outer) => inner.xMin >= outer.xMin - 0.5f && inner.xMax <= outer.xMax + 0.5f && inner.yMin >= outer.yMin - 0.5f && inner.yMax <= outer.yMax + 0.5f;
+                var bar = root.Q("top-bar");
+                foreach (var l in bar.Query<VisualElement>().ToList().Where(e => e != bar && e.resolvedStyle.display == DisplayStyle.Flex))
+                    if (!Inside(R(l), R(bar))) problems.Add($"{w}x{h}: top bar child {l.name}/{(l as Label)?.text ?? l.GetClasses().FirstOrDefault()} {R(l)} leaves the bar {R(bar)}");
+                var card = root.Q("event-card");
+                if (R(card).Overlaps(R(root.Q("minimap")))) problems.Add($"{w}x{h}: event card {R(card)} overlaps the minimap {R(root.Q("minimap"))}");
+                foreach (var s in ScreenNav.Screens)
+                {
+                    nav.Open(s);
+                    for (int i = 0; i < 3; i++) yield return null;
+                    var screen = root.Q("screen-" + s);
+                    foreach (var e in screen.Children().Concat(screen.Query<ScrollView>().ToList()).Where(e => e.resolvedStyle.display == DisplayStyle.Flex))
+                        if (!Inside(R(e), R(screen))) problems.Add($"{w}x{h}: {s} child {e.name}/{e.GetClasses().FirstOrDefault()} {R(e)} leaves the screen {R(screen)}");
+                }
+                nav.Open(null);
+            }
+            finally
+            {
+                nav.Dispose(); foreach (var d in disposables) d.Dispose();
+                Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+            }
+        }
+        Assert.IsEmpty(problems, string.Join("\n", problems));
     }
 }
