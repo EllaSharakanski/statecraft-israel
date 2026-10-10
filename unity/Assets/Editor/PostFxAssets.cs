@@ -10,7 +10,7 @@ namespace Statecraft.Game.EditorTools
     /// <summary>Creates TiltShift.mat and adds one active TiltShiftFeature using it to both URP renderers (web: Mobile, desktop:
     /// PC). Idempotent. Adding a feature needs the renderer's feature list and its local-file-id map kept in step, as URP's own
     /// renderer inspector does. Run headless:
-    /// Unity -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.PostFxAssets.Create</summary>
+    /// Unity -batchmode -quit -projectPath unity -CI false -GITHUB_ACTIONS false -TF_BUILD false -executeMethod Statecraft.Game.EditorTools.PostFxAssets.Create</summary>
     public static class PostFxAssets
     {
         public static readonly string[] Renderers = { "Assets/Settings/Mobile_Renderer.asset", "Assets/Settings/PC_Renderer.asset" };
