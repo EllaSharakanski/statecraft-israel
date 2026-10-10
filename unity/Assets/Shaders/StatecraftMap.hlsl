@@ -50,30 +50,52 @@ float ScWater(float coast) { return 1.0 - smoothstep(0.497, 0.503, coast); }
 static const float ScCoastRangeM = 12000.0;   // tools/terrain_bake.py COAST_RANGE_M
 float _ScWaterOn;                              // 1 = shaded water, 0 = the flat sea colour (the "water" toggle)
 
-// The water's lit colour before haze (callers apply ScHazeWater and output it as is): a turquoise -> teal -> navy ramp with
-// distance from the shore; the Dead Sea (below -300 m) pale turquoise with a white salt rim, the Sea of Galilee a fresher
-// teal; two scrolling noise layers tilt a wave normal for Lambert from the sun (with its shadows: cliffs shade the water)
-// plus sky fill and a small glint; animated foam bands within 350 m of the shore. elevM is the real elevation of the water
-// surface; mapM metres east and north of the map's south-west corner.
-float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM)
+// Depth from the shore (promo-sea). The map has no bathymetry: the heightmap is Copernicus GLO-30, a land model whose sea
+// texels are 0 m, so the water's depth is read from the distance to the shore (coast.png). To first order that is the
+// Israeli shelf: sandy shallows for the first kilometre or two, the 100 m isobath some 10-20 km out. Turquoise shallows
+// ScShallowM wide (the edge wanders +-35% with a 3 km noise, so it never reads as a ruled stripe), teal, then the open
+// sea's muted steel blue towards ScCoastRangeM. sRGB, before the grade; chosen so the graded sea lands near the promo's
+// (promo 03 sea pixels: saturation 0.49; Task 7's ramp graded to 0.81, open item 3).
+static const float ScShallowM = 2600.0;
+static const float3 ScShallowSrgb = float3(0.46, 0.68, 0.64);
+static const float3 ScMidSrgb = float3(0.29, 0.46, 0.53);
+static const float3 ScDeepSrgb = float3(0.22, 0.34, 0.47);
+// The surf: a swash line along the sand (full to ScSwashM) and breakers rolling shoreward through the surf zone
+// (ScSurfM), broken along the shore by noise. Where a pixel's footprint nears the breakers' spacing they fade to their
+// mean, so the overview never shimmers.
+static const float ScSwashM = 180.0, ScSurfM = 900.0, ScBreakerSpacingM = 160.0;
+
+// The water's lit colour before haze (callers apply ScHazeWater and output it as is): the depth ramp above; the Dead Sea
+// (below -300 m) pale turquoise with a white salt rim, the Sea of Galilee a fresher teal; a long swell and a finer chop
+// (scrolling noise, the chop faded by the footprint) tilt a wave normal for Lambert from the sun (with its shadows: cliffs
+// shade the water) plus sky fill and a small glint; the surf along the shore. elevM is the real elevation of the water
+// surface; mapM metres east and north of the map's south-west corner; footprintM the metres one pixel covers (from fwidth,
+// taken by the caller in uniform control flow).
+float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, float footprintM)
 {
-    if (_ScWaterOn < 0.5) return SRGBToLinear(float3(0.16, 0.42, 0.55)) * 0.8;
+    if (_ScWaterOn < 0.5) return SRGBToLinear(float3(0.20, 0.36, 0.47)) * 0.8;
     float offshoreM = saturate(0.5 - coast) * 2.0 * ScCoastRangeM;
-    float t = pow(saturate(offshoreM / ScCoastRangeM), 0.55);
-    float3 shallow = SRGBToLinear(float3(0.38, 0.74, 0.72));
-    float3 mid = SRGBToLinear(float3(0.13, 0.47, 0.58));
-    float3 deep = SRGBToLinear(float3(0.06, 0.24, 0.40));
-    float3 c = t < 0.5 ? lerp(shallow, mid, t * 2.0) : lerp(mid, deep, t * 2.0 - 1.0);
+    float shallowEdge = ScShallowM * (0.65 + 0.7 * ScNoise(mapM / 3000.0));
+    float shallow = 1.0 - smoothstep(0.0, shallowEdge, offshoreM);
+    float deepT = pow(smoothstep(0.0, ScCoastRangeM, offshoreM), 0.6);
+    float3 c = lerp(SRGBToLinear(ScMidSrgb), SRGBToLinear(ScDeepSrgb), deepT);
+    c = lerp(c, SRGBToLinear(ScShallowSrgb), shallow * (0.4 + 0.6 * shallow));
     float salt = step(elevM, -300.0);
     float fresh = step(elevM, -100.0) * (1.0 - salt);
     c = lerp(c, SRGBToLinear(float3(0.45, 0.78, 0.78)), salt * 0.8);
-    c = lerp(c, SRGBToLinear(float3(0.15, 0.48, 0.60)), fresh * 0.7);
+    c = lerp(c, SRGBToLinear(float3(0.20, 0.45, 0.55)), fresh * 0.7);
 
     float time = _Time.y;
     float2 p = mapM / 700.0;
     float2 g = float2(ScNoise(p + float2(time * 0.05, 0.0)) - ScNoise(p + float2(0.37 + time * 0.05, 0.0)),
                       ScNoise(p.yx + float2(0.0, time * 0.04)) - ScNoise(p.yx + float2(0.0, 0.41 + time * 0.04)));
-    float3 n = normalize(float3(g.x * 0.15, 1.0, g.y * 0.15));
+    // The chop: a 170 m layer moving the other way, full while a pixel covers under 40 m, gone by 170 m (the gameplay pose
+    // sees it, the overview averages it away).
+    float chop = 1.0 - smoothstep(40.0, 170.0, footprintM);
+    float2 q = mapM / 170.0;
+    g += 1.4 * chop * float2(ScNoise(q - float2(time * 0.11, 0.0)) - ScNoise(q + float2(0.29 - time * 0.11, 0.0)),
+                       ScNoise(q.yx - float2(0.0, time * 0.09)) - ScNoise(q.yx + float2(0.0, 0.33 - time * 0.09)));
+    float3 n = normalize(float3(g.x * 0.28, 1.0, g.y * 0.28));
 #if defined(UNIVERSAL_REALTIME_LIGHTS_INCLUDED) && !defined(SHADERGRAPH_PREVIEW)
     Light sun = GetMainLight(TransformWorldToShadowCoord(positionWS));   // review I6: the water receives the sun's shadows
     float3 l = sun.direction, lc = sun.color;
@@ -89,11 +111,36 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM)
     // view-dependent gradient that read as a seam between samples 5 km apart either side of the map's edge.
     lit += pow(saturate(dot(reflect(-l, n), v)), 80.0) * 0.06 * lc * shadow;
 
-    float band = 1.0 - smoothstep(0.0, 350.0, offshoreM);
-    float waves = 0.7 + 0.3 * sin(offshoreM / 90.0 - time * 1.3);
+    // Surf: the swash line, then breakers (sharp crests every ScBreakerSpacingM, rolling in: the phase grows with time
+    // towards the shore) whose crests break up along the coast. Neither on the Dead Sea, which keeps its salt rim.
+    float swash = 1.0 - smoothstep(ScSwashM, ScSwashM * 1.8, offshoreM);
+    float zone = 1.0 - smoothstep(ScSwashM, ScSurfM, offshoreM);
+    float phase = offshoreM / ScBreakerSpacingM + time * 0.18 + ScNoise(mapM / 1200.0) * 2.0;
+    float crest = pow(1.0 - abs(frac(phase) * 2.0 - 1.0), 5.0);
+    crest = lerp(1.0 / 6.0, crest, 1.0 - smoothstep(ScBreakerSpacingM * 0.25, ScBreakerSpacingM * 0.6, footprintM));
+    float broken = smoothstep(0.3, 0.7, ScNoise(mapM / 300.0 + float2(0.0, time * 0.02)));
     float rim = salt * (1.0 - smoothstep(0.0, 900.0, offshoreM));
-    float foam = saturate(band * waves * (1.0 - salt) + rim);
+    float foam = saturate((swash * (0.8 + 0.2 * broken) + zone * crest * broken) * (1.0 - salt) + rim);
     return lerp(lit, SRGBToLinear(float3(0.93, 0.95, 0.94)), foam * 0.85);
+}
+
+// The shore on land (promo-sea): a sand strip along the Mediterranean (above -100 m, so not the rift lakes), wet and
+// darker where the swash reaches, ScBeachM wide on average (+-40% with a 4 km noise) - symbolic width, as the promo's
+// beach, wider than the real 30-100 m strip but within the coastal dune belt's kilometres; white salt flats along the
+// Dead Sea (below -300 m). Steep faces (the Carmel's and the kurkar cliffs) keep their rock.
+static const float ScBeachM = 650.0;
+static const float3 ScSandSrgb = float3(0.88, 0.76, 0.56), ScSaltSrgb = float3(0.92, 0.90, 0.85);
+float3 ScShore(float3 ground, float coast, float elevM, float3 n, float2 mapM)
+{
+    float landM = saturate(coast - 0.5) * 2.0 * ScCoastRangeM;
+    float width = ScBeachM * (0.6 + 0.8 * ScNoise(mapM / 4000.0 + 7.3));
+    float strip = (1.0 - smoothstep(width * 0.55, width, landM)) * (1.0 - smoothstep(0.25, 0.45, 1.0 - saturate(n.y)));
+    float salt = step(elevM, -300.0);
+    float med = step(-100.0, elevM);
+    float3 sand = SRGBToLinear(ScSandSrgb) * lerp(0.94, 1.04, ScNoise(mapM / 350.0));
+    sand = lerp(sand, sand * 0.78, 1.0 - smoothstep(60.0, 160.0, landM));          // wet sand at the waterline
+    float3 shore = lerp(sand, SRGBToLinear(ScSaltSrgb), salt);
+    return lerp(ground, shore, strip * saturate(med + salt));
 }
 
 // The painted ground: biome colour, warmer stone high up, a dusty rift floor, rock on steep slopes, two octaves of

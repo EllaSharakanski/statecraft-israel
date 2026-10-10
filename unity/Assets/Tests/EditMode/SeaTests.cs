@@ -126,6 +126,43 @@ public class SeaTests
         Assert.Greater(Luma(f), Luma(s) + 0.02f, "foam at the shore");
         Assert.Greater(Luma(s), Luma(d) + 0.05f, "shallows lighter");
         Assert.Greater(s.g / s.b, d.g / d.b, "shallows greener");
+        // promo-sea (open item 3, issue #38): the open sea is the promo's muted steel blue, not a saturated navy. HSV
+        // saturation before the grade: 0.91 with Task 7's ramp, 0.58 now (the grade lifts it: promo 03's sea measures 0.49).
+        Color.RGBToHSV(d, out _, out float deepSat, out _);
+        Assert.Less(deepSat, 0.7f, "the open sea is muted");
+    }
+
+    /// <summary>promo-sea: a sand strip lines the Mediterranean shore (promo 03's beach). Rendered on the same row west of
+    /// Tel Aviv: about 200 m inland of the shore the ground is pale sand, lighter than the plain 5 km inland and less
+    /// yellow-green than the bare coastal edge it covers.</summary>
+    [UnityTest]
+    public IEnumerator ASandStripLinesTheMediterraneanShore()
+    {
+        var map = OpenMap();
+        yield return null;
+        var coast = new Texture2D(2, 2);
+        coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));   // readable copy; row 0 = south
+        int row = Mathf.FloorToInt((32.08f - 29.45f) / (33.35f - 29.45f) * coast.height);
+        int col = Mathf.FloorToInt((34.95f - 34.2f) / (35.9f - 34.2f) * coast.width);
+        while (col > 0 && coast.GetPixel(col, row).r >= 0.5f) col--;          // walk west to the first water texel
+        Object.DestroyImmediate(coast);
+        Vector3 At(int c)
+        {
+            double lon = 34.2 + (c + 0.5) / 2048.0 * (35.9 - 34.2), lat = 29.45 + (row + 0.5) / 2048.0 * (33.35 - 29.45);
+            var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w); return w;
+        }
+        Vector3 beach = At(col + 3), inland = At(col + 60);
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        rig.LookAt = Vector3.Lerp(beach, inland, 0.5f); rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+        var px = new Vector2[2];
+        var r = RenderSample.Render(cam, 960, 540, new[] { beach, inland }, px);
+        Color b = r.Mean((int)px[0].x, (int)px[0].y, 1), l = r.Mean((int)px[1].x, (int)px[1].y, 2);
+        TestContext.WriteLine($"beach {b}, plain {l}");
+        // Without the strip the same pixel is the plain's pale coastal edge, RGBA(0.716, 0.656, 0.378): luma 0.65, b/g 0.58.
+        // With it RGBA(0.906, 0.771, 0.516): luma 0.78, b/g 0.67.
+        Assert.Greater(Luma(b), Luma(l) + 0.2f, "the sand is lighter than the plain");
+        Assert.Greater(Luma(b), 0.72f, "pale sand");
+        Assert.Greater(b.b / b.g, 0.62f, "sand, not the plain's yellow-green");
     }
 
     /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>
