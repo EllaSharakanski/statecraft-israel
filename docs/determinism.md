@@ -52,7 +52,13 @@ Each golden constant is written in three places that must agree:
 (run `tools/build_sim_for_unity.sh` first so Unity has the current DLLs).
 
 Verified on .NET, Unity editor Mono, a macOS IL2CPP player (Apple clang, no `-ffp-contract=off` needed) and a WebGL
-IL2CPP player in Chrome (M3 Task 22). Re-check with:
+IL2CPP player in Chrome (M3 Task 22). Re-checked at the M3 merge candidate (2026-10-11, commit a099655):
+- macOS IL2CPP player (`Build.Mac`, then `-batchmode -nographics -golden`): **exit 0**, printing
+  `GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07` and
+  `GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767`.
+- WebGL IL2CPP player (Brotli release build, `web_check.py` with the three full values above): PASS.
+
+Re-check with:
 
 ```
 "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log

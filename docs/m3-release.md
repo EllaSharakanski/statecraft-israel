@@ -9,12 +9,18 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 - **After building:** drop the build's rewrites of the settings with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
   build-cache change gets committed.
-- **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`. This runs both golden hashes in the WebGL IL2CPP player, then plays five turns through the UI's own buttons.
-  - Result, 2026-10-10: `GOLDEN OK 1950 ee5d0826…`, `GOLDEN OK 1952 91bb6fb5…`, `SMOKE OK 5 turns 1948-06-19 7004c29a…`, then PASS.
-  - Result after the 1948 war-period events, fix round 1 (playtest 1 E), on the Disabled build: `GOLDEN OK 1950 71e9904d…`, `GOLDEN OK 1952 73590e32…`, `SMOKE OK 5 turns 1948-06-19 d3fdd459…`, then PASS. The smoke run answers two events through the card (the IDF founding order on turn 2, the first truce on turn 4). The Brotli folder, the zip and the size lines below are from the build before these events; they are re-measured when the release build is rebuilt after the merge.
-- **Size:**
-  - The folder is 23 MB (`du -sh`) in 36 files. itch.io allows 1,000 files.
-  - The zip is 20 MB (20,862,385 bytes).
+- **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5"` with the three
+  full `--expect` values pinned in `docs/determinism.md` (both goldens and the smoke line). This runs both golden hashes
+  in the WebGL IL2CPP player, then plays five turns through the UI's own buttons (answering two events through the card:
+  the IDF founding order on turn 2, the first truce on turn 4).
+  - **Result at the merge candidate (2026-10-11, commit a099655, Brotli build):** `GOLDEN OK 1950 71e9904d…`,
+    `GOLDEN OK 1952 73590e32…`, `SMOKE OK 5 turns 1948-06-19 d3fdd459…` (all three matched in full), then PASS.
+  - History: 2026-10-10 at d450566 (Brotli, before the 1948 war-period events): `GOLDEN OK 1950 ee5d0826…`,
+    `GOLDEN OK 1952 91bb6fb5…`, `SMOKE OK 5 turns 1948-06-19 7004c29a…`, PASS; folder 23 MB in 36 files, zip 20,862,385
+    bytes. After the 1948 events (playtest 1 E, Disabled build): the current hashes, PASS.
+- **Size (merge candidate, a099655):**
+  - The folder is 23 MB (`du -sh`) in 51 files. itch.io allows 1,000 files.
+  - The zip is 20 MB (20,941,435 bytes).
   - `StreamingAssets/map/heightmap.r16` (8 MB) is served as is, outside Unity's compression. Making it smaller is deferred to M5.
 - **Play it locally:** serve the folder with web_check's handler, which sends `Content-Encoding: br` for `*.br`. Plain `python3 -m http.server` does not, so the Brotli build would not load. Then open http://localhost:8000/.
   ```
