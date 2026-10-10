@@ -117,6 +117,24 @@ public class KitTests
         Assert.AreEqual(0, wet, "trees in the water");
     }
 
+    /// <summary>The WebGL checkpoint drew every palm black: a frond's tip quad collapsed to a point, its edge-based normal was
+    /// zero and normalize(0) is NaN on WebGL 2 (the tilt-shift then smeared it into black blocks). No part may have one.</summary>
+    [Test]
+    public void EveryPartHasAUnitNormal()
+    {
+        foreach (TreeKind k in System.Enum.GetValues(typeof(TreeKind))) Assert.AreEqual(0, Vegetation.Build(k).BadNormals, k.ToString());
+        var km = new KitMesh(); var rnd = new KitRandom("parts");
+        km.Box(0, 0, 17f, 500f, 300f, -50f, 0f, 400f, new Color32(255, 255, 255, 255), new Color32(200, 200, 200, 255), Facade.WhiteCity, 25f);
+        km.Gable(0, 0, 17f, 500f, 300f, 400f, 120f, new Color32(200, 80, 50, 255), new Color32(255, 255, 255, 255));
+        km.Pyramid(0, 0, 0f, 100f, 100f, 0f, 80f, new Color32(255, 255, 255, 255));
+        km.Dome(0, 0, 0f, 100f, new Color32(255, 255, 255, 255));
+        km.Shaft(Vector3.zero, Vector3.up * 300f, 30f, 20f, new Color32(255, 255, 255, 255), 8);
+        km.Cone(Vector3.zero, 30f, 40f, new Color32(255, 255, 255, 255), 8);
+        km.Crown(Vector3.zero, Vector3.one * 50f, new Color32(40, 80, 30, 255), ref rnd);
+        km.Frond(Vector3.zero, Vector3.right, 100f, 25f, 0.7f, new Color32(40, 80, 30, 255));
+        Assert.AreEqual(0, km.BadNormals);
+    }
+
     [Test]
     public void TheKitShaderRunsOnWebGL2()
     {

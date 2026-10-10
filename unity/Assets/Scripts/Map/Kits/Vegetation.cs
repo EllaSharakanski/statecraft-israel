@@ -14,7 +14,10 @@ namespace Statecraft.Game.Map.Kits
     public static class Vegetation
     {
         /// <summary>One tree's mesh in real metres (the instance matrix applies KitScale.Trees).</summary>
-        public static Mesh BuildMesh(TreeKind kind)
+        public static Mesh BuildMesh(TreeKind kind) => Build(kind).ToMesh("Tree_" + kind);
+
+        /// <summary>The tree's parts before upload (tests read them).</summary>
+        public static KitMesh Build(TreeKind kind)
         {
             var km = new KitMesh();
             var rnd = new KitRandom("tree:" + kind, 3);
@@ -56,7 +59,7 @@ namespace Statecraft.Game.Map.Kits
                     km.Crown(new Vector3(0, 4.6f, 0), new Vector3(1.05f, 4.4f, 1.05f), C(0.14f, 0.27f, 0.13f), ref rnd, 0.08f, 7, 7, 0f, default, 0.9f);
                     break;
             }
-            return km.ToMesh("Tree_" + kind);
+            return km;
         }
 
         /// <summary>Where each tree stands: (kind, world matrix) for the whole map, seeded.</summary>

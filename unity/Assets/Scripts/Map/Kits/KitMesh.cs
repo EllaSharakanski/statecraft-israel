@@ -22,6 +22,8 @@ namespace Statecraft.Game.Map.Kits
 
         public int VertexCount => pos.Count;
         public int TriangleCount => tri.Count / 3;
+        /// <summary>Vertices whose normal is not unit length (a degenerate face): the shader would light them as NaN on WebGL 2.</summary>
+        public int BadNormals { get { int n = 0; foreach (var v in nrm) if (Mathf.Abs(v.sqrMagnitude - 1f) > 1e-3f) n++; return n; } }
 
         public Mesh ToMesh(string name)
         {
@@ -39,7 +41,9 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>A flat-shaded quad a-b-c-d, clockwise seen from its front (Unity's front-face winding), with a per-corner uv.</summary>
         public void Face(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Color32 colour, Vector2 ta, Vector2 tb, Vector2 tc, Vector2 td)
         {
-            var n = Vector3.Cross(b - a, c - a).normalized;
+            // From the diagonals: robust when one edge collapses to a point (a frond's tip), where an edge cross product
+            // is zero and its normal would be NaN on WebGL 2 (normalize of zero).
+            var n = Vector3.Cross(c - a, d - b).normalized;
             int i = V(a, n, colour, ta); V(b, n, colour, tb); V(c, n, colour, tc); V(d, n, colour, td);
             Quad(i, i + 1, i + 2, i + 3);
         }
@@ -210,7 +214,7 @@ namespace Statecraft.Game.Map.Kits
             }
             for (int i = 0; i < n; i++)
             {
-                float w0 = Mathf.Sin(Mathf.PI * Mathf.Max(0.15f, (float)i / n)), w1 = Mathf.Sin(Mathf.PI * Mathf.Max(0.15f, (float)(i + 1) / n));
+                float w0 = Mathf.Sin(Mathf.PI * Mathf.Clamp((float)i / n, 0.15f, 0.92f)), w1 = Mathf.Sin(Mathf.PI * Mathf.Clamp((float)(i + 1) / n, 0.15f, 0.92f));
                 var a = spine[i] - side * w0; var b = spine[i] + side * w0; var c = spine[i + 1] + side * w1; var d = spine[i + 1] - side * w1;
                 Face(a, b, c, d, colour, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
                 Face(d, c, b, a, colour, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);

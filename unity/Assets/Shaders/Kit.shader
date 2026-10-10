@@ -92,7 +92,7 @@ Shader "Statecraft/Kit"
 
             half4 Frag(Varyings i) : SV_Target
             {
-                float3 n = normalize(i.normalWS);
+                float3 n = SafeNormalize(i.normalWS);   // never NaN, even for a degenerate face
                 half3 albedo = SRGBToLinear(i.color.rgb) * _BaseColor.rgb;
                 // Per-instance (tree) tint: brighter or darker, a touch warmer or cooler.
                 float t = i.tint - 0.5;
