@@ -127,3 +127,18 @@ def test_hebrew_readme_keeps_the_english_facts():
         assert fact in he, fact
     assert "מסחרית" in he  # a commercial edition is planned
     assert "אינו ניטרלי" in he or "לא ניטרלי" in he  # "not neutral"
+
+
+def test_social_preview_is_1280_by_640_and_small():
+    import struct
+    data = (ROOT / "docs/images/social-preview.jpg").read_bytes()
+    assert len(data) < 1_000_000 and data[:2] == b"\xff\xd8"
+    i = 2
+    while i < len(data):  # walk JPEG segments to the start-of-frame marker
+        marker, size = data[i + 1], struct.unpack(">H", data[i + 2:i + 4])[0]
+        if marker in (0xC0, 0xC1, 0xC2):
+            h, w = struct.unpack(">HH", data[i + 5:i + 9])
+            assert (w, h) == (1280, 640)
+            return
+        i += 2 + size
+    raise AssertionError("no frame header")
