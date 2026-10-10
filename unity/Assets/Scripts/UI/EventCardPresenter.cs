@@ -10,6 +10,9 @@ namespace Statecraft.Game.UI
     /// A choice is an order: it takes effect at End Turn, and an unanswered event is delegated to the minister.</summary>
     public sealed class EventCardPresenter : System.IDisposable
     {
+        /// <summary>The portrait thumbnail's size in the card (Statecraft.uss .event-image).</summary>
+        public const float PortraitWidth = 96f, PortraitHeight = 128f;
+
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         
         public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits)
@@ -37,9 +40,13 @@ namespace Statecraft.Game.UI
             var date = EventSystem.FillDate(e, s.Date);
             var holder = e.Office == "" ? null : Cabinet.Holder(c, s, e.Office, date);
             var image = card.Q<VisualElement>("event-image");
-            var portrait = portraits?.Get(holder?.Id);
+            var entry = portraits?.Find(holder?.Id);
+            var portrait = entry?.image;
             image.style.backgroundImage = portrait == null ? (StyleBackground)StyleKeyword.None : new StyleBackground(portrait);
             image.style.display = portrait == null ? DisplayStyle.None : DisplayStyle.Flex;
+            if (portrait != null)   // keep the face in view (playtest 2, P2-5)
+                image.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top,
+                    new Length(PortraitFraming.PositionYPercent(portrait.width, portrait.height, PortraitWidth, PortraitHeight, entry!.Value.focusY), LengthUnit.Percent));
             card.Q<Label>("event-draft").style.display = e.Status == "draft" ? DisplayStyle.Flex : DisplayStyle.None;
             card.Q<Label>("event-title").text = Cabinet.Fill(c, s, e.Title, date);
             card.Q<Label>("event-office").text = holder == null ? "" : text.Format("event.office", c.Offices.First(o => o.Id == e.Office).Title, holder.Name);

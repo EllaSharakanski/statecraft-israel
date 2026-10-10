@@ -34,7 +34,7 @@ public class BudgetScreenTests
         var budget = new BudgetPresenter(ui.Root, bridge, Text);
         Assert.AreEqual("45%", ui.Q<Label>("budget-defense_minister-share").text);
         Assert.AreEqual("Minister of Defense (David Ben-Gurion)", ui.Q<Label>("budget-defense_minister-name").text);
-        Assert.AreEqual("effect x1.50", ui.Q<Label>("budget-defense_minister-factor").text);   // capped at 1.5
+        Assert.AreEqual("spending effect 150%", ui.Q<Label>("budget-defense_minister-factor").text);   // capped at 1.5 (playtest 2, P2-6)
         Assert.AreEqual("The Provisional State Council does not vote on the budget", ui.Q<Label>("budget-vote").text);
         Assert.AreEqual("Treasury IL 20.0m · debt IL 0.0m · foreign currency $40.0m", ui.Q<Label>("budget-money").text);
         UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
@@ -67,11 +67,11 @@ public class BudgetScreenTests
         var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
         var budget = new BudgetPresenter(ui.Root, bridge, Text);
         foreach (var office in C.Rules.BudgetStart.Keys)
-            Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, office):0.00}"), ui.Q<Label>($"budget-{office}-factor").text, office);
+            Assert.AreEqual("spending effect " + PlayerText.Percent(EffectsSystem.BudgetFactor(budget.Draft, office)), ui.Q<Label>($"budget-{office}-factor").text, office);
         var f = EconomySystem.Flows(C, bridge.State, 1.0);
         Assert.AreEqual(System.FormattableString.Invariant($"Taxes IL {f.Tax:0.0}m, spending IL {f.Spending:0.0}m and reserve call-up IL {f.Mobilization:0.0}m a year"), ui.Q<Label>("budget-flow").text);
         UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
-        Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, "education_minister"):0.00}"), ui.Q<Label>("budget-education_minister-factor").text);
+        Assert.AreEqual("spending effect " + PlayerText.Percent(EffectsSystem.BudgetFactor(budget.Draft, "education_minister")), ui.Q<Label>("budget-education_minister-factor").text);
     }
 
     [Test]

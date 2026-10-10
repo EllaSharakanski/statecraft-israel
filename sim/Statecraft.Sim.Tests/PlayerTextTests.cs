@@ -179,7 +179,7 @@ public class PlayerTextTests
         Assert.True(budget && camp && housing, $"the script ran every command (budget {budget}, camp {camp}, housing {housing})");
         Assert.True(appointable.SetEquals(appointedOffices), $"every appointable office was filled: missing {string.Join(", ", appointable.Except(appointedOffices))}");
         Assert.True(c.Policies.All(p => policiesSet.Contains(p.Id)), $"every policy was set: missing {string.Join(", ", c.Policies.Select(p => p.Id).Except(policiesSet))}");
-        Assert.Contains(causes, w => w.Message.StartsWith("borrowed ", StringComparison.Ordinal));
+        Assert.Contains(causes, w => w.Message.StartsWith("Borrowed ", StringComparison.Ordinal));
         Assert.Contains(causes, w => w.System == "policy");
         Assert.Contains(causes, w => w.System == "politics" && w.Message.Contains(" voted down "));
         return causes;
@@ -407,4 +407,28 @@ public class PlayerTextTests
         Assert.Equal(shown, PlayerText.PercentChangeShown(before, now));
         Assert.Equal(PlayerText.ShownPoints(now) - PlayerText.ShownPoints(before), double.Parse(shown.TrimEnd('%'), System.Globalization.CultureInfo.InvariantCulture));
     }
+
+    /// <summary>Playtest 2, P2-6: every Cause line is in sentence case (a capital letter or a number first).</summary>
+    [Fact]
+    public void EveryCauseLineStartsWithACapitalOrANumber()
+    {
+        var bad = AllCauses(Real).Select(w => w.Message).Where(m => m.Length == 0 || char.IsLower(m[0])).Distinct().ToList();
+        Assert.True(bad.Count == 0, "lowercase Cause lines:\n" + string.Join("\n", bad.Take(20)));
+    }
+
+    /// <summary>Playtest 2, P2-5: a portrait carries its documented focal point (the face's height as a share of the
+    /// picture, 0..1), required, so the event card can keep the face in view.</summary>
+    [Theory]
+    [InlineData("    portrait: { file: a.jpg, license: Public domain, source: s }\n", "people[pm_one].portrait.focus_y")]
+    [InlineData("    portrait: { file: a.jpg, license: Public domain, source: s, focus_y: 1.4 }\n", "people[pm_one].portrait.focus_y")]
+    public void APortraitNeedsItsFocalPoint(string portrait, string field)
+    {
+        var ex = ValidationTests.Bad("people.yaml", "  - id: pm_one\n", "  - id: pm_one\n" + portrait);
+        Assert.Equal("people.yaml", ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    [Fact]
+    public void EveryRealPortraitHasAFocalPoint() =>
+        Assert.All(Real.People.Where(p => p.Portrait != null && p.Portrait.File != ""), p => Assert.InRange(p.Portrait!.FocusY ?? -1, 0.05, 0.95));
 }

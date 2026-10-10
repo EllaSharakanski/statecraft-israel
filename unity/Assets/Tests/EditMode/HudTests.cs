@@ -359,6 +359,7 @@ public class HudTests
     static readonly (string file, string contains, string why)[] AllowedScale =
     {
         ("MinimapPresenter.cs", "Length.Percent(", "the view frame's position and size in percent of the picture (layout, not text)"),
+        ("PortraitFraming.cs", "offset / (h - boxH) * 100f", "a portrait's background-position-y in percent (layout, not text)"),
     };
 
     [Test]

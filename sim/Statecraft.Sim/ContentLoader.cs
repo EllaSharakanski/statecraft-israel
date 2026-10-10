@@ -335,6 +335,8 @@ namespace Statecraft.Sim
 
             foreach (var p in c.People)
             {
+                if (p.Portrait != null && p.Portrait.File != "" && !(p.Portrait.FocusY >= 0 && p.Portrait.FocusY <= 1))
+                    throw new ContentException("people.yaml", $"people[{p.Id}].portrait.focus_y", "required: the face's height as a share of the picture, from 0 (top) to 1 (bottom)");
                 if (!p.Living.HasValue) throw new ContentException("people.yaml", $"people[{p.Id}].living", "required (true or false)");
                 if (p.Competence < 0 || p.Competence > 10) throw new ContentException("people.yaml", $"people[{p.Id}].competence", "must be 0-10");
                 if (p.Loyalty < 0 || p.Loyalty > 10) throw new ContentException("people.yaml", $"people[{p.Id}].loyalty", "must be 0-10");

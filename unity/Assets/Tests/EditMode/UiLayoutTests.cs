@@ -260,13 +260,24 @@ public class UiLayoutTests
         Assert.IsEmpty(problems, string.Join("\n", problems));
     }
 
+    /// <summary>A button's text fits its content box: on one line, or wrapped (white-space normal) within its height.</summary>
+    static bool TextFits(TextElement b)
+    {
+        var box = b.contentRect;
+        var natural = b.MeasureTextSize(b.text, 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined);
+        if (natural.x <= box.width + 1f) return true;
+        if (b.resolvedStyle.whiteSpace != WhiteSpace.Normal) return false;
+        var wrapped = b.MeasureTextSize(b.text, box.width, VisualElement.MeasureMode.Exactly, 0, VisualElement.MeasureMode.Undefined);
+        return wrapped.y <= box.height + 1f;
+    }
+
     /// <summary>Task 24 review I2: every real event, the tallest included, fits its card above the minimap at every window
     /// shape, wide and short ones included: the card never overlaps the minimap and its option buttons stay inside it.</summary>
     [UnityTest]
     public IEnumerator EveryEventCardStaysAboveTheMinimap()
     {
         var problems = new List<string>();
-        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (2560, 1080), (1920, 900), (1366, 657), (1280, 1024) })
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (1568, 752), (2560, 1080), (1920, 900), (1366, 657), (1280, 1024) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -300,8 +311,19 @@ public class UiLayoutTests
                     if (c.yMax > mini.yMin + 0.5f && c.xMax > mini.xMin && c.xMin < mini.xMax)
                         problems.Add($"{w}x{h}: {e.Id}: card {c} overlaps the minimap {mini}");
                     foreach (var b in root.Q("event-options").Query<Button>().ToList())
-                        if (b.worldBound.yMax > c.yMax + 0.5f || b.worldBound.yMin < c.yMin - 0.5f)
+                    {
+                        if (b.worldBound.yMax > c.yMax + 0.5f || b.worldBound.yMin < c.yMin - 0.5f || b.worldBound.xMax > c.xMax + 0.5f || b.worldBound.xMin < c.xMin - 0.5f)
                             problems.Add($"{w}x{h}: {e.Id}: option '{b.text}' {b.worldBound} is cut off by the card {c}");
+                        // Playtest 2, P2-2: the option's text lies inside its button (it wraps; it is never cut at the edge).
+                        if (!TextFits(b))
+                            problems.Add($"{w}x{h}: {e.Id}: option text '{b.text}' does not fit its button {b.contentRect}");
+                    }
+                    // Playtest 2, P2-3: in a window at least as tall (logically) as 1366x657, the body and the options fit
+                    // without scrolling; shorter windows may scroll the body as the fallback.
+                    var scroll = root.Q<ScrollView>("event-scroll");
+                    var logicalHeight = root.panel.visualTree.layout.height;
+                    if (logicalHeight >= 990f && scroll.contentContainer.layout.height > scroll.contentViewport.layout.height + 1f)
+                        problems.Add($"{w}x{h} (logical height {logicalHeight:0}): {e.Id}: the body scrolls ({scroll.contentContainer.layout.height:0} px of text in {scroll.contentViewport.layout.height:0} px)");
                 }
                 Debug.Log($"I2 {w}x{h}: tallest card {tallestId} {tallest:0} px");
                 Assert.Greater(tallest, 400f, $"{w}x{h}: the cards were laid out (a short window shrinks the tallest to fit)");

@@ -44,7 +44,7 @@ public class MapActionTests
         Assert.Null(MapActions.Apply(C, s, "housing", 1, 1, why));
         Assert.Equal(0, s.Treasury);
         Assert.Equal(5, s.Debt, 9);
-        Assert.Contains(why, w => w.Message == "borrowed IL 5.0m to build a housing project");
+        Assert.Contains(why, w => w.Message == "Borrowed IL 5.0m to build a housing project");
     }
 
     [Fact]

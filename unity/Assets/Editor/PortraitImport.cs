@@ -68,7 +68,7 @@ namespace Statecraft.Game.EditorTools
                 }
                 else AssetDatabase.ImportAsset(target);
                 Configure(target);
-                catalog.entries.Add(new PortraitCatalog.Entry { personId = p.Id, image = AssetDatabase.LoadAssetAtPath<Texture2D>(target) });
+                catalog.entries.Add(new PortraitCatalog.Entry { personId = p.Id, image = AssetDatabase.LoadAssetAtPath<Texture2D>(target), focusY = (float)p.Portrait!.FocusY!.Value });
                 credits.Append(p.Id).Append(" | ").Append(p.Portrait.License).Append(" | ").Append(p.Portrait.Source).Append('\n');
             }
             var creditsPath = Folder + "/PORTRAITS.txt";

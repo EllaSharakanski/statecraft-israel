@@ -12,15 +12,23 @@ namespace Statecraft.Game.UI
     public sealed class PortraitCatalog : ScriptableObject
     {
         [Serializable]
-        public struct Entry { public string personId; public Texture2D image; }
+        public struct Entry
+        {
+            public string personId; public Texture2D image;
+            /// <summary>The face centre's height as a share of the picture (people.yaml portrait.focus_y).</summary>
+            public float focusY;
+        }
 
         public List<Entry> entries = new List<Entry>();
 
         /// <summary>The person's portrait, or null when there is none.</summary>
-        public Texture2D? Get(string? personId)
+        public Texture2D? Get(string? personId) => Find(personId)?.image;
+
+        /// <summary>The person's entry (picture and focal point), or null.</summary>
+        public Entry? Find(string? personId)
         {
             if (personId == null) return null;
-            foreach (var e in entries) if (e.personId == personId) return e.image;
+            foreach (var e in entries) if (e.personId == personId) return e;
             return null;
         }
     }

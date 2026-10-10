@@ -7,6 +7,8 @@
 # 1948-49 cabinet, 2026-10-10 for people added in M3).
 # Portraits: public-domain files fetched with license check (promo/CREDITS.md).
 # Not modelled: deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title (research notes 1c, 1e).
+# portrait.focus_y: the face centre's height as a share of the picture (0 top, 1 bottom), measured on each picture;
+# the event card keeps it in view (playtest 2, P2-5).
 people:
   - id: ben_gurion
     name: David Ben-Gurion
@@ -14,7 +16,7 @@ people:
     party: mapai
     competence: 9
     loyalty: 10
-    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg" }
+    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg", focus_y: 0.3 }
     offices:
       - { office: prime_minister, from: 1948-05-14, sources: &prov [{ url: "https://en.wikipedia.org/wiki/Provisional_government_of_Israel", checked: 2026-10-09 }] }
       - { office: defense_minister, from: 1948-05-14, sources: *prov }
@@ -27,7 +29,7 @@ people:
     party: mapam
     competence: 6
     loyalty: 5
-    portrait: { file: promo/ref/people/Aharon_Zisling.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg" }
+    portrait: { file: promo/ref/people/Aharon_Zisling.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg", focus_y: 0.34 }
     offices:
       - { office: agriculture_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -37,7 +39,7 @@ people:
     party: mapai
     competence: 8
     loyalty: 9
-    portrait: { file: promo/ref/people/Eliezer_Kaplan.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg" }
+    portrait: { file: promo/ref/people/Eliezer_Kaplan.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg", focus_y: 0.3 }
     offices:
       - { office: finance_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: finance_minister, from: 1949-03-10, to: 1950-11-01, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
@@ -51,7 +53,7 @@ people:
     party: mapai
     competence: 8
     loyalty: 8
-    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg" }
+    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg", focus_y: 0.22 }
     offices:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
@@ -64,7 +66,7 @@ people:
     party: hapoel_hamizrachi
     competence: 7
     loyalty: 7
-    portrait: { file: promo/ref/people/Haim-Moshe_Shapira.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg" }
+    portrait: { file: promo/ref/people/Haim-Moshe_Shapira.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg", focus_y: 0.42 }
     offices:
       - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
@@ -87,7 +89,7 @@ people:
     party: independent
     competence: 6
     loyalty: 6
-    portrait: { file: promo/ref/people/Yitzhak_Gruenbaum.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg" }
+    portrait: { file: promo/ref/people/Yitzhak_Gruenbaum.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg", focus_y: 0.3 }
     offices:
       - { office: interior_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -97,7 +99,7 @@ people:
     party: new_aliyah
     competence: 8
     loyalty: 7
-    portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg" }
+    portrait: { file: promo/ref/people/Pinchas_Rosen.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg", focus_y: 0.36 }
     offices:
       - { office: justice_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: justice_minister, from: 1949-03-10, to: 1950-11-01, party: progressive, sources: *first }
@@ -110,7 +112,7 @@ people:
     party: mapam
     competence: 7
     loyalty: 5
-    portrait: { file: promo/ref/people/Mordechai_Bentov.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:MordechaiBentov.jpg" }
+    portrait: { file: promo/ref/people/Mordechai_Bentov.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:MordechaiBentov.jpg", focus_y: 0.28 }
     offices:
       - { office: labour_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -120,7 +122,7 @@ people:
     party: sephardim
     competence: 7
     loyalty: 7
-    portrait: { file: promo/ref/people/Bechor-Shalom_Sheetrit.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg" }
+    portrait: { file: promo/ref/people/Bechor-Shalom_Sheetrit.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg", focus_y: 0.18 }
     offices:
       - { office: police_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: minority_affairs_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
@@ -136,7 +138,7 @@ people:
     party: mizrachi
     competence: 6
     loyalty: 7
-    portrait: { file: promo/ref/people/Yehuda_Leib_Maimon.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg" }
+    portrait: { file: promo/ref/people/Yehuda_Leib_Maimon.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg", focus_y: 0.26 }
     offices:
       - { office: religions_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: war_victims_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
@@ -156,7 +158,7 @@ people:
     party: general_zionists
     competence: 7
     loyalty: 6
-    portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg" }
+    portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg", focus_y: 0.28 }
     offices:
       - { office: trade_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
     status: fact-checked
@@ -168,7 +170,7 @@ people:
     party: mapai
     competence: 7
     loyalty: 8
-    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg" }
+    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg", focus_y: 0.38 }
     offices:
       - { office: transportation_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: transportation_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
@@ -180,7 +182,7 @@ people:
     party: agudat_yisrael
     competence: 6
     loyalty: 6
-    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg" }
+    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg", focus_y: 0.28 }
     offices:
       - { office: welfare_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: welfare_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }

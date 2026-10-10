@@ -131,7 +131,7 @@ public class EventCardTests
         Assert.AreNotEqual("armistice_egypt", card.Shown?.Id);           // the card moves on
         bridge.EndTurn();
         Assert.AreEqual(2, bridge.State.Rung);                            // signing ends full war
-        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "chosen: Sign the armistice"));
+        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "Chosen: Sign the armistice"));
     }
 
     // Fix round 1, I3: the 1949 elections are a one-option card; it renders one button, and pressing it answers the event.

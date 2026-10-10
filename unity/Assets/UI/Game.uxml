@@ -1,6 +1,8 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <Style src="Statecraft.uss" />
-    <ui:VisualElement name="root" class="root" picking-mode="Ignore">
+    <!-- "loading" until GameRoot has started the game: only the loading line shows (playtest 2, P2-1). -->
+    <ui:VisualElement name="root" class="root loading" picking-mode="Ignore">
+        <ui:Label name="loading" text="Loading the map of 1948…" class="loading-line" picking-mode="Ignore" />
         <ui:VisualElement name="top-bar" class="panel top-bar">
             <ui:VisualElement class="date-box">
                 <ui:Label name="year" class="year" />
@@ -55,10 +57,15 @@
              card shrinks its text, which scrolls, and keeps its option buttons. -->
         <ui:VisualElement name="right-column" class="right-column" picking-mode="Ignore">
             <ui:VisualElement name="event-card" class="panel event-card">
-                <ui:VisualElement name="event-image" class="event-image" />
-                <ui:Label name="event-draft" text="DRAFT" class="draft" />
-                <ui:Label name="event-title" class="title event-title" />
-                <ui:Label name="event-office" class="muted" />
+                <!-- A portrait-shaped thumbnail beside the heading, framed on the face (playtest 2, P2-3 and P2-5). -->
+                <ui:VisualElement class="event-head">
+                    <ui:VisualElement name="event-image" class="event-image" />
+                    <ui:VisualElement class="event-heading">
+                        <ui:Label name="event-draft" text="DRAFT" class="draft" />
+                        <ui:Label name="event-title" class="title event-title" />
+                        <ui:Label name="event-office" class="muted event-office" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
                 <ui:ScrollView name="event-scroll" class="event-scroll"><ui:Label name="event-text" class="event-text" /></ui:ScrollView>
                 <ui:VisualElement name="event-options" />
                 <ui:Label name="event-count" class="muted" />

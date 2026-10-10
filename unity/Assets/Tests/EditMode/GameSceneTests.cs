@@ -435,8 +435,8 @@ public class GameSceneTests
         StringAssert.StartsWith("SMOKE OK 1 turns", log[log.Count - 1], string.Join("\n", log));
         StringAssert.StartsWith($"SMOKE turn {turn + 1} ", log[log.Count - 2]);
         Assert.AreEqual(turn + 1, bridge.State.Turn);
-        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "chosen: Sign the armistice"), "the card's option was pressed, not delegated");
-        Assert.IsFalse(bridge.Session.Last.Why.Any(w => w.Target == "armistice_egypt" && w.Message.StartsWith("delegated")));
+        Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "Chosen: Sign the armistice"), "the card's option was pressed, not delegated");
+        Assert.IsFalse(bridge.Session.Last.Why.Any(w => w.Target == "armistice_egypt" && w.Message.StartsWith("Delegated")));
     }
 
     [Test]
@@ -534,5 +534,13 @@ public class GameSceneTests
         terrain.heightmapPixelError = 5f;                               // where an interrupted profile leaves it
         root.enabled = false;
         Assert.AreEqual(MapBuilder.TerrainPixelError, terrain.heightmapPixelError);
+    }
+
+    /// <summary>Playtest 2, P2-1: once GameRoot has started the game, the loading state is gone.</summary>
+    [Test]
+    public void TheGameLeavesTheLoadingState()
+    {
+        Boot();
+        Assert.IsFalse(Ui.Q("root").ClassListContains("loading"), "GameRoot clears the loading state");
     }
 }

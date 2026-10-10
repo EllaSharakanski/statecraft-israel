@@ -28,7 +28,13 @@ namespace Statecraft.Sim
         public List<Source> Sources { get; set; } = new List<Source>();
     }
 
-    public sealed class Portrait { public string File { get; set; } = ""; public string License { get; set; } = ""; public string Source { get; set; } = ""; }
+    public sealed class Portrait
+    {
+        public string File { get; set; } = ""; public string License { get; set; } = ""; public string Source { get; set; } = "";
+        /// <summary>Where the face is: its centre's height as a share of the picture (0 = top, 1 = bottom), so the event card
+        /// can keep it in view (playtest 2, P2-5). Required for a portrait with a file.</summary>
+        public double? FocusY { get; set; }
+    }
 
     public sealed class Person
     {

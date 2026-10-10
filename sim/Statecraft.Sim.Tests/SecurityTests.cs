@@ -51,7 +51,7 @@ public class SecurityTests
         Assert.Null(SecuritySystem.SetMobilization(C, s, 0.9, why));
         var cause = Assert.Single(why, w => w.System == "security" && w.Target == "mobilization");
         Assert.Equal(0.9, cause.Delta);
-        Assert.Equal("reserve call-up set to 90%", cause.Message);
+        Assert.Equal("Reserve call-up set to 90%", cause.Message);
         Assert.Equal(0.9, s.Mobilization);
     }
 

@@ -117,7 +117,7 @@ namespace Statecraft.Game.UI
                 row.Add(new Label(text.Format("budget.share", PlayerText.Percent(share))) { name = "budget-" + office + "-share" });
                 row.Add(new Button(() => Change(office, +Step)) { name = "budget-" + office + "-up", text = "+" });
                 var factor = EffectsSystem.BudgetFactor(draft, office);
-                row.Add(new Label(text.Format("budget.factor", factor)) { name = "budget-" + office + "-factor" });
+                row.Add(new Label(text.Format("budget.factor", PlayerText.Percent(factor))) { name = "budget-" + office + "-factor" });
                 row[4].AddToClassList("muted");
                 rows.Add(row);
             }

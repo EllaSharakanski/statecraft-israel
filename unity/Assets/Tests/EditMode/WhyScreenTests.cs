@@ -25,7 +25,7 @@ public class WhyScreenTests
         var lines = ui.Q<ScrollView>("why-rows").Query<Label>(className: "why-line").ToList();
         Assert.AreEqual(r.Why.Count, lines.Count);
         Assert.AreEqual("Immigration and population", ui.Q<Label>("why-group-population").text);
-        Assert.IsTrue(lines.Any(l => l.text == "reserve call-up set to 100%"));
+        Assert.IsTrue(lines.Any(l => l.text == "Reserve call-up set to 100%"));
         var groups = ui.Q<ScrollView>("why-rows").Query<Label>(className: "why-group").ToList().Select(l => l.name).ToList();
         Assert.Less(groups.IndexOf("why-group-security"), groups.IndexOf("why-group-economy"));
     }
@@ -90,7 +90,7 @@ public class WhyScreenTests
             Assert.AreEqual("why-group-zzz", headers.Last().name);
             Assert.AreEqual("Other", headers.Last().text);
             Assert.IsFalse(rows.Query<Label>().ToList().Any(l => l.text == "zzz"), "the raw id is never shown");
-            Assert.AreEqual("something odd happened", rows.Query<Label>(className: "why-line").ToList().Last().text);
+            Assert.AreEqual("Something odd happened", rows.Query<Label>(className: "why-line").ToList().Last().text);
         }
     }
 

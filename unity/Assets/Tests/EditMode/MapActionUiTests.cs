@@ -61,7 +61,8 @@ public class MapActionUiTests
         var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
         info.Show(tlv.Q, tlv.R);
         Assert.AreEqual("Tel Aviv", ui.Q<Label>("info-title").text);
-        StringAssert.StartsWith("Coastal plain · hex (", ui.Q<Label>("info-subtitle").text);
+        StringAssert.StartsWith("Coastal plain · elevation ", ui.Q<Label>("info-subtitle").text);
+        StringAssert.DoesNotContain("hex (", ui.Q<Label>("info-subtitle").text, "no debug coordinates in player text (playtest 2, P2-6)");
         Assert.IsFalse(ui.Q<Button>("build-camp").enabledSelf);
         Assert.AreEqual("Transit camps and housing projects can be placed from 1 January 1950", ui.Q<Label>("info-reason").text);
     }

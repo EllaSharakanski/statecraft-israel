@@ -263,8 +263,8 @@ options:
         var r = Simulation.Step(c, s0, HistoricalAI.Commands(c, s0));   // 3 attention, each choice costs 2
         Assert.StartsWith("Not enough attention", r.Rejected.Single().Reason);
         Assert.Empty(r.State.PendingEvents);
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("chosen: "));
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("delegated to Def Two"));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Chosen: "));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Delegated to Def Two"));
     }
 
     [Fact]
@@ -316,7 +316,7 @@ options:
             var s0 = Simulation.NewGame(c, seed, Mode.Historical);
             Assert.Equal(new[] { "partition" }, s0.PendingEvents);
             var r = Simulation.Step(c, s0, None);
-            Assert.Contains(r.Why, w => w.System == "events" && w.Message == "delegated to Pm One: Accept the line");
+            Assert.Contains(r.Why, w => w.System == "events" && w.Message == "Delegated to Pm One: Accept the line");
             Assert.Equal(seed, r.State.RngState);
         }
     }
@@ -329,7 +329,7 @@ options:
         s0.Mode = Mode.Open;
         var r = Simulation.Step(c, s0, None);
         Assert.NotEqual(5UL, r.State.RngState);
-        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("delegated to Pm One: "));
+        Assert.Contains(r.Why, w => w.System == "events" && w.Message.StartsWith("Delegated to Pm One: "));
     }
 
     const string Late = @"

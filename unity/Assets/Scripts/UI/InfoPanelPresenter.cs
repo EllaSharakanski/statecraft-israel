@@ -58,7 +58,7 @@ namespace Statecraft.Game.UI
             var hex = c.HexAt(q, r);
             var owned = c.SettlementHexes.Where(x => x.Q == q && x.R == r).Select(x => settlementNames.TryGetValue(x.Id, out var n) ? n : x.Id).ToList();
             title.text = owned.Count > 0 ? owned[0] : hex == null ? text["info.off_map"] : text["info.biome." + hex.Biome];
-            subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], q, r, hex.ElevM);
+            subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)
             settlements.text = owned.Count > 0 ? text.Format("info.owned", string.Join(", ", owned)) : "";
             var here = MapActions.At(s, q, r);
             var queued = bridge.QueuedLike(new MapAction(MapActions.Housing, q, r)) as MapAction;

@@ -23,6 +23,11 @@
   - `TURN <n> <date> hash <state hash>` after every End Turn.
   - `CAMERA distance=<m> yaw=<deg>` with `?camlog`.
   - `PROFILE ...` with `?profile`.
+  - `BOOT phase=<name> at=<ms> ms dt=<ms> ms` for each boot phase with `?bootlog` (playtest 2, P2-1).
+  - `NAV f=<frame> ...` with `?navlog`: every raw mouse event, UI pointer and submit event, screen toggle and map click,
+    with its frame (playtest 2, P2-4).
+- **Player-facing wording:** the Budget screen gives each ministry's multiplier as "spending effect 150%" (the share's
+  effect on that ministry's effects, on the 0-100 scale the rest of the game uses), never "x1.50" (playtest 2, P2-6).
 
 ## WebGL terrain profile
 Results from `?profile`: 300 frames per setting after 60 warm-up frames, from the diorama camera over central Israel. All runs were in Chrome for Testing 1228 with `--disable-frame-rate-limit --disable-gpu-vsync`.

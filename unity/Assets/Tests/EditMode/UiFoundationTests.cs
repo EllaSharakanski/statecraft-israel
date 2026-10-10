@@ -69,6 +69,7 @@ public class UiFoundationTests
         using var ui = new UiTestKit();
         foreach (var name in new[] { "screen-cabinet", "screen-budget", "screen-defence", "screen-why", "toast" })
             ui.Q<VisualElement>(name).style.display = DisplayStyle.None;   // closed, as at game start
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");        // ready, as GameRoot leaves it
         var button = ui.Q<Button>("end-turn");
         for (int i = 0; i < 10 && float.IsNaN(button.worldBound.width); i++) yield return null;
         var panel = ui.Root.panel;
@@ -111,5 +112,26 @@ public class UiFoundationTests
         var bar = ui.Q<VisualElement>("top-bar");
         for (int i = 0; i < 10 && bar.resolvedStyle.backgroundColor.a < 0.5f; i++) yield return null;
         Assert.AreEqual(1f, bar.resolvedStyle.backgroundColor.a, 1e-3f);
+    }
+
+    /// <summary>Playtest 2, P2-1: until GameRoot has started the game, the tree shows only a styled loading line: no screen,
+    /// no event card (and never its DRAFT placeholder), no empty top-bar values, info panel or minimap.</summary>
+    [UnityTest]
+    public IEnumerator BeforeTheGameIsReadyOnlyALoadingLineShows()
+    {
+        using var ui = new UiTestKit();
+        var loading = ui.Q<Label>("loading");
+        for (int i = 0; i < 10 && float.IsNaN(loading.worldBound.width); i++) yield return null;
+        Assert.IsTrue(ui.Q<VisualElement>("root").ClassListContains("loading"), "the tree starts in the loading state");
+        Assert.AreEqual(DisplayStyle.Flex, loading.resolvedStyle.display);
+        Assert.IsNotEmpty(loading.text);
+        foreach (var s in ScreenNav.Screens)
+            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("screen-" + s).resolvedStyle.display, s);
+        Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-card").resolvedStyle.display, "event card");
+        Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-draft").resolvedStyle.display, "DRAFT placeholder");
+        foreach (var cls in new[] { "date-box", "meters", "nav", "turn-box" })
+            Assert.AreEqual(Visibility.Hidden, ui.Root.Q(className: cls).resolvedStyle.visibility, cls);
+        foreach (var name in new[] { "info-panel", "right-column" })
+            Assert.AreEqual(Visibility.Hidden, ui.Q<VisualElement>(name).resolvedStyle.visibility, name);
     }
 }
