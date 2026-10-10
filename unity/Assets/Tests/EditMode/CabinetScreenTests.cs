@@ -30,6 +30,7 @@ public class CabinetScreenTests
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         Assert.AreEqual("First Government", ui.Q<Label>("cabinet-government").text);
         StringAssert.StartsWith("Coalition: 73 of 120 seats", ui.Q<Label>("cabinet-coalition").text);
+        StringAssert.IsMatch(@"stability \d+%$", ui.Q<Label>("cabinet-coalition").text);   // fix round 1, I2: the unit
         Assert.AreEqual("Minister of Finance: Eliezer Kaplan · Mapai · competence 8, loyalty 9", ui.Q<Label>("seat-finance_minister-holder").text);
         UiTestKit.Press(ui.Q<Button>("seat-finance_minister"));
         Assert.AreEqual("finance_minister", cabinet.Selected);

@@ -25,6 +25,9 @@ public class HudTests
         Assert.AreEqual("15 May 1948", m.Date);
         Assert.AreEqual("IL 20.0m", m.Treasury.Value);          // Israeli pounds (playtest 1, item 7)
         Assert.AreEqual("$40.0m", m.Fx.Value);
+        Assert.AreEqual("30%", m.Security.Value);                    // the 0-100 scale, with its unit (fix round 1, I2)
+        Assert.AreEqual("50%", m.Standing.Value);
+        StringAssert.EndsWith("%", m.Support.Value);
         Assert.AreEqual("Level 5 of 5", m.SecurityLevel);
         Assert.AreEqual("Attention 4.0 of 4.0", m.Attention);
         Assert.AreEqual("", m.Treasury.Delta);                       // no previous turn yet
@@ -45,7 +48,7 @@ public class HudTests
         var s0 = bridge.Session.Previous!; var s1 = bridge.State;
         var d = System.Math.Round((s1.Treasury - s1.Debt) - (s0.Treasury - s0.Debt), 1, System.MidpointRounding.AwayFromZero);
         Assert.AreNotEqual(0.0, d, "the test needs a week with a treasury change");
-        Assert.AreEqual(d.ToString("+0.0;-0.0", System.Globalization.CultureInfo.InvariantCulture), ui.Q<Label>("treasury-delta").text);
+        Assert.AreEqual(PlayerText.MoneyChange(C, "treasury", d), ui.Q<Label>("treasury-delta").text);
         Assert.AreEqual(d < 0, ui.Q<Label>("treasury-delta").ClassListContains("delta-down"));
         Assert.AreEqual(d > 0, ui.Q<Label>("treasury-delta").ClassListContains("delta-up"));
     }
@@ -194,7 +197,7 @@ public class HudTests
         var now = bridge.State;
         prev.Treasury = now.Treasury - now.Debt + prev.Debt - 5;          // up by 5
         hud.Render();
-        Assert.AreEqual("+5.0", ui.Q<Label>("treasury-delta").text);
+        Assert.AreEqual("+IL 5.0m", ui.Q<Label>("treasury-delta").text);
         Assert.IsTrue(ui.Q<Label>("treasury-delta").ClassListContains("delta-up"));
         Assert.IsFalse(ui.Q<Label>("treasury-delta").ClassListContains("delta-down"));
         prev.Treasury = now.Treasury - now.Debt + prev.Debt + 0.04;       // down by 0.04: rounds to zero, never "-0.0"
@@ -308,5 +311,48 @@ public class HudTests
             }
         }
         finally { Object.DestroyImmediate(portraits); }
+    }
+
+    /// <summary>Fix round 1, I2: the top-bar changes carry their unit: IL for the treasury, $ for foreign currency, % for
+    /// the 0-100 meters.</summary>
+    [Test]
+    public void EveryTopBarChangeCarriesItsUnit()
+    {
+        var bridge = NewBridge();
+        bridge.EndTurn();
+        var prev = bridge.Session.Previous!;
+        var now = bridge.State;
+        prev.FxReserves = now.FxReserves + 2;                                // down by 2
+        prev.Indicators["security"] = now.Indicators["security"] - 0.05;    // up 5 points
+        prev.Treasury = now.Treasury - now.Debt + prev.Debt + 3;            // down by 3
+        var m = HudModel.From(bridge, Text);
+        Assert.AreEqual("-$2.0m", m.Fx.Delta);
+        Assert.AreEqual("+5%", m.Security.Delta);
+        Assert.AreEqual("-IL 3.0m", m.Treasury.Delta);
+    }
+
+    /// <summary>Fix round 1, I2: Unity never rescales a sim number itself; 0..1 values go through PlayerText.Scale or
+    /// PlayerText.Percent (the minimap's layout percentages are not numbers the player reads).</summary>
+    [Test]
+    public void TheUiNeverMultipliesBy100Itself()
+    {
+        foreach (var f in System.IO.Directory.GetFiles("Assets/Scripts/UI", "*.cs"))
+            foreach (var line in System.IO.File.ReadAllLines(f))
+                if (System.Text.RegularExpressions.Regex.IsMatch(line, @"\*\s*100\b") && !line.Contains("Length.Percent"))
+                    Assert.Fail($"{System.IO.Path.GetFileName(f)}: {line.Trim()}");
+    }
+
+    /// <summary>Fix round 1, M3: the top-bar captions are the content names in title case (a deliberate casing for
+    /// captions); Immigration and Public Support are UI quantities with no content name.</summary>
+    [Test]
+    public void TopBarCaptionsAreTheContentNamesInTitleCase()
+    {
+        using var ui = new UiTestKit();
+        string Caption(string meter) => ui.Q<VisualElement>(meter).Q<Label>(className: "meter-name").text;
+        string Title(string name) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
+        Assert.AreEqual(Title(PlayerText.Target(C, "treasury")), Caption("meter-treasury"));
+        Assert.AreEqual(Title(PlayerText.Target(C, "security")), Caption("meter-security"));
+        Assert.AreEqual(Title(PlayerText.Target(C, "intl_standing")), Caption("meter-standing"));
+        Assert.AreEqual(Title(PlayerText.Target(C, "fx_reserves")), Caption("meter-fx"));
     }
 }

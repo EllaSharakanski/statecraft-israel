@@ -46,7 +46,7 @@ namespace Statecraft.Game.UI
             var gov = Offices.Government(c, s.Date);
             var (seats, size) = PoliticsSystem.CoalitionSeats(c, s.Date);
             screen.Q<Label>("cabinet-government").text = gov?.Name ?? "";
-            screen.Q<Label>("cabinet-coalition").text = text.Format("cabinet.coalition", seats, size, s.CoalitionStability * 100);
+            screen.Q<Label>("cabinet-coalition").text = text.Format("cabinet.coalition", seats, size, PlayerText.Percent(s.CoalitionStability));
             var list = screen.Q<ScrollView>("cabinet-seats");
             list.Clear();
             var lineup = Cabinet.Lineup(c, s);

@@ -27,13 +27,30 @@ namespace Statecraft.Game.UI
         public static HudModel From(SimBridge b, UiText t)
         {
             var c = b.Content; var s = b.State; var prev = b.Session.Previous;
-            Meter M(double now, double? before, string valueKey, string deltaKey)
+            // Each meter: its value and, after the first turn, the change rounded as shown (a change that rounds to zero is
+            // not shown). Money comes with its currency (PlayerText.Money: IL or $ from content); the 0..1 values are on the
+            // 0-100 scale with "%" (PlayerText.Scale), as everywhere the player sees them (fix round 1, I2).
+            Meter Money(string id, double now, double? before)
             {
-                if (before == null) return new Meter(t.Format(valueKey, now), "", 0);
-                var d = Math.Round(now - before.Value, deltaKey == "hud.delta_money" ? 1 : 0, MidpointRounding.AwayFromZero);
-                return d == 0 ? new Meter(t.Format(valueKey, now), "", 0) : new Meter(t.Format(valueKey, now), t.Format(deltaKey, d), Math.Sign(d));
+                var value = PlayerText.Money(c, id, now);
+                if (before == null) return new Meter(value, "", 0);
+                var d = Math.Round(now - before.Value, 1, MidpointRounding.AwayFromZero);
+                return d == 0 ? new Meter(value, "", 0) : new Meter(value, PlayerText.MoneyChange(c, id, d), Math.Sign(d));
             }
-            double Pct(GameState x, string id) => Math.Round(x.Indicators[id] * 100, MidpointRounding.AwayFromZero);
+            Meter Points(double now, double? before)
+            {
+                var v = Math.Round(PlayerText.Scale(now), MidpointRounding.AwayFromZero);
+                var value = t.Format("hud.percent", v);
+                if (before == null) return new Meter(value, "", 0);
+                var d = v - Math.Round(PlayerText.Scale(before.Value), MidpointRounding.AwayFromZero);
+                return d == 0 ? new Meter(value, "", 0) : new Meter(value, t.Format("hud.delta_percent", d), Math.Sign(d));
+            }
+            Meter People(double now, double? before)
+            {
+                if (before == null) return new Meter(t.Format("hud.people", now), "", 0);
+                var d = Math.Round(now - before.Value, 0, MidpointRounding.AwayFromZero);
+                return d == 0 ? new Meter(t.Format("hud.people", now), "", 0) : new Meter(t.Format("hud.people", now), t.Format("hud.delta_people", d), Math.Sign(d));
+            }
             return new HudModel
             {
                 Year = s.Date.Year.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -41,12 +58,12 @@ namespace Statecraft.Game.UI
                 Date = t.Format("hud.date", PlayerText.Date(s.Date)),
                 Attention = t.Format("hud.attention", b.AttentionLeft, c.Rules.AttentionPerTurn),
                 SecurityLevel = t.Format("hud.level", s.Rung),
-                Treasury = M(s.Treasury - s.Debt, prev == null ? (double?)null : prev.Treasury - prev.Debt, "hud.money", "hud.delta_money"),
-                Immigration = M(Arrivals(b.Session.Last), b.BeforeLast == null ? (double?)null : Arrivals(b.BeforeLast), "hud.people", "hud.delta_people"),
-                Security = M(Pct(s, "security"), prev == null ? (double?)null : Pct(prev, "security"), "hud.percent", "hud.delta"),
-                Support = M(Math.Round(EffectsSystem.Approval(c, s) * 100, MidpointRounding.AwayFromZero), prev == null ? (double?)null : Math.Round(EffectsSystem.Approval(c, prev) * 100, MidpointRounding.AwayFromZero), "hud.percent", "hud.delta"),
-                Standing = M(Pct(s, "intl_standing"), prev == null ? (double?)null : Pct(prev, "intl_standing"), "hud.percent", "hud.delta"),
-                Fx = M(s.FxReserves, prev?.FxReserves, "hud.fx", "hud.delta_money"),
+                Treasury = Money("treasury", s.Treasury - s.Debt, prev == null ? (double?)null : prev.Treasury - prev.Debt),
+                Immigration = People(Arrivals(b.Session.Last), b.BeforeLast == null ? (double?)null : Arrivals(b.BeforeLast)),
+                Security = Points(s.Indicators["security"], prev?.Indicators["security"]),
+                Support = Points(EffectsSystem.Approval(c, s), prev == null ? (double?)null : EffectsSystem.Approval(c, prev)),
+                Standing = Points(s.Indicators["intl_standing"], prev?.Indicators["intl_standing"]),
+                Fx = Money("fx_reserves", s.FxReserves, prev?.FxReserves),
             };
         }
     }

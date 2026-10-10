@@ -109,8 +109,8 @@ namespace Statecraft.Game.UI
             screen.Q<Label>("order-pending").text = delta == 0 ? "" : text.Format("defence.order", s.Rung, target);
             var floor = SecuritySystem.MinMobilization(c, target);
             var proposed = EffectiveAt(ProposedMobilization);   // what the call-up will be: the sim raises a lower order to the minimum
-            screen.Q<Label>("mob-level").text = text.Format("defence.mob", proposed * 100, target, floor * 100);
-            screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", c.Rules.MobilizationCostPerYear * proposed);
+            screen.Q<Label>("mob-level").text = text.Format("defence.mob", PlayerText.Percent(proposed), target, PlayerText.Percent(floor));
+            screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", PlayerText.Money(c, "treasury", c.Rules.MobilizationCostPerYear * proposed));
             screen.Q<Button>("escalate").SetEnabled(target < 5);
             screen.Q<Button>("de-escalate").SetEnabled(target > 1);
         }

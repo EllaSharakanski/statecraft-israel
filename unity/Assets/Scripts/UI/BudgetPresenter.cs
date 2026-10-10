@@ -114,7 +114,7 @@ namespace Statecraft.Game.UI
                 row.Add(new Label(text.Format("budget.office", o.Title, Cabinet.Holder(c, s, office)?.Name ?? text["budget.vacant"])) { name = "budget-" + office + "-name" });
                 row[0].AddToClassList("grow");
                 row.Add(new Button(() => Change(office, -Step)) { name = "budget-" + office + "-down", text = "-" });
-                row.Add(new Label(text.Format("budget.share", share * 100)) { name = "budget-" + office + "-share" });
+                row.Add(new Label(text.Format("budget.share", PlayerText.Percent(share))) { name = "budget-" + office + "-share" });
                 row.Add(new Button(() => Change(office, +Step)) { name = "budget-" + office + "-up", text = "+" });
                 var factor = EffectsSystem.BudgetFactor(draft, office);
                 row.Add(new Label(text.Format("budget.factor", factor)) { name = "budget-" + office + "-factor" });
@@ -125,9 +125,9 @@ namespace Statecraft.Game.UI
             var (seats, size) = PoliticsSystem.CoalitionSeats(c, s.Date);
             screen.Q<Label>("budget-vote").text = leg == null ? "" : leg.BudgetApproval
                 ? text.Format("budget.vote_needed", leg.Body, seats, size) : text.Format("budget.no_vote", leg.Body);
-            screen.Q<Label>("budget-money").text = text.Format("budget.money", s.Treasury, s.Debt, s.FxReserves);
+            screen.Q<Label>("budget-money").text = text.Format("budget.money", PlayerText.Money(c, "treasury", s.Treasury), PlayerText.Money(c, "debt", s.Debt), PlayerText.Money(c, "fx_reserves", s.FxReserves));
             var flows = EconomySystem.Flows(c, s, 1.0);   // the sim's own arithmetic, for a year
-            screen.Q<Label>("budget-flow").text = text.Format("budget.flow", flows.Tax, flows.Spending, flows.Mobilization);
+            screen.Q<Label>("budget-flow").text = text.Format("budget.flow", PlayerText.Money(c, "treasury", flows.Tax), PlayerText.Money(c, "treasury", flows.Spending), PlayerText.Money(c, "treasury", flows.Mobilization));
             var queuedShares = QueuedShares;
             // The status says what is actually queued: edits after Submit are "Changed" again.
             screen.Q<Label>("budget-status").text = queuedShares != null ? (Same(draft, queuedShares) ? text["budget.queued"] : text["budget.unsaved"])
