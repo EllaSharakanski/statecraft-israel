@@ -171,6 +171,50 @@ public class GradeTests
         Assert.That(ratio, Is.InRange(0.98f, 1.12f));
     }
 
+    /// <summary>Task 10: the "bloom" toggle prices the pipeline assets' own bloom (Settings/SampleSceneProfile: intensity 0.25
+    /// above 1), so the profile can measure it like every other feature. Off, the map's runtime profile overrides it with
+    /// intensity 0; on, that override is inactive and the pipeline profile decides. Rendered at both promo poses on both
+    /// tiers (0 web, 1 desktop), the bloom's whole effect on the frame is logged for the tier decision (docs/visual-v1.md
+    /// "Tier decisions"); bloom only ever adds light.</summary>
+    [UnityTest]
+    public IEnumerator TheBloomToggleSwitchesThePipelineBloom([Values(0, 1)] int level)
+    {
+        int previous = QualitySettings.GetQualityLevel();
+        QualitySettings.SetQualityLevel(level, false);
+        try
+        {
+            var (map, rig, profile) = Open();
+            yield return null;
+            CollectionAssert.Contains(VisualToggles.Names, "bloom");
+            VisualToggles.Set("bloom", false);
+            Assert.IsTrue(profile.TryGet<Bloom>(out var bloom), "the runtime profile carries the bloom override");
+            Assert.IsTrue(bloom.active && bloom.intensity.overrideState && bloom.intensity.value == 0f, "off: intensity 0 wins");
+            VisualToggles.Set("bloom", true);
+            Assert.IsFalse(bloom.active, "on: the pipeline profile's bloom applies");
+            var cam = Camera.main;
+            static float Warmth(RenderSample s) { float w = 0f; foreach (var c in s.Pixels) w += c.r - c.b; return w / s.Pixels.Length; }
+            foreach (var pose in PromoPose.All)
+            {
+                pose.Apply(rig, map.Frame);
+                VisualToggles.Set("bloom", true); var on = RenderSample.Render(cam, 480, 270);
+                VisualToggles.Set("bloom", false); var off = RenderSample.Render(cam, 480, 270);
+                VisualToggles.Set("bloom", true);
+                float sum = 0f, max = 0f; int changed = 0;
+                for (int i = 0; i < on.Pixels.Length; i++)
+                {
+                    float d = Mathf.Max(Mathf.Abs(on.Pixels[i].r - off.Pixels[i].r), Mathf.Abs(on.Pixels[i].g - off.Pixels[i].g), Mathf.Abs(on.Pixels[i].b - off.Pixels[i].b));
+                    sum += d; max = Mathf.Max(max, d); if (d > 1.5f / 255f) changed++;
+                }
+                float lumaOn = on.MeanLuma(0f, 0f, 1f, 1f), lumaOff = off.MeanLuma(0f, 0f, 1f, 1f);
+                TestContext.WriteLine($"level {level} {pose.Name}: bloom mean |d| {sum / on.Pixels.Length * 255f:0.00}/255, max {max * 255f:0}/255, " +
+                    $"pixels changed > 1.5/255 {(float)changed / on.Pixels.Length:P2}; luma {lumaOff:0.0000} -> {lumaOn:0.0000}; " +
+                    $"saturation {off.MeanSaturation():0.0000} -> {on.MeanSaturation():0.0000}; warmth {Warmth(off):0.0000} -> {Warmth(on):0.0000}");
+                Assert.GreaterOrEqual(lumaOn + 1e-4f, lumaOff, "bloom only adds light");
+            }
+        }
+        finally { QualitySettings.SetQualityLevel(previous, false); }
+    }
+
     /// <summary>Rendered: MapGrade's vignette darkens the corners relative to the centre more than the vignette it replaces
     /// (the pipeline's template profile, Settings/SampleSceneProfile, applies a 0.2 black one, which "plain" still shows).</summary>
     [UnityTest]

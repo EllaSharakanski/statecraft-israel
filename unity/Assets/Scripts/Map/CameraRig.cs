@@ -51,6 +51,10 @@ namespace Statecraft.Game.Map
             TeardownActions.Add(TiltShift.Reset);
             TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
             TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
+            // The pipeline assets' own profile (Settings/SampleSceneProfile) blooms at 0.25 above 1; this switch prices it
+            // (Task 10): off overrides the intensity with 0, on leaves the pipeline profile in charge.
+            var bloom = vol.profile.Add<Bloom>(true); bloom.intensity.Override(0f); bloom.active = false;
+            TeardownActions.Add(VisualToggles.Register("bloom", on => bloom.active = !on));
             if (TiltShift.OffRequested()) TiltShift.Enabled = false;
             initialised = true;
             Apply();
