@@ -69,7 +69,7 @@
 
 ## איך משתתפים
 
-מתכנתים, היסטוריונים, אמנים, מעצבי משחק, כותבים ומתרגמים: התחילו ב־[<span dir="ltr">CONTRIBUTING.md</span>](CONTRIBUTING.md) (באנגלית). אפשר לעבוד גם עם בינה מלאכותית, בתנאי שמצהירים על כך ושכל טענה היסטורית נבדקה מול מקור. אין הסכם CLA: תרומות נכנסות תחת הרישיונות של המאגר. מחפשים משימה ראשונה? ראו את הסינון [good first issue](https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue), את [help wanted](https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted) ואת [הבעיות הפתוחות](https://github.com/eyalgolan/statecraft-israel/issues).
+מתכנתים, היסטוריונים, אמנים, מעצבי משחק, כותבים ומתרגמים: התחילו ב־[<span dir="ltr">CONTRIBUTING.md</span>](CONTRIBUTING.md) (באנגלית). להוספת אירוע היסטורי ראו [<span dir="ltr">docs/WRITING_EVENTS.md</span>](docs/WRITING_EVENTS.md) (באנגלית). אפשר לעבוד גם עם בינה מלאכותית, בתנאי שמצהירים על כך ושכל טענה היסטורית נבדקה מול מקור. אין הסכם CLA: תרומות נכנסות תחת הרישיונות של המאגר. מחפשים משימה ראשונה? ראו את הסינון [good first issue](https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue), את [help wanted](https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted) ואת [הבעיות הפתוחות](https://github.com/eyalgolan/statecraft-israel/issues).
 
 ### עבודה עם סוכן בינה מלאכותית ב־Unity (<span dir="ltr">Unity-MCP</span>)
 

@@ -49,6 +49,7 @@ Follow [docs/dev-setup.md](docs/dev-setup.md). In short:
 
 ## History and content rules
 
+- **Adding an event?** Follow [docs/WRITING_EVENTS.md](docs/WRITING_EVENTS.md): every field, what the loader rejects, and how to run the tests.
 - **Every fact needs a source.** Every event, minister, office term, date and number in `content/` carries `sources:` with a URL and the date you checked it. A claim without a source can't be merged.
 - **No invented quotes.** Paraphrase, and never put words in a real person's mouth.
 - **Framing.** The project tells the story from the Israeli perspective. Contested narratives are not shown as parallel accounts.

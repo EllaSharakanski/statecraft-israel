@@ -105,6 +105,7 @@ Help is very welcome:
 Before you start:
 - Read [docs/dev-setup.md](docs/dev-setup.md).
 - Run the tests listed in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Adding a historical event? Read [docs/WRITING_EVENTS.md](docs/WRITING_EVENTS.md).
 - Keep game rules in the sim, not in Unity.
 - Working in Unity with an AI agent? Use the bundled Unity-MCP plugin in local Custom mode; the steps are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
