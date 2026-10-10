@@ -32,4 +32,4 @@ options:
       - { target: security, delta: -0.02 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Hiram", checked: 2026-10-10 }
-status: fact-checked
+status: sensitivity-reviewed

@@ -38,7 +38,7 @@ public class FinalWaveTests
     [Fact]
     public void AShareableBuildNeedsEverySensitiveEventReviewed()
     {
-        Assert.Equal(SensitiveEvents, ReleaseGate.SensitiveUnreviewed(Real).OrderBy(x => x, StringComparer.Ordinal));   // the owner has not signed off yet
+        Assert.Empty(ReleaseGate.SensitiveUnreviewed(Real));   // the owner signed off all seven on 2026-10-10 (docs/oss/DECISIONS.md D11)
         var reviewed = Fixture.Write(events: new Dictionary<string, string>
         {
             ["a.yaml"] = "id: a\ntitle: A\ntext: x\nfrom: 1948-06-01\ntags: [terror]\noptions:\n  - id: o\n    text: O\nstatus: sensitivity-reviewed\n",
