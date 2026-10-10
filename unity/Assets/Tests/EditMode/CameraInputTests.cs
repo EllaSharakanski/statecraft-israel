@@ -27,9 +27,19 @@ public class CameraInputTests
         Assert.AreEqual(3, map.FindAction("DragPan").bindings.Count);
         Assert.AreEqual(1, map.FindAction("Zoom").bindings.Count);
         Assert.AreEqual(3, map.FindAction("Orbit").bindings.Count);
-        foreach (var a in map.actions)
-            foreach (var b in a.bindings.Where(b => !b.isComposite))
-                Assert.IsNotNull(UnityEngine.InputSystem.InputControlPath.TryGetDeviceLayout(b.path), a.name + " " + b.path);
+        var added = new System.Collections.Generic.List<InputDevice>();
+        if (Keyboard.current == null) added.Add(InputSystem.AddDevice<Keyboard>());
+        if (Mouse.current == null) added.Add(InputSystem.AddDevice<Mouse>());
+        try
+        {
+            foreach (var a in map.actions)
+                foreach (var b in a.bindings.Where(b => !b.isComposite))
+                {
+                    using var found = InputSystem.FindControls(b.path);
+                    Assert.Greater(found.Count, 0, a.name + " " + b.path + " resolves to no control");
+                }
+        }
+        finally { foreach (var d in added) InputSystem.RemoveDevice(d); }
         Assert.IsNotNull(asset.FindActionMap("UI", true).FindAction("Click"), "UI Toolkit needs the UI map's actions");
     }
 
@@ -133,9 +143,24 @@ public class CameraInputTests
             CameraController.Step(a, inp, 0.1f, Map);
             CameraController.Step(b, inp, 0.05f, Map); CameraController.Step(b, inp, 0.05f, Map);
             Assert.AreEqual(a.Yaw, b.Yaw, 1e-3);
-            // the pan direction turns with the yaw between the half steps (about 1.5 degrees here), so allow 0.5% of the distance
+            // the pan direction turns with the yaw between the half steps (3 degrees here: yaw updates before pan), so allow 0.5% of the distance
             Assert.AreEqual(a.LookAt.x, b.LookAt.x, 500f);
             Assert.AreEqual(a.LookAt.z, b.LookAt.z, 500f);
+        }
+        finally { Object.DestroyImmediate(a.gameObject); Object.DestroyImmediate(b.gameObject); }
+    }
+
+    [Test]
+    public void PanAloneIsFrameRateIndependent()
+    {
+        var a = NewRig(); var b = NewRig();
+        try
+        {
+            var inp = new CameraInput { Pan = new Vector2(1, 1) };
+            CameraController.Step(a, inp, 0.1f, Map);
+            CameraController.Step(b, inp, 0.05f, Map); CameraController.Step(b, inp, 0.05f, Map);
+            Assert.AreEqual(a.LookAt.x, b.LookAt.x, 1f);
+            Assert.AreEqual(a.LookAt.z, b.LookAt.z, 1f);
         }
         finally { Object.DestroyImmediate(a.gameObject); Object.DestroyImmediate(b.gameObject); }
     }
