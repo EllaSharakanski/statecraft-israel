@@ -161,6 +161,51 @@ public class GameSceneTests
         }
     }
 
+    /// <summary>Fix round 1, M4: the real path. GameRoot.Begin creates TopBarInset before the panel's first layout (the
+    /// inset starts at 0); the layout then sets it to the bar's share of the window, and a resize to a 21:9 window
+    /// updates it. The camera's projection follows (the look-at point sits in the middle of the area below the bar).</summary>
+    [UnityTest]
+    public IEnumerator TheCameraFollowsTheTopBarFromTheFirstLayoutThroughAResize()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(1920, 1080, 0);
+        var ps = Object.Instantiate(doc.panelSettings);
+        ps.targetTexture = rt;
+        try
+        {
+            doc.panelSettings = ps;
+            Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+            var root = Object.FindFirstObjectByType<GameRoot>();
+            root.Store = new SaveStore(saveDir);
+            var rig = Camera.main.GetComponent<CameraRig>();
+            root.Begin(Inputs, 0);
+            var ui = doc.rootVisualElement;
+            float Expected() => ui.Q("top-bar").worldBound.height / ui.panel.visualTree.worldBound.height;
+            for (int i = 0; i < 30 && !(ui.Q("top-bar").worldBound.height > 0); i++) yield return null;
+            yield return null;
+            Assert.Greater(rig.TopInset, 0f, "the first layout set the inset");
+            Assert.AreEqual(Expected(), rig.TopInset, 1e-3f, "1920x1080: the bar's share of the window");
+            var at1080 = rig.TopInset;
+            var cam = Camera.main;
+            Assert.AreEqual((1 - rig.TopInset) / 2, cam.WorldToViewportPoint(rig.LookAt).y, 1e-3f, "framed below the bar");
+
+            var before = ui.panel.visualTree.worldBound;
+            rt.Release(); rt.width = 2560; rt.Create();              // the window becomes 21:9 (same target, new size)
+            for (int i = 0; i < 30 && ui.panel.visualTree.worldBound == before; i++) yield return null;
+            yield return null;
+            Assert.AreNotEqual(before, ui.panel.visualTree.worldBound, "the panel followed the new size");
+            Assert.AreEqual(Expected(), rig.TopInset, 1e-3f, "2560x1080: the new share");
+            Assert.Greater(Mathf.Abs(at1080 - rig.TopInset), 1e-3f, "the resize changed it (the bar is 96 of a shorter logical window)");
+        }
+        finally
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            if (ps != null) Object.DestroyImmediate(ps);
+            if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+
     // Carry 8: a real raycast on the built terrain picks the hex under the camera and fills the info panel.
     [Test]
     public void AClickOnTheTerrainFillsTheInfoPanel()
