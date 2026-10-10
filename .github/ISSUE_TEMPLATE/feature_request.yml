@@ -1,0 +1,20 @@
+name: Idea or feature request
+description: Something the game or its tools should do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: The situation in the game or the workflow, not the solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you propose
+  - type: textarea
+    id: history
+    attributes:
+      label: Historical basis (for gameplay or content ideas)
+      description: Sources for the history the idea models, if any.

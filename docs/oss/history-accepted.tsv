@@ -1,0 +1,10 @@
+# Rows of scripts/oss/scan_history.py that are known and handled. Columns: commit, path, kind, action, date.
+# A rotated key stays in history (owner ruling: no rewriting); its row here records the rotation.
+203b64688e	unity/Assets/Tests/EditMode/SaveUiTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+4061a8beaa	unity/Assets/Tests/EditMode/GameSceneTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+4061a8beaa	unity/Assets/Tests/EditMode/SaveUiTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+4cc34d6f67	unity/Assets/Tests/EditMode/GameSceneTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+581760d618	spikes/m0/unity/Assets/TutorialInfo/Layout.wlt	home-path	Unity's own template path, not ours	2026-10-11
+746207491f	unity/Assets/Tests/EditMode/SaveUiTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+8f90aff336	unity/Assets/Tests/EditMode/SaveUiTests.cs	home-path	fake path in a redaction test fixture	2026-10-11
+d42bd6ba6c	promo/fetch_portraits.py	personal-email	owner's address; tip fixed; public in history (decision D10)	2026-10-11

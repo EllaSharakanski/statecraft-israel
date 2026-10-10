@@ -1,0 +1,176 @@
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+HERO = "docs/images/hero-concept-1936.jpg"
+GRID = ["docs/images/build-m3-map.jpg", "docs/images/build-m3-cabinet.jpg", "docs/images/build-m3-why.jpg"]
+
+
+def read(rel: str) -> str:
+    return (ROOT / rel).read_text(encoding="utf-8")
+
+
+def images(text: str) -> list[str]:
+    return [a or b for a, b in re.findall(r'<img src="([^"]+)"|!\[[^\]]*\]\(([^)]+)\)', text)
+            if not (a or b).startswith("https://img.shields.io")]
+
+
+def section(text: str, heading: str) -> str:
+    return text.split(heading, 1)[1].split("\n## ", 1)[0]
+
+
+def test_language_bar_comes_first():
+    first = read("README.md").lstrip().splitlines()[0]
+    assert "English" in first and "README.he.md" in first
+
+
+def test_hero_is_the_first_image_captioned_as_concept_art_in_alt_and_caption():
+    text = read("README.md")
+    assert images(text)[0] == HERO
+    tag = re.search(rf'<img src="{re.escape(HERO)}"[^>]*>', text, re.S).group(0)
+    assert "AI-generated concept art" in tag and "not the current build" in tag
+    after = text.split(tag, 1)[1][:600]
+    assert "Concept art (AI-generated)" in after and "set in 1936" in after and "not the current build" in after
+
+
+def test_real_dated_screenshots_in_a_one_plus_two_grid():
+    text = read("README.md")
+    assert images(text)[1:4] == GRID
+    for path, width in zip(GRID, ("820", "405", "405")):
+        assert re.search(rf'<img src="{re.escape(path)}"[^>]*width="{width}"', text), path
+    assert re.search(r"Real screenshots from build \d+\.\d+\.\d+ \(M3\), \d{4}-\d{2}-\d{2}\.", text)
+
+
+def test_note_says_independent_and_planned_commercial_before_what_is_this():
+    text = read("README.md")
+    note = text.index("> [!NOTE]")
+    assert note < text.index("## What is this?")
+    block = text[note:note + 600]
+    assert "not affiliated with or endorsed by" in block and "any person depicted" in block
+    assert "commercial edition is planned" in block and "non-commercial" not in text
+
+
+def test_link_bar_routes_errors_to_the_form():
+    text = read("README.md")
+    assert "template=historical_accuracy.yml" in text.split("## What is this?", 1)[0]
+
+
+def test_history_section_is_accurate():
+    hist = section(read("README.md"), "## History, sources and accuracy")
+    assert "historical_accuracy.yml" in hist and "docs/CONTENT_POLICY.md" in hist and "not neutral" in hist
+    assert "Wikipedia" in hist and "Historian review is planned for M4" in hist
+    assert "DRAFT" not in read("README.md")  # review I3: no such stamp exists
+
+
+def test_play_is_run_locally_with_hosted_build_planned_for_m4():
+    play = section(read("README.md"), "## Play")
+    assert "planned for M4" in play and "BUILDING.md" in play and "TODO" not in read("README.md")
+
+
+def test_build_section_pins_unity_and_points_to_building():
+    build = section(read("README.md"), "## Build from source")
+    assert "6000.3.25f1" in build and "unity/ProjectSettings/ProjectVersion.txt" in build and "BUILDING.md" in build
+
+
+def test_ai_use_uses_itch_categories():
+    ai = section(read("README.md"), "## AI use")
+    for cat in ("Code", "Graphics", "Text", "Sound"):
+        assert f"**{cat}:**" in ai, cat
+
+
+def test_no_counts_in_building_prose():
+    assert "five commands" not in read("BUILDING.md") and "five commands" not in read("README.md")
+
+
+def test_every_local_link_and_image_exists():
+    for rel in ("README.md", "README.he.md", "BUILDING.md", "CONTRIBUTING.md"):
+        text = read(rel)
+        targets = re.findall(r'\]\(([^)#\s]+)', text) + re.findall(r'(?:src|href)="([^"#]+)"', text)
+        local = [t for t in targets if not t.startswith(("http://", "https://", "mailto:"))]
+        missing = [t for t in local if not (ROOT / t).exists()]
+        assert not missing, (rel, missing)
+
+
+def test_hebrew_readme_is_rtl_and_names_english_as_authoritative():
+    he = read("README.he.md")
+    assert he.lstrip().splitlines()[0].startswith("[English](README.md)")
+    assert he.count('<div dir="rtl">') >= 2
+    assert he.count("<div") == he.count("</div>")
+    assert "הנוסח האנגלי" in he and images(he)[:4] == [HERO, *GRID]
+
+
+def test_images_are_web_sized_and_the_original_stays():
+    for p in (ROOT / "docs/images").glob("*.jpg"):
+        assert p.stat().st_size < 1_000_000, p.name
+    assert (ROOT / "promo/final/03-gameplay-1936.png").is_file()
+
+
+def test_building_names_contributing_headings_that_exist():
+    building, contributing = read("BUILDING.md"), read("CONTRIBUTING.md")
+    for heading in ("Rules every change follows", "What CI runs"):
+        assert f'"{heading}"' in building and f"## {heading}" in contributing, heading
+
+
+def test_contributing_links_the_issue_filters_and_the_open_issues():
+    text = section(read("README.md"), "## Contributing")
+    for url in ("https://github.com/eyalgolan/statecraft-israel/labels/good%20first%20issue",
+                "https://github.com/eyalgolan/statecraft-israel/labels/help%20wanted",
+                "https://github.com/eyalgolan/statecraft-israel/issues"):
+        assert url in text, url
+
+
+def test_hebrew_readme_keeps_the_english_facts():
+    he = read("README.he.md")
+    for fact in ("15 במאי 1948", "M3", "0.1.0", "2026-10-10", "M4", "CC BY-SA 4.0", "CC0", "Firaxis", "2K", "1936",
+                 "6000.3.25f1", "docs/CONTENT_POLICY.md", "historical_accuracy.yml", "SECURITY.md"):
+        assert fact in he, fact
+    assert "מסחרית" in he  # a commercial edition is planned
+    assert "אינו ניטרלי" in he or "לא ניטרלי" in he  # "not neutral"
+
+
+def test_social_preview_is_1280_by_640_and_small():
+    import struct
+    data = (ROOT / "docs/images/social-preview.jpg").read_bytes()
+    assert len(data) < 1_000_000 and data[:2] == b"\xff\xd8"
+    i = 2
+    while i < len(data):  # walk JPEG segments to the start-of-frame marker
+        marker, size = data[i + 1], struct.unpack(">H", data[i + 2:i + 4])[0]
+        if marker in (0xC0, 0xC1, 0xC2):
+            h, w = struct.unpack(">HH", data[i + 5:i + 9])
+            assert (w, h) == (1280, 640)
+            return
+        i += 2 + size
+    raise AssertionError("no frame header")
+
+
+def test_readme_has_no_formatting_churn():
+    text = read("README.md")
+    assert "\n\n\n" not in text, "double blank line"
+    assert not re.search(r"\n [A-Za-z<]", text), "continuation line indented by one space"
+    for block in re.findall(r"(?:^- .*\n(?:\n)?)+", text, re.M):
+        assert "\n\n- " not in block, "loose list: " + block[:40]
+    assert "#1 to #13" not in text
+
+
+def test_hebrew_readme_polish_and_alt_text():
+    he = read("README.he.md")
+    assert "`content/`" not in he  # the trailing slash jumps to the wrong side in RTL
+    for bad in ("מורשה ב־CC", "מצוטטת עם מקור", "מאסיבי", "שערי סקירה", "בזמן אמת בזמן"):
+        assert bad not in he, bad
+    alts = re.findall(r'alt="([^"]+)"', he)
+    assert len(alts) == 4 and all(re.search(r"[א-ת]", a) for a in alts)
+
+
+def test_first_open_in_unity_is_in_all_three_files():
+    for rel in ("README.md", "BUILDING.md", "README.he.md"):
+        text = read(rel)
+        for fact in ("Assets/Map.unity", "Packages/manifest.json", "com.ivanmurzak.unity.mcp"):
+            assert fact in text, (rel, fact)
+    assert "First open in Unity" in read("README.md") and "First open in Unity" in read("BUILDING.md")
+
+
+def test_hebrew_file_names_in_link_text_are_direction_isolated():
+    # GitHub strips <bdi> but keeps <span dir="ltr">.
+    he = read("README.he.md")
+    assert '[<span dir="ltr">BUILDING.md</span>]' in he and '[<span dir="ltr">CONTRIBUTING.md</span>]' in he
+    assert "<bdi>" not in he

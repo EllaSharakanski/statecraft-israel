@@ -108,7 +108,7 @@ Deferred to the start of M4, as a private Draft (owner ruling, 2026-10-10). The 
 owner's itch.io account and is never automated, and the build must pass the sensitivity gate above (`-shareable`).
 1. Sign in at https://itch.io. Go to Dashboard, then **Create new project**.
 2. Set the title to "Statecraft: Israel (M3 preview)", Kind of project to **HTML**, and Classification to Games.
-3. Under Uploads, upload `unity/Builds/statecraft-m3-web.zip` (made by `python3 tools/package_release.py`) and tick **This file will be played in the browser**.
+3. Under Uploads, upload the zip made by `bash scripts/oss/package_web.sh unity/Builds/Web-brotli unity/Builds/statecraft-m3-web.zip` (it puts the licence and attribution files inside, then runs `tools/package_release.py`; see `docs/RELEASING.md`) and tick **This file will be played in the browser**.
 4. Embed options:
    - Viewport **1280 × 720**. It fits a 1366×768 or 1440×900 laptop page without scrolling, and under the UI's
      ScaleWithScreenSize (reference 1920×1080) it lays out exactly like 1920×1080; `UiLayoutTests` covers 1280×720.

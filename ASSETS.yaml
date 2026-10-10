@@ -1,0 +1,92 @@
+# Provenance of every image, video, font, audio, 3D-model and map-data file in this repository.
+# scripts/oss/check_repo.py --only assets fails when such a file (by extension, or any file git treats as binary, or
+# a file under content/map/ or StreamingAssets/map/) matches no rule, when a rule matches nothing (unless allow_empty),
+# when a rule lacks glob/licence/source/status, or when a licence is not in scripts/oss/oss_policy.py ALLOWED_LICENCES.
+# With --release (the release gate) it also fails on any row marked owner-verify or with licence unknown.
+# Globs use fnmatch: '*' also matches '/'. Portrait rows live in ASSETS.portraits.yaml (scripts/oss/commons_licences.py).
+# ai_generated: true marks AI output (the future Steam/itch.io disclosure is generated from it).
+rules:
+  # --- AI-generated concept art: CC0 / no rights claimed (LICENSING.md); published 2026-10-10 before D5 was checked ---
+  - glob: "promo/final/0[1-8]-*.png"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "ElevenLabs Image API /v1/flows/image (GPT Image 2.5, Nano Banana Pro), prompts in promo/shots.json, generated 2026-10-08/09 by promo/gen.py; text fixes by promo/patch.py"
+    status: owner-verify
+    note: "Decision D5: the ElevenLabs Terms of Service for the account's plan at generation time, and the model providers' output terms, allow public redistribution. Concept art, not game footage. 04-cabinet-1948 and 08-defense-1955 are AI likenesses of real ministers made from public-domain reference sheets: never presented as photographs (docs/CONTENT_POLICY.md section 4)."
+  - glob: "promo/ref/*-src.jpg"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Earlier promo/gen.py outputs used as edit inputs for the *_fix shots in promo/shots.json (commit d42bd6b)"
+    status: owner-verify
+    note: "Decision D-P: the owner confirms these are our own earlier generations, not third-party screenshots; D5 applies."
+  - glob: "docs/images/hero-concept-1936.jpg"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Web copy of promo/final/03-gameplay-1936.png (published 2026-10-10); same provenance as promo/final"
+    status: owner-verify
+    note: "Owner-ruled README hero, captioned as concept art. Blocker if D5 disallows redistribution: the owner rules, an agent never drops it. D-H: no Civilization VII icon, logo or wordmark."
+  # --- Reference sheets composed from the public-domain portraits ---
+  - glob: "promo/ref/*-sheet.jpg"
+    licence: Public-Domain
+    source: "Reference sheets composed for the edit model (cabinet 1948, defense 1955) from the public-domain portraits in promo/ref/people/"
+    status: owner-verify
+    note: "Decision D-P: the owner confirms the sheets contain only the public-domain portraits and our plain layout."
+  # --- Our own captures and drawings: CC BY 4.0 ---
+  - glob: "promo/final/09-m2-flythrough.mp4"
+    licence: CC-BY-4.0
+    source: "In-engine Unity capture of the M2 map (MapCapture.Flythrough); terrain derived from Copernicus DEM (NOTICE)"
+    status: verified
+  - glob: "promo/final/10-m2-topdown.png"
+    licence: CC-BY-4.0
+    source: "In-engine Unity capture of the M2 map (MapCapture.TopDown); terrain derived from Copernicus DEM (NOTICE)"
+    status: verified
+  - glob: "promo/ref/geo-reference.png"
+    licence: CC-BY-4.0
+    source: "Drawn by promo/refmap.py from gazetteer coordinates"
+    status: verified
+  - glob: "docs/images/build-*.jpg"
+    licence: CC-BY-4.0
+    source: "Real screenshots of the game's own WebGL build, dated in the README caption; map derived from Copernicus DEM, portraits public domain"
+    status: verified
+  - glob: "docs/images/social-preview.jpg"
+    licence: CC-BY-4.0
+    source: "Crop of docs/images/build-m3-map.jpg, 1280x640, for the GitHub social preview (a real build image, not concept art)"
+    status: verified
+  - glob: "spikes/m0/evidence/*.jpg"
+    licence: CC-BY-4.0
+    source: "Screenshots of the M0 spike builds"
+    status: verified
+  # --- Fonts ---
+  - glob: "unity/Assets/UI/Fonts/*.ttf"
+    licence: OFL-1.1
+    source: "https://github.com/octaviopardo/EBGaramond12 @ 106a4a6d377987459ae5e68673a4570f13b957fb (unity/Assets/UI/Fonts/SOURCE.txt)"
+    status: verified
+  # --- Map data ---
+  - glob: "unity/Assets/StreamingAssets/map/heightmap.*"
+    licence: Copernicus-DEM
+    source: "Copernicus DEM GLO-30 via tools/dem_to_heightmap.py; attribution in NOTICE"
+    status: verified
+  - glob: "content/map/hexes.json"
+    licence: CC-BY-SA-4.0
+    source: "tools/hexgrid.py from the heightmap (Copernicus), CHELSA bio12 and IMS station normals; attributions in NOTICE; content/ is CC BY-SA 4.0"
+    status: verified
+  - glob: "content/map/precip_bio12.*"
+    licence: CC0-1.0
+    source: "CHELSA V2.1 bio12 1981-2010 via tools/precip_clip.py; citation in NOTICE"
+    status: verified
+  - glob: "content/map/precip_stations.json"
+    licence: IMS-data.gov.il
+    source: "Israel Meteorological Service, data.gov.il dataset 481, via tools/ims_normals.py; licence 'Other (Open)' with no licence URL"
+    status: owner-verify
+    note: "Decision D6 (the M3 plan's deferred 'Legal review of map-data licences' row). Published 2026-10-10 before the check."
+  - glob: "content/map/settlement*.yaml"
+    licence: CC-BY-SA-4.0
+    source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
+    status: verified
+  # --- Reserved for the visual-v1 plan's baked textures (derived from the heightmap) ---
+  - glob: "unity/Assets/Textures/*"
+    licence: Copernicus-DEM
+    source: "tools/terrain_bake.py from the Copernicus-derived heightmap (visual-v1 plan)"
+    status: verified
+    allow_empty: true
+removed: []
