@@ -44,8 +44,9 @@ public class GameInputsTests
     {
         var site = StagedSite();
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish in 600 editor frames");
+        var start = Time.realtimeSinceStartup;
+        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
+        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         var fetched = fetch.GetResult();
         var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
         CollectionAssert.AreEqual(disk.Map.HeightmapR16, fetched.Map.HeightmapR16);
@@ -63,8 +64,9 @@ public class GameInputsTests
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish in 600 editor frames");
+        var start = Time.realtimeSinceStartup;
+        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
+        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         var ex = Assert.Throws<IOException>(() => fetch.GetResult());
         StringAssert.StartsWith("people.yaml: ", ex.Message);
         Directory.Delete(site, true);
@@ -76,8 +78,9 @@ public class GameInputsTests
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        for (int i = 0; i < 600 && !fetch.IsCompleted; i++) yield return null;
-        Assert.IsTrue(fetch.IsCompleted);
+        var start = Time.realtimeSinceStartup;
+        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
+        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
         Assert.Throws<IOException>(() => fetch.GetResult());
         Assert.AreEqual(0, GameInputs.OpenRequests, "requests still in flight after a failed fetch were not disposed");
         Directory.Delete(site, true);
