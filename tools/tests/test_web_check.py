@@ -3,6 +3,9 @@ import gzip
 import http.client
 import queue
 import re
+import socket
+import threading
+import time
 import urllib.request
 
 import web_check as wc
@@ -31,6 +34,44 @@ def test_precompressed_files_get_content_encoding_and_wasm_its_type(tmp_path):
         assert urllib.request.urlopen(base + "/index.html").headers["Content-Encoding"] is None
     finally:
         server.shutdown()
+        server.server_close()
+
+
+def test_a_burst_of_connections_while_the_accept_thread_is_starved_is_served(tmp_path):
+    """The boot fetches every StreamingAssets file at once over HTTP/1.0 (a new connection each), up to 6 at a time per
+    host in Chrome. On a loaded machine the accept thread can lag; macOS answers a connection that overflows the listen
+    backlog with a reset, which the player sees as a failed fetch (BOOT FAIL <file>: Unknown Error). Holding the accept
+    thread while a burst arrives must not lose any connection."""
+    (tmp_path / "a.yaml").write_text("a: 1\n")
+    server = wc.serve(tmp_path)
+    gate, accept = threading.Event(), server.get_request
+    server.get_request = lambda: (gate.wait(10), accept())[1]    # the starved accept thread
+    socks, errors = [], {}
+    try:
+        for i in range(16):
+            s = socket.socket()
+            socks.append(s)
+            s.settimeout(10)
+            try:
+                s.connect(("127.0.0.1", server.server_address[1]))
+                s.sendall(b"GET /a.yaml HTTP/1.0\r\nHost: localhost\r\n\r\n")
+            except OSError as e:
+                errors[i] = type(e).__name__
+        time.sleep(0.2)
+        gate.set()
+        statuses = []
+        for i, s in enumerate(socks):
+            try:
+                statuses.append(errors.get(i) or s.recv(64).split(b"\r\n")[0].decode())
+            except OSError as e:
+                statuses.append(type(e).__name__)
+        assert statuses == ["HTTP/1.0 200 OK"] * 16
+    finally:
+        gate.set()
+        for s in socks:
+            s.close()
+        server.shutdown()
+        server.server_close()
 
 
 FAIL = re.compile(r"GOLDEN FAIL|BOOT FAIL")

@@ -76,21 +76,57 @@ namespace Statecraft.Game.Boot
             r.Dispose();
         }
 
-        /// <summary>Waits a frame at a time (no threads on WebGL; an Awaitable is never awaited twice). The caller releases r.</summary>
-        static async Awaitable Done(UnityWebRequest r, string name)
+        /// <summary>Attempts per file, the first included. The boot fetches every file at once; one transient failure
+        /// (a reset connection, a busy server) used to fail the whole boot (BOOT FAIL israel_bonds.yaml under load).</summary>
+        internal const int MaxAttempts = 4;
+
+        /// <summary>Seconds to wait before attempt <paramref name="attempt"/> + 1: 0.5, 1, 2.</summary>
+        internal static float Backoff(int attempt) => 0.5f * (1 << (attempt - 1));
+
+        /// <summary>Worth another attempt: no response at all (reset, refused, timed out) or a server-side status (408, 429,
+        /// 5xx). A 404 or any other client error, and a body that failed to decode, fail at once.</summary>
+        internal static bool Transient(UnityWebRequest.Result result, long status) =>
+            result == UnityWebRequest.Result.ConnectionError
+            || (result == UnityWebRequest.Result.ProtocolError && (status >= 500 || status == 408 || status == 429));
+
+        /// <summary>Waits a frame at a time (no threads on WebGL; an Awaitable is never awaited twice) until r is done. On a
+        /// transient failure r is released and its URL fetched again after Backoff, up to MaxAttempts in all. Returns the
+        /// request that succeeded (the caller releases it); on a final failure every attempt is released and an
+        /// IOException names the file. Retrying changes only when a file arrives, never its bytes or the parse order.</summary>
+        static async Awaitable<UnityWebRequest> Done(UnityWebRequest r, string name)
         {
-            while (!r.isDone) await Awaitable.NextFrameAsync();
-            if (r.result != UnityWebRequest.Result.Success) throw new IOException($"{name}: {r.error} ({r.url})");
+            for (var attempt = 1; ; attempt++)
+            {
+                while (!r.isDone) await Awaitable.NextFrameAsync();
+                if (r.result == UnityWebRequest.Result.Success) return r;
+                var error = $"{name}: {r.error} ({r.url})";
+                var retry = attempt < MaxAttempts && Transient(r.result, r.responseCode);
+                var url = r.url;
+                Release(r);
+                if (!retry) throw new IOException(attempt > 1 ? $"{error} after {attempt} attempts" : error);
+                Debug.LogWarning($"{error}; attempt {attempt + 1} of {MaxAttempts} in {Backoff(attempt):0.#} s");
+                var until = Time.realtimeSinceStartup + Backoff(attempt);
+                while (Time.realtimeSinceStartup < until) await Awaitable.NextFrameAsync();
+                r = Start(url);
+            }
         }
 
         static async Awaitable<string> Text(UnityWebRequest r, string name)
         {
-            try { await Done(r, name); return r.downloadHandler.text; }
+            r = await Done(r, name);
+            try { return r.downloadHandler.text; }
             finally { Release(r); }
         }
 
-        /// <summary>Fetches the manifest, then starts every download before awaiting any (parallel), then loads. When one
-        /// download fails, the others still running are aborted and disposed.</summary>
+        static async Awaitable<byte[]> Bytes(UnityWebRequest r, string name)
+        {
+            r = await Done(r, name);
+            try { return r.downloadHandler.data; }
+            finally { Release(r); }
+        }
+
+        /// <summary>Fetches the manifest, then starts every download before awaiting any (parallel), then loads. A transient
+        /// failure is retried (Done). When one download fails for good, the others still running are aborted and disposed.</summary>
         public static async Awaitable<GameInputs> FetchAsync(string baseUrl)
         {
             var manifest = ContentManifest.Parse(await Text(Start(baseUrl + "/content/" + ContentManifest.FileName), ContentManifest.FileName));
@@ -102,9 +138,9 @@ namespace Statecraft.Game.Boot
                 var texts = new Dictionary<string, string>();
                 foreach (var (file, request) in requests) texts[file] = await Text(request, file);
                 var metaText = await Text(meta, "heightmap.json");
-                await Done(r16, "heightmap.r16");
+                var r16Bytes = await Bytes(r16, "heightmap.r16");
                 DiagLog.BootPhase($"downloaded {texts.Count + 3} files");
-                var inputs = FromTexts(texts, manifest, metaText, r16.downloadHandler.data);
+                var inputs = FromTexts(texts, manifest, metaText, r16Bytes);
                 DiagLog.BootPhase("content parsed and validated");
                 return inputs;
             }
