@@ -12,6 +12,8 @@ namespace Statecraft.Game.Map
         public Vector2 Pan, DragPan; public float Zoom, Orbit;
         /// <summary>True while the pointer is over the UI: the camera then ignores pointer input (wheel zoom, drag).</summary>
         public bool OverUi;
+        /// <summary>True when the current right-button drag started over the UI (latched on button-down): that drag never pans the map.</summary>
+        public bool DragFromUi;
     }
 
     /// <summary>Pans, zooms and orbits the diorama camera from the project-wide "Camera" action map (Input System only).
@@ -26,6 +28,7 @@ namespace Statecraft.Game.Map
         public const float DragPanPerPixel = 0.0012f;  // distances per pixel of drag
         public const float ZoomPerStep = 0.1f;         // fraction of the distance per scroll notch (scroll units are normalised to notches)
         public const float OrbitDegreesPerSecond = 60f;
+        public const float MaxFrameSeconds = 0.1f;     // a stalled frame (tab in the background) must not fling the camera
 
         /// <summary>Answers "is the pointer over the UI?" for a screen position (y up). Null = never.</summary>
         public Func<Vector2, bool>? IsOverUi;
@@ -48,24 +51,40 @@ namespace Statecraft.Game.Map
 
         void OnDisable() => InputSystem.actions?.FindActionMap("Camera")?.Disable();
 
+        bool dragFromUi, dragWasDown;
+
         void Update()
         {
             if (pan == null || dragPan == null || zoom == null || orbit == null) return;
-            var pointer = Pointer.current?.position.ReadValue() ?? Vector2.zero;
-            Step(rig, new CameraInput
+            Vector2? pointer = Pointer.current != null ? Pointer.current.position.ReadValue() : (Vector2?)null;
+            var down = Mouse.current != null && Mouse.current.rightButton.isPressed;
+            Step(rig, Gather(pan.ReadValue<Vector2>(), dragPan.ReadValue<Vector2>(), zoom.ReadValue<float>(),
+                orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds);
+        }
+
+        public static float ClampDt(float dt) => Mathf.Min(dt, MaxFrameSeconds);
+
+        /// <summary>Builds one frame of input from raw action values. The wheel is checked against the UI at the pointer every frame;
+        /// the drag is checked once, when the button goes down, and that answer holds until it is released. No pointer means not over the UI.</summary>
+        public CameraInput Gather(Vector2 panValue, Vector2 dragValue, float zoomRaw, float orbitValue, bool dragDown, Vector2? pointer)
+        {
+            var over = pointer.HasValue && IsOverUi != null && IsOverUi(pointer.Value);
+            if (dragDown && !dragWasDown) dragFromUi = over;
+            if (!dragDown) dragFromUi = false;
+            dragWasDown = dragDown;
+            return new CameraInput
             {
-                Pan = pan.ReadValue<Vector2>(), DragPan = dragPan.ReadValue<Vector2>(),
-                Zoom = Mathf.Clamp(zoom.ReadValue<float>() / 120f, -3f, 3f),   // browsers report 100-120 per notch; clamp bursts
-                Orbit = orbit.ReadValue<float>(),
-                OverUi = IsOverUi != null && IsOverUi(pointer),
-            }, Time.unscaledDeltaTime, Bounds);
+                Pan = panValue, DragPan = dragValue,
+                Zoom = Mathf.Clamp(zoomRaw / 120f, -3f, 3f),   // browsers report 100-120 per notch; clamp bursts
+                Orbit = orbitValue, OverUi = over, DragFromUi = dragFromUi,
+            };
         }
 
         /// <summary>Applies one frame of input to the rig and calls rig.Apply(). Pure apart from the rig, so it is testable.</summary>
         public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds)
         {
             var zoom = input.OverUi ? 0f : input.Zoom;
-            var drag = input.OverUi ? Vector2.zero : input.DragPan;
+            var drag = input.DragFromUi ? Vector2.zero : input.DragPan;
             rig.Yaw = Mathf.Repeat(rig.Yaw + input.Orbit * OrbitDegreesPerSecond * dt, 360f);
             rig.Distance = Mathf.Clamp(rig.Distance * (1f - zoom * ZoomPerStep), MinDistance, MaxDistance);
             var yaw = Quaternion.Euler(0, rig.Yaw, 0);
