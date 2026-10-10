@@ -65,7 +65,23 @@ Notes:
 - Superseded first recording (commit `33fb072`, before the CDP viewport): headless ran at `res=1920x937` and headed at
   `res=1728x860`, with a first-pose spread of 0.68 ms (headless) and one headed run that stalled; do not compare with it.
 
+## Task 2: sun and shadows
+Headless, viewport 1920x1080 at DPR 1 (`res=1920x1080 scale=0.80`), web tier (shadow map 2048, shadow distance fitted to
+1.75 x the rig distance); build from the Task 2 tree on `vis-light`.
+
+| Run | Lines |
+|---|---|
+| headless | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.11 spread_ms=0.10 median_p95_ms=3.00`<br>`PROFILE summary visual=-shadows pose=gameplay03 runs=3 median_avg_ms=2.43 spread_ms=0.11 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.12 spread_ms=0.43 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.39 spread_ms=0.17 median_p95_ms=8.00` |
+
+Budget check (`median(all) - median(-shadows) <= 2.5 ms + the larger spread`):
+- gameplay03: -0.32 ms (within noise; the 6-60 km view casts few shadows) against 2.61 ms: within.
+- diorama02: 2.73 ms against 2.93 ms (2.5 + 0.43): within, with 0.20 ms to spare. The country-wide pose fits the shadow
+  map over about 400 km of relief; Task 10 should re-check this pose (cascades or a lower cover factor at the far zoom are
+  the levers if the tier review needs headroom).
+- Edit-mode `ReliefCastsShadowsAtMapScale`: shadowed share 3.1 % (floor 2 %) over the Dead Sea escarpment at 60 km.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
+| 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) Note: at the new 6 km hero zoom the view is filled by the 600-1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them. |

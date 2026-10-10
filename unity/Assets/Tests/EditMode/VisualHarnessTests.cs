@@ -170,21 +170,24 @@ public class VisualHarnessTests
     }
 
     /// <summary>Review M8: undo actions an earlier Init left behind (Init called outside MapScene.Build) run on the next
-    /// Init instead of piling up.</summary>
+    /// Init instead of piling up. (From Task 2 on, Init registers its own undo actions: the shadow fit and the toggle.)</summary>
     [Test]
     public void InitRunsAndClearsUndoActionsLeftByAnEarlierInit()
     {
         var go = new GameObject("cam", typeof(Camera)); var rig = go.AddComponent<CameraRig>();
         int ran = 0;
-        rig.TeardownActions.Add(() => ran++);
+        System.Action stale = () => ran++;
+        rig.TeardownActions.Add(stale);
         try
         {
             rig.Init();
             Assert.AreEqual(1, ran);
-            CollectionAssert.IsEmpty(rig.TeardownActions);
+            CollectionAssert.DoesNotContain(rig.TeardownActions, stale);
         }
         finally
         {
+            for (int i = rig.TeardownActions.Count - 1; i >= 0; i--) rig.TeardownActions[i]();   // the shadow fit, the toggle
+            rig.TeardownActions.Clear();
             if (rig.Volume != null) { Object.DestroyImmediate(rig.Volume.profile); Object.DestroyImmediate(rig.Volume.gameObject); }
             Object.DestroyImmediate(go);
         }

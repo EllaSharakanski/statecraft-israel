@@ -24,6 +24,7 @@ namespace Statecraft.Game.Map
         /// <summary>Undo actions for state Init changes outside the rig (the URP asset's shadow distance...). MapScene.Build hands
         /// them to the map's MapRuntimeAssets right after Init, so destroying the map undoes them.</summary>
         public readonly List<Action> TeardownActions = new List<Action>();
+        bool initialised;   // only a rig the map set up fits the shadow distance (bare rigs in tests must not touch the URP asset)
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
         /// (MapScene registers it with MapRuntimeAssets).</summary>
@@ -45,6 +46,10 @@ namespace Statecraft.Game.Map
             _dof = vol.profile.Add<DepthOfField>(true); _dof.mode.Override(DepthOfFieldMode.Gaussian);
             _dof.gaussianMaxRadius.Override(1.5f);
             Volume = vol;
+            MapLighting.Apply(MapLighting.FindSun());
+            TeardownActions.Add(VisualToggles.Register("shadows", on => { var sun = MapLighting.FindSun(); if (sun != null) sun.shadows = on ? LightShadows.Soft : LightShadows.None; }));
+            TeardownActions.Add(ShadowFit.Restore);
+            initialised = true;
             Apply();
         }
 
@@ -53,6 +58,7 @@ namespace Statecraft.Game.Map
             transform.rotation = Quaternion.Euler(Pitch, Yaw, 0);
             transform.position = LookAt - transform.forward * Distance;
             if (_dof != null) { _dof.gaussianStart.Override(Distance * 1.05f); _dof.gaussianEnd.Override(Distance * 1.8f); }
+            if (initialised) ShadowFit.Apply(Distance);
             ApplyProjection();
         }
 
