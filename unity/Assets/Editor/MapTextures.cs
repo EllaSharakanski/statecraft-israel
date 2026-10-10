@@ -30,7 +30,8 @@ namespace Statecraft.Game.EditorTools
             }
             imp.sRGBTexture = false; imp.mipmapEnabled = true; imp.isReadable = false;
             imp.wrapMode = TextureWrapMode.Clamp; imp.filterMode = FilterMode.Trilinear;   // no mip seams across the pitched view
-            imp.anisoLevel = path == MapTexturePaths.Bake ? 2 : 1;   // the shading is seen at a grazing angle imp.maxTextureSize = 2048;
+            imp.anisoLevel = path == MapTexturePaths.Bake ? 2 : 1;   // the shading is seen at a grazing angle
+            imp.maxTextureSize = 2048;
             imp.textureCompression = singleChannel ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
             imp.SaveAndReimport();
         }
