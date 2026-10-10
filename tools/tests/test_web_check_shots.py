@@ -130,3 +130,29 @@ def test_chrome_keeps_its_page_content_agent_quiet_so_it_cannot_split_a_console_
     # Chrome 153's --v=1 log of ai_page_content_agent.cc ("GetAIPageContent SYNC MainFrame") was written into the middle of
     # an 8000-character SHOT line on stderr, so that part failed to parse (Task 10: hero06judea 165-166 of 167, three runs).
     assert "--vmodule=ai_page_content_agent=0" in wc.chrome_flags("/tmp/p", swiftshader=False)
+
+
+SPLICE = "[8471:92424315:1010/172052.176598:VERBOSE1:gpu/command_buffer/service/gles2_cmd_decoder.cc:77] Some GPU note\n"
+
+
+def test_a_log_line_from_another_thread_spliced_into_a_shot_line_is_cut_out_and_the_line_rejoined():
+    # Chrome writes a long console line to stderr in pieces; another thread's --v=1 line (any module) can land between
+    # them, ending the console line early and pushing its tail onto the next stderr line (Task 10 fix round 1, m6).
+    text = "SHOT hero06judea 11/167 " + "AbCd+/" * 40
+    head, tail = text[:100], text[100:]
+    raw = [f'[1010/172052.1:INFO:CONSOLE:2] "{head}{SPLICE}', f'{tail}", source: http://localhost:1/index.html (2)\n']
+    rejoin = wc.Rejoin()
+    out = [l for r in raw for l in rejoin.feed(r)]
+    assert len(out) == 1 and wc.CONSOLE.search(out[0]).group(1) == text
+
+
+def test_rejoin_holds_an_open_line_across_batches_and_leaves_ordinary_lines_alone():
+    rejoin = wc.Rejoin()
+    plain = '[1010/1.1:INFO:CONSOLE:2] "GOLDEN OK 1950 a", source: x (2)\n'
+    multi = '[1010/1.1:INFO:CONSOLE:9] "SMOKE OK 5 turns 1949-01-01\n'   # a multi-line message: first line only, as before
+    other = "[8471:1:1010/1.1:VERBOSE1:foo.cc:1] unrelated\n"
+    assert rejoin.feed(plain) == [plain] and rejoin.feed(multi) == [multi] and rejoin.feed(other) == [other]
+    assert rejoin.feed(f'[1010/1.1:INFO:CONSOLE:2] "SHOT a 1/2 AAAA{SPLICE}') == []
+    joined = rejoin.feed('BBBB", source: x (2)\n')
+    assert [wc.CONSOLE.search(l).group(1) for l in joined] == ["SHOT a 1/2 AAAABBBB"]
+    assert rejoin.flush() == []

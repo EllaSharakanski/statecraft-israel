@@ -101,6 +101,37 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             print("http:", fmt % args)
 
 
+# A Chrome log line ("[pid:tid:MMDD/HHMMSS.micro:LEVEL:file.cc:line] text") ending a raw stderr line.
+SPLICED = re.compile(r"\[\d+:\d+:\d{4}/\d{6}\.\d+:[A-Z]+\d*:[^\]\s]+:\d+\] [^\n]*\n?$")
+
+
+class Rejoin:
+    """Repairs console lines another thread's log line was spliced into. Chrome writes a long console message (a SHOT
+    part is 8000 characters) to stderr in pieces, and any module's --v=1 line can land between two pieces: the console
+    line then ends with that log line, and the message's tail (with its '", source:' end) starts the next stderr line.
+    feed(raw) cuts the log line out and joins the tail back on; it returns the lines ready to scan (none while a line is
+    open). A line that ends in its source, or that holds no spliced log line (a multi-line message's first line), passes
+    through unchanged."""
+
+    def __init__(self):
+        self.head: str | None = None
+
+    def feed(self, raw: str) -> list[str]:
+        if self.head is not None:
+            raw, self.head = self.head + raw, None
+        m = CONSOLE.search(raw)
+        if m and '", source: ' not in raw[m.start(1):]:
+            s = SPLICED.search(raw, m.start(1))
+            if s:
+                self.head = raw[:s.start()]
+                return []
+        return [raw]
+
+    def flush(self) -> list[str]:
+        head, self.head = self.head, None
+        return [head] if head is not None else []
+
+
 class ShotCollector:
     """Reassembles the PNGs Statecraft.Game.Map.VisualShots logs: "SHOT <pose> begin <n> <sha256>" then n lines
     "SHOT <pose> <i>/<n> <base64>" (any order). A finished shot is checked against its SHA-256 and written to
@@ -176,8 +207,8 @@ def find_chrome() -> Path:
 def chrome_flags(profile: str, swiftshader: bool, dpr: float = 1.0) -> list[str]:
     """Headless Chrome at the device pixel ratio (1 unless asked), frame rate uncapped (so frame times are not the
     display's), never throttled, with a DevTools port for the viewport override."""
-    # --vmodule: Chrome's page content agent logs at --v=1 from another thread, and its line can land inside a long
-    # console line (a SHOT part) on stderr, which then fails to parse.
+    # --vmodule: Chrome's page content agent logs at --v=1 from another thread, often enough to split a long console
+    # line (a SHOT part) on stderr every run; Rejoin repairs such a split from any module.
     flags = ["--headless=new", "--enable-logging=stderr", "--v=1", "--vmodule=ai_page_content_agent=0", "--no-first-run", "--no-default-browser-check",
              "--autoplay-policy=no-user-gesture-required", "--window-size=1920,1080", f"--force-device-scale-factor={dpr:g}",
              "--disable-frame-rate-limit", "--disable-gpu-vsync", *KEEP_AWAKE, "--remote-debugging-port=0",
@@ -361,7 +392,15 @@ def main() -> int:
         proc = subprocess.Popen([str(chrome), *chrome_flags(profile, a.swiftshader, a.dpr), "about:blank"],
                                 stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="replace")
         inbox: queue.Queue = queue.Queue()
-        reader = threading.Thread(target=lambda: [inbox.put(l) for l in iter(proc.stderr.readline, "")], daemon=True)
+        rejoin = Rejoin()
+
+        def read():
+            for raw in iter(proc.stderr.readline, ""):
+                for line in rejoin.feed(raw):
+                    inbox.put(line)
+            for line in rejoin.flush():
+                inbox.put(line)
+        reader = threading.Thread(target=read, daemon=True)
         reader.start()
         try:
             page = Page(profile, url, w, h, a.dpr)
