@@ -323,3 +323,74 @@ The grade costs +0.02 ms at gameplay03 and 0.00 ms at diorama02, inside the nois
 | 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) Note: at the new 6 km hero zoom the view is filled by the 600-1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them. |
 | 3 | t03-tiltshift | captures/visual/t03-tiltshift/*-compare*.png (re-shot in fix round 1: bands 0.13/0.17, radius 14/1080) | (owner) Note: the map labels are still world-space text, so they blur with the map in the top and bottom bands until Task 9 moves them to UI Toolkit. |
 | 4 | t04-grade | captures/visual/t04-grade/*-compare*.png (with -deuteranopia / -protanopia copies) | (owner) Note: saturation is above the promo (0.51/0.43 diorama, 0.55/0.38 gameplay); `MapGrade.Saturation` is the lever. |
+| 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
+
+## Task 9: labels
+
+Settlement names are UI Toolkit pills (`MapLabelsPresenter`, EB Garamond SemiBold on navy with a gold edge) in the
+click-through `map-labels` layer, placed in `GameRoot.LateUpdate` with an inline pixel `translate` and hidden while the
+game loads. The world-space `TextMesh` labels are gone.
+
+Frame time, headless, DPR 1, `res=1920x1080 scale=0.80` (`?vprofile`, `machine_lock.py --exclusive --wait-unity`):
+
+| Pose | all | -labels | none | all - (-labels) | budget |
+|---|---|---|---|---|---|
+| gameplay03 | 2.30 (spread 0.15) | 2.36 (0.06) | 2.34 (0.04) | -0.06 ms | <= 1 + 0.15 ms: within |
+| diorama02 | 6.82 (0.06) | 6.55 (0.02) | 6.61 (0.14) | +0.27 ms | <= 1 + 0.06 ms: within |
+
+The profile holds the camera still, so after the first frames `Refresh` returns early (unchanged view-projection,
+panel size and zoom); the cost measured is the drawing of the pills, not the per-frame placement while the camera moves.
+
+Deviations from the plan text, each forced by a test:
+- Projection: `RuntimePanelUtils.CameraTransformWorldToPanel` flips y with `Screen.height`, which is wrong when the camera
+  draws to a texture of another size (edit-mode tests: 600 px off). The presenter maps the camera's viewport point
+  through `camera.rect` onto the panel's own size instead.
+- Declutter at the overview: the Tel Aviv - Lod cluster's markers sit 10-60 px apart there, and a town's pill could not
+  avoid a neighbour's marker with any anchor (Rishon LeZion's pill ended 10 px under Jaffa's marker). A pill other than
+  a city's is now also hidden when it comes within `NeighbourClearPx` (2 x LiftPx + MarginPx = 16 px) of another
+  settlement's marker top. At 90 km this hides nothing (11 of 25 shown, as before); at the overview 10 of 25 are shown.
+- City pills: 20 px text and 8 px side padding at first. Fix round 1 restores the plan's 22 px and 10 px (see below).
+- `ThePillIsEbGaramondOnNavyWithAGoldEdgeAndHiddenWhileLoading` uses a 1920x1080 panel instead of `UiTestKit`'s: the
+  batch-mode screen gives that panel about 0.39 px per point, and UI Toolkit rounds the 1 px border up to one physical
+  pixel (2.57 points).
+
+### Task 9 fix round 1 (review I1-I5, M1-M7)
+
+- Panels: pills are culled against the cached rects of the top bar, the info panel, the minimap and the event card,
+  marked dirty by GeometryChangedEvent; a pill must lie wholly on screen, and a marker under a panel is no one's
+  neighbour. A container resize re-places the pills before the repaint (M4).
+- Anchors: the USS anchor class is tried first, then lower right, lower left, lower centre and centred below the marker,
+  as a pixel shift on the slot's translate. The legibility rule (more than 2 x own gap + MarginPx from every other
+  visible marker top) applies to every pill; a city whose anchors all crowd a neighbour keeps the first that is clear of
+  panels and pills. A pill hidden in the last refresh needs HysteresisPx = 2 more (M7).
+- Shown sets (MapLabelTests): 90 km: tel_aviv jaffa lod ramla petah_tikva rishon_lezion rehovot netanya (every visible
+  marker); overview: jerusalem tel_aviv lod gaza beersheba petah_tikva netanya; diorama02 with the top-bar inset also
+  labels Hadera (checkpoint).
+- City pills are back to the plan's 22 px and 10 px padding (towns 19 px), so cities read larger (M5). At the
+  overview Tel Aviv's pill takes the lower-right anchor, over the sea.
+- Refresh allocates nothing (`Is.Not.AllocatingGCMemory`). Editor Mono, 240 refreshes while turning and zooming:
+  `LABELS refresh moving avg_us=27 p95_us=38`.
+- `?vprofile&vmoving` (FrameProfile, additive): every run restarts at its pose and turns 0.5 degrees per frame.
+  Headless, DPR 1, `res=1920x1080 scale=0.80`:
+
+| Pose | all | -labels | none | all - (-labels) | budget |
+|---|---|---|---|---|---|
+| gameplay03-moving | 2.24 (spread 0.65) | 2.28 (0.78) | 2.44 (0.63) | -0.04 ms | <= 1 + 0.78 ms: within |
+| diorama02-moving | 10.21 (0.10) | 10.20 (0.16) | 10.10 (0.34) | +0.01 ms | <= 1 + 0.16 ms: within |
+| gameplay03 (still) | 2.47 (0.51) | 2.44 (0.04) | 2.35 (0.34) | +0.03 ms | within |
+| diorama02 (still) | 6.76 (0.38) | 6.53 (0.29) | 6.58 (0.41) | +0.23 ms | within |
+
+  diorama02 costs about 3.4 ms more while turning than still, with or without labels (the rest of the scene).
+
+### Task 9 fix round 2 (re-review N1-N3, shown-set robustness)
+
+- A GeometryChangedEvent on a panel (event card, info panel, minimap, top bar) re-places the pills at once, inside the
+  layout pass, so a card that opens never covers a pill for a frame (N1). The pills' summed sizes are part of the
+  early-out key, so a pill that grows with the camera still is re-placed (N2). `LABELS refresh moving avg_us=28 p95_us=38`.
+- N3: WebGL `?smoke=5&navlog` (`SMOKE OK 5 turns 1948-06-19 d3fdd459...`) shows no layout or style warning in the
+  console; the only non-game lines are the existing `WebGL: INVALID_ENUM: getInternalformatParameter` driver notices.
+- `ShownPillsNeverOverlapAndEachReadsAsItsOwn` pins only unambiguous names (90 km: Tel Aviv, Petah Tikva; overview: Tel
+  Aviv, Jerusalem, Gaza, Beersheba), at least 8 and 7 pills, Hadera or Netanya at the overview, and completeness: every
+  visible marker not decluttered by zoom with no other visible marker within 2 pill heights + MarginPx is labelled.
+  Disabling the anchor fallback turns it red (`overview: shown pills Expected: greater than or equal to 7 But was: 6`).
+

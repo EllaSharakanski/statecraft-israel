@@ -3,6 +3,8 @@
     <!-- "loading" until GameRoot has started the game: only the loading line shows (playtest 2, P2-1). -->
     <ui:VisualElement name="root" class="root loading" picking-mode="Ignore">
         <ui:Label name="loading" text="Loading the map of 1948…" class="loading-line" picking-mode="Ignore" />
+        <!-- Settlement names, positioned by MapLabelsPresenter under every panel; clicks pass through to the map. -->
+        <ui:VisualElement name="map-labels" class="map-labels" picking-mode="Ignore" />
         <ui:VisualElement name="top-bar" class="panel top-bar">
             <ui:VisualElement class="date-box">
                 <ui:Label name="year" class="year" />
