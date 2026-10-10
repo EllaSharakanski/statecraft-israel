@@ -130,3 +130,46 @@ def test_release_mode_refuses_open_decisions(make_repo, capsys):
 def test_unknown_check_name_is_an_error(make_repo, capsys):
     root = make_repo({"a.txt": "x\n"})
     assert run(root, "--only", "nonsense") == 2
+
+
+# Review I4: scanner gaps.
+def test_unquoted_env_assignment_is_a_secret(make_repo, capsys):
+    value = "q" * 40
+    root = make_repo({"setup.sh": "export OPENAI_" + f"API_KEY={value}\n", "ok.sh": "export OPENAI_API_KEY=$KEY\n"})
+    assert run(root, "--only", "secrets") == 1
+    out = capsys.readouterr().out
+    assert "secrets: setup.sh:1: env-assignment" in out and "ok.sh" not in out and value not in out
+
+
+def test_non_utf8_and_utf16_files_are_still_scanned(make_repo, capsys):
+    aws = "AKIA" + "ABCDEFGHIJ" + "123456"
+    mail = "someone" + "@" + "gmail.com"
+    latin = f"caf\xe9 {aws}\n{mail}\n".encode("latin-1")
+    utf16 = f"{aws}\n".encode("utf-16")
+    root = make_repo({"latin.txt": latin, "wide.txt": utf16})
+    assert run(root, "--only", "secrets,emails") == 1
+    out = capsys.readouterr().out
+    assert "secrets: latin.txt:1: aws-access-key-id" in out and "emails: latin.txt:2: personal-email" in out
+    assert "secrets: wide.txt:1: aws-access-key-id" in out
+
+
+def test_more_personal_path_shapes_are_home_paths(make_repo, capsys):
+    root = make_repo({"a.md": "cd /Users/" + "someone\n", "b.md": "C:\\Users\\" + "someone\\x\n",
+                      "c.md": "see -Users-" + "someone-israel-game\n", "d.md": "/Users/Shared and ~/x\n"})
+    assert run(root, "--only", "home-paths") == 1
+    out = capsys.readouterr().out
+    for f in ("a.md", "b.md", "c.md"):
+        assert f"home-paths: {f}:1: home-path" in out
+    assert "d.md" not in out
+
+
+def test_email_allowlist_is_exact_addresses_not_whole_domains(make_repo, capsys):
+    root = make_repo({"a.md": "Claude <noreply" + "@" + "anthropic.com>\n", "b.md": "x" + "@" + "anthropic.com\n"})
+    assert run(root, "--only", "emails") == 1
+    out = capsys.readouterr().out
+    assert "b.md:1: personal-email" in out and "a.md" not in out
+
+
+def test_outside_a_checkout_is_a_readable_error_not_a_traceback(tmp_path, capsys):
+    assert run(tmp_path) == 2
+    assert "not a git checkout" in capsys.readouterr().err

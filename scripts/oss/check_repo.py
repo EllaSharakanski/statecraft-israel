@@ -63,12 +63,14 @@ def _text(root: Path, rel: str) -> str | None:
     if p.is_symlink() or not p.is_file():
         return None
     data = p.read_bytes()
+    if data[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return data.decode("utf-16", errors="replace")  # UTF-16 text has NULs; the BOM says it is text
     if b"\0" in data[:8192]:
         return None
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError:
-        return None
+        return data.decode("latin-1")  # never skip a text file whole
 
 
 def _line_check(name: str, fn: Callable[[str], list[str]]):
@@ -209,7 +211,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"unknown check(s): {', '.join(unknown)}; known: {', '.join(CHECKS)}")
         return 2
     root = args.root.resolve()
-    files = tracked_files(root)
+    try:
+        files = tracked_files(root)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("not a git checkout (or git refused it): run from a clone", file=sys.stderr)
+        return 2
     findings = [f for n in names for f in CHECKS[n](root, files, args.release)]
     findings = apply_allowlist(root, findings, names)
     for f in findings:

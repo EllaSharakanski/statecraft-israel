@@ -17,6 +17,9 @@ SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
     "jwt": re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"),
     "secret-assignment": re.compile(
         r"(?i)(?:api[_-]?key|secret|token|passw(?:or)?d)['\"]?\s*[:=]\s*['\"][A-Za-z0-9_\-/+=]{16,}['\"]"),
+    # The unquoted shell / .env shape: export OPENAI_API_KEY=<value> (review I4).
+    "env-assignment": re.compile(
+        r"(?:^|[^A-Za-z0-9_])[A-Z0-9_]*(?:API_?KEY|SECRET|TOKEN|PASSWORD)[A-Z0-9_]*[ \t]*[:=][ \t]*[A-Za-z0-9_/+=-]{16,}"),
     # Unity writes these into ProjectSettings.asset when the project is linked to Unity Cloud. Empty is fine. The value
     # shapes are narrow on purpose (a GUID; a slug that ends the line) so that this file and its tests, which mention
     # the keys, do not match themselves.
@@ -28,10 +31,11 @@ SECRET_PATTERNS: dict[str, re.Pattern[str]] = {
 # The local part must start with a letter or digit (so "@pytest.mark" is not an address), and the last domain label
 # must be letters only (so a Unity package id such as "com.unity.template.urp-blank@17.0.14" is not an address).
 EMAIL = re.compile(r"(?<![\w.+-])[A-Za-z0-9][A-Za-z0-9._%+\-]*@((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})(?![\w.-])")
-ALLOWED_EMAIL_DOMAINS = frozenset({"users.noreply.github.com", "anthropic.com", "example.com", "example.org",
-                                   "example.net"})
+ALLOWED_EMAIL_DOMAINS = frozenset({"users.noreply.github.com", "example.com", "example.org", "example.net"})
+ALLOWED_EMAILS = frozenset({"noreply@anthropic.com", "noreply@github.com"})  # exact addresses, never a whole domain
 
-HOME_PATH = re.compile(r"(?:/Users/(?!Shared/)|/home/)[A-Za-z][\w.\-]*/")
+HOME_PATH = re.compile(
+    r"(?:/Users/(?!Shared\b)|/home/)[A-Za-z][\w.\-]*(?:/|\b)|[A-Za-z]:\\Users\\[A-Za-z]|-Users-[a-z][\w.]*-")
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 
@@ -68,8 +72,7 @@ def secret_kinds(line: str) -> list[str]:
 def email_kinds(line: str) -> list[str]:
     for m in EMAIL.finditer(line):
         domain = m.group(1).lower()
-        local = m.group(0).split("@", 1)[0].lower()
-        if domain in ALLOWED_EMAIL_DOMAINS or local == "noreply":
+        if domain in ALLOWED_EMAIL_DOMAINS or m.group(0).lower() in ALLOWED_EMAILS:
             continue
         return ["personal-email"]
     return []
