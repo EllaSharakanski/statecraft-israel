@@ -22,6 +22,9 @@ Offline data tools (uv inline-script Python). Run from the repo root.
   alone, imported uncompressed) and `coast.png`
   (exact signed Euclidean distance to the shoreline; lakes under 1 km2 count as land) from the committed heightmap (no
   network). Re-run it whenever the heightmap changes; its PNG bytes are reproducible only on the same toolchain.
+- `land_bake.py` writes `unity/Assets/Textures/Map/landuse.png` (fields, citrus belt, wet hills) and `tracks.png` (the
+  offset to the nearest dirt track between towns) from the heightmap, the CHELSA rainfall, the hex biomes and the 1948
+  settlements (no network); the terrain shader's `StatecraftLand.hlsl` paints the parcels, terraces and scrub from them.
 - `terrain_graph.py` writes `unity/Assets/Shaders/StatecraftTerrain.shadergraph` from Unity's "Terrain Simple" template
   with one Custom Function node (`StatecraftTerrain.hlsl`); re-run it only when that function's inputs or outputs change.
 - `art_compare.py` puts screenshots next to the promo image of their pose, writes deuteranopia and protanopia copies and

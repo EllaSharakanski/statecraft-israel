@@ -8,7 +8,8 @@ namespace Statecraft.Game.EditorTools
     /// <summary>Import settings of the baked map textures: linear data (not sRGB), clamped, mipmapped, trilinear, 2048. The
     /// shading bake (curvature, sky-view) is block-compressed; the coast distance and the AO are each one uncompressed 8-bit
     /// channel (R8): compression blocks would show in the 350 m foam band, and BC1 stepped the AO on broad slopes (Task 6
-    /// fix round 1). Idempotent; MapMaterials.Create calls it.</summary>
+    /// fix round 1). The land-use mask (1024 x 2048, RGB) is block-compressed too; the track offsets (512 x 1024) are RG16.
+    /// Idempotent; MapMaterials.Create calls it.</summary>
     public static class MapTextures
     {
         public static void Configure()
@@ -16,6 +17,15 @@ namespace Statecraft.Game.EditorTools
             Set(MapTexturePaths.Bake, singleChannel: false);
             Set(MapTexturePaths.Coast, singleChannel: true);
             Set(MapTexturePaths.Ao, singleChannel: true);
+            Set(MapTexturePaths.Land, singleChannel: false);   // smooth weights: block compression is fine
+            Set(MapTexturePaths.Tracks, singleChannel: false);
+            // The track offsets: two uncompressed channels (RG16) on every platform, so the filter keeps them affine.
+            var imp = (TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Tracks);
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            foreach (var platform in new[] { "Standalone", "WebGL" })
+                imp.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+                    { name = platform, overridden = true, maxTextureSize = 2048, format = TextureImporterFormat.RG16 });
+            imp.SaveAndReimport();
         }
 
         static void Set(string path, bool singleChannel)

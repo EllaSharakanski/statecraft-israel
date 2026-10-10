@@ -24,6 +24,8 @@ namespace Statecraft.Game.EditorTools
             terrain.SetTexture("_ScBakeTex", Tex(Statecraft.Game.Map.MapTexturePaths.Bake));
             terrain.SetTexture("_ScCoastTex", Tex(Statecraft.Game.Map.MapTexturePaths.Coast));
             terrain.SetTexture("_ScAoTex", Tex(Statecraft.Game.Map.MapTexturePaths.Ao));
+            terrain.SetTexture("_ScLandTex", Tex(Statecraft.Game.Map.MapTexturePaths.Land));   // land use (tools/land_bake.py)
+            terrain.SetTexture("_ScTrackTex", Tex(Statecraft.Game.Map.MapTexturePaths.Tracks));
             EditorUtility.SetDirty(terrain);
             // Settlement boxes: matte URP Lit; SettlementPlacer sets the per-type _BaseColor through a MaterialPropertyBlock.
             var marker = Make(MarkerPath, "Universal Render Pipeline/Lit", Color.white);

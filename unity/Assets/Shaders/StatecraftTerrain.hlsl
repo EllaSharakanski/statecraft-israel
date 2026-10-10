@@ -1,12 +1,16 @@
 #ifndef STATECRAFT_TERRAIN_INCLUDED
 #define STATECRAFT_TERRAIN_INCLUDED
 #include "Assets/Shaders/StatecraftMap.hlsl"
+#include "Assets/Shaders/StatecraftLand.hlsl"
 
 // The Custom Function of StatecraftTerrain.shadergraph (written by tools/terrain_graph.py; keep this signature in step with
 // its INPUTS and OUTPUTS). UV is the terrain UV (0..1 over the map); PositionWS and NormalWS are absolute world space;
 // Bake is terrain_bake.png (g curvature, b sky-view; its r is not read); Coast is coast.png (0.5 = shore, lower = water);
-// Ao is ao.png, the ambient occlusion on its own, uncompressed (BC1 banded it: Task 6 fix round 1).
-void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast, UnityTexture2D Ao,
+// Ao is ao.png, the ambient occlusion on its own, uncompressed (BC1 banded it: Task 6 fix round 1); Land is landuse.png
+// (tools/land_bake.py: r fields, g orchards, b wet) and Tracks tracks.png (rg the offset to the nearest dirt track), read
+// by ScLandUse (StatecraftLand.hlsl).
+void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast, UnityTexture2D Ao, UnityTexture2D Land,
+    UnityTexture2D Tracks,
     out float3 BaseColor, out float3 NormalOut, out float Occlusion, out float Smoothness, out float Metallic, out float3 Emission)
 {
     float3 n = normalize(NormalWS);
@@ -14,7 +18,11 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     bake.r = SAMPLE_TEXTURE2D(Ao.tex, Ao.samplerstate, UV).r;
     float coast = SAMPLE_TEXTURE2D(Coast.tex, Coast.samplerstate, UV).r;
     float2 mapM = UV * _ScMap.xy;
-    float3 ground = ScGround(UV, mapM, n, PositionWS, bake);
+    // ScGround with the land use painted between its colour and its shading (curvature, AO and breakup shade the fields).
+    float3 land = SAMPLE_TEXTURE2D(Land.tex, Land.samplerstate, UV).rgb;
+    float2 track = SAMPLE_TEXTURE2D(Tracks.tex, Tracks.samplerstate, UV).rg;
+    float3 ground = ScGroundShade(ScLandUse(ScGroundBase(UV, mapM, n, PositionWS), land, track, mapM, n,
+        (PositionWS.y - _ScMap.z) / _ScMap.w, coast), mapM, bake);
     float h = _ScHaze.a * ScHazeAmount(PositionWS);                 // land haze, applied after lighting via Emission
     float ao = bake.r * lerp(0.6, 1.0, bake.b);
     float water = ScWater(coast);

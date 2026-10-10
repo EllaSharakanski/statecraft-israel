@@ -84,6 +84,16 @@ rules:
     source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
     status: verified
   # --- Baked map textures (derived from the heightmap) ---
+  - glob: "unity/Assets/Textures/Map/landuse.png"
+    licence: Copernicus-DEM
+    source: "tools/land_bake.py (issue #33): land-use mask (fields, citrus belt, wet hills) from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
+    status: owner-verify
+    note: "Derived data combining Copernicus-DEM, CC0 rainfall and settlement coordinates taken from Wikipedia: the owner confirms the combined licence (the coordinates are facts; the yaml row is CC-BY-SA-4.0)."
+  - glob: "unity/Assets/Textures/Map/tracks.png"
+    licence: Copernicus-DEM
+    source: "tools/land_bake.py (issue #33): dirt-track offsets between the towns from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
+    status: owner-verify
+    note: "Derived data combining Copernicus-DEM, CC0 rainfall and settlement coordinates taken from Wikipedia: the owner confirms the combined licence (the coordinates are facts; the yaml row is CC-BY-SA-4.0)."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"

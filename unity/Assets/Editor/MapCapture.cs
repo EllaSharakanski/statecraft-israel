@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using Statecraft.Game;
 using Statecraft.Game.EditorTools;
@@ -146,7 +147,7 @@ public static class MapCapture
             for (int level = 0; level < QualitySettings.names.Length; level++)
             {
                 QualitySettings.SetQualityLevel(level, true);
-                foreach (var pose in PromoPose.All)
+                foreach (var pose in Poses(args))
                 {
                     pose.Apply(rig, map.Frame);
                     Save(Camera.main, 1920, 1080, Path.Combine(dir, $"{QualitySettings.names[level]}-{pose.Name}.png"));
@@ -154,6 +155,20 @@ public static class MapCapture
             }
         }
         finally { QualitySettings.SetQualityLevel(saved, true); }
+    }
+
+    /// <summary>PromoPose.All, plus any "-extraPose name:lon:lat:distanceM:yaw" given (close looks while tuning the art, for
+    /// example the terraces at 20 km; not promo matches).</summary>
+    static IEnumerable<PromoPose> Poses(string[] args)
+    {
+        foreach (var p in PromoPose.All) yield return p;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        for (int i = 0; i + 1 < args.Length; i++)
+        {
+            if (args[i] != "-extraPose") continue;
+            var f = args[i + 1].Split(':');
+            yield return new PromoPose(f[0], double.Parse(f[1], inv), double.Parse(f[2], inv), float.Parse(f[3], inv), float.Parse(f[4], inv));
+        }
     }
 
     static void Save(Camera cam, int w, int h, string path)

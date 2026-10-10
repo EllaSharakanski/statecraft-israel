@@ -58,8 +58,11 @@ public class TerrainShaderTests
         rig.LookAt = plain; rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
         var magenta = new Texture2D(1, 1, TextureFormat.RGBA32, false); magenta.SetPixel(0, 0, Color.magenta); magenta.Apply();
         var real = Shader.GetGlobalTexture(MapShaderGlobals.Biome);
+        // The land use (fields, issue #33) paints over the plain: with an empty mask the biome colour is what remains.
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath); var realLand = mat.GetTexture("_ScLandTex"); var realTracks = mat.GetTexture("_ScTrackTex");
         try
         {
+            mat.SetTexture("_ScLandTex", Texture2D.blackTexture); mat.SetTexture("_ScTrackTex", Texture2D.blackTexture);   // black: no track within range
             Shader.SetGlobalTexture(MapShaderGlobals.Biome, magenta);
             var px = new Vector2[1];
             var s = RenderSample.Render(cam, 480, 270, new[] { plain }, px);
@@ -68,7 +71,7 @@ public class TerrainShaderTests
             Assert.Greater(c.r + c.g + c.b, 0.15f, "not black");
             Assert.Greater(Mathf.Min(c.r, c.b), c.g + 0.1f, "magenta: the biome texture reaches the screen through the HLSL");
         }
-        finally { Shader.SetGlobalTexture(MapShaderGlobals.Biome, real); Object.DestroyImmediate(magenta); }
+        finally { Shader.SetGlobalTexture(MapShaderGlobals.Biome, real); mat.SetTexture("_ScLandTex", realLand); mat.SetTexture("_ScTrackTex", realTracks); Object.DestroyImmediate(magenta); }
     }
 
     [Test]
@@ -80,6 +83,8 @@ public class TerrainShaderTests
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Bake), mat.GetTexture("_ScBakeTex"));
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Coast), mat.GetTexture("_ScCoastTex"));
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Ao), mat.GetTexture("_ScAoTex"));
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Land), mat.GetTexture("_ScLandTex"));
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Tracks), mat.GetTexture("_ScTrackTex"));
         CollectionAssert.AreEquivalent(MapBuilder.BiomeColours.Keys, MapPalette.Ground.Keys, "a ground colour for every biome");
     }
 
