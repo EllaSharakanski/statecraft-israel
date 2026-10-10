@@ -56,7 +56,7 @@ namespace Statecraft.Game.UI
             }
             var (q, r) = Selected.Value;
             var hex = c.HexAt(q, r);
-            var owned = c.SettlementHexes.Where(x => x.Q == q && x.R == r).Select(x => settlementNames.TryGetValue(x.Id, out var n) ? n : x.Id).ToList();
+            var owned = c.SettlementHexes.Where(x => x.Q == q && x.R == r).Select(x => settlementNames[x.Id]).ToList();   // strict: every settlement hex has a name (final review M4)
             title.text = owned.Count > 0 ? owned[0] : hex == null ? text["info.off_map"] : text["info.biome." + hex.Biome];
             subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)
             settlements.text = owned.Count > 0 ? text.Format("info.owned", string.Join(", ", owned)) : "";

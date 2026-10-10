@@ -201,4 +201,19 @@ public class DefenceScreenTests
             Assert.DoesNotThrow(() => { var _ = text[DefencePresenter.TurnKey((TurnLength)v)]; }, v.ToString());
         Assert.Throws<System.ArgumentOutOfRangeException>(() => DefencePresenter.TurnKey((TurnLength)99));
     }
+
+    /// <summary>Final review M5: the call-up cost comes from the sim's one rule, and a vacant office reads "(vacant)" as on
+    /// the Cabinet and Budget screens.</summary>
+    [Test]
+    public void TheCostComesFromTheSimAndAVacancySaysSo()
+    {
+        var c = ContentLoader.Load(Paths.Content);
+        foreach (var p in c.People) p.Offices.RemoveAll(t => t.Office == "defense_minister");   // no Minister of Defense
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), Text);
+        new DefencePresenter(ui.Root, bridge, Text);
+        StringAssert.StartsWith("Minister of Defense (vacant) · Chief of Staff ", ui.Q<Label>("defence-command").text);
+        Assert.AreEqual(Text.Format("defence.mob_cost", PlayerText.Money(c, "treasury", EconomySystem.MobilizationCost(c, bridge.State.Mobilization))),
+            ui.Q<Label>("mob-cost").text);
+    }
 }

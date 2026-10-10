@@ -131,4 +131,5 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    right-hand column are kept out of sight (visibility, so the layout does not jump when they appear). */
 .loading-line { display: none; position: absolute; left: 0; right: 0; top: 45%; -unity-text-align: middle-center; font-size: 28px; color: var(--ink); }
 .loading .loading-line { display: flex; }
+.root.loading { background-color: var(--navy-solid); }   /* the template's navy, not the default sky (final review M1) */
 .loading .date-box, .loading .meters, .loading .nav, .loading .turn-box, .loading .info-panel, .loading .right-column { visibility: hidden; }

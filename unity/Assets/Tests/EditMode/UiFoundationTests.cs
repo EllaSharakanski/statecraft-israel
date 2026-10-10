@@ -124,6 +124,7 @@ public class UiFoundationTests
         for (int i = 0; i < 10 && float.IsNaN(loading.worldBound.width); i++) yield return null;
         Assert.IsTrue(ui.Q<VisualElement>("root").ClassListContains("loading"), "the tree starts in the loading state");
         Assert.AreEqual(DisplayStyle.Flex, loading.resolvedStyle.display);
+        Assert.AreEqual(1f, ui.Q<VisualElement>("root").resolvedStyle.backgroundColor.a, 1e-3f, "a navy page while loading, not the grey sky (final review M1)");
         Assert.IsNotEmpty(loading.text);
         foreach (var s in ScreenNav.Screens)
             Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("screen-" + s).resolvedStyle.display, s);

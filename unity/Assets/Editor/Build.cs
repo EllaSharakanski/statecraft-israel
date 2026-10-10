@@ -34,9 +34,24 @@ namespace Statecraft.Game.EditorTools
             _ => throw new ArgumentException($"-compression must be disabled, gzip or brotli (got '{name}')"),
         };
 
+        /// <summary>Why a shareable build may not be made, or null: every event with a sensitive tag needs the owner's
+        /// sensitivity review first (status sensitivity-reviewed; docs/m3-release.md, M3 final review I4).</summary>
+        public static string? ShareableRefusal(Statecraft.Sim.Content c)
+        {
+            var open = Statecraft.Sim.ReleaseGate.SensitiveUnreviewed(c);
+            return open.Count == 0 ? null
+                : "a shareable build needs the owner's sensitivity review of: " + string.Join(", ", open) + " (set status: sensitivity-reviewed; see docs/m3-release.md)";
+        }
+
         public static void Web()
         {
             var name = Arg("-compression") ?? "disabled";
+            if (Flag("-shareable") && ShareableRefusal(Statecraft.Sim.ContentLoader.Load(Paths.Content)) is string refusal)
+            {
+                Debug.LogError("BUILD REFUSED " + refusal);
+                EditorApplication.Exit(1);
+                return;
+            }
             ProjectSetup.Apply();
             PlayerSettings.WebGL.compressionFormat = Compression(name);
             PlayerSettings.WebGL.decompressionFallback = false;   // itch.io serves .br/.gz with Content-Encoding

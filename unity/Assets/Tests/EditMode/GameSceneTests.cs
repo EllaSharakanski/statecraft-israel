@@ -543,4 +543,69 @@ public class GameSceneTests
         Boot();
         Assert.IsFalse(Ui.Q("root").ClassListContains("loading"), "GameRoot clears the loading state");
     }
+
+    /// <summary>Final review M1: once ready, the root is transparent again, so the map shows.</summary>
+    [UnityTest]
+    public IEnumerator TheLoadingBackgroundGoesWhenTheGameIsReady()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(1280, 720, 0);
+        var ps = Object.Instantiate(doc.panelSettings); ps.targetTexture = rt;
+        try
+        {
+            doc.panelSettings = ps;
+            Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+            var root = Object.FindFirstObjectByType<GameRoot>();
+            root.Store = new SaveStore(saveDir);
+            root.Begin(Inputs, 0);
+            for (int i = 0; i < 5; i++) yield return null;
+            Assert.AreEqual(0f, doc.rootVisualElement.Q("root").resolvedStyle.backgroundColor.a, 1e-3f);
+        }
+        finally
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            if (ps != null) Object.DestroyImmediate(ps);
+            if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+
+    /// <summary>Final review I5: a boot failure (a failed StreamingAssets fetch, a content error) is shown on the loading
+    /// line, naming the reason, instead of "Loading the map of 1948..." forever; no panel appears.</summary>
+    [UnityTest]
+    public IEnumerator ABootFailureIsShownOnTheLoadingLine()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(1280, 720, 0);
+        var ps = Object.Instantiate(doc.panelSettings); ps.targetTexture = rt;
+        try
+        {
+            doc.panelSettings = ps;
+            var boot = Object.FindFirstObjectByType<GameBoot>();
+            LogAssert.Expect(LogType.Error, "BOOT FAIL people.yaml: people[x].name: required");
+            boot.Fail("people.yaml: people[x].name: required");
+            for (int i = 0; i < 5; i++) yield return null;
+            var ui = doc.rootVisualElement;
+            Assert.AreEqual("Statecraft could not start: people.yaml: people[x].name: required. Reload the page.", ui.Q<Label>("loading").text);
+            Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("loading").resolvedStyle.display);
+            Assert.IsTrue(ui.Q("root").ClassListContains("loading"), "the panels stay hidden");
+            Assert.AreEqual(Visibility.Hidden, ui.Q("info-panel").resolvedStyle.visibility);
+            Assert.AreEqual("people.yaml: people[x].name: required", boot.Error);
+        }
+        finally
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            if (ps != null) Object.DestroyImmediate(ps);
+            if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+
+    /// <summary>Final review M4: every settlement that owns a hex has a display name (the info panel looks names up strictly).</summary>
+    [Test]
+    public void EverySettlementHexHasAName()
+    {
+        var names = SettlementPlacer.Parse(Inputs.Map.SettlementsYaml).Select(s => s.Id).ToHashSet();
+        foreach (var sh in Inputs.Content.SettlementHexes) Assert.IsTrue(names.Contains(sh.Id), sh.Id);
+    }
 }

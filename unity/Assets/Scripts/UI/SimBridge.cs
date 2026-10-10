@@ -107,7 +107,7 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>Runs the turn with the queued orders, clears the queue, and notifies. If the simulation refuses the
-        /// batch outright (ArgumentException), the state is unchanged, the queue is cleared, and the reason is raised
+        /// batch outright (any exception: an ArgumentException is a refusal, anything else is also logged), the state is unchanged, the queue is cleared, and the reason is raised
         /// through TurnEnded like any refusal.</summary>
         public StepResult EndTurn()
         {
@@ -115,8 +115,9 @@ namespace Statecraft.Game.UI
             var before = Session.Last;
             var batch = queue.ToList();
             try { r = step(Session, batch); }
-            catch (ArgumentException e)
+            catch (Exception e)   // any exception (M3 final review M7): never leave a queue that fails on every End Turn
             {
+                if (!(e is ArgumentException)) UnityEngine.Debug.LogException(e);   // unexpected: the full exception for the log
                 queue.Clear();
                 var reason = text.Format("order.failed", e.Message);
                 var failed = new StepResult(State, new Cause[0], batch.Select(x => new Rejection(x, reason)).ToList());

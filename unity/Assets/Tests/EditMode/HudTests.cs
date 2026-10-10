@@ -253,11 +253,17 @@ public class HudTests
         Assert.AreEqual(0, bridge.State.Turn);
     }
 
-    [Test]
-    public void ABatchTheSimRefusesOutrightKeepsTheStateAndShowsTheReason()
+    /// <summary>Any exception from the sim (not only ArgumentException; final review M7) keeps the state, clears the queue
+    /// and shows the reason: End Turn can never soft-lock. An unexpected kind is also logged in full.</summary>
+    [TestCase(typeof(System.ArgumentException))]
+    [TestCase(typeof(System.InvalidOperationException))]
+    [TestCase(typeof(System.NullReferenceException))]
+    public void ABatchTheSimRefusesOutrightKeepsTheStateAndShowsTheReason(System.Type kind)
     {
         using var ui = new UiTestKit();
-        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text, (s, cmds) => throw new System.ArgumentException("boom"));
+        if (kind != typeof(System.ArgumentException)) LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("boom"));
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text,
+            (s, cmds) => throw (System.Exception)System.Activator.CreateInstance(kind, "boom")!);
         new ToastPresenter(ui.Root, bridge, Text);
         var order = new SecurityOrder(-1);
         Assert.IsNull(bridge.Queue(order));

@@ -55,15 +55,24 @@ namespace Statecraft.Game.UI
             this.placements = placements; this.pointer = pointer; this.cameraController = cameraController;
             // An enabled GameRoot is already subscribed to the old boot's Ready (OnEnable): move the subscription.
             if (!isActiveAndEnabled) return;
-            if (oldBoot != null) oldBoot.Ready -= Begin;
-            if (this.boot != null) this.boot.Ready += Begin;
+            if (oldBoot != null) { oldBoot.Ready -= Begin; oldBoot.Failed -= OnBootFailed; }
+            if (this.boot != null) { this.boot.Ready += Begin; this.boot.Failed += OnBootFailed; }
         }
 
-        void OnEnable() { if (boot != null) boot.Ready += Begin; }
+        void OnEnable() { if (boot != null) { boot.Ready += Begin; boot.Failed += OnBootFailed; } }
+
+        /// <summary>A boot failure replaces the loading line with the reason; the loading state stays, so no half-built panel
+        /// shows (M3 final review I5).</summary>
+        internal void OnBootFailed(string reason)
+        {
+            if (document == null || strings == null) return;
+            var line = document.rootVisualElement.Q<Label>("loading");
+            if (line != null) line.text = UiText.Parse(strings.text).Format("boot.failed", reason);
+        }
 
         void OnDisable()
         {
-            if (boot != null) boot.Ready -= Begin;
+            if (boot != null) { boot.Ready -= Begin; boot.Failed -= OnBootFailed; }
             Shutdown();
         }
 
