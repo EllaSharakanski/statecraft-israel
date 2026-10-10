@@ -12,10 +12,12 @@ namespace Statecraft.Game.Map
     public static class MapBuilder
     {
         public const float VerticalExaggeration = 3f; // diorama look; real relief would read flat at 400 km scale
-        public const int AlphamapResolution = 1024;   // ~158 m (E-W) x ~421 m (N-S) per texel
+        public const int BiomeTextureResolution = 1024;   // ~158 m (E-W) x ~421 m (N-S) per texel
+        /// <summary>Terrain.basemapDistance: farther than the camera ever is, so the terrain is always drawn by the Statecraft
+        /// graph, never by its low-resolution baked basemap (Unity's default switches at 1 km).</summary>
+        public const float NoBasemapDistanceM = 1e7f;
         public const float BiomeLayerTileSizeM = 1000f; // layers are flat colours, so the tiling only needs to be finite
         public const int OverlaySegmentsPerEdge = 10;  // ~500 m sub-segments on a 5 km hex edge, each draped on the terrain
-        public const float OverlayClearanceM = 40f * VerticalExaggeration; // above the (exaggerated) terrain surface
         // ~31 m steps, finer than the heightmap spacing on both axes: 78.9 m E-W x 210.6 m N-S
         // (heightmap.json: 2049 samples, so 2048 intervals, over width_km 161.53 x length_km 431.22).
         public const int OverlaySamplesPerSegment = 16;
@@ -37,28 +39,26 @@ namespace Statecraft.Game.Map
             ["desert"] = new Color(0.80f, 0.68f, 0.48f),
         };
 
-        /// <summary>Builds the terrain (with a "HexOverlay" child) from the heightmap in <paramref name="mapDir"/> and the
-        /// hexes in <paramref name="hexesJson"/>, both read with System.IO. Materials are editor-made assets (Assets/Materials/Terrain.mat,
-        /// HexOverlay.mat) passed in by the caller: Shader.Find returns null in players (M0 correction 1).
+        /// <summary>Builds the terrain from the heightmap in <paramref name="mapDir"/> and the
+        /// hexes in <paramref name="hexesJson"/>, both read with System.IO. The material is an editor-made asset (Assets/Materials/Terrain.mat) passed in by
+        /// the caller: Shader.Find returns null in players (M0 correction 1).
         /// Runtime-created objects are owned by a <see cref="MapRuntimeAssets"/> on the returned GameObject and destroyed with it.</summary>
-        public static GameObject Build(string mapDir, string hexesJson, Material terrainMaterial, Material overlayMaterial)
+        public static GameObject Build(string mapDir, string hexesJson, Material terrainMaterial)
         {
             if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
-            if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
             var (meta, heights) = HeightmapLoader.Load(mapDir);
-            return Build(meta, heights, LoadHexes(hexesJson), terrainMaterial, overlayMaterial);
+            return Build(meta, heights, LoadHexes(hexesJson), terrainMaterial);
         }
 
         /// <summary>Builds the map from already-read inputs (HeightmapLoader.Load and LoadHexes over text and bytes), so a
         /// WebGL build needs no System.IO. Throws InvalidDataException, before creating any object, when the hexes' bounds
         /// differ from the heightmap's by more than <see cref="BoundsTolerance"/>.</summary>
-        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial, Material overlayMaterial)
+        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial)
         {
             if (meta == null) throw new ArgumentNullException(nameof(meta));
             if (heights == null) throw new ArgumentNullException(nameof(heights));
             if (hexFile == null) throw new ArgumentNullException(nameof(hexFile));
             if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
-            if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
             CheckSameArea(meta, hexFile.bounds);
             float widthM = meta.width_km * 1000f, lengthM = meta.length_km * 1000f;
             float reliefM = (meta.elev_max_m - meta.elev_min_m) * VerticalExaggeration;
@@ -76,12 +76,11 @@ namespace Statecraft.Game.Map
             var terrain = terrainGo.GetComponent<Terrain>();
             terrain.materialTemplate = terrainMaterial;
             terrain.heightmapPixelError = TerrainPixelError;
-            ApplyBiomeColours(data, frame, hexFile, assets);
-            Boot.DiagLog.BootPhase("biome colours blended");
-
-            var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
-            overlay.transform.SetParent(terrainGo.transform, false);
-            Boot.DiagLog.BootPhase("hex overlay draped");
+            terrain.basemapDistance = NoBasemapDistanceM;
+            data.terrainLayers = new[] { NeutralLayer(assets) };   // one layer, one pass: the graph paints from the biome texture
+            data.alphamapResolution = 16;
+            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets), assets);
+            Boot.DiagLog.BootPhase("biome texture baked");
             return terrainGo;
         }
 
@@ -118,53 +117,68 @@ namespace Statecraft.Game.Map
                     $"hexes.json bounds (lon {b?.lon0}..{b?.lon1}, lat {b?.lat0}..{b?.lat1}) differ from heightmap.json (lon {meta.lon0}..{meta.lon1}, lat {meta.lat0}..{meta.lat1}) by more than {BoundsTolerance}"));
         }
 
-        /// <summary>One terrain layer per biome; each alphamap texel blends the biomes of nearby hex centres (BiomeBlender).</summary>
-        static void ApplyBiomeColours(TerrainData data, GeoFrame frame, HexFile hexes, MapRuntimeAssets assets)
+        /// <summary>The single terrain layer the Terrain Lit target needs; the graph ignores its colour.</summary>
+        static TerrainLayer NeutralLayer(MapRuntimeAssets assets)
+        {
+            var tex = assets.Own(new Texture2D(1, 1, TextureFormat.RGB24, false) { name = "TerrainLayerNeutral" }); // no alpha: no smoothness
+            tex.SetPixel(0, 0, Color.grey); tex.Apply();
+            return assets.Own(new TerrainLayer
+            {
+                name = "neutral", diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM),
+                smoothness = 0f, metallic = 0f,
+            });
+        }
+
+        /// <summary>The ground colour of every point, blended from the biomes of nearby hex centres (BiomeBlender) in the
+        /// MapPalette.Ground colours, baked once into an sRGB texture over the whole map (texel row 0 = south) that the
+        /// terrain shader samples as _ScBiomeTex. Owned by the map.</summary>
+        static Texture2D BakeBiomeTexture(GeoFrame frame, HexFile hexes, MapRuntimeAssets assets)
         {
             var names = new List<string>(Biome.Keys);
-            var layers = new TerrainLayer[names.Count];
-            for (int i = 0; i < names.Count; i++)
-            {
-                var tex = assets.Own(new Texture2D(1, 1, TextureFormat.RGB24, false) { name = "Biome_" + names[i] }); // no alpha: Terrain/Lit would read it as smoothness 1
-                tex.SetPixel(0, 0, Biome[names[i]]); tex.Apply();
-                layers[i] = assets.Own(new TerrainLayer
-                {
-                    name = names[i], diffuseTexture = tex, tileSize = new Vector2(BiomeLayerTileSizeM, BiomeLayerTileSizeM),
-                    smoothness = 0f, metallic = 0f, // matte: URP Terrain/Lit's default 0.5 smoothness gives white streaks on slopes
-                });
-            }
-            data.terrainLayers = layers;
-            int res = AlphamapResolution; data.alphamapResolution = res;
-
+            var colours = new Color[names.Count];
+            for (int i = 0; i < names.Count; i++) colours[i] = MapPalette.Ground[names[i]];
             var centres = new List<Vector2>(hexes.hexes.Length); var layerOf = new List<int>(hexes.hexes.Length);
             foreach (var h in hexes.hexes)
             {
-                int idx = names.IndexOf(h.biome); // validated in LoadHexes, before any object exists
-                var w = frame.ToWorld(h.lon, h.lat, 0); centres.Add(new Vector2(w.x, w.z)); layerOf.Add(idx);
+                var w = frame.ToWorld(h.lon, h.lat, 0); centres.Add(new Vector2(w.x, w.z)); layerOf.Add(names.IndexOf(h.biome));
             }
             var blender = new BiomeBlender(centres, layerOf, hexes.hex_size_km * 1000f, names.Count);
-            var a = new float[res, res, names.Count]; var wts = new float[names.Count];
+            int res = BiomeTextureResolution;
+            var tex = assets.Own(new Texture2D(res, res, TextureFormat.RGBA32, true, false)
+                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear });
+            var px = new Color32[res * res]; var wts = new float[names.Count];
             for (int y = 0; y < res; y++)
                 for (int x = 0; x < res; x++)
                 {
                     blender.Weights(new Vector2((x + 0.5f) / res * frame.WidthM, (y + 0.5f) / res * frame.LengthM), wts);
-                    for (int l = 0; l < wts.Length; l++) a[y, x, l] = wts[l];
+                    var c = Color.clear;
+                    for (int l = 0; l < wts.Length; l++) c += colours[l] * wts[l];
+                    c.a = 1f;
+                    px[y * res + x] = c;
                 }
-            data.SetAlphamaps(0, 0, a);
+            tex.SetPixels32(px); tex.Apply(true, true);   // no CPU copy: nothing reads the pixels back (about 5.6 MB on the heap)
+            return tex;
         }
 
-        /// <summary>Distances (m) of the border skirt's rings from the map's edge: land falls from the edge's height to sea
-        /// level across the first rings, then stays flat to the last, beyond anything the camera can see.</summary>
+        /// <summary>Distances (m) of the border skirt's rings from the map's edge: land holds the edge's height across the
+        /// first rings and reaches sea level only at the last, beyond anything the camera can see (SkirtFall).</summary>
         public static readonly float[] SkirtRings = { 0f, 4000f, 20000f, 60000f, 600000f };
-        /// <summary>Share of the fall to sea level reached at each ring (land samples only).</summary>
-        static readonly float[] SkirtFall = { 0f, 0.4f, 0.85f, 1f, 1f };
+        /// <summary>Share of the fall to sea level reached at each ring (land samples only). Visual v1 Task 7: the edge's height
+        /// is held for 20 km (the Jordanian plateau, about 900 m, continues past the edge instead of sagging at once) and
+        /// eases to sea level by the last ring, beyond anything the camera sees.</summary>
+        public static readonly float[] SkirtFall = { 0f, 0.05f, 0.15f, 0.45f, 1f };
+        /// <summary>Half-width (m) of the along-edge average the land skirt holds past its inner ring (Task 7): holding each
+        /// edge vertex's own height for 20 km drew its ridges and gullies out as long stripes across the skirt, so the rings
+        /// past the edge hold the edge's broad height (the plateau) and only ring 0 follows the terrain's edge exactly.</summary>
+        public const float SkirtHoldSmoothingM = 8000f;
         /// <summary>A heightmap sample this close to 0 m is sea (tools/dem_to_heightmap.py writes open sea as exactly 0 m).</summary>
         public const float SeaToleranceM = 0.5f;
 
         /// <summary>The land and sea past the map's edge (fix round 2, R2-1 and N1). Each edge sample continues outward: a sea
-        /// sample stays flat at sea level (submesh 0, the sea material, lit like the terrain's sea, so no seam shows); a land
-        /// sample falls from the edge's height to sea level (submesh 1, a muted land tone), so Sinai, Jordan and Lebanon read
-        /// as land. A segment with a land end is land. Corner fans close the four corners. Every triangle lies outside the
+        /// sample stays flat at sea level (submesh 0, Sea.mat: the unlit Statecraft/Sea, shaded by the same ScWaterShade as the
+        /// terrain's own water, so no seam shows); a land sample meets the terrain's edge at ring 0, then holds the along-edge
+        /// mean of the edge's height (SkirtHoldSmoothingM) and eases to sea level by the last ring (SkirtFall; submesh 1, a
+        /// muted land tone), so Sinai, Jordan and Lebanon read as land. A segment with a land end is land. Corner fans close the four corners. Every triangle lies outside the
         /// terrain's footprint, so nothing covers the map (the old full sea plane hid all land below about -10 m).</summary>
         public static Mesh BuildBorderSkirt(TerrainData data, float elevMinM, MapRuntimeAssets assets)
         {
@@ -175,15 +189,31 @@ namespace Statecraft.Game.Map
             int samples = data.heightmapResolution - 1;
             var verts = new List<Vector3>(); var sea = new List<int>(); var land = new List<int>();
             bool IsLand(float h) => Mathf.Abs(h / VerticalExaggeration + elevMinM) > SeaToleranceM;
-            // One ring of vertices outward from an edge point; returns the index of its first vertex.
-            int Spoke(Vector2 p, Vector2 outward, bool isLand, Vector2? outward2 = null)
+            // The edge's heights and their running mean over +-SkirtHoldSmoothingM of the edge's own samples (prefix sums; the
+            // window is cut short at the edge's ends). Every sample counts, so no ridge between taps aliases (fix round 1, M4).
+            float[] HeldAlong(Vector2 a, Vector2 b, float[] h)
             {
-                float h = data.GetInterpolatedHeight(Mathf.Clamp01(p.x / size.x), Mathf.Clamp01(p.y / size.z));
+                for (int i = 0; i <= samples; i++) h[i] = Height(Vector2.Lerp(a, b, (float)i / samples));
+                var sum = new double[samples + 2];
+                for (int i = 0; i <= samples; i++) sum[i + 1] = sum[i] + h[i];
+                int w = Mathf.Max(1, Mathf.RoundToInt(SkirtHoldSmoothingM / ((b - a).magnitude / samples)));
+                var held = new float[samples + 1];
+                for (int i = 0; i <= samples; i++)
+                {
+                    int lo = Mathf.Max(0, i - w), hi = Mathf.Min(samples, i + w);
+                    held[i] = (float)((sum[hi + 1] - sum[lo]) / (hi - lo + 1));
+                }
+                return held;
+            }
+            // One ring of vertices outward from an edge point (h its height, held the height the rings past it hold); returns
+            // the index of its first vertex.
+            int Spoke(Vector2 p, float h, float held, Vector2 outward, bool isLand, Vector2? outward2 = null)
+            {
                 int first = verts.Count;
                 for (int k = 0; k < SkirtRings.Length; k++)
                 {
                     var q = p + (outward + (outward2 ?? Vector2.zero)) * SkirtRings[k];
-                    float y = isLand ? Mathf.Lerp(h, seaY, SkirtFall[k]) : seaY;
+                    float y = isLand ? Mathf.Lerp(held, seaY, SkirtFall[k]) : seaY;
                     if (k == 0) y = h;                                     // meets the terrain's edge exactly
                     verts.Add(new Vector3(q.x, y, q.y));
                 }
@@ -212,14 +242,17 @@ namespace Statecraft.Game.Map
                 (new Vector2(size.x, size.z), new Vector2(0, size.z), Vector2.up),          // north
                 (new Vector2(0, size.z), new Vector2(0, 0), Vector2.left),                  // west
             };
-            foreach (var (a, b, n) in edges)
+            var heights = new float[edges.Length][]; var helds = new float[edges.Length][];
+            for (int e = 0; e < edges.Length; e++) { heights[e] = new float[samples + 1]; helds[e] = HeldAlong(edges[e].a, edges[e].b, heights[e]); }
+            for (int e = 0; e < edges.Length; e++)
             {
+                var (a, b, n) = edges[e];
                 int prev = -1; bool prevLand = false;
                 for (int i = 0; i <= samples; i++)
                 {
                     var p = Vector2.Lerp(a, b, (float)i / samples);
-                    bool isLand = IsLand(Height(p));
-                    int spoke = Spoke(p, n, isLand);
+                    bool isLand = IsLand(heights[e][i]);
+                    int spoke = Spoke(p, heights[e][i], helds[e][i], n, isLand);
                     if (prev >= 0) Quad(prevLand || isLand ? land : sea, prev, spoke);
                     prev = spoke; prevLand = isLand;
                 }
@@ -228,8 +261,10 @@ namespace Statecraft.Game.Map
             for (int e = 0; e < edges.Length; e++)
             {
                 var corner = edges[e].b; var n1 = edges[e].n; var n2 = edges[(e + 1) % edges.Length].n;
-                bool isLand = IsLand(Height(corner));
-                int s1 = Spoke(corner, n1, isLand), sd = Spoke(corner, n1, isLand, n2), s2 = Spoke(corner, n2, isLand);
+                int e2 = (e + 1) % edges.Length;
+                float h = heights[e][samples], held1 = helds[e][samples], held2 = helds[e2][0];   // the corner ends edge e, starts e2
+                bool isLand = IsLand(h);
+                int s1 = Spoke(corner, h, held1, n1, isLand), sd = Spoke(corner, h, 0.5f * (held1 + held2), n1, isLand, n2), s2 = Spoke(corner, h, held2, n2, isLand);
                 Quad(isLand ? land : sea, s1, sd); Quad(isLand ? land : sea, sd, s2);
             }
             var mesh = assets.Own(new Mesh { name = "BorderSkirt", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
@@ -247,7 +282,7 @@ namespace Statecraft.Game.Map
         /// around <paramref name="centre"/> (world x, z), corners from HexMath. Each edge is split into OverlaySegmentsPerEdge
         /// sub-segments, clamped to the terrain bounds; each vertex sits <paramref name="clearance"/> above the highest
         /// terrain sampled along its two adjacent sub-segments, so the straight line between two vertices clears any ridge.
-        /// The hex overlay and the selection outline share it.</summary>
+        /// The selection outline uses it (the hex grid itself is drawn by the shaders since visual v1 Task 8).</summary>
         public static void DrapedRing(GeoFrame frame, TerrainData data, Vector2 centre, float size, float clearance, List<Vector3> verts)
         {
             int n = RingVertices;
@@ -272,33 +307,6 @@ namespace Statecraft.Game.Map
             }
             for (int j = 0; j < n; j++)
                 verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + clearance, ground[j].y));
-        }
-
-        /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments; vertices
-        /// are clamped to the terrain bounds. Each vertex sits OverlayClearanceM above the highest terrain sampled along its
-        /// two adjacent sub-segments, so the straight line between two vertices clears any ridge between them.</summary>
-        static GameObject BuildHexOverlay(GeoFrame frame, HexFile hexes, TerrainData data, Material material, MapRuntimeAssets assets)
-        {
-            float size = hexes.hex_size_km * 1000f;
-            int n = RingVertices;
-            var verts = new List<Vector3>(); var idx = new List<int>();
-            foreach (var h in hexes.hexes)
-            {
-                if (!h.land) continue;
-                var c = frame.ToWorld(h.lon, h.lat, 0);
-                int start = verts.Count;
-                DrapedRing(frame, data, new Vector2(c.x, c.z), size, OverlayClearanceM, verts);
-                for (int i = 0; i < n; i++) { idx.Add(start + i); idx.Add(start + (i + 1) % n); }
-            }
-            var mesh = assets.Own(new Mesh { name = "HexOverlay", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
-            mesh.SetVertices(verts); mesh.SetIndices(idx, MeshTopology.Lines, 0);
-            mesh.RecalculateBounds();
-            var go = new GameObject("HexOverlay");
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = material;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return go;
         }
     }
 }

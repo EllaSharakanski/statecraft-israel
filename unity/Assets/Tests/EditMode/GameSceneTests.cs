@@ -67,7 +67,6 @@ public class GameSceneTests
         Assert.AreSame(Object.FindFirstObjectByType<MapScene>(), new SerializedObject(boot).FindProperty("map").objectReferenceValue, "GameBoot.map");
         var map = new SerializedObject(Object.FindFirstObjectByType<MapScene>());
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"), map.FindProperty("terrainMaterial").objectReferenceValue);
-        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"), map.FindProperty("overlayMaterial").objectReferenceValue);
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"), map.FindProperty("markerMaterial").objectReferenceValue);
         var doc = Object.FindFirstObjectByType<UIDocument>();
         Assert.AreEqual(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel), doc.panelSettings);

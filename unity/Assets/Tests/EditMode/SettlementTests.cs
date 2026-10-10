@@ -129,7 +129,7 @@ public class MapSceneTests
     static (double, double, double, double) Bounds => (Meta.lon0, Meta.lon1, Meta.lat0, Meta.lat1);
     static string RealYamlPath => Path.Combine(Paths.Content, "map", "settlements_1948.yaml");
 
-    const string TerrainMatPath = "Assets/Materials/Terrain.mat", OverlayMatPath = "Assets/Materials/HexOverlay.mat",
+    const string TerrainMatPath = "Assets/Materials/Terrain.mat",
         MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat", SeaMatPath = "Assets/Materials/Sea.mat", BorderLandMatPath = "Assets/Materials/BorderLand.mat";
 
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -143,7 +143,7 @@ public class MapSceneTests
     {
         if (withCamera) new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
+        map.Configure(Load(TerrainMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         return map;
     }
 
@@ -344,20 +344,34 @@ public class MapSceneTests
             Assert.Less(low.elev_m, -10f, $"{name}: a hex below the old plane's -10 m");
             var centre = map.Frame.ToWorld(low.lon, low.lat, 0); centre.y = map.Terrain.SampleHeight(centre);
             var corner2 = HexMath.Corner(new Vector2(centre.x, centre.z), size, 0);
-            var corner = new Vector3(corner2.x, 0, corner2.y); corner.y = map.Terrain.SampleHeight(corner) + MapBuilder.OverlayClearanceM;
-            var colours = new Color[1]; var lines = new Color[1];
+            var corner = new Vector3(corner2.x, 0, corner2.y); corner.y = map.Terrain.SampleHeight(corner);
+            var colours = new Color[1];
             yield return RenderAt(centre, 40000f, new[] { centre }, colours);
-            yield return RenderAt(centre, 40000f, new[] { corner }, lines, radius: 2, darkest: true);
-            TestContext.WriteLine($"{name} ({low.q}, {low.r}) {low.elev_m:0} m: centre {colours[0]}, line {lines[0]}");
+            // Visual v1 Task 8: the terrain shader draws the grid, light and faint as in the promo; the line shows if the
+            // corner's neighbourhood changes when the grid is switched off (tilt-shift off: a colour test, task-3 carry m6).
+            var cam = Camera.main; var px = new Vector2[1];
+            RenderSample.TiltShift(false);
+            var on = RenderSample.Render(cam, 1600, 900, new[] { corner }, px);
+            VisualToggles.Set("grid", false);
+            var off = RenderSample.Render(cam, 1600, 900, new[] { corner }, px);
+            VisualToggles.Set("grid", true);
+            RenderSample.TiltShift(true);
+            float change = 0f;
+            for (int dx = -2; dx <= 2; dx++)
+                for (int dy = -2; dy <= 2; dy++)
+                    change = Mathf.Max(change, Mathf.Abs(RenderSample.Luma(on.At((int)px[0].x + dx, (int)px[0].y + dy)) - RenderSample.Luma(off.At((int)px[0].x + dx, (int)px[0].y + dy))));
+            TestContext.WriteLine($"{name} ({low.q}, {low.r}) {low.elev_m:0} m: centre {colours[0]}, line change {change:0.000}");
             Assert.IsTrue(LandColour(colours[0]), $"{name}: the {low.biome} colour, rendered {colours[0]}");
-            Assert.Less(lines[0].r + lines[0].g + lines[0].b, 0.75f * (colours[0].r + colours[0].g + colours[0].b), $"{name}: the hex line shows, rendered {lines[0]}");
+            // 0.012 (3/255 in sRGB luma, above 8-bit quantisation; grid off renders are identical, so any change is the
+            // line). The plan's 0.03 holds in the green rift valleys (about 0.06), but light lines on the bright Arava
+            // desert by the Dead Sea change luma only about 0.016: faint, as the promo's land lines are (pre-grade).
+            Assert.Greater(change, 0.012f, $"{name}: the hex line shows");
         }
         // Settlement markers in the rift (below -10 m) are drawn: the pixel at the marker's top is not the sea colour.
         var root = GameObject.Find("Settlements").transform;
         int seen = 0;
         foreach (Transform box in root)
         {
-            if (box.name.EndsWith("_label") || box.GetComponent<MeshRenderer>() == null) continue;
             var ground = map.Terrain.SampleHeight(box.position);
             var realElevation = ground / MapBuilder.VerticalExaggeration + HeightmapLoader.Load(Paths.StreamingMap).meta.elev_min_m;
             if (realElevation > -10f) continue;
@@ -379,40 +393,67 @@ public class MapSceneTests
     [UnityTest]
     public System.Collections.IEnumerator TheSeaBeyondTheEdgeMatchesTheTerrainSea()
     {
+        // Visual v1 Task 7: both sides now shade with StatecraftMap.hlsl ScWaterShade, whose waves vary over a few hundred
+        // metres, so 7x7-pixel patch means are compared (still 0.012), at four yaws (Review Focus 1). Task 7 fix round 1 (M1):
+        // a close pair at +-600 m straddles the edge too, so a step at the edge is told from a view-dependent gradient. Each
+        // side of the close pair is the mean of five such patches 2 km apart along the edge: a step at the edge runs along
+        // all of it, while a single 1 km patch still carries one wave cell or glint sparkle (up to 0.012 on its own).
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
-        // Visual v1 Task 4: the grade roughly doubles the sea's sub-step mismatch between the two shaders (0.008 -> 0.016
-        // here). Track B's patch-mean version of this test should keep the graded/ungraded loop at the merge.
+        yield return null;
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var size = map.Terrain.terrainData.size;
-        var rt = new RenderTexture(1600, 900, 24);
-        var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        // Visual v1 Task 8 (review I3): both sides draw the same hex grid; the lattice runs on past the edge and is
+        // mirror-symmetric about it. Every pair is checked with the grid off and on, at four yaws. Task 8 fix round 1 (M1):
+        // the close strips are centred on even hex rows, where x = 0 is a hex centre, so their +-600 m patches (five, 2 km
+        // apart along the edge) all lie over 2.2 km from any line; on an odd row the x = 0 hex line itself fell unequally
+        // into the two foreshortened patches at yaw 90/270.
+        float rowM = 1.5f * map.Hexes.hex_size_km * 1000f;
+        float EvenRowZ(float fromNorthM) => size.z - 2f * Mathf.Round(fromNorthM / rowM / 2f) * rowM;
+        float midZ = EvenRowZ(0.45f * size.z), northZ = EvenRowZ(2f * rowM);
+        // (The plan's one-row hex-centre pairs at x = +-4330 m were tried and dropped: at yaw 180 the middle-row pair differs
+        // by 0.027 with the grid off too, a warm view-dependent sun glint on the terrain side, not a grid or seam effect.)
         try
         {
+            // Visual v1 Task 4 (kept at the merge point): measured before the grade against 0.012 and on the shipped, graded
+            // frame against 0.024 (the grade scales the sea's chroma by about 2). Tilt-shift off: a colour test whose close
+            // strips lie in the blurred bands at some yaws (task-3 carry m6).
+            RenderSample.TiltShift(false);
             foreach (var graded in new[] { false, true })
-            foreach (var (look, inside, beyond) in new[] {
-                (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
-                (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)) })
+            foreach (var grid in new[] { false, true })
             {
                 VisualToggles.Set("grade", graded);
-                rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = 0; rig.Apply();
-                cam.targetTexture = rt;
-                yield return null;
-                cam.Render();
-                RenderTexture.active = rt;
-                tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
-                // Project while the camera still renders into the texture, so the points are in its pixels.
-                Color Px(Vector3 w) { var p = cam.WorldToScreenPoint(w); return tex.GetPixel((int)p.x, (int)p.y); }
-                var a = Px(new Vector3(inside.x, map.Terrain.SampleHeight(inside), inside.z));
-                var b = Px(new Vector3(beyond.x, map.Terrain.SampleHeight(inside), beyond.z));
-                RenderTexture.active = null; cam.targetTexture = null;
-                var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
-                TestContext.WriteLine($"seam at {look}, graded={graded}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
-                Assert.Less(diff, graded ? 0.024f : 0.012f, $"seam at {look}, graded={graded}: terrain sea {a}, beyond {b}");
+                VisualToggles.Set("grid", grid);
+                var cases = new[] {
+                    (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
+                    (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)),
+                    (new Vector3(3000, 0, midZ), new Vector3(600, 0, midZ), new Vector3(-600, 0, midZ)),
+                    (new Vector3(3000, 0, northZ), new Vector3(600, 0, northZ), new Vector3(-600, 0, northZ)) };
+                foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
+                    foreach (var (look, inside, beyond) in cases)
+                    {
+                        rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = yaw; rig.TopInset = 0; rig.Apply();
+                        var y = map.Terrain.SampleHeight(inside);
+                        bool close = Mathf.Abs(inside.x) < 1000f;
+                        int rows = close ? 5 : 1;
+                        var world = new Vector3[2 * rows]; var px = new Vector2[2 * rows];
+                        for (int r = 0; r < rows; r++)
+                        {
+                            float dz = (r - (rows - 1) / 2f) * 2000f;
+                            world[2 * r] = new Vector3(inside.x, y, inside.z + dz); world[2 * r + 1] = new Vector3(beyond.x, y, beyond.z + dz);
+                        }
+                        var s = RenderSample.Render(cam, 1600, 900, world, px);
+                        Color a = Color.clear, b = Color.clear;
+                        for (int r = 0; r < rows; r++) { a += s.Mean((int)px[2 * r].x, (int)px[2 * r].y, 3) / rows; b += s.Mean((int)px[2 * r + 1].x, (int)px[2 * r + 1].y, 3) / rows; }
+                        var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
+                        float bound = graded ? 0.024f : 0.012f;
+                        TestContext.WriteLine($"seam graded={graded} grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000} (bound {bound})");
+                        Assert.Less(diff, bound, $"seam graded={graded} grid={grid} at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}");
+                    }
             }
         }
-        finally { rt.Release(); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex); }
+        finally { VisualToggles.Set("grid", true); VisualToggles.Set("grade", true); RenderSample.TiltShift(true); }
     }
 
     /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is
@@ -432,18 +473,18 @@ public class MapSceneTests
         Assert.AreEqual(0.5f, cam.WorldToViewportPoint(rig.LookAt).y, 1e-3f, "the inset is undone");
     }
 
-    /// <summary>Playtest 1, item 10: the selected hex gets an outline in the highlight colour, draped on the terrain like
-    /// the hex overlay (HexMath corners), drawn with the editor-made overlay material (no runtime material).</summary>
+    /// <summary>Playtest 1, item 10: the selected hex gets an outline in the highlight colour, draped on the terrain
+    /// (HexMath corners), drawn with its own editor-made material (no runtime material).</summary>
     [Test]
     public void SelectingAHexOutlinesItOnTheTerrain()
     {
         var map = NewMap(); map.Build();
         var selection = Load(SelectionMatPath);
         // Fix round 1, M2: its own editor-made material, whose shader pulls the band towards the camera in depth (Offset), so
-        // the overlay lines under its edge cannot z-fight with it at long range.
+        // it cannot z-fight with the ground at long range.
         Assert.AreEqual("Statecraft/HexSelection", selection.shader.name);
         StringAssert.IsMatch(@"(?m)^\s*Offset\s+-\d+\s*,\s*-\d+", File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader)));
-        Assert.Greater(selection.renderQueue, Load(OverlayMatPath).renderQueue, "drawn after the overlay lines");
+        Assert.Greater(selection.renderQueue, 2000, "drawn after the opaque terrain (queue Geometry+10)");
         // Fix round 3 (m-2): every pass declares the same UnityPerMaterial CBUFFER, as the SRP Batcher requires.
         var source = File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader));
         var buffers = System.Text.RegularExpressions.Regex.Matches(source, @"CBUFFER_START\(UnityPerMaterial\)(.*?)CBUFFER_END", System.Text.RegularExpressions.RegexOptions.Singleline);
@@ -485,7 +526,7 @@ public class MapSceneTests
             {
                 Assert.LessOrEqual((new Vector2(verts[j].x, verts[j].z) - c2).magnitude, size + 1f, "inside the hex");
                 var mid = (verts[j] + verts[n + j]) / 2;    // the middle of the band, between its outer and inner edge
-                Assert.Greater(mid.y, map.Terrain.SampleHeight(mid) + MapBuilder.OverlayClearanceM - 1f,
+                Assert.Greater(mid.y, map.Terrain.SampleHeight(mid) + MapScene.SelectionClearanceM - 1f,
                     $"({h.q}, {h.r}) vertex {j}: the band clears the ground across its width");
             }
         }
@@ -497,16 +538,16 @@ public class MapSceneTests
     public void BuildWithoutMaterialsNamesTheMissingField()
     {
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
+        map.Configure(Load(TerrainMatPath), null, Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         var ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("markerMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null, Load(SeaMatPath), Load(BorderLandMatPath));
+        map.Configure(Load(TerrainMatPath), Load(MarkerMatPath), null, Load(SeaMatPath), Load(BorderLandMatPath));
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("selectionMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), null, Load(BorderLandMatPath));
+        map.Configure(Load(TerrainMatPath), Load(MarkerMatPath), Load(SelectionMatPath), null, Load(BorderLandMatPath));
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("seaMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), null);
+        map.Configure(Load(TerrainMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), null);
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("borderLandMaterial", ex.Message);
     }
@@ -535,7 +576,7 @@ public class MapSceneTests
         var map = NewMap(); map.Build();
         var go = map.gameObject; Object.DestroyImmediate(map);
         var fresh = go.AddComponent<MapScene>();
-        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
+        fresh.Configure(Load(TerrainMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         fresh.Build();
         AssertOneOfEach();
     }

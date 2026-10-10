@@ -10,7 +10,6 @@ namespace Statecraft.Game.EditorTools
     {
         public const string Folder = "Assets/Materials";
         public const string TerrainPath = Folder + "/Terrain.mat";
-        public const string OverlayPath = Folder + "/HexOverlay.mat";
         public const string MarkerPath = Folder + "/SettlementMarker.mat";
         public const string SelectionPath = Folder + "/HexSelection.mat";
         public const string SeaPath = Folder + "/Sea.mat";
@@ -19,25 +18,22 @@ namespace Statecraft.Game.EditorTools
         public static void Create()
         {
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets", "Materials");
-            var terrain = Make(TerrainPath, "Universal Render Pipeline/Terrain/Lit", null);
-            // Matte defaults. The terrain overrides these from each TerrainLayer (MapBuilder sets 0 there too); URP Terrain/Lit
-            // exposes no specular-highlight or environment-reflection toggle.
-            for (int i = 0; i < 4; i++) { terrain.SetFloat("_Smoothness" + i, 0f); terrain.SetFloat("_Metallic" + i, 0f); }
+            MapTextures.Configure();
+            // The Statecraft terrain graph (tools/terrain_graph.py + StatecraftTerrain.hlsl) with the baked textures.
+            var terrain = Make(TerrainPath, "Statecraft/StatecraftTerrain", null);
+            terrain.SetTexture("_ScBakeTex", Tex(Statecraft.Game.Map.MapTexturePaths.Bake));
+            terrain.SetTexture("_ScCoastTex", Tex(Statecraft.Game.Map.MapTexturePaths.Coast));
+            terrain.SetTexture("_ScAoTex", Tex(Statecraft.Game.Map.MapTexturePaths.Ao));
             EditorUtility.SetDirty(terrain);
-            Make(OverlayPath, "Universal Render Pipeline/Unlit", new Color(0.15f, 0.12f, 0.08f, 1f));
             // Settlement boxes: matte URP Lit; SettlementPlacer sets the per-type _BaseColor through a MaterialPropertyBlock.
             var marker = Make(MarkerPath, "Universal Render Pipeline/Lit", Color.white);
             marker.SetFloat("_Smoothness", 0f); marker.SetFloat("_Metallic", 0f);
             EditorUtility.SetDirty(marker);
             // The selected hex's outline: its own shader (Assets/Shaders/HexSelection.shader) with a depth offset (fix round 1, M2).
             Make(SelectionPath, "Statecraft/HexSelection", Statecraft.Game.Map.MapScene.SelectionColour);
-            // The sea past the map's edge: URP Lit in the sea biome colour, matte like the terrain's layers, so it is lit as the
-            // terrain's sea is and no seam shows at the edge (fix round 1).
-            var sea = Make(SeaPath, "Universal Render Pipeline/Lit", Statecraft.Game.Map.MapBuilder.BiomeColours["sea"]);
-            // Terrain/Lit keeps its specular and environment reflections at smoothness 0, so the plane keeps them too.
-            sea.SetFloat("_Smoothness", 0f); sea.SetFloat("_Metallic", 0f);
-            sea.SetFloat("_SpecularHighlights", 1f); sea.SetFloat("_EnvironmentReflections", 1f);
-            sea.DisableKeyword("_SPECULARHIGHLIGHTS_OFF"); sea.DisableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            // The skirt's sea past the map's edge: the terrain's own water shading (StatecraftMap.hlsl ScWaterShade), so no seam.
+            var sea = Make(SeaPath, "Statecraft/Sea", null);
+            sea.SetTexture("_ScCoastTex", Tex(Statecraft.Game.Map.MapTexturePaths.Coast));
             EditorUtility.SetDirty(sea);
             // Neighbouring land past the map's edge (Sinai, Jordan, Lebanon): one muted land tone, lit and matte like the sea
             // (fix round 2, R2-1).
@@ -60,5 +56,8 @@ namespace Statecraft.Game.EditorTools
             EditorUtility.SetDirty(mat);
             return mat;
         }
+
+        static Texture2D Tex(string path) =>
+            AssetDatabase.LoadAssetAtPath<Texture2D>(path) ?? throw new System.IO.FileNotFoundException("texture missing (tools/terrain_bake.py)", path);
     }
 }

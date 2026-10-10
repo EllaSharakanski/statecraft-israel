@@ -1,0 +1,175 @@
+#nullable enable
+using System.Collections;
+using System.IO;
+using NUnit.Framework;
+using Statecraft.Game.Map;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.TestTools;
+
+/// <summary>Plan Task 7: the water, inside the map and past its edge, and the plateau skirt.</summary>
+public class SeaTests
+{
+    const string SeaMatPath = "Assets/Materials/Sea.mat";
+
+    [TearDown]
+    public void Reset() { RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
+
+    static MapScene OpenMap()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        // Every render here measures colour or local detail: Track A's tilt-shift blurs the top and bottom bands (task-3
+        // carry m6, applied at the merge point), so it is off; the TearDown turns it back on.
+        RenderSample.TiltShift(false);
+        return map;
+    }
+
+    [Test]
+    public void TheSkirtSeaUsesTheWaterShaderWithTheCoastTexture()
+    {
+        var sea = AssetDatabase.LoadAssetAtPath<Material>(SeaMatPath);
+        Assert.AreEqual("Statecraft/Sea", sea.shader.name);
+        Assert.IsFalse(ShaderUtil.ShaderHasError(sea.shader));
+        Assert.AreEqual(AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Coast), sea.GetTexture("_ScCoastTex"));
+        Assert.GreaterOrEqual(sea.FindPass("DepthOnly"), 0, "in the depth prepass, like the selection band (m3-fix N6)");
+        Assert.GreaterOrEqual(sea.FindPass("DepthNormals"), 0);
+    }
+
+    [Test]
+    public void TheWaterShadersCompileForWebGL2()
+    {
+        CollectionAssert.IsEmpty(ShaderChecks.Gles3Errors(Shader.Find("Statecraft/Sea")));
+        CollectionAssert.IsEmpty(ShaderChecks.Gles3Errors(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat").shader));
+    }
+
+    /// <summary>The controller's known gap: at the Jordanian plateau the land skirt holds the edge's height for 20 km (at
+    /// least 80% of its height above the sea) and reaches sea level only at the last ring.</summary>
+    [Test]
+    public void TheLandSkirtHoldsThePlateauThenEasesToSeaLevel()
+    {
+        var map = OpenMap();
+        var size = map.Terrain.terrainData.size;
+        var verts = map.Terrain.transform.Find(MapScene.BorderSkirtName).GetComponent<MeshFilter>().sharedMesh.vertices;
+        var meta = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
+        float seaY = (0f - meta.elev_min_m) * MapBuilder.VerticalExaggeration;
+        float zAmman = map.Frame.ToWorld(35.9, 31.95, 0).z;
+        int best = -1;
+        for (int i = 0; i < verts.Length; i++)
+            if (Mathf.Abs(verts[i].x - size.x) < 0.5f && (best < 0 || Mathf.Abs(verts[i].z - zAmman) < Mathf.Abs(verts[best].z - zAmman))) best = i;
+        Assert.GreaterOrEqual(best, 0, "an east-edge spoke");
+        float edge = verts[best].y - seaY;
+        Assert.Greater(edge, 1500f, "the plateau stands well above the sea (about 900 m, exaggerated 3x)");
+        Assert.AreEqual(size.x + MapBuilder.SkirtRings[2], verts[best + 2].x, 1f, "ring 2 of the same spoke");
+        Assert.GreaterOrEqual(verts[best + 2].y - seaY, 0.8f * edge, "held 20 km out");
+        Assert.AreEqual(seaY, verts[best + MapBuilder.SkirtRings.Length - 1].y, 1f, "at sea level at the last ring");
+    }
+
+    /// <summary>Task 7 checkpoint finding: holding each edge vertex's own height for 20 km drew the edge's ridges out as long
+    /// stripes across the Jordan skirt. Along the east edge, the held ring 2 is far smoother from spoke to spoke than the
+    /// edge (ring 0, which meets the terrain exactly). Fix round 1 (review M4): the hold is a running mean over the edge's
+    /// own samples, not 17 taps 1 km apart that undersampled ridges shorter than about 2 km: under 18% of the edge's step.
+    /// What a +-8 km mean keeps is the plateau's own trend along the edge (about 400 m of exaggerated height over 16 km, over
+    /// a 77-sample window: 5.2 m per spoke); the 17 taps added their aliasing on top (8.5 m).</summary>
+    [Test]
+    public void TheHeldSkirtCarriesThePlateauNotTheEdgesRidges()
+    {
+        var map = OpenMap();
+        var size = map.Terrain.terrainData.size;
+        var verts = map.Terrain.transform.Find(MapScene.BorderSkirtName).GetComponent<MeshFilter>().sharedMesh.vertices;
+        int rings = MapBuilder.SkirtRings.Length;
+        float edge = 0f, held = 0f; int pairs = 0, prev = -1;
+        for (int i = 0; i + rings <= verts.Length; i += rings)
+        {
+            bool east = Mathf.Abs(verts[i].x - size.x) < 0.5f && verts[i].z > 0.3f * size.z && verts[i].z < 0.9f * size.z
+                && Mathf.Abs(verts[i + 2].x - (size.x + MapBuilder.SkirtRings[2])) < 1f;
+            if (!east) { prev = -1; continue; }
+            if (prev >= 0) { edge += Mathf.Abs(verts[i].y - verts[prev].y); held += Mathf.Abs(verts[i + 2].y - verts[prev + 2].y); pairs++; }
+            prev = i;
+        }
+        TestContext.WriteLine($"east edge: {pairs} spoke pairs, mean step at the edge {edge / pairs:0.0} m, held 20 km out {held / pairs:0.0} m");
+        Assert.Greater(pairs, 500);
+        Assert.Less(held, 0.18f * edge, "the held rings carry the plateau's broad height, not the edge's ridges (no aliasing)");
+    }
+
+    static float Luma(Color c) => RenderSample.Luma(c);
+
+    /// <summary>Rendered west of Tel Aviv: just offshore (inside the 350 m foam band) is brighter than 1.2 km out, which is
+    /// lighter and greener than the open sea 24 km out. The shore is found in coast.png itself.</summary>
+    [UnityTest]
+    public IEnumerator ShallowsAreLighterThanTheOpenSeaAndFoamLinesTheShore()
+    {
+        var map = OpenMap();
+        yield return null;
+        var coast = new Texture2D(2, 2);
+        coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));   // readable copy; row 0 = south
+        int row = Mathf.FloorToInt((32.08f - 29.45f) / (33.35f - 29.45f) * coast.height);
+        int col = Mathf.FloorToInt((34.95f - 34.2f) / (35.9f - 34.2f) * coast.width);
+        while (col > 0 && coast.GetPixel(col, row).r >= 0.5f) col--;          // walk west to the first water texel
+        Object.DestroyImmediate(coast);
+        Vector3 At(int c)
+        {
+            double lon = 34.2 + (c + 0.5) / 2048.0 * (35.9 - 34.2), lat = 29.45 + (row + 0.5) / 2048.0 * (33.35 - 29.45);
+            var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w); return w;
+        }
+        Vector3 foam = At(col - 2), shallow = At(col - 15), deep = At(col - 300);
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        rig.LookAt = shallow; rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+        var px = new Vector2[2];
+        var near = RenderSample.Render(cam, 960, 540, new[] { foam, shallow }, px);
+        Color f = near.Mean((int)px[0].x, (int)px[0].y, 1), s = near.Mean((int)px[1].x, (int)px[1].y, 1);
+        rig.LookAt = deep; rig.Apply();
+        var far = RenderSample.Render(cam, 960, 540, new[] { deep }, px);
+        Color d = far.Mean((int)px[0].x, (int)px[0].y, 2);
+        TestContext.WriteLine($"foam {f}, shallow {s}, deep {d}");
+        Assert.Greater(Luma(f), Luma(s) + 0.02f, "foam at the shore");
+        Assert.Greater(Luma(s), Luma(d) + 0.05f, "shallows lighter");
+        Assert.Greater(s.g / s.b, d.g / d.b, "shallows greener");
+    }
+
+    /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>
+    [UnityTest]
+    public IEnumerator TheDeadSeaIsPalerThanTheOpenSea()
+    {
+        var map = OpenMap();
+        yield return null;
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        Color Sample(double lon, double lat)
+        {
+            var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w);
+            rig.LookAt = w; rig.Distance = 40000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+            var px = new Vector2[1];
+            var r = RenderSample.Render(cam, 480, 270, new[] { w }, px);
+            return r.Mean((int)px[0].x, (int)px[0].y, 2);
+        }
+        Color dead = Sample(35.50, 31.50), med = Sample(34.40, 32.00);
+        TestContext.WriteLine($"Dead Sea {dead}, Mediterranean {med}");
+        Assert.Greater(Luma(dead), Luma(med) + 0.1f);
+    }
+
+    /// <summary>Review I2: at the country-wide pose (about 300 km from the camera) the open sea stays saturated blue under the
+    /// water haze: b > r + 0.15 (worked out in Step 4: about 0.21 before the grade). And the water toggle exists. Fix round
+    /// 1 (review I1): the water haze applies at all: with the haze off the same sample moves by more than 0.01 in luma
+    /// (about 0.18 x 0.33 of the way to the cool water haze at about 300 km).</summary>
+    [UnityTest]
+    public IEnumerator TheOpenSeaStaysBlueUnderTheHaze()
+    {
+        var map = OpenMap();
+        yield return null;
+        CollectionAssert.Contains(VisualToggles.Names, "water");
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        PromoPose.Diorama02.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
+        var sea = map.Frame.ToWorld(34.40, 31.80, 0); sea.y = map.Terrain.SampleHeight(sea);
+        var px = new Vector2[1];
+        var s = RenderSample.Render(cam, 960, 540, new[] { sea }, px);
+        var c = s.Mean((int)px[0].x, (int)px[0].y, 2);
+        VisualToggles.Set("haze", false);
+        var clear = RenderSample.Render(cam, 960, 540, new[] { sea }, px);
+        VisualToggles.Set("haze", true);
+        var c0 = clear.Mean((int)px[0].x, (int)px[0].y, 2);
+        TestContext.WriteLine($"open sea at the diorama pose {c}, b - r = {c.b - c.r:0.000}; haze off {c0}, luma shift {Luma(c) - Luma(c0):0.000}");
+        Assert.Greater(c.b, c.r + 0.15f);
+        Assert.Greater(Mathf.Abs(Luma(c) - Luma(c0)), 0.01f, "the water haze moves the far open sea");
+    }
+}
