@@ -35,9 +35,10 @@ namespace Statecraft.Game.Map.Units
         /// from renders at 0.40-0.74, docs/units.md).</summary>
         public const float StillPhase = 0.52f;
 
-        /// <summary>Where the slice stands, inside the gameplay03 frame: the trio on the coastal plain south-east of Jaffa
-        /// (the promo puts its trio there), the loop over Tel Aviv and the plain, the corvette off Jaffa.</summary>
-        public static readonly (double lon, double lat) TrioAt = (34.84, 31.93), LoopCentre = (34.86, 32.03), ShipAt = (34.63, 32.02);
+        /// <summary>Where the slice stands, inside the gameplay03 frame: the trio on the coastal plain east of Tel Aviv, in
+        /// the frame's sharp band and clear of every settlement label (at 31.93 N it stood on Ramla's label), the loop over
+        /// Tel Aviv and the coast, the corvette off Jaffa.</summary>
+        public static readonly (double lon, double lat) TrioAt = (34.88, 32.01), LoopCentre = (34.86, 32.03), ShipAt = (34.63, 32.02);
         public const float ShipHeadingDegrees = 200f;
 
         public static bool Requested() =>

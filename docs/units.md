@@ -24,7 +24,7 @@ Code: `unity/Assets/Scripts/Map/Units/`. The materials are made by `UnitMaterial
 
 | Piece | Model | Where (PromoPose.Gameplay03) |
 |---|---|---|
-| Rifle trio | three 1948 IDF riflemen: bush hat with rifle held ready, Mk II steel helmet with rifle grounded, Palmach stocking cap with rifle slung | on the coastal plain south-east of Jaffa (34.84 E, 31.93 N), inside a white selection ring |
+| Rifle trio | three 1948 IDF riflemen: bush hat with rifle held ready, Mk II steel helmet with rifle grounded, Palmach stocking cap with rifle slung | on the coastal plain east of Tel Aviv (34.88 E, 32.01 N), clear of the settlement labels, inside a white selection ring |
 | Aircraft | Supermarine Spitfire LF Mk IX in IAF service, 1948 | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
 | Navy | modified Flower-class corvette INS Haganah (K-20), 1948 | off Jaffa (34.63 E, 32.02 N) |
 
