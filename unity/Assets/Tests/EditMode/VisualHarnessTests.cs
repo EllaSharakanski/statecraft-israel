@@ -238,4 +238,30 @@ public class VisualHarnessTests
         }
         finally { Object.DestroyImmediate(mixed); Object.DestroyImmediate(none); }
     }
+
+    // A fragment-stage UAV write: Metal compiles it; the GLES3 translation needs GL_EXT_texture_buffer, which WebGL 2 lacks.
+    const string MetalOnly = "Pass { HLSLPROGRAM\n#pragma vertex v\n#pragma fragment f\nfloat4 v(float4 p : POSITION) : SV_POSITION { return p; }\nRWTexture2D<float4> _U : register(u1);\nfloat4 f(float4 p : SV_POSITION) : SV_Target { _U[int2(p.xy)] = 1; return 1; }\nENDHLSL }";
+
+    /// <summary>Review I3: a GLES3-specific negative control. The pass compiles for Metal, but its GLES3 (WebGL 2) GLSL
+    /// requires an extension WebGL 2 does not have, so the check fails it; a generic HLSL error would not prove that the
+    /// check looks at the GLES3 output at all.</summary>
+    [Test]
+    public void AShaderThatCompilesForMetalButNotForWebGL2Fails()
+    {
+        Assert.IsEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_shader_framebuffer_fetch : enable\nvoid main() {}"));
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors("#version 310 es\nvoid main() {}"), "WebGL 2 is GLSL ES 3.00");
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_texture_buffer : require\nvoid main() {}"));
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors(""), "no GLSL at all is not a pass");
+        var shader = Make("Shader \"Test/MetalOnly\" { SubShader { " + MetalOnly + " } }");
+        try
+        {
+            var pass = ShaderUtil.GetShaderData(shader).GetSerializedSubshader(0).GetPass(0);
+            var metal = pass.CompileVariant(UnityEditor.Rendering.ShaderType.Fragment, new string[0],
+                UnityEditor.Rendering.ShaderCompilerPlatform.Metal, BuildTarget.StandaloneOSX);
+            Assert.IsTrue(metal.Success, "compiles for Metal: " + string.Join("; ", metal.Messages.Select(m => m.message)));
+            var errors = ShaderChecks.Gles3Errors(shader);
+            Assert.That(errors, Has.Some.Contains("GL_EXT_texture_buffer"), string.Join("\n", errors));
+        }
+        finally { Object.DestroyImmediate(shader); }
+    }
 }
