@@ -4,6 +4,8 @@
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 fail=0
+scan_out="$(mktemp)"
+trap 'rm -f "$scan_out"' EXIT
 step() { echo; echo "== $1"; }
 
 step "on main, clean tree"
@@ -26,8 +28,8 @@ step "tools tests"
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q || fail=1
 
 step "history scan of main (information; rows in docs/oss/history-accepted.tsv are accepted)"
-uv run scripts/oss/scan_history.py --ref main | tee /tmp/oss-release-scan.txt
-if ! grep -q ' 0 open secret-shape findings' /tmp/oss-release-scan.txt; then
+uv run scripts/oss/scan_history.py --ref main | tee "$scan_out"
+if ! grep -q ' 0 open secret-shape findings' "$scan_out"; then
   echo "OPEN SECRET-SHAPE FINDING: rotate it at its provider (owner), then add the row to docs/oss/history-accepted.tsv"
   fail=1
 fi

@@ -62,3 +62,15 @@ def test_versions_agree():
     released = re.findall(r"^## \[(\d+\.\d+\.\d+)\]", (ROOT / "CHANGELOG.md").read_text(), re.M)
     if released:
         assert released[0] == sim
+
+
+def test_a_stale_zip_does_not_survive_a_refusal(tmp_path):
+    out = tmp_path / "game.zip"
+    out.write_bytes(b"stale")
+    r = run(tmp_path, fake_build(tmp_path), out, stub="import sys\nprint('PACKAGE REFUSED: review')\nsys.exit(1)\n")
+    assert r.returncode != 0 and not out.exists()
+
+
+def test_release_gate_uses_a_temp_file_not_a_fixed_path():
+    text = (ROOT / "scripts/oss/release_gate.sh").read_text()
+    assert "mktemp" in text and "/tmp/oss-release-scan.txt" not in text

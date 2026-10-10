@@ -1,24 +1,27 @@
 # Releasing
 
 A release is a tagged commit on `main` with a CHANGELOG section and, from the first shared build on, a WebGL zip on the
-GitHub Releases page (and, from M4, on itch.io). Steps 1–4 are a normal pull request. Steps 5–7 are owner steps.
+GitHub Releases page (and, from M4, on itch.io). Steps 1–3 are a normal pull request. Steps 4–7 happen on the merged `main`, and steps 5–7 are owner steps.
 
 1. **Choose the version** (Semantic Versioning, pre-1.0 while the game is pre-release).
 2. **Bump every version site in one pull request:** `sim/Statecraft.Sim/SimInfo.cs` (`Version`) and
    `unity/ProjectSettings/ProjectSettings.asset` (`bundleVersion`). Then move the `## [Unreleased]` entries in
    `CHANGELOG.md` under `## [X.Y.Z] - YYYY-MM-DD` and leave an empty `## [Unreleased]` above it.
    `scripts/oss/tests/test_release.py::test_versions_agree` fails if the three disagree.
-3. **Run the release gate** on the merged `main`: `bash scripts/oss/release_gate.sh`. It must print
+3. **Merge** the pull request (squash).
+4. **Run the release gate** on the merged `main` (it refuses to run elsewhere): `bash scripts/oss/release_gate.sh`. It must print
    `RELEASE GATE OK`. It refuses while an owner decision is open (including D10, history acknowledgement, and D11, the
    sensitivity review), while an asset row is `owner-verify`, while the sim's sensitivity gate refuses `content/`, or
    while the history scan shows an open secret-shape row.
-4. **Merge** the pull request (squash).
 5. **Build and package** on the owner's machine, from the merged `main`:
 
    ```bash
    "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -shareable -logFile "$PWD/unity-build-web-br.log"
    git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-   uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"
+   uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" \
+     --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" \
+     --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" \
+     --expect "SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6"
    bash scripts/oss/package_web.sh unity/Builds/Web-brotli unity/Builds/statecraft-israel-vX.Y.Z-web.zip
    ```
 
@@ -51,7 +54,7 @@ The README's screenshots are claims about the current build. Re-take them whenev
    and update the README to the new names). Each must show a non-sensitive moment: no unreviewed sensitive event card.
 3. Update the visible caption "Real screenshots from build X.Y.Z (Mn), YYYY-MM-DD." in `README.md`, and the
    "Is this any good?" and "Roadmap" text the change made stale.
-4. Re-crop `docs/images/social-preview.jpg` (1280×640) from the new map shot. The owner re-uploads it under Settings →
+4. Rebuild `docs/images/social-preview.jpg` (1280×640) from the new map shot: `sips --resampleWidth 1280 <shot> --out /tmp/sp.jpg` then `sips --padToHeightWidth 640 1280 --padColor 0B1220 /tmp/sp.jpg --out docs/images/social-preview.jpg` (padded, not cropped, so no text is cut off). The owner re-uploads it under Settings →
    General → Social preview. Never use concept art for the social preview.
 
 ## Replacing the concept-art hero (planned)

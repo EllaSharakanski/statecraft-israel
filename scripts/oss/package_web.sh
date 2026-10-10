@@ -18,6 +18,7 @@ cp "$root/LICENSE" "$root/NOTICE" "$root/THIRD-PARTY-NOTICES.md" "$build/"
 cp "$root/LICENSES/"*.txt "$build/LICENSES/"
 cp "$root/unity/Assets/UI/Fonts/OFL.txt" "$build/OFL.txt"
 
+rm -f "$zip_path"   # a refusal must not leave an earlier zip behind
 python3 "$packager" --build "$build" --zip "$zip_path"
 
 listing="$(unzip -Z1 "$zip_path")"

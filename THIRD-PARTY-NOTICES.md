@@ -17,7 +17,7 @@ required attribution texts are in [`NOTICE`](NOTICE).
 | Wikipedia text and coordinates | cited throughout `content/` | CC BY-SA 4.0 | Attribution (source URL per entry); share-alike, which is why `content/` is CC BY-SA 4.0 |
 | Portraits (Wikimedia Commons) | `promo/ref/people/`, `unity/Assets/UI/Portraits/` | Public domain or CC0, per file | None legally; the per-file record in `ASSETS.portraits.yaml` is kept as provenance |
 | EB Garamond | `unity/Assets/UI/Fonts/` | SIL Open Font License 1.1 | Keep `OFL.txt` with the fonts; do not sell the fonts on their own |
-| Unity template-derived settings | `unity/Assets/Settings/`, `spikes/m0/unity/Assets/Settings/`, `spikes/m0/unity/Assets/UI Toolkit/UnityThemes/` | Unity Companion License | Use with Unity; see `LICENSING.md` |
+| Unity template-derived files | `unity/Assets/Settings/`, `spikes/m0/unity/Assets/Settings/`, `spikes/m0/unity/Assets/UI Toolkit/UnityThemes/`, and Shader Graphs generated from a Unity template (`unity/Assets/Shaders/StatecraftTerrain.shadergraph`) | Unity Companion License | Use with Unity; see `LICENSING.md` |
 | AI-generated concept art | `promo/final/01`–`08`, `promo/ref/*-src.jpg`, `docs/images/hero-concept-1936.jpg` | CC0 / no rights claimed (`LICENSING.md`); generator terms under owner review (D5) | Disclose as AI-generated (Steam and itch.io require it) |
 
 Code dependencies are fetched at build or run time under their own licences and are not vendored: NuGet packages in

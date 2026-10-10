@@ -161,3 +161,30 @@ def test_gitignore_covers_editor_licence_and_local_files():
     for rule in (".env.*", "*.alf", "Unity_v*.alf", ".claude/settings.local.json", ".pytest_cache/", ".vs/",
                  ".idea/", "unity/obj/", "unity/MemoryCaptures/"):
         assert rule in lines, rule
+
+
+# Batch 2 fix round 1.
+def test_trademark_says_the_logo_check_is_pending_and_d_h_covers_every_promo_image():
+    tm = " ".join(read("TRADEMARK.md").split())
+    assert "checked by the owner" not in tm and "decision D-H, open" in tm
+    d_h = next(l for l in read("docs/oss/DECISIONS.md").splitlines() if "D-H" in l)
+    assert d_h.startswith("- [ ] D-H") and "promo/final/" in d_h and "hero-concept-1936.jpg" in d_h
+
+
+def test_releasing_merges_before_the_gate_and_pins_the_full_expect_values():
+    text = read("docs/RELEASING.md")
+    assert text.index("**Merge**") < text.index("**Run the release gate**")
+    det = read("docs/determinism.md")
+    import re
+    for expect in re.findall(r'--expect "((?:GOLDEN|SMOKE) OK [^"]* [0-9a-f]{64})"', det):
+        assert f'--expect "{expect}"' in text, expect
+
+
+def test_notices_cover_shader_graph_and_spike_evidence_logs():
+    assert "StatecraftTerrain.shadergraph" in read("THIRD-PARTY-NOTICES.md")
+    assert "spikes/m0/evidence/" in read("LICENSING.md").replace("spikes/m0/evidence/*.jpg", "")
+
+
+def test_audit_says_what_changed_since_the_snapshot():
+    text = read("docs/oss/AUDIT.md")
+    assert "Snapshot as of 2026-10-10" in text and "Since then" in text and "5411f02" in text

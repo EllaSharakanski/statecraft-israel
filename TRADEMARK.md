@@ -37,9 +37,8 @@ Other companies' names that appear in this repository, and their owners, are lis
 `THIRD-PARTY-NOTICES.md` under "Third-party trademarks". They are used only to say truthfully what the project uses or
 is compared with. This repository ships none of their logos. The research notes and the image prompts name
 *Civilization VII* as a style reference. The game uses no Civilization assets or names. The AI concept art in
-`promo/final/` and `docs/images/hero-concept-1936.jpg` was prompted in that style; it is not game art, it carries no
-Civilization logo or wordmark (checked by the owner, decision D-H), and it is captioned as concept art wherever it
-appears.
+`promo/final/` and `docs/images/hero-concept-1936.jpg` was prompted in that style; it is not game art, and it is captioned as concept art wherever it
+appears. The owner is still checking that none of it carries a Civilization logo or wordmark (decision D-H, open).
 
 ## Asking
 

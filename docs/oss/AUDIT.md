@@ -85,3 +85,7 @@ Platform evidence for why this matters is in `research_notes/Israel nation sim g
 |---|---|---|---|
 | 2026-10-11 | `scripts/oss/scan_history.py --ref main` | 248 commits, every added line (merges included), every message and identity | 8 findings, **0 open secret-shape findings**. The 8 are 7 fake or template home paths and the owner's own email in `promo/fetch_portraits.py` (commit `d42bd6ba6c`, decision D10). All 8 are listed in `docs/oss/history-accepted.tsv`. |
 | 2026-10-11 | `scripts/oss/check_repo.py` (secrets, emails, home paths, sizes, symlinks) | the tip of `main` | OK |
+
+## 6. Since the snapshot
+
+Snapshot as of 2026-10-10 (sections 1 to 4). Since then: the repository is public on GitHub (it had no remote when the audit ran); the owner's email was removed from the tip of `promo/fetch_portraits.py` (it stays in history, decision D10); the `.gitignore` gaps listed in section 4 are closed (5411f02); and `promo/gen.py` reads its key from the environment only. Sections 1 to 4 above are left as they were written.
