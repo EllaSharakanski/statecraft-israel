@@ -570,3 +570,49 @@ Each candidate gives dates, the real choice faced, the historical option taken, 
   - GNP in IL is an unverified snippet; Kaplan's IL 300m "national income" is a different concept.
   - No full-year FY1951/52 budget.
 - **Security:** Infiltration counts per year come from secondary reports of Morris and Brecher. The Tel Mutila 41-killed figure is from an Israeli memorial article and ru-wiki only.
+
+
+## Addendum (2026-10-10): Third Government portfolios, Weizmann term start
+
+### Third Government (approved 8 Oct 1951, PM David Ben-Gurion; resigned 19 Dec 1952 per Wikipedia, JVL says 22 Dec; replaced 24 Dec 1952)
+Sources: https://en.wikipedia.org/wiki/Third_government_of_Israel ; https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית ; https://www.jewishvirtuallibrary.org/third-government-of-israel (JVL lists no parties). Knesset site (main.knesset.gov.il govId=3) returned no usable content.
+
+(a) Minister of Immigration (Aliyah): NOT FOUND. No source (en/he Wikipedia, JVL) lists an Immigration portfolio or minister in the Third Government. Tag: not found. (In the Second Government, Immigration sat with Haim-Moshe Shapira, see Q2.) Implication: no Immigration minister existed in Third Gov per all available lists; treat as handled by the Jewish Agency / PM's office until verified.
+
+(b) Minister of War Victims: NOT FOUND in the Third Government (no source lists it). Tag: not found. (In the Second Government it was paired with Religions under Yehuda Leib Maimon.)
+
+(c) Minister of Health: Yosef Burg, Hapoel HaMizrachi, 8 Oct 1951 - 24 Dec 1952. Tag: verified (en Wikipedia Yosef_Burg, he Wikipedia יוסף_בורג, JVL, en Third Gov page; four sources agree).
+ Resolution of the Health/Posts conflict: Hebrew sources say Burg became Minister of Posts on 24 Dec 1952 (Fourth Government, to 1 Jul 1958), not in the Third. So "Burg = Posts" is the later portfolio; "Burg = Health" is correct for the Third Government. https://he.wikipedia.org/wiki/יוסף_בורג ; https://en.wikipedia.org/wiki/Yosef_Burg
+ Posts in Third Government: Mordechai Nurock (Nurok), Mizrachi, Minister of Posts from 3 Nov 1952 to 24 Dec 1952 (first ever holder; appointed to the seat vacated after Agudat Yisrael left the coalition in Sept 1952). Tag: verified for the 3 Nov 1952 date (en + he Wikipedia Nurock pages; he page Posts-minister article says Posts had been inside the Transport ministry, split off after Pinkas died 14 Aug 1952). Holder of Posts between 8 Oct 1951 and 3 Nov 1952: not found / no separate minister (postal powers were held by the postal director, under Transport). JVL and en Third Gov page list Nurock as Posts without a date, which is simplified. https://he.wikipedia.org/wiki/מרדכי_נורוק ; https://he.wikipedia.org/wiki/שר_הדואר
+
+(d) Bechor-Shalom Sheetrit: Minister of Police, party Mapai, whole term 8 Oct 1951 - 24 Dec 1952. Tag: verified (en Wikipedia, he Wikipedia, JVL agree on portfolio). Note: in the Second Government (1950-51) Sheetrit was listed under "Sephardim and Oriental Communities" (en Wikipedia Second_government_of_Israel); in the Third, both Wikipedias list Mapai.
+
+Full minister list (en Wikipedia unless noted):
+- David Ben-Gurion, Mapai: PM and Defense; also Transport from 14 Aug 1952 (after Pinkas died)
+- Eliezer Kaplan, Mapai: Deputy PM and Finance, 8 Oct 1951 - 25 Jun 1952; Minister without portfolio 25 Jun - 13 Jul 1952 (died 13 Jul 1952)
+- Levi Eshkol, Mapai: Agriculture (and Development) 8 Oct 1951 - 25 Jun 1952; Finance 25 Jun 1952 - end
+- Peretz Naftali, Mapai: Minister without portfolio 8 Oct 1951 - 25 Jun 1952; Agriculture 25 Jun 1952 - end
+- Pinhas Lavon, Mapai: Minister without portfolio 17 Aug - 24 Dec 1952
+- Ben-Zion Dinur, Mapai (he Wikipedia; en says not an MK in 2nd Knesset): Education and Culture
+- Moshe Sharett, Mapai: Foreign Affairs
+- Yosef Burg, Hapoel HaMizrachi: Health
+- Haim-Moshe Shapira, Hapoel HaMizrachi: Interior and Religions
+- Dov Yosef, Mapai: Trade and Industry; Justice until 25 Jun 1952 (en Wikipedia: Justice 8 Oct 1951 - 25 Jun 1952 then Haim Cohn, not an MK, 25 Jun - 24 Dec 1952; he Wikipedia says Yosef took Justice from 25 Jun 1952 - CONFLICTING on who held Justice after June 1952; JVL lists Yosef as Trade and Industry and Justice)
+- Golda Meir, Mapai: Labour
+- Bechor-Shalom Sheetrit, Mapai: Police
+- Mordechai Nurock, Mizrachi: Posts from 3 Nov 1952
+- David-Zvi Pinkas, Mizrachi: Transport 8 Oct 1951 - 14 Aug 1952 (died)
+- Yitzhak Meir Levin, Agudat Yisrael: Welfare, to 18 Sep 1952 (en/he differ: 18 vs 23 Sep 1952 for Agudat Yisrael leaving coalition)
+- Deputies (en): Yosef Efrati (Mapai) Agriculture; Kalman Kahana (Poalei Agudat Yisrael) Education and Culture
+Cabinet size: sources conflict (13 vs 15). Tag for the list overall: verified on core portfolios; dates of mid-term changes single source (Wikipedia) with the conflicts noted above. Knesset vote: 56-40 (he Wikipedia, single source).
+
+### Q2. Second Government (1 Nov 1950 - 8 Oct 1951, Ben-Gurion)
+Source: https://en.wikipedia.org/wiki/Second_government_of_Israel (single source, Knesset site not reachable). Tag: single source.
+- Immigration: no separate minister; held by Haim-Moshe Shapira (United Religious Front) together with Health and Interior, whole term (no separate dates).
+- War Victims: Yehuda Leib Maimon (United Religious Front), as "Religions and War Victims", whole term.
+- Others: Lavon (Agriculture, Mapai), Remez (Education, 1 Nov 1950 - 19 May 1951, then Ben-Gurion), Sharett (Foreign), Kaplan (Finance), Rosen (Justice, Progressive), Meir (Labour), Sheetrit (Police), Geri (Trade and Industry), Dov Yosef (Transport), Levin (Welfare). Government resigned 14 Feb 1951.
+
+### Q3. Weizmann first term start
+- Knesset election: 16 Feb 1949 (83 votes to Klausner's 15, 114 of 120 voting). Source: https://en.wikipedia.org/wiki/1949_Israeli_presidential_election (cites Wechsler 2024, Middle Eastern Studies 60(2)). Tag: verified (en Wikipedia election page + web search summary). Note en Wikipedia Chaim_Weizmann is internally inconsistent (16 vs 17 Feb for election).
+- Declared president / term start: 17 Feb 1949; infobox term runs to 9 Nov 1952 (death). https://en.wikipedia.org/wiki/Chaim_Weizmann ; 1949 election page ("declared president on 17 February 1949").
+- Swearing-in: 17 Feb 1949 per Weizmann Institute (https://weizmann.ac.il/WeizmannCompass/node/914) and IFCJ (https://www.ifcj.org/news/fellowship-blog/the-first-president-of-israel-2); Israel MFA page (https://embassies.gov.il/MFA/AboutIsrael/state/Pages/Chaim%20Weizmann.aspx) says swearing-in in Jerusalem on 16 Feb. Tag: conflicting, both versions given; 17 Feb is the better supported (2 vs 1), so election 16 Feb / oath and term start 17 Feb is the working answer.
