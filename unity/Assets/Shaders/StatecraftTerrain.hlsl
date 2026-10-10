@@ -22,7 +22,10 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     // fully occluded surface, so Lit adds nothing (no diffuse, specular colour 0, indirect light times occlusion 0): exactly
     // what Sea.shader returns past the edge. Land keeps its after-lighting haze through the same Emission.
     float elevM = (PositionWS.y - _ScMap.z) / _ScMap.w;
-    float3 waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM), PositionWS);
+    // Land pixels (water 0, spatially coherent) skip the water shading: its noise and second shadow lookup would only be
+    // multiplied away (Task 7 fix round 1, M3).
+    float3 waterColour = 0;
+    [branch] if (water > 0.0) waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM), PositionWS);
     BaseColor = ground * (1.0 - h) * (1.0 - water);
     NormalOut = normalize(lerp(n, float3(0, 1, 0), water));
     Occlusion = lerp(lerp(1.0, ao, 0.8), 0.0, water);

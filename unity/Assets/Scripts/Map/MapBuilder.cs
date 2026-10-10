@@ -182,9 +182,10 @@ namespace Statecraft.Game.Map
         public const float SeaToleranceM = 0.5f;
 
         /// <summary>The land and sea past the map's edge (fix round 2, R2-1 and N1). Each edge sample continues outward: a sea
-        /// sample stays flat at sea level (submesh 0, the sea material, lit like the terrain's sea, so no seam shows); a land
-        /// sample falls from the edge's height to sea level (submesh 1, a muted land tone), so Sinai, Jordan and Lebanon read
-        /// as land. A segment with a land end is land. Corner fans close the four corners. Every triangle lies outside the
+        /// sample stays flat at sea level (submesh 0, Sea.mat: the unlit Statecraft/Sea, shaded by the same ScWaterShade as the
+        /// terrain's own water, so no seam shows); a land sample meets the terrain's edge at ring 0, then holds the along-edge
+        /// mean of the edge's height (SkirtHoldSmoothingM) and eases to sea level by the last ring (SkirtFall; submesh 1, a
+        /// muted land tone), so Sinai, Jordan and Lebanon read as land. A segment with a land end is land. Corner fans close the four corners. Every triangle lies outside the
         /// terrain's footprint, so nothing covers the map (the old full sea plane hid all land below about -10 m).</summary>
         public static Mesh BuildBorderSkirt(TerrainData data, float elevMinM, MapRuntimeAssets assets)
         {
@@ -195,18 +196,26 @@ namespace Statecraft.Game.Map
             int samples = data.heightmapResolution - 1;
             var verts = new List<Vector3>(); var sea = new List<int>(); var land = new List<int>();
             bool IsLand(float h) => Mathf.Abs(h / VerticalExaggeration + elevMinM) > SeaToleranceM;
-            // The edge's height averaged along the edge over +-SkirtHoldSmoothingM (17 samples, clamped to the map).
-            float Held(Vector2 p, Vector2 outward)
+            // The edge's heights and their running mean over +-SkirtHoldSmoothingM of the edge's own samples (prefix sums; the
+            // window is cut short at the edge's ends). Every sample counts, so no ridge between taps aliases (fix round 1, M4).
+            float[] HeldAlong(Vector2 a, Vector2 b, float[] h)
             {
-                var along = new Vector2(outward.y, -outward.x);
-                float sum = 0f;
-                for (int j = -8; j <= 8; j++) sum += Height(p + along * (SkirtHoldSmoothingM * j / 8f));
-                return sum / 17f;
+                for (int i = 0; i <= samples; i++) h[i] = Height(Vector2.Lerp(a, b, (float)i / samples));
+                var sum = new double[samples + 2];
+                for (int i = 0; i <= samples; i++) sum[i + 1] = sum[i] + h[i];
+                int w = Mathf.Max(1, Mathf.RoundToInt(SkirtHoldSmoothingM / ((b - a).magnitude / samples)));
+                var held = new float[samples + 1];
+                for (int i = 0; i <= samples; i++)
+                {
+                    int lo = Mathf.Max(0, i - w), hi = Mathf.Min(samples, i + w);
+                    held[i] = (float)((sum[hi + 1] - sum[lo]) / (hi - lo + 1));
+                }
+                return held;
             }
-            // One ring of vertices outward from an edge point; returns the index of its first vertex.
-            int Spoke(Vector2 p, Vector2 outward, bool isLand, Vector2? outward2 = null)
+            // One ring of vertices outward from an edge point (h its height, held the height the rings past it hold); returns
+            // the index of its first vertex.
+            int Spoke(Vector2 p, float h, float held, Vector2 outward, bool isLand, Vector2? outward2 = null)
             {
-                float h = Height(p), held = isLand ? Held(p, outward) : seaY;
                 int first = verts.Count;
                 for (int k = 0; k < SkirtRings.Length; k++)
                 {
@@ -240,14 +249,17 @@ namespace Statecraft.Game.Map
                 (new Vector2(size.x, size.z), new Vector2(0, size.z), Vector2.up),          // north
                 (new Vector2(0, size.z), new Vector2(0, 0), Vector2.left),                  // west
             };
-            foreach (var (a, b, n) in edges)
+            var heights = new float[edges.Length][]; var helds = new float[edges.Length][];
+            for (int e = 0; e < edges.Length; e++) { heights[e] = new float[samples + 1]; helds[e] = HeldAlong(edges[e].a, edges[e].b, heights[e]); }
+            for (int e = 0; e < edges.Length; e++)
             {
+                var (a, b, n) = edges[e];
                 int prev = -1; bool prevLand = false;
                 for (int i = 0; i <= samples; i++)
                 {
                     var p = Vector2.Lerp(a, b, (float)i / samples);
-                    bool isLand = IsLand(Height(p));
-                    int spoke = Spoke(p, n, isLand);
+                    bool isLand = IsLand(heights[e][i]);
+                    int spoke = Spoke(p, heights[e][i], helds[e][i], n, isLand);
                     if (prev >= 0) Quad(prevLand || isLand ? land : sea, prev, spoke);
                     prev = spoke; prevLand = isLand;
                 }
@@ -256,8 +268,10 @@ namespace Statecraft.Game.Map
             for (int e = 0; e < edges.Length; e++)
             {
                 var corner = edges[e].b; var n1 = edges[e].n; var n2 = edges[(e + 1) % edges.Length].n;
-                bool isLand = IsLand(Height(corner));
-                int s1 = Spoke(corner, n1, isLand), sd = Spoke(corner, n1, isLand, n2), s2 = Spoke(corner, n2, isLand);
+                int e2 = (e + 1) % edges.Length;
+                float h = heights[e][samples], held1 = helds[e][samples], held2 = helds[e2][0];   // the corner ends edge e, starts e2
+                bool isLand = IsLand(h);
+                int s1 = Spoke(corner, h, held1, n1, isLand), sd = Spoke(corner, h, 0.5f * (held1 + held2), n1, isLand, n2), s2 = Spoke(corner, h, held2, n2, isLand);
                 Quad(isLand ? land : sea, s1, sd); Quad(isLand ? land : sea, sd, s2);
             }
             var mesh = assets.Own(new Mesh { name = "BorderSkirt", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });

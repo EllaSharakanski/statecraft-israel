@@ -158,6 +158,35 @@ distance needs no smoothing (Task 5 carry). Plateau edge (diorama02): the Jordan
 edge at the edge's broad height instead of sagging at once, as a flat muted band level with the map's eastern rim. A
 faint low-contrast banding remains there at grazing angles.
 
+### Task 7 fix round 1
+- **Haze at full width (review I1, the Task 6 carry).**
+  - At diorama02, the haze toggle moves the far band 0.047 and the near band 0.002 over the full width. Task 6 measured
+    0.023 / 0.026, with the sea and skirt unhazed. Restricted to the land column it was 0.069 / 0.026.
+  - So `TheHazeThickensWithDistance` and `TheHazeStartsBeyondTheNearestDioramaLandAndGrowsWithDistance` sample x 0..1
+    again. By distance: near 0.0019, mid 0.0212, far 0.0473.
+  - `TheOpenSeaStaysBlueUnderTheHaze` now asserts that the water haze applies. The open sea at about 300 km moves 0.059
+    in luma with the haze on, and 0.000 with `ScHazeWater` dropped on both sides (the red check).
+- **Seam test close pair (M1).**
+  - The pair sits at +-600 m across the edge. Each side is the mean of five 7x7 patches, 2 km apart along the edge,
+    because a single 1 km patch carries one wave cell or glint sparkle on its own (up to 0.012).
+  - A step of 5% on the skirt sea only within 1.5 km of the edge passes the +-2.5 km pairs (0.000) and fails the close
+    pair (0.015). All 16 lines are <= 0.004.
+- **Skirt hold (M4).**
+  - The hold is now a running mean over the edge's own samples (prefix sums, +-8 km). It replaces the 17 taps 1 km apart.
+  - East edge, spoke-to-spoke step 20 km out: 8.5 -> 5.2 m. What remains is the plateau's own trend along the edge.
+  - The test bound is under 0.18 x the edge's step.
+  - The faint grazing-angle banding in diorama02 is gone.
+- **Land skips the water shading (M3).** `[branch]` on `water > 0`.
+  - gameplay03 `all` minus `-water`: 0.03 ms before, 0.01 ms after. Both are inside the spreads, so there is no
+    measurable change on this GPU.
+  - Before, on the build at `6757168`: `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.49 spread_ms=0.17`
+    and `visual=-water ... median_avg_ms=2.46 spread_ms=0.06`.
+  - After: `visual=all ... median_avg_ms=2.55 spread_ms=0.07`, `visual=-water ... median_avg_ms=2.54 spread_ms=0.02`;
+    diorama02 `all` 7.34 ms (before 7.38 ms).
+  - The earlier 0.68 ms water cost was run-to-run noise.
+- **Build and boot.** WebGL 77.1 MB, no `Shader error`. Boot `--cpu 1`: `map_build_ms` 469, `first_frame_ms` 3598
+  (budgets 743 / 5321).
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
@@ -165,3 +194,4 @@ faint low-contrast banding remains there at grazing angles.
 | 6 | t06-terrain | captures/visual/t06-terrain/*-compare*.png, editor/*-compare*.png | (owner) |
 | 6 (fix 1) | t06-terrain-r1 | captures/visual/t06-terrain-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 7 | t07-sea | captures/visual/t07-sea/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
+| 7 (fix 1) | t07-sea-r1 | captures/visual/t07-sea-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |

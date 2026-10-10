@@ -65,7 +65,10 @@ public class SeaTests
 
     /// <summary>Task 7 checkpoint finding: holding each edge vertex's own height for 20 km drew the edge's ridges out as long
     /// stripes across the Jordan skirt. Along the east edge, the held ring 2 is far smoother from spoke to spoke than the
-    /// edge (ring 0, which meets the terrain exactly).</summary>
+    /// edge (ring 0, which meets the terrain exactly). Fix round 1 (review M4): the hold is a running mean over the edge's
+    /// own samples, not 17 taps 1 km apart that undersampled ridges shorter than about 2 km: under 18% of the edge's step.
+    /// What a +-8 km mean keeps is the plateau's own trend along the edge (about 400 m of exaggerated height over 16 km, over
+    /// a 77-sample window: 5.2 m per spoke); the 17 taps added their aliasing on top (8.5 m).</summary>
     [Test]
     public void TheHeldSkirtCarriesThePlateauNotTheEdgesRidges()
     {
@@ -84,7 +87,7 @@ public class SeaTests
         }
         TestContext.WriteLine($"east edge: {pairs} spoke pairs, mean step at the edge {edge / pairs:0.0} m, held 20 km out {held / pairs:0.0} m");
         Assert.Greater(pairs, 500);
-        Assert.Less(held, 0.25f * edge, "the held rings carry the plateau's broad height, not the edge's ridges");
+        Assert.Less(held, 0.18f * edge, "the held rings carry the plateau's broad height, not the edge's ridges (no aliasing)");
     }
 
     static float Luma(Color c) => RenderSample.Luma(c);
@@ -143,7 +146,9 @@ public class SeaTests
     }
 
     /// <summary>Review I2: at the country-wide pose (about 300 km from the camera) the open sea stays saturated blue under the
-    /// water haze: b > r + 0.15 (worked out in Step 4: about 0.21 before the grade). And the water toggle exists.</summary>
+    /// water haze: b > r + 0.15 (worked out in Step 4: about 0.21 before the grade). And the water toggle exists. Fix round
+    /// 1 (review I1): the water haze applies at all: with the haze off the same sample moves by more than 0.01 in luma
+    /// (about 0.18 x 0.33 of the way to the cool water haze at about 300 km).</summary>
     [UnityTest]
     public IEnumerator TheOpenSeaStaysBlueUnderTheHaze()
     {
@@ -156,7 +161,12 @@ public class SeaTests
         var px = new Vector2[1];
         var s = RenderSample.Render(cam, 960, 540, new[] { sea }, px);
         var c = s.Mean((int)px[0].x, (int)px[0].y, 2);
-        TestContext.WriteLine($"open sea at the diorama pose {c}, b - r = {c.b - c.r:0.000}");
+        VisualToggles.Set("haze", false);
+        var clear = RenderSample.Render(cam, 960, 540, new[] { sea }, px);
+        VisualToggles.Set("haze", true);
+        var c0 = clear.Mean((int)px[0].x, (int)px[0].y, 2);
+        TestContext.WriteLine($"open sea at the diorama pose {c}, b - r = {c.b - c.r:0.000}; haze off {c0}, luma shift {Luma(c) - Luma(c0):0.000}");
         Assert.Greater(c.b, c.r + 0.15f);
+        Assert.Greater(Mathf.Abs(Luma(c) - Luma(c0)), 0.01f, "the water haze moves the far open sea");
     }
 }

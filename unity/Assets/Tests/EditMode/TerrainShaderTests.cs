@@ -172,10 +172,10 @@ public class TerrainShaderTests
         finally { mat.SetTexture("_ScBakeTex", real); mat.SetTexture("_ScAoTex", realAo); Object.DestroyImmediate(neutral); }
     }
 
-    /// <summary>Rendered at the country-wide pose: the haze moves the far (top) band more than the near (bottom) band. Both
-    /// bands are sampled in the column x 0.45..0.6, which is the map's land from top to bottom at this pose: in Task 6 only
-    /// the land carries haze, and across the full width the far band is mostly the Mediterranean and the border skirt
-    /// (no haze until Task 7), which hid the effect (full width: far 0.023, near 0.026; land column: far 0.069, near 0.026).</summary>
+    /// <summary>Rendered at the country-wide pose: the haze moves the far (top) band more than the near (bottom) band, across
+    /// the full width. Task 6 sampled only the land column x 0.45..0.6, because then only the land carried haze and the far
+    /// band's sea and border skirt hid the effect (full width: far 0.023, near 0.026). Since Task 7 the sea on both sides
+    /// takes the water haze, so the full width is measured again (Task 7 fix round 1).</summary>
     [UnityTest]
     public IEnumerator TheHazeThickensWithDistance()
     {
@@ -185,7 +185,7 @@ public class TerrainShaderTests
         PromoPose.Diorama02.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
         VisualToggles.Set("haze", false); var clear = RenderSample.Render(cam, 480, 270);
         VisualToggles.Set("haze", true); var hazy = RenderSample.Render(cam, 480, 270);
-        const float x0 = 0.45f, x1 = 0.6f;
+        const float x0 = 0f, x1 = 1f;
         float far = Mathf.Abs(hazy.MeanLuma(x0, 0.8f, x1, 0.95f) - clear.MeanLuma(x0, 0.8f, x1, 0.95f));
         float near = Mathf.Abs(hazy.MeanLuma(x0, 0.05f, x1, 0.2f) - clear.MeanLuma(x0, 0.05f, x1, 0.2f));
         TestContext.WriteLine($"haze shift far {far:0.000}, near {near:0.000}");
@@ -194,7 +194,7 @@ public class TerrainShaderTests
 
     /// <summary>Review I1: the haze is a depth cue, not a veil. At the country-wide pose the nearest land (bottom band,
     /// about 205 km away) is inside the haze's start distance and barely moves; the middle and far bands move more and
-    /// more. Land column x 0.45..0.6, as in TheHazeThickensWithDistance.</summary>
+    /// more. Full width, as in TheHazeThickensWithDistance (Task 7 fix round 1: the sea is hazed too).</summary>
     [UnityTest]
     public IEnumerator TheHazeStartsBeyondTheNearestDioramaLandAndGrowsWithDistance()
     {
@@ -204,7 +204,7 @@ public class TerrainShaderTests
         PromoPose.Diorama02.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
         VisualToggles.Set("haze", false); var clear = RenderSample.Render(cam, 480, 270);
         VisualToggles.Set("haze", true); var hazy = RenderSample.Render(cam, 480, 270);
-        float Shift(float y0, float y1) => Mathf.Abs(hazy.MeanLuma(0.45f, y0, 0.6f, y1) - clear.MeanLuma(0.45f, y0, 0.6f, y1));
+        float Shift(float y0, float y1) => Mathf.Abs(hazy.MeanLuma(0f, y0, 1f, y1) - clear.MeanLuma(0f, y0, 1f, y1));
         float near = Shift(0.05f, 0.2f), mid = Shift(0.425f, 0.575f), far = Shift(0.8f, 0.95f);
         TestContext.WriteLine($"haze by distance near {near:0.0000}, mid {mid:0.0000}, far {far:0.0000}");
         Assert.Less(near, 0.008f, "about no haze at the nearest land");

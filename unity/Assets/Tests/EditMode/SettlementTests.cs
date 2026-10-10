@@ -377,7 +377,10 @@ public class MapSceneTests
     public System.Collections.IEnumerator TheSeaBeyondTheEdgeMatchesTheTerrainSea()
     {
         // Visual v1 Task 7: both sides now shade with StatecraftMap.hlsl ScWaterShade, whose waves vary over a few hundred
-        // metres, so 7x7-pixel patch means are compared (still 0.012), at four yaws (Review Focus 1).
+        // metres, so 7x7-pixel patch means are compared (still 0.012), at four yaws (Review Focus 1). Task 7 fix round 1 (M1):
+        // a close pair at +-600 m straddles the edge too, so a step at the edge is told from a view-dependent gradient. Each
+        // side of the close pair is the mean of five such patches 2 km apart along the edge: a step at the edge runs along
+        // all of it, while a single 1 km patch still carries one wave cell or glint sparkle (up to 0.012 on its own).
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
@@ -387,16 +390,26 @@ public class MapSceneTests
         foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
             foreach (var (look, inside, beyond) in new[] {
                 (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
-                (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)) })
+                (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)),
+                (new Vector3(3000, 0, size.z * 0.55f), new Vector3(600, 0, size.z * 0.55f), new Vector3(-600, 0, size.z * 0.55f)),
+                (new Vector3(3000, 0, size.z - 8000), new Vector3(600, 0, size.z - 8000), new Vector3(-600, 0, size.z - 8000)) })
             {
                 rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = yaw; rig.TopInset = 0; rig.Apply();
                 var y = map.Terrain.SampleHeight(inside);
-                var px = new Vector2[2];
-                var s = RenderSample.Render(cam, 1600, 900, new[] { new Vector3(inside.x, y, inside.z), new Vector3(beyond.x, y, beyond.z) }, px);
-                Color a = s.Mean((int)px[0].x, (int)px[0].y, 3), b = s.Mean((int)px[1].x, (int)px[1].y, 3);
+                bool close = Mathf.Abs(inside.x) < 1000f;
+                int rows = close ? 5 : 1;
+                var world = new Vector3[2 * rows]; var px = new Vector2[2 * rows];
+                for (int r = 0; r < rows; r++)
+                {
+                    float dz = (r - (rows - 1) / 2f) * 2000f;
+                    world[2 * r] = new Vector3(inside.x, y, inside.z + dz); world[2 * r + 1] = new Vector3(beyond.x, y, beyond.z + dz);
+                }
+                var s = RenderSample.Render(cam, 1600, 900, world, px);
+                Color a = Color.clear, b = Color.clear;
+                for (int r = 0; r < rows; r++) { a += s.Mean((int)px[2 * r].x, (int)px[2 * r].y, 3) / rows; b += s.Mean((int)px[2 * r + 1].x, (int)px[2 * r + 1].y, 3) / rows; }
                 var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
-                TestContext.WriteLine($"seam at {look}, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
-                Assert.Less(diff, 0.012f, $"seam at {look}, yaw {yaw}: terrain sea {a}, beyond {b}");
+                TestContext.WriteLine($"seam at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
+                Assert.Less(diff, 0.012f, $"seam at {look}, x +-{inside.x:0} m, yaw {yaw}: terrain sea {a}, beyond {b}");
             }
     }
 
