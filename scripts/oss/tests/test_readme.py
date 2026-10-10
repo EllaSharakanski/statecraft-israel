@@ -2,7 +2,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-HERO = "docs/images/hero-concept-1936.jpg"
+HERO = "docs/images/trailer-loop.webp"
+CONCEPT = "docs/images/hero-concept-1936.jpg"
 GRID = ["docs/images/build-m3-map.jpg", "docs/images/build-m3-cabinet.jpg", "docs/images/build-m3-why.jpg"]
 
 
@@ -24,18 +25,28 @@ def test_language_bar_comes_first():
     assert "English" in first and "README.he.md" in first
 
 
-def test_hero_is_the_first_image_captioned_as_concept_art_in_alt_and_caption():
+def test_hero_is_the_trailer_loop_disclosed_as_ai_and_linked_to_the_full_trailer():
     text = read("README.md")
     assert images(text)[0] == HERO
     tag = re.search(rf'<img src="{re.escape(HERO)}"[^>]*>', text, re.S).group(0)
-    assert "AI-generated concept art" in tag and "not the current build" in tag
+    assert "AI video tools" in tag and "not in-game footage" in tag
     after = text.split(tag, 1)[1][:600]
+    assert "not in-game footage" in after and 'href="docs/media/trailer.mp4"' in after
+    assert (ROOT / "docs/media/trailer.mp4").stat().st_size < 10 * 1024 * 1024
+
+
+def test_concept_art_opens_what_is_this_captioned_as_concept_art():
+    what = section(read("README.md"), "## What is this?")
+    assert images(what)[0] == CONCEPT
+    tag = re.search(rf'<img src="{re.escape(CONCEPT)}"[^>]*>', what, re.S).group(0)
+    assert "AI-generated concept art" in tag and "not the current build" in tag
+    after = what.split(tag, 1)[1][:600]
     assert "Concept art (AI-generated)" in after and "set in 1936" in after and "not the current build" in after
 
 
 def test_real_dated_screenshots_in_a_one_plus_two_grid():
     text = read("README.md")
-    assert images(text)[1:4] == GRID
+    assert images(text)[2:5] == GRID
     for path, width in zip(GRID, ("820", "405", "405")):
         assert re.search(rf'<img src="{re.escape(path)}"[^>]*width="{width}"', text), path
     assert re.search(r"Real screenshots from build \d+\.\d+\.\d+ \(M3\), \d{4}-\d{2}-\d{2}\.", text)
@@ -158,7 +169,7 @@ def test_hebrew_readme_polish_and_alt_text():
     for bad in ("מורשה ב־CC", "מצוטטת עם מקור", "מאסיבי", "שערי סקירה", "בזמן אמת בזמן"):
         assert bad not in he, bad
     alts = re.findall(r'alt="([^"]+)"', he)
-    assert len(alts) == 4 and all(re.search(r"[א-ת]", a) for a in alts)
+    assert len(alts) == 5 and all(re.search(r"[א-ת]", a) for a in alts)
 
 
 def test_first_open_in_unity_is_in_all_three_files():

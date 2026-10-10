@@ -1,9 +1,9 @@
 **English** · [עברית](README.he.md)
 
 <p align="center">
-  <img src="docs/images/hero-concept-1936.jpg" alt="Concept art of the target look: a tilt-shift diorama of the coast around Tel Aviv and Jaffa in 1936, with a top resource bar and an event card. This is AI-generated concept art, not the current build." width="100%">
+  <a href="docs/media/trailer.mp4"><img src="docs/images/trailer-loop.webp" alt="A 25-second loop from the cinematic trailer: Herzl's line over the sea, the gameplay map, Israeli Air Force aircraft from 1948, 1967 and 1973, a Tel Aviv tile growing from 1909 to 2026, and 'If you will it, it is no dream.' The trailer is made with AI video tools from our concept art; it is not in-game footage." width="100%"></a>
   <br>
-  <em>Concept art (AI-generated): the look we are building toward, set in 1936, before the game's 1948 start. It is not the current build, and it shows things the game does not have. Real screenshots of today's build are <a href="#what-it-looks-like-today">below</a>.</em>
+  <em>From the cinematic trailer, made with AI video tools from our concept art, not in-game footage. <a href="docs/media/trailer.mp4">Watch the full trailer (1:23, with sound)</a>.</em>
 </p>
 
 # Statecraft: Israel
@@ -21,6 +21,12 @@
 ##### [Report a bug](https://github.com/eyalgolan/statecraft-israel/issues/new?template=bug_report.yml) | [Report a historical error](https://github.com/eyalgolan/statecraft-israel/issues/new?template=historical_accuracy.yml) | [Discussions](https://github.com/eyalgolan/statecraft-israel/discussions) | [Changelog](CHANGELOG.md)
 
 ## What is this?
+
+<p align="center">
+  <img src="docs/images/hero-concept-1936.jpg" alt="Concept art of the target look: a tilt-shift diorama of the coast around Tel Aviv and Jaffa in 1936, with a top resource bar and an event card. This is AI-generated concept art, not the current build." width="100%">
+  <br>
+  <em>Concept art (AI-generated): the look we are building toward, set in 1936, before the game's 1948 start. It is not the current build, and it shows things the game does not have. Real screenshots of today's build are <a href="#what-it-looks-like-today">below</a>.</em>
+</p>
 
 You sit in the prime minister's chair from the founding of the state. Each turn you:
 
