@@ -78,3 +78,9 @@ def test_code_of_conduct_has_a_private_contact_and_the_history_section():
     assert "Conduct:" in text and "security/advisories/new" in text
     assert "## Historical content and political discussion" in text
     assert "Contributor Covenant" in text and "version 2.1" in text
+
+
+def test_pr_template_has_evidence_and_no_cla_item():
+    text = read(".github/pull_request_template.md")
+    assert "## Evidence" in text and "LICENSING.md" in text and "ASSETS.yaml" in text
+    assert "CLA" not in text and "contributors/" not in text
