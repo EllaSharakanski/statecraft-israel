@@ -9,7 +9,7 @@ LIVE = {
     "question": "d876e3", "wontfix": "ffffff", "content": "0e8a16", "historical-accuracy": "1d76db",
     "no-changelog": "cfd3d7", "spam": "000000", "area: sim": "5319e7", "area: tools": "bfd4f2",
     "area: unity": "222222", "area: art": "f9d0c4", "area: design": "c5def5", "research": "0e8a16",
-    "translation": "fbca04", "M4": "b60205", "in progress (maintainer)": "ededed",
+    "translation": "fbca04", "M4": "b60205", "in progress (maintainer)": "ededed", "roadmap": "3e4b9e",
 }
 
 
