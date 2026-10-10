@@ -12,3 +12,11 @@ anchors:
     jews: 1013900       # end of year
     sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-09 }]
     status: fact-checked
+  - date: 1950-12-31
+    jews: 1203000       # end of year (1,203.0 thousand)
+    sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-10 }]
+    status: fact-checked
+  - date: 1951-12-31
+    jews: 1404400       # end of year (1,404.4 thousand)
+    sources: [{ url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-10 }]
+    status: fact-checked

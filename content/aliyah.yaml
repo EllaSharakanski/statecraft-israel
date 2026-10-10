@@ -15,3 +15,21 @@ series:
       - { url: "https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html", checked: 2026-10-09 }
       - { url: "https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year", checked: 2026-10-09 }
     status: fact-checked
+  # 1950 and 1951 rows parsed from the raw HTML of the JVL table (right-to-left; the row label follows the data). Each
+  # row sums exactly to the CBS total: 170,563 (1950) and 175,279 (1951), as in CBS Publication 1365, Table 1.
+  - from: 1950-01-01
+    to: 1950-12-31
+    origins: { asia: 57565, africa: 26162, europe: 81195, america_oceania: 1954, unknown: 3687 }
+    sources:
+      - { url: "https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html", checked: 2026-10-10 }
+      - { url: "https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year", checked: 2026-10-10 }
+      - { url: "https://www.cbs.gov.il/he/publications/DocLib/2009/1365/pdf/e_print.pdf", checked: 2026-10-10 }
+    status: fact-checked
+  - from: 1951-01-01
+    to: 1951-12-31
+    origins: { asia: 103396, africa: 20382, europe: 47074, america_oceania: 1286, unknown: 3141 }
+    sources:
+      - { url: "https://jewishvirtuallibrary.org/jsource/Immigration/Immigration_by_Period_and_Continent.html", checked: 2026-10-10 }
+      - { url: "https://www.jewishvirtuallibrary.org/total-immigration-to-israel-by-year", checked: 2026-10-10 }
+      - { url: "https://www.cbs.gov.il/he/publications/DocLib/2009/1365/pdf/e_print.pdf", checked: 2026-10-10 }
+    status: fact-checked
