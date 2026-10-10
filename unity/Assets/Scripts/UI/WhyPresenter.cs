@@ -36,7 +36,7 @@ namespace Statecraft.Game.UI
             var rows = screen.Q<ScrollView>("why-rows");
             rows.Clear();
             var prev = bridge.Session.Previous;
-            screen.Q<Label>("why-turn").text = last == null || prev == null ? "" : text.Format("why.turn", prev.Date, bridge.State.Date);
+            screen.Q<Label>("why-turn").text = last == null || prev == null ? "" : text.Format("why.turn", PlayerText.Date(prev.Date), PlayerText.Date(bridge.State.Date));
             if (last == null) { rows.Add(new Label(text["why.empty"]) { name = "why-empty" }); return; }
             if (last.Why.Count == 0) { rows.Add(new Label(text["why.nothing"]) { name = "why-nothing" }); return; }
             int i = 0;

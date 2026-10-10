@@ -111,7 +111,7 @@ namespace Statecraft.Game.UI
                 var share = draft.TryGetValue(office, out var v) ? v : 0;
                 var row = new VisualElement { name = "budget-" + office };
                 row.AddToClassList("row");
-                row.Add(new Label(text.Format("budget.office", o.Title, Cabinet.Holder(c, s, office)?.Name ?? "-")) { name = "budget-" + office + "-name" });
+                row.Add(new Label(text.Format("budget.office", o.Title, Cabinet.Holder(c, s, office)?.Name ?? text["budget.vacant"])) { name = "budget-" + office + "-name" });
                 row[0].AddToClassList("grow");
                 row.Add(new Button(() => Change(office, -Step)) { name = "budget-" + office + "-down", text = "-" });
                 row.Add(new Label(text.Format("budget.share", share * 100)) { name = "budget-" + office + "-share" });

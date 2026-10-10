@@ -36,7 +36,7 @@ public class BudgetScreenTests
         Assert.AreEqual("Minister of Defense (David Ben-Gurion)", ui.Q<Label>("budget-defense_minister-name").text);
         Assert.AreEqual("effect x1.50", ui.Q<Label>("budget-defense_minister-factor").text);   // capped at 1.5
         Assert.AreEqual("The Provisional State Council does not vote on the budget", ui.Q<Label>("budget-vote").text);
-        Assert.AreEqual("Treasury 20.0m · debt 0.0m · foreign currency $40.0m", ui.Q<Label>("budget-money").text);
+        Assert.AreEqual("Treasury IL 20.0m · debt IL 0.0m · foreign currency $40.0m", ui.Q<Label>("budget-money").text);
         UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
         Assert.AreEqual("11%", ui.Q<Label>("budget-education_minister-share").text);
         Assert.AreEqual("Changed: submit to put it to the vote", ui.Q<Label>("budget-status").text);
@@ -69,7 +69,7 @@ public class BudgetScreenTests
         foreach (var office in C.Rules.BudgetStart.Keys)
             Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, office):0.00}"), ui.Q<Label>($"budget-{office}-factor").text, office);
         var f = EconomySystem.Flows(C, bridge.State, 1.0);
-        Assert.AreEqual(System.FormattableString.Invariant($"Taxes {f.Tax:0.0}m, spending {f.Spending:0.0}m and reserve call-up {f.Mobilization:0.0}m a year"), ui.Q<Label>("budget-flow").text);
+        Assert.AreEqual(System.FormattableString.Invariant($"Taxes IL {f.Tax:0.0}m, spending IL {f.Spending:0.0}m and reserve call-up IL {f.Mobilization:0.0}m a year"), ui.Q<Label>("budget-flow").text);
         UiTestKit.Press(ui.Q<Button>("budget-education_minister-up"));
         Assert.AreEqual(System.FormattableString.Invariant($"effect x{EffectsSystem.BudgetFactor(budget.Draft, "education_minister"):0.00}"), ui.Q<Label>("budget-education_minister-factor").text);
     }
@@ -203,5 +203,22 @@ public class BudgetScreenTests
             Assert.DoesNotThrow(() => budget.Change("zzz", 0.05));
             foreach (var kv in bridge.State.Budget) Assert.AreEqual(kv.Value, budget.Draft[kv.Key], 1e-12);
         }
+    }
+
+    /// <summary>Playtest 1, item 6: a vacant ministry reads "(vacant)", as on the Cabinet screen, never "(-)".</summary>
+    [Test]
+    public void AVacantMinistryReadsVacant()
+    {
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        Seat vacant = null;
+        for (int i = 0; i < 400 && g.State.GameOver == null && vacant == null; i++)
+        {
+            vacant = Cabinet.Lineup(C, g.State).FirstOrDefault(x => x.Holder == null && g.State.Budget.ContainsKey(x.Office.Id));
+            if (vacant == null) g.Step(HistoricalAI.Commands(C, g.State));
+        }
+        Assert.IsNotNull(vacant, "the historical game has a vacant budgeted ministry to test with");
+        using var ui = new UiTestKit();
+        new BudgetPresenter(ui.Root, new SimBridge(g, Text), Text);
+        Assert.AreEqual(vacant.Office.Title + " (vacant)", ui.Q<Label>("budget-" + vacant.Office.Id + "-name").text);
     }
 }

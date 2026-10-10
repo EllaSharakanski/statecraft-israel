@@ -1,5 +1,8 @@
 offices:
   - { id: prime_minister, title: Prime Minister }
+  # Spelling is deliberate, do not "fix" it (playtest 1, item 8): the office title keeps Israel's official English,
+  # "Ministry of Defense" / "Minister of Defense", because it is a proper noun. The UI is otherwise British English, so
+  # the screen and its button say "Defence".
   - { id: defense_minister, title: Minister of Defense }
   - { id: finance_minister, title: Minister of Finance }
   - { id: foreign_minister, title: Minister of Foreign Affairs }

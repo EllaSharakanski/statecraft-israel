@@ -63,7 +63,7 @@ public class MapActionUiTests
         Assert.AreEqual("Tel Aviv", ui.Q<Label>("info-title").text);
         StringAssert.StartsWith("Coastal plain · hex (", ui.Q<Label>("info-subtitle").text);
         Assert.IsFalse(ui.Q<Button>("build-camp").enabledSelf);
-        Assert.AreEqual("Transit camps and housing projects can be placed from 1950-01-01", ui.Q<Label>("info-reason").text);
+        Assert.AreEqual("Transit camps and housing projects can be placed from 1 January 1950", ui.Q<Label>("info-reason").text);
     }
 
     [Test]
@@ -75,7 +75,7 @@ public class MapActionUiTests
         var tlv = C.SettlementHexes.Single(s => s.Id == "tel_aviv");
         info.Show(tlv.Q, tlv.R);
         Assert.IsTrue(ui.Q<Button>("build-camp").enabledSelf, ui.Q<Label>("info-reason").text);
-        Assert.AreEqual("Place a transit camp (1.5m)", ui.Q<Button>("build-camp").text);
+        Assert.AreEqual("Place a transit camp (IL 1.5m)", ui.Q<Button>("build-camp").text);
         ui.Press("build-camp");
         Assert.AreEqual("Ordered: A transit camp, at End Turn", ui.Q<Label>("info-placement").text);
         bridge.EndTurn();

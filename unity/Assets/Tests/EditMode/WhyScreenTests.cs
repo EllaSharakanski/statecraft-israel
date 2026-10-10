@@ -165,4 +165,18 @@ public class WhyScreenTests
             Assert.AreEqual(loaded.Last!.Why.Count, ui.Q<ScrollView>("why-rows").Query<Label>(className: "why-line").ToList().Count);
         }
     }
+
+    /// <summary>Playtest 1, item 4: the effects group covers effects that are not policies too.</summary>
+    [Test]
+    public void TheEffectsGroupIsCalledOngoingEffects() => Assert.AreEqual("Ongoing effects", Text["why.effects"]);
+
+    /// <summary>Playtest 1, item 5: every date the player sees goes through Statecraft.Sim.PlayerText ("15 May 1948"),
+    /// so no UI string carries a date format of its own.</summary>
+    [Test]
+    public void NoUiStringFormatsADateItself()
+    {
+        var yaml = AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text;
+        foreach (var line in yaml.Split('\n'))
+            Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(line, "yyyy|MMM|MM-dd|:d "), "date format in strings.en.yaml: " + line);
+    }
 }

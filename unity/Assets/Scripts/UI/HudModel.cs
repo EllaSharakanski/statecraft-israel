@@ -38,7 +38,7 @@ namespace Statecraft.Game.UI
             {
                 Year = s.Date.Year.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 Turn = t.Format("hud.turn", s.Turn),
-                Date = t.Format("hud.date", s.Date),
+                Date = t.Format("hud.date", PlayerText.Date(s.Date)),
                 Attention = t.Format("hud.attention", b.AttentionLeft, c.Rules.AttentionPerTurn),
                 SecurityLevel = t.Format("hud.level", s.Rung),
                 Treasury = M(s.Treasury - s.Debt, prev == null ? (double?)null : prev.Treasury - prev.Debt, "hud.money", "hud.delta_money"),

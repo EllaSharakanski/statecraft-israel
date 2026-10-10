@@ -23,7 +23,7 @@ public class HudTests
         Assert.AreEqual("1948", m.Year);
         Assert.AreEqual("Turn 0", m.Turn);
         Assert.AreEqual("15 May 1948", m.Date);
-        Assert.AreEqual("20.0m", m.Treasury.Value);
+        Assert.AreEqual("IL 20.0m", m.Treasury.Value);          // Israeli pounds (playtest 1, item 7)
         Assert.AreEqual("$40.0m", m.Fx.Value);
         Assert.AreEqual("Level 5 of 5", m.SecurityLevel);
         Assert.AreEqual("Attention 4.0 of 4.0", m.Attention);
@@ -267,5 +267,46 @@ public class HudTests
         Assert.IsNull(bridge.BeforeLast);
         Assert.AreSame(order, seen![0].Command);
         Assert.AreEqual("Not done: The turn could not run: boom", ui.Q<Label>("toast").text);
+    }
+
+    /// <summary>Playtest 1, item 11: pressing the open screen's button closes it, every time, with every presenter
+    /// GameRoot creates listening, with the button focused (as after a mouse click), and across End Turn.</summary>
+    [Test]
+    public void PressingTheOpenScreensButtonClosesItAcrossTurns()
+    {
+        using var ui = new UiTestKit();
+        var bridge = NewBridge();
+        var portraits = ScriptableObject.CreateInstance<PortraitCatalog>();
+        try
+        {
+            new HudPresenter(ui.Root, bridge, Text);
+            var nav = new ScreenNav(ui.Root);
+            new EventCardPresenter(ui.Root, bridge, Text, portraits);
+            new DefencePresenter(ui.Root, bridge, Text);
+            new BudgetPresenter(ui.Root, bridge, Text);
+            new WhyPresenter(ui.Root, bridge, Text);
+            new CabinetPresenter(ui.Root, bridge, Text, portraits);
+            DisplayStyle Shown(string screen) => ui.Q<VisualElement>("screen-" + screen).style.display.value;
+            for (int turn = 0; turn < 4; turn++)
+            {
+                foreach (var screen in ScreenNav.Screens)
+                {
+                    ui.Press("nav-" + screen);
+                    Assert.AreEqual(DisplayStyle.Flex, Shown(screen), $"turn {turn}: {screen} did not open");
+                    ui.Q<Button>("nav-" + screen).Focus();
+                    ui.Press("nav-" + screen);
+                    Assert.AreEqual(DisplayStyle.None, Shown(screen), $"turn {turn}: {screen} did not close");
+                    Assert.IsNull(nav.Current);
+                }
+                var open = ScreenNav.Screens[turn % ScreenNav.Screens.Length];
+                ui.Press("nav-" + open);
+                ui.Press("end-turn");
+                Assert.AreEqual(turn + 1, bridge.State.Turn, $"turn {turn}: End Turn did not run");
+                Assert.AreEqual(DisplayStyle.Flex, Shown(open), $"turn {turn}: End Turn closed {open}");
+                ui.Press("nav-" + open);
+                Assert.AreEqual(DisplayStyle.None, Shown(open), $"turn {turn}: {open} did not close after End Turn");
+            }
+        }
+        finally { Object.DestroyImmediate(portraits); }
     }
 }
