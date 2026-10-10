@@ -51,3 +51,14 @@ def test_contributing_names_every_ci_command_and_the_unity_gate():
 def test_changelog_has_unreleased_on_top():
     text = read("CHANGELOG.md")
     assert text.index("## [Unreleased]") == text.index("## [")
+
+
+def test_historical_accuracy_form_requires_a_source():
+    import yaml
+    form = yaml.safe_load(read(".github/ISSUE_TEMPLATE/historical_accuracy.yml"))
+    body = {b.get("id"): b for b in form["body"]}
+    assert body["sources"]["validations"]["required"] is True
+    assert {"where", "wrong", "sources"} <= set(body)
+    cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
+    assert cfg["blank_issues_enabled"] is False
+    assert any("security/advisories/new" in c["url"] for c in cfg["contact_links"])
