@@ -105,7 +105,7 @@ public class KitTests
             Assert.Less(b.size.x, 2.6f * SettlementKits.FootprintRadiusM(s, g.HexSizeM) + 2000f, s.Id + ": the town stays within its footprint");
         }
         var trees = Vegetation.Plant(map.Settlements, g);
-        Assert.Greater(trees.Count(t => t.kind == TreeKind.Citrus), 1000); Assert.Greater(trees.Count(t => t.kind == TreeKind.Olive), 1000);
+        Assert.Greater(trees.Count(t => t.kind == TreeKind.Citrus) + 4 * trees.Count(t => t.kind == TreeKind.CitrusPatch), 1000); Assert.Greater(trees.Count(t => t.kind == TreeKind.Olive), 1000);
         Assert.Greater(trees.Count(t => t.kind == TreeKind.Palm), 50); Assert.Greater(trees.Count(t => t.kind == TreeKind.Cypress), 50);
         int wet = 0;
         foreach (var (_, m) in trees)

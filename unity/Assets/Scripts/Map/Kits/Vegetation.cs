@@ -4,7 +4,9 @@ using UnityEngine;
 
 namespace Statecraft.Game.Map.Kits
 {
-    public enum TreeKind { Citrus, Olive, Palm, Cypress }
+    /// <summary>CitrusPatch is four citrus trees in a 2 x 2 block of a grove's rows, drawn as one instance: the trees' cost on
+    /// WebGL is per instance (the matrices uploaded each frame), not per triangle, so the dense groves are instanced in fours.</summary>
+    public enum TreeKind { Citrus, Olive, Palm, Cypress, CitrusPatch }
 
     /// <summary>Procedural trees at the symbolic scale (issue #34): citrus groves (dense rows of round dark-green trees with
     /// fruit specks) on the coastal plain round the towns, olives scattered over the hills, palms by the shore of the coastal
@@ -25,20 +27,21 @@ namespace Statecraft.Game.Map.Kits
             switch (kind)
             {
                 case TreeKind.Citrus:
-                {
-                    // Promo 03's orange trees: a dark, lumpy crown of three clusters, heavy with fruit.
-                    var leaf = C(0.17f, 0.30f, 0.12f); var fruit = C(0.92f, 0.50f, 0.09f);
-                    km.Shaft(new Vector3(0, -0.6f, 0), new Vector3(0, 1.0f, 0), 0.18f, 0.14f, C(0.33f, 0.25f, 0.17f), 5);
-                    km.Crown(new Vector3(0, 2.3f, 0), new Vector3(2.1f, 1.8f, 2.1f), leaf, ref rnd, 0.10f, 8, 6, 0.13f, fruit, 0.55f);
-                    km.Crown(new Vector3(0.9f, 2.9f, 0.5f), new Vector3(1.3f, 1.1f, 1.3f), leaf, ref rnd, 0.12f, 7, 5, 0.16f, fruit, 0.5f);
-                    km.Crown(new Vector3(-0.8f, 2.8f, -0.6f), new Vector3(1.2f, 1.0f, 1.2f), leaf, ref rnd, 0.12f, 7, 5, 0.16f, fruit, 0.5f);
+                    CitrusTree(km, Vector3.zero, 1f, ref rnd);
                     break;
-                }
+                case TreeKind.CitrusPatch:
+                    // A grove's row spacing (GroveStepM) apart, each tree a little off its spot and its own size.
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var at = new Vector3(((i & 1) - 0.5f) * GroveStepM + rnd.Range(-0.3f, 0.3f), 0f, ((i >> 1) - 0.5f) * GroveStepM + rnd.Range(-0.3f, 0.3f));
+                        CitrusTree(km, at, rnd.Range(0.88f, 1.06f), ref rnd);
+                    }
+                    break;
                 case TreeKind.Olive:
-                    km.Shaft(new Vector3(0, -0.6f, 0), new Vector3(0.15f, 1.7f, 0.1f), 0.32f, 0.22f, C(0.36f, 0.31f, 0.25f), 5);
-                    km.Crown(new Vector3(0.5f, 2.9f, 0.2f), new Vector3(2.0f, 1.5f, 1.9f), C(0.50f, 0.55f, 0.39f), ref rnd, 0.16f, 8, 5);
-                    km.Crown(new Vector3(-0.8f, 2.6f, -0.4f), new Vector3(1.6f, 1.3f, 1.5f), C(0.46f, 0.52f, 0.37f), ref rnd, 0.18f, 7, 5);
-                    km.Crown(new Vector3(-0.1f, 3.5f, 0.6f), new Vector3(1.3f, 1.0f, 1.3f), C(0.55f, 0.60f, 0.44f), ref rnd, 0.15f, 7, 4);
+                    km.Shaft(new Vector3(0, -0.6f, 0), new Vector3(0.15f, 1.7f, 0.1f), 0.32f, 0.22f, C(0.36f, 0.31f, 0.25f), 4);
+                    km.Crown(new Vector3(0.5f, 2.9f, 0.2f), new Vector3(2.0f, 1.5f, 1.9f), C(0.50f, 0.55f, 0.39f), ref rnd, 0.16f, 7, 4);
+                    km.Crown(new Vector3(-0.8f, 2.6f, -0.4f), new Vector3(1.6f, 1.3f, 1.5f), C(0.46f, 0.52f, 0.37f), ref rnd, 0.18f, 6, 4);
+                    km.Crown(new Vector3(-0.1f, 3.5f, 0.6f), new Vector3(1.3f, 1.0f, 1.3f), C(0.55f, 0.60f, 0.44f), ref rnd, 0.15f, 6, 3);
                     break;
                 case TreeKind.Palm:
                 {
@@ -62,6 +65,20 @@ namespace Statecraft.Game.Map.Kits
             return km;
         }
 
+        /// <summary>Real metres between the trees of a grove's rows.</summary>
+        public const float GroveStepM = 4.9f;
+
+        /// <summary>Promo 03's orange tree: a dark, lumpy crown of three clusters, heavy with fruit.</summary>
+        static void CitrusTree(KitMesh km, Vector3 at, float size, ref KitRandom rnd)
+        {
+            Color32 C(float r, float g, float b) => new Color32((byte)(r * 255), (byte)(g * 255), (byte)(b * 255), 0);
+            var leaf = C(0.17f, 0.30f, 0.12f); var fruit = C(0.92f, 0.50f, 0.09f);
+            km.Shaft(at + new Vector3(0, -0.6f, 0), at + new Vector3(0, 1.0f, 0) * size, 0.18f * size, 0.14f * size, C(0.33f, 0.25f, 0.17f), 4);
+            km.Crown(at + new Vector3(0, 2.3f, 0) * size, new Vector3(2.1f, 1.8f, 2.1f) * size, leaf, ref rnd, 0.10f, 7, 5, 0.13f, fruit, 0.55f);
+            km.Crown(at + new Vector3(0.9f, 2.9f, 0.5f) * size, new Vector3(1.3f, 1.1f, 1.3f) * size, leaf, ref rnd, 0.12f, 6, 4, 0.16f, fruit, 0.5f);
+            km.Crown(at + new Vector3(-0.8f, 2.8f, -0.6f) * size, new Vector3(1.2f, 1.0f, 1.2f) * size, leaf, ref rnd, 0.12f, 6, 4, 0.16f, fruit, 0.5f);
+        }
+
         /// <summary>Where each tree stands: (kind, world matrix) for the whole map, seeded.</summary>
         public static List<(TreeKind kind, Matrix4x4 m)> Plant(IReadOnlyList<Settlement> settlements, KitGround ground)
         {
@@ -70,11 +87,12 @@ namespace Statecraft.Game.Map.Kits
             // Counts fall with the square of the tree scale (k = 1 at the default), so a larger tree covers the same ground
             // with fewer instances instead of burying the towns.
             float ks = s / KitScale.DefaultTrees;
-            void Add(TreeKind k, float x, float z, ref KitRandom rnd, float size = 1f)
+            void Add(TreeKind k, float x, float z, ref KitRandom rnd, float size = 1f, float yawDeg = float.NaN)
             {
                 float y = ground.Y(x, z);
                 var scale = s * size * rnd.Range(0.85f, 1.15f);
-                trees.Add((k, Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0, rnd.Range(0f, 360f), 0), new Vector3(scale, scale * rnd.Range(0.9f, 1.1f), scale))));
+                float yaw = float.IsNaN(yawDeg) ? rnd.Range(0f, 360f) : yawDeg;
+                trees.Add((k, Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0, yaw, 0), new Vector3(scale, scale * rnd.Range(0.9f, 1.1f), scale))));
             }
 
             // Citrus groves round the coastal-plain towns: rectangular blocks of rows, each grove on its own angle.
@@ -98,7 +116,7 @@ namespace Statecraft.Game.Map.Kits
                     float yaw = rnd.Range(0f, 90f) * Mathf.Deg2Rad, ca = Mathf.Cos(yaw), sa = Mathf.Sin(yaw);
                     // Grove sizes grow with the square root of the tree scale, so a bigger tree means fewer, not only larger, rows.
                     float grow = Mathf.Sqrt(s / KitScale.DefaultTrees);
-                    float w = rnd.Range(1300f, 3000f) * grow, d = rnd.Range(900f, 2000f) * grow, step = 4.9f * s;
+                    float w = rnd.Range(1300f, 3000f) * grow, d = rnd.Range(900f, 2000f) * grow, step = 2f * GroveStepM * s;   // one 2 x 2 patch per step
                     // A ragged block: each row stops at its own length, and some groves lose a corner (an L shape).
                     bool notch = rnd.Chance(0.3f); float nu = rnd.Range(0.1f, 0.3f) * w, nv = rnd.Range(0.1f, 0.3f) * d;
                     for (float v = -d / 2; v <= d / 2; v += step)
@@ -107,10 +125,13 @@ namespace Statecraft.Game.Map.Kits
                         for (float u = -w / 2; u <= rowEnd; u += step)
                         {
                             if (notch && u > nu && v > nv) continue;
-                            if (rnd.Chance(0.06f)) continue;   // a gap: a dead tree, a well, a packing shed's yard
+                            if (rnd.Chance(0.05f)) continue;   // a gap: a well, a packing shed's yard
                             float x = gc.x + u * ca - v * sa, z = gc.y + u * sa + v * ca;
                             if (ground.Water(x, z) || ground.InTown(x, z, 0.85f)) continue;
-                            Add(TreeKind.Citrus, x, z, ref rnd, rnd.Range(0.9f, 1.05f));
+                            // The patch's rows follow the grove's own angle (yaw is measured clockwise from north in Unity).
+                            float patchYaw = -yaw * Mathf.Rad2Deg + (rnd.Chance(0.5f) ? 0f : 90f);
+                            if (u + step > rowEnd && rnd.Chance(0.5f)) Add(TreeKind.Citrus, x, z, ref rnd, rnd.Range(0.9f, 1.05f));   // a row thins out at its end
+                            else Add(TreeKind.CitrusPatch, x, z, ref rnd, 1f, patchYaw);
                         }
                     }
                 }
