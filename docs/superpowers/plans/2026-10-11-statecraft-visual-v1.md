@@ -53,8 +53,8 @@ Copied from the M3 plan (`docs/superpowers/plans/2026-10-10-statecraft-m3.md`, G
   - Every new shader compiles for GLES3 (`ShaderChecks.Gles3Errors` is empty) and a WebGL build log shows no `Shader error` for it.
   - Art checkpoints never block a task: the implementer runs `tools/art_checkpoint.sh <task>`, attaches the `*-compare.png` and `*-deuteranopia.png`/`*-protanopia.png` paths to the task report, and moves on; the owner reviews asynchronously.
   - Every visual feature registers a `VisualToggles` switch so `?vprofile` can price it: `shadows`, `tiltshift`, `grade`, `haze`, `water`, `grid`, `labels`.
-  - **Measurement discipline (review I1):** every frame-time run goes through `tools/machine_lock.py --exclusive --wait-unity`, which holds the machine lock and waits until no other batch-mode Unity process (edit-mode run, build, import, in any worktree) is running; Unity builds and captures inside `art_checkpoint.sh` take the lock shared. Chrome runs at device pixel ratio 1 (`--force-device-scale-factor=1`) unless a step asks for the DPR-2 stress proxy, and every `PROFILE` line states its resolution and render scale. Each configuration runs 3 times in interleaved order; a feature's cost is the difference of the medians, and it is over budget only when that difference exceeds the budget **plus** the larger of the two spreads (max − min of the three runs). The controller dispatches at most one profiling step at a time across tracks.
-  - **Boot budget (playtest 2, P2-1):** `?bootlog` phase lines are recorded in Task 1 (baseline) and after Tasks 6 and 8; the map-build span (`tools/headed.py boot --runs 3 --baseline <ms>`, three cold loads) may grow by at most 1,000 ms (median of 3 runs).
+  - **Measurement discipline (review I1):** every frame-time run goes through `tools/machine_lock.py --exclusive --wait-unity`, which holds the machine lock and waits until no other batch-mode Unity process (edit-mode run, build, import, in any worktree) is running; Unity builds and captures inside `art_checkpoint.sh` take the lock shared. Chrome runs at device pixel ratio 1 (`--force-device-scale-factor=1`) unless a step asks for the DPR-2 stress proxy, and every `PROFILE` line states its resolution and render scale. The page's viewport is fixed to exactly 1920x1080 CSS pixels at the DPR over CDP (`Emulation.setDeviceMetricsOverride`, before navigation), and `web_check.py` and `headed.py profile` FAIL on any `res=` other than 1920x1080 × DPR, or on 120 s without console output (`--stall`). The WebGL frame clock is quantised to about 1 ms, so p95 values are whole milliseconds. Each configuration runs 3 times in interleaved order; a feature's cost is the difference of the medians, and it is over budget only when that difference exceeds the budget **plus** the larger of the two spreads (max − min of the three runs). The controller dispatches at most one profiling step at a time across tracks.
+  - **Boot budget (playtest 2, P2-1; controller ruling 3):** `?bootlog` phase lines are recorded in Task 1 (baseline) and after Tasks 6 and 8. Two spans, each the median of three cold loads in a kept-awake headed window with a 1920x1080 viewport (`tools/headed.py boot --runs 3 --baseline <ms> --baseline-first-frame <ms>`): `map_build_ms` (heightmap decoded to map built) and `first_frame_ms` (navigation start to the second animation frame after `GAME OK`: scene load, texture uploads, map build and the first draw with its shader compiles). Each may grow by at most max(300 ms, 50% of its baseline), the tool's default. Task 1 baselines: `--cpu 1` 443 / 3547 ms; `--cpu 4` 1813 / 6963 ms.
 
 ## Review Focus
 
@@ -76,7 +76,7 @@ Phase 0 runs first on `visual-v1` (worktree `.worktrees/visual-v1`), branched fr
 | 1 | **A: light and lens** | 2, 3, 4 in order | `vis-light` | `Scripts/Map/{MapLighting,ShadowFit,TiltShift,TiltShiftFeature,MapGrade,CameraRig,CameraController}.cs`, `Shaders/TiltShift.shader`, `Editor/PostFxAssets.cs`, `Materials/TiltShift.mat`, `Settings/{Mobile,PC}_RPAsset.asset`, `Settings/{Mobile,PC}_Renderer.asset`, `Tests/EditMode/{LightingTests,TiltShiftTests,GradeTests}.cs`; `Tests/EditMode/SettlementTests.cs` (shared, non-overlapping hunk: `RebuildingDoesNotLeak…` only) |
 | 1 | **B: ground and water** | 5, 6, 7, 8 in order | `vis-ground` | `tools/{terrain_bake,terrain_graph}.py` + tests, `Textures/Map/**`, `Shaders/{StatecraftMap.hlsl,StatecraftTerrain.hlsl,StatecraftTerrain.shadergraph,Sea.shader}`, `Scripts/Map/{MapBuilder,MapShaderGlobals,MapPalette,HexGrid}.cs`, `Scripts/Map/MapScene.cs` (Configure/Build/Select, shared, non-overlapping with Track C's one property), `Editor/{MapMaterials,MapTextures,MapCapture}.cs`, `Materials/{Terrain,Sea,HexOverlay}.mat`, `Map.unity` (one line), `Tests/EditMode/{MapTests,TerrainShaderTests,SeaTests,HexGridTests,MapActionUiTests,GameSceneTests}.cs`; `Tests/EditMode/SettlementTests.cs` (shared, non-overlapping hunks: `Configure` calls, the seam test, the rift test, the selection test, the backdrop test's comment) |
 | 1 | **C: labels** | 9 | `vis-labels` | `Scripts/UI/MapLabelsPresenter.cs`, `Scripts/UI/GameRoot.cs` (labels lines), `Scripts/Map/SettlementPlacer.cs`, `Scripts/Map/MapScene.cs` (shared: the `Settlements` property and one assignment), `UI/{Game.uxml,Statecraft.uss}`, `Tests/EditMode/MapLabelTests.cs`; `Tests/EditMode/SettlementTests.cs` (shared, non-overlapping hunk: the two label tests and their helpers) |
-| — | **Merge point** | merge A, B, C into `visual-v1` | `visual-v1` | Expected: Unity edit mode `failed="0"` with total = B1 + 23 (Track A: 11 + 6 + 6) + 19 (Track B: 9 + 6 + 4) + 5 (Track C) = **B1 + 47** (B1 = B0 + 14, the total after Task 1); tools = **T1 + 15** (T1 = T0 + 20); sim unchanged |
+| — | **Merge point** | merge A, B, C into `visual-v1` | `visual-v1` | Expected: Unity edit mode `failed="0"` with total = B1 + 23 (Track A: 11 + 6 + 6) + 19 (Track B: 9 + 6 + 4) + 5 (Track C) = **B1 + 47** (B1 = B0 + 21 = 338, the total after Task 1 and its fix round); tools = **T1 + 15** (T1 = T0 + 34 = 143); sim unchanged |
 | 2 | **D: tiers** | 10 | `visual-v1` | `Editor/QualityTiers.cs`, `Scripts/Map/QualityTierValues.cs`, `Settings/**`, `ProjectSettings/QualitySettings.asset`, `Tests/EditMode/QualityTierTests.cs`, `docs/visual-v1.md`, `docs/dev-setup.md` |
 
 Notes for the controller:
@@ -84,7 +84,7 @@ Notes for the controller:
 - **Shared files:** `MapScene.cs` (B edits `Configure`/`Build`'s material checks and the builder call; C adds a property and one assignment after `SettlementPlacer.Parse`); `GameRoot.cs` (Phase 0 adds two flag lines; C adds the labels presenter); `SettlementTests.cs` (A, B, C each edit different tests). Merge B first, then A, then C; conflicts, if any, are adjacent-line conflicts with an obvious union.
 - **Render tests across tracks:** Track A's render tests run before Track B's terrain shader exists, Track B's before Track A's grade. All of them run again at the merge point; thresholds in this plan were chosen with that headroom (each threshold names its reasoning).
 - **Settings and the art checkpoint:** a track that changes `unity/Assets/Settings` stages the change before running `tools/art_checkpoint.sh` (the script refuses otherwise).
-- **One machine (review I1):** three worktrees share one Mac. Profiling steps (`?vprofile`, `?bootlog` budgets) run under `tools/machine_lock.py --exclusive --wait-unity`; dispatch at most one at a time. Builds, imports and edit-mode runs of the other tracks may continue; the profile waits for them.
+- **One machine (review I1):** three worktrees share one Mac. Profiling steps (`?vprofile`, `?bootlog` budgets) run under `tools/machine_lock.py --exclusive --wait-unity`; dispatch at most one at a time. Builds, imports and edit-mode runs of the other tracks may continue; the profile waits for them (machine_lock recognises Unity by its executable, so queued wrappers never count; macOS flock does not queue fairly, so a stream of shared jobs can delay an exclusive profile).
 - **Hidden shared state at the merge:** Track A's lighting and grade shift every colour Track B's render tests read; Track B's thresholds below are derived with Track A's sun (intensity 1.6, warm) already in the arithmetic, and all render tests re-run at the merge point.
 
 ## Effort (honest)
@@ -182,13 +182,13 @@ docs/                          visual-v1.md
 - Consumes: `UrlFlags.Has(string?, string)`, `CameraRig.{LookAt, Distance, Yaw, Apply()}`, `GeoFrame.ToWorld`, `MapRuntimeAssets.Own`, `GameRoot.Begin` (R10), `DiagLog` `BOOT phase=` lines (R21).
 - Produces (later tasks rely on these exact names):
   - `PromoPose { string Name; double Lon, Lat; float Distance, Yaw; static PromoPose Gameplay03, Diorama02; static IReadOnlyList<PromoPose> All; void Apply(CameraRig rig, GeoFrame frame); }`
-  - `VisualToggles { static void Register(string name, Action<bool> set); static void Unregister(string name); static IReadOnlyList<string> Names; static void Set(string name, bool on); static void SetAll(bool on); static void Clear(); }`
+  - `VisualToggles { static Action Register(string name, Action<bool> set) /* returns a removal token: removes the switch only while it is still the registered one */; static void Unregister(string name); static IReadOnlyList<string> Names; static void Set(string name, bool on); static void SetAll(bool on); static void Clear(); }`
   - `FrameStats.Summary(IReadOnlyList<float> frameMs) -> (float avg, float p95)`
   - `FrameProfile { const int WarmupFrames = 60, MeasuredFrames = 300, Repeats = 3; static bool Requested(); static bool Requested(string? url, string[] args, bool webgl); static string Line(string label, string pose, string resolution, float renderScale, int rep, IReadOnlyList<float> frameMs); static string Summary(string label, string pose, IReadOnlyList<(float avg, float p95)> runs); static IReadOnlyList<int> Order(int count, int rep); static IEnumerator Run(CameraRig, GeoFrame, Action<string> log, bool quitWhenDone); }` logging `PROFILE visual=<all|-name|none> pose=<pose> res=<w>x<h> scale=<s> rep=<r> frames=300 avg_ms=<a> p95_ms=<p>`, then per configuration `PROFILE summary visual=<label> pose=<pose> runs=3 median_avg_ms=<m> spread_ms=<s> median_p95_ms=<p>`, and `PROFILE visual done`
   - `VisualShots { const int SettleFrames = 30, ChunkChars = 8000; static bool Requested(); static bool Requested(string? url, string[] args, bool webgl); static IEnumerable<string> Lines(string name, byte[] png); static IEnumerator Run(CameraRig, GeoFrame, Action<string> log); }` logging `SHOT <pose> begin <n> <sha256>`, `SHOT <pose> <i>/<n> <base64>`, `SHOT done`
-  - `MapRuntimeAssets.OnTeardown(Action)` (run newest first in `OnDestroy`); `CameraRig.TeardownActions` (a `List<Action>` that `MapScene.Build` hands to the map's `MapRuntimeAssets` after `rig.Init()`)
+  - `MapRuntimeAssets.OnTeardown(Action)` and `MapRuntimeAssets.RunTeardown()` (idempotent, newest first, a throwing action is logged and the rest still run; `MapScene.Clear` calls it before destroying the map, `OnDestroy` calls it too); `CameraRig.TeardownActions` (a `List<Action>` that `MapScene.Build` hands to the map's `MapRuntimeAssets` after `rig.Init()`; `Init` runs and clears any left behind); a switch is always owned by a teardown: `TeardownActions.Add(VisualToggles.Register(...))` in `CameraRig.Init`, `assets.OnTeardown(VisualToggles.Register(...))` elsewhere
   - Test kit: `RenderSample.Render(Camera, int w, int h)`, `RenderSample.Render(Camera, int w, int h, Vector3[] world, Vector2[] screenOut)`, `.At(x, y)`, `.Mean(cx, cy, radius)`, `.GradientEnergy(float y0, float y1)`, `.MeanSaturation()`, `.LumaStd()`, `.MeanLuma(float x0, float y0, float x1, float y1)`, `.FractionClipped(float level)`, `static Luma(Color)`, `static FractionDarker(RenderSample a, RenderSample b, float by)`, `static Vector3 Lab(Color srgb)`, `static float DeltaE(Color a, Color b)` (CIE76), `enum Cvd { Deuteranopia, Protanopia }`, `static Color SimulateCvd(Color srgb, Cvd kind)` (Machado 2009, severity 1); `ShaderChecks.Gles3Errors(Shader) -> List<string>`, `ShaderChecks.ExcludesGles3(string passSource) -> bool`
-  - Tools: `web_check.py --shots DIR` (headless, DPR 1); `web_check.ShotCollector(out_dir).feed(text) -> bool` (raises on `SHOT done` with an unfinished shot); `web_check.chrome_flags(profile, swiftshader) -> list[str]`; `tools/machine_lock.py (--shared|--exclusive) [--wait-unity] -- <command>` (`lockfile_holders`, `unity_pids`: batch-mode Unity and any editor holding a worktree's `unity/Temp/UnityLockfile`); `tools/headed.py boot --runs N [--baseline MS] [--budget MS] [--cpu R]` printing `BOOT map_build_ms median=<m> runs=<n>` (exit 1 over budget) and `tools/headed.py profile --dpr N` (headed `?vprofile` at 1920x1080, uncapped), with `headed.boot_phases`, `headed.map_build_ms`, `headed.over_budget`, `headed.browser_flags`; `tools/art_compare.py <shots-dir> <name> [--log PATH]`; `tools/art_checkpoint.sh [--no-build] <name>`
+  - Tools: `web_check.py --shots DIR` (headless, DPR 1); `web_check.ShotCollector(out_dir).feed(text) -> bool` (raises on `SHOT done` with an unfinished shot); `web_check.chrome_flags(profile, swiftshader, dpr=1) -> list[str]`; `web_check.py` fixes the viewport to 1920x1080 over CDP and fails on another `res=` or shot size, and on `--stall S` seconds without console output; `web_check.profile_errors(lines, expected_res)`, `web_check.expected_res(w, h, dpr)`; `tools/machine_lock.py (--shared|--exclusive) [--wait-unity] -- <command>` (`lockfile_holders`, `unity_pids`: batch-mode Unity and any editor holding a worktree's `unity/Temp/UnityLockfile`); `tools/headed.py boot --runs N [--baseline MS] [--baseline-first-frame MS] [--budget MS] [--cpu R]` printing `BOOT map_build_ms median=<m> runs=<n> cpu=<r>` and `BOOT first_frame_ms median=<m> runs=<n> cpu=<r>` (exit 1 when either exceeds its baseline + `--budget`, default max(300 ms, 50%)) and `tools/headed.py profile --dpr N` (headed `?vprofile` at 1920x1080, uncapped), with `headed.boot_phases`, `headed.map_build_ms`, `headed.over_budget`, `headed.browser_flags`; `tools/art_compare.py <shots-dir> <name> [--log PATH]`; `tools/art_checkpoint.sh [--no-build] <name>`
 
 - [ ] **Step 1: Record the baseline**
 
@@ -1922,7 +1922,7 @@ Run (from here on, every Unity command and every measurement goes through `tools
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | tee "$PWD/unity-vprofile-t01-headless.log" | grep "PROFILE"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | tee "$PWD/unity-vprofile-t01-headless.log" | grep "PROFILE"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-disabled --dpr 1 | tee "$PWD/unity-vprofile-t01-headed.log" | grep "PROFILE"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 | tee "$PWD/unity-boot-t01.log" | grep "BOOT map"
 tools/art_checkpoint.sh --no-build t01-before
@@ -2355,7 +2355,7 @@ In `unity/Assets/Scripts/Map/CameraRig.cs`:
 ```csharp
             Volume = vol;
             MapLighting.Apply(MapLighting.FindSun());
-            VisualToggles.Register("shadows", on => { var sun = MapLighting.FindSun(); if (sun != null) sun.shadows = on ? LightShadows.Soft : LightShadows.None; });
+            TeardownActions.Add(VisualToggles.Register("shadows", on => { var sun = MapLighting.FindSun(); if (sun != null) sun.shadows = on ? LightShadows.Soft : LightShadows.None; }));
             TeardownActions.Add(ShadowFit.Restore);
             initialised = true;
             Apply();
@@ -2411,7 +2411,7 @@ Run:
 git add unity/Assets/Settings/Mobile_RPAsset.asset        # staged before any build (Global Constraints)
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t02-light
 ```
 Expected: the summary now includes `PROFILE summary visual=-shadows ...` lines for both poses; the checkpoint prints `PASS: saw GOLDEN OK 1950, GOLDEN OK 1952, SHOT done` and the compare paths. Add the `all`/`-shadows` summary lines to `docs/visual-v1.md` under a new heading `## Task 2: sun and shadows`, and a row `| 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) |` to the Checkpoints table. Budget check: `median(all) - median(-shadows) <= 2.5 ms + the larger spread` at both poses; if it is over, note it under the heading for Task 10 (do not block). Note for the owner in the checkpoint row: at the new 6 km hero zoom the view is filled by the 600–1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them.
@@ -2445,6 +2445,134 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `CameraRig.{TopInset, Distance, Apply}`, `CameraController.MaxDistance`, `VisualToggles`, `RenderSample`, `ShaderChecks`, `PromoPose`.
 - Produces: `TiltShift { static readonly int ParamsId /* _ScTiltShift */; const float HalfWidth = 0.17f, Feather = 0.18f, MaxRadiusUv = 10f / 1080f, FullStrengthDistanceM = 60000f, MinStrength = 0.35f; static bool Enabled; static float Weight(float y, Vector4 p); static float FocusCentre(float topInset); static float Strength(float distance); static Vector4 Params(float topInset, float distance); static void Apply(float topInset, float distance); }`; `PostFxPaths.TiltShiftMaterial`; `TiltShiftFeature : ScriptableRendererFeature { Material? Material; int Downsample; }`; `PostFxAssets.Create()`; toggle `"tiltshift"`; global `float4 _ScTiltShift` (x focus centre in viewport y, y sharp half-width, z feather, w max radius as a share of the picture height).
+
+- [ ] **Step 0: Fix the GLES3 `require` policy and judge the real shaders before any Task 3 shader (Task 1 re-review F1)**
+
+`ShaderChecks.GlslErrors` fails any `#extension X : require`. That is the right default, but Unity's GLES3 output for URP Lit, Terrain Lit and Shader Graph shaders may legitimately `require` an extension that WebGL 2 (ANGLE) accepts, and a false failure would stall Task 3, 6, 7 or 8 in the middle of its red/green step. Policy: default-deny, with an explicit `AllowedRequires` set. An entry is added only with a comment saying it was verified to work in WebGL 2 in headless Chrome (the compile in sub-step 3), never because the check complained. Tasks 3, 6, 7 and 8 report any new `require` they meet and extend the set by this same rule; they never weaken `GlslErrors`.
+
+1. In `unity/Assets/Tests/EditMode/ShaderChecks.cs`, add `using System.Linq;` to the usings, then replace the `GlslErrors` method with the following two methods (the `Require` regex and everything else stay):
+
+```csharp
+    /// <summary>The `#extension X : require` lines the check accepts. Default-deny: an entry needs a comment saying it was
+    /// verified to work in WebGL 2 in headless Chrome (a `compileShader` of a shader carrying that line, see plan Task 3
+    /// Step 0). An extension is never added because the check complained, only because the compile succeeded.</summary>
+    static readonly HashSet<string> AllowedRequires = new HashSet<string>
+    {
+        // (empty: add `"GL_..."` with a "verified to work in WebGL 2 in headless Chrome, <date>, <Chrome version>" comment)
+    };
+
+    public static List<string> GlslErrors(string glsl) => GlslErrors(glsl, AllowedRequires);
+
+    /// <summary>What in generated GLES3 GLSL WebGL 2 cannot run: no GLSL, a version other than "300 es", or a required
+    /// extension that is not in <paramref name="allowedRequires"/>.</summary>
+    public static List<string> GlslErrors(string glsl, ISet<string> allowedRequires)
+    {
+        var errors = new List<string>();
+        var versions = Version.Matches(glsl ?? "");
+        if (versions.Count == 0) errors.Add("no GLSL was generated");
+        foreach (Match v in versions)
+            if (v.Groups[1].Value.Trim() != "300 es") errors.Add($"#version {v.Groups[1].Value.Trim()}: WebGL 2 runs GLSL ES 3.00 only");
+        foreach (Match r in Require.Matches(glsl ?? ""))
+            if (!allowedRequires.Contains(r.Groups[1].Value))
+                errors.Add($"requires {r.Groups[1].Value}, which is not in ShaderChecks.AllowedRequires: if WebGL 2 supports it, " +
+                           "verify it in headless Chrome (plan Task 3 Step 0) and add it there with a comment saying so");
+        return errors;
+    }
+```
+
+2. In `unity/Assets/Tests/EditMode/VisualHarnessTests.cs`, add these tests after `AShaderThatCompilesForMetalButNotForWebGL2Fails`:
+
+```csharp
+    [Test]
+    public void AnAllowedRequireIsAcceptedAndAnUnknownOneFailsWithHowToAddIt()
+    {
+        const string glsl = "#version 300 es\n#extension GL_EXT_demo_allowed : require\nvoid main() {}";
+        Assert.IsEmpty(ShaderChecks.GlslErrors(glsl, new HashSet<string> { "GL_EXT_demo_allowed" }), "an allowed require passes");
+        var errors = ShaderChecks.GlslErrors(glsl, new HashSet<string>());
+        Assert.AreEqual(1, errors.Count, string.Join("\n", errors));
+        StringAssert.Contains("GL_EXT_demo_allowed", errors[0]);
+        StringAssert.Contains("AllowedRequires", errors[0], "the message says where to add it");
+        Assert.IsNotEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_other : require\nvoid main() {}",
+            new HashSet<string> { "GL_EXT_demo_allowed" }), "allowing one extension allows no other");
+        Assert.IsEmpty(ShaderChecks.GlslErrors("#version 300 es\n#extension GL_EXT_demo_allowed : enable\nvoid main() {}", new HashSet<string>()),
+            "enable and warn never fail");
+    }
+```
+
+3. Create `unity/Assets/Tests/EditMode/Gles3Report.cs`, a read-only report (it changes no asset) that prints `Gles3Errors` for the shaders this track depends on:
+
+```csharp
+#nullable enable
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>Plan Task 3 Step 0: prints ShaderChecks.Gles3Errors for URP Lit, URP Terrain Lit and every Statecraft shader, so
+/// a `require` is judged once, up front, instead of in the middle of a task. Run with -executeMethod Gles3Report.Run.</summary>
+public static class Gles3Report
+{
+    static readonly string[] Urp = { "Universal Render Pipeline/Lit", "Universal Render Pipeline/Terrain/Lit" };
+
+    public static void Run()
+    {
+        var shaders = Urp.Select(Shader.Find).ToList();
+        shaders.AddRange(AssetDatabase.FindAssets("t:Shader", new[] { "Assets/Shaders" })
+            .Select(g => AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(g))));
+        foreach (var shader in shaders.Where(s => s != null).Distinct())
+        {
+            var errors = ShaderChecks.Gles3Errors(shader);
+            Debug.Log($"GLES3REPORT {shader.name}: {errors.Count} error(s)");
+            foreach (var e in errors) Debug.Log($"GLES3REPORT   {e}");
+        }
+        foreach (var name in Urp)
+            if (Shader.Find(name) == null) Debug.LogError($"GLES3REPORT {name}: shader not found");
+        Debug.Log("GLES3REPORT done");
+    }
+}
+```
+
+4. Run the report and the new test, and read the output:
+
+```bash
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Gles3Report.Run -logFile "$PWD/unity-gles3-report.log"; echo exit=$?
+grep "GLES3REPORT" unity-gles3-report.log
+"$UNITY" -batchmode -projectPath unity -buildTarget OSXUniversal -runTests -testPlatform EditMode -testFilter AnAllowedRequireIsAcceptedAndAnUnknownOneFailsWithHowToAddIt -testResults "$PWD/unity-editmode-gles3.xml" -logFile unity-tests.log; echo exit=$?
+```
+
+Expected: the test passes; the report ends with `GLES3REPORT done`; every shader line reads `0 error(s)`. For each `requires GL_...` line, decide once, here:
+
+- Verify the extension in WebGL 2 in headless Chrome. This page compiles a fragment shader carrying exactly that line; set `EXT` to the extension name:
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+EXT=GL_EXT_shader_non_constant_global_initializers
+cat > "$PWD/gles3-require-probe.html" <<HTML
+<script>
+const gl = document.createElement('canvas').getContext('webgl2');
+let out = 'NO WEBGL2';
+if (gl) {
+  const sh = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(sh, '#version 300 es\n#extension $EXT : require\nprecision highp float;\nout vec4 o;\nvoid main() { o = vec4(1.0); }');
+  gl.compileShader(sh);
+  out = gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? 'REQUIRE OK' : 'REQUIRE FAILS: ' + gl.getShaderInfoLog(sh);
+}
+document.title = out; document.body.textContent = out;
+</script>
+HTML
+"$CHROME" --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --virtual-time-budget=3000 --dump-dom "file://$PWD/gles3-require-probe.html" | grep -o "REQUIRE [A-Z]*.*\|NO WEBGL2"
+rm -f "$PWD/gles3-require-probe.html"
+```
+
+- `REQUIRE OK`: add the extension to `AllowedRequires` with the comment `// <name>: verified to work in WebGL 2 in headless Chrome (<Chrome version>, <date>)`, re-run the report, and record the entry in `docs/visual-v1.md` under the GLES3 check.
+- `REQUIRE FAILS` or `NO WEBGL2`: the shader genuinely cannot run on the web tier. Record which shader and which extension, and fix or avoid that shader before relying on it (for Unity's own URP shaders, report it to the controller instead of editing them).
+- A shader still unverified is not allowed by default: it stays a failure.
+
+Do not write any Task 3 shader until every `GLES3REPORT` line has been judged this way. If the allowlist changed, commit it on its own:
+
+```bash
+git add unity/Assets/Tests/EditMode/ShaderChecks.cs unity/Assets/Tests/EditMode/VisualHarnessTests.cs unity/Assets/Tests/EditMode/Gles3Report.cs docs/visual-v1.md
+git commit -m "test: GLES3 require allowlist (default-deny, verified in WebGL 2) and the shader report" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+```
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2884,7 +3012,7 @@ In `unity/Assets/Scripts/Map/CameraRig.cs`:
 
 ```csharp
             Volume = vol;
-            VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on);
+            TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
 ```
 
 4. Replace
@@ -2924,7 +3052,7 @@ Run:
 git add unity/Assets/Settings/Mobile_Renderer.asset unity/Assets/Settings/PC_Renderer.asset
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-disabled --dpr 1 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t03-tiltshift
 ```
@@ -3197,7 +3325,7 @@ In `unity/Assets/Scripts/Map/CameraRig.cs`, replace
 
 ```csharp
             Volume = vol;
-            VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on);
+            TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
 ```
 
 with
@@ -3205,8 +3333,8 @@ with
 ```csharp
             Volume = vol;
             MapGrade.Apply(vol.profile);
-            VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on);
-            VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on));
+            TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
+            TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
 ```
 
 (`MapScene.Build` already owns every component of the profile, so the four new components are destroyed with the map; `RebuildingDoesNotLeakVolumeComponents` checks it.)
@@ -3227,7 +3355,7 @@ Run:
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t04-grade
 ```
 Expected: `PROFILE summary visual=-grade` lines (budget 2.5 ms plus the larger spread); golden and shots pass. Record under `## Task 4: grade` in `docs/visual-v1.md`, with the art-log row's saturation and warmth next to the promo's (the caption prints both), and look at the `*-deuteranopia.png`/`*-protanopia.png` copies for anything the test points do not cover.
@@ -3646,7 +3774,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   - HLSL (`StatecraftMap.hlsl`): globals `float4 _ScMap` (x width m, y length m, z sea-level world y, w vertical exaggeration), `float4 _ScMapOrigin` (xyz terrain origin, w hex circumradius m), `float4 _ScHaze` (rgb linear land haze colour, a strongest land haze), `float4 _ScHazeWater` (rgb linear water haze colour, a strongest water haze), `float4 _ScHazeRange` (x rift haze top world y, y rift haze full world y, z aerial distance scale m), `TEXTURE2D(_ScBiomeTex)`; functions `ScHash`, `ScNoise`, `ScHazeAmount(float3 positionWS)` (0..1, applied after lighting), `ScHazeWater(float3 colour, float3 positionWS)`, `ScWater(float coast)`, `ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake)`. Task 7 adds `ScWaterShade`, Task 8 `ScHexEdgeDistance`/`ScGridLine`.
   - Custom Function `StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast, out float3 BaseColor, out float3 NormalOut, out float Occlusion, out float Smoothness, out float Metallic, out float3 Emission)`.
   - Shader `Statecraft/StatecraftTerrain` with material textures `_ScBakeTex`, `_ScCoastTex`.
-  - C#: `MapPalette.Ground` (biome name → sRGB `Color`); `MapShaderGlobals { static readonly int Map, MapOrigin, Biome, Haze, HazeWater, HazeRange; static readonly Color HazeColour, WaterHazeColour; const float HazeMax, WaterHazeMax, HazeDistanceM, RiftHazeTopM, RiftHazeFullM; static void Apply(Terrain, HeightmapMeta, float hexSizeM, Texture2D biome); }`; `MapTexturePaths { const string Bake, Coast; }`; `MapBuilder.BiomeTextureResolution = 1024`, `MapBuilder.NoBasemapDistanceM = 1e7f`; `MapTextures.Configure()`; toggle `"haze"`.
+  - C#: `MapPalette.Ground` (biome name → sRGB `Color`); `MapShaderGlobals { static readonly int Map, MapOrigin, Biome, Haze, HazeWater, HazeRange; static readonly Color HazeColour, WaterHazeColour; const float HazeMax, WaterHazeMax, HazeDistanceM, RiftHazeTopM, RiftHazeFullM; static void Apply(Terrain, HeightmapMeta, float hexSizeM, Texture2D biome, MapRuntimeAssets assets); }`; `MapTexturePaths { const string Bake, Coast; }`; `MapBuilder.BiomeTextureResolution = 1024`, `MapBuilder.NoBasemapDistanceM = 1e7f`; `MapTextures.Configure()`; toggle `"haze"`.
 
 - [ ] **Step 1: Write the generator's failing tests**
 
@@ -4320,7 +4448,7 @@ namespace Statecraft.Game.Map
 
         static Vector4 haze, hazeWater;
 
-        public static void Apply(Terrain terrain, HeightmapMeta meta, float hexSizeM, Texture2D biome)
+        public static void Apply(Terrain terrain, HeightmapMeta meta, float hexSizeM, Texture2D biome, MapRuntimeAssets assets)
         {
             var size = terrain.terrainData.size; var o = terrain.transform.position;
             float Y(float elevM) => o.y + (elevM - meta.elev_min_m) * MapBuilder.VerticalExaggeration;
@@ -4334,11 +4462,11 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(Haze, haze);
             Shader.SetGlobalVector(HazeWater, hazeWater);
             Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, 0f));
-            VisualToggles.Register("haze", on =>
+            assets.OnTeardown(VisualToggles.Register("haze", on =>
             {
                 Shader.SetGlobalVector(Haze, on ? haze : new Vector4(haze.x, haze.y, haze.z, 0f));
                 Shader.SetGlobalVector(HazeWater, on ? hazeWater : new Vector4(hazeWater.x, hazeWater.y, hazeWater.z, 0f));
-            });
+            }));
         }
     }
 
@@ -4380,7 +4508,7 @@ In `unity/Assets/Scripts/Map/MapBuilder.cs`:
             terrain.basemapDistance = NoBasemapDistanceM;
             data.terrainLayers = new[] { NeutralLayer(assets) };   // one layer, one pass: the graph paints from the biome texture
             data.alphamapResolution = 16;
-            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets));
+            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets), assets);
             Boot.DiagLog.BootPhase("biome texture baked");
 ```
 
@@ -4534,14 +4662,14 @@ Run:
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
 grep "BUILD " unity-build-web.log
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t06-terrain
 ```
 Expected: `BUILD Succeeded WebGL ...` with the size about 3–6 MB above Task 1's (the two textures); `PROFILE summary visual=all` no slower than Task 1's baseline by more than 2.5 ms (median, plus the larger spread) at either pose (one pass instead of two should make it faster); the checkpoint passes golden and shots.
 
 Then the boot budget (the biome bake still runs on the main thread, now into a texture, and the graph adds shader variants):
 ```bash
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline <boot baseline from Task 1> --budget 1000 > "$PWD/unity-boot-t06.log"; echo exit=$?; grep "BOOT map\|OVER BUDGET" unity-boot-t06.log
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline 443 --baseline-first-frame 3547 > "$PWD/unity-boot-t06.log"; echo exit=$?; grep "BOOT .*median\|OVER BUDGET" unity-boot-t06.log
 ```
 Expected: `exit=0`. If it is over budget, record the per-phase `dt` of `biome texture baked` against Task 1's `biome colours blended` and raise it in the task report (the remedy is to bake the biome colour texture offline in `terrain_bake.py`, since hexes.json and the palette are static; that is a follow-up, not part of this task). Record the build size, the summary lines and the boot line under `## Task 6: terrain` in `docs/visual-v1.md`, plus the checkpoint row.
 
@@ -4871,15 +4999,15 @@ In `unity/Assets/Scripts/Map/MapShaderGlobals.cs`:
 2. Replace
 
 ```csharp
-            VisualToggles.Register("haze", on =>
+            assets.OnTeardown(VisualToggles.Register("haze", on =>
 ```
 
    with
 
 ```csharp
             Shader.SetGlobalFloat(WaterOn, 1f);
-            VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f));
-            VisualToggles.Register("haze", on =>
+            assets.OnTeardown(VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f)));
+            assets.OnTeardown(VisualToggles.Register("haze", on =>
 ```
 
 Create `unity/Assets/Shaders/Sea.shader`:
@@ -5017,7 +5145,7 @@ Run:
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t07-sea
 ```
 Expected: `PROFILE summary visual=all` no more than 2.5 ms (median, plus the larger spread) slower than Task 6's at either pose, and a `visual=-water` line pricing the water; checkpoint passes. Record under `## Task 7: sea` in `docs/visual-v1.md` with the checkpoint row, and one sentence on the plateau edge as seen in `diorama02` (the owner's known gap).
@@ -5500,7 +5628,7 @@ In `unity/Assets/Scripts/Map/MapShaderGlobals.cs`:
 
 ```csharp
             Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, 1f));
-            VisualToggles.Register("grid", on => Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, on ? 1f : 0f)));
+            assets.OnTeardown(VisualToggles.Register("grid", on => Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, on ? 1f : 0f))));
             Shader.SetGlobalFloat(WaterOn, 1f);
 ```
 
@@ -5580,12 +5708,12 @@ Run:
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t08-grid
 ```
 Expected: `PROFILE summary visual=-grid` lines (budget 2.5 ms plus the larger spread; the line mesh's draw call is gone); checkpoint passes. Then the boot budget (the overlay's draping phase is gone, so this should improve):
 ```bash
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline <boot baseline from Task 1> --budget 1000 > "$PWD/unity-boot-t08.log"; echo exit=$?; grep "BOOT map\|OVER BUDGET" unity-boot-t08.log
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline 443 --baseline-first-frame 3547 > "$PWD/unity-boot-t08.log"; echo exit=$?; grep "BOOT .*median\|OVER BUDGET" unity-boot-t08.log
 ```
 Expected: `exit=0`. Record the summary lines and the boot line under `## Task 8: grid` in `docs/visual-v1.md` with the checkpoint row.
 
@@ -6021,7 +6149,8 @@ namespace Statecraft.Game.UI
             var ordered = items.Select((it, i) => (it, i)).OrderBy(x => Priority(x.it.Settlement.Type)).ThenBy(x => x.i).Select(x => x.it).ToList();
             items.Clear(); items.AddRange(ordered);
             Labels = labels; Slots = slots;
-            VisualToggles.Register("labels", on => container.style.display = on ? DisplayStyle.Flex : DisplayStyle.None);
+            removeToggle?.Invoke();
+            removeToggle = VisualToggles.Register("labels", on => container.style.display = on ? DisplayStyle.Flex : DisplayStyle.None);
             Refresh(force: true);
         }
 
@@ -6082,7 +6211,9 @@ namespace Statecraft.Game.UI
             }
         }
 
-        public void Dispose() { VisualToggles.Unregister("labels"); container.Clear(); items.Clear(); }
+        Action? removeToggle;   // the labels switch's removal token (VisualToggles.Register): a disposed presenter never removes a newer one
+
+        public void Dispose() { removeToggle?.Invoke(); removeToggle = null; container.Clear(); items.Clear(); }
     }
 }
 ```
@@ -6183,7 +6314,7 @@ Run:
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t09-labels
 ```
 Expected: `PROFILE summary visual=-labels` lines, with `median(all) - median(-labels) <= 1 ms` plus the larger spread (review I10: priced against its own toggle, not against an old baseline); the checkpoint's `gameplay03.png` shows serif pills over Tel Aviv, Jaffa, Lod and Ramla, none overlapping, each touching its own marker. Record under `## Task 9: labels` with the checkpoint row.
@@ -6269,25 +6400,25 @@ Run:
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile "$PWD/unity-build-web.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
 grep "BUILD " unity-build-web.log
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE" | tee "$PWD/unity-vprofile-headless.log"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE" | tee "$PWD/unity-vprofile-headless.log"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-disabled --dpr 1 | grep "PROFILE" | tee "$PWD/unity-vprofile-headed.log"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-disabled --dpr 2 | grep "PROFILE" | tee "$PWD/unity-vprofile-dpr2.log"
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline <boot baseline from Task 1> --budget 1000 > "$PWD/unity-boot-t10.log"; echo exit=$?; grep "BOOT map\|OVER BUDGET" unity-boot-t10.log
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --cpu 4 > "$PWD/unity-boot-t10-cpu4.log"; grep "BOOT map" unity-boot-t10-cpu4.log   # low-end boot proxy (4x CPU throttling), recorded, not budgeted
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --baseline 443 --baseline-first-frame 3547 > "$PWD/unity-boot-t10.log"; echo exit=$?; grep "BOOT .*median\|OVER BUDGET" unity-boot-t10.log
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py boot --build unity/Builds/Web-disabled --runs 3 --cpu 4 --baseline 1813 --baseline-first-frame 6963 > "$PWD/unity-boot-t10-cpu4.log"; echo exit=$?; grep "BOOT .*median\|OVER BUDGET" unity-boot-t10-cpu4.log   # low-end boot proxy (4x CPU throttling), budgeted by the same rule
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile "$PWD/unity-build-mac.log"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
 app="$(ls -d unity/Builds/Mac/Statecraft.app/Contents/MacOS/* | head -1)"
 uv run tools/machine_lock.py --exclusive --wait-unity -- "$app" -vprofile -screen-width 1920 -screen-height 1080 -screen-fullscreen 0 -logFile "$PWD/unity-mac-vprofile.log"; grep "PROFILE summary" unity-mac-vprofile.log
 "$app" -golden -logFile "$PWD/unity-mac-golden.log"; echo exit=$?; grep "GOLDEN OK" unity-mac-golden.log
 ```
-Expected: each profile run prints, per pose, three repeats of `all`, one `-<name>` per toggle (`-grade`, `-grid`, `-haze`, `-labels`, `-shadows`, `-tiltshift`, `-water`) and `none`, each line with `res=` and `scale=`, then the summary lines and `PROFILE visual done`. The headless and headed DPR-1 runs show `res=1920x1080`; the DPR-2 run shows the doubled backing size (or the screen-clamped one; record what it shows). The boot run exits 0 (within budget); the throttled run's median is recorded beside it as the low-end boot proxy. The macOS player quits by itself after its profile; `-golden` exits 0 with `GOLDEN OK 1950 71e9904d…` and `GOLDEN OK 1952 73590e32…`.
+Expected: each profile run prints, per pose, three repeats of `all`, one `-<name>` per toggle (`-grade`, `-grid`, `-haze`, `-labels`, `-shadows`, `-tiltshift`, `-water`) and `none`, each line with `res=` and `scale=`, then the summary lines and `PROFILE visual done`. The headless and headed DPR-1 runs show `res=1920x1080` and the DPR-2 run is expected to show `res=3840x2160` (the tool fails on any other size). Both boot runs exit 0 (both spans within baseline + max(300 ms, 50%)); the throttled run is the low-end boot proxy. The macOS player quits by itself after its profile; `-golden` exits 0 with `GOLDEN OK 1950 71e9904d…` and `GOLDEN OK 1952 73590e32…`.
 
 - [ ] **Step 2: Measure the render-scale candidate**
 
 Temporarily set `m_RenderScale: 1` in `unity/Assets/Settings/Mobile_RPAsset.asset` (do not stage it), then:
 ```bash
 uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -out Builds/Web-scale1 -logFile "$PWD/unity-build-web-scale1.log"
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-scale1 --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary visual=all"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-scale1 --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary visual=all"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-scale1 --dpr 1 | grep "PROFILE summary visual=all"
 uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/headed.py profile --build unity/Builds/Web-scale1 --dpr 2 | grep "PROFILE summary visual=all"
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
@@ -6451,7 +6582,7 @@ uv run tools/machine_lock.py --shared -- "$UNITY" -batchmode -quit -projectPath 
 git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
 uv run tools/web_check.py unity/Builds/Web-disabled --swiftshader --query "golden&shot" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" \
   --shots captures/visual/t10-swiftshader --timeout 1200 --fail 'GOLDEN FAIL|SMOKE FAIL|BOOT FAIL|Statecraft/.*(not supported|Unsupported)|(not supported|Unsupported).*Statecraft/'
-uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 | grep "PROFILE summary"
+uv run tools/machine_lock.py --exclusive --wait-unity -- uv run tools/web_check.py unity/Builds/Web-disabled --query "vprofile" --expect "PROFILE visual done" --timeout 1800 --stall 120 | grep "PROFILE summary"
 tools/art_checkpoint.sh --no-build t10-final
 ```
 Expected: total **B1 + 50**, `failed="0"`; the SwiftShader run passes (slow, software WebGL 2) and its screenshots show the same look as the GPU ones; the final profile meets the budgets or each overrun is named in the decisions table; the final checkpoint passes.
@@ -6468,7 +6599,7 @@ Add to `docs/visual-v1.md`:
 | Depth / opaque copies | off / off | off / off | no visual v1 effect samples them; the Gaussian DoF that did is retired (Task 3) |
 | Render scale | (0.8 or 1.0) | 1.0 | Step 2 lines: (paste the six `PROFILE summary visual=all` lines at scale 1.0) |
 | Fill-rate stress (DPR 2, headed) | (paste the two `all` summary lines) | — | a stand-in for a GPU with a quarter of the fill rate; the 33 ms floor |
-| Boot | map-build span (paste the `BOOT map_build_ms` line) | — | within 1,000 ms of the Task 1 baseline |
+| Boot | both spans at `--cpu 1` and `--cpu 4` (paste the four `BOOT … median` lines) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms) |
 | Shadows | 1 cascade, (2048 or 1024), hard | 4 cascades, 2048, soft | `-shadows` cost: (paste) |
 | Tilt-shift | downsample (2 or 3) | downsample 2 | `-tiltshift` cost: (paste) |
 | SSAO | none | off | metre radius cannot reach km relief; baked AO replaces it (Tasks 5–6) |
@@ -6542,7 +6673,7 @@ Run against the owner's scope list, the controller input and rulings, the review
 
 **4. Review Focus.** Five conditions (yaw, zoom extremes, window size and render scale, rebuild, weak GPU and colour-blind players), each pinned by a named test or step in its owning task.
 
-**5. Test totals.** Unity: Task 1 +14 (B1), Task 2 +11, Task 3 +6, Task 4 +6, Task 6 +9, Task 7 +6, Task 8 +4, Task 9 +5: merge point B1 + 47; Task 10 +3: B1 + 50. Tools (T0 = `109 passed, 1 skipped` on `554ca2c`): Task 1 +20 (T1; web_check shots 6, art_compare 6, machine_lock 5, headed 3), Task 5 +10, Task 6 +5: T1 + 15; the skipped count stays 1.
+**5. Test totals.** Unity: Task 1 +14, fix round 1 +7 (B1 = B0 + 21), Task 2 +11, Task 3 +6, Task 4 +6, Task 6 +9, Task 7 +6, Task 8 +4, Task 9 +5: merge point B1 + 47; Task 10 +3: B1 + 50. Tools (T0 = `109 passed, 1 skipped` on `554ca2c`): Task 1 +20, fix round 1 +14 (T1 = T0 + 34; web_check shots 15, art_compare 7, machine_lock 6, headed 6), Task 5 +10, Task 6 +5: T1 + 15; the skipped count stays 1.
 
 **API facts checked against the installed packages (URP and Shader Graph 17.3 package cache, the 6000.3.25f1 editor DLLs) while writing:** `RealtimeLights.hlsl` guards with `UNIVERSAL_REALTIME_LIGHTS_INCLUDED`; `ScriptableRenderPass.requiresIntermediateTexture` exists; `Blitter.BlitTexture(RasterCommandBuffer, RTHandle, Vector4, Material, int)` exists; `TextureDesc` has `sizeMode`, `width`, `filterMode`, `wrapMode`, `msaaSamples`, `clearBuffer`; `UniversalCameraData.cameraType` exists; `UniversalRenderPipelineAsset.shadowDistance` and `mainLightShadowmapResolution` are public; the editor exposes `ShaderData.Pass.CompileVariant`, `ShaderData.Pass.SourceCode`, `GetSerializedSubshader` and `TextureImporterSingleChannelComponent`; Shader Graph's `HlslSourceType` is `{ File, String }` (the review's C1); URP's LDR grading applies the tonemapper before the LUT (`Common.hlsl`); the "Terrain Simple" template ships with Shader Graph 17.3 and contains every slot kind the generator copies. Checked by running, in a scratch copy, while amending: every Python file and test in this plan (extracted verbatim) with M3's `test_web_check.py` beside them: 41 passed (the committed-texture test needs the generated PNGs); and `terrain_bake.py` on the real heightmap: 42 s, water 20.2% of texels, and every assertion of `test_the_committed_coast_texture_marks_the_seas_and_lakes` holds (Mediterranean 0, Sea of Galilee 73, Dead Sea 69, Gulf of Aqaba 94, Jerusalem 255). Not checked by running: the C# and HLSL (they need the Unity tasks), the generated graph's import and render (Task 6's two-sided gate), and Chrome's console-line length for `SHOT` (Task 1 Step 9 fallback).
 
@@ -6587,7 +6718,7 @@ The re-review (`.superpowers/sdd/2026-10-10-statecraft-m3/visual-v1-plan-rerevie
 |---|---|
 | **N1** Seam test pairs 9–20 km apart, haze differs | Task 8's `TheSeaBeyondTheEdgeMatchesTheTerrainSea` now compares two hex centres on one odd row at x = +4330 m and −4330 m (the same z), for a west-coast row and the north-west row; the seam itself is checked with the haze off (grid on and off, four yaws, 0.012). One haze-on check per pair stays, at yaw 0 (the pair is equidistant from the camera), tolerance 0.012. The yaw-90 haze-on check was dropped in re-review 2 (R2-1): with correct sRGB slopes haze alone adds about 0.015 there. |
 | **N2** Anchors moved | Re-anchored on `main` at `554ca2c` (M3 merged at `4061a8b`, open-sourced): `docs/dev-setup.md`'s edit appends to the current end of the "Page flags" bullet; `tools/README.md`'s edits anchor on the `headed.py` entry and keep the `Expected:` line's skipped count; T0 is recorded (`109 passed, 1 skipped` at `554ca2c`), not asserted; R16, R17, R23 updated, R26 (doc anchors) and R27 (the full expectations in `docs/determinism.md`, used by `art_checkpoint.sh` and Task 10's SwiftShader run) added. The plan branches from `main` at or after `554ca2c` in `.worktrees/visual-v1`, and every task's PR goes to `main`. |
-| **N3** Task 1 count | B1 = B0 + 14 (Step 5, the merge point, the self-review). |
+| **N3** Task 1 count | B1 = B0 + 21 (Step 5's +14 and fix round 1's +7; the merge point, the self-review). |
 | **N4** Labels during loading | `.loading .map-labels { display: none; }` (children cannot override display); the text check is replaced by `ThePillIsEbGaramondOnNavyWithAGoldEdgeAndHiddenWhileLoading`, which reads the container's resolved display while `loading` is on and off. |
 | **N5** machine_lock | `test_a_shared_holder_really_blocks_an_exclusive_lock` runs `machine_lock.py --shared` in a child and shows `LOCK_EX | LOCK_NB` is refused (the lock path is overridable through `STATECRAFT_MACHINE_LOCK`); `--wait-unity` also waits for any process holding a worktree's `unity/Temp/UnityLockfile` (`lockfile_holders` over `git worktree list`), so an interactive editor counts, with `test_an_editor_holding_a_worktree_lockfile_counts_as_unity`; "How to measure" says so. |
 | **N6** Text-only assertions | The tilt-shift's shader-text check is replaced by a render at 1920×1080 beside the 960×540 one: the top band loses the same share of detail (within 0.1). The pill's USS-text check is replaced by resolved-style checks (font, navy fill, gold edge and width). |
