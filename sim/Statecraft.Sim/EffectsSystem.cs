@@ -25,10 +25,13 @@ namespace Statecraft.Sim
         /// <summary>An equal split of the budget is neutral (1.0); a ministry's factor runs from 0.5 (no money) to 1.5.
         /// An office with no budget line (not in budget_start, so the player can never fund it) is neutral too:
         /// treating it as unfunded would halve its effects permanently with no way to fix it.</summary>
-        public static double BudgetFactor(GameState s, string office)
+        public static double BudgetFactor(GameState s, string office) => BudgetFactor(s.Budget, office);
+
+        /// <summary>The same rule for any set of shares (the Budget screen shows the factor of a draft budget).</summary>
+        public static double BudgetFactor(IReadOnlyDictionary<string, double> budget, string office)
         {
-            if (!s.Budget.TryGetValue(office, out var share)) return 1.0;
-            return Math.Min(1.5, 0.5 + share * s.Budget.Count / 2.0);
+            if (!budget.TryGetValue(office, out var share)) return 1.0;
+            return Math.Min(1.5, 0.5 + share * budget.Count / 2.0);
         }
 
         public static void Apply(Content c, GameState s, List<Cause> why)
@@ -65,6 +68,19 @@ namespace Statecraft.Sim
         /// <summary>clamp(inner + event shift) to [0, 1].</summary>
         internal static double Level(Content c, GameState s, Indicator i) =>
             Math.Max(0, Math.Min(1, Inner(c, s, i) + s.IndicatorShifts[i.Id]));
+
+        /// <summary>Moves an indicator's level by <paramref name="delta"/> through its permanent shift (the layer event
+        /// choices and crises use), clamped to [0, 1]. The shift is set so the level lands exactly on the visible result.
+        /// Returns the change actually applied (0 when the indicator was already at the clamp).</summary>
+        public static double Shift(Content c, GameState s, string indicator, double delta)
+        {
+            var ind = c.Indicators.First(i => i.Id == indicator);
+            var level = Level(c, s, ind);
+            var newLevel = Math.Max(0, Math.Min(1, level + delta));
+            s.IndicatorShifts[ind.Id] = newLevel - Inner(c, s, ind);
+            s.Indicators[ind.Id] = newLevel;
+            return newLevel - level;
+        }
 
         public static void UpdateSituations(Content c, GameState s, List<Cause> why)
         {

@@ -20,7 +20,8 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `bf6baf3ff8880b06b82ebf66a01157b29754eed117a7c2bdca528b05fa7959a4` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `1753fb88dfeef95d8260b8ffe6250e52b04b71ba10babe8a96d07914047257d0` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -44,3 +45,5 @@ rules or content, treat it as a determinism bug.
 | M3 Task 2 | 1950 | `d46ce5ff` | the Immigration budget line moves to the Prime Minister (the Ministry of Immigration ends on 1951-10-08), which renames a key in the hashed budget |
 | M3 Task 3 | 1950 | `3d360deb` | CBS immigration for 1950 adds January-February 1950 arrivals inside the run |
 | M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
+| M3 Task 5 | 1950 | `bf6baf3f` | economy calibrated (rules.yaml) and HistoricalAI sends reserves home after the armistices; capital_inflow_per_year 193.8 acts from 1948, so it moves this hash too |
+| M3 Task 5 | 1952 | `1753fb88` | new run covering the M3 content range. Task 4 fix round 1 changed 1951 event windows/effects (hula, forex, bonds, clothing rationing, education, reparations), so capital_inflow_per_year was re-fitted from 192 to 193.8 (first fx crisis in H2 1951) |

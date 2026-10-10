@@ -19,7 +19,7 @@ public class DeterminismTests
 
     /// <summary>Any change to this value is a deliberate rules or content change: update it here, in
     /// GoldenRun.Hash1950 and in docs/determinism.md in the same commit.</summary>
-    public const string GoldenHash = "e2fa38969b15171a95d6ab7e3d3236d135a6b7af94e0dc822cf391fb3fb898d0";
+    public const string GoldenHash = "bf6baf3ff8880b06b82ebf66a01157b29754eed117a7c2bdca528b05fa7959a4";
 
     /// <summary>Real content, seed 1948, Historical mode, HistoricalAI until the date reaches 1950-01-01.</summary>
     public static GameState GoldenPlaythrough(Content c) => GoldenRun.Play(c, GoldenRun.Until1950);
@@ -33,7 +33,23 @@ public class DeterminismTests
         Assert.Equal(GoldenHash, s.Hash());
     }
 
-    /// <summary>The library constant Unity players compare against is the value this test pins.</summary>
+    /// <summary>Same rule for the second golden run, which covers the M3 content range (to 1952-01-01).</summary>
+    public const string GoldenHash1952 = "1753fb88dfeef95d8260b8ffe6250e52b04b71ba10babe8a96d07914047257d0";
+
     [Fact]
-    public void LibraryGoldenConstantMatchesThisTest() => Assert.Equal(GoldenHash, GoldenRun.Hash1950);
+    public void GoldenPlaythroughTo1952HashIsFixed()
+    {
+        var s = GoldenRun.Play(ContentLoader.Load(RealContentTests.ContentRoot()), GoldenRun.Until1952);
+        Assert.Null(s.GameOver);
+        Assert.Equal(new DateTime(1952, 2, 26), s.Date);
+        Assert.Equal(GoldenHash1952, s.Hash());
+    }
+
+    /// <summary>The library constants Unity players compare against are the values these tests pin.</summary>
+    [Fact]
+    public void LibraryGoldenConstantsMatchThisTest()
+    {
+        Assert.Equal(GoldenHash, GoldenRun.Hash1950);
+        Assert.Equal(GoldenHash1952, GoldenRun.Hash1952);
+    }
 }

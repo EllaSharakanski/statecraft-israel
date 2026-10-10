@@ -331,8 +331,11 @@ namespace Statecraft.Sim
             var r = c.Rules;
             foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
                 ("spending_per_capita_per_year", r.SpendingPerCapitaPerYear), ("exports_per_year", r.ExportsPerYear), ("imports_per_capita_per_year", r.ImportsPerCapitaPerYear),
-                ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear) })
+                ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear),
+                ("capital_inflow_per_year", r.CapitalInflowPerYear), ("fx_crisis_food_per_year", r.FxCrisisFoodPerYear) })
                 Finite("rules.yaml", key, v);
+            if (r.FxCrisisFoodPerYear > 0) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "must be <= 0 (a crisis cuts food imports)");
+            if (r.FxCrisisFoodPerYear < 0 && !indicators.Contains("food_supply")) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "needs a food_supply indicator in model.yaml");
             foreach (var kv in r.InitialPopulation) Count("rules.yaml", $"initial_population.{kv.Key}", kv.Value);
             foreach (var kv in r.BudgetStart)
             {

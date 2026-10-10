@@ -32,13 +32,23 @@ namespace Statecraft.Sim
             }
 
             var exports = r.ExportsPerYear * yearFraction;
+            var inflow = r.CapitalInflowPerYear * yearFraction;
             var imports = r.ImportsPerCapitaPerYear * pop * yearFraction;
-            s.FxReserves += exports - imports;
-            why.Add(new Cause("economy", "fx_reserves", exports - imports, FormattableString.Invariant($"foreign currency {exports - imports:+0.00;-0.00;+0.00} (exports {exports:0.00}, imports {imports:0.00})")));
+            var net = exports + inflow - imports;
+            s.FxReserves += net;
+            why.Add(new Cause("economy", "fx_reserves", net, FormattableString.Invariant($"foreign currency {net:+0.00;-0.00;+0.00} (exports {exports:0.00}, donations and loans {inflow:0.00}, imports {imports:0.00})")));
 
             bool on = s.ActiveSituations.Contains(FxCrisis);
             if (!on && s.FxReserves < 0) { s.ActiveSituations.Add(FxCrisis); why.Add(new Cause("economy", FxCrisis, 1, "Foreign currency reserves are exhausted")); }
             else if (on && s.FxReserves > 0.25 * r.FxStart) { s.ActiveSituations.Remove(FxCrisis); why.Add(new Cause("economy", FxCrisis, -1, "Foreign currency crisis eased")); }
+
+            // The consequence: with no currency to pay for them, food imports are cut while the crisis lasts.
+            if (s.ActiveSituations.Contains(FxCrisis) && r.FxCrisisFoodPerYear < 0)
+            {
+                var change = EffectsSystem.Shift(c, s, "food_supply", r.FxCrisisFoodPerYear * yearFraction);
+                if (change != 0)
+                    why.Add(new Cause("economy", "food_supply", change, FormattableString.Invariant($"food_supply {change:+0.000;-0.000;+0.000} (foreign currency crisis: food imports cut)")));
+            }
         }
 
         /// <summary>Returns null on success, or the reason the allocation was rejected.</summary>

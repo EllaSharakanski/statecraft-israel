@@ -27,4 +27,12 @@ public class SimSmokeTests
         Assert.IsNull(s.GameOver);
         Assert.AreEqual(GoldenRun.Hash1950, s.Hash());
     }
+
+    [Test]
+    public void GoldenPlaythroughTo1952MatchesDotNet()
+    {
+        var s = GoldenRun.Play(ContentLoader.Load(Paths.Content), GoldenRun.Until1952);
+        Assert.IsNull(s.GameOver);
+        Assert.AreEqual(GoldenRun.Hash1952, s.Hash());
+    }
 }

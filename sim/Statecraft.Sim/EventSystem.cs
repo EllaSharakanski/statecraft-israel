@@ -62,16 +62,7 @@ namespace Statecraft.Sim
                 var change = fx.Delta;
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
                 else if (fx.Target == "fx_reserves") s.FxReserves += fx.Delta;
-                else
-                {
-                    // The shift is set so the level lands exactly on the visible result; it never exceeds the clamp.
-                    var ind = c.Indicators.First(i => i.Id == fx.Target);
-                    var level = EffectsSystem.Level(c, s, ind);
-                    var newLevel = Math.Max(0, Math.Min(1, level + fx.Delta));
-                    s.IndicatorShifts[ind.Id] = newLevel - EffectsSystem.Inner(c, s, ind);
-                    s.Indicators[ind.Id] = newLevel;
-                    change = newLevel - level;
-                }
+                else change = EffectsSystem.Shift(c, s, fx.Target, fx.Delta);
                 why.Add(new Cause("events", fx.Target, change, FormattableString.Invariant($"{fx.Target} {change:+0.00;-0.00;+0.00} ({eventId}/{o.Id})")));
             }
             foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))

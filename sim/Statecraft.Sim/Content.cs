@@ -124,6 +124,10 @@ namespace Statecraft.Sim
         public double SpendingPerCapitaPerYear { get; set; }
         public double ExportsPerYear { get; set; }
         public double ImportsPerCapitaPerYear { get; set; }
+        /// <summary>Foreign currency arriving each year without exports (donations, loans, transfers), in the units of fx_start.</summary>
+        public double CapitalInflowPerYear { get; set; }
+        /// <summary>Change to food_supply per year while the foreign currency crisis lasts (imports of food are cut); &lt;= 0.</summary>
+        public double FxCrisisFoodPerYear { get; set; }
         public double MobilizationCostPerYear { get; set; }
         public double NaturalIncreasePerYear { get; set; }
         public Dictionary<string, double> InitialPopulation { get; set; } = new Dictionary<string, double>();
