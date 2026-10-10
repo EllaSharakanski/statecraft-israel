@@ -28,6 +28,20 @@ namespace Statecraft.Sim
         }
         sealed class AliyahFile { public List<AliyahPeriod> Series { get; set; } = new List<AliyahPeriod>(); }
         sealed class PopulationFile { public List<PopulationAnchor> Anchors { get; set; } = new List<PopulationAnchor>(); }
+        sealed class HexBounds { public double Lon0 { get; set; } public double Lon1 { get; set; } public double Lat0 { get; set; } public double Lat1 { get; set; } }
+        /// <summary>hexes.json is JSON, which YAML 1.2 reads as a flow mapping; every key the tool writes is declared.</summary>
+        sealed class MapFile
+        {
+            public List<string> Attribution { get; set; } = new List<string>();
+            public HexBounds Bounds { get; set; } = new HexBounds();
+            public double HexSizeKm { get; set; }
+            public string Layout { get; set; } = "";
+            public List<MapHex> Hexes { get; set; } = new List<MapHex>();
+        }
+        sealed class SettlementHexesFile { public List<SettlementHex> Settlements { get; set; } = new List<SettlementHex>(); }
+
+        public const string HexesFile = "map/hexes.json";
+        public const string SettlementHexesFileName = "map/settlement_hexes.yaml";
 
         static readonly IDeserializer Yaml = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -103,6 +117,8 @@ namespace Statecraft.Sim
             c.Rules = Read<Rules>(readFile, "rules.yaml");
             c.Aliyah = Read<AliyahFile>(readFile, "aliyah.yaml").Series;
             c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
+            c.Hexes = Read<MapFile>(readFile, HexesFile).Hexes;
+            c.SettlementHexes = Read<SettlementHexesFile>(readFile, SettlementHexesFileName).Settlements;
             foreach (var rel in eventFiles.OrderBy(p => p, StringComparer.Ordinal))
             {
                 var e = Read<GameEvent>(readFile, rel);
@@ -364,7 +380,27 @@ namespace Statecraft.Sim
                 if (a.Date == default) throw new ContentException("population.yaml", path + ".date", "required");
                 Count("population.yaml", path + ".jews", a.Jews);
             }
+            ValidateMap(c);
             EventRules.Validate(c, offices, indicators);
+        }
+
+        static void ValidateMap(Content c)
+        {
+            if (c.Hexes.Count == 0) throw new ContentException(HexesFile, "hexes", "no hexes");
+            var seen = new HashSet<(int, int)>();
+            foreach (var h in c.Hexes)
+            {
+                var at = FormattableString.Invariant($"hexes[q={h.Q},r={h.R}]");
+                if (!seen.Add((h.Q, h.R))) throw new ContentException(HexesFile, at, "duplicate hex");
+                if (h.Biome == "") throw new ContentException(HexesFile, at + ".biome", "required");
+            }
+            Unique(SettlementHexesFileName, "settlements", c.SettlementHexes.Select(s => s.Id));
+            foreach (var s in c.SettlementHexes)
+            {
+                var hex = c.HexAt(s.Q, s.R);
+                if (hex == null || !hex.Land)
+                    throw new ContentException(SettlementHexesFileName, $"settlements[{s.Id}]", FormattableString.Invariant($"hex q={s.Q} r={s.R} is not a land hex in {HexesFile}"));
+            }
         }
     }
 }

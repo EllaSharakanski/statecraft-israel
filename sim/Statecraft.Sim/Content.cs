@@ -189,6 +189,27 @@ namespace Statecraft.Sim
         [YamlIgnore] public string File { get; set; } = "";
     }
 
+    /// <summary>One hex of content/map/hexes.json (written by tools/hexgrid.py; axial q, r, pointy-top).</summary>
+    public sealed class MapHex
+    {
+        public int Q { get; set; }
+        public int R { get; set; }
+        public double Lon { get; set; }
+        public double Lat { get; set; }
+        public double ElevM { get; set; }
+        public bool Land { get; set; }
+        public string Biome { get; set; } = "";
+    }
+
+    /// <summary>The hex that owns a settlement (content/map/settlement_hexes.yaml, written by tools/settlement_hexes.py
+    /// with the hexgrid.settlement_hex rule).</summary>
+    public sealed class SettlementHex
+    {
+        public string Id { get; set; } = "";
+        public int Q { get; set; }
+        public int R { get; set; }
+    }
+
     public sealed class Content
     {
         public List<Office> Offices = new List<Office>();
@@ -206,6 +227,21 @@ namespace Statecraft.Sim
         public List<AliyahPeriod> Aliyah = new List<AliyahPeriod>();
         public List<PopulationAnchor> PopulationAnchors = new List<PopulationAnchor>();
         public List<GameEvent> Events = new List<GameEvent>();
+        public List<MapHex> Hexes = new List<MapHex>();
+        public List<SettlementHex> SettlementHexes = new List<SettlementHex>();
+        Dictionary<(int, int), MapHex>? _hexIndex;
+
+        /// <summary>The hex at axial (q, r), or null when the map has none there.</summary>
+        public MapHex? HexAt(int q, int r)
+        {
+            if (_hexIndex == null)
+            {
+                var index = new Dictionary<(int, int), MapHex>();
+                foreach (var h in Hexes) index[(h.Q, h.R)] = h;
+                _hexIndex = index;
+            }
+            return _hexIndex.TryGetValue((q, r), out var hex) ? hex : null;
+        }
     }
 
     public sealed class ContentException : Exception

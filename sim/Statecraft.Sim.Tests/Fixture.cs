@@ -134,6 +134,22 @@ budget_start: { finance_minister: 1.0 }
         ["population.yaml"] = @"
 anchors: []
 ",
+        // A 5 x 2 map: one sea hex, the rest land; one settlement at (1, 0).
+        ["map/hexes.json"] = @"{""attribution"":[""test""],""bounds"":{""lon0"":34.2,""lon1"":35.9,""lat0"":29.45,""lat1"":33.35},""hex_size_km"":5.0,""layout"":""pointy"",""hexes"":[
+{""q"":0,""r"":0,""lon"":34.2,""lat"":33.35,""elev_m"":0.0,""land"":false,""biome"":""sea""},
+{""q"":1,""r"":0,""lon"":34.29,""lat"":33.35,""elev_m"":20.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":2,""r"":0,""lon"":34.38,""lat"":33.35,""elev_m"":250.0,""land"":true,""biome"":""hills""},
+{""q"":3,""r"":0,""lon"":34.47,""lat"":33.35,""elev_m"":300.0,""land"":true,""biome"":""hills""},
+{""q"":4,""r"":0,""lon"":34.56,""lat"":33.35,""elev_m"":100.0,""land"":true,""biome"":""desert""},
+{""q"":0,""r"":1,""lon"":34.24,""lat"":33.28,""elev_m"":10.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":1,""r"":1,""lon"":34.33,""lat"":33.28,""elev_m"":40.0,""land"":true,""biome"":""coastal_plain""},
+{""q"":2,""r"":1,""lon"":34.42,""lat"":33.28,""elev_m"":260.0,""land"":true,""biome"":""hills""},
+{""q"":3,""r"":1,""lon"":34.51,""lat"":33.28,""elev_m"":120.0,""land"":true,""biome"":""desert""}]}
+",
+        ["map/settlement_hexes.yaml"] = @"
+settlements:
+  - { id: town_a, q: 1, r: 0 }
+",
         ["aliyah.yaml"] = @"
 series:
   - from: 1948-05-15
@@ -146,6 +162,7 @@ series:
     {
         var dir = Path.Combine(Path.GetTempPath(), "statecraft-fixture-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(dir, "events"));
+        Directory.CreateDirectory(Path.Combine(dir, "map"));
         foreach (var kv in Files)
             File.WriteAllText(Path.Combine(dir, kv.Key), overrides != null && overrides.TryGetValue(kv.Key, out var o) ? o : kv.Value);
         if (events != null)
