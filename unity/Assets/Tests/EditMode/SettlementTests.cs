@@ -8,6 +8,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.TestTools;
 
 public class SettlementTests
 {
@@ -129,7 +130,7 @@ public class MapSceneTests
     static string RealYamlPath => Path.Combine(Paths.Content, "map", "settlements_1948.yaml");
 
     const string TerrainMatPath = "Assets/Materials/Terrain.mat", OverlayMatPath = "Assets/Materials/HexOverlay.mat",
-        MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat";
+        MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat", SeaMatPath = "Assets/Materials/Sea.mat";
 
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -142,7 +143,7 @@ public class MapSceneTests
     {
         if (withCamera) new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath));
         return map;
     }
 
@@ -177,6 +178,67 @@ public class MapSceneTests
         rig.TopInset = 1f; rig.Apply();                                    // clamped to MaxTopInset
         foreach (var x in new[] { 0f, 0.5f, 1f })
             Assert.Less(cam.ViewportPointToRay(new Vector3(x, 1f, 0)).direction.y, 0f, $"top edge at x={x} looks down");
+    }
+
+    /// <summary>Fix round 1 (review M7, the sea seam): a lit sea plane at sea level, under the terrain, carries the sea past
+    /// the map's edge, drawn with the editor-made Sea.mat (URP Lit, the sea biome colour, matte like the terrain).</summary>
+    [Test]
+    public void ASeaPlaneCarriesTheSeaPastTheTerrain()
+    {
+        var map = NewMap(); map.Build();
+        var plane = map.Terrain.transform.Find(MapScene.SeaPlaneName);
+        Assert.IsNotNull(plane, "the sea plane exists");
+        var mr = plane.GetComponent<MeshRenderer>();
+        var sea = Load(SeaMatPath);
+        Assert.AreSame(sea, mr.sharedMaterial, "the editor-made sea material, not an instance");
+        Assert.AreEqual("Universal Render Pipeline/Lit", sea.shader.name, "lit like the terrain");
+        var c = sea.GetColor("_BaseColor"); var want = MapBuilder.BiomeColours["sea"];
+        Assert.Less(Mathf.Abs(c.r - want.r) + Mathf.Abs(c.g - want.g) + Mathf.Abs(c.b - want.b), 1e-3f, "the sea biome colour");
+        var size = map.Terrain.terrainData.size;
+        var b = mr.bounds;
+        Assert.Less(b.min.x, -400000f); Assert.Greater(b.max.x, size.x + 400000f);
+        Assert.Less(b.min.z, -400000f); Assert.Greater(b.max.z, size.z + 400000f);
+        var seaHex = System.Array.Find(map.Hexes.hexes, h => h.biome == "sea");
+        var seaY = map.Terrain.SampleHeight(map.Frame.ToWorld(seaHex.lon, seaHex.lat, 0));
+        Assert.Less(b.max.y, seaY, "under the terrain's sea, so the terrain draws inside its bounds");
+        Assert.Greater(b.max.y, seaY - 100f, "at sea level");
+    }
+
+    /// <summary>Fix round 1 (the sea seam), rendered: at the west and north-west edges of the map, the sea on the terrain and
+    /// the sea beyond it come out the same colour (the scene's own light, camera rig and post-processing).</summary>
+    [UnityTest]
+    public System.Collections.IEnumerator TheSeaBeyondTheEdgeMatchesTheTerrainSea()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        var size = map.Terrain.terrainData.size;
+        var rt = new RenderTexture(1600, 900, 24);
+        var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        try
+        {
+            foreach (var (look, inside, beyond) in new[] {
+                (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
+                (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)) })
+            {
+                rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = 0; rig.Apply();
+                cam.targetTexture = rt;
+                yield return null;
+                cam.Render();
+                RenderTexture.active = rt;
+                tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
+                // Project while the camera still renders into the texture, so the points are in its pixels.
+                Color Px(Vector3 w) { var p = cam.WorldToScreenPoint(w); return tex.GetPixel((int)p.x, (int)p.y); }
+                var a = Px(new Vector3(inside.x, map.Terrain.SampleHeight(inside), inside.z));
+                var b = Px(new Vector3(beyond.x, map.Terrain.SampleHeight(inside), beyond.z));
+                RenderTexture.active = null; cam.targetTexture = null;
+                var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
+                TestContext.WriteLine($"seam at {look}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
+                Assert.Less(diff, 0.012f, $"seam at {look}: terrain sea {a}, beyond {b}");
+            }
+        }
+        finally { rt.Release(); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex); }
     }
 
     /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is
@@ -251,12 +313,15 @@ public class MapSceneTests
     public void BuildWithoutMaterialsNamesTheMissingField()
     {
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath), Load(SeaMatPath));
         var ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("markerMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null, Load(SeaMatPath));
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("selectionMaterial", ex.Message);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), null);
+        ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
+        StringAssert.Contains("seaMaterial", ex.Message);
     }
 
     [Test]
@@ -283,7 +348,7 @@ public class MapSceneTests
         var map = NewMap(); map.Build();
         var go = map.gameObject; Object.DestroyImmediate(map);
         var fresh = go.AddComponent<MapScene>();
-        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath));
+        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath));
         fresh.Build();
         AssertOneOfEach();
     }
