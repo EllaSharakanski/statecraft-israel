@@ -27,9 +27,9 @@ namespace Statecraft.Game.UI
         /// <summary>Shows the session's last turn. Does nothing when that same result is already on screen.</summary>
         public void Render() => Show(bridge.Session.Last);
 
-        /// <summary>Shows <paramref name="last"/> (a turn's result, or null for "nothing yet"). The same session and result
+        /// <summary>Test seam (internal; the tests see it through InternalsVisibleTo). Shows <paramref name="last"/> (a turn's result, or null for "nothing yet"). The same session and result
         /// as last time are not rebuilt; a new turn, a new game or a loaded save are.</summary>
-        public void Show(StepResult? last)
+        internal void Show(StepResult? last)
         {
             if (shownSession == bridge.Session && shown == last && screen.Q<ScrollView>("why-rows").childCount > 0) return;
             shownSession = bridge.Session; shown = last;

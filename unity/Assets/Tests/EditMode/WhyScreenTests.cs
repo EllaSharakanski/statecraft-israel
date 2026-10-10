@@ -99,9 +99,15 @@ public class WhyScreenTests
     {
         var text = Text;
         var found = new System.Collections.Generic.SortedSet<string>();
+        int literal = 0, all = 0;
         foreach (var f in System.IO.Directory.GetFiles(System.IO.Path.Combine(Paths.RepoRoot, "sim", "Statecraft.Sim"), "*.cs"))
-            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(System.IO.File.ReadAllText(f), "new Cause\\(\"([a-z_]+)\""))
-                found.Add(m.Groups[1].Value);
+        {
+            var source = System.IO.File.ReadAllText(f);
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(source, "new Cause\\(\"([a-z_]+)\""))
+            { found.Add(m.Groups[1].Value); literal++; }
+            all += System.Text.RegularExpressions.Regex.Matches(source, "new\\s+Cause\\s*\\(").Count;
+        }
+        Assert.AreEqual(all, literal, "every 'new Cause(' must name its system as a plain literal, or this scan cannot see it");
         Assert.Greater(found.Count, 5, "the scan found the sim's causes");
         foreach (var sys in found)
         {
