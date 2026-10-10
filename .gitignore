@@ -43,6 +43,8 @@ unity/Builds/
 *.env
 *.ulf
 .superpowers/
+promo/teaser/out/
+promo/teaser/*.id
 research_notes/open source/
 
 .env.*
