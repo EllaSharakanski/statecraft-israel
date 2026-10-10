@@ -45,6 +45,23 @@ public class EconomyM3Tests
     }
 
     [Fact]
+    public void TheFoodCutStopsWhenTheCrisisEases()
+    {
+        var c = Load("fx_crisis_food_per_year: -0.4\n");
+        var s = Fresh(c);
+        s.FxReserves = -20;
+        EconomySystem.Apply(c, s, 0.25, new List<Cause>());
+        Assert.Contains(EconomySystem.FxCrisis, s.ActiveSituations);
+        var afterCut = s.Indicators["food_supply"];
+        s.FxReserves = 10 * c.Rules.FxStart;                     // well above the exit threshold, 0.25 * fx_start
+        EconomySystem.Apply(c, s, 0.25, new List<Cause>());      // the crisis eases in this step
+        Assert.DoesNotContain(EconomySystem.FxCrisis, s.ActiveSituations);
+        Assert.Equal(afterCut, s.Indicators["food_supply"], 9);
+        EconomySystem.Apply(c, s, 0.25, new List<Cause>());
+        Assert.Equal(afterCut, s.Indicators["food_supply"], 9);
+    }
+
+    [Fact]
     public void NoCrisisNoFoodCut()
     {
         var c = Load("fx_crisis_food_per_year: -0.4\n");

@@ -20,8 +20,8 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `bf6baf3ff8880b06b82ebf66a01157b29754eed117a7c2bdca528b05fa7959a4` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `1753fb88dfeef95d8260b8ffe6250e52b04b71ba10babe8a96d07914047257d0` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `43cc7773f890d8b79a7fc6a733d90b1314f452a91d766b0e7cf56aa8b9d43210` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `0359fa91b04d300084897a0d25b13dc92715d332363cfa2c285e6db740b83001` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -47,3 +47,5 @@ rules or content, treat it as a determinism bug.
 | M3 Task 4 | 1950 | `e2fa3896` | frumkin_commission (window from 1950-01-01) fires inside the run |
 | M3 Task 5 | 1950 | `bf6baf3f` | economy calibrated (rules.yaml) and HistoricalAI sends reserves home after the armistices; capital_inflow_per_year 193.8 acts from 1948, so it moves this hash too |
 | M3 Task 5 | 1952 | `1753fb88` | new run covering the M3 content range. Task 4 fix round 1 changed 1951 event windows/effects (hula, forex, bonds, clothing rationing, education, reparations), so capital_inflow_per_year was re-fitted from 192 to 193.8 (first fx crisis in H2 1951) |
+| M3 Task 5 fix 1 | 1950 | `43cc7773` | capital_inflow_per_year re-fitted 193.8 -> 200 (it acts from 1948) after the missing $45m credit maturity was added |
+| M3 Task 5 fix 1 | 1952 | `0359fa91` | forex_crisis_1951 now applies the documented -45 fx (FRUS d513) in both options, and capital_inflow_per_year is 200 |

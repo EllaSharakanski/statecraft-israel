@@ -12,12 +12,16 @@ options:
     historical: true
     recommended: true
     effects:
-      # The notes record the request, not its outcome; the fx effect is a game assumption, not a historical claim.
+      # About $45m of short-term credit matured Oct-Dec 1951 (FRUS d513); that it was paid, not rolled over, is a game
+      # assumption (foreign banks and oil companies refused to expand credit at the end of 1951, en.wiki Austerity).
+      - { target: fx_reserves, delta: -45 }
+      # The notes record the request, not its outcome; the +15 is a game assumption, not a historical claim.
       - { target: fx_reserves, delta: 15 }
       - { target: intl_standing, delta: -0.01 }
   - id: cut_imports
     text: Cut imports further
     effects:
+      - { target: fx_reserves, delta: -45 }
       - { target: food_supply, delta: -0.05 }
       - { target: morale, delta: -0.04 }
 sources:

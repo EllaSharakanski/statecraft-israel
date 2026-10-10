@@ -82,14 +82,23 @@ public class EconomyCalibrationTests
         }
     }
 
+    /// <summary>[consistency: capital_inflow_per_year is tuned to this anchor] FRUS 1951 v.V doc 513 (19 Oct 1951): the
+    /// crisis was acute in the last quarter of 1951, when about $45m of short-term credit fell due Oct-Dec and Israel
+    /// asked for $15m of immediate aid. So: (1) reserves are not exhausted before the turn that covers 19 October;
+    /// (2) at the end of that turn they cannot cover the $45m falling due; (3) they are exhausted no later than the turn
+    /// that covers the end of 1951.</summary>
     [Fact]
-    public void ForeignCurrencyRunsOutInTheLastHalfOf1951()
+    public void ForeignCurrencyRunsOutInTheLastQuarterOf1951()
     {
-        var first = History.FirstOrDefault(s => s.ActiveSituations.Contains(EconomySystem.FxCrisis));
-        Assert.True(first != null, "[consistency: capital_inflow_per_year is tuned to this anchor] reserves never ran out");
-        Assert.True(first!.Date > new DateTime(1951, 7, 1) && first.Date <= new DateTime(1952, 1, 1),
-            $"[consistency: capital_inflow_per_year is tuned to this anchor] reserves ran out on {first.Date:yyyy-MM-dd}; historically in October 1951");
-        Assert.All(History.Where(s => s.Date < first.Date), s => Assert.True(s.FxReserves >= 0, $"{s.Date:yyyy-MM-dd}: fx {F(s.FxReserves)}"));
+        const string kind = "[consistency: capital_inflow_per_year is tuned to this anchor]";
+        var frus = new DateTime(1951, 10, 19);
+        var i = History.FindIndex(s => s.ActiveSituations.Contains(EconomySystem.FxCrisis));
+        Assert.True(i > 0, kind + " reserves never ran out");
+        Assert.All(History.Take(i), s => Assert.True(s.FxReserves >= 0, $"{kind} {s.Date:yyyy-MM-dd}: fx {F(s.FxReserves)}"));
+        Assert.True(History[i].Date > frus && History[i - 1].Date < new DateTime(1952, 1, 1),
+            $"{kind} reserves ran out in the turn ending {History[i].Date:yyyy-MM-dd}; historically in the last quarter of 1951");
+        var october = History.First(s => s.Date >= frus).FxReserves;
+        Assert.True(october < 45, $"{kind} reserves at the turn covering 19 Oct 1951 are {F(october)} $m: enough to meet the $45m falling due");
     }
 
     /// <summary>[independent, loose] External debt rose IL 22.6m + 43.1m = 65.7m over 1950-51 (Michaely Table 5-2), which

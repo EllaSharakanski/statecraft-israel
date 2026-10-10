@@ -24,11 +24,15 @@ exports_per_year: 40
 imports_per_capita_per_year: 0.00025
 # Donations, loans and transfers, set so reserves run out in the last quarter of 1951: the October 1951 crisis
 # (FRUS 1951 v.V doc 513, https://history.state.gov/historicaldocuments/frus1951v05/d513, checked 2026-10-10).
-# Re-fitted from 192 to 193.8 after Task 4 moved the Israel Bonds inflow to its 10 May 1951 launch; consistency anchor: first
-# fx crisis in H2 1951 (FRUS d513, 19 Oct 1951). Only about 193.76 to 193.88 satisfies it (reserves non-negative through
-# May 1951, first negative at the turn ending 1951-11-26), because the events' lump sums and the quarterly turns make the
-# fit knife-edged; 193.8 is the smallest value on a 0.05 grid inside that range.
-capital_inflow_per_year: 193.8
+# History of this value: 192 (first fit, brief) -> 193.8 (re-fitted after Task 4 moved the Israel Bonds inflow to its
+# 10 May 1951 launch; consistency anchor: first fx crisis in H2 1951, FRUS d513, 19 Oct 1951) -> 200. The 193.8 fit was
+# knife-edged (valid range about 0.12 wide) because the model left out the documented drain of Q4 1951: about $45m of
+# short-term credit matured Oct-Dec 1951 (FRUS d513), now applied by both options of forex_crisis_1951. With that drain the
+# anchor (reserves not exhausted before the turn covering 19 Oct 1951; at its end below $45m; exhausted by the turn that
+# covers the end of 1951) holds for 193.78 to 206.62 (measured by bisection); 200 is the centre. Margins at 200: reserves
+# $18.9m at the turn after May 1951 and $21.6m at the turn covering 19 Oct (against $45m falling due); first crisis in the
+# turn ending 1952-02-26 (the one covering 31 Dec 1951); reserves -36.1 at the end of the run.
+capital_inflow_per_year: 200
 # While reserves are exhausted, food imports are cut: food_supply falls by this much per year.
 fx_crisis_food_per_year: -0.2
 mobilization_cost_per_year: 60
