@@ -33,7 +33,15 @@ Each constant is written in three places that must agree:
 `unity/Assets/Tests/EditMode/SimSmokeTests.cs` runs the same playthroughs inside Unity against `GoldenRun`'s constants
 (run `tools/build_sim_for_unity.sh` first so Unity has the current DLLs).
 
-Verified on .NET and Unity editor Mono. IL2CPP and WebGL: pending (M3 Task 22 checks both players).
+Verified on .NET, Unity editor Mono, a macOS IL2CPP player (Apple clang, no `-ffp-contract=off` needed) and a WebGL
+IL2CPP player in Chrome (M3 Task 22). Re-check with:
+
+```
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression disabled -logFile unity-build-web.log
+uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952"
+"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile unity-build-mac.log
+"unity/Builds/Mac/Statecraft.app/Contents/MacOS/Statecraft Israel" -batchmode -nographics -golden -logFile unity-golden-mac.log; echo exit=$?
+```
 
 **Any change to a golden hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
 content in `content/`, or the hash format. When it happens, update every place above in the same commit, add a row to
