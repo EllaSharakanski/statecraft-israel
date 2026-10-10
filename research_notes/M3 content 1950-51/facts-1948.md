@@ -1,0 +1,403 @@
+# M3 content research: decision events, 15 May 1948 to 24 Feb 1949
+
+Researched 2026-10-10. All URLs were checked on that date.
+
+**Purpose.** The game has no events between `start: 1948-05-15` and `armistice_egypt` (`from: 1949-02-24`), which leaves about 40 weekly turns (rung 5) with no decision. These notes collect sourced candidates for that period.
+
+**Conventions** (the same as `facts.md`)
+- **[V]** means verified on the cited page. Where two independent pages agree, both are given.
+- **[S]** means single source, or a search-result summary that was not opened directly. Treat it as "probably".
+- **[C]** means sources conflict. Every version is given, each with its source.
+- **[GAP]** means not found.
+- No quotes are invented. The few short quotes below are copied from the cited page.
+
+**Schema reminders** (read from `content/` and `sim/Statecraft.Sim/EventRules.cs`)
+- **Effect targets:** only the indicators `morale`, `food_supply`, `housing`, `security` and `intl_standing`, plus `treasury` and `fx_reserves`.
+- **Policies:** only `rationing`, `housing_construction`, `border_settlement` and `maabarot`. None fits these events, so the options below use effects and `set_rung` only.
+- **Rungs:** `set_rung` takes 1–5. 5 is full war (weekly turns) and 4 is prolonged conflict (monthly turns). A truce mapped to rung 4 would also cut the number of empty weekly turns.
+- **Sensitive tags:** `holocaust`, `terror`, `massacre` and `war-casualties`. A sensitive event cannot have a positive `treasury` or `fx_reserves` delta.
+- **Hard anchors** must have a historical option, and an event may have at most one historical option.
+- **Offices in 1948:** Ben-Gurion holds both `prime_minister` and `defense_minister` (people.yaml). Sharett is `foreign_minister`, Kaplan `finance_minister`, Gruenbaum `interior_minister`, Shapira `immigration_minister` + `health_minister`, Rosen `justice_minister`, Bechor-Shalom Sheetrit `police_minister` + `minority_affairs_minister`. Dori is `chief_of_staff`, but Yadin acted for him in 1948 (see 3b).
+
+**Source caveat (important).** The owner's preferred historians (Shapira, Morris's military narrative, Gilbert, Gelber, Bar-Zohar, official IDF history) were not read directly: the books are not online. The facts below come from:
+- Israeli state sources: the MoD/IDF Archives, the Ben-Gurion Archive diaries at BGU, and the CBS;
+- the Jewish Virtual Library (JVL), whose war pages give the IDF as their source;
+- US FRUS documents and UN documents;
+- en and he Wikipedia.
+
+Where a fact traces to one of the named historians (Bar-Zohar via Lavid, for example), it is marked. A historian review is still needed before `status: historian-reviewed`.
+
+---
+
+## 1. First truce: accept or refuse (June 1948)
+
+- **Security Council Resolution 50** was adopted on **29 May 1948** (S/801). [V] https://en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_50
+  - It called for a four-week cease-fire.
+  - It barred bringing fighting men or war material into Palestine and the Arab states.
+  - The mediator was to supervise, and Chapter VII was raised if the terms were violated.
+  - No vote was taken on the resolution as a whole; it was adopted in parts.
+- **Israel's acceptance was sent to the UN on 10 June 1948.** [V] https://www.jewishvirtuallibrary.org/israel-accepts-the-truce-letter-from-ambassador-eban-to-the-secretary-general-s-834
+  - Aubrey Eban sent the letter to the Secretary-General (S/834), conveying Shertok's reply to Bernadotte.
+  - Israel was prepared, "if the other side accepts likewise", to cease fire from 11 June. The letter says it "attaches no conditions to this decision", but then lists reservations: limits on immigration of men of military age, food supply to Jerusalem, and blockades.
+- **The truce took effect on 11 June 1948 and lasted 28 days.** [V] https://www.jewishvirtuallibrary.org/the-first-truce-1948 (source given: IDF); https://en.wikipedia.org/wiki/1948_Arab–Israeli_War
+- **End date** [C]:
+  - **8 July**: en.wiki 1948 war (contents, "First truce: 11 June – 8 July 1948"), and the Bernadotte article.
+  - **9 July**: JVL/IDF ("ended Friday, July 9, 1948") and he.wiki (11.6–9.7).
+  - Both sources agree that Egypt renewed fighting on 8 July, one day before the truce was due to expire. [V] en.wiki 1948 war.
+- **What Israel did during the truce.** The IDF reorganised and trained, and materiel arrived from Europe, especially Czechoslovakia. [V] JVL/IDF page above.
+- **Bernadotte's first proposals.**
+  - He submitted them secretly on **28 June 1948**. [S] https://en.wikipedia.org/wiki/Bernadotte_plan
+  - Terms: Galilee to Israel, the Negev to the Arabs, Jerusalem under UN authority. [V] JVL/IDF page.
+  - **Israel rejected the proposals but agreed to extend the truce by a month. The Arab states rejected both.** [V] en.wiki 1948 war.
+  - The date of Shertok's reply is [GAP] (I recalled 5 July but could not verify it). A contemporary report (NY Herald Tribune, 7 July 1948) says Israel would accept a longer truce and turn down the plan. [S] https://cojs.org/jews_to_accept_longer_truce-_bar_peace_plan-_ny_herald_tribune-_july_7-_1948/
+- **The internal Israeli debate on accepting** is a [GAP]. I found no online source naming ministers for and against.
+  - Yadin is quoted, via the Jewish Press, as calling the truce "dew falling from the heavens". [S, secondary, not used as a quote] https://jewishpress.com/shavuot-2/
+- **Proposed event** `first_truce`:
+  - **Window:** `from: 1948-06-01`, `to: 1948-06-11`. Anchor: hard. Office: `prime_minister`.
+  - **accept** (historical): `set_rung: 4`; `security +0.05` (time to rearm and reorganise); `intl_standing +0.03`.
+  - **refuse** (keep fighting): `intl_standing -0.08`; `morale -0.03`, because the army was short of arms and Resolution 50 threatened Chapter VII. The second effect is a design inference, not a sourced fact.
+  - Do not invent a named "opponent" option; no Israeli voice for refusing was found. The Bernadotte plan of 28 June could be its own short event (reject the plan, historical; or open talks on it).
+  - Tags: none.
+
+## 2. The Altalena (20–22 June 1948)
+
+- **20 June:** The ship reached Kfar Vitkin in the late afternoon. The same day the government met in Tel Aviv and resolved to empower the army to use force if necessary. [V] https://en.wikipedia.org/wiki/Altalena_Affair
+  - 1948-in-Israel adds that the government demanded all weapons be handed over and that "The Irgun refuses to comply". [V] https://en.wikipedia.org/wiki/1948_in_Israel
+- **The actual choice.**
+  - Begin's first request, that 20% of the arms go to the Irgun's Jerusalem battalion, was agreed.
+  - His second request, that the rest go to the IDF to equip Irgun battalions, was rejected as an "army within an army". [V] Altalena Affair.
+- **21 June:**
+  - Brigade commander Dan Even issued an ultimatum at Kfar Vitkin. [V]
+  - Fighting broke out in the evening.
+  - The ship sailed for Tel Aviv at 21:35 and ran aground off Tel Aviv around midnight.
+- **22 June:** Ben-Gurion ordered the ship shelled, around 16:00. Yitzhak Rabin commanded the forces on shore. A ceasefire followed that evening. [V]
+- **Casualties:** 16 Irgun and 3 IDF dead. [V] (both pages agree)
+- **Aftermath:**
+  - More than 200 Irgun members were arrested. Five commanders were held until 27 August 1948. [V]
+  - The Irgun units in the IDF were disbanded and their men dispersed across other units. [V]
+- **Cabinet objections or resignations:** [GAP]. The en.wiki page names none.
+- **Proposed event** `altalena`:
+  - **Window:** `from: 1948-06-20`, `to: 1948-06-22`. Anchor: hard. Office: `defense_minister` (or `prime_minister`; both are Ben-Gurion).
+  - **enforce** (historical): order the IDF to take the arms. `security +0.05` (one army); `morale -0.05` (Jews killed by Jews).
+  - **compromise**: Begin's second request, the arms to Irgun battalions inside the IDF. This was actually put on the table and rejected. `security -0.08` (a separate army inside the IDF); `morale +0.02`.
+  - Tag: `war-casualties`. 19 Jewish dead in a clash between Jews, so it needs a sensitivity review. There are no money effects.
+
+## 3. The IDF founding order and absorbing the Irgun, Lehi and Palmach
+
+### 3a. Founding order
+- **Date of the order** [C]:
+  - Ben-Gurion signed the order on **26 May 1948**. [V] MoD/IDF Archives https://archives.mod.gov.il/sites/English/Exhibitions/David_Ben_Gurion_and_the_IDF/Pages/The-establishment-of-the-IDF.aspx and https://en.wikipedia.org/wiki/1948_in_Israel
+  - JVL says it was "issued May 28, 1948". https://jewishvirtuallibrary.org/the-founding-of-the-israel-defense-forces
+  - Both agree it was published in the Official Gazette No. 3 of **31 May 1948**. en.wiki IDF says the cabinet made it legal on 31 May. [V]
+- **The prohibition.** The order banned "any armed force other than the Israel Defense Forces". [V, JVL wording]
+- **First swearing-in:** **27 June 1948**, for the senior commanders at Ramat Gan. Ben-Gurion read the oath. Dori was absent through illness. [V] MoD Archives; corroborated by https://martinkramer.org/2020/02/06/swearing-allegiance-to-israel/
+- **Irgun–government agreement** to dissolve the Irgun and fold it into the IDF: **1 June 1948**. [S] en.wiki 1948 in Israel. Jerusalem was excluded (Jerusalem was not yet under Israeli sovereignty). [V] JVL founding page.
+
+### 3b. The "Generals' Revolt" (June–July 1948, inside the first truce)
+- **Galili.** Ben-Gurion told Galili on 26 April that his post was abolished, and sent the formal letter on 3 May. On 6 May there was a 12-hour ultimatum from the Haganah leadership, which ended in a compromise. [V] https://en.wikipedia.org/wiki/The_Generals%27_Revolt
+- **June 1948.** Ben-Gurion proposed his own front commanders. Yadin and other senior officers resigned. The cabinet set up a Committee of Five headed by Gruenbaum.
+  - With eight days of the truce left, Ben-Gurion announced his resignation as PM and Defence Minister.
+  - Outcome: the committee's recommendations were withdrawn, Ben-Gurion dropped his appointments and his resignation, and Galili was removed. [V] same page. The exact days are a [GAP].
+- This is a good real PM dilemma, but the page itself frames it as partly a purge of Mapam officers. Treat it as needing historian review.
+
+### 3c. Palmach staff disbanded
+- **Order and effective date.** The Chief of Staff ordered the dissolution on **29 Oct 1948**, effective **7 Nov 1948**. [V] JVL founding page. The 7 Nov date is also given by https://www.jewishvirtuallibrary.org/the-palmach and by https://he.wikipedia.org/wiki/פלמ"ח (infobox: 15.5.1941–7.11.1948).
+- **Earlier announcement:** Ben-Gurion told Palmach commanders on **14 Sept 1948** that the separate command would end. [S, search-result summary only; source pages were not opened]
+- **Year** [C]: en.wiki IDF says Ben-Gurion disbanded the Palmach staff "in 1949". The Israeli sources say 7 Nov 1948. **Use 7 Nov 1948.**
+- **Reasons.** he.wiki gives Ben-Gurion's statism (one army) and, in the view of some, a political aim against Mapam. Nahal was set up in August 1948 as a concession. [V]
+- **Proposed event** `palmach_staff`:
+  - **Window:** `from: 1948-10-29`, `to: 1948-11-07`. Anchor: soft. Office: `defense_minister`.
+  - **disband** (historical): `security +0.03`; `morale -0.02` (the Mapam/kibbutz constituency).
+  - **keep the separate staff**: `security -0.03`.
+  - Tags: none.
+
+### 3d. Absorbing Lehi and the Jerusalem Irgun
+See section 6.
+
+## 4. The Ten Days and Operation Dani (8/9–18 July 1948)
+
+- **Start date** [C]: en.wiki 1948 war gives "8–18 July"; the Dani page and he.wiki give 9 July.
+- **Operation Dani** ran **9–19 July 1948**. [V] https://en.wikipedia.org/wiki/Operation_Danny
+  - **Commander:** Yigal Allon, with Yitzhak Rabin as his deputy (the en.wiki wording).
+  - **Forces:** about 6,000 men from the Yiftach, Harel and 8th Armoured brigades, plus battalions of Kiryati and Alexandroni.
+  - **Aim:** secure the Tel Aviv–Jerusalem corridor.
+- **Lydda airport** was taken on **10 July**. [V] en.wiki 1948 in Israel
+- **Towns** [V] en.wiki 1948 war; Dani page:
+  - Lydda fell on 11 July.
+  - Ramle surrendered on 12 July, after the Arab Legion withdrew.
+- **Latrun** was attacked on 15–16 July and again on 18 July. Both attempts failed. [V] en.wiki 1948 war; the Dani page says Phase 2 failed.
+- **Palmach dead:** 91 recorded, 44 of them at Khirbet Kurikur on 18 July. [V] Dani page
+- **Same window:**
+  - Operation Dekel took Nazareth on **16 July**. [V]
+  - **Operation Kedem**, the Old City attempt, failed on the night of 16–17 July. [V] https://en.wikipedia.org/wiki/Operation_Kedem
+- **Sensitivity.** Both the en.wiki Dani page and Morris's published work document the flight and expulsion of 50,000–70,000 inhabitants of Lydda and Ramle. Under the owner's rule ("contested narratives not shown") the event text should stay military: the airport, the Jerusalem road and Latrun. It must not make claims about civilians either way. Flag it for sensitivity review: leaving it out is an editorial choice that reviewers should approve explicitly.
+- **Proposed event** `ten_days`:
+  - **Window:** `from: 1948-07-08`, `to: 1948-07-10`. Anchor: hard. Office: `defense_minister`.
+  - Choice: where to put the main effort when the truce ends.
+  - **central_front** (historical): Dani, the Lydda/Ramle/Jerusalem corridor. `set_rung: 5`; `security +0.08`.
+  - **southern_front**: concentrate against Egypt first. `set_rung: 5`; `security +0.04`.
+    - This is a design alternative. I found no online source for an explicit cabinet debate in July. Ben-Gurion's diary of 11 July records Yadin asking where forces should go after Lydda and Ramle fell. [S] https://bengurionarchive.bgu.ac.il/en/node/9706
+  - Tag: `war-casualties`. No money effects.
+
+## 5. The second truce (from 18 July 1948)
+
+- **Security Council Resolution 54** was adopted on **15 July 1948** (S/902). [V] https://en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_54
+  - It found a threat to the peace under Article 39 and ordered a cease-fire within three days. It ordered an immediate, unconditional cease-fire in Jerusalem.
+  - Vote: 7–1 (Syria) with 3 abstentions.
+- **The truce took effect at 19:00 on 18 July 1948** and lasted until 15 October. [V] en.wiki 1948 war; he.wiki gives 18.7–15.10.
+- **Date of Israel's acceptance and internal debate:** [GAP].
+- **Proposed event** `second_truce`:
+  - **Window:** `from: 1948-07-15`, `to: 1948-07-18`. Anchor: hard. Office: `prime_minister`.
+  - **comply** (historical): `set_rung: 4`; `intl_standing +0.03`.
+  - **defy**: keep attacking Latrun. `intl_standing -0.10` (the Article 39 threat); `security +0.02`.
+  - Tags: none.
+- **Companion events in the second truce** (the long lull, which is the period that most needs content):
+  - **Jerusalem military government, 2 Aug 1948.** The government rejected Bernadotte's suggestion to demilitarise Jerusalem and declared the Jerusalem area under its control to be Israel-occupied territory. Dov Yosef (Dov Joseph) was appointed Military Governor (Official Gazette No. 12). [V] https://www.jewishvirtuallibrary.org/jerusalem-declared-israel-occupied-city-government-proclamation and https://en.wikipedia.org/wiki/Dov_Yosef
+    - Office: `prime_minister`. **accept_demilitarisation** vs **military_government** (historical).
+  - **The Israeli pound, 17 Aug 1948.** [V] en.wiki 1948 in Israel ("replaces the Palestine pound").
+    - The Bank Notes Ordinance took effect on 17 Aug, with Anglo-Palestine Bank notes. [S] search summaries of https://www.jhom.com/topics/money/anglo_palestine.htm and the UN CCP paper.
+    - [C] The UN CCP paper dates the new unit to 16 Aug, with old notes exchangeable 17 Aug–17 Sept at par with sterling.
+    - Office: `finance_minister`. A plausible decision, but I found no sourced alternative. [GAP] on a debate.
+  - **Area of Jurisdiction and Powers Ordinance, 22 Sept 1948.** It applied Israeli law to areas taken since the war began. [S] en.wiki 1948 in Israel. Office: `justice_minister` or `prime_minister`.
+  - **Ben-Gurion's Latrun proposal, 26 Sept 1948.** See section 13a. This is the best "real PM decision" in the lull.
+
+## 6. Bernadotte's assassination (17 Sept 1948): Lehi outlawed, the Jerusalem Irgun disbanded
+
+- **The assassination:** **17 Sept 1948**, in Jerusalem (Katamon), by Lehi. [V] https://en.wikipedia.org/wiki/Folke_Bernadotte; en.wiki 1948 in Israel. (A footnote on en.wiki Lehi gives 16 Sept, which is an outlier.)
+- **Bernadotte's second plan** was completed on **16 Sept 1948**, the day before. [V] en.wiki 1948 war; [S] the Bernadotte plan page.
+- **Lehi arrests:** about 200 Lehi members were arrested. Yellin-Mor and Shmuelevitz were arrested on 29 Sept 1948. [V] https://en.wikipedia.org/wiki/Lehi_(militant_group)
+- **Lehi in Jerusalem** was dissolved by government order, per JVL "until September 17, 1948". [V] JVL founding page.
+- **Prevention of Terrorism Ordinance No. 33, 5708-1948**, dated **23 Sept 1948**. [V] https://en.wikipedia.org/wiki/Prevention_of_Terror_Ordinance; also https://www.jewishvirtuallibrary.org/jsource/Terrorism/terrorord.html and https://palquest.org/en/node/34119 (search summaries).
+  - [C] en.wiki Lehi says it was passed "three days after", and a photo caption dates the terrorist designation to 20 Sept.
+  - A UN cable of 21 Sept 1948 already reports emergency regulations issued by the Defence Minister.
+  - Reading: emergency regulations came around 20 Sept and the ordinance on 23 Sept. Mark [C].
+- **Jerusalem Irgun ultimatum:** issued by the IDF on **20 Sept 1948 at 12:00**, with 24 hours to disband, hand over arms and enlist. [S] daat.ac.il reproduces the text: https://daat.ac.il/DAAT/english/history/lapidot/36.htm
+  - The US Consul reported on 22 Sept that the Irgun had agreed the previous day (21 Sept). [S] https://history.state.gov/historicaldocuments/frus1948v05p2/d609
+  - JVL says the Irgun battalions in Jerusalem were "disbanded on September 20, 1948". [V]
+  - [C] Formal Irgun dissolution: 12 Jan 1949 (en.wiki Irgun) vs 1 Sept 1948 (Britannica, search summary).
+- **Sentences and amnesty.** Yellin-Mor and Shmuelevitz were sentenced on 10 Feb 1949 (8 and 5 years) and released. The date of the general amnesty is a [GAP]; en.wiki is internally inconsistent. [V/C] en.wiki Lehi
+- **Proposed event** `bernadotte_assassination`:
+  - **Window:** `from: 1948-09-17`, `to: 1948-09-23`. Anchor: hard. Office: `prime_minister` (the emergency regulations were the Defence Minister's, also Ben-Gurion).
+  - **outlaw** (historical): outlaw Lehi, arrest its members, give the Jerusalem Irgun an ultimatum. `intl_standing +0.03` (partial recovery); `security +0.02`.
+  - **investigate_only**: no general crackdown. `intl_standing -0.10`.
+  - The `intl_standing` hit from the killing itself should apply to both options, or sit in the event text.
+  - Tag: `terror`. The Israeli government's own ordinance treated it as terrorism, so the tag matches the Israeli framing. No money effects.
+
+## 7. Operation Yoav (15–22 Oct 1948)
+
+- **Dates:** 15–22 Oct 1948. [V] https://en.wikipedia.org/wiki/Operation_Yoav; the start date is also given by en.wiki 1948 in Israel.
+- **Cabinet approval:** approved at the **Cabinet session of 6 Oct 1948**. [V] Yoav page
+- **Trigger:** an Israeli supply convoy was fired on as it passed Egyptian positions, on **14 Oct**. [V]
+- **Commander:** Yigal Allon (Southern Front). [V]
+- **Beersheba** was taken on **21 Oct**, the Negev Brigade. [V] (two pages)
+- **Third cease-fire** took effect on **22 Oct**. [V] en.wiki 1948 war
+- **Debate.** At the end, Allon asked to push into the Hebron hills and the Jericho valley. Ben-Gurion refused, "mainly due to fears that this would lead to British involvement". [V] Yoav page. That is a real, sourced alternative.
+- **Background.** On 26 Sept the cabinet had rejected Ben-Gurion's central-front proposal (section 13a), so the southern offensive was the alternative that was approved. That sequence is my inference from the two dates; I found no page stating the causal link [S].
+- **Proposed events** `operation_yoav` (cabinet, 6 Oct) and an optional follow-up, `yoav_hebron` (late Oct):
+  - **operation_yoav:** **launch** (historical): `set_rung: 5`; `security +0.08`. **wait**: `security -0.05`. The Negev convoys stay blocked; that is a design effect.
+  - **yoav_hebron:** **stop** (historical) vs **push into the Hebron hills**: `intl_standing -0.08`, plus British-intervention risk.
+  - Tag: `war-casualties`.
+
+## 8. Operation Hiram (late Oct 1948)
+
+- **Dates** [C]:
+  - 29–31 Oct 1948, "launched on the night of 28–29 October", about 60 hours. [V] https://en.wikipedia.org/wiki/Operation_Hiram
+  - 28–31 Oct per PalQuest and the original order dated 28 Oct. [S]
+  - en.wiki 1948 war says "launched on 24 October". This is an outlier; do not use it.
+- **Trigger.** On 22 Oct the Arab Liberation Army attacked the Sheikh Abd position above Kibbutz Manara, in breach of the truce, and sniped at Manara on 24–25 Oct. Qawuqji refused to withdraw, and Israel told the UN it felt free to act. [V] Hiram page
+- **Commander:** Moshe Carmel. [V]
+- **Outcome:** the Upper Galilee and a strip of southern Lebanon taken; the ALA driven into Lebanon. [V]
+- **Ceasefire:** 31 Oct, 11:00. [V]
+- **Alternative actually raised.** Ben-Gurion declined to authorise an advance further into Lebanon (the page says towards Beirut), fearing international condemnation. [V] Hiram page
+- **Sensitivity.** The en.wiki page also carries population claims (the over-50,000 figure) and a cabinet quote of 26 Sept. Both are contested material under the owner's rules. Keep the text military.
+- **Proposed event** `operation_hiram`:
+  - **Window:** `from: 1948-10-24`, `to: 1948-10-29`. Anchor: soft. Office: `defense_minister`.
+  - **launch** (historical): `security +0.08` (north); `set_rung: 5`.
+  - **protest_to_un**: `security -0.04`.
+  - Optional second choice, **advance into Lebanon**: `intl_standing -0.08`.
+  - Tag: `war-casualties`.
+
+## 9. Operation Horev, the British ultimatum and the RAF clash (Dec 1948 – 7 Jan 1949)
+
+- **Start date** [C]:
+  - **22 Dec 1948.** [V] https://en.wikipedia.org/wiki/Operation_Horev; JVL https://www.jewishvirtuallibrary.org/jsource/History/horev.html (search summary)
+  - **27 Dec.** en.wiki 1948 in Israel. This is the date of the al-Auja attack.
+  - **Use 22 Dec.**
+- **End:** 7 Jan 1949. [V]
+- **Commander:** Yigal Allon, with five brigades. [V]
+- **Into Sinai.** The Negev Brigade crossed the border on the night of 28 Dec and reached the outskirts of El-Arish airfield by 30 Dec. [V] Horev page
+- **UN cease-fire:** the Security Council called for one on 29 Dec 1948. [V] Horev page
+- **US pressure.** The State Department's message of 30 Dec was read to Ben-Gurion by McDonald. [V] FRUS 1949 vol. VI doc 341 (McDonald to the Secretary of State, 1 Jan 1949, 09:00) https://history.state.gov/historicaldocuments/frus1949v06/d341
+  - In it, Ben-Gurion says Israeli forces "have already received orders to return to the Negev frontier".
+  - He also says Britain "threatens to take action against us under 1936 Treaty with Egypt".
+  - So the British threat came under the 1936 Anglo-Egyptian treaty and was known by 31 Dec/1 Jan. The exact date of the British note is a [GAP].
+- **Withdrawal order.** Israeli forces were ordered out of Sinai with total withdrawal by **2 Jan 1949**. [S] FRUS 1949 doc 371 summary: https://history.state.gov/historicaldocuments/frus1949v06/d371
+  - A further attempt at Rafah on 3 Jan was halted by Ben-Gurion. [S, weaker source]
+- **RAF clash: date** [C]:
+  - **7 Jan 1949**: JVL (IAF page: "five RAF planes in two dogfights on January 7, 1949", https://jewishvirtuallibrary.org/israel-air-force-in-the-war-of-independence), en.wiki 1949 in Israel and en.wiki 1948 war.
+  - **6 Jan**: en.wiki Horev.
+  - **Use 7 Jan** (three sources).
+- **RAF clash: losses** [C]: five RAF aircraft (four Spitfires, then a Tempest). Two pilots killed and two taken prisoner, per en.wiki Horev and 1949 in Israel.
+  - The ASN narrative says ground fire downed one Spitfire. [S] https://asn.flightsafety.org/wikibase/121188
+- **Aftermath:**
+  - Ben-Gurion ordered the wrecks moved into Israeli territory. [V] en.wiki 1948 war
+  - Britain blocked aviation fuel shipments to Israel in January 1949. [V] en.wiki 1948 war
+  - Israel accepted the cease-fire on **7 Jan 1949**. [V] Horev page
+  - Egypt announced on **6 Jan** that it would negotiate. [V] Horev page
+  - Rhodes talks opened on **13 Jan 1949**. [V] he.wiki elections page
+- **Debated alternative.** Allon's forces could have cut off the Egyptian army from El-Arish, and the withdrawal ended that chance. This is documented in Avnery's commentary [S] and implied in the Horev page.
+- **Proposed events**:
+  - **`operation_horev`.** Window: `from: 1948-12-20`, `to: 1948-12-22`. Anchor: hard. Office: `defense_minister`. **launch** (historical): `set_rung: 5`; `security +0.06`.
+  - **`sinai_withdrawal`.** Window: `from: 1948-12-31`, `to: 1949-01-02`. Anchor: hard. Office: `prime_minister`.
+    - **withdraw** (historical): `intl_standing +0.05`; `security -0.02`.
+    - **hold El-Arish**: `intl_standing -0.15`; British relations hit (`uk` standing in model.yaml, if events can target it later); `security +0.05`.
+  - **`raf_clash`.** Window: 7 Jan 1949. Probably text-only, or a choice between **accept the ceasefire** (historical, `set_rung: 4`) and **fight on**.
+  - Tag for `operation_horev`: `war-casualties`.
+
+## 10. The population registration of 8 Nov 1948
+
+- **Date** [C]: **8 Nov 1948** per CBS (already `population.yaml`, fact-checked), en.wiki elections and he.wiki elections. en.wiki 1948 in Israel gives "8 or 11".
+- **How it was done.** The whole country was under a seven-hour curfew, from 17:00 to midnight, while enumerators went door to door. [V] https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת
+- **Purpose:** to build the voters' roll for the Constituent Assembly. [V] en.wiki and he.wiki elections pages.
+- **Eligible voters** [C]: 506,507 (JCPA/JCFA, https://www.jcfa.org/wp-content/uploads/art/knesset1.htm) vs 506,567 (he.wiki).
+- **Fit as a decision: weak.**
+  - No debated alternative was found [GAP]. The responsible office and minister are also a [GAP]; it was probably the Interior Ministry (Gruenbaum), but that is unverified.
+  - **Recommendation:** fold it into the elections event (section 11) as the preparatory step, or show it as a notification. Do not make it a standalone choice: an invented "skip the census" option would have no historical basis. This keeps the calibration anchor untouched.
+
+## 11. Elections to the Constituent Assembly (25 Jan 1949)
+
+- **Original deadline.** The Declaration of Independence required elected institutions by **1 Oct 1948**. [V] he.wiki elections; en.wiki https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election
+- **Postponements.** The vote was postponed twice because of the war. [V] (both pages)
+  - IDI: scheduled for October 1948, postponed three months. [S] https://en.idi.org.il/israeli-elections-and-parties/elections/1949/
+  - The exact dates of the postponement decisions are a [GAP].
+- **Size of the assembly.** On **5 Nov 1948** the Provisional State Council set it at **120 seats**, kept nationwide PR, and left the electoral system to the constitution. [V] (both)
+- **The vote:** **25 Jan 1949** (24 Tevet 5709), a rest day. [V]
+  - Turnout: 86.9% (en.wiki), about 440,095 voters (he.wiki).
+  - About 1,000 polling stations; 21 lists. [V] en.wiki
+  - Results [V] en.wiki: Mapai 46, Mapam 19, URF 16, Herut 14, General Zionists 7, Progressives 5, Sephardim 4, Maki 4.
+  - Soldiers voted at the front. [V, he.wiki photo captions only]
+- **Timing.** The vote fell after the 7 Jan cease-fire on the Egyptian front and 12 days after Rhodes opened. The campaign was largely about continuing the war or seeking armistices. [V] he.wiki; JCPA
+- **Debate over holding elections in wartime:** [GAP]. No source found.
+  - **Recommendation:** model the decision as **hold on 25 Jan** (historical) vs **postpone again until the armistices**. The second option is a plausible design alternative given the two real postponements, but no named advocate exists, so the text must not attribute it to anyone.
+  - Effects: hold gives `morale +0.03`, `intl_standing +0.03`; postpone gives `intl_standing -0.05`.
+  - Office: `prime_minister` (or `interior_minister`, unverified). Anchor: hard.
+  - **Window:** `from: 1948-11-05`, `to: 1949-01-25`.
+- **Related:** the Knesset's first sitting on 14 Feb 1949, and Weizmann elected president on 16 Feb 1949, 83–15 over Joseph Klausner. [V] en.wiki 1949 in Israel. These are already partly covered in people.yaml.
+
+## 12. Operation Magic Carpet (Yemen)
+
+- **Start** [C]:
+  - **16 Dec 1948**, the first flight: 50 orphans out of Aden on a DC-3. [V] https://en.wikipedia.org/wiki/Operation_Magic_Carpet_(Yemen)
+  - JDC: "December 1948–September 1950". [S] https://archives.jdc.org/historic-sound-recording-from-1949-operation-magic-carpet/
+  - en.wiki Yemenite Jews in Israel: "June 1949". [C] That is the start of the main wave.
+- **Phases** [V] Magic Carpet page:
+  - Stage 1, Dec 1948 to Mar/Apr 1949: about 7,000 people (about 4,500 by end-Feb 1949).
+  - Stage 2, Jul–Nov 1949: about 30,000.
+  - The operation ended on 24 Sept 1950. Total about 49,000 [C: 45,000–49,000 across sources].
+- **Who decided.**
+  - The Israeli government made 3,500 visas available. The JDC ran the airlift from Aden (Hashed camp). [V] Magic Carpet page
+  - "David Ben-Gurion was reluctant at first but eventually agreed". [S, en.wiki only; uncited claim on that page]
+- **Fit for this window:** small (stage 1). It fits better as a 1949 event (stage 2, July 1949), which is outside this window.
+  - If used here: window `from: 1948-12-01`, `to: 1948-12-16`; office `immigration_minister` (Shapira).
+  - **airlift** (historical): `housing -0.01`, `morale +0.02`.
+  - **wait for the sea route**: Suez was closed to Israel-bound ships [V], so `morale -0.02`.
+
+## 13. Other PM decisions in the window
+
+### 13a. Ben-Gurion's proposal to attack Latrun (26 Sept 1948): strong candidate
+- **Ben-Gurion's diary, 26 Sept 1948.** He proposed to the cabinet to attack and take Latrun. The proposal was rejected. [V primary] https://bengurionarchive.bgu.ac.il/en/node/6251
+- **The vote as the diary records it: 7–5.**
+  - **Against (7):** Rosen (Rosenblüth), Moshe Shapira, Levin, Bernstein, Kaplan, Remez, and "Sharett (Sheetrit?)"; the diary page has a question mark here.
+  - **For (5):** Fishman (Maimon), Gruenbaum, Zisling, Bentov, and Ben-Gurion.
+- [C] Lior Lavid (BGU, citing Bar-Zohar) describes the proposal as clearing the road from Latrun to Jericho and the Dead Sea, rejected "by a majority of one", according to Ben-Gurion. https://in.bgu.ac.il/bgi/israelis/DocLib/Pages/2012/ליאור-לביד.pdf (extracted text partly garbled).
+  - Bar-Zohar (via Lavid) says Ben-Gurion kept the vote quiet for years so as not to embarrass the ministers who opposed it.
+- **Ben-Gurion's diary, 29 Sept.** He told the General Staff that an attack was "possible but not at this time". [S] https://bengurionarchive.bgu.ac.il/en/node/12491
+- **Proposed event** `latrun_proposal`:
+  - **Window:** `from: 1948-09-24`, `to: 1948-09-26`. Anchor: hard. Office: `prime_minister`.
+  - **Mechanic:** the player-PM proposes, and the cabinet's historical decision is "reject". Options are **bring to cabinet and accept the vote** (historical) or **press the offensive**: `security +0.05`, `intl_standing -0.10`, coalition-stability cost (the ministers who voted against).
+  - **Avoid** the 26 Sept "Galilee clean of Arabs" quote on en.wiki Hiram: it is contested, and the owner's rules exclude it.
+
+### 13b. Jerusalem front
+- **2 Aug 1948:** military government in Jerusalem. See section 5.
+- **30 Nov 1948:** the Dayan–Abdullah el-Tell "complete and sincere cease-fire" agreement for the Jerusalem area, signed at Government House with UN observers present. [V] FRUS 1948 vol. V pt 2, editorial note: https://history.state.gov/historicaldocuments/frus1948v05p2/d800
+  - Talks began on 28 Nov. [S] UN press release
+  - On 23 Dec, el-Tell apparently received new orders and avoided further talks. [S] FRUS d844
+  - **Event:** **sign** (historical; `security +0.03` for Jerusalem) vs **hold out for the Old City / Latrun road**. Office: `prime_minister`.
+- **Operation Kedem (16–17 July):** the failed Old City attempt. Good event text, not a strong choice.
+
+### 13c. Etzion bloc and Old City POWs
+- **Release in March 1949:** 320 prisoners from the Etzion settlements, 85 of them women. [V] https://en.wikipedia.org/wiki/Kfar_Etzion_massacre (no exact day)
+  - [C] A footnote on the same page gives 670 prisoners in total.
+  - [S] The last Old City POWs returned on 3 March 1949.
+  - Partial releases followed the 30 Nov 1948 agreement. [S]
+- Outside the window (after 24 Feb 1949) and with no decision found. Not recommended. The page title also makes it a `massacre`-tagged topic.
+
+### 13d. First US loan: Export-Import Bank
+- **Application:** Israel applied for $100m on **2 June 1948**. [S] FRUS summary (search result)
+- **Earmark, Jan 1949:** $100m earmarked for Israel: $35m for agriculture authorised, plus $65m available to 31 Dec 1949 for communications, transport, manufacturing, housing and public works, at 3.5%.
+  - [S] The Federal Reserve press release is dated **19 Jan 1949**: https://fraser.stlouisfed.org/files/docs/historical/martin/12_03_19490119.pdf (the PDF could not be text-extracted; the facts are from the search summary).
+  - [V] FRUS 1949 doc 956 refers to the $100m "earmarked for Israel last January". https://history.state.gov/historicaldocuments/frus1949v06/d956
+  - [C] A later State Department memo says "spring of 1949". A 1952 JTA piece garbles the tranches. https://jta.org/archive/israel-starts-payments-on-american-export-import-bank-loan
+- **Fit:** a finance_minister event. **accept the conditional US credit** (historical; `fx_reserves +35` for the first tranche, or the per-year share).
+  - Alternative: rely on the UJA and diaspora only. No sourced debate; [GAP].
+  - Not sensitive, so positive fx is allowed.
+
+### 13e. Israeli pound (16/17 Aug 1948)
+See section 5. Better as a notification than a choice ([GAP] on alternatives).
+
+### 13f. UN membership bid
+- **Applied:** 29 Nov 1948. [S] NZ parliamentary paper (search summary)
+- **Outcome** [C]: the Security Council vote on 17 Dec 1948 failed at 5–1–5 (Jewish Press) vs "decided to defer" (NZ paper).
+- **Later:** admitted after Security Council Resolution 69 (4 Mar 1949) and GA Resolution 273 (May 1949), both outside the window.
+- Weak as a choice; the alternative would be to wait.
+
+### 13g. The Generals' Revolt (June–July 1948)
+See section 3b. A real PM crisis: Ben-Gurion threatened to resign during the first truce. It needs historian review because of the Mapam framing.
+
+---
+
+## Ranking for implementation (strength of sourcing × quality of the decision)
+
+| # | Event | Window | Sourcing | Decision quality |
+|---|---|---|---|---|
+| 1 | `first_truce` | 1–11 Jun 1948 | V (UN, Eban letter, IDF/JVL); end date C (8/9 Jul) | High |
+| 2 | `altalena` | 20–22 Jun 1948 | V (two pages agree) | High; real compromise option |
+| 3 | `bernadotte_assassination` | 17–23 Sep 1948 | V; ordinance and ultimatum dates C (20 vs 23 Sep) | High |
+| 4 | `latrun_proposal` | 26 Sep 1948 | V primary (BG diary); vote count C (7–5 vs majority of one) | High; real cabinet vote |
+| 5 | `operation_yoav` | 6–15 Oct 1948 | V (cabinet 6 Oct) | Medium-high; real Hebron alternative |
+| 6 | `sinai_withdrawal` (Horev) | 31 Dec 1948 – 2 Jan 1949 | V (FRUS d341); British note date GAP; RAF date C (6/7 Jan) | High |
+| 7 | `second_truce` | 15–18 Jul 1948 | V (Res 54); Israeli acceptance GAP | Medium |
+| 8 | `ten_days` | 8–10 Jul 1948 | V; alternative weak (S) | Medium; sensitive |
+| 9 | `operation_hiram` | 24–29 Oct 1948 | V; start date C (28/29 Oct) | Medium; sensitive |
+| 10 | `elections_1949` | 5 Nov 1948 – 25 Jan 1949 | V facts; wartime debate GAP | Medium |
+| 11 | `jerusalem_military_government` | 2 Aug 1948 | V | Medium |
+| 12 | `palmach_staff` | 29 Oct – 7 Nov 1948 | V (7 Nov); C (1948 vs 1949 on en.wiki IDF) | Medium |
+| 13 | `jerusalem_ceasefire` (Dayan–el-Tell) | 28–30 Nov 1948 | V (FRUS) | Medium-low |
+| 14 | `exim_loan` | Jan 1949 | S/C | Medium-low |
+| 15 | Magic Carpet stage 1 | 16 Dec 1948 | V (en.wiki), C on start | Low here; better in mid-1949 |
+| 16 | Census | 8 Nov 1948 | V | Not a decision; fold into elections |
+| 17 | Israeli pound | 16/17 Aug 1948 | V/C | Notification |
+
+**Coverage of the 40 empty turns** (in weekly turns, unless a truce event moves the game to rung 4):
+- June: 1, 2, 3g
+- July: 8, 7
+- August: 11, 17
+- September: 3, 4
+- October: 5, 9, 12
+- November: 16, 10, 13
+- December: 15, 6
+- January: 6 (RAF clash), 14, 10
+- February: the existing armistice event
+
+Gaps remain in the second half of August and in early December.
+
+## Open gaps to close with print sources (historian review)
+- Names of Israeli ministers or generals who argued for refusing the first truce, if any. Sources: Gelber, Bar-Zohar.
+- The date of Shertok's reply to the Bernadotte proposals of 28 June.
+- The date and terms of Israel's acceptance of the second truce.
+- The exact date of the British note under the 1936 treaty (late Dec 1948).
+- Exact days of the June–July Generals' Revolt events.
+- Who ran the 8 Nov registration (which ministry), and whether there was any debate.
+- Any recorded debate on holding the elections in wartime, and the dates of the two postponement decisions.
+- The date of the Lehi amnesty (en.wiki is internally inconsistent).
+- The Altalena cabinet: whether any minister objected on 20 June or resigned afterwards.
