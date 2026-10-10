@@ -32,25 +32,36 @@ namespace Statecraft.Sim
             }
 
             var exports = r.ExportsPerYear * yearFraction;
+            var inflow = r.CapitalInflowPerYear * yearFraction;
             var imports = r.ImportsPerCapitaPerYear * pop * yearFraction;
-            s.FxReserves += exports - imports;
-            why.Add(new Cause("economy", "fx_reserves", exports - imports, FormattableString.Invariant($"foreign currency {exports - imports:+0.00;-0.00;+0.00} (exports {exports:0.00}, imports {imports:0.00})")));
+            var net = exports + inflow - imports;
+            s.FxReserves += net;
+            why.Add(new Cause("economy", "fx_reserves", net, FormattableString.Invariant($"foreign currency {net:+0.00;-0.00;+0.00} (exports {exports:0.00}, donations and loans {inflow:0.00}, imports {imports:0.00})")));
 
             bool on = s.ActiveSituations.Contains(FxCrisis);
             if (!on && s.FxReserves < 0) { s.ActiveSituations.Add(FxCrisis); why.Add(new Cause("economy", FxCrisis, 1, "Foreign currency reserves are exhausted")); }
             else if (on && s.FxReserves > 0.25 * r.FxStart) { s.ActiveSituations.Remove(FxCrisis); why.Add(new Cause("economy", FxCrisis, -1, "Foreign currency crisis eased")); }
+
+            // The consequence: with no currency to pay for them, food imports are cut while the crisis lasts.
+            if (s.ActiveSituations.Contains(FxCrisis) && r.FxCrisisFoodPerYear < 0)
+            {
+                var change = EffectsSystem.Shift(c, s, "food_supply", r.FxCrisisFoodPerYear * yearFraction);
+                if (change != 0)
+                    why.Add(new Cause("economy", "food_supply", change, FormattableString.Invariant($"food_supply {change:+0.000;-0.000;+0.000} (foreign currency crisis: food imports cut)")));
+            }
         }
 
         /// <summary>Returns null on success, or the reason the allocation was rejected.</summary>
         public static string? Allocate(Content c, GameState s, Dictionary<string, double> shares)
         {
             if (shares == null) return "Budget shares are required";
-            var unknown = shares.Keys.FirstOrDefault(k => c.Offices.All(o => o.Id != k));
+            var unknown = shares.Keys.OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault(k => c.Offices.All(o => o.Id != k));   // ordinal: play and replay name the same office
             if (unknown != null) return $"Unknown office '{unknown}'";
             if (shares.Values.Any(v => double.IsNaN(v) || double.IsInfinity(v))) return "Budget shares must be finite numbers";
             if (!new HashSet<string>(shares.Keys).SetEquals(c.Rules.BudgetStart.Keys))
                 return "Budget shares must cover exactly: " + string.Join(", ", c.Rules.BudgetStart.Keys.OrderBy(k => k, StringComparer.Ordinal));
-            if (Math.Abs(shares.Values.Sum() - 1.0) > 1e-6) return "Budget shares must sum to 1";
+            // Summed in key order, not dictionary order, so play and replay agree to the bit whatever order the caller built the map in.
+            if (Math.Abs(shares.OrderBy(kv => kv.Key, StringComparer.Ordinal).Sum(kv => kv.Value) - 1.0) > 1e-6) return "Budget shares must sum to 1";
             if (shares.Values.Any(v => v < 0)) return "Budget shares cannot be negative";
             s.Budget = new Dictionary<string, double>(shares);
             return null;

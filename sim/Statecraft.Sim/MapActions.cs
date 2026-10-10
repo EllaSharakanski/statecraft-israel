@@ -1,0 +1,89 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Statecraft.Sim
+{
+    /// <summary>Something the player built on a hex. Immutable, so GameState.Clone can copy the list shallowly.</summary>
+    public sealed class Placement
+    {
+        public string Action { get; }
+        public int Q { get; }
+        public int R { get; }
+        public DateTime Date { get; }
+        public Placement(string action, int q, int r, DateTime date) { Action = action; Q = q; R = r; Date = date; }
+    }
+
+    /// <summary>Map actions (M3 scope: absorption from 1950). A transit camp (ma'abara) or a housing project goes on a land
+    /// hex within rules map_action_max_distance of a hex that owns a settlement (content/map/settlement_hexes.yaml). It
+    /// costs treasury (a shortfall is borrowed, as in EconomySystem) and moves housing (absorption) and morale (support).
+    /// At most rules map_actions_per_turn are built in one turn (upkeep and camp capacity are M4).</summary>
+    public static class MapActions
+    {
+        public const string Kind = "map_action";
+        public const string TransitCamp = "transit_camp";
+        public const string Housing = "housing";
+        public static readonly IReadOnlyList<string> Actions = new[] { TransitCamp, Housing };
+        public const string MaabarotPolicy = "maabarot";
+
+        /// <summary>Axial hex distance (Red Blob Games).</summary>
+        public static int Distance(int q1, int r1, int q2, int r2) =>
+            (Math.Abs(q1 - q2) + Math.Abs(q1 + r1 - q2 - r2) + Math.Abs(r1 - r2)) / 2;
+
+        /// <summary>The placement on (q, r), or null.</summary>
+        public static Placement? At(GameState s, int q, int r) => s.Placements.FirstOrDefault(p => p.Q == q && p.R == r);
+
+        static int ActionsThisTurn(GameState s) => s.MapActionsTurnDate == s.Date ? s.MapActionsThisTurn : 0;
+
+        static string Name(string action) => action == TransitCamp ? "a transit camp" : "a housing project";
+
+        /// <summary>Null when <paramref name="action"/> may be placed on (q, r) now, else the reason shown to the player.</summary>
+        public static string? Check(Content c, GameState s, string action, int q, int r)
+        {
+            if (!Actions.Contains(action)) return $"Unknown map action '{action}'";
+            var rule = c.Rules.MapActions.TryGetValue(action, out var x) ? x : null;
+            if (rule == null) return $"Map action '{action}' is not available in this content";
+            if (s.Date < c.Rules.MapActionsFrom)
+                return FormattableString.Invariant($"Transit camps and housing projects can be placed from {c.Rules.MapActionsFrom:yyyy-MM-dd}");
+            if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
+                return "Transit camps need the ma'abarot policy";
+            var hex = c.HexAt(q, r);
+            if (hex == null || !hex.Land) return FormattableString.Invariant($"There is no land hex at ({q}, {r})");
+            var max = c.Rules.MapActionMaxDistance;
+            if (!c.SettlementHexes.Any(sh => Distance(q, r, sh.Q, sh.R) <= max))
+                return FormattableString.Invariant($"({q}, {r}) is more than {max} {(max == 1 ? "hex" : "hexes")} from a settlement");
+            var here = At(s, q, r);
+            if (here != null && !(action == Housing && here.Action == TransitCamp))
+                return FormattableString.Invariant($"({q}, {r}) already has {Name(here.Action)}");
+            // The cap comes last so a player who is over it still sees the specific reason an order is illegal. It counts
+            // accepted actions (not surviving placements): housing on a camp removes the camp but still used an action.
+            if (ActionsThisTurn(s) >= c.Rules.MapActionsPerTurn)
+                return FormattableString.Invariant($"No more than {c.Rules.MapActionsPerTurn} map actions in one turn");
+            return null;
+        }
+
+        /// <summary>Returns null and builds, or the reason (state untouched). Housing on a transit camp replaces the camp.</summary>
+        public static string? Apply(Content c, GameState s, string action, int q, int r, List<Cause> why)
+        {
+            var reason = Check(c, s, action, q, r);
+            if (reason != null) return reason;
+            var rule = c.Rules.MapActions[action];
+            if (s.MapActionsTurnDate != s.Date) { s.MapActionsTurnDate = s.Date; s.MapActionsThisTurn = 0; }
+            s.MapActionsThisTurn++;
+            s.Placements.RemoveAll(p => p.Q == q && p.R == r);
+            s.Placements.Add(new Placement(action, q, r, s.Date));
+            s.Treasury -= rule.Cost;
+            if (s.Treasury < 0)
+            {
+                s.Debt += -s.Treasury;
+                why.Add(new Cause("economy", "debt", -s.Treasury, FormattableString.Invariant($"borrowed {-s.Treasury:0.00} to build {Name(action)}")));
+                s.Treasury = 0;
+            }
+            var housing = rule.Housing == 0 ? 0 : EffectsSystem.Shift(c, s, "housing", rule.Housing);
+            var morale = rule.Morale == 0 ? 0 : EffectsSystem.Shift(c, s, "morale", rule.Morale);
+            why.Add(new Cause("map", action, 1, FormattableString.Invariant(
+                $"{Name(action)} at ({q}, {r}): cost {rule.Cost:0.0}, housing {housing:+0.000;-0.000;+0.000}, morale {morale:+0.000;-0.000;+0.000}")));
+            return null;
+        }
+    }
+}

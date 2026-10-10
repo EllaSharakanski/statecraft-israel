@@ -9,6 +9,10 @@ policies:
   - { id: rationing, default: 0.0, office: rationing_minister }
   - { id: housing_construction, default: 0.3, office: labour_minister }
   - { id: border_settlement, default: 0.2, office: agriculture_minister }
+  # 1 = transit camps (ma'abarot) where residents earn their own living replace the free-board immigrant camps.
+  # Transit-camp map actions need it at 0.5 or above (MapActions). The event maabarot_policy sets it. Office: the Prime
+  # Minister, who decided it with the Jewish Agency (and the Ministry of Immigration ends on 1951-10-08).
+  - { id: maabarot, default: 0.0, office: prime_minister }
 effects:
   - { id: rationing_feeds, source: rationing, target: food_supply, k: 0.40, inertia: 2, office: rationing_minister }
   - { id: rationing_grates, source: rationing, target: morale, k: -0.15, inertia: 1 }

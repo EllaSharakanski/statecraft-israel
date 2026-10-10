@@ -2,16 +2,52 @@
 start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
 start_rung: 5                     # the war is under way when the slice opens
 attention_per_turn: 4
-attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 2, map_action: 1 }
+# Coalition stability lost by replacing a minister (Cabinet.Appoint): a seat taken from the minister's party, or a
+# reshuffle within it.
+appoint_stability_cost_other_party: 0.06
+appoint_stability_cost_same_party: 0.02
+# Map actions (MapActions): from 1950, on land within one hex of a settlement. Transit camps also need the ma'abarot
+# policy (the first ma'abara, Kesalon, opened in May 1950: https://en.wikipedia.org/wiki/Ma'abarot, checked 2026-10-10).
+# Costs (IL millions) and effects are game balance: a camp is cheap and grim, permanent housing dear and welcome.
+map_actions_from: 1950-01-01
+map_action_max_distance: 1
+map_actions_per_turn: 2
+map_actions:
+  transit_camp: { cost: 1.5, housing: 0.02, morale: -0.005 }
+  housing: { cost: 6, housing: 0.03, morale: 0.01 }
 rung_attention_step: 0.25
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
 ceasefire_weeks: 52               # long enough that the historical armistice events end the war first
+# ---- Economy (calibrated in M3; checked by sim/Statecraft.Sim.Tests/EconomyCalibrationTests.cs) ----
+# Units: treasury and debt in IL millions; fx_start, exports, donations/loans and imports in US$ millions.
+# Formal rate 1950-51: IL 0.36 per US$ (IL 1 = $2.80), Michaely, Foreign Trade Regimes and Economic Development: Israel
+# (NBER 1975) Table 5-1, https://www.nber.org/system/files/chapters/c4560/c4560.pdf (checked 2026-10-10).
 treasury_start: 20
 fx_start: 40
-tax_per_capita_per_year: 0.00012
-spending_per_capita_per_year: 0.00016
-exports_per_year: 30
-imports_per_capita_per_year: 0.00008
+# Taxes finance the ordinary budget: FY 1950/51 IL 60 million, approved 29 June 1950
+# (https://en.wikipedia.org/wiki/1950_in_Israel, checked 2026-10-10). 60m / ~1.10m Jews (CBS average 1950) = 0.0000545.
+tax_per_capita_per_year: 0.0000545
+# Spending above taxes is borrowed. The gap is set so 1950-51 borrowing matches the rise in internal debt, IL 65.4m (1950)
+# + 33.0m (1951) = 98.4m (Michaely Table 5-2, same chapter). The 1951 fiscal tightening is not modelled, so the model
+# matches the two-year total, not each year: (98.4m - 6m reserve call-up) / ~2.40m person-years = 0.0000385 per person.
+spending_per_capita_per_year: 0.000093
+# Exports cover under a third of imports (spec section 3; EconomyCalibrationTests checks it every turn of 1950-51).
+exports_per_year: 40
+imports_per_capita_per_year: 0.00025
+# Donations, loans and transfers, set so reserves run out in the last quarter of 1951: the October 1951 crisis
+# (FRUS 1951 v.V doc 513, https://history.state.gov/historicaldocuments/frus1951v05/d513, checked 2026-10-10).
+# History of this value: 192 (first fit, brief) -> 193.8 (re-fitted after Task 4 moved the Israel Bonds inflow to its
+# 10 May 1951 launch; consistency anchor: first fx crisis in H2 1951, FRUS d513, 19 Oct 1951) -> 200. The 193.8 fit was
+# knife-edged (valid range about 0.12 wide) because the model left out the documented drain of Q4 1951: about $45m of
+# short-term credit matured Oct-Dec 1951 (FRUS d513), now applied by both options of forex_crisis_1951. With that drain the
+# anchor (reserves not exhausted before the turn covering 19 Oct 1951; at its end below $45m; exhausted by the turn that
+# covers the end of 1951) holds for 193.78 to 206.62 (measured by bisection); 200 is the centre. Margins at 200: reserves
+# $18.9m at the turn after May 1951 and $21.6m at the turn covering 19 Oct (against $45m falling due); first crisis in the
+# turn ending 1952-02-26 (the one covering 31 Dec 1951); reserves -36.1 at the end of the run.
+capital_inflow_per_year: 200
+# While reserves are exhausted, food imports are cut: food_supply falls by this much per year.
+fx_crisis_food_per_year: -0.2
 mobilization_cost_per_year: 60
 # Derived from CBS table 2.1 (1949): (end-1949 1,013.9k - end-1948 758.7k - 1949 immigrants 239,954) / average 1949 population 901.0k.
 natural_increase_per_year: 0.0169
@@ -23,7 +59,10 @@ initial_population: { veterans: 649400 }
 budget_start:
   defense_minister: 0.45
   finance_minister: 0.05
-  immigration_minister: 0.15
+  # No Immigration portfolio in the Third Government; absorption is assumed to sit with the Jewish Agency and the Prime
+  # Minister (notes, Addendum (a), unverified). The Ministry of Immigration ends on 1951-10-08, so its budget line sits
+  # with the Prime Minister (the loader refuses a line for an abolished office).
+  prime_minister: 0.15
   labour_minister: 0.10
   health_minister: 0.07
   education_minister: 0.06

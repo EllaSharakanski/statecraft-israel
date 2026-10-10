@@ -28,6 +28,40 @@ namespace Statecraft.Sim
         }
         sealed class AliyahFile { public List<AliyahPeriod> Series { get; set; } = new List<AliyahPeriod>(); }
         sealed class PopulationFile { public List<PopulationAnchor> Anchors { get; set; } = new List<PopulationAnchor>(); }
+        sealed class HexBounds { public double Lon0 { get; set; } public double Lon1 { get; set; } public double Lat0 { get; set; } public double Lat1 { get; set; } }
+        /// <summary>hexes.json is JSON, which YAML 1.2 reads as a flow mapping; every key the tool writes is declared.</summary>
+        sealed class MapFile
+        {
+            public List<string> Attribution { get; set; } = new List<string>();
+            public HexBounds Bounds { get; set; } = new HexBounds();
+            public double HexSizeKm { get; set; }
+            public string Layout { get; set; } = "";
+            public List<MapHex> Hexes { get; set; } = new List<MapHex>();
+        }
+        sealed class SettlementHexesFile { public List<SettlementHex> Settlements { get; set; } = new List<SettlementHex>(); }
+
+        public const string HexesFile = "map/hexes.json";
+        public const string SettlementHexesFileName = "map/settlement_hexes.yaml";
+        public const string SettlementsFileName = "map/settlements_1948.yaml";
+
+        /// <summary>The ids of settlements_1948.yaml, which the tools own (its other keys are not the sim's business), so it is
+        /// read as plain maps rather than through the strict content types.</summary>
+        static List<string> ReadSettlementIds(Func<string, string?> readFile)
+        {
+            string? text;
+            try { text = readFile(SettlementsFileName); }
+            catch (IOException e) { throw new ContentException(SettlementsFileName, "(file)", e.Message); }
+            catch (UnauthorizedAccessException e) { throw new ContentException(SettlementsFileName, "(file)", e.Message); }
+            if (text == null) throw new ContentException(SettlementsFileName, "(file)", "missing file");
+            try
+            {
+                var file = new DeserializerBuilder().Build().Deserialize<Dictionary<string, List<Dictionary<string, object>>>>(text);
+                if (file == null || !file.TryGetValue("settlements", out var rows)) throw new ContentException(SettlementsFileName, "settlements", "required");
+                return rows.Select((r, i) => r.TryGetValue("id", out var id) && id is string sid && sid != ""
+                    ? sid : throw new ContentException(SettlementsFileName, $"settlements[{i}].id", "required")).ToList();
+            }
+            catch (YamlException e) { throw new ContentException(SettlementsFileName, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
+        }
 
         static readonly IDeserializer Yaml = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -91,6 +125,15 @@ namespace Statecraft.Sim
         {
             if (readFile == null) throw new ArgumentNullException(nameof(readFile));
             if (eventFiles == null) throw new ArgumentNullException(nameof(eventFiles));
+            var read = new List<(string rel, string text)>();
+            var inner = readFile;
+            readFile = rel =>
+            {
+                var text = inner(rel);
+                if (text != null && text.Length > 0 && text[0] == '\uFEFF') text = text.Substring(1);   // a byte-order mark is not content
+                if (text != null) read.Add((rel, text));
+                return text;
+            };
             var c = new Content();
             c.Offices = Read<OfficesFile>(readFile, "offices.yaml").Offices;
             c.Parties = Read<PartiesFile>(readFile, "parties.yaml").Parties;
@@ -103,14 +146,31 @@ namespace Statecraft.Sim
             c.Rules = Read<Rules>(readFile, "rules.yaml");
             c.Aliyah = Read<AliyahFile>(readFile, "aliyah.yaml").Series;
             c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
+            c.Hexes = Read<MapFile>(readFile, HexesFile).Hexes;
+            c.SettlementHexes = Read<SettlementHexesFile>(readFile, SettlementHexesFileName).Settlements;
+            var settlementIds = ReadSettlementIds(readFile);
             foreach (var rel in eventFiles.OrderBy(p => p, StringComparer.Ordinal))
             {
                 var e = Read<GameEvent>(readFile, rel);
                 e.File = rel;
                 c.Events.Add(e);
             }
-            Validate(c);
+            Validate(c, settlementIds);
+            c.Hash = HashOf(read);
             return c;
+        }
+
+        /// <summary>SHA-256 over "path\nlength\ntext" for each file, CRLF normalised to LF (a Windows checkout hashes alike).</summary>
+        static string HashOf(List<(string rel, string text)> files)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var (rel, text) in files)
+            {
+                var t = text.Replace("\r\n", "\n");
+                sb.Append(rel).Append('\n').Append(t.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('\n').Append(t);
+            }
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            return string.Concat(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).Select(b => b.ToString("x2", System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
@@ -172,7 +232,22 @@ namespace Statecraft.Sim
             if (to.HasValue && to.Value <= from) throw new ContentException(file, path + ".to", FormattableString.Invariant($"must be after from ({from:yyyy-MM-dd})"));
         }
 
-        static void Validate(Content c)
+        /// <summary>Only one legislature sits, and one government holds office, on any date: "which body sat on this
+        /// date" must never be ambiguous. Periods are [from, to); sorted by from, each must end on or before the next
+        /// one starts (an open-ended period can only be the last).</summary>
+        static void NoOverlap(string file, string list, IEnumerable<(string id, DateTime from, DateTime? to)> periods)
+        {
+            var sorted = periods.OrderBy(p => p.from).ThenBy(p => p.id, StringComparer.Ordinal).ToList();
+            for (int i = 1; i < sorted.Count; i++)
+            {
+                var (prev, next) = (sorted[i - 1], sorted[i]);
+                if (!prev.to.HasValue || prev.to.Value > next.from)
+                    throw new ContentException(file, $"{list}[{next.id}].from", FormattableString.Invariant(
+                        $"overlaps {prev.id} ({prev.from:yyyy-MM-dd} to {(prev.to.HasValue ? prev.to.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "open")})"));
+            }
+        }
+
+        static void Validate(Content c, List<string> settlementIds)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
             var parties = new HashSet<string>(c.Parties.Select(p => p.Id));
@@ -213,6 +288,15 @@ namespace Statecraft.Sim
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
             }
+            foreach (var o in c.Offices.Where(o => o.Until.HasValue))
+                foreach (var p in c.People)
+                    foreach (var t in p.Offices.Where(t => t.Office == o.Id))
+                        if (!t.To.HasValue || t.To.Value > o.Until!.Value)
+                            throw new ContentException("people.yaml", $"people[{p.Id}].offices.{o.Id}.to", FormattableString.Invariant($"must be on or before {o.Until:yyyy-MM-dd}, when the office was abolished"));
+            foreach (var p in c.People.Where(p => p.Died.HasValue))
+                foreach (var t in p.Offices)
+                    if (!t.To.HasValue || t.To.Value > p.Died!.Value)
+                        throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}.to", FormattableString.Invariant($"must be on or before {p.Died:yyyy-MM-dd}, the date of death"));
             foreach (var p in c.People)
                 for (int i = 0; i < p.Offices.Count; i++)
                     for (int j = i + 1; j < p.Offices.Count; j++)
@@ -248,6 +332,8 @@ namespace Statecraft.Sim
                 foreach (var p in g.Coalition)
                     if (!parties.Contains(p)) throw new ContentException("governments.yaml", $"governments[{g.Id}].coalition.{p}", "unknown party");
             }
+            NoOverlap("legislatures.yaml", "legislatures", c.Legislatures.Select(l => (l.Id, l.From, l.To)));
+            NoOverlap("governments.yaml", "governments", c.Governments.Select(g => (g.Id, g.From, g.To)));
             foreach (var i in c.Indicators)
             {
                 Finite("model.yaml", $"indicators[{i.Id}].base", i.Base);
@@ -305,12 +391,34 @@ namespace Statecraft.Sim
             var r = c.Rules;
             foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
                 ("spending_per_capita_per_year", r.SpendingPerCapitaPerYear), ("exports_per_year", r.ExportsPerYear), ("imports_per_capita_per_year", r.ImportsPerCapitaPerYear),
-                ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear) })
+                ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear),
+                ("capital_inflow_per_year", r.CapitalInflowPerYear), ("fx_crisis_food_per_year", r.FxCrisisFoodPerYear) })
                 Finite("rules.yaml", key, v);
+            Unit("rules.yaml", "appoint_stability_cost_other_party", r.AppointStabilityCostOtherParty);
+            Unit("rules.yaml", "appoint_stability_cost_same_party", r.AppointStabilityCostSameParty);
+            if (r.MapActionMaxDistance < 0) throw new ContentException("rules.yaml", "map_action_max_distance", "must be >= 0");
+            if (r.MapActionsPerTurn < 1) throw new ContentException("rules.yaml", "map_actions_per_turn", "must be >= 1");
+            foreach (var kv in r.MapActions)
+            {
+                if (!MapActions.Actions.Contains(kv.Key)) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}", "unknown map action (transit_camp or housing)");
+                if (!(kv.Value.Cost >= 0 && IsFinite(kv.Value.Cost))) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}.cost", "must be a finite number >= 0");
+                foreach (var (key, v) in new[] { ("housing", kv.Value.Housing), ("morale", kv.Value.Morale) })
+                    if (!(v >= -1 && v <= 1)) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}.{key}", "must be a number from -1 to 1");
+            }
+            if (r.MapActions.Count > 0 && r.MapActionsFrom == default) throw new ContentException("rules.yaml", "map_actions_from", "required when map_actions are defined");
+            if (r.MapActions.Count > 0 && (!indicators.Contains("housing") || !indicators.Contains("morale")))
+                throw new ContentException("rules.yaml", "map_actions", "needs housing and morale indicators in model.yaml");
+            if (r.FxCrisisFoodPerYear > 0) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "must be <= 0 (a crisis cuts food imports)");
+            if (r.FxCrisisFoodPerYear < 0 && !indicators.Contains("food_supply")) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "needs a food_supply indicator in model.yaml");
             foreach (var kv in r.InitialPopulation) Count("rules.yaml", $"initial_population.{kv.Key}", kv.Value);
             foreach (var kv in r.BudgetStart)
             {
                 if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                // A budget line must not silently stop mattering when its office is abolished: move it to the office that
+                // took over (plan amendment C3).
+                var until = c.Offices.First(o => o.Id == kv.Key).Until;
+                if (until.HasValue)
+                    throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", FormattableString.Invariant($"office '{kv.Key}' is abolished on {until:yyyy-MM-dd}: give its budget line to the office that took over"));
                 Unit("rules.yaml", $"budget_start.{kv.Key}", kv.Value);
             }
             // The same rule EconomySystem.Allocate applies to every later allocation.
@@ -328,7 +436,36 @@ namespace Statecraft.Sim
                 if (a.Date == default) throw new ContentException("population.yaml", path + ".date", "required");
                 Count("population.yaml", path + ".jews", a.Jews);
             }
+            ValidateMap(c, settlementIds);
             EventRules.Validate(c, offices, indicators);
+        }
+
+        static void ValidateMap(Content c, List<string> settlementIds)
+        {
+            if (c.Hexes.Count == 0) throw new ContentException(HexesFile, "hexes", "no hexes");
+            var seen = new HashSet<(int, int)>();
+            foreach (var h in c.Hexes)
+            {
+                var at = FormattableString.Invariant($"hexes[q={h.Q},r={h.R}]");
+                if (!seen.Add((h.Q, h.R))) throw new ContentException(HexesFile, at, "duplicate hex");
+                if (h.Biome == "") throw new ContentException(HexesFile, at + ".biome", "required");
+            }
+            Unique(SettlementHexesFileName, "settlements", c.SettlementHexes.Select(s => s.Id));
+            Unique(SettlementsFileName, "settlements", settlementIds);
+            var known = new HashSet<string>(settlementIds);
+            var placed = new HashSet<string>(c.SettlementHexes.Select(s => s.Id));
+            foreach (var s in c.SettlementHexes)
+                if (!known.Contains(s.Id))
+                    throw new ContentException(SettlementHexesFileName, $"settlements[{s.Id}]", $"is not in {SettlementsFileName}");
+            foreach (var id in settlementIds)
+                if (!placed.Contains(id))
+                    throw new ContentException(SettlementsFileName, $"settlements[{id}]", $"has no hex in {SettlementHexesFileName}");
+            foreach (var s in c.SettlementHexes)
+            {
+                var hex = c.HexAt(s.Q, s.R);
+                if (hex == null || !hex.Land)
+                    throw new ContentException(SettlementHexesFileName, $"settlements[{s.Id}]", FormattableString.Invariant($"hex q={s.Q} r={s.R} is not a land hex in {HexesFile}"));
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Statecraft.Sim
     public static class AttentionSystem
     {
         static readonly HashSet<string> Kinds = new HashSet<string>
-            { "set_policy", "allocate_budget", "choose_event_option", "set_mobilization", "security_order" };
+            { "set_policy", "allocate_budget", "choose_event_option", "set_mobilization", "security_order", "appoint", "map_action" };
 
         public static IReadOnlyCollection<string> CommandKinds => Kinds;
 

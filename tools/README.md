@@ -9,6 +9,8 @@ Offline data tools (uv inline-script Python). Run from the repo root.
 - `ims_normals.py` downloads Israel Meteorological Service rain-gauge records from data.gov.il into `tools/.cache/ims/`
   (not committed) and writes the 1981-2010 station normals `content/map/precip_stations.json` (committed).
 - `hexgrid.py` writes `content/map/hexes.json` from the heightmap and those committed precipitation inputs (no network).
+- `settlement_hexes.py` writes `content/map/settlement_hexes.yaml` (committed): the hex that owns each settlement, by the
+  `hexgrid.settlement_hex` rule. The sim reads it, so it needs no projection maths.
 - `preview_map.py` renders the geography check image `tools/.cache/map-preview.png`.
 
 ## Running the tests
@@ -19,7 +21,7 @@ Run from the repo root; this installs every pinned dependency (rasterio included
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 ```
 
-Expected: `93 passed`. Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
+Expected: `96 passed`. Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
 
 ## Required attribution (Copernicus DEM licence, modified data)
 

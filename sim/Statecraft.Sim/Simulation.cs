@@ -31,6 +31,7 @@ namespace Statecraft.Sim
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (commands == null) throw new ArgumentNullException(nameof(commands));
             if (commands.Any(x => x == null)) throw new ArgumentException("Commands cannot contain null.", nameof(commands));
+            CommandText.Validate(commands);
 
             var s = state.Clone();
             var why = new List<Cause>();
@@ -63,6 +64,7 @@ namespace Statecraft.Sim
             var turnStart = s.Date;
             s.Date = next;
             s.Turn++;
+            Cabinet.ExpireOnGovernmentChange(c, s, why);
             AttentionSystem.Refill(c, s);
             if (s.GameOver == null) EventSystem.Trigger(c, s, why, turnStart);   // a game that just ended raises no new events
             return new StepResult(s, why, rejected);
@@ -105,6 +107,10 @@ namespace Statecraft.Sim
                     return EventSystem.Choose(c, s, e.EventId, e.OptionId, why);
                 case SetMobilization m:
                     return SecuritySystem.SetMobilization(c, s, m.Level, why);
+                case Appoint a:
+                    return Cabinet.Appoint(c, s, a.Office, a.Person, why);
+                case MapAction m:
+                    return MapActions.Apply(c, s, m.Action, m.Q, m.R, why);
                 case SecurityOrder o:
                     // long arithmetic: an extreme delta clamps to the ladder's end instead of wrapping around.
                     SecuritySystem.SetRung(c, s, (int)Math.Max(1L, Math.Min(5L, (long)s.Rung + o.Delta)), why);

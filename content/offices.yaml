@@ -4,7 +4,9 @@ offices:
   - { id: finance_minister, title: Minister of Finance }
   - { id: foreign_minister, title: Minister of Foreign Affairs }
   - { id: health_minister, title: Minister of Health }
-  - { id: immigration_minister, title: Minister of Immigration }
+  # No Immigration or War Victims portfolio in the Third Government (8 Oct 1951): research_notes/M3 content 1950-51/facts.md,
+  # Addendum (2026-10-10) (a) and (b), after en.wiki, he.wiki and JVL. Re-add a term if a source shows the portfolio.
+  - { id: immigration_minister, title: Minister of Immigration, until: 1951-10-08 }
   - { id: interior_minister, title: Minister of Internal Affairs }
   - { id: justice_minister, title: Minister of Justice }
   - { id: agriculture_minister, title: Minister of Agriculture }
@@ -12,10 +14,16 @@ offices:
   - { id: police_minister, title: Minister of Police }
   - { id: minority_affairs_minister, title: Minister of Minority Affairs }
   - { id: religions_minister, title: Minister of Religions }
-  - { id: war_victims_minister, title: Minister of War Victims }
+  - { id: war_victims_minister, title: Minister of War Victims, until: 1951-10-08 }
   - { id: trade_minister, title: Minister of Trade and Industry }
   - { id: transportation_minister, title: Minister of Transportation }
   - { id: welfare_minister, title: Minister of Welfare }
   - { id: education_minister, title: Minister of Education and Culture }
-  - { id: rationing_minister, title: Minister of Rationing and Supply }
+  # The minister responsible for rationing: the rationing policy's effects and events look this office up. Until
+  # 1 November 1950 that was the Minister of Rationing and Supply (Dov Yosef). The ministry was then abolished and its
+  # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
+  # notes, Addendum 2). From 8 October 1951 no source names the responsible minister, so the office is vacant (people.yaml).
+  - { id: rationing_minister, title: Minister responsible for rationing }
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
+  - { id: minister_without_portfolio, title: Minister without Portfolio }
+  - { id: president, title: President of Israel }

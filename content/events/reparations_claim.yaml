@@ -1,0 +1,24 @@
+id: reparations_claim
+title: A Claim on Germany
+text: '{foreign_minister} proposes a note to the four occupying powers claiming 1.5 billion dollars from Germany: the cost of absorbing 500,000 survivors of the Holocaust, at 3,000 dollars each.'
+anchor: hard
+tags: [holocaust]
+office: foreign_minister
+# The note is dated 12 March 1951 (en.wiki "1951 in Israel" gives 13 March).
+from: 1951-03-01
+to: 1951-03-13
+options:
+  - id: claim
+    text: Send the claim to the four powers
+    historical: true
+    recommended: true
+    effects:
+      - { target: intl_standing, delta: 0.02 }
+  - id: refuse
+    text: Refuse any dealings with Germany
+    effects:
+      - { target: intl_standing, delta: 0 }
+sources:
+  - { url: "https://en.wikipedia.org/wiki/Reparations_Agreement_between_Israel_and_the_Federal_Republic_of_Germany", checked: 2026-10-10 }
+  - { url: "https://www.jewishvirtuallibrary.org/german-holocaust-reparations", checked: 2026-10-10 }
+status: fact-checked

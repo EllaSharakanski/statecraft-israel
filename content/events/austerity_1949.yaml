@@ -3,7 +3,8 @@ title: Austerity
 text: 'Food and foreign currency cannot keep pace with the immigrants arriving every week. {rationing_minister}, heading the new Ministry of Rationing and Supply, proposes strict rationing.'
 anchor: hard
 office: rationing_minister
-from: 1949-03-10
+# Rationing was decided on 26 April 1949, the day the ministry was created (he.wiki austerity).
+from: 1949-04-26
 to: 1950-01-01
 options:
   - id: impose
@@ -21,5 +22,6 @@ options:
       - { target: food_supply, delta: -0.05 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Austerity_in_Israel", checked: 2026-10-09 }
+  - { url: "https://he.wikipedia.org/wiki/תקופת_הצנע", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-09 }
 status: fact-checked

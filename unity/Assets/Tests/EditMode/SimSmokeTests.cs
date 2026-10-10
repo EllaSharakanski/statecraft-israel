@@ -17,20 +17,42 @@ public class SimSmokeTests
         Assert.IsNotEmpty(ra.State.Hash());
     }
 
-    /// <summary>The same playthrough and constant as sim/Statecraft.Sim.Tests/DeterminismTests.cs (see docs/determinism.md).
-    /// It proves the Unity editor's runtime computes, bit for bit, what .NET computes: verified on .NET and Unity editor
-    /// Mono; IL2CPP/WebGL pending M3. Update all three places together.</summary>
-    public const string GoldenHash = "eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9";
+    /// <summary>The golden playthroughs of docs/determinism.md, run on the Unity editor's Mono runtime. The constants are
+    /// GoldenRun's, which sim/Statecraft.Sim.Tests/DeterminismTests.cs pins on .NET; rebuild the DLLs
+    /// (tools/build_sim_for_unity.sh) after changing them.</summary>
+    [Test]
+    public void GoldenPlaythroughTo1950MatchesDotNet()
+    {
+        var s = GoldenRun.Play(ContentLoader.Load(Paths.Content), GoldenRun.Until1950);
+        Assert.IsNull(s.GameOver);
+        Assert.AreEqual(GoldenRun.Hash1950, s.Hash());
+    }
 
     [Test]
-    public void GoldenPlaythroughMatchesDotNet()
+    public void GoldenPlaythroughTo1952MatchesDotNet()
     {
-        var c = ContentLoader.Load(Paths.Content);
-        var s = Simulation.NewGame(c, 1948UL, Mode.Historical);
-        for (int turn = 0; turn < 1000 && s.Date < new System.DateTime(1950, 1, 1) && s.GameOver == null; turn++)
-            s = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
+        var s = GoldenRun.Play(ContentLoader.Load(Paths.Content), GoldenRun.Until1952);
         Assert.IsNull(s.GameOver);
-        Assert.GreaterOrEqual(s.Date, new System.DateTime(1950, 1, 1));
-        Assert.AreEqual(GoldenHash, s.Hash());
+        Assert.AreEqual(GoldenRun.Hash1952, s.Hash());
+    }
+
+    /// <summary>The save format's strict UTF-8 decoding, on the Unity editor's Mono runtime (it must not depend on the
+    /// BCL's Uri class): an overlong escape is refused, a surrogate pair round-trips.</summary>
+    [Test]
+    public void SaveTextIsStrictUtf8OnMono()
+    {
+        var hash = new string('a', 64);
+        var overlong = "statecraft-save 1\ncontent " + hash + "\nseed 1\nmode Historical\nturn\npolicy a%C0%AF 3FE0000000000000\nend " + hash + "\n";
+        var ex = Assert.Throws<SaveException>(() => SaveGame.Parse(overlong));
+        Assert.AreEqual("line 6: bad text 'a%C0%AF'", ex.Message);
+
+        var content = ContentLoader.Load(Paths.Content);
+        var g = GameSession.New(content, 1UL, Mode.Historical);
+        g.Step(new List<Command> { new SetPolicy("a\uD83D\uDE00b", 1.0) });
+        var text = g.Save.Write();
+        StringAssert.Contains("policy a%F0%9F%98%80b 3FF0000000000000", text);
+        var loaded = GameSession.Load(content, text, out _);
+        Assert.AreEqual(g.State.Hash(), loaded.State.Hash());
+        Assert.AreEqual(text, loaded.Save.Write());
     }
 }

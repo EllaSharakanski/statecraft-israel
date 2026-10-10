@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Statecraft.Sim
@@ -41,6 +42,22 @@ namespace Statecraft.Sim
         public SecurityOrder(int delta) { Delta = delta; }
     }
 
+    /// <summary>Puts <see cref="Person"/> in <see cref="Office"/> (Cabinet.Appoint has the rules).</summary>
+    public sealed class Appoint : Command
+    {
+        public override string Kind => Cabinet.Kind;
+        public string Office { get; } public string Person { get; }
+        public Appoint(string office, string person) { Office = office; Person = person; }
+    }
+
+    /// <summary>Builds <see cref="Action"/> (MapActions.TransitCamp or MapActions.Housing) on hex (Q, R).</summary>
+    public sealed class MapAction : Command
+    {
+        public override string Kind => MapActions.Kind;
+        public string Action { get; } public int Q { get; } public int R { get; }
+        public MapAction(string action, int q, int r) { Action = action; Q = q; R = r; }
+    }
+
     public sealed class Rejection
     {
         public Command Command { get; } public string Reason { get; }
@@ -53,5 +70,31 @@ namespace Statecraft.Sim
         public IReadOnlyList<Cause> Why { get; }
         public IReadOnlyList<Rejection> Rejected { get; }
         public StepResult(GameState state, IReadOnlyList<Cause> why, IReadOnlyList<Rejection> rejected) { State = state; Why = why; Rejected = rejected; }
+    }
+
+    /// <summary>Checks that every text an order carries can be saved: a null id or a lone surrogate would make the save
+    /// unwritable or lossy, so Step refuses the whole batch before anything happens (a programmer error, like a null Command).</summary>
+    static class CommandText
+    {
+        public static void Validate(IReadOnlyList<Command> commands)
+        {
+            foreach (var cmd in commands)
+                switch (cmd)
+                {
+                    case SetPolicy p: Text(p.Policy, "Policy"); break;
+                    case AllocateBudget b: if (b.Shares != null) foreach (var k in b.Shares.Keys) Text(k, "Shares key"); break;
+                    case ChooseEventOption e: Text(e.EventId, "EventId"); Text(e.OptionId, "OptionId"); break;
+                    case Appoint a: Text(a.Office, "Office"); Text(a.Person, "Person"); break;
+                    case MapAction m: Text(m.Action, "Action"); break;
+                    case SetMobilization _: case SecurityOrder _: break;
+                    default: throw new ArgumentException("unknown command type " + cmd.GetType().Name, "commands");
+                }
+        }
+
+        static void Text(string? s, string field)
+        {
+            if (s == null) throw new ArgumentNullException("commands", $"{field} cannot be null.");
+            if (!SaveText.IsEncodable(s)) throw new ArgumentException($"{field} is not valid text (a lone surrogate).", "commands");
+        }
     }
 }

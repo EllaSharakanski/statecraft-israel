@@ -1,0 +1,24 @@
+id: frumkin_commission
+title: Education in the Immigrant Camps
+text: 'Religious Yemenite parents report coercion in the immigrant-camp schools, which the uniform system put under the Culture Department, including the cutting of sidelocks. The religious parties demand action. {prime_minister} must decide whether to appoint an inquiry.'
+anchor: soft
+office: prime_minister
+# Commission appointed January 1950 (first session 25 January); report submitted 9 May 1950.
+from: 1950-01-01
+to: 1950-05-09
+options:
+  - id: inquiry
+    text: Appoint a commission of inquiry and move camp education to the Education Ministry
+    historical: true
+    recommended: true
+    effects:
+      - { target: morale, delta: 0.02 }
+  - id: dismiss
+    text: Dismiss the charges and keep the uniform system
+    effects:
+      - { target: morale, delta: -0.04 }
+sources:
+  - { url: "https://he.wikipedia.org/wiki/ועדת_פרומקין", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/Gad_Frumkin", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1950_in_Israel", checked: 2026-10-10 }
+status: fact-checked
