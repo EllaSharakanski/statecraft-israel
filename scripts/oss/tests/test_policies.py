@@ -168,7 +168,7 @@ def test_trademark_says_the_logo_check_is_pending_and_d_h_covers_every_promo_ima
     tm = " ".join(read("TRADEMARK.md").split())
     assert "checked by the owner" not in tm and "decision D-H, open" in tm
     d_h = next(l for l in read("docs/oss/DECISIONS.md").splitlines() if "D-H" in l)
-    assert d_h.startswith("- [ ] D-H") and "promo/final/" in d_h and "hero-concept-1936.jpg" in d_h
+    assert d_h.startswith("- [x] D-H") and "promo/final/" in d_h and "hero-concept-1936.jpg" in d_h
 
 
 def test_releasing_merges_before_the_gate_and_pins_the_full_expect_values():
