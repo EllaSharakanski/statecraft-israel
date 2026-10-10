@@ -83,10 +83,9 @@ rules:
     licence: CC-BY-SA-4.0
     source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
     status: verified
-  # --- Reserved for the visual-v1 plan's baked textures (derived from the heightmap) ---
+  # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
-    source: "tools/terrain_bake.py from the Copernicus-derived heightmap (visual-v1 plan)"
+    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png) and coast distance (Map/coast.png); attribution in NOTICE"
     status: verified
-    allow_empty: true
 removed: []
