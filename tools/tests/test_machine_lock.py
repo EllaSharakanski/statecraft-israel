@@ -51,6 +51,7 @@ def test_a_shared_holder_really_blocks_an_exclusive_lock(tmp_path):
     finally:
         child.terminate()
         child.wait(10)
+        child.stdout.close()
 
 
 def test_an_editor_holding_a_worktree_lockfile_counts_as_unity(tmp_path):
