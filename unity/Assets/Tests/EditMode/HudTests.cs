@@ -248,4 +248,23 @@ public class HudTests
         Assert.IsNull(bridge.BeforeLast);
         Assert.AreEqual(0, bridge.State.Turn);
     }
+
+    [Test]
+    public void ABatchTheSimRefusesOutrightKeepsTheStateAndShowsTheReason()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text, (s, cmds) => throw new System.ArgumentException("boom"));
+        new ToastPresenter(ui.Root, bridge, Text);
+        var order = new SecurityOrder(-1);
+        Assert.IsNull(bridge.Queue(order));
+        System.Collections.Generic.IReadOnlyList<Rejection>? seen = null;
+        bridge.TurnEnded += r => seen = r;
+        var hash = bridge.State.Hash();
+        Assert.DoesNotThrow(() => bridge.EndTurn());
+        Assert.AreEqual(hash, bridge.State.Hash());
+        Assert.AreEqual(0, bridge.Queued.Count);
+        Assert.IsNull(bridge.BeforeLast);
+        Assert.AreSame(order, seen![0].Command);
+        Assert.AreEqual("Not done: The turn could not run: boom", ui.Q<Label>("toast").text);
+    }
 }

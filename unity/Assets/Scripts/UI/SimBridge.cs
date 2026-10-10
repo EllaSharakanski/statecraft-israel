@@ -28,9 +28,13 @@ namespace Statecraft.Game.UI
         public event Action<string>? Refused;
 
         readonly UiText text;
+        readonly Func<GameSession, IReadOnlyList<Command>, StepResult> step;
 
-        public SimBridge(GameSession session, UiText text)
+        /// <param name="step">How a turn is run; the default is Session.Step. Tests pass a stepper that throws, to prove
+        /// that a batch the simulation refuses outright cannot soft-lock the game.</param>
+        public SimBridge(GameSession session, UiText text, Func<GameSession, IReadOnlyList<Command>, StepResult>? step = null)
         {
+            this.step = step ?? ((s, cmds) => s.Step(cmds));
             Session = session ?? throw new ArgumentNullException(nameof(session));
             this.text = text ?? throw new ArgumentNullException(nameof(text));
         }
@@ -109,11 +113,13 @@ namespace Statecraft.Game.UI
         {
             StepResult r;
             var before = Session.Last;
-            try { r = Session.Step(queue.ToList()); }
+            var batch = queue.ToList();
+            try { r = step(Session, batch); }
             catch (ArgumentException e)
             {
                 queue.Clear();
-                var failed = new StepResult(State, new Cause[0], new[] { new Rejection(new SecurityOrder(0), text.Format("order.failed", e.Message)) });
+                var reason = text.Format("order.failed", e.Message);
+                var failed = new StepResult(State, new Cause[0], batch.Select(x => new Rejection(x, reason)).ToList());
                 Changed?.Invoke();
                 TurnEnded?.Invoke(failed.Rejected);
                 return failed;

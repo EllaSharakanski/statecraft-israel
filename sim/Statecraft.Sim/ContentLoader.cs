@@ -93,7 +93,7 @@ namespace Statecraft.Sim
                 var key = (path == "" ? "" : path + ".") + UnderscoredNamingConvention.Instance.Apply(p.Name);
                 var t = p.PropertyType;
                 var v = p.GetValue(o);
-                if (t == typeof(string)) { if (v == null) p.SetValue(o, ""); }
+                if (t == typeof(string)) { if (v == null) p.SetValue(o, ""); else Encodable(file, key, (string)v); }
                 else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>))
                 {
                     if (v == null) throw new ContentException(file, key, "must be a list");
@@ -102,6 +102,7 @@ namespace Statecraft.Sim
                     {
                         var item = list[i];
                         if (item == null) throw new ContentException(file, FormattableString.Invariant($"{key}[{i}]"), "empty entry");
+                        if (item is string si) Encodable(file, FormattableString.Invariant($"{key}[{i}]"), si);
                         if (!IsContentType(item.GetType())) continue;
                         var id = item.GetType().GetProperty("Id")?.GetValue(item) as string;
                         CheckNulls(file, string.IsNullOrEmpty(id) ? FormattableString.Invariant($"{key}[{i}]") : $"{key}[{id}]", item);
@@ -110,9 +111,21 @@ namespace Statecraft.Sim
                 else if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
                     if (v == null) throw new ContentException(file, key, "must be a map");
+                    foreach (DictionaryEntry kv in (IDictionary)v)
+                    {
+                        if (kv.Key is string sk) Encodable(file, key + "." + sk, sk);
+                        if (kv.Value is string sv) Encodable(file, key + "." + kv.Key, sv);
+                    }
                 }
                 else if (v != null && IsContentType(t)) CheckNulls(file, key, v);
             }
+        }
+
+        /// <summary>Every id and text must be valid Unicode (no lone surrogate), or orders and saves that carry it would fail
+        /// later. Uses the same check as the save format.</summary>
+        static void Encodable(string file, string field, string s)
+        {
+            if (!SaveText.IsEncodable(s)) throw new ContentException(file, field, "must be valid text (no lone surrogate)");
         }
 
         static bool IsContentType(Type t) => t.IsClass && t != typeof(string) && t.Namespace == typeof(Content).Namespace;
