@@ -103,7 +103,10 @@ namespace Statecraft.Game.Boot
                 foreach (var (file, request) in requests) texts[file] = await Text(request, file);
                 var metaText = await Text(meta, "heightmap.json");
                 await Done(r16, "heightmap.r16");
-                return FromTexts(texts, manifest, metaText, r16.downloadHandler.data);
+                DiagLog.BootPhase($"downloaded {texts.Count + 3} files");
+                var inputs = FromTexts(texts, manifest, metaText, r16.downloadHandler.data);
+                DiagLog.BootPhase("content parsed and validated");
+                return inputs;
             }
             finally
             {

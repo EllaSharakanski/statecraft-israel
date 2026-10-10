@@ -105,15 +105,19 @@ namespace Statecraft.Game.Map
 
             Clear();
             var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16, MetaPath);
+            DiagLog.BootPhase("heightmap decoded");
             Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
+            DiagLog.BootPhase("hexes parsed");
             var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial, overlayMaterial);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
             AddBorderSkirt(terrainGo, meta.elev_min_m);
+            DiagLog.BootPhase("border skirt");
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
             var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
+            DiagLog.BootPhase("settlements placed");
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
             rig.LookAt = Frame.ToWorld(34.95, 31.95, 0); rig.Init(); // central Israel: Tel Aviv–Jerusalem corridor

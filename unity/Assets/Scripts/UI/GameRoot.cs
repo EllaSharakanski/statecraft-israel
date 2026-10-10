@@ -114,13 +114,15 @@ namespace Statecraft.Game.UI
             var session = smoke > 0
                 ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, fresh: true)
                 : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text);
+            DiagLog.BootPhase($"session started (turn {session.State.Turn}, replayed)");
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
 
             // The toast first: the autosave (below) must report a failed write after the toast has shown the turn's refusals.
             var toast = Own(new ToastPresenter(root, bridge, text));
             Own(new HudPresenter(root, bridge, text));
-            Own(new ScreenNav(root));                                      // hides every screen: the USS has no display:none for them
+            Own(new ScreenNav(root));                                      // every screen starts hidden (USS); ScreenNav opens one at a time
+            if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             var card = Own(new EventCardPresenter(root, bridge, text, portraits));
             Own(new DefencePresenter(root, bridge, text));
             Own(new BudgetPresenter(root, bridge, text));
@@ -172,6 +174,8 @@ namespace Statecraft.Game.UI
             drawn = null;
             RenderPlacementsIfChanged();
             SyncMinimap();
+            root.Q("root")?.RemoveFromClassList("loading");                // ready: the bar, panels and screens may show (P2-1)
+            DiagLog.BootPhase("screens ready");
 
             if (notes.Count > 0) toast.Show(notes);
             Debug.Log(FormattableString.Invariant($"GAME OK {bridge.State.Date:yyyy-MM-dd} turn {bridge.State.Turn} hash {bridge.State.Hash()}"));

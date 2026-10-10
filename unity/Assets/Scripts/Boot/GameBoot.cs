@@ -20,6 +20,8 @@ namespace Statecraft.Game.Boot
 
         async void Start()
         {
+            DiagLog.Init();
+            DiagLog.BootPhase("player started");
             try
             {
                 Inputs = Application.platform == RuntimePlatform.WebGLPlayer
@@ -33,6 +35,7 @@ namespace Statecraft.Game.Boot
                     if (Application.platform != RuntimePlatform.WebGLPlayer) { Application.Quit(ok ? 0 : 1); return; }
                 }
                 map.Build(Inputs.Map);
+                DiagLog.BootPhase("map built");
                 Debug.Log($"BOOT OK content {Inputs.Content.Hash}");
                 Ready?.Invoke(Inputs);
             }

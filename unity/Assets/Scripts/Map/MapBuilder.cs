@@ -67,6 +67,7 @@ namespace Statecraft.Game.Map
             var data = new TerrainData { heightmapResolution = meta.width };
             data.size = new Vector3(widthM, reliefM, lengthM);
             data.SetHeights(0, 0, heights);
+            Boot.DiagLog.BootPhase("terrain heights set");
 
             var terrainGo = Terrain.CreateTerrainGameObject(data);
             terrainGo.name = "Terrain";
@@ -76,9 +77,11 @@ namespace Statecraft.Game.Map
             terrain.materialTemplate = terrainMaterial;
             terrain.heightmapPixelError = TerrainPixelError;
             ApplyBiomeColours(data, frame, hexFile, assets);
+            Boot.DiagLog.BootPhase("biome colours blended");
 
             var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
             overlay.transform.SetParent(terrainGo.transform, false);
+            Boot.DiagLog.BootPhase("hex overlay draped");
             return terrainGo;
         }
 

@@ -33,7 +33,11 @@ namespace Statecraft.Game.UI
         /// <summary>The open screen's name, or null.</summary>
         public string? Current { get; private set; }
 
-        public void Toggle(string screen) => Open(Current == screen ? null : screen);
+        public void Toggle(string screen)
+        {
+            Boot.DiagLog.NavLine($"toggle {screen}: {Current ?? "none"} -> {(Current == screen ? "none" : screen)}");
+            Open(Current == screen ? null : screen);
+        }
 
         public void Open(string? screen)
         {
