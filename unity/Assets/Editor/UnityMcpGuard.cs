@@ -50,12 +50,59 @@ namespace Statecraft.Game.EditorTools
         public static Type? LoadedPluginEditorType() =>
             AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == PluginEditorAssembly)?.GetType(PluginEditorType);
 
-        /// <summary>True when the plugin's own knob for this field is set, as an env var or a -NAME command-line argument.</summary>
-        static bool ExplicitKnob(string name) =>
-            !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(name))
-            || Environment.GetCommandLineArgs().Any(a => a.TrimStart('-').Split('=')[0] == name);
+        /// <summary>Where the guard reads command-line arguments from: "plugin ArgsUtils" (the plugin's own parser and key
+        /// comparer, so an argument counts for the guard exactly when it counts for the plugin) or "fallback parser".</summary>
+        public static string ArgSource = "not read";
 
-        static string Hold(bool batch)
+        /// <summary>The plugin's own value for an opt-out knob, or null when there is none: the first non-blank of the flag
+        /// alias argument (-auth), the -KEY argument and the KEY env var, trimmed with quotes stripped, and only if it parses
+        /// as an enum name (case-insensitive). This mirrors EnvironmentUtils.ApplyEnvironmentOverrides: an invalid first
+        /// value overrides nothing there, so it is no opt-out here either.</summary>
+        public static string? KnobValue(string envKey, string? flagAlias, Type enumType, Func<string, string?> arg, Func<string, string?> env)
+        {
+            string? raw = null;
+            if (flagAlias != null && !string.IsNullOrWhiteSpace(arg(flagAlias))) raw = arg(flagAlias);
+            else if (!string.IsNullOrWhiteSpace(arg(envKey))) raw = arg(envKey);
+            else if (!string.IsNullOrWhiteSpace(env(envKey))) raw = env(envKey);
+            if (raw == null) return null;
+            var value = raw.Trim().Trim('"');
+            var name = Enum.GetNames(enumType).FirstOrDefault(n => string.Equals(n, value, StringComparison.OrdinalIgnoreCase));
+            return name;
+        }
+
+        /// <summary>KnobValue for this process: arguments through the plugin's ArgsUtils.ParseCommandLineArguments.</summary>
+        public static string? ExplicitKnob(string envKey, string? flagAlias, Type enumType)
+        {
+            var args = PluginArgs();
+            return KnobValue(envKey, flagAlias, enumType, k => args.Contains(k) ? args[k] as string : null, Environment.GetEnvironmentVariable);
+        }
+
+        static System.Collections.IDictionary PluginArgs()
+        {
+            var utils = AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("com.IvanMurzak.McpPlugin.Common.Utils.ArgsUtils")).FirstOrDefault(t => t != null);
+            if (utils?.GetMethod("ParseCommandLineArguments", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null)?
+                    .Invoke(null, null) is System.Collections.IDictionary parsed)
+            {
+                ArgSource = "plugin ArgsUtils";
+                return parsed;
+            }
+            // Same shape as the plugin's resolver parser: -key value, -key=value, keys case-insensitive.
+            ArgSource = "fallback parser";
+            var d = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            var argv = Environment.GetCommandLineArgs();
+            for (var i = 0; i < argv.Length; i++)
+            {
+                if (!argv[i].StartsWith("-")) continue;
+                var key = argv[i].TrimStart('-');
+                var eq = key.IndexOf('=');
+                if (eq >= 0) { d[key.Substring(0, eq)] = key.Substring(eq + 1); continue; }
+                d[key] = i + 1 < argv.Length && !argv[i + 1].StartsWith("-") ? argv[++i] : null;
+            }
+            return d;
+        }
+
+        public static string Hold(bool batch, string? simulateOverrideFailure = null)
         {
             var editor = LoadedPluginEditorType();
             if (editor == null) return "plugin not loaded";
@@ -80,21 +127,36 @@ namespace Statecraft.Game.EditorTools
                     return null;
                 }
 
-                var failed = (ExplicitKnob("UNITY_MCP_CONNECTION_MODE") ? null : Override("ConnectionMode", t => Enum.Parse(t, "Custom")))
-                          ?? (ExplicitKnob("UNITY_MCP_AUTH_OPTION") ? null : Override("AuthOption", t => Enum.Parse(t, "token")));
-                if (failed != null) return failed;
-                if (!batch) return "held local";
-
-                failed = Override("KeepConnected", _ => false) ?? Override("KeepServerRunning", _ => false);
-                if (failed != null) return failed;
-                // Run each static constructor first (it queues the callback), or the unhook could come before the queueing.
-                failed = Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowInitializer", "PerformInitialization", runCctorOf: null, update: true)
-                      ?? Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.Utils.UpdateChecker", "CheckForUpdatesOnStartup",
-                                runCctorOf: "com.IvanMurzak.Unity.MCP.Editor.Startup", update: false);
-                if (failed != null) return failed;
-                foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>().Where(w => w.GetType().Assembly == editor.Assembly).ToList())
-                    w.Close();
-                return "held offline";
+                var failures = new List<string>();
+                if (batch)
+                {
+                    // Batch protections first and on their own: a failed Custom/token override must not skip them.
+                    var f = Override("KeepConnected", _ => false) ?? Override("KeepServerRunning", _ => false);
+                    if (f != null) failures.Add(f);
+                    // Run each static constructor first (it queues the callback), or the unhook could come before the queueing.
+                    f = Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.UI.MainWindowInitializer", "PerformInitialization", runCctorOf: null, update: true);
+                    if (f != null) failures.Add(f);
+                    f = Unhook(editor.Assembly, "com.IvanMurzak.Unity.MCP.Editor.Utils.UpdateChecker", "CheckForUpdatesOnStartup",
+                               runCctorOf: "com.IvanMurzak.Unity.MCP.Editor.Startup", update: false);
+                    if (f != null) failures.Add(f);
+                    foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>().Where(w => w.GetType().Assembly == editor.Assembly).ToList())
+                        w.Close();
+                }
+                if (simulateOverrideFailure != null) failures.Add(simulateOverrideFailure);
+                else
+                {
+                    foreach (var (name, knob, alias, value) in new[] { ("ConnectionMode", "UNITY_MCP_CONNECTION_MODE", (string?)null, "Custom"),
+                                                                        ("AuthOption", "UNITY_MCP_AUTH_OPTION", "auth", "token") })
+                    {
+                        var type = config.GetType().GetProperty(name)?.PropertyType;
+                        if (type == null) { failures.Add("plugin internals changed: no " + name); continue; }
+                        if (ExplicitKnob(knob, alias, type) != null) continue;   // the plugin's own opt-out, respected
+                        var f = Override(name, t => Enum.Parse(t, value));
+                        if (f != null) failures.Add(f);
+                    }
+                }
+                if (failures.Count > 0) return string.Join("; ", failures);
+                return batch ? "held offline" : "held local";
             }
             catch (Exception e)
             {
