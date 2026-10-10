@@ -62,8 +62,8 @@ namespace Statecraft.Game.UI
             settlements.text = owned.Count > 0 ? text.Format("info.owned", string.Join(", ", owned)) : "";
             var here = MapActions.At(s, q, r);
             var queued = bridge.QueuedLike(new MapAction(MapActions.Housing, q, r)) as MapAction;
-            placement.text = queued != null ? text.Format("info.queued", text["info." + queued.Action])
-                : here != null ? text.Format("info.built", text["info." + here.Action], PlayerText.Month(here.Date)) : "";
+            placement.text = queued != null ? text.Format("info.queued", PlayerText.Capitalised(PlayerText.MapAction(c, queued.Action)))
+                : here != null ? text.Format("info.built", PlayerText.Capitalised(PlayerText.MapAction(c, here.Action)), PlayerText.Month(here.Date)) : "";
             var campWhy = MapActions.Check(c, s, MapActions.TransitCamp, q, r);
             var housingWhy = MapActions.Check(c, s, MapActions.Housing, q, r);
             camp.style.display = DisplayStyle.Flex; housing.style.display = DisplayStyle.Flex;

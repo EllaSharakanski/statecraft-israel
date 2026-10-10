@@ -123,7 +123,8 @@ public class MapActionTests
     [Fact]
     public void AnActionTheContentDoesNotDefineIsNotAvailable()
     {
-        var rules = Fixture.Files["rules.yaml"].Replace("  housing: { cost: 8, housing: 0.08, morale: 0.01 }\n", "");
+        var rules = Fixture.Files["rules.yaml"].Replace("  housing: { cost: 8, housing: 0.08, morale: 0.01, name: a housing project }\n", "");
+        Assert.NotEqual(Fixture.Files["rules.yaml"], rules);
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = rules }));
         var s = Simulation.NewGame(c, 42, Mode.Historical);
         s.Date = new DateTime(1948, 6, 1);

@@ -32,6 +32,14 @@ namespace Statecraft.Sim
             c.Indicators.FirstOrDefault(i => i.Id == id)?.Name ?? c.Policies.FirstOrDefault(p => p.Id == id)?.Name
             ?? c.Money.FirstOrDefault(m => m.Id == id)?.Name ?? throw Unknown("indicator, policy or money", id);
 
+        /// <summary>The phrase a map action reads as in a sentence ("a transit camp"; rules.yaml map_actions name).</summary>
+        public static string MapAction(Content c, string id) =>
+            c.Rules.MapActions.TryGetValue(id, out var rule) ? rule.Name : throw Unknown("map action", id);
+
+        /// <summary>The phrase with a capital first letter, to start a sentence ("A transit camp").</summary>
+        public static string Capitalised(string phrase) =>
+            phrase.Length == 0 ? phrase : char.ToUpperInvariant(phrase[0]) + phrase.Substring(1);
+
         public static bool IsMoney(Content c, string id) => c.Money.Any(m => m.Id == id);
 
         static MoneyAccount Account(Content c, string id) => c.Money.FirstOrDefault(m => m.Id == id) ?? throw Unknown("money", id);

@@ -88,7 +88,7 @@ public class PlayerTextTests
     static IEnumerable<string> ContentIds(Content c) =>
         c.Indicators.Select(x => x.Id).Concat(c.Policies.Select(x => x.Id)).Concat(c.Effects.Select(x => x.Id))
             .Concat(c.Situations.Select(x => x.Id)).Concat(c.Money.Select(x => x.Id)).Concat(c.Regions.Select(x => x.Id))
-            .Concat(c.Offices.Select(x => x.Id)).Concat(c.Events.Select(x => x.Id)).Distinct();
+            .Concat(c.Offices.Select(x => x.Id)).Concat(c.Events.Select(x => x.Id)).Concat(c.Rules.MapActions.Keys).Distinct();
 
     /// <summary>Where an id would appear in a Cause: a snake_case id anywhere as a whole word; a one-word id ("morale",
     /// "treasury", "asia") at the start, alone in parentheses or a list, before a signed number, "set to", "=",
@@ -186,6 +186,7 @@ public class PlayerTextTests
     [InlineData("14 immigrants arrived from asia", "asia")]
     [InlineData("Morale +4.1% (homes_lift_morale)", "homes_lift_morale")]
     [InlineData("Food supply +5.0% (austerity_1949)", "austerity_1949")]
+    [InlineData("transit_camp at (3, 4): cost IL 1.5m", "transit_camp")]
     public void TheGuardCatchesOneWordIds(string message, string id) =>
         Assert.Contains(Leaks(Real, new[] { message }), l => l.StartsWith($"'{id}'", StringComparison.Ordinal));
 
@@ -251,5 +252,34 @@ public class PlayerTextTests
         var ex = ValidationTests.Bad("model.yaml", from, to);
         Assert.Equal("model.yaml", ex.File);
         Assert.Equal(field, ex.Field);
+    }
+
+    // ---- Fix round 2 (R2-2): map-action phrases come from content ----
+
+    [Theory]
+    [InlineData("transit_camp: { cost: 2, housing: 0.05, morale: -0.02, name: a transit camp }", "transit_camp: { cost: 2, housing: 0.05, morale: -0.02 }", "map_actions.transit_camp.name")]
+    [InlineData("housing: { cost: 8, housing: 0.08, morale: 0.01, name: a housing project }", "housing: { cost: 8, housing: 0.08, morale: 0.01, name: '  ' }", "map_actions.housing.name")]
+    public void MapActionNamesAreRequired(string from, string to, string field)
+    {
+        var ex = ValidationTests.Bad("rules.yaml", from, to);
+        Assert.Equal("rules.yaml", ex.File);
+        Assert.Equal(field, ex.Field);
+    }
+
+    [Fact]
+    public void MapActionCausesAndReasonsUseTheContentPhrase()
+    {
+        var rules = Fixture.Files["rules.yaml"].Replace("name: a transit camp", "name: a ma'abara");
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = rules }));
+        Assert.Equal("a ma'abara", PlayerText.MapAction(c, MapActions.TransitCamp));
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        s.Policies[MapActions.MaabarotPolicy] = 1;
+        s.Date = c.Rules.MapActionsFrom;
+        var hex = c.Hexes.First(h => MapActions.Check(c, s, MapActions.TransitCamp, h.Q, h.R) == null);
+        var why = new List<Cause>();
+        Assert.Null(MapActions.Apply(c, s, MapActions.TransitCamp, hex.Q, hex.R, why));
+        Assert.Contains(why, w => w.System == "map" && w.Message.StartsWith($"A ma'abara at ({hex.Q}, {hex.R})", StringComparison.Ordinal));
+        Assert.Equal($"({hex.Q}, {hex.R}) already has a ma'abara", MapActions.Check(c, s, MapActions.TransitCamp, hex.Q, hex.R));
+        Assert.Throws<InvalidOperationException>(() => PlayerText.MapAction(c, "factory"));
     }
 }

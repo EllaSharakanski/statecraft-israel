@@ -166,6 +166,8 @@ namespace Statecraft.Sim
         public double Housing { get; set; }
         /// <summary>Change to the morale indicator (public support).</summary>
         public double Morale { get; set; }
+        /// <summary>The phrase the player reads in a sentence ("a transit camp"); required.</summary>
+        public string Name { get; set; } = "";
     }
 
     /// <summary>Money the sim tracks (model.yaml money): treasury, debt and fx_reserves, each with the name and currency

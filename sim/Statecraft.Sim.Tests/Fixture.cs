@@ -138,8 +138,8 @@ map_actions_from: 1948-06-01
 map_action_max_distance: 1
 map_actions_per_turn: 2
 map_actions:
-  transit_camp: { cost: 2, housing: 0.05, morale: -0.02 }
-  housing: { cost: 8, housing: 0.08, morale: 0.01 }
+  transit_camp: { cost: 2, housing: 0.05, morale: -0.02, name: a transit camp }
+  housing: { cost: 8, housing: 0.08, morale: 0.01, name: a housing project }
 rung_attention_step: 0.25
 ceasefire_weeks: 4
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]

@@ -35,9 +35,6 @@ namespace Statecraft.Sim
 
         static int ActionsThisTurn(GameState s) => s.MapActionsTurnDate == s.Date ? s.MapActionsThisTurn : 0;
 
-        static string Name(string action) => action == TransitCamp ? "a transit camp" : "a housing project";
-
-        static string Capitalised(string s) => char.ToUpperInvariant(s[0]) + s.Substring(1);
 
         /// <summary>Null when <paramref name="action"/> may be placed on (q, r) now, else the reason shown to the player.</summary>
         public static string? Check(Content c, GameState s, string action, int q, int r)
@@ -56,7 +53,7 @@ namespace Statecraft.Sim
                 return FormattableString.Invariant($"({q}, {r}) is more than {max} {(max == 1 ? "hex" : "hexes")} from a settlement");
             var here = At(s, q, r);
             if (here != null && !(action == Housing && here.Action == TransitCamp))
-                return FormattableString.Invariant($"({q}, {r}) already has {Name(here.Action)}");
+                return FormattableString.Invariant($"({q}, {r}) already has {PlayerText.MapAction(c, here.Action)}");
             // The cap comes last so a player who is over it still sees the specific reason an order is illegal. It counts
             // accepted actions (not surviving placements): housing on a camp removes the camp but still used an action.
             if (ActionsThisTurn(s) >= c.Rules.MapActionsPerTurn)
@@ -78,13 +75,13 @@ namespace Statecraft.Sim
             if (s.Treasury < 0)
             {
                 s.Debt += -s.Treasury;
-                why.Add(new Cause("economy", "debt", -s.Treasury, $"borrowed {PlayerText.Money(c, "debt", -s.Treasury)} to build {Name(action)}"));
+                why.Add(new Cause("economy", "debt", -s.Treasury, $"borrowed {PlayerText.Money(c, "debt", -s.Treasury)} to build {PlayerText.MapAction(c, action)}"));
                 s.Treasury = 0;
             }
             var housing = rule.Housing == 0 ? 0 : EffectsSystem.Shift(c, s, "housing", rule.Housing);
             var morale = rule.Morale == 0 ? 0 : EffectsSystem.Shift(c, s, "morale", rule.Morale);
             why.Add(new Cause("map", action, 1, FormattableString.Invariant(
-                $"{Capitalised(Name(action))} at ({q}, {r}): cost {PlayerText.Money(c, "treasury", rule.Cost)}, {PlayerText.Change(c, "housing", housing)}, {PlayerText.Change(c, "morale", morale)}")));
+                $"{PlayerText.Capitalised(PlayerText.MapAction(c, action))} at ({q}, {r}): cost {PlayerText.Money(c, "treasury", rule.Cost)}, {PlayerText.Change(c, "housing", housing)}, {PlayerText.Change(c, "morale", morale)}")));
             return null;
         }
     }

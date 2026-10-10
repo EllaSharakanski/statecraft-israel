@@ -13,9 +13,10 @@ appoint_stability_cost_same_party: 0.02
 map_actions_from: 1950-01-01
 map_action_max_distance: 1
 map_actions_per_turn: 2
+# name: the phrase the player reads in a sentence ("a transit camp"); required.
 map_actions:
-  transit_camp: { cost: 1.5, housing: 0.02, morale: -0.005 }
-  housing: { cost: 6, housing: 0.03, morale: 0.01 }
+  transit_camp: { cost: 1.5, housing: 0.02, morale: -0.005, name: a transit camp }
+  housing: { cost: 6, housing: 0.03, morale: 0.01, name: a housing project }
 rung_attention_step: 0.25
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
 ceasefire_weeks: 52               # long enough that the historical armistice events end the war first
