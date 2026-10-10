@@ -56,7 +56,9 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>Points, colours and enables shadows on <paramref name="sun"/> (when there is one) and sets the trilight
-        /// ambient and its probe.</summary>
+        /// ambient. Unity converts the three (sRGB) colours to the linear SH probe the shaders read, at once, in the editor
+        /// and in the WebGL player; a probe assigned in Trilight mode is replaced by that conversion (Task 4, review M4), so
+        /// the colours are the only input.</summary>
         public static void Apply(Light? sun)
         {
             if (sun != null)
@@ -69,23 +71,6 @@ namespace Statecraft.Game.Map
             }
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = AmbientSky; RenderSettings.ambientEquatorColor = AmbientEquator; RenderSettings.ambientGroundColor = AmbientGround;
-            RenderSettings.ambientProbe = AmbientProbe();
-        }
-
-        /// <summary>The trilight ambient as spherical harmonics (set explicitly: a runtime change of the trilight colours does
-        /// not rebuild the probe the shaders read). Review M4: this is an approximation, and the three colours are its
-        /// inputs, not what it evaluates to. Each AddDirectionalLight lobe also adds constant and linear terms in every
-        /// direction, and the ground lobe (darker than the equator) pulls the whole probe down. Evaluated, the probe is
-        /// darker than the constants everywhere; LightingTests.TheAmbientFillIsCoolFromTheSkyAndDarkFromTheGround pins the
-        /// evaluated up/horizon/down colours. The look was judged on these evaluated values, and Track B's render thresholds
-        /// were derived with them, so a least-squares refit is a look change for Task 4's grade, not a bug fix here.</summary>
-        public static SphericalHarmonicsL2 AmbientProbe()
-        {
-            var sh = new SphericalHarmonicsL2();
-            sh.AddAmbientLight(AmbientEquator);
-            sh.AddDirectionalLight(Vector3.up, AmbientSky - AmbientEquator, 1f);
-            sh.AddDirectionalLight(Vector3.down, AmbientGround - AmbientEquator, 1f);
-            return sh;
         }
     }
 }

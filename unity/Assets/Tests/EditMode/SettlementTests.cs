@@ -379,6 +379,10 @@ public class MapSceneTests
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
+        // Visual v1 Task 4: measured before the grade. The grade is a per-pixel colour transform (plus a vignette that is flat
+        // this close to the centre), so it cannot open a seam, but it roughly doubles the sea's sub-step mismatch between the
+        // two shaders (0.008 -> 0.016 here). Track B's patch-mean version of this test should keep this line at the merge.
+        VisualToggles.Set("grade", false);
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var size = map.Terrain.terrainData.size;
         var rt = new RenderTexture(1600, 900, 24);

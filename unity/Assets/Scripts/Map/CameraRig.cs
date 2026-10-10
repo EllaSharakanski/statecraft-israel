@@ -42,6 +42,7 @@ namespace Statecraft.Game.Map
             var vol = new GameObject("PostFX").AddComponent<Volume>(); vol.isGlobal = true;
             vol.profile = ScriptableObject.CreateInstance<VolumeProfile>();
             Volume = vol;
+            MapGrade.Apply(vol.profile);
             var sun = MapLighting.FindSun();
             TeardownActions.Add(MapLighting.Capture(sun));   // first, so it runs last (review M1)
             MapLighting.Apply(sun);
@@ -49,6 +50,7 @@ namespace Statecraft.Game.Map
             TeardownActions.Add(ShadowFit.Restore);
             TeardownActions.Add(TiltShift.Reset);
             TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
+            TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
             if (TiltShift.OffRequested()) TiltShift.Enabled = false;
             initialised = true;
             Apply();

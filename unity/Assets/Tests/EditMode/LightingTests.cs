@@ -49,16 +49,28 @@ public class LightingTests
         Assert.Greater(c[0].b, c[0].r, "sky fill is cool");
         Assert.Greater(c[0].grayscale, c[1].grayscale + 0.05f, "brighter from above");
         Assert.AreEqual(AmbientMode.Trilight, RenderSettings.ambientMode);
-        // Review M4: the SH lobes leak into every direction, so the trilight constants are inputs, not the evaluated
-        // colours (MapLighting.AmbientProbe); print the evaluated up / horizon / down so the documented values are checked.
+        // Review M4, closed in Task 4: the shaders read Unity's own trilight -> SH conversion of the three colours (the
+        // RenderSettings.ambientProbe getter returns it, in the editor and in the WebGL player alike), and it holds linear
+        // values. The trilight constants are sRGB, so comparing the evaluated probe with them directly made it look like 40%
+        // of nominal. In sRGB the horizon is the equator colour; up and down are blended towards it (an L2 probe cannot
+        // hold a sharp trilight). The evaluated linear values stay pinned so a change to the colours is a visible decision.
         var e = new Color[3]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.up, Vector3.right, Vector3.down }, e);
-        TestContext.WriteLine($"ambient evaluated up {e[0]} horizon {e[1]} down {e[2]}");
+        TestContext.WriteLine($"ambient evaluated (linear) up {e[0]} horizon {e[1]} down {e[2]}; horizon sRGB {e[1].gamma}");
         var expected = new[] { new Color(0.216f, 0.255f, 0.326f), new Color(0.184f, 0.179f, 0.171f), new Color(0.119f, 0.103f, 0.080f) };
         for (int i = 0; i < 3; i++)
         {
             Assert.AreEqual(expected[i].r, e[i].r, 0.01f, $"direction {i} r"); Assert.AreEqual(expected[i].g, e[i].g, 0.01f, $"direction {i} g");
             Assert.AreEqual(expected[i].b, e[i].b, 0.01f, $"direction {i} b");
         }
+        var horizon = e[1].gamma;
+        Assert.AreEqual(MapLighting.AmbientEquator.r, horizon.r, 0.05f, "horizon r (sRGB)"); Assert.AreEqual(MapLighting.AmbientEquator.g, horizon.g, 0.05f, "horizon g (sRGB)");
+        Assert.AreEqual(MapLighting.AmbientEquator.b, horizon.b, 0.05f, "horizon b (sRGB)");
+        // No explicit probe: one assigned in Trilight mode is replaced by the conversion at once (measured in Task 4).
+        var custom = new SphericalHarmonicsL2(); custom.AddAmbientLight(Color.white);
+        RenderSettings.ambientProbe = custom;
+        var after = new Color[1]; RenderSettings.ambientProbe.Evaluate(new[] { Vector3.right }, after);
+        Assert.AreEqual(e[1].r, after[0].r, 1e-4f, "an explicit probe does not stick in Trilight mode");
+        Assert.IsNull(typeof(MapLighting).GetMethod("AmbientProbe"), "MapLighting sets the colours only");
     }
 
     /// <summary>Review I1: URP fades shadows by straight-line distance from the camera, starting at (1 - cascadeBorder) of
