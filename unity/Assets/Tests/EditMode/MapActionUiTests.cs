@@ -112,7 +112,6 @@ public class MapActionUiTests
             new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
             var map = new GameObject("MapScene").AddComponent<MapScene>();
             map.Configure(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"),
-                AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"),
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"),
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSelection.mat"),
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Sea.mat"),
@@ -241,7 +240,6 @@ public class MapActionUiTests
         new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
         var map = new GameObject("MapScene").AddComponent<MapScene>();
         map.Configure(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat"),
-            AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexOverlay.mat"),
             AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SettlementMarker.mat"),
             AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexSelection.mat"),
                 AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Sea.mat"),

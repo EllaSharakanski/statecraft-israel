@@ -50,36 +50,30 @@ public class MapTests
     }
 
     // M0 correction 1: no Shader.Find at runtime. Materials are editor-made assets passed into Build.
-    const string TerrainMatPath = "Assets/Materials/Terrain.mat", OverlayMatPath = "Assets/Materials/HexOverlay.mat";
+    const string TerrainMatPath = "Assets/Materials/Terrain.mat";
 
     static string HexesJson => System.IO.Path.Combine(Paths.Content, "map", "hexes.json");
 
-    static (Material terrain, Material overlay) Materials()
+    static Material TerrainMaterial()
     {
         var terrainMat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath);
-        var overlayMat = AssetDatabase.LoadAssetAtPath<Material>(OverlayMatPath);
-        Assert.IsNotNull(terrainMat, TerrainMatPath); Assert.IsNotNull(overlayMat, OverlayMatPath);
-        return (terrainMat, overlayMat);
+        Assert.IsNotNull(terrainMat, TerrainMatPath);
+        return terrainMat;
     }
 
     [Test]
-    public void BuildUsesThePassedTerrainAndOverlayMaterials()
+    public void BuildUsesThePassedTerrainMaterialAndDrawsNoLineMesh()
     {
-        var (terrainMat, overlayMat) = Materials();
+        var terrainMat = TerrainMaterial();
         Assert.AreEqual("Statecraft/StatecraftTerrain", terrainMat.shader.name);
-        Assert.AreEqual("Universal Render Pipeline/Unlit", overlayMat.shader.name);
-
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         try
         {
             var terrain = go.GetComponent<Terrain>();
             Assert.AreSame(terrainMat, terrain.materialTemplate);
-            var overlay = go.transform.Find("HexOverlay");
-            Assert.IsNotNull(overlay, "HexOverlay child");
-            Assert.AreSame(overlayMat, overlay.GetComponent<MeshRenderer>().sharedMaterial);
+            Assert.IsNull(go.transform.Find("HexOverlay"), "the grid is drawn by the terrain shader (visual v1 Task 8)");
             Assert.AreEqual(2049, terrain.terrainData.heightmapResolution);
             Assert.AreEqual(1, terrain.terrainData.terrainLayers.Length);
-            Assert.Greater(overlay.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
         }
         finally { Object.DestroyImmediate(go); }
     }
@@ -87,14 +81,14 @@ public class MapTests
     [Test]
     public void BuildRejectsMissingMaterials()
     {
-        Assert.Throws<System.ArgumentNullException>(() => MapBuilder.Build(Paths.StreamingMap, HexesJson, null, null));
+        Assert.Throws<System.ArgumentNullException>(() => MapBuilder.Build(Paths.StreamingMap, HexesJson, null));
     }
 
     [Test]
     public void BiomeLayersAreMatte()
     {
-        var (terrainMat, overlayMat) = Materials();
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var terrainMat = TerrainMaterial();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         try
         {
             var layers = go.GetComponent<Terrain>().terrainData.terrainLayers;
@@ -110,73 +104,12 @@ public class MapTests
         finally { Object.DestroyImmediate(go); }
     }
 
-    // --- Overlay drape (M1, L6) ---
-
-    [Test]
-    public void EveryOverlayVertexLiesAboveTheTerrainAndInsideItsBounds()
-    {
-        var (terrainMat, overlayMat) = Materials();
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
-        try
-        {
-            var data = go.GetComponent<Terrain>().terrainData;
-            var mesh = go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh;
-            var verts = mesh.vertices;
-            int land = 0; foreach (var h in MapBuilder.LoadHexes(HexesJson).hexes) if (h.land) land++;
-            Assert.AreEqual(land * 6 * MapBuilder.OverlaySegmentsPerEdge, verts.Length);
-            int below = 0, outside = 0;
-            foreach (var v in verts)
-            {
-                if (v.x < 0 || v.x > data.size.x || v.z < 0 || v.z > data.size.z) { outside++; continue; }
-                if (v.y <= data.GetInterpolatedHeight(v.x / data.size.x, v.z / data.size.z)) below++;
-            }
-            Assert.AreEqual(0, outside, "vertices outside the terrain bounds");
-            Assert.AreEqual(0, below, "vertices at or below the terrain");
-        }
-        finally { Object.DestroyImmediate(go); }
-    }
-
-    // k/7 and k/13 share no interior point with the builder's t/16 sampling grid, so the test does not mirror it.
-    static readonly float[] SegmentProbes = Probes();
-    static float[] Probes()
-    {
-        var l = new System.Collections.Generic.List<float>();
-        for (int k = 1; k < 7; k++) l.Add(k / 7f);
-        for (int k = 1; k < 13; k++) l.Add(k / 13f);
-        return l.ToArray();
-    }
-
-    [Test]
-    public void EveryPointAlongEveryOverlaySegmentLiesAboveTheTerrain()
-    {
-        // Vertices alone are not enough: a ridge between two draped vertices hides the straight line joining them (K2).
-        var (terrainMat, overlayMat) = Materials();
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
-        try
-        {
-            var data = go.GetComponent<Terrain>().terrainData;
-            var mesh = go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh;
-            var verts = mesh.vertices; var idx = mesh.GetIndices(0);
-            int hidden = 0; float worst = 0f;
-            for (int i = 0; i < idx.Length; i += 2)
-                foreach (var t in SegmentProbes)
-                {
-                    var p = Vector3.Lerp(verts[idx[i]], verts[idx[i + 1]], t);
-                    float deficit = data.GetInterpolatedHeight(p.x / data.size.x, p.z / data.size.z) - p.y;
-                    if (deficit >= 0f) hidden++;
-                    worst = Mathf.Max(worst, deficit);
-                }
-            Assert.AreEqual(0, hidden, $"points along overlay segments at or below the terrain (worst {worst:F0} m below)");
-        }
-        finally { Object.DestroyImmediate(go); }
-    }
-
     [Test]
     public void TerrainUsesFineLodSoTheCoarseSurfaceDoesNotCoverTheOverlay()
     {
         // At the default heightmapPixelError (5) far cameras get a coarse LOD whose surface sits above the draped lines (K2).
-        var (terrainMat, overlayMat) = Materials();
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var terrainMat = TerrainMaterial();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         try { Assert.AreEqual(MapBuilder.TerrainPixelError, go.GetComponent<Terrain>().heightmapPixelError); Assert.AreEqual(1f, MapBuilder.TerrainPixelError); }
         finally { Object.DestroyImmediate(go); }
     }
@@ -186,14 +119,14 @@ public class MapTests
     [Test]
     public void DestroyingTheMapDestroysItsRuntimeAssets()
     {
-        var (terrainMat, overlayMat) = Materials();
-        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var terrainMat = TerrainMaterial();
+        var go = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         var data = go.GetComponent<Terrain>().terrainData;
-        var owned = new System.Collections.Generic.List<Object> { data, go.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh };
+        var owned = new System.Collections.Generic.List<Object> { data };
         foreach (var l in data.terrainLayers) { owned.Add(l); owned.Add(l.diffuseTexture); }
         Object.DestroyImmediate(go);
         foreach (var o in owned) Assert.IsTrue(o == null, $"{o} survived the map");
-        Assert.IsTrue(terrainMat != null && overlayMat != null, "material assets must not be destroyed");
+        Assert.IsTrue(terrainMat != null, "the material asset must not be destroyed");
     }
 
     // --- Biome blending (C2) ---
@@ -311,11 +244,11 @@ public class MapTests
     [Test]
     public void UnknownBiomeIsRejectedBeforeAnyObjectIsCreated()
     {
-        var (terrainMat, overlayMat) = Materials();
+        var terrainMat = TerrainMaterial();
         var path = TempFile("hexes.json", "{\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"biome\":\"sea\"},{\"q\":1,\"r\":0,\"biome\":\"tundra\"}]}");
         int terrainsBefore = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length;
         int dataBefore = Resources.FindObjectsOfTypeAll<TerrainData>().Length;
-        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat, overlayMat));
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat));
         StringAssert.Contains("unknown biome 'tundra'", ex.Message);
         Assert.AreEqual(terrainsBefore, Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length, "orphan Terrain left behind");
         Assert.AreEqual(dataBefore, Resources.FindObjectsOfTypeAll<TerrainData>().Length, "orphan TerrainData left behind");
@@ -349,18 +282,16 @@ public class MapTests
     [Test]
     public void BuildFromReadInputsMatchesBuildFromPaths()
     {
-        var (terrainMat, overlayMat) = Materials();
-        var a = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat, overlayMat);
+        var terrainMat = TerrainMaterial();
+        var a = MapBuilder.Build(Paths.StreamingMap, HexesJson, terrainMat);
         var (meta, heights) = HeightmapLoader.Load(System.IO.File.ReadAllText(MetaPath), System.IO.File.ReadAllBytes(R16Path), MetaPath);
-        var b = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(System.IO.File.ReadAllText(HexesJson), HexesJson), terrainMat, overlayMat);
+        var b = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(System.IO.File.ReadAllText(HexesJson), HexesJson), terrainMat);
         try
         {
             var ta = a.GetComponent<Terrain>().terrainData; var tb = b.GetComponent<Terrain>(); Assert.IsNotNull(tb, "terrain from read inputs");
             Assert.AreEqual(ta.size, tb.terrainData.size);
             Assert.AreEqual(ta.heightmapResolution, tb.terrainData.heightmapResolution);
             Assert.AreEqual(ta.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution), tb.terrainData.GetHeights(0, 0, ta.heightmapResolution, ta.heightmapResolution));
-            Assert.AreEqual(a.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh.vertices,
-                b.transform.Find("HexOverlay").GetComponent<MeshFilter>().sharedMesh.vertices);
         }
         finally { Object.DestroyImmediate(a); Object.DestroyImmediate(b); }
     }
@@ -373,14 +304,14 @@ public class MapTests
     [TestCase(0, 0, 0, -1e-6)]
     public void HexBoundsThatDifferFromTheHeightmapAreRejectedBeforeAnyObjectIsCreated(double dLon0, double dLon1, double dLat0, double dLat1)
     {
-        var (terrainMat, overlayMat) = Materials();
+        var terrainMat = TerrainMaterial();
         var meta = HeightmapLoader.Load(Paths.StreamingMap).meta;
         string D(double v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
         var json = "{\"bounds\":{\"lon0\":" + D(meta.lon0 + dLon0) + ",\"lon1\":" + D(meta.lon1 + dLon1) + ",\"lat0\":" + D(meta.lat0 + dLat0) + ",\"lat1\":" + D(meta.lat1 + dLat1)
             + "},\"hex_size_km\":5,\"layout\":\"pointy\",\"hexes\":[{\"q\":0,\"r\":0,\"lon\":35,\"lat\":32,\"land\":true,\"biome\":\"hills\"}]}";
         var path = TempFile("hexes.json", json);
         int terrainsBefore = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length;
-        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat, overlayMat));
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => MapBuilder.Build(Paths.StreamingMap, path, terrainMat));
         StringAssert.Contains("hexes.json", ex.Message); StringAssert.Contains("heightmap.json", ex.Message); StringAssert.Contains("bounds", ex.Message);
         Assert.AreEqual(terrainsBefore, Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None).Length, "orphan Terrain left behind");
     }

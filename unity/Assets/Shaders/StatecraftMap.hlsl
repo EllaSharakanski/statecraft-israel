@@ -8,6 +8,7 @@ float4 _ScMapOrigin;  // xyz terrain origin (world), w hex circumradius (m)
 float4 _ScHaze;       // rgb land haze colour (linear), a strongest land haze (0..1)
 float4 _ScHazeWater;  // rgb water haze colour (linear, cooler), a strongest water haze (weaker: the sea keeps its blue)
 float4 _ScHazeRange;  // x rift haze begins (world y), y rift haze is full (world y), z aerial distance scale (m), w start (m)
+float4 _ScGrid;       // x land line opacity, y water line opacity, z line width (pixels), w 1 = on
 TEXTURE2D(_ScBiomeTex); SAMPLER(sampler_ScBiomeTex);
 
 float ScHash(float2 p)
@@ -112,6 +113,41 @@ float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake
     g *= 1.0 + 0.40 * (bake.g - 0.5) * 2.0;
     g *= lerp(1.0, bake.r * lerp(0.6, 1.0, bake.b), 0.45);
     return g;
+}
+
+// Distance (m) from p to the nearest edge of its hex: tools/hexgrid.py's pointy-top axial layout, (0, 0) at the north-west
+// corner, p.x east and p.y south (HexGrid.EdgeDistance is the C# twin).
+float ScHexEdgeDistance(float2 p, float size)
+{
+    float qf = (0.57735027 * p.x - p.y / 3.0) / size;
+    float rf = 0.66666667 * p.y / size;
+    float sf = -qf - rf;
+    float q = round(qf), r = round(rf), s = round(sf);
+    float dq = abs(q - qf), dr = abs(r - rf), ds = abs(s - sf);
+    if (dq > dr && dq > ds) q = -r - s; else if (dr > ds) r = -q - s;
+    float2 v = p - float2(size * (1.7320508 * q + 0.8660254 * r), size * 1.5 * r);
+    float m = max(abs(v.x), max(abs(0.5 * v.x + 0.8660254 * v.y), abs(0.5 * v.x - 0.8660254 * v.y)));
+    return 0.8660254 * size - m;
+}
+
+// Anti-aliased coverage (0..1) of a hex line widthPx pixels wide at mapM (metres east and north of the south-west corner):
+// fwidth turns the metre distance into pixels, so the line keeps its width at every zoom. Call it in uniform control flow
+// (outside any [branch]): fwidth needs the neighbouring pixels.
+float ScGridLine(float2 mapM, float widthPx)
+{
+    float d = ScHexEdgeDistance(float2(mapM.x, _ScMap.y - mapM.y), _ScMapOrigin.w);
+    float aa = max(fwidth(d), 1e-3);
+    return 1.0 - smoothstep(0.5 * widthPx * aa, (0.5 * widthPx + 1.0) * aa, d);
+}
+
+// The grid as drawn on both the terrain and the skirt's sea: on/off, thinner towards the overview. Light lines on land and
+// water, as in the promo (ruling 2: the promo wins over M2's dark lines).
+static const float3 ScGridLandSrgb = float3(0.93, 0.90, 0.80);
+static const float3 ScGridWaterSrgb = float3(0.82, 0.90, 0.95);
+float ScGridAmount(float2 mapM, float3 positionWS)
+{
+    float fade = lerp(1.0, 0.6, saturate((length(_WorldSpaceCameraPos - positionWS) - 40000.0) / 200000.0));
+    return ScGridLine(mapM, _ScGrid.z) * _ScGrid.w * fade;
 }
 
 #endif

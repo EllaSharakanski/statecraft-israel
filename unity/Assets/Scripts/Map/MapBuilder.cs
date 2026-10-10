@@ -18,7 +18,6 @@ namespace Statecraft.Game.Map
         public const float NoBasemapDistanceM = 1e7f;
         public const float BiomeLayerTileSizeM = 1000f; // layers are flat colours, so the tiling only needs to be finite
         public const int OverlaySegmentsPerEdge = 10;  // ~500 m sub-segments on a 5 km hex edge, each draped on the terrain
-        public const float OverlayClearanceM = 40f * VerticalExaggeration; // above the (exaggerated) terrain surface
         // ~31 m steps, finer than the heightmap spacing on both axes: 78.9 m E-W x 210.6 m N-S
         // (heightmap.json: 2049 samples, so 2048 intervals, over width_km 161.53 x length_km 431.22).
         public const int OverlaySamplesPerSegment = 16;
@@ -40,28 +39,26 @@ namespace Statecraft.Game.Map
             ["desert"] = new Color(0.80f, 0.68f, 0.48f),
         };
 
-        /// <summary>Builds the terrain (with a "HexOverlay" child) from the heightmap in <paramref name="mapDir"/> and the
-        /// hexes in <paramref name="hexesJson"/>, both read with System.IO. Materials are editor-made assets (Assets/Materials/Terrain.mat,
-        /// HexOverlay.mat) passed in by the caller: Shader.Find returns null in players (M0 correction 1).
+        /// <summary>Builds the terrain from the heightmap in <paramref name="mapDir"/> and the
+        /// hexes in <paramref name="hexesJson"/>, both read with System.IO. The material is an editor-made asset (Assets/Materials/Terrain.mat) passed in by
+        /// the caller: Shader.Find returns null in players (M0 correction 1).
         /// Runtime-created objects are owned by a <see cref="MapRuntimeAssets"/> on the returned GameObject and destroyed with it.</summary>
-        public static GameObject Build(string mapDir, string hexesJson, Material terrainMaterial, Material overlayMaterial)
+        public static GameObject Build(string mapDir, string hexesJson, Material terrainMaterial)
         {
             if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
-            if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
             var (meta, heights) = HeightmapLoader.Load(mapDir);
-            return Build(meta, heights, LoadHexes(hexesJson), terrainMaterial, overlayMaterial);
+            return Build(meta, heights, LoadHexes(hexesJson), terrainMaterial);
         }
 
         /// <summary>Builds the map from already-read inputs (HeightmapLoader.Load and LoadHexes over text and bytes), so a
         /// WebGL build needs no System.IO. Throws InvalidDataException, before creating any object, when the hexes' bounds
         /// differ from the heightmap's by more than <see cref="BoundsTolerance"/>.</summary>
-        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial, Material overlayMaterial)
+        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial)
         {
             if (meta == null) throw new ArgumentNullException(nameof(meta));
             if (heights == null) throw new ArgumentNullException(nameof(heights));
             if (hexFile == null) throw new ArgumentNullException(nameof(hexFile));
             if (terrainMaterial == null) throw new ArgumentNullException(nameof(terrainMaterial));
-            if (overlayMaterial == null) throw new ArgumentNullException(nameof(overlayMaterial));
             CheckSameArea(meta, hexFile.bounds);
             float widthM = meta.width_km * 1000f, lengthM = meta.length_km * 1000f;
             float reliefM = (meta.elev_max_m - meta.elev_min_m) * VerticalExaggeration;
@@ -84,10 +81,6 @@ namespace Statecraft.Game.Map
             data.alphamapResolution = 16;
             MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets), assets);
             Boot.DiagLog.BootPhase("biome texture baked");
-
-            var overlay = BuildHexOverlay(frame, hexFile, data, overlayMaterial, assets);
-            overlay.transform.SetParent(terrainGo.transform, false);
-            Boot.DiagLog.BootPhase("hex overlay draped");
             return terrainGo;
         }
 
@@ -289,7 +282,7 @@ namespace Statecraft.Game.Map
         /// around <paramref name="centre"/> (world x, z), corners from HexMath. Each edge is split into OverlaySegmentsPerEdge
         /// sub-segments, clamped to the terrain bounds; each vertex sits <paramref name="clearance"/> above the highest
         /// terrain sampled along its two adjacent sub-segments, so the straight line between two vertices clears any ridge.
-        /// The hex overlay and the selection outline share it.</summary>
+        /// The selection outline uses it (the hex grid itself is drawn by the shaders since visual v1 Task 8).</summary>
         public static void DrapedRing(GeoFrame frame, TerrainData data, Vector2 centre, float size, float clearance, List<Vector3> verts)
         {
             int n = RingVertices;
@@ -314,33 +307,6 @@ namespace Statecraft.Game.Map
             }
             for (int j = 0; j < n; j++)
                 verts.Add(new Vector3(ground[j].x, Mathf.Max(segMax[(j + n - 1) % n], segMax[j]) + clearance, ground[j].y));
-        }
-
-        /// <summary>Line mesh of every land hex outline. Each edge is split into OverlaySegmentsPerEdge sub-segments; vertices
-        /// are clamped to the terrain bounds. Each vertex sits OverlayClearanceM above the highest terrain sampled along its
-        /// two adjacent sub-segments, so the straight line between two vertices clears any ridge between them.</summary>
-        static GameObject BuildHexOverlay(GeoFrame frame, HexFile hexes, TerrainData data, Material material, MapRuntimeAssets assets)
-        {
-            float size = hexes.hex_size_km * 1000f;
-            int n = RingVertices;
-            var verts = new List<Vector3>(); var idx = new List<int>();
-            foreach (var h in hexes.hexes)
-            {
-                if (!h.land) continue;
-                var c = frame.ToWorld(h.lon, h.lat, 0);
-                int start = verts.Count;
-                DrapedRing(frame, data, new Vector2(c.x, c.z), size, OverlayClearanceM, verts);
-                for (int i = 0; i < n; i++) { idx.Add(start + i); idx.Add(start + (i + 1) % n); }
-            }
-            var mesh = assets.Own(new Mesh { name = "HexOverlay", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
-            mesh.SetVertices(verts); mesh.SetIndices(idx, MeshTopology.Lines, 0);
-            mesh.RecalculateBounds();
-            var go = new GameObject("HexOverlay");
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = material;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return go;
         }
     }
 }

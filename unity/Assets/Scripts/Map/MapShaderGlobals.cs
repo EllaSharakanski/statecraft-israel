@@ -10,7 +10,7 @@ namespace Statecraft.Game.Map
     {
         public static readonly int Map = Shader.PropertyToID("_ScMap"), MapOrigin = Shader.PropertyToID("_ScMapOrigin"),
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
-            HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn");
+            HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn"), Grid = Shader.PropertyToID("_ScGrid");
 
         /// <summary>A warm, dusty haze over land (sRGB): warmer than the ground it covers (R - B 0.26), so the far land reads
         /// as dust, not as a cool milky veil (Task 6 review I1).</summary>
@@ -26,6 +26,10 @@ namespace Statecraft.Game.Map
         public const float HazeStartM = 200000f, HazeDistanceM = 250000f;
         /// <summary>Real elevations between which the haze thickens, low in the Jordan rift.</summary>
         public const float RiftHazeTopM = -100f, RiftHazeFullM = -400f;
+
+        /// <summary>Hex line opacity on land and water, and width in pixels (anti-aliased, the same at every zoom). Light,
+        /// faint lines on land as in the promo.</summary>
+        public const float GridLandOpacity = 0.25f, GridWaterOpacity = 0.35f, GridWidthPx = 1.5f;
 
         static Vector4 haze, hazeWater;
 
@@ -43,6 +47,8 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(Haze, haze);
             Shader.SetGlobalVector(HazeWater, hazeWater);
             Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, HazeStartM));
+            Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, 1f));
+            assets.OnTeardown(VisualToggles.Register("grid", on => Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, on ? 1f : 0f))));
             Shader.SetGlobalFloat(WaterOn, 1f);
             assets.OnTeardown(VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f)));
             assets.OnTeardown(VisualToggles.Register("haze", on =>

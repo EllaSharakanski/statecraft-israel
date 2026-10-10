@@ -187,6 +187,33 @@ faint low-contrast banding remains there at grazing angles.
 - **Build and boot.** WebGL 77.1 MB, no `Shader error`. Boot `--cpu 1`: `map_build_ms` 469, `first_frame_ms` 3598
   (budgets 743 / 5321).
 
+## Task 8: grid
+The hex grid is drawn by the terrain graph and by the skirt's `Sea.shader` from one distance field (`ScHexEdgeDistance`,
+tools/hexgrid.py's layout; `HexGrid` is the C# twin), anti-aliased with `fwidth`, 1.5 px wide, light on land (0.25) and
+water (0.35), fading to 0.6 of that from 40 km to 240 km camera distance. The `MeshTopology.Lines` overlay, its material,
+`OverlayClearanceM` and its boot phase are gone; the selected-hex band sits 30 m above the ground (was 140 m). Toggle
+`grid`, registered in `MapShaderGlobals.Apply` through `assets.OnTeardown`. All numbers here are pre-grade (Track A's grade
+and tilt-shift are not in this worktree).
+
+- **Rendered tests (EditMode).** Edge luma change 0.059 (hills, 30 km). Grid coverage: 3.08% at 20 km, 18.15% at
+  250 km (bound 0.05%-25%). Rift hex lines: Beit She'an 0.062, Jericho 0.058, Dead Sea shore / Arava 0.016 (light lines
+  on the bright desert are faint; that test's bound is 0.012, the plan's 0.03 holds only off the desert).
+- **Seam.** Task 7's pairs and close strip, grid off: 16 lines, max 0.004. Grid on: 12 asserted lines, max 0.008; the
+  close strip at yaw 90/270 is logged only (0.014 at yaw 270: the x = 0 hex line falls unequally into the two
+  foreshortened patches). The plan's hex-centre pairs at x = +-4330 m were dropped: the middle-row pair differs by 0.027
+  at yaw 180 with the grid off too (a warm sun glint on the terrain side), a pre-existing water effect.
+- **Profile (WebGL, 1920x1080).**
+  - `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.42 spread_ms=0.74 median_p95_ms=4.00`
+  - `PROFILE summary visual=-grid pose=gameplay03 runs=3 median_avg_ms=2.41 spread_ms=0.22 median_p95_ms=4.00`
+  - `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=7.30 spread_ms=0.12 median_p95_ms=8.00`
+  - `PROFILE summary visual=-grid pose=diorama02 runs=3 median_avg_ms=7.28 spread_ms=0.34 median_p95_ms=8.00`
+  - The grid costs 0.01-0.02 ms, inside the spreads; with the line mesh's draw call gone, gameplay03 `all` is 2.42 ms
+    (Task 7 fix round 1: 2.55 ms).
+- **Build and boot.** WebGL 77 MB, no `Shader error`; no GLES derivative error (no `#pragma require derivatives`
+  needed). Boot `--cpu 1`: `BOOT map_build_ms median=419`, `BOOT first_frame_ms median=3442` (Task 7: 469 / 3598).
+- **Look (t08-grid).** The sea lattice runs on past the map's edge with no step. At the 250 km overview the sea lattice is
+  dense and reads strongly; land lines are faint, nearly invisible on the desert.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
@@ -195,3 +222,4 @@ faint low-contrast banding remains there at grazing angles.
 | 6 (fix 1) | t06-terrain-r1 | captures/visual/t06-terrain-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 7 | t07-sea | captures/visual/t07-sea/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 7 (fix 1) | t07-sea-r1 | captures/visual/t07-sea-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
+| 8 | t08-grid | captures/visual/t08-grid/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |

@@ -26,6 +26,11 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     // multiplied away (Task 7 fix round 1, M3).
     float3 waterColour = 0;
     [branch] if (water > 0.0) waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM), PositionWS);
+    // The hex grid (visual v1 Task 8), light and faint on land and water, thinner towards the overview: the same lines as
+    // Sea.shader past the edge. Computed outside the branch: its fwidth needs uniform control flow.
+    float gridLine = ScGridAmount(mapM, PositionWS);
+    ground = lerp(ground, SRGBToLinear(ScGridLandSrgb), gridLine * _ScGrid.x);
+    waterColour = lerp(waterColour, SRGBToLinear(ScGridWaterSrgb), gridLine * _ScGrid.y);
     BaseColor = ground * (1.0 - h) * (1.0 - water);
     NormalOut = normalize(lerp(n, float3(0, 1, 0), water));
     Occlusion = lerp(lerp(1.0, ao, 0.8), 0.0, water);

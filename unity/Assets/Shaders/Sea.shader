@@ -44,7 +44,10 @@ Shader "Statecraft/Sea"
             {
                 float2 mapM = input.positionWS.xz - _ScMapOrigin.xz;
                 float coast = SAMPLE_TEXTURE2D(_ScCoastTex, sampler_ScCoastTex, saturate(mapM / _ScMap.xy)).r;
-                return half4(ScHazeWater(ScWaterShade(coast, 0.0, input.positionWS, mapM), input.positionWS), 1.0);
+                float3 c = ScHazeWater(ScWaterShade(coast, 0.0, input.positionWS, mapM), input.positionWS);
+                // The hex lattice runs on past the map's edge, exactly as on the terrain's water (review I3).
+                c = lerp(c, SRGBToLinear(ScGridWaterSrgb), ScGridAmount(mapM, input.positionWS) * _ScGrid.y);
+                return half4(c, 1.0);
             }
             ENDHLSL
         }

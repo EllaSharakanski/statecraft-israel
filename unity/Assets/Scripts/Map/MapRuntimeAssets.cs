@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Statecraft.Game.Map
 {
-    /// <summary>Owns the objects MapBuilder creates at runtime (TerrainData, TerrainLayers, their textures, the overlay
-    /// mesh) and destroys them with the map, so rebuilding the map does not leak them. [ExecuteAlways] so OnDestroy also
+    /// <summary>Owns the objects MapBuilder creates at runtime (TerrainData, TerrainLayers, their textures, the selection
+    /// band's mesh) and destroys them with the map, so rebuilding the map does not leak them. [ExecuteAlways] so OnDestroy also
     /// runs in edit mode (edit-mode tests, editor capture tools).</summary>
     [ExecuteAlways]
     public sealed class MapRuntimeAssets : MonoBehaviour
