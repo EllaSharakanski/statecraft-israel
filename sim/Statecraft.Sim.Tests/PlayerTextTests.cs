@@ -92,7 +92,11 @@ public class PlayerTextTests
 
     /// <summary>Fix round 3 (m-3): sim prose that legitimately contains a lowercase word that is also a content id. Each
     /// entry is the exact phrase, never the bare word (<see cref="EverySimPhraseIsRealSimText"/>).</summary>
-    internal static readonly string[] SimPhrases = { "the minimum for security level" };   // SecuritySystem's ladder, not the indicator
+    internal static readonly string[] SimPhrases =
+    {
+        "the minimum for security level",                       // SecuritySystem's ladder, not the indicator
+        "Transit camps and housing projects can be placed from", // MapActions.Check before map_actions_from (SliceSmokeTests shows it)
+    };
 
     /// <summary>The exact display strings that may contain such a word: content names (indicators, policies, effects,
     /// situations, map actions, offices, parties, people, governments, legislatures), event titles and option texts (a "{office}" placeholder matches the filled-in name), each
@@ -110,17 +114,24 @@ public class PlayerTextTests
     }
 
     /// <summary>Every content id found as a whole word anywhere in a message once the exact display strings are removed.</summary>
-    static List<string> Leaks(Content c, IEnumerable<string> messages)
+    static List<string> Leaks(Content c, IEnumerable<string> messages) => LeakGuard(c)(messages);
+
+    /// <summary><see cref="Leaks"/> with the display strings and id patterns built once, for callers that check many
+    /// batches of text against the same content (SliceSmokeTests checks every turn).</summary>
+    internal static Func<IEnumerable<string>, List<string>> LeakGuard(Content c)
     {
         var display = DisplayStrings(c);
         var patterns = ContentIds(c).Select(id => (id, re: new Regex($@"\b{Regex.Escape(id)}\b"))).ToList();
-        var leaks = new List<string>();
-        foreach (var m in messages.Distinct())
+        return messages =>
         {
-            var rest = display.Aggregate(m, (acc, d) => d.Replace(acc, " "));
-            leaks.AddRange(patterns.Where(p => p.re.IsMatch(rest)).Select(p => $"'{p.id}' in: {m}"));
-        }
-        return leaks;
+            var leaks = new List<string>();
+            foreach (var m in messages.Distinct())
+            {
+                var rest = display.Aggregate(m, (acc, d) => d.Replace(acc, " "));
+                leaks.AddRange(patterns.Where(p => p.re.IsMatch(rest)).Select(p => $"'{p.id}' in: {m}"));
+            }
+            return leaks;
+        };
     }
 
     /// <summary>The player's own commands from mid-1950 on (historical play up to then): policy votes (passed and lost),
@@ -241,7 +252,8 @@ public class PlayerTextTests
         var s = Simulation.NewGame(Real, 1, Mode.Historical);
         var why = new List<Cause>();
         SecuritySystem.SetMobilization(Real, s, 0, why);                  // below the floor: the ladder message
-        foreach (var phrase in SimPhrases) Assert.Contains(why, w => w.Message.Contains(phrase));
+        var texts = why.Select(w => w.Message).Append(MapActions.Check(Real, s, MapActions.Housing, 0, 0)!).ToList();   // before map actions open
+        foreach (var phrase in SimPhrases) Assert.Contains(texts, t => t.Contains(phrase));
     }
 
     [Theory]
