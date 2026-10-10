@@ -11,13 +11,10 @@ options:
     text: Ration clothing and footwear
     historical: true
     recommended: true
-    set_policy: { rationing: 1.0 }
     effects:
-      - { target: food_supply, delta: 0.02 }
       - { target: morale, delta: -0.05 }
   - id: relax
     text: Ease rationing and let imports fill the shops
-    set_policy: { rationing: 0.5 }
     effects:
       - { target: morale, delta: 0.03 }
       - { target: fx_reserves, delta: -8 }

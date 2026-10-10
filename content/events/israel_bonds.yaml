@@ -1,13 +1,13 @@
 id: israel_bonds
 title: Israel Bonds
-text: '{finance_minister} proposes selling State of Israel bonds to Jews abroad, alongside the United Jewish Appeal donations. The Knesset has authorised the first issue.'
+text: 'The Knesset authorised a bond issue in February; it launches on 10 May. {finance_minister} proposes selling State of Israel bonds to Jews abroad, alongside the United Jewish Appeal donations.'
 anchor: hard
 office: finance_minister
-# Knesset authorisation February 1951; launched 10 May 1951 at Madison Square Garden; over 52 million dollars sold in
+# Knesset authorisation February 1951 (the vote is undated, so the window opens at the launch); launched 10 May 1951 at Madison Square Garden; over 52 million dollars sold in
 # the first year against a 25 million goal (en.wiki and JVL; en.wiki "1950 in Israel" gives September 1950, which
 # conflicts with both and is not used).
-from: 1951-02-01
-to: 1951-05-10
+from: 1951-05-10
+to: 1951-05-11
 options:
   - id: launch
     text: Launch the bond issue in the United States

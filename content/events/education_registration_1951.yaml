@@ -15,8 +15,10 @@ options:
       - { target: morale, delta: -0.02 }
   - id: concede
     text: Leave camp children in the religious stream
+    # Conceding angers the labour-movement side of the coalition, which wanted the registration plan; its opinion weighs
+    # morale and housing (model.yaml), so the cost is a morale penalty a little larger than the historical option's.
     effects:
-      - { target: morale, delta: -0.01 }
+      - { target: morale, delta: -0.03 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }
   - { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }

@@ -4,7 +4,7 @@ text: 'Drought has forced larger wheat imports, immigration in the first half of
 anchor: soft
 office: finance_minister
 # US Ambassador Davis's report of 19 October 1951 (FRUS 1951 v.V doc 513).
-from: 1951-10-01
+from: 1951-10-19
 to: 1952-01-01
 options:
   - id: request_aid
@@ -12,6 +12,7 @@ options:
     historical: true
     recommended: true
     effects:
+      # The notes record the request, not its outcome; the fx effect is a game assumption, not a historical claim.
       - { target: fx_reserves, delta: 15 }
       - { target: intl_standing, delta: -0.01 }
   - id: cut_imports

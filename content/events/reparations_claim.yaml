@@ -17,7 +17,7 @@ options:
   - id: refuse
     text: Refuse any dealings with Germany
     effects:
-      - { target: intl_standing, delta: -0.01 }
+      - { target: intl_standing, delta: 0 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Reparations_Agreement_between_Israel_and_the_Federal_Republic_of_Germany", checked: 2026-10-10 }
   - { url: "https://www.jewishvirtuallibrary.org/german-holocaust-reparations", checked: 2026-10-10 }

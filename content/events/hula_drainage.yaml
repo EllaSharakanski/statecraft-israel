@@ -1,11 +1,13 @@
 id: hula_drainage
 title: Draining the Hula
-text: 'Drainage works south of Lake Hula, under the concession Israel holds, reach into the demilitarised zone with Syria. Syria has complained, and the chairman of the armistice commission asks that work stop pending agreement. {prime_minister} must decide.'
+text: 'Drainage works south of Lake Hula, under the Palestine Land Development Company''s concession, reach into the demilitarised zone with Syria. Syria has complained, and the chairman of the armistice commission asks that work stop pending agreement. {prime_minister} must decide.'
 anchor: soft
 tags: [security]
 office: prime_minister
-# Works began about 14 February 1951; Syria complained on 21 February; General Riley recommended a halt on 7 March.
-from: 1951-02-14
+# Works began about 14 February 1951 and Syria complained on 21 February. The window opens on 7 March, when General
+# Riley's memo recommended that work stop pending agreement (research notes section 8). FRUS 1951 v.V doc 288 is dated
+# 5 March 1951; the notes give 7 March for Riley's request, and both dates are recorded here.
+from: 1951-03-07
 to: 1951-05-18
 options:
   - id: continue_works
