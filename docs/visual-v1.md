@@ -69,3 +69,34 @@ Notes:
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
+| 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
+
+## Task 9: labels
+
+Settlement names are UI Toolkit pills (`MapLabelsPresenter`, EB Garamond SemiBold on navy with a gold edge) in the
+click-through `map-labels` layer, placed in `GameRoot.LateUpdate` with an inline pixel `translate` and hidden while the
+game loads. The world-space `TextMesh` labels are gone.
+
+Frame time, headless, DPR 1, `res=1920x1080 scale=0.80` (`?vprofile`, `machine_lock.py --exclusive --wait-unity`):
+
+| Pose | all | -labels | none | all - (-labels) | budget |
+|---|---|---|---|---|---|
+| gameplay03 | 2.30 (spread 0.15) | 2.36 (0.06) | 2.34 (0.04) | -0.06 ms | <= 1 + 0.15 ms: within |
+| diorama02 | 6.82 (0.06) | 6.55 (0.02) | 6.61 (0.14) | +0.27 ms | <= 1 + 0.06 ms: within |
+
+The profile holds the camera still, so after the first frames `Refresh` returns early (unchanged view-projection,
+panel size and zoom); the cost measured is the drawing of the pills, not the per-frame placement while the camera moves.
+
+Deviations from the plan text, each forced by a test:
+- Projection: `RuntimePanelUtils.CameraTransformWorldToPanel` flips y with `Screen.height`, which is wrong when the camera
+  draws to a texture of another size (edit-mode tests: 600 px off). The presenter maps the camera's viewport point
+  through `camera.rect` onto the panel's own size instead.
+- Declutter at the overview: the Tel Aviv - Lod cluster's markers sit 10-60 px apart there, and a town's pill could not
+  avoid a neighbour's marker with any anchor (Rishon LeZion's pill ended 10 px under Jaffa's marker). A pill other than
+  a city's is now also hidden when it comes within `NeighbourClearPx` (2 x LiftPx + MarginPx = 16 px) of another
+  settlement's marker top. At 90 km this hides nothing (11 of 25 shown, as before); at the overview 10 of 25 are shown.
+- City pills: 20 px text and 8 px side padding (plan: 22 px and 10 px), so Tel Aviv's centred pill ends clear of Petah
+  Tikva's marker at the overview.
+- `ThePillIsEbGaramondOnNavyWithAGoldEdgeAndHiddenWhileLoading` uses a 1920x1080 panel instead of `UiTestKit`'s: the
+  batch-mode screen gives that panel about 0.39 px per point, and UI Toolkit rounds the 1 px border up to one physical
+  pixel (2.57 points).

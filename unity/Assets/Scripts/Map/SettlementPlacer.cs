@@ -26,32 +26,16 @@ namespace Statecraft.Game.Map
     {
         public const string DefaultFileName = "settlements_1948.yaml";
 
-        // Marker colour and box edge (m); label cap height (m). Cap heights give >= 18 / 14 / 11 px at the top (farthest
-        // edge, ~128 km) of a 1080p flythrough frame at the rig's 90 km distance and 35-degree FOV (K1).
-        static readonly Dictionary<string, (Color c, float h, float cap)> Marker = new Dictionary<string, (Color, float, float)>
+        // Marker colour and box edge (m) per type: placeholder art until the settlement art track.
+        static readonly Dictionary<string, (Color c, float h)> Marker = new Dictionary<string, (Color, float)>
         {
-            ["city"] = (new Color(0.93f, 0.92f, 0.88f), 1800f, 1500f), ["town"] = (new Color(0.88f, 0.84f, 0.76f), 1100f, 1150f),
-            ["kibbutz"] = (new Color(0.80f, 0.35f, 0.25f), 600f, 900f), ["moshav"] = (new Color(0.78f, 0.45f, 0.30f), 600f, 900f),
-            ["arab_town"] = (new Color(0.82f, 0.74f, 0.58f), 1100f, 1150f), ["village"] = (new Color(0.76f, 0.68f, 0.52f), 600f, 900f),
+            ["city"] = (new Color(0.93f, 0.92f, 0.88f), 1800f), ["town"] = (new Color(0.88f, 0.84f, 0.76f), 1100f),
+            ["kibbutz"] = (new Color(0.80f, 0.35f, 0.25f), 600f), ["moshav"] = (new Color(0.78f, 0.45f, 0.30f), 600f),
+            ["arab_town"] = (new Color(0.82f, 0.74f, 0.58f), 1100f), ["village"] = (new Color(0.76f, 0.68f, 0.52f), 600f),
         };
 
-        // Labels in the dense Tel Aviv - Lod cluster (and Safed / Rosh Pinna, 4 km apart) extend away from their neighbours
-        // instead of centring on the marker.
-        static readonly Dictionary<string, TextAnchor> LabelAnchor = new Dictionary<string, TextAnchor>
-        {
-            ["jaffa"] = TextAnchor.LowerRight, ["rishon_lezion"] = TextAnchor.LowerRight,
-            ["lod"] = TextAnchor.LowerLeft, ["petah_tikva"] = TextAnchor.LowerLeft,
-            ["safed"] = TextAnchor.LowerRight, ["rosh_pinna"] = TextAnchor.LowerLeft,
-        };
-
-        // East offset (m) of a label from its marker. Ramla sits between Rishon LeZion (west) and Lod (north-east): centred
-        // and nudged west, its label stays over its own marker and clear of both neighbours' boxes.
-        static readonly Dictionary<string, float> LabelOffsetEastM = new Dictionary<string, float> { ["ramla"] = -1500f };
-
-        public const int LabelFontSize = 64;          // glyph raster size; characterSize scales it to world metres
-        public const float CapHeightPerUnit = 4.5f;   // cap height (m) per unit of characterSize at LabelFontSize
-        public const float LabelLift = 0.75f;         // label base above the marker top, in box edges: clears the box's far top edge at the rig pitch
-        static readonly Color LabelColour = new Color(0.98f, 0.97f, 0.93f), ShadowColour = new Color(0.06f, 0.05f, 0.04f, 0.9f);
+        /// <summary>The marker box's edge (m) for a settlement type; the UI's label sits on its top.</summary>
+        public static float MarkerHeightM(string type) => Marker[type].h;
 
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
@@ -136,47 +120,26 @@ namespace Statecraft.Game.Map
                 throw new InvalidDataException($"{at} {field} {v} outside the heightmap bounds {min.Value}..{max.Value}");
         }
 
-        /// <summary>Placeholder markers (real per-era prefabs come in M3/M4): a box sized by type plus a name label, under a
-        /// returned "Settlements" root. The box is a plain MeshFilter + MeshRenderer (no collider) using the editor-made
+        /// <summary>Placeholder markers (per-era art comes with the settlement art track): a box sized by type, under a returned
+        /// "Settlements" root. The box is a plain MeshFilter + MeshRenderer (no collider) using the editor-made
         /// <paramref name="markerMaterial"/> (no runtime Shader.Find, M0 correction 1); the per-type colour goes through a
-        /// MaterialPropertyBlock. The label is light text with a dark drop shadow, above the box, facing the rig's pitch.</summary>
+        /// MaterialPropertyBlock. Names are drawn by the UI (MapLabelsPresenter), not here.</summary>
         public static GameObject Place(List<Settlement> list, GeoFrame frame, Terrain terrain, Material markerMaterial)
         {
             var root = new GameObject("Settlements"); var parent = root.transform;
-            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             var cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
             var block = new MaterialPropertyBlock();
             foreach (var s in list)
             {
                 var p = frame.ToWorld(s.Lon, s.Lat, 0); p.y = terrain.SampleHeight(p) + terrain.transform.position.y;
-                var (c, h, cap) = Marker[s.Type];
+                var (c, h) = Marker[s.Type];
                 var box = new GameObject(s.Id); box.transform.SetParent(parent);
                 box.AddComponent<MeshFilter>().sharedMesh = cube;
                 var r = box.AddComponent<MeshRenderer>(); r.sharedMaterial = markerMaterial;
                 block.SetColor(BaseColor, c); r.SetPropertyBlock(block);
                 box.transform.position = p + Vector3.up * h / 2; box.transform.localScale = new Vector3(h, h, h);
-
-                var anchor = LabelAnchor.TryGetValue(s.Id, out var a) ? a : TextAnchor.LowerCenter;
-                var label = MakeText(s.Id + "_label", s.Name, font, cap, anchor, LabelColour);
-                var east = LabelOffsetEastM.TryGetValue(s.Id, out var dx) ? dx : 0f;
-                label.transform.SetPositionAndRotation(p + Vector3.up * h * (1f + LabelLift) + Vector3.right * east,
-                    Quaternion.Euler(CameraRig.Pitch, 0, 0));
-                label.transform.SetParent(parent, true);
-                var shadow = MakeText("shadow", s.Name, font, cap, anchor, ShadowColour);
-                shadow.transform.SetParent(label.transform, false);
-                shadow.transform.localPosition = new Vector3(cap * 0.07f, -cap * 0.07f, cap * 0.05f); // down-right, behind
             }
             return root;
-        }
-
-        static GameObject MakeText(string name, string text, Font font, float capM, TextAnchor anchor, Color colour)
-        {
-            var go = new GameObject(name);
-            go.AddComponent<MeshRenderer>().sharedMaterial = font.material;
-            var t = go.AddComponent<TextMesh>();
-            t.font = font; t.fontSize = LabelFontSize; t.characterSize = capM / CapHeightPerUnit;
-            t.text = text; t.anchor = anchor; t.color = colour;
-            return go;
         }
     }
 }

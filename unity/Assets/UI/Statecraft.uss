@@ -133,3 +133,31 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .loading .loading-line { display: flex; }
 .root.loading { background-color: var(--navy-solid); }   /* the template's navy, not the default sky (final review M1) */
 .loading .date-box, .loading .meters, .loading .nav, .loading .turn-box, .loading .info-panel, .loading .right-column { visibility: hidden; }
+
+/* Map labels (visual v1 Task 9): the promo's dark pill with a thin gold edge, in EB Garamond SemiBold. Each pill sits in a
+   zero-size slot that MapLabelsPresenter moves with an inline translate; the anchor class says which corner of the pill sits
+   on the marker's top. Hidden while the game loads. */
+.map-labels { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.loading .map-labels { display: none; }
+.map-label-slot { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; }
+.map-label {
+    position: absolute;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf");
+    font-size: 18px;
+    color: rgb(243, 234, 216);
+    background-color: rgba(14, 22, 38, 0.82);
+    border-width: 1px;
+    border-color: var(--gold);
+    border-radius: 12px;
+    padding: 1px 8px 2px 8px;
+    margin: 0;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+/* Tel Aviv's pill, centred on its marker, must end clear of Petah Tikva's marker 10 km east at the overview (about 61 px
+   apart there; MapLabelTests.ShownPillsNeverOverlapAndEachReadsAsItsOwn): 20 px and 8 px side padding, not 22 and 10. */
+.map-label-city { font-size: 20px; }
+.map-label-town, .map-label-arab_town { font-size: 19px; }
+.anchor-lower-centre { translate: -50% -100%; }
+.anchor-lower-left { translate: 0 -100%; }
+.anchor-lower-right { translate: -100% -100%; }

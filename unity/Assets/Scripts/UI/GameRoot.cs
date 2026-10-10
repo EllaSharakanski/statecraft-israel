@@ -40,6 +40,7 @@ namespace Statecraft.Game.UI
         /// <summary>Everything Begin created that must be undone, disposed in reverse order.</summary>
         readonly List<IDisposable> owned = new List<IDisposable>();
         MinimapPresenter? minimap;
+        MapLabelsPresenter? labels;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -161,6 +162,7 @@ namespace Statecraft.Game.UI
             var camRig = rig = cameraController.GetComponent<CameraRig>();
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
+            labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>()));
             mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); };
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
@@ -208,7 +210,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; rig = null; drawn = null; logCamera = false;
+            minimap = null; labels = null; rig = null; drawn = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -243,6 +245,9 @@ namespace Statecraft.Game.UI
             CameraLogRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
 
         internal static string CameraLine(float distance, float yaw) => FormattableString.Invariant($"CAMERA distance={distance:0} yaw={yaw:0.0}");
+
+        /// <summary>After every Update (CameraController moves the camera in its Update), so the pills never trail the camera.</summary>
+        void LateUpdate() => labels?.Refresh();
 
         void Update()
         {

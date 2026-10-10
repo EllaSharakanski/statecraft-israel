@@ -18,6 +18,8 @@ namespace Statecraft.Game.Map
         public HexFile Hexes { get; private set; }
         public Terrain Terrain { get; private set; }
         public Material MarkerMaterial => markerMaterial;
+        /// <summary>The settlements the last Build placed (settlements_1948.yaml), for the UI's map labels.</summary>
+        public IReadOnlyList<Settlement> Settlements { get; private set; } = new List<Settlement>();
 
         /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
         public const string SelectionName = "HexSelection";
@@ -116,6 +118,7 @@ namespace Statecraft.Game.Map
             DiagLog.BootPhase("border skirt");
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
             var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
+            Settlements = list;
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
             DiagLog.BootPhase("settlements placed");
 
