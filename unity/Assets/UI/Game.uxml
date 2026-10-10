@@ -92,7 +92,10 @@
             </ui:VisualElement>
             <ui:Label name="mob-cost" class="muted" />
         </ui:VisualElement>
-        <ui:VisualElement name="screen-why" class="panel screen" />
+        <ui:VisualElement name="screen-why" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label text="Why did this happen?" class="title" /><ui:Label name="why-turn" class="muted" /></ui:VisualElement>
+            <ui:ScrollView name="why-rows" class="grow" />
+        </ui:VisualElement>
         <ui:Label name="toast" class="panel toast" />
     </ui:VisualElement>
 </ui:UXML>
