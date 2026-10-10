@@ -11,6 +11,7 @@ namespace Statecraft.Game.Map
     {
         public const float Pitch = 50f, Fov = 35f;
         public Vector3 LookAt; public float Distance = 120000f; public float Yaw;
+        public float TopInset;
         DepthOfField _dof;
 
         /// <summary>The global post-processing volume Init creates. Its runtime VolumeProfile must be owned by the caller
@@ -20,6 +21,10 @@ namespace Statecraft.Game.Map
         public void Init()
         {
             var cam = GetComponent<Camera>(); cam.fieldOfView = Fov; cam.farClipPlane = 1_000_000f; cam.nearClipPlane = 50f;
+            // Beyond the terrain the view shows open sea, not a grey void (playtest 1, item 9). At this pitch the top of the
+            // view still looks down, so the sky never shows and a solid clear in the sea biome colour is the whole fix.
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = MapBuilder.BiomeColours["sea"];
             cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
             var vol = new GameObject("PostFX").AddComponent<Volume>(); vol.isGlobal = true;
             vol.profile = ScriptableObject.CreateInstance<VolumeProfile>();

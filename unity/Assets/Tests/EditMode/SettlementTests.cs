@@ -160,6 +160,81 @@ public class MapSceneTests
         Assert.AreEqual(1, Object.FindObjectsByType<CameraRig>(FindObjectsSortMode.None).Length, "camera rigs");
     }
 
+    /// <summary>Playtest 1, item 9: beyond the terrain the view shows sea, not a grey void. The diorama pitch never shows
+    /// the sky, so the camera clears to the sea biome colour.</summary>
+    [Test]
+    public void TheCameraClearsToTheSeaColour()
+    {
+        var map = NewMap(); map.Build();
+        var cam = Camera.main;
+        Assert.AreEqual(CameraClearFlags.SolidColor, cam.clearFlags);
+        Assert.AreEqual(MapBuilder.BiomeColours["sea"], cam.backgroundColor);
+        Assert.Less(CameraRig.Pitch - CameraRig.Fov / 2, 90f);
+        Assert.Greater(CameraRig.Pitch - CameraRig.Fov / 2, 0f, "the top of the view looks down: no sky to show");
+    }
+
+    /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is
+    /// framed in the middle of the map area below the bar, not in the middle of the whole screen.</summary>
+    [Test]
+    public void TheLookAtPointIsCentredBelowTheTopBar()
+    {
+        var map = NewMap(); map.Build();
+        var cam = Camera.main;
+        var rig = cam.GetComponent<CameraRig>();
+        Assert.AreEqual(0.5f, cam.WorldToViewportPoint(rig.LookAt).y, 1e-3f, "no inset: the screen's centre");
+        rig.TopInset = 0.1f; rig.Apply();
+        var v = cam.WorldToViewportPoint(rig.LookAt);
+        Assert.AreEqual(0.45f, v.y, 1e-3f, "the middle of the 90% below the bar (viewport y is up)");
+        Assert.AreEqual(0.5f, v.x, 1e-3f);
+        rig.TopInset = 0f; rig.Apply();
+        Assert.AreEqual(0.5f, cam.WorldToViewportPoint(rig.LookAt).y, 1e-3f, "the inset is undone");
+    }
+
+    /// <summary>Playtest 1, item 10: the selected hex gets an outline in the highlight colour, draped on the terrain like
+    /// the hex overlay (HexMath corners), drawn with the editor-made overlay material (no runtime material).</summary>
+    [Test]
+    public void SelectingAHexOutlinesItOnTheTerrain()
+    {
+        var map = NewMap(); map.Build();
+        var overlay = Load(OverlayMatPath);
+        float size = map.Hexes.hex_size_km * 1000f;
+        bool Inland(HexJson h)   // whole hex on the terrain, so no corner is clamped to the map's edge
+        {
+            var w = map.Frame.ToWorld(h.lon, h.lat, 0);
+            return w.x > size && w.x < map.Frame.WidthM - size && w.z > size && w.z < map.Frame.LengthM - size;
+        }
+        var land = System.Array.FindAll(map.Hexes.hexes, h => h.land && h.biome == "hills" && Inland(h));
+        Assert.Greater(land.Length, 2);
+        foreach (var h in new[] { land[0], land[land.Length / 2] })
+        {
+            map.Select(h.q, h.r);
+            var sel = map.Terrain.transform.Find(MapScene.SelectionName);
+            Assert.IsNotNull(sel, "the selection outline exists");
+            var mr = sel.GetComponent<MeshRenderer>();
+            Assert.IsTrue(mr.enabled, "the outline is shown");
+            Assert.AreSame(overlay, mr.sharedMaterial, "the editor-made overlay material, not an instance");
+            var block = new MaterialPropertyBlock(); mr.GetPropertyBlock(block);
+            var colour = block.GetColor(Shader.PropertyToID("_BaseColor"));
+            Assert.Less(Mathf.Abs(colour.r - MapScene.SelectionColour.r) + Mathf.Abs(colour.g - MapScene.SelectionColour.g)
+                + Mathf.Abs(colour.b - MapScene.SelectionColour.b), 1e-3f, $"highlight colour, got {colour}");
+            var verts = sel.GetComponent<MeshFilter>().sharedMesh.vertices;
+            var centre = map.Frame.ToWorld(h.lon, h.lat, 0);
+            var c2 = new Vector2(centre.x, centre.z);
+            for (int i = 0; i < 6; i++)
+            {
+                var corner = HexMath.Corner(c2, size, i);
+                Assert.IsTrue(System.Array.Exists(verts, v => (new Vector2(v.x, v.z) - corner).magnitude < 1f), $"corner {i} of ({h.q}, {h.r})");
+            }
+            foreach (var v in verts)
+            {
+                Assert.LessOrEqual((new Vector2(v.x, v.z) - c2).magnitude, size + 1f, "inside the hex");
+                Assert.Greater(v.y, map.Terrain.SampleHeight(v) + MapBuilder.OverlayClearanceM - 1f, "draped above the terrain");
+            }
+        }
+        map.Select(-9999, -9999);
+        Assert.IsFalse(map.Terrain.transform.Find(MapScene.SelectionName).GetComponent<MeshRenderer>().enabled, "no hex there: no outline");
+    }
+
     [Test]
     public void BuildWithoutMaterialsNamesTheMissingField()
     {

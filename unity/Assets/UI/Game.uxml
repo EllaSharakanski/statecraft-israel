@@ -3,8 +3,7 @@
     <ui:VisualElement name="root" class="root" picking-mode="Ignore">
         <ui:VisualElement name="top-bar" class="panel top-bar">
             <ui:VisualElement class="date-box">
-                <ui:Label name="year" class="year" />
-                <ui:Label name="turn" class="muted" />
+                <ui:VisualElement class="year-row"><ui:Label name="year" class="year" /><ui:Label name="turn" class="muted" /></ui:VisualElement>
                 <ui:Label name="date" class="muted" />
             </ui:VisualElement>
             <ui:VisualElement name="meters" class="meters">
@@ -46,6 +45,9 @@
                 <ui:Button name="end-turn" text="End Turn" class="end-turn" />
             </ui:VisualElement>
         </ui:VisualElement>
+        <!-- Everything below the top bar. The bar's height follows its content; the panels are placed in the stage, so none
+             of them can start under the bar whatever the window's shape (playtest 1, item 1). -->
+        <ui:VisualElement name="stage" class="stage" picking-mode="Ignore">
         <ui:VisualElement name="event-card" class="panel event-card">
             <ui:VisualElement name="event-image" class="event-image" />
             <ui:Label name="event-draft" text="DRAFT" class="draft" />
@@ -73,7 +75,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="screen-cabinet" class="panel screen">
             <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>
-            <ui:VisualElement class="row grow">
+            <ui:VisualElement class="screen-body">
                 <ui:ScrollView name="cabinet-seats" class="grow" />
                 <ui:VisualElement name="cabinet-pick" class="grow">
                     <ui:Label name="cabinet-pick-title" class="meter-name" />
@@ -122,5 +124,6 @@
             <ui:ScrollView name="why-rows" class="grow" />
         </ui:VisualElement>
         <ui:Label name="toast" class="panel toast" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

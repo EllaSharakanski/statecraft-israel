@@ -1,4 +1,8 @@
+#nullable enable
 using System.Collections;
+using System.Linq;
+using Statecraft.Game;
+using Statecraft.Sim;
 using NUnit.Framework;
 using Statecraft.Game.UI;
 using UnityEditor;
@@ -17,7 +21,7 @@ public class UiLayoutTests
     [UnityTest]
     public IEnumerator NothingOverlapsAt1080pAnd720p()
     {
-        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1280, 1024) })
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1280, 1024), (1531, 784), (2560, 1080), (1920, 900) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -60,5 +64,126 @@ public class UiLayoutTests
             }
             finally { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
         }
+    }
+
+    static readonly Content C = ContentLoader.Load(Paths.Content);
+    static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
+
+    /// <summary>The window sizes a player is likely to have: 16:9, 5:4, the playtest's wide-and-short browser window
+    /// (1531x784, about 1.95) and 21:9.</summary>
+    static readonly (int w, int h)[] Windows = { (1531, 784), (2560, 1080), (1920, 1080), (1280, 1024), (1920, 900) };
+
+    /// <summary>The real Game.uxml on the real PanelSettings (and so the real theme), rendered at <paramref name="w"/> x
+    /// <paramref name="h"/>, with the HUD and the Cabinet screen filled from the opening of the historical game.</summary>
+    static IEnumerator Filled(int w, int h, string? screen, System.Action<VisualElement> check)
+    {
+        var rt = new RenderTexture(w, h, 0);
+        var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+        ps.targetTexture = rt;
+        var go = new GameObject("LayoutTest");
+        go.SetActive(false);
+        var doc = go.AddComponent<UIDocument>();
+        doc.panelSettings = ps;
+        doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+        go.SetActive(true);
+        var root = doc.rootVisualElement;
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var hud = new HudPresenter(root, bridge, Text);
+        var nav = new ScreenNav(root);
+        var cabinet = new CabinetPresenter(root, bridge, Text, null);
+        nav.Open(screen);
+        try
+        {
+            for (int i = 0; i < 20 && (float.IsNaN(root.Q("minimap").worldBound.width) || root.Q("year").worldBound.height <= 0); i++) yield return null;
+            yield return null;   // one more pass, so text measured after the first layout settles
+            check(root);
+        }
+        finally
+        {
+            cabinet.Dispose(); nav.Dispose(); hud.Dispose();
+            Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+        }
+    }
+
+    static bool Inside(Rect inner, Rect outer) =>
+        inner.xMin >= outer.xMin - 0.5f && inner.xMax <= outer.xMax + 0.5f && inner.yMin >= outer.yMin - 0.5f && inner.yMax <= outer.yMax + 0.5f;
+
+    /// <summary>Playtest 1, item 1: every top-bar label (the year, the date, the security level) lies inside the bar,
+    /// clear of the window's top edge, and nothing else starts above the bar's bottom edge.</summary>
+    [UnityTest]
+    public IEnumerator TheTopBarHoldsItsContentInWideAndShortWindows()
+    {
+        foreach (var (w, h) in Windows)
+            yield return Filled(w, h, null, root =>
+            {
+                var bar = root.Q("top-bar").worldBound;
+                Assert.GreaterOrEqual(bar.yMin, -0.5f, $"{w}x{h}: the top bar starts above the window");
+                var labels = root.Q("top-bar").Query<Label>().ToList().Where(l => !string.IsNullOrEmpty(l.text)).ToList();
+                Assert.Greater(labels.Count, 10, "the HUD filled the bar");
+                foreach (var l in labels)
+                {
+                    Assert.IsTrue(Inside(l.worldBound, bar), $"{w}x{h}: '{l.text}' {l.worldBound} is outside the top bar {bar}");
+                    Assert.GreaterOrEqual(l.worldBound.yMin, bar.yMin + 2f, $"{w}x{h}: '{l.text}' sits flush against the top edge");
+                }
+                foreach (var name in new[] { "event-card", "screen-cabinet", "screen-budget", "screen-defence", "screen-why", "toast" })
+                    if (root.Q(name).resolvedStyle.display != DisplayStyle.None)
+                        Assert.GreaterOrEqual(root.Q(name).worldBound.yMin, bar.yMax - 0.5f, $"{w}x{h}: {name} starts under the top bar");
+            });
+    }
+
+    /// <summary>Playtest 1, item 2: the Cabinet lineup is a list inside the screen panel, below its header, filling the
+    /// panel; rows that do not fit scroll instead of spilling over the top bar.</summary>
+    [UnityTest]
+    public IEnumerator TheCabinetListStaysInsideItsPanel()
+    {
+        foreach (var (w, h) in Windows)
+            yield return Filled(w, h, "cabinet", root =>
+            {
+                var screen = root.Q("screen-cabinet").worldBound;
+                var header = root.Q("screen-cabinet").Q(className: "screen-header").worldBound;
+                var list = root.Q<ScrollView>("cabinet-seats");
+                var view = list.contentViewport.worldBound;
+                Assert.IsTrue(Inside(header, screen), $"{w}x{h}: the header {header} is outside the screen {screen}");
+                Assert.IsTrue(Inside(view, screen), $"{w}x{h}: the list {view} is outside the screen {screen}");
+                Assert.GreaterOrEqual(view.yMin, header.yMax - 0.5f, $"{w}x{h}: the list starts above the screen header");
+                Assert.GreaterOrEqual(view.yMax, root.Q("cabinet-status").worldBound.yMin - 16f, $"{w}x{h}: the list leaves the panel empty below it");
+                var rows = list.Query<Button>(className: "seat").ToList();
+                Assert.Greater(rows.Count, 5, "the lineup was rendered");
+                foreach (var r in rows)
+                {
+                    Assert.GreaterOrEqual(r.worldBound.yMin, view.yMin - 0.5f, $"{w}x{h}: {r.name} sits above the list");
+                    Assert.GreaterOrEqual(r.worldBound.xMin, screen.xMin - 0.5f, $"{w}x{h}: {r.name} leaves the panel on the left");
+                    Assert.LessOrEqual(r.worldBound.xMax, screen.xMax + 0.5f, $"{w}x{h}: {r.name} leaves the panel on the right");
+                    if (r.worldBound.yMax > view.yMax + 0.5f)
+                        Assert.Greater(list.verticalScroller.highValue, 0f, $"{w}x{h}: {r.name} runs past the panel and the list does not scroll");
+                }
+            });
+    }
+
+    /// <summary>Playtest 1, item 3: the camera learns how much of the window the top bar covers, at every window shape,
+    /// so the map is framed below it; disposing gives the whole screen back.</summary>
+    [UnityTest]
+    public IEnumerator TheCameraIsToldWhatTheTopBarCovers()
+    {
+        var camGo = new GameObject("InsetCamera");
+        camGo.AddComponent<Camera>();
+        var rig = camGo.AddComponent<Statecraft.Game.Map.CameraRig>();
+        try
+        {
+            foreach (var (w, h) in Windows)
+            {
+                yield return Filled(w, h, null, root =>
+                {
+                    var inset = new TopBarInset(root, rig);
+                    var bar = root.Q("top-bar").worldBound.height;
+                    var screen = root.panel.visualTree.worldBound.height;
+                    Assert.Greater(bar, 90f, $"{w}x{h}: the bar is laid out");
+                    Assert.AreEqual(bar / screen, rig.TopInset, 1e-3f, $"{w}x{h}: the inset is the bar's share of the window");
+                    inset.Dispose();
+                    Assert.AreEqual(0f, rig.TopInset, $"{w}x{h}: disposing gives the screen back");
+                });
+            }
+        }
+        finally { Object.DestroyImmediate(camGo); }
     }
 }
