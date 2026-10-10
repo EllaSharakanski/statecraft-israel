@@ -68,7 +68,7 @@ namespace Statecraft.Game.UI
         }
 
         // "smoke" as a whole query parameter: bare ("?smoke", "&smoke=") or with a number; it ends at '&', '#' or the end, so
-        // "?smoke-x", "?smoker" and "?smoke=five" are not the flag (tighter than UrlFlags' word boundary, amendment A3).
+        // "?smoke-x", "?smoker" and "?smoke=five" are not the flag: UrlFlags' whole-parameter rule, plus digits only (amendment A3).
         static readonly Regex SmokeQuery = new Regex(@"[?&]smoke(?:=(\d*))?(?=&|#|$)", RegexOptions.CultureInvariant);
 
         /// <summary>Smoke-test turn count: from the page URL on WebGL, else from the command line. "?smoke=N" / "-smoke N"
@@ -217,7 +217,7 @@ namespace Statecraft.Game.UI
         /// <summary>"camlog" in the WebGL page URL (a whole query parameter) or -camlog on desktop: log the camera distance and
         /// yaw whenever they change (checks the wheel-zoom step in a real browser).</summary>
         internal static bool CameraLogRequested(string? url, string[] args, bool webgl) =>
-            webgl ? Regex.IsMatch(url ?? "", @"[?&]camlog(?=&|#|=|$)") : Array.IndexOf(args, "-camlog") >= 0;
+            webgl ? UrlFlags.Has(url, "camlog") : Array.IndexOf(args, "-camlog") >= 0;
 
         static bool CameraLogRequested() =>
             CameraLogRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);

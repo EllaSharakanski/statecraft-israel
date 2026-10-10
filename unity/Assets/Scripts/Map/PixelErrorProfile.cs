@@ -11,7 +11,7 @@ namespace Statecraft.Game.Map
     /// <summary>Measures frame time with the terrain's heightmapPixelError at 1 (M2's value, which keeps the hex overlay
     /// draped visibly) and at Unity's default 5, from the diorama camera over central Israel, then restores the M2 value.
     /// Logs "PROFILE pixelError=&lt;e&gt; frames=&lt;n&gt; avg_ms=&lt;a&gt; p95_ms=&lt;p&gt;" per setting and "PROFILE done".
-    /// Asked for by "profile" in the WebGL page URL (a whole query parameter, UrlFlags) or -profile on desktop.</summary>
+    /// Asked for by "profile" in the WebGL page URL (a whole query parameter, UrlFlags.Has) or -profile on desktop.</summary>
     public static class PixelErrorProfile
     {
         public const int WarmupFrames = 60, MeasuredFrames = 300;

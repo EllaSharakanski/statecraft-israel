@@ -473,6 +473,7 @@ public class GameSceneTests
         Assert.IsTrue(GameRoot.CameraLogRequested("http://localhost/?golden&camlog", new string[0], true));
         Assert.IsFalse(GameRoot.CameraLogRequested("http://localhost/?camlogs", new string[0], true));
         Assert.IsFalse(GameRoot.CameraLogRequested("http://localhost/camlog/", new string[0], true));
+        Assert.IsFalse(GameRoot.CameraLogRequested("http://localhost/?camlog-x", new string[0], true));
         Assert.IsTrue(GameRoot.CameraLogRequested(null, new[] { "x", "-camlog" }, false));
         Assert.IsFalse(GameRoot.CameraLogRequested(null, new[] { "x" }, false));
         Assert.AreEqual("CAMERA distance=120000 yaw=0.0", GameRoot.CameraLine(120000f, 0f));

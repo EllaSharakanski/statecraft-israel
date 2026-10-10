@@ -15,6 +15,7 @@ public class PixelErrorProfileTests
     [TestCase("http://localhost:8000/index.html?profile", true)]
     [TestCase("http://localhost:8000/index.html?golden&profile", true)]
     [TestCase("https://html.itch.zone/html/123/profile-pics/index.html", false)]
+    [TestCase("http://localhost:8000/index.html?profile-x", false)]           // Task 24 review M2
     public void TheProfileFlagIsAQueryParameter(string url, bool expected) =>
         Assert.AreEqual(expected, PixelErrorProfile.Requested(url, new string[0], true));
 

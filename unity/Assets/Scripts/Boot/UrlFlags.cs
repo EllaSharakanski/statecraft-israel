@@ -4,11 +4,12 @@ using System.Text.RegularExpressions;
 
 namespace Statecraft.Game.Boot
 {
-    /// <summary>Flags in the WebGL page URL's query: "?golden", "&amp;smoke=5", "?profile". A flag must start a query
-    /// parameter and end at a word boundary, so a path such as ".../golden-project/..." never turns one on.</summary>
+    /// <summary>Flags in the WebGL page URL's query: "?golden", "&amp;smoke=5", "?profile", "?camlog". A flag is a whole query
+    /// parameter: it starts at '?' or '&amp;' and ends at '=', '&amp;', '#' or the end of the URL (the rule GameRoot's smoke
+    /// flag uses), so neither a path such as ".../golden-project/..." nor "?profile-x" or "?golden.y" turns one on.</summary>
     public static class UrlFlags
     {
-        public static bool Has(string? url, string name) => Regex.IsMatch(url ?? "", @"[?&]" + Regex.Escape(name) + @"\b");
+        public static bool Has(string? url, string name) => Regex.IsMatch(url ?? "", @"[?&]" + Regex.Escape(name) + @"(?=[=&#]|$)");
 
         /// <summary>The flag's integer value ("smoke=5" -> 5), or 0 when absent.</summary>
         public static int Int(string? url, string name)
