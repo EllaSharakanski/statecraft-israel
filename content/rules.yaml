@@ -23,9 +23,9 @@ initial_population: { veterans: 649400 }
 budget_start:
   defense_minister: 0.45
   finance_minister: 0.05
-  # Absorption was handled by the Jewish Agency and the Prime Minister's office (notes, Addendum (a)); the Ministry of
-  # Immigration ends on 1951-10-08, so its budget line sits with the Prime Minister (the loader refuses a line for an
-  # abolished office).
+  # No Immigration portfolio in the Third Government; absorption is assumed to sit with the Jewish Agency and the Prime
+  # Minister (notes, Addendum (a), unverified). The Ministry of Immigration ends on 1951-10-08, so its budget line sits
+  # with the Prime Minister (the loader refuses a line for an abolished office).
   prime_minister: 0.15
   labour_minister: 0.10
   health_minister: 0.07

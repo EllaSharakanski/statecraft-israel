@@ -143,4 +143,17 @@ public class RealContentTests
         Assert.Equal("mapai", Offices.PartyOf(C, sheetrit, new DateTime(1951, 10, 8)));
         Assert.Equal("", Offices.PartyOf(C, C.People.Single(p => p.Id == "geri"), new DateTime(1951, 1, 1)));
     }
+
+    [Fact]
+    public void PresidencyAndMaimonsTermsEnd()
+    {
+        Assert.Equal("weizmann", Offices.Holder(C, "president", new DateTime(1950, 1, 1))!.Id);
+        Assert.Null(Offices.Holder(C, "president", new DateTime(1949, 2, 16)));
+        var maimon = C.People.Single(p => p.Id == "maimon");
+        foreach (var office in new[] { "religions_minister", "war_victims_minister" })
+        {
+            Assert.Equal(new DateTime(1951, 2, 14), maimon.Offices.Single(t => t.Office == office && t.From == new DateTime(1950, 11, 1)).To);
+            Assert.Null(Offices.Holder(C, office, new DateTime(1951, 3, 1)));
+        }
+    }
 }

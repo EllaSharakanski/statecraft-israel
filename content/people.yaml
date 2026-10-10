@@ -126,9 +126,9 @@ people:
       - { office: minority_affairs_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: police_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
       - { office: police_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
-      # en.wiki Third Government lists him under Mapai; he was elected in 1949 for the Sephardim list. Sources conflict
-      # (research notes 1e); the cabinet table (en.wiki) is used.
-      - { office: police_minister, from: 1951-10-08, party: mapai, sources: *third }
+      # Both Wikipedias and JVL list him under Mapai for 1951 (Addendum (d)); he was elected in 1949 for the Sephardim
+      # list. The cabinet tables are used.
+      - { office: police_minister, from: 1951-10-08, party: mapai, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }, { url: "https://www.jewishvirtuallibrary.org/third-government-of-israel", checked: 2026-10-10 }] }
     status: fact-checked
   - id: maimon
     name: Yehuda Leib Maimon
@@ -142,9 +142,11 @@ people:
       - { office: war_victims_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: religions_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
       - { office: war_victims_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
-      # Resignation date conflicts (research notes 1d): he.wiki has him resign after the February 1951 Knesset vote,
-      # which brought the government's resignation on 14 February 1951; en.wiki "1951 in Israel" gives 4 January 1951
-      # without a footnote. The footnoted he.wiki account is used, with the government's resignation as the date.
+      # Resignation date conflicts (research notes 1d). he.wiki's text says he resigned before the government's
+      # resignation of 14 February 1951 but gives no date; 14 February is used as the latest possible date. The cabinet
+      # tables (en.wiki and he.wiki, Second Government) show the full term to 8 October 1951. en.wiki "1951 in Israel"
+      # gives 4 January 1951, with no footnote. Religions and War Victims are vacant from 14 February 1951; no
+      # successor is named.
       - { office: religions_minister, from: 1950-11-01, to: 1951-02-14, party: united_religious_front, sources: *second }
       - { office: war_victims_minister, from: 1950-11-01, to: 1951-02-14, party: united_religious_front, sources: *second }
     status: fact-checked
@@ -231,7 +233,7 @@ people:
       - { office: agriculture_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
       # Agriculture took most of the rationing and supply functions of the abolished Ministry of Rationing and Supply;
       # Trade and Industry (Geri) took some supply departments (commodities and stock). Research notes, Addendum 2 (A1):
-      # he.wiki (read directly); Weitz 2014 and Schiffman and Goldstein (search summaries).
+      # he.wiki was read directly; the Weitz PDF and SSRN 6351358 were not read directly, only their search summaries.
       - { office: rationing_minister, from: 1950-11-01, to: 1951-10-08, sources: [{ url: "https://he.wikipedia.org/wiki/משרד_האספקה_והקיצוב", checked: 2026-10-10 }, { url: "https://in.bgu.ac.il/bgi/iyunim/24/Yechiam-Weitz.pdf", checked: 2026-10-10 }, { url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6351358", checked: 2026-10-10 }] }
       # From 8 October 1951: no source names the responsible minister (Addendum 2: not found), so the office is vacant.
     status: fact-checked
@@ -258,7 +260,7 @@ people:
   - id: dinur
     name: Ben-Zion Dinur
     living: false
-    # Not a Knesset member in the Third Government (a former Mapai MK), so no party is set.
+    # Not a Knesset member in the Third Government (a former Mapai MK; he.wiki lists him under Mapai), so no party is set.
     party: ""
     competence: 7
     loyalty: 7
@@ -272,9 +274,9 @@ people:
     competence: 7
     loyalty: 7
     offices:
-      # Portfolios conflict: en.wiki (Third Government, Yosef Burg) gives Health; he.wiki's table shows Post, which went
-      # to Nurock only on 3 November 1952 (research notes 1e). Health is used.
-      - { office: health_minister, from: 1951-10-08, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/Yosef_Burg", checked: 2026-10-10 }] }
+      # Four sources give Health (en.wiki Third Government and Yosef Burg, he.wiki Yosef Burg, JVL). Posts came only in
+      # the Fourth Government (24 December 1952), per Addendum (c).
+      - { office: health_minister, from: 1951-10-08, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/Yosef_Burg", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/יוסף_בורג", checked: 2026-10-10 }] }
     status: fact-checked
   - id: pinkas
     name: David-Zvi Pinkas
@@ -306,7 +308,7 @@ people:
       # 11 against, 3 blank; the only candidate.
       - { office: president, from: 1949-02-17, to: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/Chaim_Weizmann", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1949_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://weizmann.ac.il/WeizmannCompass/node/914", checked: 2026-10-10 }] }
       # The second term starts on the election date (notes section 3); he was sworn in at Rehovot on 25 November 1951
-      # (single source, IDI via search), which is not used as a date.
+      # (stated on the cited en.wiki 1951 presidential election page), which is not used as a date.
       - { office: president, from: 1951-11-19, sources: [{ url: "https://en.wikipedia.org/wiki/1951_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1951_in_Israel", checked: 2026-10-10 }] }
     status: fact-checked
   - id: dori
