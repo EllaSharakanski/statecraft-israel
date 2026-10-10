@@ -32,12 +32,16 @@ namespace Statecraft.Sim
         public const int MaxTurns = 2000;
         const string Magic = "statecraft-save";
 
-        readonly List<IReadOnlyList<Command>> turns = new List<IReadOnlyList<Command>>();
+        /// <summary>Each turn as its canonical command lines. The save keeps text, not the caller's objects, so nothing
+        /// outside can change a recorded turn; <see cref="Turns"/> parses fresh copies on demand.</summary>
+        readonly List<List<string>> turns = new List<List<string>>();
 
         public string ContentHash { get; }
         public ulong Seed { get; }
         public Mode Mode { get; }
-        public IReadOnlyList<IReadOnlyList<Command>> Turns => turns;
+        /// <summary>The recorded turns as new command objects each time it is read (changing them changes nothing in the save).</summary>
+        public IReadOnlyList<IReadOnlyList<Command>> Turns =>
+            turns.Select(t => (IReadOnlyList<Command>)t.Select(l => ParseCommand(0, l)).ToList().AsReadOnly()).ToList().AsReadOnly();
         /// <summary>GameState.Hash() after the last recorded turn (the new game's hash before any turn).</summary>
         public string FinalHash { get; private set; }
 
@@ -54,7 +58,7 @@ namespace Statecraft.Sim
             if (commands == null) throw new ArgumentNullException(nameof(commands));
             if (after == null) throw new ArgumentNullException(nameof(after));
             // A recorded turn is immutable: the caller keeps its own objects (an AllocateBudget's dictionary is theirs to reuse).
-            turns.Add(commands.Select(Snapshot).ToList());
+            turns.Add(commands.Select(Format).ToList());
             FinalHash = after.Hash();
         }
 
@@ -68,14 +72,11 @@ namespace Statecraft.Sim
             foreach (var t in turns)
             {
                 sb.Append("turn\n");
-                foreach (var cmd in t) sb.Append(Format(cmd)).Append('\n');
+                foreach (var line in t) sb.Append(line).Append('\n');
             }
             sb.Append("end ").Append(FinalHash).Append('\n');
             return sb.ToString();
         }
-
-        static Command Snapshot(Command cmd) =>
-            cmd is AllocateBudget b && b.Shares != null ? new AllocateBudget(new Dictionary<string, double>(b.Shares)) : cmd;
 
         static string Esc(string s) => SaveText.Escape(s);
         static string Num(double v) => BitConverter.DoubleToInt64Bits(v).ToString("X16", CultureInfo.InvariantCulture);
@@ -125,12 +126,12 @@ namespace Statecraft.Sim
             var end = Head(n - 1, "end", 2)[1];
             if (!IsHash(end)) throw new SaveException(n, "bad end hash");
             var save = new SaveGame(content, seed, mode, end);
-            List<Command>? current = null;
+            List<string>? current = null;
             for (int i = 4; i < n - 1; i++)
             {
-                if (lines[i] == "turn") { current = new List<Command>(); save.turns.Add(current); continue; }
+                if (lines[i] == "turn") { current = new List<string>(); save.turns.Add(current); continue; }
                 if (current == null) throw new SaveException(i + 1, "command before the first 'turn'");
-                current.Add(ParseCommand(i + 1, lines[i]));
+                current.Add(Format(ParseCommand(i + 1, lines[i])));   // canonical form, validated now
             }
             return save;
         }

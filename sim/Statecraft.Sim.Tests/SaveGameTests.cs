@@ -375,4 +375,44 @@ public class SaveGameTests
         Assert.Empty(warnings);
         Assert.Throws<SaveException>(() => SaveGame.Parse(text.Replace("\n", "\r")));
     }
+
+    sealed class Foreign : Command { public override string Kind => "set_policy"; }
+
+    [Fact]
+    public void AForeignCommandNeverMakesTheSaveUnwritable()
+    {
+        var g = GameSession.New(Fixture1(), 1, Mode.Historical);
+        Assert.Throws<ArgumentException>(() => g.Step(new Command[] { new Foreign() }));
+        g.Step(new Command[0]);
+        Assert.StartsWith("statecraft-save 1", g.Save.Write());
+        Assert.Single(g.Save.Turns);
+    }
+
+    [Fact]
+    public void MutatingWhatTurnsReturnsDoesNotChangeTheSave()
+    {
+        var c = Fixture1();
+        var g = GameSession.New(c, 1, Mode.Historical);
+        g.Step(new Command[] { new AllocateBudget(new Dictionary<string, double> { ["finance_minister"] = 0.6, ["defense_minister"] = 0.4 }) });
+        var before = g.Save.Write();
+        var turn = g.Save.Turns[0];
+        ((AllocateBudget)turn[0]).Shares.Clear();                  // probe 1: the shares of a recorded order
+        // probe 2: the lists themselves are read-only
+        Assert.Throws<NotSupportedException>(() => ((IList<Command>)turn).Clear());
+        Assert.Throws<NotSupportedException>(() => ((IList<IReadOnlyList<Command>>)g.Save.Turns).Clear());
+        Assert.Equal(before, g.Save.Write());
+        Assert.Single(g.Save.Turns);
+        Assert.Equal(g.State.Hash(), GameSession.Load(c, g.Save.Write(), out _).State.Hash());
+    }
+
+    [Fact]
+    public void TheFirstUnknownOfficeInOrdinalOrderIsNamedInPlayAndInReplay()
+    {
+        var c = Fixture1();
+        var g = GameSession.New(c, 1, Mode.Historical);
+        g.Step(new Command[] { new AllocateBudget(new Dictionary<string, double> { ["zzz"] = 0.5, ["aaa"] = 0.5 }) });
+        var live = g.Last!.Rejected.Single().Reason;
+        Assert.Equal("Unknown office 'aaa'", live);
+        Assert.Equal(live, GameSession.Load(c, g.Save.Write(), out _).Last!.Rejected.Single().Reason);
+    }
 }

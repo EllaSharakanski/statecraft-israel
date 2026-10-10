@@ -86,6 +86,8 @@ namespace Statecraft.Sim
                     case ChooseEventOption e: Text(e.EventId, "EventId"); Text(e.OptionId, "OptionId"); break;
                     case Appoint a: Text(a.Office, "Office"); Text(a.Person, "Person"); break;
                     case MapAction m: Text(m.Action, "Action"); break;
+                    case SetMobilization _: case SecurityOrder _: break;
+                    default: throw new ArgumentException("unknown command type " + cmd.GetType().Name, "commands");
                 }
         }
 

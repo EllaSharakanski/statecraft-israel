@@ -138,13 +138,14 @@ options:
 
     sealed class Bogus : Command { public override string Kind => "bogus"; }
 
+    /// <summary>A Command type this assembly does not know cannot be saved, so Step refuses it up front (a programmer error,
+    /// like a null command) instead of rejecting it and leaving a game whose save cannot be written.</summary>
     [Fact]
-    public void UnknownCommandKindIsRejectedNotThrown()
+    public void ACommandTypeTheSimDoesNotKnowIsRefusedBeforeAnythingRuns()
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
-        var r = Simulation.Step(C, s0, new Command[] { new Bogus(), new SetMobilization(1.0) });
-        Assert.Equal(new[] { "Unknown command 'bogus'" }, r.Rejected.Select(x => x.Reason));
-        Assert.Equal(1.0, r.State.Mobilization);   // the bogus command cost no attention
+        var ex = Assert.Throws<ArgumentException>(() => Simulation.Step(C, s0, new Command[] { new SetMobilization(1.0), new Bogus() }));
+        Assert.Contains("unknown command type", ex.Message);
     }
 
     [Fact]
