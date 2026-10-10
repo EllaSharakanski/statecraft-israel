@@ -71,10 +71,17 @@ namespace Statecraft.Sim
         /// <summary>An indicator level (0..1) or a share on the scale the player sees: 0..100.</summary>
         public static double Scale(double level) => Finite(level, nameof(level)) * 100;
 
+        /// <summary>The value the player sees for a level, in points: 0.626 shows as 63.</summary>
+        public static double ShownPoints(double level) => Math.Round(Scale(level), 0, MidpointRounding.AwayFromZero);
+
+        /// <summary>The change between two shown levels: the difference of the two shown (rounded) values, so it always
+        /// agrees with them (0.626 -> 0.634 shows "63%" -> "63%" and no change; 0.624 -> 0.626 shows "+1%").</summary>
+        public static string PercentChangeShown(double before, double now) => PercentChange((ShownPoints(now) - ShownPoints(before)) / 100, 0);
+
         /// <summary>"55%" for a level of 0.55; zero is "0%".</summary>
         public static string Percent(double level)
         {
-            var r = Math.Round(Scale(level), 0, MidpointRounding.AwayFromZero);
+            var r = ShownPoints(level);                               // the same rounding as PercentChangeShown
             return Signed(r, "", Fixed(Math.Abs(r), 0) + "%", signed: false);
         }
 

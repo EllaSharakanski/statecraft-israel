@@ -39,9 +39,11 @@ namespace Statecraft.Sim
         /// <summary>Null when <paramref name="action"/> may be placed on (q, r) now, else the reason shown to the player.</summary>
         public static string? Check(Content c, GameState s, string action, int q, int r)
         {
-            if (!Actions.Contains(action)) return $"Unknown map action '{action}'";
+            // No id in either reason: a command from an old save or a stale UI may name an action this content lacks; the
+            // replay refuses it here, before anything is formatted, so a placement always has its rule (fix round 3, m-6).
+            if (!Actions.Contains(action)) return "There is no such map action";
             var rule = c.Rules.MapActions.TryGetValue(action, out var x) ? x : null;
-            if (rule == null) return $"Map action '{action}' is not available in this content";
+            if (rule == null) return "That map action is not available in this game";
             if (s.Date < c.Rules.MapActionsFrom)
                 return $"Transit camps and housing projects can be placed from {PlayerText.Date(c.Rules.MapActionsFrom)}";
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))

@@ -58,7 +58,7 @@ public class MapActionTests
     }
 
     [Theory]
-    [InlineData("airport", 2, 0, "Unknown map action 'airport'")]
+    [InlineData("airport", 2, 0, "There is no such map action")]
     [InlineData("transit_camp", 0, 0, "There is no land hex at (0, 0)")]
     [InlineData("transit_camp", 7, 7, "There is no land hex at (7, 7)")]
     [InlineData("transit_camp", 4, 0, "(4, 0) is more than 1 hex from a settlement")]
@@ -116,7 +116,7 @@ public class MapActionTests
         Assert.Equal("There is no land hex at (7, 7)", MapActions.Check(C, s, "housing", 7, 7));
         Assert.Equal("(4, 0) is more than 1 hex from a settlement", MapActions.Check(C, s, "housing", 4, 0));
         Assert.Equal("(2, 0) already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
-        Assert.Equal("Unknown map action 'airport'", MapActions.Check(C, s, "airport", 0, 1));
+        Assert.Equal("There is no such map action", MapActions.Check(C, s, "airport", 0, 1));
         Assert.Equal("No more than 2 map actions in one turn", MapActions.Check(C, s, "housing", 0, 1));
     }
 
@@ -128,7 +128,7 @@ public class MapActionTests
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = rules }));
         var s = Simulation.NewGame(c, 42, Mode.Historical);
         s.Date = new DateTime(1948, 6, 1);
-        Assert.Equal("Map action 'housing' is not available in this content", MapActions.Check(c, s, "housing", 2, 0));
+        Assert.Equal("That map action is not available in this game", MapActions.Check(c, s, "housing", 2, 0));
     }
 
     [Fact]
@@ -209,5 +209,28 @@ public class MapActionTests
         Assert.Null(MapActions.Check(c, s, "transit_camp", tlv.Q, tlv.R));
         var s1949 = GoldenRun.Play(c, new DateTime(1949, 6, 1));
         Assert.Equal("Transit camps and housing projects can be placed from 1 January 1950", MapActions.Check(c, s1949, "housing", tlv.Q, tlv.R));
+    }
+
+    /// <summary>Fix round 3 (m-6): a save that built something the content no longer defines still loads: the replay
+    /// refuses that order with a reason (no id, no exception), so no placement of it exists and no formatter ever meets
+    /// the stale id.</summary>
+    [Fact]
+    public void AStaleMapActionInASaveIsRefusedOnReplayNotACrash()
+    {
+        var g = GameSession.New(C, 7, Mode.Historical);
+        while (g.State.Date < C.Rules.MapActionsFrom) g.Step(new Command[0]);
+        var hex = C.Hexes.First(h => MapActions.Check(C, g.State, MapActions.Housing, h.Q, h.R) == null);
+        g.Step(new Command[] { new MapAction(MapActions.Housing, hex.Q, hex.R) });
+        Assert.NotNull(MapActions.At(g.State, hex.Q, hex.R));
+        var save = g.Save.Write();
+        var rules = Fixture.Files["rules.yaml"].Replace("  housing: { cost: 8, housing: 0.08, morale: 0.01, name: a housing project }\n", "");
+        Assert.NotEqual(Fixture.Files["rules.yaml"], rules);
+        var stale = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["rules.yaml"] = rules }));
+        var loaded = GameSession.Load(stale, save, out var warnings);
+        Assert.Contains(warnings, w => w.Contains("different game content"));
+        Assert.Null(MapActions.At(loaded.State, hex.Q, hex.R));
+        var refused = Assert.Single(loaded.Last!.Rejected);
+        Assert.Equal("That map action is not available in this game", refused.Reason);
+        Assert.Equal("That map action is not available in this game", MapActions.Check(stale, loaded.State, MapActions.Housing, hex.Q, hex.R));
     }
 }

@@ -90,32 +90,37 @@ public class PlayerTextTests
             .Concat(c.Situations.Select(x => x.Id)).Concat(c.Money.Select(x => x.Id)).Concat(c.Regions.Select(x => x.Id))
             .Concat(c.Offices.Select(x => x.Id)).Concat(c.Events.Select(x => x.Id)).Concat(c.Rules.MapActions.Keys).Distinct();
 
-    /// <summary>Where an id would appear in a Cause: a snake_case id anywhere as a whole word; a one-word id ("morale",
-    /// "treasury", "asia") at the start, alone in parentheses or a list, before a signed number, "set to", "=",
-    /// "began"/"ended", or after "from" (case-sensitive: the display names are capitalised or phrased).</summary>
-    static Regex IdPattern(string id)
+    /// <summary>Fix round 3 (m-3): sim prose that legitimately contains a lowercase word that is also a content id. Each
+    /// entry is the exact phrase, never the bare word (<see cref="EverySimPhraseIsRealSimText"/>).</summary>
+    internal static readonly string[] SimPhrases = { "the minimum for security level" };   // SecuritySystem's ladder, not the indicator
+
+    /// <summary>The exact display strings that may contain such a word: content names (indicators, policies, effects,
+    /// situations, map actions, offices, parties, people, governments, legislatures), event titles and option texts (a "{office}" placeholder matches the filled-in name), each
+    /// also capitalised to start a sentence, plus <see cref="SimPhrases"/>.</summary>
+    static List<Regex> DisplayStrings(Content c)
     {
-        var e = Regex.Escape(id);
-        return EnglishWords.ContainsKey(id)
-            ? new Regex($@"(^|\(|, |/|from ){e}(\)|,|/|:| [+-]?\d| set to| =| began| ended| at \d|$)")
-            : new Regex($@"\b{e}\b");
+        var texts = c.Indicators.Select(x => x.Name).Concat(c.Policies.Select(x => x.Name)).Concat(c.Effects.Select(x => x.Name))
+            .Concat(c.Situations.Select(x => x.Name)).Concat(c.Rules.MapActions.Values.Select(x => x.Name))
+            .Concat(c.Events.Select(e => e.Title)).Concat(c.Events.SelectMany(e => e.Options.Select(o => o.Text)))
+            .Concat(c.Offices.Select(o => o.Title)).Concat(c.Parties.Select(p => p.Name)).Concat(c.People.Select(p => p.Name))
+            .Concat(c.Governments.Select(g => g.Name)).Concat(c.Legislatures.Select(l => l.Body)).Concat(SimPhrases);
+        return texts.SelectMany(t => new[] { t, PlayerText.Capitalised(t) }).Distinct()
+            .OrderByDescending(t => t.Length)                         // longest first, so a phrase is removed whole
+            .Select(t => new Regex(string.Join(".+?", Regex.Split(t, @"\{[a-z_]+\}").Select(Regex.Escape)))).ToList();
     }
 
-    /// <summary>Fix round 2 (N3): ids are matched anywhere as whole words, except these, which are also ordinary English in
-    /// player text (each with where it legitimately appears; <see cref="EveryAllowedWordIsRealEnglishInPlayerText"/>).
-    /// They are still caught wherever an id would sit.</summary>
-    static readonly Dictionary<string, string> EnglishWords = new Dictionary<string, string>
-    {
-        ["morale"] = "Homes lift morale",                         // effect names (model.yaml)
-        ["housing"] = "a housing project",                        // the map action's phrase (rules.yaml) and "New housing"
-        ["rationing"] = "Impose rationing",                       // event option text (events/austerity_1949.yaml)
-        ["security"] = "the minimum for security level",          // the security ladder (SecuritySystem), not the indicator
-    };
-
+    /// <summary>Every content id found as a whole word anywhere in a message once the exact display strings are removed.</summary>
     static List<string> Leaks(Content c, IEnumerable<string> messages)
     {
-        var patterns = ContentIds(c).Select(id => (id, re: IdPattern(id))).ToList();
-        return messages.Distinct().SelectMany(m => patterns.Where(p => p.re.IsMatch(m)).Select(p => $"'{p.id}' in: {m}")).ToList();
+        var display = DisplayStrings(c);
+        var patterns = ContentIds(c).Select(id => (id, re: new Regex($@"\b{Regex.Escape(id)}\b"))).ToList();
+        var leaks = new List<string>();
+        foreach (var m in messages.Distinct())
+        {
+            var rest = display.Aggregate(m, (acc, d) => d.Replace(acc, " "));
+            leaks.AddRange(patterns.Where(p => p.re.IsMatch(rest)).Select(p => $"'{p.id}' in: {m}"));
+        }
+        return leaks;
     }
 
     /// <summary>The player's own commands from mid-1950 on (historical play up to then): policy votes (passed and lost),
@@ -212,46 +217,37 @@ public class PlayerTextTests
     [InlineData("Morale +4.1% (homes_lift_morale)", "homes_lift_morale")]
     [InlineData("Food supply +5.0% (austerity_1949)", "austerity_1949")]
     [InlineData("transit_camp at (3, 4): cost IL 1.5m", "transit_camp")]
+    [InlineData("rationing set to 0.50 (Austerity)", "rationing")]
     public void TheGuardCatchesOneWordIds(string message, string id) =>
         Assert.Contains(Leaks(Real, new[] { message }), l => l.StartsWith($"'{id}'", StringComparison.Ordinal));
 
+    /// <summary>Fix round 3 (m-3): only the exact display strings are allowed; the bare word is caught anywhere.</summary>
     [Theory]
+    [InlineData("the morale fell", "morale")]
     [InlineData("morale: low", "morale")]
-    [InlineData("the morale fell", "morale")]                           // plain English: not an id position, so allowed
-    public void AllowedWordsAreStillCaughtWhereAnIdWouldSit(string message, string id)
-    {
-        var caught = Leaks(Real, new[] { message }).Any(l => l.StartsWith($"'{id}'", StringComparison.Ordinal));
-        Assert.Equal(message.StartsWith(id, StringComparison.Ordinal), caught);
-    }
-
-    [Theory]
+    [InlineData("housing fell this turn", "housing")]
+    [InlineData("a cut in rationing", "rationing")]
+    [InlineData("security fell", "security")]
     [InlineData("of asia", "asia")]
     [InlineData("the treasury fell", "treasury")]
     [InlineData("Ends with debt", "debt")]
-    public void OtherOneWordIdsAreCaughtAnywhere(string message, string id) =>
+    public void AnIdIsCaughtAnywhereOutsideADisplayString(string message, string id) =>
         Assert.Contains(Leaks(Real, new[] { message }), l => l.StartsWith($"'{id}'", StringComparison.Ordinal));
 
-    /// <summary>Each allowed English word really is display text from content or sim prose, so allowing it hides nothing.</summary>
+    /// <summary>Each sim phrase is what the sim really writes.</summary>
     [Fact]
-    public void EveryAllowedWordIsRealEnglishInPlayerText()
+    public void EverySimPhraseIsRealSimText()
     {
-        var display = Real.Effects.Select(e => e.Name).Concat(Real.Rules.MapActions.Values.Select(a => a.Name))
-            .Concat(Real.Events.SelectMany(e => e.Options.Select(o => o.Text))).ToList();
-        foreach (var kv in EnglishWords)
-        {
-            Assert.Contains(kv.Key, kv.Value.Split(' '));
-            if (kv.Key == "security") continue;                           // sim prose: SecuritySystem's ladder message
-            Assert.Contains(display, d => Regex.IsMatch(d, $@"\b{kv.Key}\b"));
-        }
         var s = Simulation.NewGame(Real, 1, Mode.Historical);
         var why = new List<Cause>();
         SecuritySystem.SetMobilization(Real, s, 0, why);                  // below the floor: the ladder message
-        Assert.Contains(why, w => w.Message.Contains(EnglishWords["security"]));
+        foreach (var phrase in SimPhrases) Assert.Contains(why, w => w.Message.Contains(phrase));
     }
 
     [Theory]
-    [InlineData("Impose rationing")]
-    [InlineData("A housing project at (3, 4): cost IL 1.5m")]
+    [InlineData("chosen: Impose rationing")]
+    [InlineData("A housing project at (3, 4): cost IL 1.5m, Housing +3.0%, Morale +1.0%")]
+    [InlineData("Morale -10.9% (Rationing wears on morale, Homes lift morale, Safety lifts morale)")]
     [InlineData("reserve call-up raised to 80%, the minimum for security level 5")]
     public void TheGuardLeavesPlainEnglishAlone(string message) => Assert.Empty(Leaks(Real, new[] { message }));
 
@@ -397,5 +393,18 @@ public class PlayerTextTests
         var ex = ValidationTests.Bad(file, from, to);
         Assert.Equal(file, ex.File);
         Assert.Equal(field, ex.Field);
+    }
+
+    // ---- Fix round 3 ----
+
+    /// <summary>m-1: a shown change is the difference of the two shown (rounded) values, so it always agrees with them.</summary>
+    [Theory]
+    [InlineData(0.626, 0.634, "0%")]       // "63%" -> "63%": no change shown (rounded difference would say "+1%")
+    [InlineData(0.624, 0.626, "+1%")]      // "62%" -> "63%": "+1%" (the raw difference rounds to "0%")
+    [InlineData(0.55, 0.50, "-5%")]
+    public void TheShownChangeIsTheDifferenceOfTheShownValues(double before, double now, string shown)
+    {
+        Assert.Equal(shown, PlayerText.PercentChangeShown(before, now));
+        Assert.Equal(PlayerText.ShownPoints(now) - PlayerText.ShownPoints(before), double.Parse(shown.TrimEnd('%'), System.Globalization.CultureInfo.InvariantCulture));
     }
 }
