@@ -81,8 +81,13 @@ indicators:
     base: 0.5
   - id: food_supply
     base: 0.4
+  - id: housing
+    base: 0.3
 policies:
   - id: rationing
+    default: 0.0
+    office: finance_minister
+  - id: maabarot
     default: 0.0
     office: finance_minister
 effects:
@@ -114,9 +119,15 @@ actors:
 start: 1948-05-15
 start_rung: 5
 attention_per_turn: 3
-attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 1 }
+attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 1, map_action: 1 }
 appoint_stability_cost_other_party: 0.1
 appoint_stability_cost_same_party: 0.03
+map_actions_from: 1948-06-01
+map_action_max_distance: 1
+map_actions_per_turn: 2
+map_actions:
+  transit_camp: { cost: 2, housing: 0.05, morale: -0.02 }
+  housing: { cost: 8, housing: 0.08, morale: 0.01 }
 rung_attention_step: 0.25
 ceasefire_weeks: 4
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]

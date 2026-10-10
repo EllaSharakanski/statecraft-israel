@@ -37,6 +37,8 @@ namespace Statecraft.Sim
         /// <summary>Player appointments by office id; valid while the government in AppointedUnder is in office (Cabinet).</summary>
         public Dictionary<string, Appointment> Appointments = new Dictionary<string, Appointment>();
         public string AppointedUnder = "";
+        /// <summary>Map actions built so far, in order (MapActions).</summary>
+        public List<Placement> Placements = new List<Placement>();
         public string? GameOver;
 
         public double TotalPopulation => Population.Values.Sum();
@@ -54,6 +56,7 @@ namespace Statecraft.Sim
             c.FiredEvents = new SortedSet<string>(FiredEvents, StringComparer.Ordinal);
             c.PendingEvents = new List<string>(PendingEvents);
             c.Appointments = new Dictionary<string, Appointment>(Appointments);
+            c.Placements = new List<Placement>(Placements);
             return c;
         }
 
@@ -83,6 +86,10 @@ namespace Statecraft.Sim
             foreach (var kv in Appointments.OrderBy(k => k.Key, StringComparer.Ordinal))
                 sb.Append(kv.Key).Append('=').Append(kv.Value.Person).Append('@').Append(kv.Value.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
             sb.Append("}under=").Append(AppointedUnder).Append(';');
+            sb.Append("map[");
+            foreach (var p in Placements)
+                sb.Append(p.Action).Append('@').Append(p.Q).Append(',').Append(p.R).Append('@').Append(p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
+            sb.Append(']');
             sb.Append("over=").Append(GameOver ?? "");
             using var sha = SHA256.Create();
             var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));

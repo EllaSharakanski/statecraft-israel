@@ -373,6 +373,18 @@ namespace Statecraft.Sim
                 Finite("rules.yaml", key, v);
             Unit("rules.yaml", "appoint_stability_cost_other_party", r.AppointStabilityCostOtherParty);
             Unit("rules.yaml", "appoint_stability_cost_same_party", r.AppointStabilityCostSameParty);
+            if (r.MapActionMaxDistance < 0) throw new ContentException("rules.yaml", "map_action_max_distance", "must be >= 0");
+            if (r.MapActionsPerTurn < 1) throw new ContentException("rules.yaml", "map_actions_per_turn", "must be >= 1");
+            foreach (var kv in r.MapActions)
+            {
+                if (!MapActions.Actions.Contains(kv.Key)) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}", "unknown map action (transit_camp or housing)");
+                if (!(kv.Value.Cost >= 0 && IsFinite(kv.Value.Cost))) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}.cost", "must be a finite number >= 0");
+                foreach (var (key, v) in new[] { ("housing", kv.Value.Housing), ("morale", kv.Value.Morale) })
+                    if (!(v >= -1 && v <= 1)) throw new ContentException("rules.yaml", $"map_actions.{kv.Key}.{key}", "must be a number from -1 to 1");
+            }
+            if (r.MapActions.Count > 0 && r.MapActionsFrom == default) throw new ContentException("rules.yaml", "map_actions_from", "required when map_actions are defined");
+            if (r.MapActions.Count > 0 && (!indicators.Contains("housing") || !indicators.Contains("morale")))
+                throw new ContentException("rules.yaml", "map_actions", "needs housing and morale indicators in model.yaml");
             if (r.FxCrisisFoodPerYear > 0) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "must be <= 0 (a crisis cuts food imports)");
             if (r.FxCrisisFoodPerYear < 0 && !indicators.Contains("food_supply")) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "needs a food_supply indicator in model.yaml");
             foreach (var kv in r.InitialPopulation) Count("rules.yaml", $"initial_population.{kv.Key}", kv.Value);

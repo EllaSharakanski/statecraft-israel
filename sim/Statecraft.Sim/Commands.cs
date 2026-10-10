@@ -49,6 +49,14 @@ namespace Statecraft.Sim
         public Appoint(string office, string person) { Office = office; Person = person; }
     }
 
+    /// <summary>Builds <see cref="Action"/> (MapActions.TransitCamp or MapActions.Housing) on hex (Q, R).</summary>
+    public sealed class MapAction : Command
+    {
+        public override string Kind => MapActions.Kind;
+        public string Action { get; } public int Q { get; } public int R { get; }
+        public MapAction(string action, int q, int r) { Action = action; Q = q; R = r; }
+    }
+
     public sealed class Rejection
     {
         public Command Command { get; } public string Reason { get; }

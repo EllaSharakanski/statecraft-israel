@@ -22,8 +22,8 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `549b49cb2337e5cc9c3e626fbddd4bade1ff68f0e8c6b8cea83dc2a85386b19b` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `860928f23dd1658ef31c1d981e31595ce297853a51d6d7373b8a19b2037fd9e5` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `f52fa804670c861b8945bb78ff483f9c9474bace247a8e6e97b63bd306c52b42` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-26, turn 53 | `d07cd3d27edb2afe761275ba7c1891fc179d9cb980059a752b99fd37845c0e52` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -53,3 +53,5 @@ rules or content, treat it as a determinism bug.
 | M3 Task 5 fix 1 | 1952 | `0359fa91` | forex_crisis_1951 now applies the documented -45 fx (FRUS d513) in both options, and capital_inflow_per_year is 200 |
 | M3 Task 6 | 1950 | `549b49cb` | hash format adds the player's appointments (empty in the run); no state change |
 | M3 Task 6 | 1952 | `860928f2` | same |
+| M3 Task 8 | 1950 | `f52fa804` | hash format adds map placements (empty in the run); no state change |
+| M3 Task 8 | 1952 | `d07cd3d2` | same |

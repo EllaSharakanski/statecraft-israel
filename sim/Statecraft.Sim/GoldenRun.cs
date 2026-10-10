@@ -11,12 +11,12 @@ namespace Statecraft.Sim
 
         /// <summary>Final hash of Play(content, Until1950). Changing it is a deliberate rules or content change:
         /// update it, DeterminismTests and docs/determinism.md in the same commit and say why in the message.</summary>
-        public const string Hash1950 = "549b49cb2337e5cc9c3e626fbddd4bade1ff68f0e8c6b8cea83dc2a85386b19b";
+        public const string Hash1950 = "f52fa804670c861b8945bb78ff483f9c9474bace247a8e6e97b63bd306c52b42";
 
         public static readonly DateTime Until1950 = new DateTime(1950, 1, 1);
 
         /// <summary>Final hash of Play(content, Until1952): the M3 content range (to 31 December 1951).</summary>
-        public const string Hash1952 = "860928f23dd1658ef31c1d981e31595ce297853a51d6d7373b8a19b2037fd9e5";
+        public const string Hash1952 = "d07cd3d27edb2afe761275ba7c1891fc179d9cb980059a752b99fd37845c0e52";
 
         public static readonly DateTime Until1952 = new DateTime(1952, 1, 1);
 

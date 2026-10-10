@@ -108,6 +108,8 @@ namespace Statecraft.Sim
                     return SecuritySystem.SetMobilization(c, s, m.Level, why);
                 case Appoint a:
                     return Cabinet.Appoint(c, s, a.Office, a.Person, why);
+                case MapAction m:
+                    return MapActions.Apply(c, s, m.Action, m.Q, m.R, why);
                 case SecurityOrder o:
                     // long arithmetic: an extreme delta clamps to the ladder's end instead of wrapping around.
                     SecuritySystem.SetRung(c, s, (int)Math.Max(1L, Math.Min(5L, (long)s.Rung + o.Delta)), why);

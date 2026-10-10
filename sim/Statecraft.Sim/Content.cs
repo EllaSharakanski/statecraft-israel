@@ -133,9 +133,27 @@ namespace Statecraft.Sim
         public double AppointStabilityCostOtherParty { get; set; }
         /// <summary>Coalition stability lost when an appointment replaces a minister with one of the same party.</summary>
         public double AppointStabilityCostSameParty { get; set; }
+        /// <summary>First day map actions can be placed.</summary>
+        public DateTime MapActionsFrom { get; set; }
+        /// <summary>How far (in hexes) a map action may be from a hex that owns a settlement.</summary>
+        public int MapActionMaxDistance { get; set; } = 1;
+        /// <summary>How many map actions may be built in one turn.</summary>
+        public int MapActionsPerTurn { get; set; } = 2;
+        public Dictionary<string, MapActionRule> MapActions { get; set; } = new Dictionary<string, MapActionRule>();
         public double NaturalIncreasePerYear { get; set; }
         public Dictionary<string, double> InitialPopulation { get; set; } = new Dictionary<string, double>();
         public Dictionary<string, double> BudgetStart { get; set; } = new Dictionary<string, double>();
+    }
+
+    /// <summary>Price and effect of one map action (rules.yaml map_actions).</summary>
+    public sealed class MapActionRule
+    {
+        /// <summary>Treasury cost, in treasury units.</summary>
+        public double Cost { get; set; }
+        /// <summary>Change to the housing indicator (absorption).</summary>
+        public double Housing { get; set; }
+        /// <summary>Change to the morale indicator (public support).</summary>
+        public double Morale { get; set; }
     }
 
     public sealed class AliyahPeriod
