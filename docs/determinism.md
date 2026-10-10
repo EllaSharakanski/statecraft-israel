@@ -20,7 +20,7 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-26, turn 45 | `d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -41,3 +41,4 @@ rules or content, treat it as a determinism bug.
 
 | Plan task | Run | New hash (first 8) | Why |
 |---|---|---|---|
+| M3 Task 2 | 1950 | `d46ce5ff` | the Immigration budget line moves to the Prime Minister (the Ministry of Immigration ends on 1951-10-08), which renames a key in the hashed budget |

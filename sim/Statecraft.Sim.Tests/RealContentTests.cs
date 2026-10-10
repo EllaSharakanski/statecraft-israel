@@ -40,7 +40,7 @@ public class RealContentTests
     public void OpenQuestionsAreExactlyTheKnownOnes()
     {
         var open = C.Legislatures.SelectMany(l => l.OpenQuestions.Select(q => $"{l.Id}.{q}")).OrderBy(x => x).ToArray();
-        Assert.Equal(new[] { "first_knesset.budget_approval", "provisional_state_council.budget_approval" }, open);
+        Assert.Equal(new[] { "first_knesset.budget_approval", "provisional_state_council.budget_approval", "second_knesset.budget_approval" }, open);
     }
 
     [Fact]
@@ -75,6 +75,7 @@ public class RealContentTests
         Assert.Equal("dori", Offices.Holder(C, "chief_of_staff", new DateTime(1949, 11, 8))!.Id);
         Assert.Equal("yadin", Offices.Holder(C, "chief_of_staff", new DateTime(1949, 11, 9))!.Id);
         Assert.Equal("dov_yosef", Offices.Holder(C, "rationing_minister", new DateTime(1949, 6, 1))!.Id);
+        Assert.Null(Offices.Holder(C, "rationing_minister", new DateTime(1949, 4, 25)));   // ministry created 26 April 1949
         Assert.Equal((30, 37), PoliticsSystem.CoalitionSeats(C, new DateTime(1948, 6, 1)));
         Assert.Equal((73, 120), PoliticsSystem.CoalitionSeats(C, new DateTime(1949, 6, 1)));
         Assert.Equal(101828, C.Aliyah[0].Origins.Values.Sum());
@@ -96,5 +97,50 @@ public class RealContentTests
         Assert.DoesNotContain("rationing_minister", C.Rules.BudgetStart.Keys);
         var s = Simulation.NewGame(C, 1, Mode.Historical);
         Assert.Equal(1.0, EffectsSystem.BudgetFactor(s, "rationing_minister"));
+    }
+
+    [Fact]
+    public void GovernmentsAndKnessetsOf1950And1951()
+    {
+        Assert.Equal("first_government", Offices.Government(C, new DateTime(1950, 10, 31))!.Id);
+        Assert.Equal("second_government", Offices.Government(C, new DateTime(1950, 11, 1))!.Id);
+        Assert.Equal("third_government", Offices.Government(C, new DateTime(1951, 10, 8))!.Id);
+        Assert.Equal("first_knesset", Offices.Legislature(C, new DateTime(1951, 8, 19))!.Id);
+        Assert.Equal("second_knesset", Offices.Legislature(C, new DateTime(1951, 8, 20))!.Id);
+        Assert.Equal((73, 120), PoliticsSystem.CoalitionSeats(C, new DateTime(1951, 1, 1)));
+        Assert.Equal((51, 120), PoliticsSystem.CoalitionSeats(C, new DateTime(1951, 9, 1)));   // transitional government, new Knesset
+        Assert.Equal((65, 120), PoliticsSystem.CoalitionSeats(C, new DateTime(1951, 10, 8)));
+    }
+
+    [Fact]
+    public void CabinetChangesOf1950And1951()
+    {
+        string Who(string office, int y, int m, int d) => Offices.Holder(C, office, new DateTime(y, m, d))?.Id ?? "(vacant)";
+        Assert.Equal("shazar", Who("education_minister", 1950, 10, 31));
+        Assert.Equal("remez", Who("education_minister", 1950, 11, 1));
+        Assert.Equal("ben_gurion", Who("education_minister", 1951, 5, 19));
+        Assert.Equal("dinur", Who("education_minister", 1951, 10, 8));
+        Assert.Equal("lavon", Who("rationing_minister", 1950, 11, 1));
+        Assert.Equal("(vacant)", Who("rationing_minister", 1951, 10, 8));
+        Assert.Equal("dov_yosef", Who("transportation_minister", 1951, 1, 1));
+        Assert.Equal("pinkas", Who("transportation_minister", 1951, 10, 8));
+        Assert.Equal("lavon", Who("agriculture_minister", 1951, 1, 1));
+        Assert.Equal("eshkol", Who("agriculture_minister", 1951, 10, 8));
+        Assert.Equal("geri", Who("trade_minister", 1951, 1, 1));
+        Assert.Equal("dov_yosef", Who("trade_minister", 1951, 10, 8));
+        Assert.Equal("dov_yosef", Who("justice_minister", 1951, 10, 8));
+        Assert.Equal("rosen", Who("justice_minister", 1951, 10, 7));
+        Assert.Equal("burg", Who("health_minister", 1951, 10, 8));
+        Assert.Equal("weizmann", Who("president", 1951, 11, 19));
+        Assert.Equal("yadin", Who("chief_of_staff", 1951, 12, 31));
+        Assert.Null(C.Offices.Single(o => o.Id == "rationing_minister").Until);   // the responsibility outlived the ministry (Addendum 2)
+        Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "immigration_minister").Until);
+        Assert.Equal(new DateTime(1951, 10, 8), C.Offices.Single(o => o.Id == "war_victims_minister").Until);
+        Assert.Equal("shapira", Who("immigration_minister", 1951, 10, 7));
+        Assert.Equal(0.15, C.Rules.BudgetStart["prime_minister"]);
+        var sheetrit = C.People.Single(p => p.Id == "sheetrit");
+        Assert.Equal("sephardim", Offices.PartyOf(C, sheetrit, new DateTime(1951, 1, 1)));
+        Assert.Equal("mapai", Offices.PartyOf(C, sheetrit, new DateTime(1951, 10, 8)));
+        Assert.Equal("", Offices.PartyOf(C, C.People.Single(p => p.Id == "geri"), new DateTime(1951, 1, 1)));
     }
 }

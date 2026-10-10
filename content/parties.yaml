@@ -1,4 +1,4 @@
-# Names as listed in the Provisional State Council and 1949 election sources (see legislatures.yaml).
+# Names as listed in the Provisional State Council, 1949 and 1951 election sources (see legislatures.yaml).
 parties:
   - { id: mapai, name: Mapai }
   - { id: mapam, name: Mapam }
@@ -21,3 +21,6 @@ parties:
   - { id: progressive, name: Progressive Party }
   - { id: democratic_list_nazareth, name: Democratic List of Nazareth }
   - { id: fighters_list, name: Fighters' List }
+  - { id: democratic_list_israeli_arabs, name: Democratic List for Israeli Arabs }
+  - { id: progress_and_work, name: Progress and Work }
+  - { id: agriculture_and_development, name: Agriculture and Development }

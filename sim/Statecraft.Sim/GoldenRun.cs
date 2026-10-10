@@ -11,7 +11,7 @@ namespace Statecraft.Sim
 
         /// <summary>Final hash of Play(content, Until1950). Changing it is a deliberate rules or content change:
         /// update it, DeterminismTests and docs/determinism.md in the same commit and say why in the message.</summary>
-        public const string Hash1950 = "eb9756528eeebdc7b078ab90f7fe7a349edcfc94be9543e5f20f258da4e500e9";
+        public const string Hash1950 = "d46ce5ffd442f6b47f515fe2497b1db3e262217b5d01be543b822e5d41a6a8cd";
 
         public static readonly DateTime Until1950 = new DateTime(1950, 1, 1);
 
