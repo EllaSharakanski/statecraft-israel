@@ -69,13 +69,13 @@ namespace Statecraft.Sim
         public static string? Check(Content c, GameState s, string officeId, string personId)
         {
             var office = c.Offices.FirstOrDefault(o => o.Id == officeId);
-            if (office == null) return $"Unknown office '{officeId}'";
+            if (office == null) return "That office does not exist in this game";
             if (office.Until.HasValue && s.Date >= office.Until.Value)
                 return $"The office of {office.Title} was abolished on {PlayerText.Date(office.Until.Value)}";
             if (officeId == "prime_minister") return "You are the Prime Minister: that office is not yours to fill";
             if (officeId == "president") return "The President is elected by the Knesset, not appointed";
             var person = c.People.FirstOrDefault(p => p.Id == personId);
-            if (person == null) return $"Unknown person '{personId}'";
+            if (person == null) return "That person is not in this game";
             if (person.Died.HasValue && s.Date >= person.Died.Value)
                 return $"{person.Name} died on {PlayerText.Date(person.Died.Value)}";
             if (Holder(c, s, "president")?.Id == personId) return $"{person.Name} is the President";

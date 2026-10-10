@@ -1,5 +1,8 @@
 # M3 release: the browser build
 
+**Status:** M3 ships as the local browser build. The itch.io upload and the cross-upload save test are deferred to the
+start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below are kept, marked "Deferred to M4".
+
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
 - **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `(cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip .)`.
@@ -68,8 +71,18 @@ Each step below passed:
 
 Firefox is not installed on the development Mac, so the Firefox check is open.
 
-## OWNER STEP: sensitivity review before a public upload
-Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags. The six events below are only `fact-checked`. The owner reviews each and records a sign-off (in progress.md, or by moving its `status` to `sensitivity-reviewed`) before the itch.io upload.
+## OWNER STEP: sensitivity review before any shared build
+Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,
+war-casualties). The seven events below are only `fact-checked`. The owner reviews each and records the sign-off **only**
+by moving the event's `status:` in its YAML file to `sensitivity-reviewed` and committing it (the loader accepts that
+value). Nothing else counts as a sign-off.
+
+- **Gate:** `Build.Web ... -shareable` refuses to build while any sensitive event is not `sensitivity-reviewed`, and names
+  them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). Use `-shareable` for every build that leaves this machine,
+  including the M4 private Draft once it is shared with anyone. Local builds (no flag) are not gated.
+- **Pinned set:** `FinalWaveTests.TheSensitiveEventsArePinned` lists the seven ids, and
+  `TheOwnerTableListsEverySensitiveEvent` fails if a sensitive event is missing from this table, so a new one cannot
+  skip the review.
 
 | Event | Tags | What to review |
 |---|---|---|
@@ -79,9 +92,11 @@ Spec section 5.5 requires a recorded sensitivity review for events with sensitiv
 | `operation_hiram` | security, war-casualties | military text only; the contested population figures and the 26 Sep cabinet quote are left out |
 | `operation_horev` | security, war-casualties | military text only |
 | `bernadotte_assassination` | security, terror | the `terror` tag follows the Israeli government's own Prevention of Terrorism Ordinance |
+| `reparations_claim` | holocaust | the claim's framing (the cost of absorbing survivors: 500,000 at $3,000 each); the "refuse" option |
 
-## OWNER STEP: upload to itch.io
-This needs the owner's itch.io account and is never automated.
+## Deferred to M4: upload to itch.io (OWNER STEP)
+Deferred to the start of M4, as a private Draft (owner ruling, 2026-10-10). The steps stay correct for then. This needs the
+owner's itch.io account and is never automated, and the build must pass the sensitivity gate above (`-shareable`).
 1. Sign in at https://itch.io. Go to Dashboard, then **Create new project**.
 2. Set the title to "Statecraft: Israel (M3 preview)", Kind of project to **HTML**, and Classification to Games.
 3. Under Uploads, upload `unity/Builds/statecraft-m3-web.zip` and tick **This file will be played in the browser**.
@@ -100,13 +115,13 @@ itch.io serves `.br` files with `Content-Encoding: br`, because it detects the e
 
 Published at: (owner fills in)
 
-## Saves on itch.io: the fix and its test
+## Saves on itch.io: the fix, and its test (the test is deferred to M4)
 - **Problem:** on WebGL, `Application.persistentDataPath` is `/idbfs/<MD5 of the page's directory URL>`. itch.io serves every upload from a new URL, so a new upload would hide the saves made with the previous one.
 - **Fix (Task 21):** the autosave lives at the fixed path `/idbfs/statecraft-saves/autosave.txt`.
   - The template sets `autoSyncPersistentDataPath: true`, so closing the file persists it to IndexedDB.
   - IndexedDB is per origin, so saves survive re-uploads to the same project and stay separate per browser profile.
   - The local checks above passed: reload, tab close, browser restart, and a second directory on the same origin.
-- **Test plan (OWNER STEP, after the first two uploads):**
+- **Test plan (OWNER STEP, deferred to M4 with the upload; after the first two uploads):**
   1. Upload A as above. Play two turns (press End Turn twice) and note the date and turn in the top bar.
   2. Reload the page. Expected: the game continues on that date. The console line `GAME OK <date> turn <n> hash ...` matches the last `TURN` line.
   3. Upload build B to the same project, replacing A. Rebuild first if anything changed.
@@ -124,4 +139,6 @@ Result: (owner fills in)
 - English only.
 - The headless smoke plays five turns; a full-slice smoke is M4.
 - The wheel-zoom step (one notch = 10%) was measured in Chrome on macOS only. Firefox reports wheel deltas in lines and
-  Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's itch.io check.
+  Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's M4 itch.io check.
+- Not uploaded to itch.io: the upload and the cross-upload save test are deferred to the start of M4 (owner ruling,
+  2026-10-10). The seven sensitive events await the owner's sensitivity review (see above).

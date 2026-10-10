@@ -72,7 +72,7 @@ options:
         Assert.Null(EventSystem.Choose(c, s, "shortage", "import", why));
         Assert.Equal(40, s.FxReserves);
         Assert.Empty(s.PendingEvents);
-        Assert.Equal("Event 'shortage' is not waiting for a decision", EventSystem.Choose(c, s, "shortage", "ration", why));
+        Assert.Equal("That event is not waiting for a decision", EventSystem.Choose(c, s, "shortage", "ration", why));
     }
 
     [Fact]
@@ -218,7 +218,7 @@ options:
         var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = Shortage });
         var s = State(c, new DateTime(1948, 6, 1)); var why = new List<Cause>();
         EventSystem.Trigger(c, s, why);
-        Assert.Equal("Event 'shortage' has no option 'nap'", EventSystem.Choose(c, s, "shortage", "nap", why));
+        Assert.Equal("That event has no such option", EventSystem.Choose(c, s, "shortage", "nap", why));
     }
 
     [Fact]

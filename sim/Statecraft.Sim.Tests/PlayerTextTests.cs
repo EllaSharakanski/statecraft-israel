@@ -246,7 +246,7 @@ public class PlayerTextTests
 
     [Theory]
     [InlineData("chosen: Impose rationing")]
-    [InlineData("A housing project at (3, 4): cost IL 1.5m, Housing +3.0%, Morale +1.0%")]
+    [InlineData("Built a housing project: cost IL 1.5m, Housing +3.0%, Morale +1.0%")]
     [InlineData("Morale -10.9% (Rationing wears on morale, Homes lift morale, Safety lifts morale)")]
     [InlineData("reserve call-up raised to 80%, the minimum for security level 5")]
     public void TheGuardLeavesPlainEnglishAlone(string message) => Assert.Empty(Leaks(Real, new[] { message }));
@@ -264,7 +264,7 @@ public class PlayerTextTests
             // Every number in the line must carry the unit (fix round 2, N3): strip the unit tokens; no digit may remain.
             if (money.Contains(w.Target) && Regex.IsMatch(Regex.Replace(w.Message, @"[+-]?(IL |\$)\d+\.\dm", ""), @"\d"))
                 bad.Add("money without a unit: " + w.Message);
-            if (w.System == "map")   // "A housing project at (q, r): cost IL 6.0m, Housing +3.0%, ...": coordinates aside, all units
+            if (w.System == "map")   // "Built a housing project: cost IL 6.0m, Housing +3.0%, ...": every number with its unit
             {
                 if (Regex.IsMatch(Regex.Replace(Regex.Replace(w.Message, @"\(-?\d+, -?\d+\)", ""), @"[+-]?(IL |\$)\d+\.\dm|[+-]?\d+(\.\d)?%", ""), @"\d"))
                     bad.Add("map line number without a unit: " + w.Message);
@@ -339,8 +339,8 @@ public class PlayerTextTests
         var hex = c.Hexes.First(h => MapActions.Check(c, s, MapActions.TransitCamp, h.Q, h.R) == null);
         var why = new List<Cause>();
         Assert.Null(MapActions.Apply(c, s, MapActions.TransitCamp, hex.Q, hex.R, why));
-        Assert.Contains(why, w => w.System == "map" && w.Message.StartsWith($"A ma'abara at ({hex.Q}, {hex.R})", StringComparison.Ordinal));
-        Assert.Equal($"({hex.Q}, {hex.R}) already has a ma'abara", MapActions.Check(c, s, MapActions.TransitCamp, hex.Q, hex.R));
+        Assert.Contains(why, w => w.System == "map" && w.Message.StartsWith("Built a ma'abara: ", StringComparison.Ordinal));
+        Assert.Equal("This hex already has a ma'abara", MapActions.Check(c, s, MapActions.TransitCamp, hex.Q, hex.R));
         Assert.Throws<InvalidOperationException>(() => PlayerText.MapAction(c, "factory"));
     }
 

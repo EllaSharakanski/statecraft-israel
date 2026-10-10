@@ -27,8 +27,12 @@ namespace Statecraft.Sim
         {
             var r = c.Rules; var pop = s.TotalPopulation;
             return new TreasuryFlows(r.TaxPerCapitaPerYear * pop * yearFraction, r.SpendingPerCapitaPerYear * pop * yearFraction,
-                r.MobilizationCostPerYear * s.Mobilization * yearFraction);
+                MobilizationCost(c, s.Mobilization, yearFraction));
         }
+
+        /// <summary>The reserve call-up's cost (pay and lost work) for <paramref name="level"/> (0..1) over a share of a year:
+        /// the one rule Flows and the Defence screen both use (M3 final review M5).</summary>
+        public static double MobilizationCost(Content c, double level, double yearFraction = 1.0) => c.Rules.MobilizationCostPerYear * level * yearFraction;
 
         public static void Apply(Content c, GameState s, double yearFraction, List<Cause> why)
         {
@@ -70,10 +74,10 @@ namespace Statecraft.Sim
         {
             if (shares == null) return "Budget shares are required";
             var unknown = shares.Keys.OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault(k => c.Offices.All(o => o.Id != k));   // ordinal: play and replay name the same office
-            if (unknown != null) return $"Unknown office '{unknown}'";
+            if (unknown != null) return "The budget names a ministry that does not exist in this game";
             if (shares.Values.Any(v => double.IsNaN(v) || double.IsInfinity(v))) return "Budget shares must be finite numbers";
             if (!new HashSet<string>(shares.Keys).SetEquals(c.Rules.BudgetStart.Keys))
-                return "Budget shares must cover exactly: " + string.Join(", ", c.Rules.BudgetStart.Keys.OrderBy(k => k, StringComparer.Ordinal));
+                return "The budget must give a share to every ministry, and only to them";
             // Summed in key order, not dictionary order, so play and replay agree to the bit whatever order the caller built the map in.
             if (Math.Abs(shares.OrderBy(kv => kv.Key, StringComparer.Ordinal).Sum(kv => kv.Value) - 1.0) > 1e-6) return "Budget shares must sum to 1";
             if (shares.Values.Any(v => v < 0)) return "Budget shares cannot be negative";

@@ -17,12 +17,14 @@
   (`-compression` is `disabled`, `gzip` or `brotli`; output in `unity/Builds/Web-<compression>/`, about 2 minutes).
 - macOS IL2CPP build: `"$UNITY" -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac -logFile "$PWD/unity-build-mac.log"`
   (output `unity/Builds/Mac/Statecraft.app`).
-- Browser check: `uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`.
+- Browser check: `uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&smoke=5"` with the three full `--expect`
+  values pinned in `docs/determinism.md` (both goldens and the smoke line).
   It uses Chrome for Testing from the Playwright cache (`~/Library/Caches/ms-playwright/chromium-1228` on this Mac;
   elsewhere `npx playwright install chromium`).
 - Page flags: `?golden` (golden check), `?smoke=N` (play N turns through the UI; bare `?smoke` = 5, `?smoke=0` = off),
-  `?profile` (terrain profile), `?camlog` (log the camera distance). Desktop players take `-golden`, `-smoke N`, `-profile`
-  and `-camlog`. The console also shows `GAME OK <date> turn <n> hash <h>` at start and `TURN <n> <date> hash <h>` per turn.
+  `?profile` (terrain profile), `?camlog` (log the camera distance), `?bootlog` (each boot phase's timing) and `?navlog`
+  (every UI pointer and submit event, screen toggle and map click, with its frame). Desktop players take `-golden`,
+  `-smoke N`, `-profile`, `-camlog`, `-bootlog` and `-navlog`. The console also shows `GAME OK <date> turn <n> hash <h>` at start and `TURN <n> <date> hash <h>` per turn.
 - A player build rewrites some URP asset and player-setting fields as build-time caches; drop them afterwards with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset`.
 - Play a build locally: `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`, then open http://localhost:8000/.

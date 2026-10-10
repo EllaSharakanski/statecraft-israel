@@ -46,9 +46,9 @@ namespace Statecraft.Sim
         /// <summary>Returns null on success, or the reason the choice was rejected.</summary>
         public static string? Choose(Content c, GameState s, string eventId, string optionId, List<Cause> why)
         {
-            if (!s.PendingEvents.Contains(eventId)) return $"Event '{eventId}' is not waiting for a decision";
+            if (!s.PendingEvents.Contains(eventId)) return "That event is not waiting for a decision";
             var option = Get(c, eventId).Options.FirstOrDefault(o => o.Id == optionId);
-            if (option == null) return $"Event '{eventId}' has no option '{optionId}'";
+            if (option == null) return "That event has no such option";
             Resolve(c, s, eventId, option, "chosen", why);
             return null;
         }

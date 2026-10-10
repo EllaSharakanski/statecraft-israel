@@ -80,8 +80,8 @@ public class CabinetTests
     [InlineData("finance_minister", "outsider", "Out Sider's party (Beta) is not in the coalition")]
     [InlineData("finance_minister", "gone", "Gone Early died on 1 May 1948")]
     [InlineData("finance_minister", "def_two", "Def Two already holds the office of Minister of Finance")]
-    [InlineData("finance_minister", "nobody", "Unknown person 'nobody'")]
-    [InlineData("treasurer", "loyalist", "Unknown office 'treasurer'")]
+    [InlineData("finance_minister", "nobody", "That person is not in this game")]
+    [InlineData("treasurer", "loyalist", "That office does not exist in this game")]
     public void IllegalAppointmentsAreRejectedWithAReason(string office, string person, string reason)
     {
         var s = Simulation.NewGame(C, 42, Mode.Historical);

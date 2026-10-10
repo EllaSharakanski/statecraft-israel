@@ -25,7 +25,25 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 | to 1950-01-01 (`Hash1950`) | 1950-02-27, turn 35 | `71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07` |
 | to 1952-01-01 (`Hash1952`) | 1952-02-27, turn 43 | `73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767` |
 
-Each constant is written in three places that must agree:
+A third value is pinned for the browser smoke run (`?smoke=5`: the golden seed, five turns played through the UI's own
+buttons, answering each event with its first option): `SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6`.
+It depends on the UI path as well as the sim (which option is first, the turn grid), so re-record it when either changes.
+Check every build with:
+
+```
+uv run tools/web_check.py unity/Builds/Web-<compression> --query "golden&smoke=5" \
+  --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" \
+  --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" \
+  --expect "SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6"
+```
+
+**Cause text is derived, not hashed.** The "Why did this happen?" lines (`Cause.Message`, `Cause.Delta`) are output
+computed from the hashed state; replaying a save's commands regenerates them. Wording changes therefore do not move the
+goldens (playtest 2 changed every line's casing with no hash change). They are still deterministic:
+`FinalWaveTests.AReloadedSaveReproducesTheLastTurnsCauses` checks a reloaded save gives the same last-turn Causes, and
+`TheGoldenRunsCausesAreTheSameInEveryCulture` runs the 1952 golden under de-DE and ar-SA against the invariant culture.
+
+Each golden constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
 - `sim/Statecraft.Sim.Tests/DeterminismTests.cs`, which pins the value on .NET and asserts the library constant equals it;
 - this file.

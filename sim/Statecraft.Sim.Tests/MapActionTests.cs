@@ -32,7 +32,7 @@ public class MapActionTests
         Assert.Equal(housing + 0.05, s.Indicators["housing"], 9);
         Assert.Equal(morale - 0.02, s.Indicators["morale"], 9);
         Assert.Equal("transit_camp", MapActions.At(s, 2, 0)!.Action);
-        Assert.Contains(why, w => w.System == "map" && w.Message == "A transit camp at (2, 0): cost IL 2.0m, Housing +5.0%, Morale -2.0%");
+        Assert.Contains(why, w => w.System == "map" && w.Message == "Built a transit camp: cost IL 2.0m, Housing +5.0%, Morale -2.0%");
     }
 
     [Fact]
@@ -59,9 +59,9 @@ public class MapActionTests
 
     [Theory]
     [InlineData("airport", 2, 0, "There is no such map action")]
-    [InlineData("transit_camp", 0, 0, "There is no land hex at (0, 0)")]
-    [InlineData("transit_camp", 7, 7, "There is no land hex at (7, 7)")]
-    [InlineData("transit_camp", 4, 0, "(4, 0) is more than 1 hex from a settlement")]
+    [InlineData("transit_camp", 0, 0, "This hex is not land")]
+    [InlineData("transit_camp", 7, 7, "This hex is not land")]
+    [InlineData("transit_camp", 4, 0, "This hex is more than 1 hex from a settlement")]
     public void IllegalPlacementsAreRejectedWithAReason(string action, int q, int r, string reason)
     {
         var s = Ready();
@@ -113,9 +113,9 @@ public class MapActionTests
         var s = Ready();
         MapActions.Apply(C, s, "housing", 2, 0, new List<Cause>());
         MapActions.Apply(C, s, "housing", 1, 1, new List<Cause>());
-        Assert.Equal("There is no land hex at (7, 7)", MapActions.Check(C, s, "housing", 7, 7));
-        Assert.Equal("(4, 0) is more than 1 hex from a settlement", MapActions.Check(C, s, "housing", 4, 0));
-        Assert.Equal("(2, 0) already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
+        Assert.Equal("This hex is not land", MapActions.Check(C, s, "housing", 7, 7));
+        Assert.Equal("This hex is more than 1 hex from a settlement", MapActions.Check(C, s, "housing", 4, 0));
+        Assert.Equal("This hex already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
         Assert.Equal("There is no such map action", MapActions.Check(C, s, "airport", 0, 1));
         Assert.Equal("No more than 2 map actions in one turn", MapActions.Check(C, s, "housing", 0, 1));
     }
@@ -140,7 +140,7 @@ public class MapActionTests
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["map/hexes.json"] = hexes }));
         var s = Simulation.NewGame(c, 42, Mode.Historical);
         s.Date = new DateTime(1948, 6, 1);
-        Assert.Equal("There is no land hex at (2, 0)", MapActions.Check(c, s, "housing", 2, 0));
+        Assert.Equal("This hex is not land", MapActions.Check(c, s, "housing", 2, 0));
     }
 
     [Fact]
@@ -175,8 +175,8 @@ public class MapActionTests
     {
         var s = Ready();
         MapActions.Apply(C, s, "housing", 2, 0, new List<Cause>());
-        Assert.Equal("(2, 0) already has a housing project", MapActions.Check(C, s, "transit_camp", 2, 0));
-        Assert.Equal("(2, 0) already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
+        Assert.Equal("This hex already has a housing project", MapActions.Check(C, s, "transit_camp", 2, 0));
+        Assert.Equal("This hex already has a housing project", MapActions.Check(C, s, "housing", 2, 0));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public class MapActionTests
         s0.Date = new DateTime(1948, 6, 1);
         // At war (rung 5) each command costs 2 of the 3 attention: the refused first order is refunded, so the second fits.
         var r = Simulation.Step(C, s0, new Command[] { new MapAction("housing", 4, 0), new MapAction("housing", 2, 0) });
-        Assert.Equal("(4, 0) is more than 1 hex from a settlement", r.Rejected.Single().Reason);
+        Assert.Equal("This hex is more than 1 hex from a settlement", r.Rejected.Single().Reason);
         Assert.Equal("housing", MapActions.At(r.State, 2, 0)!.Action);
         Assert.Empty(s0.Placements);                                       // Step never mutates its input
         Assert.NotEqual(Simulation.Step(C, s0, new Command[0]).State.Hash(), r.State.Hash());

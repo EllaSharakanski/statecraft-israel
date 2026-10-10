@@ -406,13 +406,13 @@ public class SaveGameTests
     }
 
     [Fact]
-    public void TheFirstUnknownOfficeInOrdinalOrderIsNamedInPlayAndInReplay()
+    public void AnUnknownOfficeIsRefusedAlikeInPlayAndInReplay()
     {
         var c = Fixture1();
         var g = GameSession.New(c, 1, Mode.Historical);
         g.Step(new Command[] { new AllocateBudget(new Dictionary<string, double> { ["zzz"] = 0.5, ["aaa"] = 0.5 }) });
         var live = g.Last!.Rejected.Single().Reason;
-        Assert.Equal("Unknown office 'aaa'", live);
+        Assert.Equal("The budget names a ministry that does not exist in this game", live);   // no id in player text (final review M4)
         Assert.Equal(live, GameSession.Load(c, g.Save.Write(), out _).Last!.Rejected.Single().Reason);
     }
 }

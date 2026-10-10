@@ -47,7 +47,7 @@ public class SimTests
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("curfew", 1), new SetMobilization(2) });
-        Assert.Equal(new[] { "Unknown policy 'curfew'", "Mobilization must be between 0 and 1" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(new[] { "That policy does not exist in this game", "Mobilization must be between 0 and 1" }, r.Rejected.Select(x => x.Reason));
     }
 
     [Fact]
@@ -172,7 +172,7 @@ options:
     {
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         var r = Simulation.Step(C, s0, new Command[] { new AllocateBudget(new Dictionary<string, double> { ["defense_minister"] = 1.0 }) });
-        Assert.Equal("Budget shares must cover exactly: finance_minister", r.Rejected.Single().Reason);
+        Assert.Equal("The budget must give a share to every ministry, and only to them", r.Rejected.Single().Reason);
         Assert.Equal(1.0, r.State.Budget["finance_minister"]);
     }
 
@@ -231,7 +231,7 @@ options:
         var s0 = Simulation.NewGame(C, 42, Mode.Historical);
         s0.Rung = 1; s0.Attention = 1;
         var r = Simulation.Step(C, s0, new Command[] { new SetPolicy("no_such_policy", 0.5), new SetPolicy("rationing", 0.5) });
-        Assert.Equal(new[] { "Unknown policy 'no_such_policy'" }, r.Rejected.Select(x => x.Reason));
+        Assert.Equal(new[] { "That policy does not exist in this game" }, r.Rejected.Select(x => x.Reason));
         Assert.Equal(0.5, r.State.Policies["rationing"]);
         Assert.Equal(s0.RngState, r.State.RngState);
     }

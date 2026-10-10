@@ -49,13 +49,13 @@ namespace Statecraft.Sim
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
                 return "Transit camps need the ma'abarot policy";
             var hex = c.HexAt(q, r);
-            if (hex == null || !hex.Land) return FormattableString.Invariant($"There is no land hex at ({q}, {r})");
+            if (hex == null || !hex.Land) return "This hex is not land";
             var max = c.Rules.MapActionMaxDistance;
             if (!c.SettlementHexes.Any(sh => Distance(q, r, sh.Q, sh.R) <= max))
-                return FormattableString.Invariant($"({q}, {r}) is more than {max} {(max == 1 ? "hex" : "hexes")} from a settlement");
+                return FormattableString.Invariant($"This hex is more than {max} {(max == 1 ? "hex" : "hexes")} from a settlement");
             var here = At(s, q, r);
             if (here != null && !(action == Housing && here.Action == TransitCamp))
-                return FormattableString.Invariant($"({q}, {r}) already has {PlayerText.MapAction(c, here.Action)}");
+                return $"This hex already has {PlayerText.MapAction(c, here.Action)}";
             // The cap comes last so a player who is over it still sees the specific reason an order is illegal. It counts
             // accepted actions (not surviving placements): housing on a camp removes the camp but still used an action.
             if (ActionsThisTurn(s) >= c.Rules.MapActionsPerTurn)
@@ -83,7 +83,7 @@ namespace Statecraft.Sim
             var housing = rule.Housing == 0 ? 0 : EffectsSystem.Shift(c, s, "housing", rule.Housing);
             var morale = rule.Morale == 0 ? 0 : EffectsSystem.Shift(c, s, "morale", rule.Morale);
             why.Add(new Cause("map", action, 1, FormattableString.Invariant(
-                $"{PlayerText.Capitalised(PlayerText.MapAction(c, action))} at ({q}, {r}): cost {PlayerText.Money(c, "treasury", rule.Cost)}, {PlayerText.Change(c, "housing", housing)}, {PlayerText.Change(c, "morale", morale)}")));
+                $"Built {PlayerText.MapAction(c, action)}: cost {PlayerText.Money(c, "treasury", rule.Cost)}, {PlayerText.Change(c, "housing", housing)}, {PlayerText.Change(c, "morale", morale)}")));
             return null;
         }
     }

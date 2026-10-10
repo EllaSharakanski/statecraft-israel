@@ -10814,7 +10814,7 @@ Every spec item M3 does not finish has a home. The M3 rows of the M0–M2 Deferr
 | Hebrew names and birth/death dates for all people | Content work before M4 | Carried; M3 adds `died` only where a term ends in death (Remez) |
 | Open fact: how the budget was approved in 1948–56 (`open_questions: [budget_approval]`, now also on the Second Knesset) | Content work before M4 | Carried |
 | Legal review of map-data licences; the Unity MCP check (M0 b) | M5 / owner | Carried |
-| itch.io upload and the two-upload save test | OWNER STEP | Documented in `docs/m3-release.md` (Task 24) |
+| itch.io upload and the two-upload save test | M4 (owner ruling, 2026-10-10) | Deferred to the start of M4 as a private Draft; the steps stay in `docs/m3-release.md` ("Deferred to M4") |
 
 ## Self-review
 

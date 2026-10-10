@@ -45,7 +45,7 @@ namespace Statecraft.Sim
             var priceRung = s.Rung;   // every command this turn is priced at the rung the turn started at
             foreach (var cmd in commands)
             {
-                if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, $"Unknown command '{cmd.Kind}'")); continue; }
+                if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, "That order is not known")); continue; }
                 var before = s.Attention;
                 var error = AttentionSystem.TrySpend(c, s, cmd.Kind, priceRung) ?? Execute(c, s, cmd, why);
                 if (error != null) { s.Attention = before; rejected.Add(new Rejection(cmd, error)); }
@@ -78,7 +78,7 @@ namespace Statecraft.Sim
             switch (cmd)
             {
                 case SetPolicy p:
-                    if (c.Policies.All(x => x.Id != p.Policy)) return $"Unknown policy '{p.Policy}'";
+                    if (c.Policies.All(x => x.Id != p.Policy)) return "That policy does not exist in this game";
                     if (!(p.Level >= 0 && p.Level <= 1)) return "Policy level must be between 0 and 1";
                     var legislature = Offices.Legislature(c, s.Date);
                     if (legislature == null) return "No legislature is sitting";
@@ -116,7 +116,7 @@ namespace Statecraft.Sim
                     SecuritySystem.SetRung(c, s, (int)Math.Max(1L, Math.Min(5L, (long)s.Rung + o.Delta)), why);
                     return null;
                 default:
-                    return $"Unknown command '{cmd.Kind}'";
+                    return "That order is not known";
             }
         }
 
