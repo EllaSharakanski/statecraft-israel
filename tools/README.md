@@ -17,7 +17,8 @@ Offline data tools (uv inline-script Python). Run from the repo root.
   (exit 1) until every sensitive event is `sensitivity-reviewed` (docs/m3-release.md).
 - `preview_map.py` renders the geography check image `tools/.cache/map-preview.png`.
 - `terrain_bake.py` writes `unity/Assets/Textures/Map/terrain_bake.png` (AO, curvature, sky-view) and `coast.png`
-  (signed distance to the shoreline) from the committed heightmap (no network). Re-run it whenever the heightmap changes.
+  (exact signed Euclidean distance to the shoreline; lakes under 1 km2 count as land) from the committed heightmap (no
+  network). Re-run it whenever the heightmap changes; its PNG bytes are reproducible only on the same toolchain.
 - `art_compare.py` puts screenshots next to the promo image of their pose, writes deuteranopia and protanopia copies and
   logs rough colour numbers; `art_checkpoint.sh [--no-build] <name>` builds WebGL, takes the screenshots
   (`web_check.py --shots`) and runs it (docs/visual-v1.md).
@@ -36,7 +37,7 @@ Run from the repo root; this installs every pinned dependency (rasterio included
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 ```
 
-Expected: `153 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
+Expected: `164 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
 
 ## Required attribution (Copernicus DEM licence, modified data)
 

@@ -65,6 +65,13 @@ Notes:
 - Superseded first recording (commit `33fb072`, before the CDP viewport): headless ran at `res=1920x937` and headed at
   `res=1728x860`, with a first-pose spread of 0.68 ms (headless) and one headed run that stalled; do not compare with it.
 
+## Baked textures (Task 5)
+`tools/terrain_bake.py` regenerates `unity/Assets/Textures/Map/terrain_bake.png` and `coast.png` from the committed
+heightmap in about 10 s. The output is deterministic per toolchain: re-running it with the pinned numpy 2.5.3 and
+pillow 12.3.0 on the same machine gives byte-identical PNGs. Another platform may differ in its zlib build or in
+1-ulp `sin`/`arctan` results. Compare decoded pixels (`np.array_equal`), not file bytes; R and B may then differ by
+one level here and there.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|

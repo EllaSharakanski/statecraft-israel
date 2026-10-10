@@ -9,13 +9,16 @@ Reads unity/Assets/StreamingAssets/map/heightmap.r16 + heightmap.json; writes, 2
   unity/Assets/Textures/Map/terrain_bake.png  RGB8: R ambient occlusion (horizon search to AO_RADIUS_M; 1 = open),
       G curvature (0.5 flat, > 0.5 convex), B sky-view factor (horizon search to SKY_RADIUS_M)
   unity/Assets/Textures/Map/coast.png         L8: 0.5 + d / (2 COAST_RANGE_M), clamped; d = signed distance (m) to the
-      nearest shoreline, < 0 in water (open sea: |elevation| <= SEA_EPS_M and connected to the map's border; lakes: flat
-      water below LAKE_BELOW_M), the rules tools/hexgrid.py uses for its sea and lake biomes
+      nearest shoreline, < 0 in water (open sea: |elevation| < SEA_EPS_M and connected to the map's border; lakes: flat
+      water below LAKE_BELOW_M covering at least MIN_LAKE_AREA_KM2), the rules tools/hexgrid.py uses for its sea and lake
+      biomes; the area floor drops the Karameh reservoir (0.3 km2, built in the 1990s) and dike slivers between the pans
 Heights are multiplied by VERTICAL_EXAGGERATION (MapBuilder.VerticalExaggeration) so the shading matches the relief the
 game draws. Texel (j, i) is the mean of heightmap samples j..j+1, i..i+1, so its centre sits at terrain UV (j + 0.5) / 2048.
-Distances use each axis' own sample spacing (about 79 m east-west, 211 m north-south)."""
+Distances are exact Euclidean (a Felzenszwalb-Huttenlocher two-pass transform) with each axis' own sample spacing (about
+79 m east-west, 211 m north-south). The PNG pixels are reproducible; their bytes are identical only on the same toolchain."""
 import json
 import math
+from collections import deque
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +37,7 @@ CURVATURE_SCALE_M = 150.0      # exaggerated metres above or below the local mea
 SEA_EPS_M = 0.5
 LAKE_BELOW_M = -150.0
 LAKE_FLAT_M = 0.25             # largest height range in a 3x3 window that is still a water surface
+MIN_LAKE_AREA_KM2 = 1.0        # smaller flat pools are land (Karameh 0.30 km2; the smallest kept pan is 1.05 km2)
 COAST_RANGE_M = 12000.0        # StatecraftMap.hlsl ScCoastRangeM
 
 
@@ -117,32 +121,98 @@ def border_connected(candidate: np.ndarray) -> np.ndarray:
             return reached
 
 
-def lake_mask(elev: np.ndarray) -> np.ndarray:
+def components(mask: np.ndarray) -> list[tuple[np.ndarray, np.ndarray]]:
+    """The 4-connected components of mask, each as (rows, cols), in scan order."""
+    label = np.zeros(mask.shape, dtype=np.int32)
+    h, w = mask.shape
+    out = []
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if label[y0, x0]:
+            continue
+        n = len(out) + 1
+        label[y0, x0] = n
+        queue, ys, xs = deque([(int(y0), int(x0))]), [], []
+        while queue:
+            y, x = queue.popleft()
+            ys.append(y); xs.append(x)
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not label[ny, nx]:
+                    label[ny, nx] = n
+                    queue.append((ny, nx))
+        out.append((np.array(ys), np.array(xs)))
+    return out
+
+
+def lake_mask(elev: np.ndarray, dx: float, dy: float) -> np.ndarray:
     hi, lo = elev.copy(), elev.copy()
     for oy in (-1, 0, 1):
         for ox in (-1, 0, 1):
             s = shifted(elev, oy, ox)
             np.maximum(hi, s, out=hi); np.minimum(lo, s, out=lo)
     flat = (elev < LAKE_BELOW_M) & (hi - lo <= LAKE_FLAT_M)
-    return grow(grow(shrink(shrink(flat)))) & flat      # an opening: specks of flat rift floor drop out
+    opened = grow(grow(shrink(shrink(flat)))) & flat     # an opening: specks of flat rift floor drop out
+    lakes = np.zeros_like(opened)
+    for ys, xs in components(opened):
+        if len(ys) * dx * dy / 1e6 >= MIN_LAKE_AREA_KM2:
+            lakes[ys, xs] = True
+    return lakes
 
 
-def water_mask(elev: np.ndarray) -> np.ndarray:
-    return border_connected(np.abs(elev) <= SEA_EPS_M) | lake_mask(elev)
+def water_mask(elev: np.ndarray, dx: float, dy: float) -> np.ndarray:
+    return border_connected(np.abs(elev) < SEA_EPS_M) | lake_mask(elev, dx, dy)
+
+
+def column_distance(target: np.ndarray) -> np.ndarray:
+    """Samples to the nearest target pixel in the same column (inf where the column has none)."""
+    h = target.shape[0]
+    up = np.full(target.shape, np.inf)
+    down = np.full(target.shape, np.inf)
+    run = np.full(target.shape[1], np.inf)
+    for y in range(h):
+        run = np.where(target[y], 0.0, run + 1); up[y] = run
+    run = np.full(target.shape[1], np.inf)
+    for y in range(h - 1, -1, -1):
+        run = np.where(target[y], 0.0, run + 1); down[y] = run
+    return np.minimum(up, down)
+
+
+def lower_envelope(f: np.ndarray, step: float) -> np.ndarray:
+    """Felzenszwalb-Huttenlocher: d[q] = min over p of (step (q - p))^2 + f[p], in O(n); f may hold inf."""
+    n = len(f)
+    finite = np.nonzero(np.isfinite(f))[0]
+    if len(finite) == 0:
+        return np.full(n, np.inf)
+    pos = [float(p) * step for p in finite]
+    val = [float(f[p]) for p in finite]
+    v = [0]                                   # indices into pos/val of the parabolas on the envelope
+    z = [-math.inf, math.inf]                 # their boundaries
+    for k in range(1, len(pos)):
+        while True:
+            j = v[-1]
+            s = ((val[k] + pos[k] * pos[k]) - (val[j] + pos[j] * pos[j])) / (2 * (pos[k] - pos[j]))
+            if s <= z[-2]:
+                v.pop(); z.pop()
+            else:
+                break
+        z[-1] = s
+        v.append(k); z.append(math.inf)
+    out = np.empty(n)
+    k = 0
+    for q in range(n):
+        x = q * step
+        while z[k + 1] < x:
+            k += 1
+        j = v[k]
+        out[q] = (x - pos[j]) ** 2 + val[j]
+    return out
 
 
 def distance_to(target: np.ndarray, dx: float, dy: float, cap: float) -> np.ndarray:
-    """Chamfer distance (m, 8 neighbours, each axis its own spacing) to the nearest target pixel, capped at cap."""
-    d = np.where(target, 0.0, cap).astype(np.float32)
-    diag = math.hypot(dx, dy)
-    moves = [(0, 1, dx), (0, -1, dx), (1, 0, dy), (-1, 0, dy), (1, 1, diag), (1, -1, diag), (-1, 1, diag), (-1, -1, diag)]
-    while True:
-        new = d.copy()
-        for oy, ox, step in moves:
-            np.minimum(new, shifted(d, oy, ox) + np.float32(step), out=new)
-        if np.array_equal(new, d):
-            return d
-        d = new
+    """Exact Euclidean distance (m, float64, each axis its own spacing) to the nearest target pixel, capped at cap: the
+    column pass, then the Felzenszwalb-Huttenlocher lower envelope along each row."""
+    g = column_distance(target) * dy
+    d2 = np.stack([lower_envelope(row * row, dx) for row in g])
+    return np.minimum(np.sqrt(d2), cap)
 
 
 def to_texels(a: np.ndarray) -> np.ndarray:
@@ -161,7 +231,7 @@ def bake(elev: np.ndarray, meta: dict) -> tuple[np.ndarray, np.ndarray]:
     dx, dy = spacing_m(meta)
     z = elev * np.float32(VERTICAL_EXAGGERATION)
     ao, sky, curv = openness(z, dx, dy, AO_RADIUS_M), openness(z, dx, dy, SKY_RADIUS_M), curvature(z, dx, dy)
-    water = water_mask(elev)
+    water = water_mask(elev, dx, dy)
     signed = np.where(water, -distance_to(~water, dx, dy, COAST_RANGE_M), distance_to(water, dx, dy, COAST_RANGE_M))
     rgb = np.stack([to_u8(to_texels(ao)), to_u8(to_texels(curv)), to_u8(to_texels(sky))], axis=-1)
     return rgb, encode_coast(to_texels(signed.astype(np.float32)))
