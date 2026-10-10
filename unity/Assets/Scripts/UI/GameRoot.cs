@@ -192,6 +192,9 @@ namespace Statecraft.Game.UI
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
             minimap = null; rig = null; drawn = null; logCamera = false;
+            // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
+            // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
+            if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
         }
 
         /// <summary>Draws the placements only when State.Placements differs from what was drawn (every order and every turn

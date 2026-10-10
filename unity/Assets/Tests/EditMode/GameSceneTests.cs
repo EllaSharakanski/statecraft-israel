@@ -478,4 +478,16 @@ public class GameSceneTests
         Assert.IsFalse(GameRoot.CameraLogRequested(null, new[] { "x" }, false));
         Assert.AreEqual("CAMERA distance=120000 yaw=0.0", GameRoot.CameraLine(120000f, 0f));
     }
+
+    /// <summary>Task 24 review M1: a profile cut short (GameRoot disabled or restarted while ?profile runs; a stopped
+    /// coroutine never reaches its restore line) does not leave the terrain at the profile's pixel error.</summary>
+    [Test]
+    public void ShuttingDownRestoresTheTerrainPixelError()
+    {
+        var root = Boot();
+        var terrain = Object.FindFirstObjectByType<MapScene>().Terrain;
+        terrain.heightmapPixelError = 5f;                               // where an interrupted profile leaves it
+        root.enabled = false;
+        Assert.AreEqual(MapBuilder.TerrainPixelError, terrain.heightmapPixelError);
+    }
 }
