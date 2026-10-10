@@ -1,6 +1,7 @@
 """tools/web_check.py: the console-line parser and the static server's headers (no browser needed)."""
 import gzip
 import http.client
+import queue
 import re
 import urllib.request
 
@@ -74,3 +75,36 @@ def test_compressed_scripts_and_data_keep_their_types_and_traversal_is_404(tmp_p
     finally:
         server.shutdown()
         server.server_close()
+
+
+def run_watch(lines, exit_code=None, expect=("GOLDEN OK",), timeout=5.0, late=()):
+    """Drives wc.watch with a fake browser: exit_code is what poll() returns (None = still running); late lines
+    arrive only after the reader thread is joined (output written just before the exit)."""
+    inbox = queue.Queue()
+    for l in lines:
+        inbox.put(l)
+    clock = [0.0]
+
+    def join_reader():
+        for l in late:
+            inbox.put(l)
+
+    return wc.watch(inbox, lambda: exit_code, join_reader, list(expect), FAIL, timeout,
+                    now=lambda: clock[0], sleep=lambda d: clock.__setitem__(0, clock[0] + d))
+
+
+def test_a_pass_line_written_just_before_the_exit_is_a_pass():
+    assert run_watch([], exit_code=0, late=[line("GOLDEN OK 1950 a")]) == 0
+    assert run_watch([line("GOLDEN OK 1950 a")], exit_code=0) == 0
+
+
+def test_an_exit_without_the_expected_lines_is_browser_exited(capsys):
+    assert run_watch([line("something else")], exit_code=3) == 1
+    assert "BROWSER EXITED code 3" in capsys.readouterr().out
+
+
+def test_a_failure_line_fails_and_a_silent_running_browser_times_out(capsys):
+    assert run_watch([line("GOLDEN FAIL 1950 a expected b")]) == 1
+    assert "FAIL: GOLDEN FAIL" in capsys.readouterr().out
+    assert run_watch([], exit_code=None) == 1
+    assert "TIMEOUT" in capsys.readouterr().out

@@ -93,6 +93,51 @@ def scan(lines, expect, fail):
     return ("pass" if not pending else "pending"), pending, texts
 
 
+def drain(inbox: queue.Queue) -> list:
+    batch = []
+    while True:       # lines are dropped once scanned: only the batch is held
+        try:
+            batch.append(inbox.get_nowait())
+        except queue.Empty:
+            return batch
+
+
+def watch(inbox, poll, join_reader, expect, fail, timeout, now=time.time, sleep=time.sleep) -> int:
+    """The check loop: 0 on PASS, 1 on a failure line, on BROWSER EXITED or on TIMEOUT. poll() is the browser's
+    returncode (None while running); join_reader() waits briefly for the stderr reader thread to hit EOF, so output
+    written just before the exit is still scanned."""
+    pending, deadline = list(expect), now() + timeout
+
+    def look():
+        nonlocal pending
+        status, pending, texts = scan(drain(inbox), pending, fail)
+        for t in texts:
+            print("console:", t)
+        if status == "fail":
+            print(f"FAIL: {texts[-1]}")
+            return 1
+        if status == "pass":
+            print("PASS: saw " + ", ".join(expect))
+            return 0
+        return None
+
+    while now() < deadline:
+        result = look()
+        if result is not None:
+            return result
+        code = poll()
+        if code is not None:
+            join_reader()
+            result = look()
+            if result is not None:
+                return result
+            print(f"BROWSER EXITED code {code}; never saw " + ", ".join(pending))
+            return 1
+        sleep(0.2)
+    print("TIMEOUT: never saw " + ", ".join(pending))
+    return 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("build", type=Path)
@@ -115,36 +160,10 @@ def main() -> int:
         if a.swiftshader:
             flags += ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
         proc = subprocess.Popen([str(chrome), *flags, url], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, errors="replace")
-        fail, pending, deadline = re.compile(a.fail), list(a.expect), time.time() + a.timeout
         inbox: queue.Queue = queue.Queue()
-        threading.Thread(target=lambda: [inbox.put(l) for l in iter(proc.stderr.readline, "")], daemon=True).start()
-        idle = 0
-        while time.time() < deadline:
-            batch = []
-            while True:       # lines are dropped once scanned: only the batch is held
-                try:
-                    batch.append(inbox.get_nowait())
-                except queue.Empty:
-                    break
-            status, pending, texts = scan(batch, pending, fail)
-            for t in texts:
-                print("console:", t)
-            if status == "fail":
-                print(f"FAIL: {texts[-1]}")
-                return 1
-            if status == "pass":
-                print("PASS: saw " + ", ".join(a.expect))
-                return 0
-            if proc.poll() is not None and not batch:
-                idle += 1      # two idle polls after exit: the reader thread has drained stderr
-            else:
-                idle = 0
-            if idle >= 2:
-                print(f"BROWSER EXITED code {proc.returncode}; never saw " + ", ".join(pending))
-                return 1
-            time.sleep(0.2)
-        print("TIMEOUT: never saw " + ", ".join(pending))
-        return 1
+        reader = threading.Thread(target=lambda: [inbox.put(l) for l in iter(proc.stderr.readline, "")], daemon=True)
+        reader.start()
+        return watch(inbox, proc.poll, lambda: reader.join(2), list(a.expect), re.compile(a.fail), a.timeout)
     finally:
         if proc is not None:
             proc.terminate()
