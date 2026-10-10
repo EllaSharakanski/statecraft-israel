@@ -12,8 +12,12 @@ office: prime_minister
 # (JVL, en.wiki "1949 in Israel" and "1948 Arab-Israeli War") vs 6 January (en.wiki "Operation Horev"); Israel accepted the
 # cease-fire on 7 January. The alternative (holding El-Arish to cut off the Egyptian army) is in Avnery's commentary [S].
 # Research notes facts-1948.md section 9.
+# The card comes on 2 January, a day after Ben-Gurion told McDonald the orders were given (1 January): it cannot come on
+# the 26 December turn without stating the facts of 28-30 December in advance (review M6, accepted). Only a player who
+# launched Operation Horev sees it.
 from: 1948-12-31
 to: 1949-01-03
+requires: { event: operation_horev, option: launch }
 options:
   - id: withdraw
     text: Withdraw from Sinai to the Negev frontier
@@ -21,12 +25,12 @@ options:
     recommended: true
     effects:
       - { target: intl_standing, delta: 0.05 }
-      - { target: security, delta: -0.02 }
+      - { target: security, delta: -0.01 }
   - id: hold_el_arish
     text: Hold the positions around El-Arish
     effects:
-      - { target: intl_standing, delta: -0.12 }
-      - { target: security, delta: 0.05 }
+      - { target: intl_standing, delta: -0.10 }
+      - { target: security, delta: 0.025 }
 sources:
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d341", checked: 2026-10-10 }
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d371", checked: 2026-10-10 }

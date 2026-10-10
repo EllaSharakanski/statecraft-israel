@@ -22,8 +22,8 @@ with `GoldenRun.Seed = 1948` on the real `content/`, then steps with `Historical
 
 | Run | Ends | Hash |
 |---|---|---|
-| to 1950-01-01 (`Hash1950`) | 1950-02-27, turn 35 | `d463d5b22c9f98cf6b604a2f31738f01ca4b72cd3b2fb3c58a6d31790f4ff26e` |
-| to 1952-01-01 (`Hash1952`) | 1952-02-27, turn 43 | `f78fc68d91fce73bc12e31c3a6eade4e889fd7e6d3002c5b9821075e31ab1dfb` |
+| to 1950-01-01 (`Hash1950`) | 1950-02-27, turn 35 | `71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07` |
+| to 1952-01-01 (`Hash1952`) | 1952-02-27, turn 43 | `73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767` |
 
 Each constant is written in three places that must agree:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against;
@@ -72,3 +72,5 @@ rules or content, treat it as a determinism bug.
 | playtest 1 E | 1952 | `16c16d7e` | same; ends 1952-02-27 after 43 turns (was 1952-02-26, turn 53) |
 | playtest 1 E fix 1 | 1950 | `d463d5b2` | events gain `requires: {event, option}`; the hash text gains chosen{event=option;...} (the options each resolved event was resolved with); no change in the run |
 | playtest 1 E fix 1 | 1952 | `f78fc68d` | same |
+| playtest 1 E fix 1 | 1950 | `71e9904d` | 1948 war-period events revised after review: windows open on the turn before each decision, Yoav becomes the Hebron-hills decision, follow-ups use `requires`, Bernadotte's shared standing hit, security deltas halved, the elections a one-option card in January, two events added (Jerusalem cease-fire, Rhodes talks); still ends 1950-02-27, turn 35 |
+| playtest 1 E fix 1 | 1952 | `73590e32` | same; still ends 1952-02-27, turn 43 |

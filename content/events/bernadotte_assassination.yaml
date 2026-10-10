@@ -19,12 +19,14 @@ options:
     historical: true
     recommended: true
     effects:
-      - { target: intl_standing, delta: 0.03 }
-      - { target: security, delta: 0.02 }
+      - { target: intl_standing, delta: -0.05 }   # the killing itself, shared by both options (notes section 6)
+      - { target: intl_standing, delta: 0.03 }    # partial recovery from the crackdown
+      - { target: security, delta: 0.01 }
   - id: investigate_only
     # Game assumption: the notes name no advocate for this option.
     text: Investigate the killing without a general crackdown
     effects:
+      - { target: intl_standing, delta: -0.05 }   # the killing itself, shared by both options (notes section 6)
       - { target: intl_standing, delta: -0.10 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Folke_Bernadotte", checked: 2026-10-10 }

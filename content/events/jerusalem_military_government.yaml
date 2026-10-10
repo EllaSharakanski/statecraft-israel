@@ -1,29 +1,33 @@
 id: jerusalem_military_government
 title: Jerusalem
-text: 'Count Bernadotte has suggested demilitarising Jerusalem. The alternative is to declare the part of Jerusalem held by the IDF Israel-occupied territory, under a military governor, Dov Yosef. {prime_minister} must decide.'
+text: 'Count Bernadotte''s proposals would put Jerusalem under UN authority, and he has suggested demilitarising the city. The alternative is to put the part of Jerusalem held by the IDF under Israeli military government, with Dov Yosef as military governor. {prime_minister} must decide.'
 anchor: hard
 tags: [security]
 office: prime_minister
-# 2 August 1948: the government rejected Bernadotte's suggestion, declared the Jerusalem area under its control
-# Israel-occupied territory and appointed Dov Yosef Military Governor (Official Gazette No. 12; JVL, en.wiki "Dov Yosef").
-# Research notes facts-1948.md section 5 (companion events) and 13b.
-from: 1948-08-02
+# Bernadotte's proposals of 28 June 1948 put Jerusalem under UN authority (notes section 1, JVL/IDF). On 2 August 1948 the
+# government rejected his suggestion to demilitarise Jerusalem, declared the Jerusalem area under its control
+# Israel-occupied territory (the proclamation's own words) and appointed Dov Yosef Military Governor (Official Gazette
+# No. 12; JVL, en.wiki "Dov Yosef"). The date of the demilitarisation suggestion is a gap in the notes. Research notes
+# sections 5 (companion events) and 13b. The window opens on 17 July, the turn date before 2 August on the monthly grid of
+# the second truce (game timing).
+from: 1948-07-17
 to: 1948-08-03
+# Effects of both options are game assumptions: the notes give none for this event.
 options:
   - id: military_government
     text: Declare military government and appoint Dov Yosef governor
     historical: true
     recommended: true
-    # Effects are game assumptions: the notes give none for this event.
     effects:
-      - { target: security, delta: 0.02 }
+      - { target: security, delta: 0.01 }
       - { target: intl_standing, delta: -0.02 }
   - id: accept_demilitarisation
     text: Accept the demilitarisation of Jerusalem
     effects:
-      - { target: security, delta: -0.03 }
+      - { target: security, delta: -0.015 }
       - { target: intl_standing, delta: 0.02 }
 sources:
   - { url: "https://www.jewishvirtuallibrary.org/jerusalem-declared-israel-occupied-city-government-proclamation", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/Dov_Yosef", checked: 2026-10-10 }
+  - { url: "https://www.jewishvirtuallibrary.org/the-first-truce-1948", checked: 2026-10-10 }
 status: fact-checked

@@ -18,18 +18,18 @@ options:
     recommended: true
     set_rung: 5
     effects:
-      - { target: security, delta: 0.04 }
+      - { target: security, delta: 0.02 }
   - id: advance_into_lebanon
     text: Launch it, and advance further into Lebanon
     set_rung: 5
     effects:
-      - { target: security, delta: 0.05 }
+      - { target: security, delta: 0.025 }
       - { target: intl_standing, delta: -0.08 }
   - id: protest_to_un
     # Game assumption: the notes name no advocate for this option.
     text: Protest to the UN and hold the line
     effects:
-      - { target: security, delta: -0.04 }
+      - { target: security, delta: -0.02 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Hiram", checked: 2026-10-10 }
 status: fact-checked
