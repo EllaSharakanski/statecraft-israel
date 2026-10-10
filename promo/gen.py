@@ -2,27 +2,24 @@
 # requires-python = ">=3.11"
 # dependencies = ["requests"]
 # ///
-"""Generate promo concept art via ElevenLabs /v1/flows/image (same endpoint and fields as
-drowning-video/tools/image.py, which ran successfully on 2026-10-08).
+"""Generate promo concept art via the ElevenLabs Image API (/v1/flows/image).
 
-Usage: uv run promo/gen.py SHOT_ID [MODEL]   (shot prompts live in promo/shots.json)
-The API key is read from drowning-video/.env and never printed. Refuses to run if the shared
-credit pool would drop below FLOOR."""
-import base64, json, mimetypes, sys, time
+Usage: ELEVENLABS_API_KEY=... uv run promo/gen.py SHOT_ID [MODEL]   (shot prompts live in promo/shots.json)
+The API key is read from the ELEVENLABS_API_KEY environment variable only and is never printed or written. Keep it
+in your own key store, never in this repository. Refuses to run if the account's credit pool would drop below FLOOR."""
+import base64, json, mimetypes, os, sys, time
 from pathlib import Path
 import requests
 
 BASE = "https://api.elevenlabs.io"
-ENV = Path.home() / "drowning-video" / ".env"
 HERE = Path(__file__).resolve().parent
-FLOOR = 50_000          # credits left for the drowning-video project, never spent here
+FLOOR = 50_000          # credits kept in reserve for other work on the same account, never spent here
 ESTIMATE = 2_000        # upper bound seen per 2K image on this account (Nano Banana Pro: 1,827)
 
 def session() -> requests.Session:
-    key = next((l.split("=", 1)[1].strip() for l in ENV.read_text().splitlines()
-                if l.startswith("ELEVENLABS_API_KEY=")), None)
+    key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
     if not key:
-        raise SystemExit("ELEVENLABS_API_KEY missing")
+        raise SystemExit("ELEVENLABS_API_KEY is not set (export it from your own key store; never commit it)")
     s = requests.Session(); s.headers["xi-api-key"] = key
     return s
 
@@ -40,7 +37,7 @@ def main(shot_id: str, model: str = "gpt-image-2.5-sunburst"):
             "resolution": "2K"}
     if model.startswith("gpt-image"):
         body["quality"] = "high"
-    if shot.get("refs"):  # reference images, paths relative to promo/ (same shape as drowning-video img_ref)
+    if shot.get("refs"):  # reference images, paths relative to promo/
         body["images"] = [{"type": "inline_base64", "mime_type": mimetypes.guess_type(p)[0] or "image/png",
                            "content_base64": base64.b64encode((HERE / p).read_bytes()).decode()}
                           for p in shot["refs"]]

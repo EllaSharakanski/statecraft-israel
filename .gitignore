@@ -44,3 +44,13 @@ unity/Builds/
 *.ulf
 .superpowers/
 research_notes/open source/
+
+.env.*
+*.alf
+Unity_v*.alf
+.claude/settings.local.json
+.pytest_cache/
+.vs/
+.idea/
+unity/obj/
+unity/MemoryCaptures/

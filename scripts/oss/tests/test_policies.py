@@ -147,3 +147,16 @@ def test_trademark_qualifies_the_concept_art():
 def test_contributing_requires_a_provenance_row():
     text = read("CONTRIBUTING.md")
     assert "**Provenance.**" in text and "[ASSETS.yaml](ASSETS.yaml)" in text
+
+
+def test_promo_gen_reads_its_key_from_the_environment_only():
+    text = read("promo/gen.py")
+    assert "drowning" not in text and "ELEVENLABS_API_KEY" in text and "dotenv" not in text and "/.env" not in text
+    assert "read_text" not in text.split("def session", 1)[1].split("def left", 1)[0]
+
+
+def test_gitignore_covers_editor_licence_and_local_files():
+    lines = set(read(".gitignore").splitlines())
+    for rule in (".env.*", "*.alf", "Unity_v*.alf", ".claude/settings.local.json", ".pytest_cache/", ".vs/",
+                 ".idea/", "unity/obj/", "unity/MemoryCaptures/"):
+        assert rule in lines, rule
