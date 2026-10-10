@@ -491,6 +491,7 @@ and tilt-shift are not in this worktree).
 | 8 | t08-grid | captures/visual/t08-grid/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 8 (fix 1) | t08-grid-r1 | captures/visual/t08-grid-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
+| merge | t-merge | captures/visual/t-merge/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png (before the grade re-tune: t-merge-pre, t-merge-r1) | (owner) Note: the land is one dry-grass gold with no fields, orchards or cities yet; that gap is content (art track), not the grade. |
 
 ## Task 9: labels
 
@@ -561,3 +562,47 @@ Deviations from the plan text, each forced by a test:
   visible marker not decluttered by zoom with no other visible marker within 2 pill heights + MarginPx is labelled.
   Disabling the anchor fallback turns it red (`overview: shown pills Expected: greater than or equal to 7 But was: 6`).
 
+## Merge point (Tracks A, B, C and main on `visual-v1`)
+Merged in order vis-light, vis-labels, main, then vis-ground (`d5037af`). Conflicts: `SettlementTests.cs` (the seam test
+now runs Track A's graded/ungraded loop around Track B's pairs and even-row strips, grid off and on, four yaws: 64
+asserted checks, max 0.006 ungraded against 0.012 and 0.005 graded against 0.024), `docs/visual-v1.md`,
+`tools/README.md`. Carries closed: the stale `_label` filter (Task 9 M8) is gone; Track B's colour and detail render
+tests (`TerrainShaderTests`, `SeaTests`, the seam and rift tests) run with the tilt-shift off (task-3 carry m6).
+
+**Counts.** Unity edit mode: base `0a2a391` 346; Track A `5fa3fa9` 382 (+36); Track B `ee555ac` 371 (+25); Track C
+`ebfdb73` 361 (+15); main since the base +15 (`UnityMcpGuardTests` 10, `GameInputsTests` 5); minus 1 for
+`VisualHarnessTests.AnAllowedRequireIsAcceptedAndAnUnknownOneFailsWithHowToAddIt`, which both A and B carry (the Task 3
+Step 0 cherry-pick). 346 + 36 + 25 + 15 + 15 - 1 = **436**, measured `total="436" passed="436" failed="0"`, no CS
+warning from `Assets/(Scripts|Editor|Tests)`. Tools 143 + 1 (main) + 29 (Track B) = **173 passed, 1 skipped**. Sim 625
+(`git diff 0a2a391 -- sim content` shows only main's owner sign-off `25d2ef6`; no visual track touches either).
+
+**Cross-track interactions found by the render tests.**
+- `GradeTests.TheSelectedHexStillStandsOutOnGradedLand` failed at gameplay03 ungraded: deltaE76 18.2 (< 20; graded
+  23.1; Track A alone 24.5 / 32.3). Track B's coastal plain is dry-grass gold, the hue of the gold selection band. The
+  selection is now warm ivory (1, 0.95, 0.80): 31.9 / 34.1 at gameplay03, 30.7 / 32.2 at diorama02.
+- Shadows (`ReliefCastsShadowsAtMapScale`, water on): 4.53% web, 6.99% PC (floor 2%; Track A alone 3.05 / 3.23).
+  Haze tests: near 0.004, mid 0.028, far 0.054. Zoom extremes at MinDistance 6 km: grid covers 0.22% (1.57% at
+  250 km). Rift line change (bound 0.012): Beit She'an 0.096, Jericho 0.085, Arava 0.026.
+
+**Grade re-tune (Task 4 review I1).** WebGL headless, 1920x1080 at DPR 1:
+
+| Shot | Saturation | Contrast | Warmth |
+|---|---|---|---|
+| promo 02 / promo 03 | 0.425 / 0.382 | 0.200 / 0.203 | 0.145 / 0.064 |
+| diorama02, `Saturation` 16 (t-merge-pre) | 0.5345 | 0.2058 | 0.1405 |
+| gameplay03, `Saturation` 16 | 0.6629 | 0.2147 | 0.1509 |
+| diorama02, `Saturation` 4 (t-merge-r1) | 0.4860 | 0.2070 | 0.1181 |
+| diorama02, **`Saturation` 0 (t-merge)** | **0.4729** | **0.2074** | **0.1099** |
+| gameplay03, **`Saturation` 0** | **0.5822** | **0.2168** | **0.1078** |
+
+Diorama02 now meets both bars (warmth in [0.087, 0.145], saturation <= 0.48). `TheGradeLiftsSaturation`: 0.568 ->
+0.598 (+5.3%, bar 5%). Gameplay03 stays 0.20 over its promo in saturation and 0.04 in warmth: the promo's frame is
+green fields and orchards, which no global grade can supply.
+
+**Grid (Task 8 N2).** Land opacity 0.25 -> 0.35: at 0.25 the graded land lines were invisible on the plain at both
+poses. At 0.35 gameplay03 shows a faint land lattice and diorama02 a faint near-field one, as in the promos. Fade
+thresholds unchanged.
+
+**Web.** `BUILD Succeeded WebGL -> Builds/Web-disabled: 77.1 MB on disk, 0 errors`; `?golden&smoke=5` PASS with all
+three values from docs/determinism.md. Boot (headed, `machine_lock --exclusive`, median of 3): `--cpu 1` map_build 456 /
+first_frame 3585 ms (budgets 743 / 5321); `--cpu 4` 1863 / 6952 ms (budgets 2720 / 10445). Both within.
