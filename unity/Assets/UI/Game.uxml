@@ -54,8 +54,22 @@
             <ui:VisualElement name="event-options" />
             <ui:Label name="event-count" class="muted" />
         </ui:VisualElement>
-        <ui:VisualElement name="info-panel" class="panel info-panel" />
-        <ui:VisualElement name="minimap" class="panel minimap" />
+        <ui:VisualElement name="info-panel" class="panel info-panel">
+            <ui:Label name="info-title" class="title" />
+            <ui:Label name="info-subtitle" class="muted" />
+            <ui:Label name="info-settlements" />
+            <ui:Label name="info-placement" class="muted" />
+            <ui:VisualElement class="row">
+                <ui:Button name="build-camp" />
+                <ui:Button name="build-housing" />
+            </ui:VisualElement>
+            <ui:Label name="info-reason" class="reason" />
+        </ui:VisualElement>
+        <ui:VisualElement name="minimap" class="panel minimap">
+            <ui:VisualElement name="minimap-image" class="minimap-image">
+                <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:VisualElement name="screen-cabinet" class="panel screen">
             <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>
             <ui:VisualElement class="row grow">

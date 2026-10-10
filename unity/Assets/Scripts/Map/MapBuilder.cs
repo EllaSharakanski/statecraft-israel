@@ -23,6 +23,9 @@ namespace Statecraft.Game.Map
         /// capture, the 90 km flythrough) a coarse surface that rises above the draped hex outlines in valleys (K2).</summary>
         public const float TerrainPixelError = 1f;
 
+        /// <summary>Biome colours of the terrain layers (the minimap uses the same ones).</summary>
+        public static IReadOnlyDictionary<string, Color> BiomeColours => Biome;
+
         static readonly Dictionary<string, Color> Biome = new Dictionary<string, Color>
         {
             ["sea"] = new Color(0.16f, 0.42f, 0.55f), ["lake"] = new Color(0.20f, 0.50f, 0.62f),

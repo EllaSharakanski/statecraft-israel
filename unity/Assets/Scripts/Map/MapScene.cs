@@ -13,6 +13,8 @@ namespace Statecraft.Game.Map
         [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial;
 
         public GeoFrame Frame { get; private set; }
+        /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
+        public HexFile Hexes { get; private set; }
         public Terrain Terrain { get; private set; }
         public Material MarkerMaterial => markerMaterial;
 
@@ -33,7 +35,8 @@ namespace Statecraft.Game.Map
 
             Clear();
             var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16, MetaPath);
-            var terrainGo = MapBuilder.Build(meta, heights, MapBuilder.LoadHexes(inputs.HexesJson, HexesPath), terrainMaterial, overlayMaterial);
+            Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
+            var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial, overlayMaterial);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
