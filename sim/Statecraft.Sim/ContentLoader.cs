@@ -125,6 +125,14 @@ namespace Statecraft.Sim
         {
             if (readFile == null) throw new ArgumentNullException(nameof(readFile));
             if (eventFiles == null) throw new ArgumentNullException(nameof(eventFiles));
+            var read = new List<(string rel, string text)>();
+            var inner = readFile;
+            readFile = rel =>
+            {
+                var text = inner(rel);
+                if (text != null) read.Add((rel, text));
+                return text;
+            };
             var c = new Content();
             c.Offices = Read<OfficesFile>(readFile, "offices.yaml").Offices;
             c.Parties = Read<PartiesFile>(readFile, "parties.yaml").Parties;
@@ -147,7 +155,21 @@ namespace Statecraft.Sim
                 c.Events.Add(e);
             }
             Validate(c, settlementIds);
+            c.Hash = HashOf(read);
             return c;
+        }
+
+        /// <summary>SHA-256 over "path\nlength\ntext" for each file, CRLF normalised to LF (a Windows checkout hashes alike).</summary>
+        static string HashOf(List<(string rel, string text)> files)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (var (rel, text) in files)
+            {
+                var t = text.Replace("\r\n", "\n");
+                sb.Append(rel).Append('\n').Append(t.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('\n').Append(t);
+            }
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            return string.Concat(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).Select(b => b.ToString("x2", System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>

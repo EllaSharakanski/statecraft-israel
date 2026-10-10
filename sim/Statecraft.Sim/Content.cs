@@ -261,6 +261,9 @@ namespace Statecraft.Sim
             }
         }
         public List<SettlementHex> SettlementHexes = new List<SettlementHex>();
+        /// <summary>SHA-256 (lowercase hex) over every file the loader read, in read order, with CRLF read as LF. A save
+        /// records it; loading a save made with other content shows a warning (spec section 7).</summary>
+        public string Hash = "";
 
         /// <summary>The hex at axial (q, r), or null when the map has none there.</summary>
         public MapHex? HexAt(int q, int r)
