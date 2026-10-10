@@ -11,9 +11,9 @@ namespace Statecraft.Game.EditorTools
 {
     /// <summary>Headless player builds. Map.unity is the boot scene; ContentSync copies content/ into StreamingAssets
     /// first (IPreprocessBuildWithReport). Exits non-zero on failure.
-    ///   Web: Unity -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web
+    ///   Web: Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web
     ///        [-compression disabled|gzip|brotli] [-out Builds/Web-disabled]
-    ///   Mac: Unity -batchmode -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac
+    ///   Mac: Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod Statecraft.Game.EditorTools.Build.Mac
     ///        [-out Builds/Mac/Statecraft.app] [-ffp-contract-off]</summary>
     public static class Build
     {

@@ -69,7 +69,7 @@ public class WarEvents1948Tests
     {
         var e = Get(id);
         var row = Events.Single(x => x.Id == id);
-        Assert.Equal("fact-checked", e.Status);
+        Assert.Contains(e.Status, new[] { "fact-checked", ReleaseGate.ReviewedStatus });   // sensitive ones carry the owner's sign-off (D11)
         Assert.True(e.Sources.Count >= 1, $"{id} has no source");
         Assert.All(e.Sources, s => { Assert.StartsWith("https://", s.Url); Assert.Equal(new DateTime(2026, 10, 10), s.Checked); });
         Assert.Equal(row.Office, e.Office);

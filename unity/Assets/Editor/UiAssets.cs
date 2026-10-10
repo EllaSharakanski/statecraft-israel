@@ -8,7 +8,7 @@ namespace Statecraft.Game.EditorTools
     /// <summary>Creates the UI Toolkit PanelSettings asset (tech notes 1.3): scale with screen size against 1920x1080,
     /// matching width and height equally, with the default runtime theme. An asset, not a runtime instance, so its theme
     /// and shader references are included in player builds (the M0 Shader.Find lesson). Idempotent.
-    /// Run headless: Unity -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.UiAssets.Create</summary>
+    /// Run headless: Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.UiAssets.Create</summary>
     public static class UiAssets
     {
         public static void Create()

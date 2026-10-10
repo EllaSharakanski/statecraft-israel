@@ -26,4 +26,4 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
   - { url: "https://www.jewishvirtuallibrary.org/jsource/History/horev.html", checked: 2026-10-10 }
-status: fact-checked
+status: sensitivity-reviewed

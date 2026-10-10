@@ -5,7 +5,7 @@ namespace Statecraft.Game.EditorTools
 {
     /// <summary>Creates the map's material assets (M0 correction 1: Shader.Find returns null in players, so materials are
     /// editor-made assets passed to MapBuilder.Build through serialized fields). Idempotent.
-    /// Run headless: Unity -batchmode -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.MapMaterials.Create</summary>
+    /// Run headless: Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod Statecraft.Game.EditorTools.MapMaterials.Create</summary>
     public static class MapMaterials
     {
         public const string Folder = "Assets/Materials";
