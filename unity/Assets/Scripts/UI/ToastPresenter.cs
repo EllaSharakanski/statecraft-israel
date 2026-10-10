@@ -34,6 +34,11 @@ namespace Statecraft.Game.UI
 
         public void Show(string line) => Show(new[] { line });
 
+        /// <summary>Adds a line under what is shown (alone when nothing is), e.g. a failed autosave after the turn's
+        /// refusals.</summary>
+        public void Append(string line) =>
+            Show(label.style.display.value == DisplayStyle.Flex && label.text.Length > 0 ? label.text + "\n" + line : line);
+
         /// <summary>Shows why an order was refused ("Not done: ...").</summary>
         public void Refuse(string reason) => Show(text.Format("toast.refused", reason));
 

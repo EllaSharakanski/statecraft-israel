@@ -84,7 +84,7 @@ public class GameSceneTests
     {
         var root = Boot();
         Assert.IsNotNull(root.Bridge);
-        Assert.AreEqual(root.Bridge!.State.Date.Year.ToString(), Ui.Q<Label>("year").text);
+        Assert.AreEqual(root.Bridge!.State.Date.Year.ToString(System.Globalization.CultureInfo.InvariantCulture), Ui.Q<Label>("year").text);
         Assert.AreEqual("Click the map to inspect a hex", Ui.Q<Label>("info-title").text);
         Assert.AreEqual(new DateTime(1948, 5, 15), root.Bridge.State.Date, "no autosave: a new game");
         var pointer = Object.FindFirstObjectByType<MapPointer>();
@@ -166,6 +166,14 @@ public class GameSceneTests
     public void AClickOnTheTerrainFillsTheInfoPanel()
     {
         Boot();
+        var pointer = Object.FindFirstObjectByType<MapPointer>();
+        Assert.IsTrue(pointer.HandleClick(AimAtTelAviv()), "the ray hit the terrain");
+        Assert.AreEqual("Tel Aviv", Ui.Q<Label>("info-title").text);
+    }
+
+    /// <summary>Points the main camera straight down at Tel Aviv and returns the screen centre.</summary>
+    static Vector2 AimAtTelAviv()
+    {
         var map = Object.FindFirstObjectByType<MapScene>();
         var c = Inputs.Content;
         var tlv = c.SettlementHexes.Single(s => s.Id == "tel_aviv");
@@ -174,13 +182,12 @@ public class GameSceneTests
         var cam = Camera.main!;
         cam.transform.position = new Vector3(ground.x, 50_000f, ground.z);
         cam.transform.rotation = Quaternion.Euler(90, 0, 0);
-        var pointer = Object.FindFirstObjectByType<MapPointer>();
-        Assert.IsTrue(pointer.HandleClick(new Vector2(cam.pixelWidth / 2f, cam.pixelHeight / 2f)), "the ray hit the terrain");
-        Assert.AreEqual("Tel Aviv", Ui.Q<Label>("info-title").text);
+        return new Vector2(cam.pixelWidth / 2f, cam.pixelHeight / 2f);
     }
 
-    // One label each presenter writes on every change: HUD, toast, info panel, Why, Budget, Defence, Cabinet.
-    static readonly string[] Watched = { "year", "toast", "info-title", "why-turn", "budget-money", "mob-level", "cabinet-coalition" };
+    // One label each presenter writes on every change: HUD, toast, info panel, Why, Budget, Defence, Cabinet, event card
+    // (the card writes its title while an event is open, so the test opens one first).
+    static readonly string[] Watched = { "year", "toast", "info-title", "why-turn", "budget-money", "mob-level", "cabinet-coalition", "event-title" };
 
     // Carry 1, 3-7, 9: disabling GameRoot disposes every presenter, the autosave and its own hooks.
     [Test]
@@ -188,10 +195,23 @@ public class GameSceneTests
     {
         var root = Boot();
         var bridge = root.Bridge!;
+        var c = Inputs.Content;
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        bridge.Replace(g);
+        Assert.AreEqual(DisplayStyle.Flex, Ui.Q("event-card").style.display.value, "an event is open before the disable");
         var pointer = Object.FindFirstObjectByType<MapPointer>();
+        var camera = Camera.main.GetComponent<CameraController>();
+        var image = Ui.Q("minimap-image");
+        var texture = image.style.backgroundImage.value.texture;
+        Assert.IsTrue(texture != null, "the minimap has its texture");
         root.enabled = false;
         Assert.IsNull(pointer.IsOverUi, "the pointer no longer asks a disposed panel");
-        Assert.IsNull(Camera.main.GetComponent<CameraController>().IsOverUi);
+        Assert.IsNull(camera.IsOverUi);
+        Assert.IsNull(pointer.Map, "the pointer no longer picks on this map");
+        Assert.AreEqual(float.MaxValue, camera.Bounds.width, "the camera bounds are restored");
+        Assert.IsTrue(texture == null, "the minimap texture is destroyed");
+        Assert.AreEqual(StyleKeyword.Null, image.style.backgroundImage.keyword, "nothing draws the destroyed texture");
         foreach (var label in Watched)
             Ui.Q<Label>(label).text = "untouched";
         var turn = bridge.State.Turn;
@@ -203,6 +223,7 @@ public class GameSceneTests
         UiTestKit.Press(Ui.Q<Button>("new-game")); UiTestKit.Press(Ui.Q<Button>("new-game"));
         Assert.AreSame(session, bridge.Session, "NewGamePresenter");
         Assert.AreEqual(DisplayStyle.None, Ui.Q("event-card").style.display.value, "EventCardPresenter hid its card");
+        Assert.IsFalse(pointer.HandleClick(AimAtTelAviv()), "a map click no longer reaches the info panel");
         bridge.Queue(new SetMobilization(0.1));
         bridge.EndTurn();
         foreach (var label in Watched)
@@ -229,15 +250,84 @@ public class GameSceneTests
         Assert.AreEqual(hash, root.Bridge!.State.Hash(), "the next start continues the autosave");
     }
 
-    // Carry 11: the autosave subscribes after the toast, so a save failure is not cleared by the turn's own toast.
+    // Carry 11 and review M4: the autosave subscribes after the toast and appends, so a save failure is shown next to
+    // the turn's refusals, not cleared by them and not replacing them.
     [Test]
-    public void ASaveFailureIsNotHiddenByTheTurnsToast()
+    public void ASaveFailureIsShownAlongsideTheTurnsRefusals()
     {
         File.WriteAllText(saveDir, "a file where the save folder should be");
         var root = Boot(new SaveStore(saveDir));
+        var tlv = Inputs.Content.SettlementHexes.Single(s => s.Id == "tel_aviv");
+        Assert.IsNull(root.Bridge!.Queue(new MapAction(MapActions.TransitCamp, tlv.Q, tlv.R)), "queued; the sim refuses it in 1948");
         LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("^Autosave could not be written"));
-        root.Bridge!.EndTurn();
-        Assert.AreEqual(Text["save.write_failed"], Ui.Q<Label>("toast").text);
+        root.Bridge.EndTurn();
+        var lines = Ui.Q<Label>("toast").text.Split('\n');
+        Assert.AreEqual(2, lines.Length, Ui.Q<Label>("toast").text);
+        StringAssert.StartsWith("Not done: ", lines[0]);
+        Assert.AreEqual(Text["save.write_failed"], lines[1]);
+        Assert.AreEqual(DisplayStyle.Flex, Ui.Q("toast").style.display.value);
+    }
+
+    [Test]
+    public void AppendAddsALineOrShowsItAlone()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(Inputs.Content, GoldenRun.Seed, Mode.Historical), Text);
+        using var toast = new ToastPresenter(ui.Root, bridge, Text);
+        toast.Append("one");
+        Assert.AreEqual("one", ui.Q<Label>("toast").text);
+        Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("toast").style.display.value);
+        toast.Append("two");
+        Assert.AreEqual("one\ntwo", ui.Q<Label>("toast").text);
+        toast.Clear();
+        toast.Append("three");
+        Assert.AreEqual("three", ui.Q<Label>("toast").text);
+    }
+
+    // Review I1: a smoke run never touches the player's save, not even through New Game.
+    [Test]
+    public void ASmokeBootNeverTouchesThePlayersSave()
+    {
+        var player = new SimBridge(GameSession.New(Inputs.Content, 9, Mode.Historical), Text);
+        player.EndTurn();
+        Directory.CreateDirectory(saveDir);
+        var path = Path.Combine(saveDir, SaveStore.AutosaveName);
+        var saved = player.Session.Save.Write();
+        File.WriteAllText(path, saved);
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var root = Object.FindFirstObjectByType<GameRoot>();
+        root.Store = new SaveStore(saveDir);
+        LogAssert.Expect(LogType.Warning, "SMOKE FAIL the smoke run needs play mode or a player");
+        root.Begin(Inputs, 5);
+        Assert.AreEqual(0, root.Bridge!.State.Turn, "a fresh game, not the player's");
+        var session = root.Bridge.Session;
+        UiTestKit.Press(Ui.Q<Button>("new-game")); UiTestKit.Press(Ui.Q<Button>("new-game"));
+        Assert.AreSame(session, root.Bridge.Session, "New Game does nothing in a smoke run");
+        root.Bridge.EndTurn();
+        Assert.AreEqual(saved, File.ReadAllText(path), "the player's autosave is untouched");
+        Assert.AreEqual(new[] { path }, Directory.GetFiles(saveDir));
+    }
+
+    // Review M6: Configure on an enabled GameRoot moves the Ready subscription to the new boot.
+    [Test]
+    public void ConfigureMovesTheReadySubscription()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var root = Object.FindFirstObjectByType<GameRoot>();
+        var old = Object.FindFirstObjectByType<GameBoot>();
+        var other = new GameObject("OtherBoot").AddComponent<GameBoot>();
+        static int Listeners(GameBoot b) =>
+            (typeof(GameBoot).GetField("Ready", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(b) as Delegate)?.GetInvocationList().Length ?? 0;
+        Assert.AreEqual(1, Listeners(old), "subscribed while enabled");
+        var so = new SerializedObject(root);
+        Object R(string f) => so.FindProperty(f).objectReferenceValue;
+        root.Configure(other, (UIDocument)R("document"), (TextAsset)R("strings"), (PortraitCatalog)R("portraits"), (MapScene)R("map"),
+            (PlacementLayer)R("placements"), (MapPointer)R("pointer"), (CameraController)R("cameraController"));
+        Assert.AreEqual(0, Listeners(old));
+        Assert.AreEqual(1, Listeners(other));
+        root.enabled = false;
+        Assert.AreEqual(0, Listeners(other));
     }
 
     // Carry 10: placements are drawn at start and redrawn only when State.Placements changes.
@@ -304,18 +394,34 @@ public class GameSceneTests
         Assert.IsFalse(log.Any(l => l.StartsWith("SMOKE OK")));
     }
 
-    // Amendment A3: the URL flag must start a query parameter and end at a word boundary.
+    // Amendment A3 and review M5: "smoke" must be a whole query parameter (bare, or =N); =0 means off; a bare flag
+    // (URL or command line) runs DefaultSmokeTurns.
     [Test]
     public void SmokeTurnsComeFromTheUrlOrTheCommandLine()
     {
-        Assert.AreEqual(5, GameRoot.SmokeTurns("http://localhost:8000/?golden&smoke=5", new string[0], true));
-        Assert.AreEqual(3, GameRoot.SmokeTurns("http://localhost:8000/?smoke=3", new string[0], true));
-        Assert.AreEqual(GameRoot.DefaultSmokeTurns, GameRoot.SmokeTurns("http://localhost:8000/?smoke", new string[0], true));
-        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/smoke-test/index.html", new string[0], true));
-        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/?smoker=4", new string[0], true));
-        Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost:8000/", new string[0], true));
-        Assert.AreEqual(4, GameRoot.SmokeTurns(null, new[] { "Statecraft", "-smoke", "4" }, false));
-        Assert.AreEqual(0, GameRoot.SmokeTurns(null, new[] { "Statecraft" }, false));
+        var none = new string[0];
+        int Web(string url) => GameRoot.SmokeTurns(url, none, true);
+        int Desk(params string[] args) => GameRoot.SmokeTurns(null, args, false);
+        Assert.AreEqual(5, Web("http://localhost:8000/?golden&smoke=5"));
+        Assert.AreEqual(3, Web("http://localhost:8000/?smoke=3"));
+        Assert.AreEqual(3, Web("http://localhost:8000/?smoke=3&golden"));
+        Assert.AreEqual(3, Web("http://localhost:8000/?smoke=3#top"));
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, Web("http://localhost:8000/?smoke"));
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, Web("http://localhost:8000/?smoke&golden"));
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, Web("http://localhost:8000/?golden&smoke="));
+        Assert.AreEqual(0, Web("http://localhost:8000/?smoke=0"), "explicitly off");
+        Assert.AreEqual(0, Web("http://localhost:8000/smoke-test/index.html"));
+        Assert.AreEqual(0, Web("http://localhost:8000/?smoker=4"));
+        Assert.AreEqual(0, Web("http://localhost:8000/?smoke-x"));
+        Assert.AreEqual(0, Web("http://localhost:8000/?smoke=five"));
+        Assert.AreEqual(0, Web("http://localhost:8000/?nosmoke=5"));
+        Assert.AreEqual(0, Web("http://localhost:8000/"));
+        Assert.AreEqual(0, Web(null!));
+        Assert.AreEqual(4, Desk("Statecraft", "-smoke", "4"));
+        Assert.AreEqual(0, Desk("Statecraft", "-smoke", "0"), "explicitly off");
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, Desk("Statecraft", "-smoke"));
+        Assert.AreEqual(GameRoot.DefaultSmokeTurns, Desk("Statecraft", "-smoke", "-golden"));
+        Assert.AreEqual(0, Desk("Statecraft"));
         Assert.AreEqual(0, GameRoot.SmokeTurns("http://localhost/?smoke=5", new[] { "Statecraft" }, false), "desktop reads only the command line");
     }
 }

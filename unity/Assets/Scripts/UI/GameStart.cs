@@ -8,7 +8,8 @@ namespace Statecraft.Game.UI
     /// <summary>Starting a session: continue the autosave when there is one (replayed to the same state hash), else a new
     /// Historical game. Anything the player should know (a content-change warning, an unreadable save) goes to notes.
     /// No failure while reading or replaying the autosave stops the game from starting: the file is set aside.
-    /// <paramref name="fresh"/> is used only by tests (New Game goes through SimBridge.Replace); it ignores the autosave.</summary>
+    /// <paramref name="fresh"/> ignores the autosave (neither read nor set aside): GameRoot's smoke run uses it, so a smoke
+    /// session never touches the player's save, and tests use it. New Game goes through SimBridge.Replace instead.</summary>
     public static class GameStart
     {
         public static ulong NewSeed() => (ulong)DateTime.UtcNow.Ticks;

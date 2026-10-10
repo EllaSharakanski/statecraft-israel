@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Statecraft.Game.Boot;
 using Statecraft.Game.Map;
 using Statecraft.Sim;
@@ -24,7 +25,8 @@ namespace Statecraft.Game.UI
     [ExecuteAlways]
     public sealed class GameRoot : MonoBehaviour
     {
-        public const int DefaultSmokeTurns = 5;
+        /// <summary>Turns a bare smoke flag ("?smoke", "-smoke") plays.</summary>
+        internal const int DefaultSmokeTurns = 5;
 
         [SerializeField] GameBoot boot = null!;
         [SerializeField] UIDocument document = null!;
@@ -43,13 +45,18 @@ namespace Statecraft.Game.UI
 
         public SimBridge? Bridge { get; private set; }
         /// <summary>Where the autosave lives; null (the default) = SaveStore.ForPlatform(). Tests set a temporary folder.</summary>
-        public SaveStore? Store { get; set; }
+        internal SaveStore? Store { get; set; }
 
         public void Configure(GameBoot boot, UIDocument document, TextAsset strings, PortraitCatalog portraits, MapScene map,
             PlacementLayer placements, MapPointer pointer, CameraController cameraController)
         {
+            var oldBoot = this.boot;
             this.boot = boot; this.document = document; this.strings = strings; this.portraits = portraits; this.map = map;
             this.placements = placements; this.pointer = pointer; this.cameraController = cameraController;
+            // An enabled GameRoot is already subscribed to the old boot's Ready (OnEnable): move the subscription.
+            if (!isActiveAndEnabled) return;
+            if (oldBoot != null) oldBoot.Ready -= Begin;
+            if (this.boot != null) this.boot.Ready += Begin;
         }
 
         void OnEnable() { if (boot != null) boot.Ready += Begin; }
@@ -60,19 +67,24 @@ namespace Statecraft.Game.UI
             Shutdown();
         }
 
-        /// <summary>Smoke-test turn count: from the page URL on WebGL ("?smoke=N", or "?smoke" for DefaultSmokeTurns; the flag
-        /// must start a query parameter and end at a word boundary, UrlFlags), else from the command line ("-smoke N").
-        /// 0 when not asked.</summary>
-        public static int SmokeTurns(string? url, string[] args, bool webgl)
+        // "smoke" as a whole query parameter: bare ("?smoke", "&smoke=") or with a number; it ends at '&', '#' or the end, so
+        // "?smoke-x", "?smoker" and "?smoke=five" are not the flag (tighter than UrlFlags' word boundary, amendment A3).
+        static readonly Regex SmokeQuery = new Regex(@"[?&]smoke(?:=(\d*))?(?=&|#|$)", RegexOptions.CultureInvariant);
+
+        /// <summary>Smoke-test turn count: from the page URL on WebGL, else from the command line. "?smoke=N" / "-smoke N"
+        /// play N turns (0 = off); a bare "?smoke" / "-smoke" plays DefaultSmokeTurns. 0 when not asked.</summary>
+        internal static int SmokeTurns(string? url, string[] args, bool webgl)
         {
             if (webgl)
             {
-                if (!UrlFlags.Has(url, "smoke")) return 0;
-                var n = UrlFlags.Int(url, "smoke");
-                return n > 0 ? n : DefaultSmokeTurns;
+                var m = SmokeQuery.Match(url ?? "");
+                if (!m.Success) return 0;
+                var digits = m.Groups[1].Value;
+                return digits.Length == 0 ? DefaultSmokeTurns : int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : 0;
             }
             var i = Array.IndexOf(args, "-smoke");
-            return i >= 0 && i + 1 < args.Length && int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : 0;
+            if (i < 0) return 0;
+            return i + 1 < args.Length && int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out var t) ? t : DefaultSmokeTurns;
         }
 
         public static int SmokeTurns() =>
@@ -82,7 +94,7 @@ namespace Statecraft.Game.UI
         public void Begin(GameInputs inputs) => Begin(inputs, SmokeTurns());
 
         /// <summary>Starts (or restarts) the game over the built map. <paramref name="smoke"/> &gt; 0 plays that many turns.</summary>
-        public void Begin(GameInputs inputs, int smoke)
+        internal void Begin(GameInputs inputs, int smoke)
         {
             if (inputs == null) throw new ArgumentNullException(nameof(inputs));
             foreach (var (value, field) in new (UnityEngine.Object?, string)[] { (document, nameof(document)), (strings, nameof(strings)),
@@ -112,12 +124,19 @@ namespace Statecraft.Game.UI
             Own(new CabinetPresenter(root, bridge, text, portraits));
             var names = SettlementPlacer.Parse(inputs.Map.SettlementsYaml).ToDictionary(s => s.Id, s => s.Name);
             var info = Own(new InfoPanelPresenter(root, bridge, text, names));
-            Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
-            if (smoke == 0) Own(GameStart.Autosave(bridge, store, text, toast.Show));
+            // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
+            // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
+            // right on every platform, and the scripted run never presses it.
+            if (smoke == 0)
+            {
+                Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
+                Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
+            }
 
             Func<Vector2, bool> overUi = p => UiPointer.IsOverUi(root.panel, p, Screen.height);
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
+            var oldBounds = cameraController.Bounds;
             cameraController.IsOverUi = overUi;
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
             pointer.Map = map;
@@ -135,6 +154,8 @@ namespace Statecraft.Game.UI
                 pointer.HexClicked -= onHex;
                 if (pointer.IsOverUi == overUi) pointer.IsOverUi = null;
                 if (cameraController.IsOverUi == overUi) cameraController.IsOverUi = null;
+                if (pointer.Map == map) pointer.Map = null;
+                cameraController.Bounds = oldBounds;
             }));
             drawn = null;
             RenderPlacementsIfChanged();
@@ -192,9 +213,9 @@ namespace Statecraft.Game.UI
                 {
                     var shown = card.Shown;
                     var option = root.Q<VisualElement>("event-options")?.Q<Button>();
-                    if (option == null || guard >= 50) { log($"SMOKE FAIL event {shown.Id} has no option to press"); yield break; }
+                    if (option == null || guard >= 50) { log(FormattableString.Invariant($"SMOKE FAIL event {shown.Id} has no option to press")); yield break; }
                     if (!Press(option, log)) yield break;
-                    if (card.Shown == shown) { log($"SMOKE FAIL the option '{option.text}' for event {shown.Id} was not taken"); yield break; }
+                    if (card.Shown == shown) { log(FormattableString.Invariant($"SMOKE FAIL the option '{option.text}' for event {shown.Id} was not taken")); yield break; }
                     yield return null;
                 }
                 var turn = bridge.State.Turn;
@@ -205,7 +226,7 @@ namespace Statecraft.Game.UI
                 try { pressed = Press(root.Q<Button>("end-turn"), log); }
                 finally { bridge.TurnEnded -= count; }
                 if (!pressed) yield break;
-                if (bridge.State.Turn != turn + 1) { log($"SMOKE FAIL End Turn did not end turn {turn}"); yield break; }
+                if (bridge.State.Turn != turn + 1) { log(FormattableString.Invariant($"SMOKE FAIL End Turn did not end turn {turn}")); yield break; }
                 var s = bridge.State;
                 log(FormattableString.Invariant($"SMOKE turn {s.Turn} {s.Date:yyyy-MM-dd} refused {refused}"));
             }
