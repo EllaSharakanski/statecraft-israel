@@ -45,7 +45,15 @@
                 <ui:Button name="end-turn" text="End Turn" class="end-turn" />
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="event-card" class="panel event-card" />
+        <ui:VisualElement name="event-card" class="panel event-card">
+            <ui:VisualElement name="event-image" class="event-image" />
+            <ui:Label name="event-draft" text="DRAFT" class="draft" />
+            <ui:Label name="event-title" class="title event-title" />
+            <ui:Label name="event-office" class="muted" />
+            <ui:Label name="event-text" class="event-text" />
+            <ui:VisualElement name="event-options" />
+            <ui:Label name="event-count" class="muted" />
+        </ui:VisualElement>
         <ui:VisualElement name="info-panel" class="panel info-panel" />
         <ui:VisualElement name="minimap" class="panel minimap" />
         <ui:VisualElement name="screen-cabinet" class="panel screen" />
