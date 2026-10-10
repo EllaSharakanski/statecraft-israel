@@ -215,9 +215,104 @@ Cost `median(all) - median(-tiltshift)`, all within the 1.5 ms budget and within
 | first build: headless | −0.08 ms | +0.48 ms |
 | first build: headed | +0.01 ms | +0.07 ms |
 
+## Task 4: grade
+`MapGrade` adds the following to the rig's runtime `VolumeProfile`, all behind the `grade` toggle, with LDR grading on both tiers:
+- a Neutral tonemapper;
+- post exposure +0.15, contrast 14, saturation 16;
+- white balance temperature **5** (the plan says 9; see the merge arithmetic below) and tint 2;
+- split toning: teal shadows (0.36, 0.52, 0.60), amber highlights (0.96, 0.78, 0.55), balance −15;
+- a dark-navy vignette: 0.26, smoothness 0.45.
+
+**What was there before (measured).** The pipeline assets' own volume profile, `Settings/SampleSceneProfile` (the URP template's), already applied the following to every frame:
+- Neutral tonemapping;
+- bloom 0.25 above 1 (high quality);
+- a 0.2 black vignette.
+
+So the build was not "without a tonemapper". The `grade` toggle off falls back to that profile, not to a raw image. Two consequences:
+- The control in `TheSunlitDesertDoesNotClip` sets the grade's tonemapper to None. That overrides the template's Neutral, and the graded Negev then clips 2.3% of its pixels, against 0.00% with Neutral.
+- URP strips the tonemapper's uber variants unless some VolumeProfile *asset* has a Tonemapping component. The runtime profile is not an asset, so it does not count. `TheGradeIsWarmLandTealShadowsAndAGentleVignette` checks that such an asset exists, and today the template profile is that asset.
+
+Bloom is the template's, not this plan's; Task 10 should decide whether the web tier keeps it.
+
+**Readability (review I9), from edit mode at 960x540, with the tilt-shift off for these detail checks.**
+- ΔE76 between the selection band and the land 1 km inside the hex:
+
+  | Pose | Graded | Ungraded |
+  |---|---|---|
+  | gameplay03 | 32.3 | 24.5 |
+  | diorama02 | 48.6 | 36.6 |
+
+- Colour-blind check (Machado 2009, gameplay pose):
+
+  | Simulation | sea vs land | selection vs land | selection vs sea |
+  |---|---|---|---|
+  | Deuteranopia | 68.6 | 31.8 | 98.6 |
+  | Protanopia | 67.8 | 31.5 | 97.6 |
+
+- Saturation rises from 0.438 to 0.564.
+- The vignette's corner/centre ratio drops from 0.603 to 0.483.
+- In the checkpoint's deuteranopia and protanopia copies, the coast (blue against yellow) and the hex lines stay clear.
+
+**Ambient (review M4, closed by measurement).**
+- **How the probe actually works.** `MapLighting.AmbientProbe()` was never what the shaders read. In Trilight mode Unity replaces any assigned probe with its own conversion of the three colours, at once. It does this in the editor, and in the WebGL player too: a diagnostic build logged the getter at Apply, frame 120 and frame 600.
+  - Editor renders with our probe, a least-squares refit and a black probe are identical to 3 decimals. Changing the trilight colours changes the image.
+- **Why it looked like 40%.** Unity converts the sRGB colours to linear. The "40% of nominal" (horizon 0.18 against 0.48) compared linear values with sRGB constants. In sRGB the horizon is (0.466, 0.460, 0.450) against the equator's (0.48, 0.46, 0.42).
+- **Decision: keep the look.** The dead explicit probe is removed, which changes nothing rendered. `LightingTests` now asserts the horizon is within 0.05 of the equator in sRGB.
+- **Why no brighter refit.** A refit that brightens the ambient towards the constants (trilight colours raised so the probe's linear values reach the constants) does not help. Measured with the grade, in editor renders:
+
+  | Pose | Warmth | Saturation | Luma | Contrast |
+  |---|---|---|---|---|
+  | gameplay03 | 0.142 → 0.082 | 0.572 → 0.518 | +0.03 | unchanged |
+  | diorama02 | 0.154 → 0.090 | 0.526 → 0.458 | +0.03 | unchanged |
+
+  That works against the merge's warmth target. It would also shift every Track B threshold, which were derived with the current ambient. Nothing Track B measures moves.
+
+**Grade terms at diorama02 (editor, Mobile tier, no UI; each line takes one term out of the full grade).** With the full grade: warmth 0.154, saturation 0.526, contrast 0.110. With the grade off: warmth 0.120, saturation 0.419, contrast 0.088. The temperature here was 9.
+
+| Term | Warmth | Saturation | Other |
+|---|---|---|---|
+| Saturation 16 | +0.027 | +0.084 | |
+| White balance 9 | +0.030 | +0.014 | |
+| Split toning | −0.039 (the teal shadows) | −0.041 | |
+| Vignette | −0.018 | | |
+| Contrast | | | +0.011 contrast |
+
+**Merge arithmetic (diorama02 warmth, WebGL frame).**
+- **Track A alone at Temperature 9:** t04 is 0.118 (t03 was 0.088).
+- **Track B's contribution:** t06-terrain-r1 0.0384 − t01 0.0171 = **+0.021** before the grade.
+- **How the grade scales it:** the grade's saturation (×1.16), contrast and exposure scale chroma by about 1.0–1.3, so Track B's +0.021 becomes +0.021 to +0.027.
+- **At Temperature 9:** 0.118 + 0.021…0.027 = **0.139–0.145**. That is already at the promo's 0.145, before Track B's Task 7 haze and palette work.
+- **Lowering the temperature:** one unit is about 0.003 of frame warmth: 0.030 for 9 units in the editor, × 0.88 for the WebGL frame's UI share. So Temperature 5 gives 0.118 − 4 × 0.003 = 0.106, and the checkpoint measured **0.106**.
+- **Expected merged diorama02 warmth: 0.106 + 0.021…0.027 = 0.127–0.133.** That is at least 0.087 by 0.04, and leaves 0.012–0.018 for Track B's later warming.
+- **Contrast:** t03 0.153 → t04 0.170, plus Track B's +0.014 (t06-r1 0.1731 − t01 0.1588), gives about **0.18–0.19** after the merge, moving towards the promo's 0.200.
+
+| WebGL | Saturation | Contrast | Warmth | Promo (sat / contrast / warmth) |
+|---|---|---|---|---|
+| diorama02, t03 | 0.422 | 0.153 | 0.088 | 0.425 / 0.200 / 0.145 |
+| diorama02, t04 (temp 9, `9603700`) | 0.52 | 0.169 | 0.118 | |
+| diorama02, t04 (temp 5, `2ac7b6e`) | 0.51 | 0.170 | 0.106 | |
+| gameplay03, t03 | 0.444 | 0.155 | 0.082 | 0.382 / 0.203 / 0.064 |
+| gameplay03, t04 (temp 5) | 0.55 | 0.174 | 0.107 | |
+
+**Over the promo (owner's call).**
+- Saturation is now about 0.09 above the promo at diorama02 and 0.17 above it at gameplay03. The lever is `Saturation` (16 → 8 is about −0.04).
+- Gameplay03 warmth is already above its promo (0.064) on Track A alone, and Track B adds about +0.03. The promo's gameplay frame has green fields and orchards, which is the art track's vegetation, and a global grade cannot fix that without cooling the diorama.
+
+**Seam test.** `TheSeaBeyondTheEdgeMatchesTheTerrainSea` measures before the grade (`grade` off). The grade roughly doubles the sub-step mismatch between the terrain sea and the skirt shader, from 0.008 to 0.016 against a limit of 0.012. A per-pixel transform cannot open a seam. At the merge, Track B's patch-mean version should keep the line.
+
+**Profile** (headless, 1920x1080, DPR 1, scale 0.80, 3 interleaved runs; build `9603700`. Temperature only changes LUT values, so the cost is the same at `2ac7b6e`):
+```
+PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.95 spread_ms=0.39 median_p95_ms=3.00
+PROFILE summary visual=-grade pose=gameplay03 runs=3 median_avg_ms=1.93 spread_ms=0.37 median_p95_ms=3.00
+PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.74 spread_ms=0.06 median_p95_ms=11.00
+PROFILE summary visual=-grade pose=diorama02 runs=3 median_avg_ms=9.74 spread_ms=0.02 median_p95_ms=11.00
+```
+The grade costs +0.02 ms at gameplay03 and 0.00 ms at diorama02, inside the noise. The tonemapper and the vignette were already in the uber pass (the template profile), and the LUT pass ran before too.
+
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
 | 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) Note: at the new 6 km hero zoom the view is filled by the 600-1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them. |
 | 3 | t03-tiltshift | captures/visual/t03-tiltshift/*-compare*.png (re-shot in fix round 1: bands 0.13/0.17, radius 14/1080) | (owner) Note: the map labels are still world-space text, so they blur with the map in the top and bottom bands until Task 9 moves them to UI Toolkit. |
+| 4 | t04-grade | captures/visual/t04-grade/*-compare*.png (with -deuteranopia / -protanopia copies) | (owner) Note: saturation is above the promo (0.51/0.43 diorama, 0.55/0.38 gameplay); `MapGrade.Saturation` is the lever. |
