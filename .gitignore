@@ -20,6 +20,11 @@ spikes/m0/unity/*.csproj
 spikes/m0/unity/*.slnx
 spikes/m0/unity/.vscode/
 spikes/m0/unity/Assets/Plugins.meta
+# Unity-MCP: NuGet DLLs its resolver downloads on first open, and its per-user files (local token, logs)
+unity/Assets/Plugins/NuGet/
+unity/Assets/Plugins/NuGet.meta
+unity/Assets/packages-merged-link/
+unity/Assets/packages-merged-link.meta
 unity/Library/
 unity/Temp/
 unity/Logs/
