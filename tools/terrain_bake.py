@@ -4,7 +4,7 @@
 # ///
 """Heightmap -> the baked shading textures of the terrain and sea shaders (no network: reads only the committed heightmap).
 
-Usage: uv run tools/terrain_bake.py   (about 45 seconds)
+Usage: uv run tools/terrain_bake.py   (about 10 seconds)
 Reads unity/Assets/StreamingAssets/map/heightmap.r16 + heightmap.json; writes, 2048 x 2048, row 0 = north:
   unity/Assets/Textures/Map/terrain_bake.png  RGB8: R ambient occlusion (horizon search to AO_RADIUS_M; 1 = open),
       G curvature (0.5 flat, > 0.5 convex), B sky-view factor (horizon search to SKY_RADIUS_M)
