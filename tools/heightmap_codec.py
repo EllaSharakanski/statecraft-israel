@@ -27,10 +27,15 @@ def encode(raw: np.ndarray) -> bytes:
 
 def decode(data: bytes, width: int, height: int) -> np.ndarray:
     """Unpacks to an (height, width) little-endian uint16 grid; ValueError on a corrupt stream or the wrong size."""
+    d = zlib.decompressobj()
     try:
-        planes = zlib.decompress(data)
+        planes = d.decompress(data)
     except zlib.error as e:
         raise ValueError(f"{FILE}: corrupt stream ({e})") from e
+    if not d.eof:
+        raise ValueError(f"{FILE}: the zlib stream ends early")
+    if d.unused_data:
+        raise ValueError(f"{FILE}: {len(d.unused_data)} bytes after the zlib stream")   # the game rejects them too
     n = width * height
     if len(planes) != 2 * n:
         raise ValueError(f"{FILE}: {len(planes)} bytes after inflating, expected {2 * n}")

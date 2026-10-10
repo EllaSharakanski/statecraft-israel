@@ -50,3 +50,11 @@ def test_the_shipped_heightmap_decodes_to_the_old_raw_file_byte_for_byte():
     assert hashlib.sha256(raw.astype("<u2").tobytes()).hexdigest() == RAW_SHA256
     assert not (MAP / "heightmap.r16").exists(), "the raw file is replaced, not kept beside the packed one"
     assert (MAP / hc.FILE).stat().st_size < 0.55 * raw.nbytes
+
+
+def test_decode_rejects_trailing_bytes_and_a_truncated_stream_like_the_game():
+    packed = hc.encode(np.arange(9, dtype="<u2").reshape(3, 3))
+    with pytest.raises(ValueError, match="after the zlib stream"):
+        hc.decode(packed + b"xx", 3, 3)
+    with pytest.raises(ValueError):
+        hc.decode(packed[:-5], 3, 3)

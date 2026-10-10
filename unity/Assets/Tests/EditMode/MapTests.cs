@@ -338,10 +338,37 @@ public class MapTests
         StringAssert.Contains("more than 2 bytes", Assert.Throws<System.IO.InvalidDataException>(() => HeightmapCodec.Decode(packed, 1, 1)).Message);
     }
 
+    /// <summary>Review M1: a damaged file either fails with an InvalidDataException naming the file, whichever exception the
+    /// platform's DeflateStream raises (Mono's native zlib reports a data error as an IOException), or still decodes to
+    /// exactly the original grid (the size and the Adler-32 of the contents are checked; flipping only the final-block bit,
+    /// for one, leaves the contents intact). Every byte of the file is flipped, one at a time.</summary>
     [Test]
-    public void TheCodecReadsWhatThePythonToolWrites()
+    public void AByteFlippedAnywhereFailsNamingTheFileOrChangesNothing()
     {
-        // tools/tests/test_heightmap_codec.py pins the same layout: row deltas, low-byte plane then high-byte plane.
+        var rng = new System.Random(7);
+        var raw = new ushort[32 * 32];
+        for (int i = 0; i < raw.Length; i++) raw[i] = (ushort)(i * 37 + rng.Next(0, 300));   // compressible: Huffman blocks
+        var packed = HeightmapCodec.Encode(raw, 32, 32);
+        int failed = 0, intact = 0;
+        foreach (byte mask in new byte[] { 0x01, 0x10, 0xFF })
+            for (int at = 0; at < packed.Length; at++)
+            {
+                var bad = (byte[])packed.Clone(); bad[at] ^= mask;
+                ushort[] got;
+                try { got = HeightmapCodec.Decode(bad, 32, 32); }
+                catch (System.IO.InvalidDataException e) { StringAssert.StartsWith("heightmap.r16z: ", e.Message, $"byte {at} ^ {mask:x2}"); failed++; continue; }
+                catch (System.Exception e) { Assert.Fail($"byte {at} ^ {mask:x2}: {e.GetType().Name} {e.Message}"); throw; }
+                CollectionAssert.AreEqual(raw, got, $"byte {at} ^ {mask:x2} decoded to a different grid");
+                intact++;
+            }
+        Assert.Greater(failed, 3 * packed.Length * 9 / 10, $"{intact} of {3 * packed.Length} damaged files decoded intact");
+    }
+
+    [Test]
+    public void TheLayoutIsRowDeltasInLowThenHighBytePlanes()
+    {
+        // tools/tests/test_heightmap_codec.py pins the same layout for the Python encoder; the cross-language guarantee is
+        // ThePackedHeightmapDecodesToTheOldRawFileByteForByte (the committed file is written by the Python tool).
         var packed = HeightmapCodec.Encode(new ushort[] { 1, 3, 0x0102, 0x0101 }, 2, 2);
         using var body = new System.IO.MemoryStream(packed, 2, packed.Length - 6);
         using var inflate = new System.IO.Compression.DeflateStream(body, System.IO.Compression.CompressionMode.Decompress);

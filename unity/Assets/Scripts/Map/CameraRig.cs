@@ -56,8 +56,7 @@ namespace Statecraft.Game.Map
             TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
             TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
             if (TiltShift.OffRequested()) TiltShift.Enabled = false;
-            // After the tilt-shift's Reset, so the map's teardown removes the driver (restoring the tier's render scale and
-            // clearing FallbackOff) before resetting the tilt-shift.
+            // The runtime quality fallback (WebGL only); its undo removes the driver and restores the tier's render scale.
             TeardownActions.Add(QualityFallbackDriver.Attach(gameObject, FallbackWanted()));
             initialised = true;
             Apply();

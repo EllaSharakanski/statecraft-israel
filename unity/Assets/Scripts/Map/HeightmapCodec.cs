@@ -42,7 +42,8 @@ namespace Statecraft.Game.Map
                 }
                 extra = got == planes.Length && inflate.Read(new byte[1], 0, 1) != 0;
             }
-            catch (InvalidDataException e) { throw new InvalidDataException($"{FileName}: corrupt stream ({e.Message})", e); }
+            // .NET reports bad deflate data as InvalidDataException, Mono's native zlib (the editor, IL2CPP players) as IOException.
+            catch (Exception e) when (e is InvalidDataException || e is IOException) { throw new InvalidDataException($"{FileName}: corrupt stream ({e.Message})", e); }
             if (got != planes.Length || extra)
                 throw new InvalidDataException($"{FileName}: {(extra ? "more than " + planes.Length : got.ToString())} bytes after inflating, expected {planes.Length}");
             uint stored = (uint)(packed[packed.Length - 4] << 24 | packed[packed.Length - 3] << 16 | packed[packed.Length - 2] << 8 | packed[packed.Length - 1]);

@@ -28,6 +28,10 @@ namespace Statecraft.Game.Map
     /// - Settle: frames in the first 0.5 s after a change are not measured (the change reallocates render targets), nor
     ///   the first 3 s after start (scene load and shader compiles).
     /// - A frame over 1 s is a pause (a hidden tab, a stalled load), not load: it drops the window.
+    /// - A window needs MinWindowFrames = 3 frames. With every counted frame at most 1 s, a full 3 s window always has 3,
+    ///   so every window counts down to 1 fps (review M2: a minimum of 10 left 1-3 fps devices, the ones that need the
+    ///   fallback most, with no decision at all). Few frames make the p95 the slowest frame, but a window that holds under
+    ///   10 frames averages over 300 ms a frame, far over the floor anyway.
     /// - Anti-oscillation: a step up that is undone within two windows doubles the windows the next step up needs
     ///   (3, 6, 12 ... at most 48, 2.4 minutes), so a device on the edge settles instead of flipping every 10 s.</summary>
     public sealed class QualityFallback
@@ -44,7 +48,7 @@ namespace Statecraft.Game.Map
         public static readonly IReadOnlyList<Step> Steps = new[] { new Step(1f, true), new Step(0.9f, true), new Step(0.8f, true), new Step(0.8f, false) };
 
         public const float FloorMs = 33f, OverMs = 34f, RecoverMs = 20f, WindowSeconds = 3f, SettleSeconds = 0.5f, StartupSeconds = 3f, PauseMs = 1000f;
-        public const int MinWindowFrames = 10, RecoverWindows = 3, MaxRecoverWindows = 48, FailedRecoveryWindows = 2;
+        public const int MinWindowFrames = 3, RecoverWindows = 3, MaxRecoverWindows = 48, FailedRecoveryWindows = 2;
 
         public int Level { get; private set; }
         public Step Current => Steps[Level];

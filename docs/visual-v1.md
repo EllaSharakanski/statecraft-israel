@@ -744,7 +744,9 @@ The Deferred row "Runtime quality fallback" (review I1), sized by the DPR-2 stre
 - **Window: 3 s, back to back, one decision each.** The p95 of a 3 s window is over only when at least 5% of its frames
   are (5 of 90 at 30 fps), so a one-off hitch (End Turn's redraw, a GC, a first shader compile) never trips it and a real
   shortfall does within 3 s. Nothing is measured in the first 3 s after the map is built, or 0.5 s after each change; a
-  frame over 1 s (a hidden tab coming back) drops the window; a window needs at least 10 frames.
+  frame over 1 s (a hidden tab coming back) drops the window; a window needs at least 3 frames, which a full 3 s window
+  of counted frames (each at most 1 s) always has, so the slowest devices (1-3 fps) step down too (fix round 1, review M2;
+  a minimum of 10 had left them with no decision).
 - **Down: p95 > 34 ms.** The floor is 33 ms (30 fps). The WebGL frame clock is quantised to about 1 ms, so exactly 30 fps
   (a 30 Hz cap from a display or a battery saver, or vsync halving 60 Hz) reads as 33 and 34 ms frames: that meets the
   floor, and a lower quality could not raise a capped rate.

@@ -639,7 +639,7 @@ public class GameSceneTests
 
     [TestCase("Could not find file '/Users/a b/x/content/people.yaml'.", "Could not find file 'people.yaml'.")]
     [TestCase(@"Could not find file 'C:\Games\Statecraft\StreamingAssets\map\hexes.json'.", "Could not find file 'hexes.json'.")]
-    [TestCase("heightmap.r16: Cannot connect to destination host (file:///Users/me/Data/StreamingAssets/map/heightmap.r16)", "heightmap.r16: Cannot connect to destination host (heightmap.r16)")]
+    [TestCase("heightmap.r16z: Cannot connect to destination host (file:///Users/me/Data/StreamingAssets/map/heightmap.r16z)", "heightmap.r16z: Cannot connect to destination host (heightmap.r16z)")]
     [TestCase("people.yaml: people[x].name: required", "people.yaml: people[x].name: required")]
     [TestCase("manifest.json: HTTP/1.1 404 Not Found (http://localhost:8766/StreamingAssets/content/manifest.json)", "manifest.json: HTTP/1.1 404 Not Found (http://localhost:8766/StreamingAssets/content/manifest.json)")]
     public void BootFailureTextKeepsOnlyFileNames(string reason, string shown) => Assert.AreEqual(shown, GameBoot.ForPlayer(reason));

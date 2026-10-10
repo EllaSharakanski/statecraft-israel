@@ -64,6 +64,17 @@ public class QualityFallbackTests
         Assert.AreEqual(Slow, q.LastP95);
     }
 
+    /// <summary>Review M2: the slowest devices (1-3 fps) get the fallback too; a 3 s window of such frames holds only 3-6.</summary>
+    [TestCase(500f)]    // 2 fps
+    [TestCase(1000f)]   // 1 fps
+    [TestCase(333f)]    // 3 fps
+    public void VerySlowFramesStillStepDown(float ms)
+    {
+        var q = new QualityFallback();
+        CollectionAssert.AreEqual(new[] { 1, 2, 3 }, Run(q, ms, 60f));
+        Assert.AreEqual(ms, q.LastP95);
+    }
+
     [Test]
     public void TheFirstStepComesAfterOneFullWindowNotBefore()
     {
