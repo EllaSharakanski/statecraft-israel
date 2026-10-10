@@ -7,14 +7,14 @@
 # Statecraft: Israel
 
 [![Code license: MIT](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
-[![Assets license: CC BY 4.0](https://img.shields.io/badge/assets-CC%20BY%204.0-lightgrey.svg)](LICENSING.md)
+[![Assets license: CC BY 4.0 / content CC BY-SA 4.0](https://img.shields.io/badge/assets-CC%20BY%20%2F%20BY--SA%204.0-lightgrey.svg)](LICENSING.md)
 [![Unity 6000.3.25f1](https://img.shields.io/badge/Unity-6000.3.25f1-black.svg)](unity/ProjectSettings/ProjectVersion.txt)
 ![Status: playable 1948–1951 prototype](https://img.shields.io/badge/status-playable%201948%E2%80%931951-orange.svg)
 
 **A Civilization-style strategy game about governing Israel. You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.**
 
 > [!NOTE]
-> This is an independent, non-commercial open-source project. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
+> This is an independent open-source project. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
 
 ## What is this?
 
@@ -111,9 +111,9 @@ Nothing is generated live while you play.
 ## License
 
 - **Code:** [MIT](LICENSE).
-- **Original assets, text and data:** [CC BY 4.0](LICENSES/CC-BY-4.0.txt).
+- **Original art, docs and data:** [CC BY 4.0](LICENSES/CC-BY-4.0.txt).
+- **Game content text** (`content/`, which paraphrases its sources, many from Wikipedia): [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt).
 - **AI-generated images:** marked [CC0](LICENSES/CC0-1.0.txt), with no rights claimed.
-- **Files derived from Wikipedia data:** [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt).
 - **Third-party material:** fonts, public-domain portraits and the Unity engine and packages are under their own terms.
 
 Details are in [LICENSING.md](LICENSING.md).

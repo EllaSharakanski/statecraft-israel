@@ -5,8 +5,9 @@ Different parts of this repository are under different licences. Where a file is
 | What | Paths | Licence |
 |---|---|---|
 | Code | `sim/`, `tools/` (Python), `unity/Assets/Scripts/`, `unity/Assets/Editor/`, `unity/Assets/Tests/`, `promo/*.py`, `spikes/` code | [MIT](LICENSE) |
-| Original content, text, data and docs | `content/` (except the files below), `docs/`, `unity/Assets/UI/*.uxml`, `*.uss` and `strings.en.yaml`, `research_notes/` (our own text), `promo/ref/geo-reference.png` | [CC BY 4.0](LICENSES/CC-BY-4.0.txt), credit "Statecraft: Israel contributors" |
-| Files derived from Wikipedia data | `content/map/settlements_1948.yaml`, `content/map/settlement_hexes.yaml` | [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt); each entry lists its Wikipedia sources |
+| Game content (text and data) | `content/` (events, people, offices, model, rules, map YAML/JSON), except the third-party map data below | [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt), credit "Statecraft: Israel contributors". The text paraphrases its cited sources, many from Wikipedia (CC BY-SA), so share-alike applies; each entry lists its sources |
+| Original docs, art and UI assets | `docs/`, `reports/` (our own text), `research_notes/` (our own text), `unity/Assets/UI/*.uxml`, `*.uss`, `strings.en.yaml`, `unity/Assets/Materials/`, `unity/Assets/Shaders/`, `unity/Assets/UI/*.asset`, `promo/ref/geo-reference.png` | [CC BY 4.0](LICENSES/CC-BY-4.0.txt), credit "Statecraft: Israel contributors" |
+| Unity template-derived settings | `unity/Assets/Settings/` (URP assets, renderers, volume profiles) | Created from Unity's URP project template and edited; under the [Unity Companion License](https://unity.com/legal/licenses/unity-companion-license) |
 | AI-generated images | `promo/final/01`–`08`, `promo/ref/*-src.jpg`, `docs/images/hero-concept-1936.jpg` | Marked [CC0 1.0](LICENSES/CC0-1.0.txt). No rights are claimed. Purely AI-generated output may not be copyrightable. Made with the ElevenLabs Image API (see `promo/CREDITS.md`). |
 | In-engine captures | `promo/final/09`, `10`, `docs/images/build-*.jpg` | CC BY 4.0. They show the Copernicus-derived terrain; see below. |
 | Portraits | `unity/Assets/UI/Portraits/`, `promo/ref/people/`, `promo/ref/*-sheet.jpg` | Public-domain photographs from Wikimedia Commons, plus one CC0 file (Moshe Dayan, 1962). Per-file sources are in `content/people.yaml` and `promo/CREDITS.md`. |
@@ -16,6 +17,8 @@ Different parts of this repository are under different licences. Where a file is
 | Rain-gauge data | `content/map/precip_stations.json` | Israel Meteorological Service, data.gov.il dataset 481, under the licence stated on the dataset ("Other (Open)") |
 | Unity engine and packages | `unity/Packages/`, `unity/ProjectSettings/` | Configuration only. The Unity engine and its packages are under Unity's own terms and are not included. No Asset Store content is in this repository. |
 
-Historical facts are not owned by anyone. The text describing them is ours and paraphrases the cited sources. The research notes quote short passages from their sources for commentary; those quotes remain © their authors.
+Historical facts are not owned by anyone. The text describing them paraphrases the cited sources. The research notes and reports quote short passages from their sources for commentary; those quotes remain © their authors.
+
+Still being checked by the owner: the ElevenLabs terms for the AI images, the data.gov.il terms for the rain-gauge data, and the US public-domain status of each portrait. If any check fails, the file is replaced or removed.
 
 "Civilization" is a trademark of Take-Two Interactive. It is mentioned only to describe the genre. This project is not affiliated with or endorsed by its owners.
