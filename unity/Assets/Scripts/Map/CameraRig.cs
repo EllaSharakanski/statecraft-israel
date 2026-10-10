@@ -49,6 +49,7 @@ namespace Statecraft.Game.Map
             TeardownActions.Add(ShadowFit.Restore);
             TeardownActions.Add(TiltShift.Reset);
             TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
+            if (TiltShift.OffRequested()) TiltShift.Enabled = false;
             initialised = true;
             Apply();
         }

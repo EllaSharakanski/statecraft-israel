@@ -1,24 +1,31 @@
 #nullable enable
+using System;
+using System.Linq;
+using Statecraft.Game.Boot;
 using UnityEngine;
 
 namespace Statecraft.Game.Map
 {
-    /// <summary>The tilt-shift band (plan Task 3; promo 03 blurs about the bottom 15% and top 20%). CameraRig.Apply calls
+    /// <summary>The tilt-shift band (plan Task 3; promo 03 blurs about the bottom 15% and top 20%: full blur starts
+    /// HalfWidth + Feather = 0.30 from the focus, review I2). CameraRig.Apply calls
     /// Apply every frame with the top bar's inset and the rig distance; TiltShiftFeature draws the blur while Enabled. The
     /// radius is a share of the picture's height, so no pixel size is needed. Weight mirrors TiltWeight in TiltShift.shader.</summary>
     public static class TiltShift
     {
         public static readonly int ParamsId = Shader.PropertyToID("_ScTiltShift");
-        public const float HalfWidth = 0.17f, Feather = 0.18f;
-        /// <summary>The largest blur radius as a share of the picture's height: 10 px of a 1080-line picture.</summary>
-        public const float MaxRadiusUv = 10f / 1080f;
+        public const float HalfWidth = 0.13f, Feather = 0.17f;
+        /// <summary>The largest blur radius as a share of the picture's height: 14 px of a 1080-line picture (tap spacing
+        /// 1.75 texels of the half-resolution target, still adequately sampled by the 9 taps).</summary>
+        public const float MaxRadiusUv = 14f / 1080f;
         public const float FullStrengthDistanceM = 60000f, MinStrength = 0.35f;
         public static bool Enabled = true;
 
-        /// <summary>HLSL smoothstep(p.y, p.y + p.z, |y - p.x|).</summary>
+        /// <summary>HLSL smoothstep(p.y, p.y + p.z, |y - p.x|); a zero feather is a step at the half-width.</summary>
         public static float Weight(float y, Vector4 p)
         {
-            float t = Mathf.Clamp01((Mathf.Abs(y - p.x) - p.y) / p.z);
+            float d = Mathf.Abs(y - p.x);
+            if (p.z <= 0f) return d >= p.y ? 1f : 0f;
+            float t = Mathf.Clamp01((d - p.y) / p.z);
             return t * t * (3f - 2f * t);
         }
 
@@ -44,6 +51,14 @@ namespace Statecraft.Game.Map
         /// <summary>True when a rig has set a band with a radius. With the zero global (before the map's first Apply, or after
         /// its teardown) smoothstep(0, 0, |y|) is about 1 everywhere, so the composite would replace the whole frame with its
         /// half-resolution copy at full cost.</summary>
+        /// <summary>"notiltshift" in the page URL (-notiltshift on desktop): boot with the tilt-shift off, so a WebGL shot
+        /// with the real top bar can be compared with one that has it (review m3). CameraRig.Init reads it.</summary>
+        public static bool OffRequested() =>
+            OffRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
+
+        public static bool OffRequested(string? url, string[] args, bool webgl) =>
+            webgl ? UrlFlags.Has(url, "notiltshift") : args.Contains("-notiltshift");
+
         public static bool HasBand => Shader.GetGlobalVector(ParamsId).w > 0f;
     }
 

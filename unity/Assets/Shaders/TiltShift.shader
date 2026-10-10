@@ -59,7 +59,7 @@ Shader "Statecraft/TiltShift"
         Pass
         {
             Name "TiltShiftComposite"
-            Blend SrcAlpha OneMinusSrcAlpha
+            Blend SrcAlpha OneMinusSrcAlpha, Zero One   // colour by the band weight; the target's alpha is kept
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag

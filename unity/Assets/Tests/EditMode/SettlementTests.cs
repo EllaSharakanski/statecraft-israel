@@ -538,8 +538,10 @@ public class MapSceneTests
     {
         var map = NewMap(); map.Build();
         int after1 = Resources.FindObjectsOfTypeAll<VolumeComponent>().Length;
+        int profiles1 = Resources.FindObjectsOfTypeAll<VolumeProfile>().Length;   // review m1: Init makes one per build
         map.Build(); map.Build();
         Assert.AreEqual(after1, Resources.FindObjectsOfTypeAll<VolumeComponent>().Length);
+        Assert.AreEqual(profiles1, Resources.FindObjectsOfTypeAll<VolumeProfile>().Length, "the runtime profile is owned by the map");
     }
 
     [Test]

@@ -24,6 +24,8 @@ namespace Statecraft.Game.Map
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             if (material == null || pass == null || !TiltShift.Enabled || !TiltShift.HasBand) return;
+            // Scene-view and preview cameras get no pass, so they are not forced onto an intermediate texture (review m2).
+            if (renderingData.cameraData.cameraType != CameraType.Game) return;
             pass.Setup(material, downsample);
             renderer.EnqueuePass(pass);
         }

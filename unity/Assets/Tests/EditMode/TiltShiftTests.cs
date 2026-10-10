@@ -13,7 +13,7 @@ using UnityEngine.TestTools;
 /// <summary>Plan Task 3: the two-band tilt-shift.</summary>
 public class TiltShiftTests
 {
-    static readonly Vector4 P = new Vector4(0.5f, 0.17f, 0.18f, 10f / 1080f);
+    static readonly Vector4 P = new Vector4(0.5f, 0.13f, 0.17f, 14f / 1080f);
 
     [TearDown]
     public void Reset()
@@ -27,10 +27,54 @@ public class TiltShiftTests
     public void TheMiddleBandIsSharpAndBothEdgesBlur()
     {
         Assert.AreEqual(0f, TiltShift.Weight(0.5f, P));
-        Assert.AreEqual(0f, TiltShift.Weight(0.34f, P), 1e-6f, "inside the sharp half-width");
+        Assert.AreEqual(0f, TiltShift.Weight(0.38f, P), 1e-6f, "inside the sharp half-width");
         Assert.AreEqual(1f, TiltShift.Weight(0.0f, P)); Assert.AreEqual(1f, TiltShift.Weight(1.0f, P));
         Assert.AreEqual(TiltShift.Weight(0.2f, P), TiltShift.Weight(0.8f, P), 1e-6f, "symmetric about the focus");
-        Assert.Greater(TiltShift.Weight(0.15f, P), TiltShift.Weight(0.25f, P), "stronger towards the edge");
+        Assert.Greater(TiltShift.Weight(0.25f, P), TiltShift.Weight(0.30f, P), "stronger towards the edge");
+        Assert.AreEqual(0f, TiltShift.Weight(0.5f, new Vector4(0.5f, 0.1f, 0f, 0.01f)), "a zero feather is a step: sharp inside");
+        Assert.AreEqual(1f, TiltShift.Weight(0.65f, new Vector4(0.5f, 0.1f, 0f, 0.01f)), "a zero feather is a step: blurred outside");
+    }
+
+    /// <summary>Review I2: the promo blurs about the bottom 15% and the top 20% fully. With no bar, full blur reaches 20% in
+    /// from each edge; under the web tier's top bar (about 9% of the screen), the map area keeps about 15% of the screen fully
+    /// blurred at the bottom and as much again between the band and the bar.</summary>
+    [Test]
+    public void TheFullBlurBandsAreAsTallAsThePromos()
+    {
+        Assert.AreEqual(0.13f, TiltShift.HalfWidth); Assert.AreEqual(0.17f, TiltShift.Feather);
+        var none = TiltShift.Params(0f, 30000f);
+        Assert.AreEqual(1f, TiltShift.Weight(0.20f, none), 1e-4f, "full blur in the bottom 20% with no bar");
+        Assert.AreEqual(1f, TiltShift.Weight(0.80f, none), 1e-4f, "full blur in the top 20% with no bar");
+        Assert.Less(TiltShift.Weight(0.25f, none), 1f, "but not further in");
+        var web = TiltShift.Params(0.09f, 30000f);
+        Assert.AreEqual(1f, TiltShift.Weight(0.155f, web), 1e-4f, "bottom 15.5% under a 9% bar");
+        Assert.AreEqual(1f, TiltShift.Weight(0.755f, web), 1e-4f, "0.755 to the bar at 0.91: 15.5% at the top");
+    }
+
+    [Test]
+    public void TearingDownTheMapClearsTheBandAndTurnsTheToggleBackOn()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        Assert.IsTrue(TiltShift.HasBand, "Init applies the band");
+        VisualToggles.Set("tiltshift", false); Assert.IsFalse(TiltShift.Enabled);
+        Object.DestroyImmediate(map.gameObject);
+        Assert.IsFalse(TiltShift.HasBand, "no band after teardown: the feature draws nothing");
+        Assert.AreEqual(Vector4.zero, Shader.GetGlobalVector(TiltShift.ParamsId));
+        Assert.IsTrue(TiltShift.Enabled, "the toggle is back on");
+        CollectionAssert.DoesNotContain(VisualToggles.Names, "tiltshift");
+    }
+
+    /// <summary>Review m3: "notiltshift" in the page URL (-notiltshift on desktop) boots with the tilt-shift off, so a WebGL
+    /// shot with the real top bar can be compared with one that has it.</summary>
+    [Test]
+    public void NoTiltShiftInTheUrlTurnsItOff()
+    {
+        Assert.IsTrue(TiltShift.OffRequested("http://localhost/?shot&notiltshift", new string[0], true));
+        Assert.IsFalse(TiltShift.OffRequested("http://localhost/?shot", new string[0], true));
+        Assert.IsFalse(TiltShift.OffRequested("http://localhost/?notiltshifts", new string[0], true));
+        Assert.IsTrue(TiltShift.OffRequested(null, new[] { "player", "-notiltshift" }, false));
+        Assert.IsFalse(TiltShift.OffRequested("http://localhost/?notiltshift", new string[0], false), "desktop reads args only");
     }
 
     [Test]
@@ -40,7 +84,7 @@ public class TiltShiftTests
         Assert.AreEqual(0.45f, TiltShift.FocusCentre(0.1f), 1e-6f, "the middle of the map area below a 10% bar");
         Assert.AreEqual(0.25f, TiltShift.FocusCentre(5f), 1e-6f, "clamped to CameraRig.MaxTopInset");
         Assert.AreEqual(0.45f, TiltShift.Params(0.1f, 30000f).x, 1e-6f);
-        Assert.AreEqual(10f / 1080f, TiltShift.MaxRadiusUv, 1e-7f, "10 px of a 1080-line picture, whatever the window or render scale");
+        Assert.AreEqual(14f / 1080f, TiltShift.MaxRadiusUv, 1e-7f, "14 px of a 1080-line picture, whatever the window or render scale");
         Assert.AreEqual(TiltShift.MaxRadiusUv, TiltShift.Params(0f, 30000f).w, 1e-7f, "full strength when close");
         Assert.AreEqual(TiltShift.MaxRadiusUv * TiltShift.MinStrength, TiltShift.Params(0f, CameraController.MaxDistance).w, 1e-7f, "weakest at the overview");
     }
@@ -91,8 +135,11 @@ public class TiltShiftTests
                 TiltShift.Enabled = true; var shifted = RenderSample.Render(cam, 960, 540);
                 float Ratio(float y0, float y1) => shifted.GradientEnergy(y0, y1) / sharp.GradientEnergy(y0, y1);
                 float top = Ratio(0.90f, 0.98f), bottom = Ratio(0.02f, 0.10f), middle = Ratio(0.46f, 0.54f);
-                TestContext.WriteLine($"{QualitySettings.names[level]}: top {top:0.00}, bottom {bottom:0.00}, middle {middle:0.00}");
+                float topInner = Ratio(0.81f, 0.87f), bottomInner = Ratio(0.13f, 0.19f);   // review I2: the bands are tall
+                TestContext.WriteLine($"{QualitySettings.names[level]}: top {top:0.00}, bottom {bottom:0.00}, middle {middle:0.00}, " +
+                                      $"top 0.81-0.87 {topInner:0.00}, bottom 0.13-0.19 {bottomInner:0.00}");
                 Assert.Less(top, 0.6f, "top band blurred"); Assert.Less(bottom, 0.6f, "bottom band blurred");
+                Assert.Less(topInner, 0.6f, "fully blurred 13-19% below the top"); Assert.Less(bottomInner, 0.6f, "and 13-19% above the bottom");
                 Assert.Greater(middle, 0.95f, "middle band sharp");
                 // Review N6: the same blur at twice the resolution (the radius is a share of the picture's height).
                 TiltShift.Enabled = false; var sharpBig = RenderSample.Render(cam, 1920, 1080);

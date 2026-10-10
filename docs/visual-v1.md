@@ -51,10 +51,38 @@ entry is added only after a WebGL 2 `compileShader` of a shader carrying that li
   **0 errors and no `require` line**, so `AllowedRequires` stays **empty**. Running the report exposed a harness bug, fixed
   here: `Gles3Errors` looped over `SubshaderCount` but indexed `GetSerializedSubshader`. URP Lit has 2 subshaders and 1
   serialized one, so the report threw. The loop now uses `SerializedSubshaderCount`.
-- Probe: full Chrome 153's `--headless=new --dump-dom` never exits on this Mac, so the probe runs in Playwright's
-  `chrome-headless-shell` (Chrome for Testing 149.0.7827.55, `--use-angle=swiftshader`). Two references both returned
-  `REQUIRE FAILS ... extension is not supported`: `GL_EXT_shader_non_constant_global_initializers` (the plan's example)
-  and `GL_EXT_texture_buffer`. So a shader that requires either cannot run on the web tier.
+- **Probe (corrected in Task 3 fix round 1).** In WebGL 2, `#extension GL_X : require` compiles only after the page has
+  called `gl.getExtension("<WebGL name>")`. The first probe never called it, so it could only ever say FAILS. The procedure
+  (page and command in `.superpowers/sdd/2026-10-11-statecraft-visual-v1/task-3-carry.md`):
+  1. Run Playwright's `chrome-headless-shell` (Chrome for Testing 149.0.7827.55) with `--use-angle=swiftshader
+     --enable-unsafe-swiftshader --dump-dom` under a timeout. Full Chrome's `--headless=new --dump-dom` never exits on this
+     Mac. Match the output with `grep -E`, because BSD grep ignores `\|`.
+  2. Log `gl.getSupportedExtensions()`.
+  3. **Positive control.** For supported extensions that have a GLSL directive, compile a `require` shader before and after
+     `gl.getExtension`. It must FAIL before and print OK after. If no control passes, the probe is broken, not the
+     extension.
+  4. Enable every supported extension, as Unity's loader does, then compile the `require` under test (vertex and
+     fragment).
+  5. **Unity's loader.** The WebGL framework (`*.framework.js`, emscripten) calls `GLctx.getExtension(ext)` for every
+     entry of `getSupportedExtensions()` except names containing `lose_context` or `debug`. So step 4 matches the player,
+     and a GLSL extension whose WebGL extension is supported is also enabled in game.
+- **Result (2026-10-10, SwiftShader).** Supported: EXT_clip_control, EXT_color_buffer_float, EXT_color_buffer_half_float,
+  EXT_conservative_depth, EXT_depth_clamp, EXT_disjoint_timer_query_webgl2, EXT_float_blend, EXT_polygon_offset_clamp,
+  EXT_texture_compression_bptc/rgtc, EXT_texture_filter_anisotropic, EXT_texture_mirror_clamp_to_edge,
+  NV_shader_noperspective_interpolation, OES_draw_buffers_indexed, OES_sample_variables,
+  OES_shader_multisample_interpolation, OES_texture_float_linear, OVR_multiview2, WEBGL_clip_cull_distance,
+  WEBGL_compressed_texture_*, WEBGL_multi_draw, WEBGL_polygon_mode, WEBGL_stencil_texturing (plus the debug and
+  lose_context ones).
+  - Positive controls: `GL_OVR_multiview2`, `GL_EXT_conservative_depth`, `GL_NV_shader_noperspective_interpolation`,
+    `GL_OES_sample_variables`, `GL_OES_shader_multisample_interpolation` and `GL_ANGLE_multi_draw` each FAIL before
+    `getExtension` and are **OK after** it, in both stages.
+  - With `WEBGL_clip_cull_distance` enabled, `GL_ANGLE_clip_cull_distance` is OK but `GL_EXT_clip_cull_distance` FAILS.
+    WebGL's GLSL names can differ from GLES's, so the probe must use the exact name that Unity's GLSL requires.
+  - Targets: `GL_EXT_shader_non_constant_global_initializers` and `GL_EXT_texture_buffer` still FAIL ("extension is not
+    supported") with every supported extension enabled. Neither is a WebGL extension, so the negatives stand.
+  - `AllowedRequires` stays empty, because none of our shaders requires anything. An extension is added only when one of
+    our shaders needs it and its probe prints OK. Note that SwiftShader's list is not every GPU's list: a desktop-GPU run
+    can list more.
 
 ## Baseline (Task 1, before any visual change; re-recorded in fix round 1)
 Viewport fixed to 1920x1080 at DPR 1 over CDP; Chrome kept awake; build from `0b6058e` (harness only).
@@ -127,31 +155,69 @@ B's thresholds were derived with them, so a least-squares refit would be a look 
 
 ## Task 3: tilt-shift
 Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on both renderers, `Statecraft/TiltShift`):
-a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv` (10/1080 of the picture height), focus at
-the middle of the map area below the top bar, weakening to 35% from 60 km to the 250 km overview. URP's far-only
-Gaussian DoF is retired. Toggle: `tiltshift`. Tests (gradient-energy ratio, shifted / sharp, at the gameplay pose, 960x540):
-Mobile top 0.22, bottom 0.31, middle 1.00 (top at 1920x1080 0.21); PC top 0.16, bottom 0.24, middle 1.00 (top at
-1920x1080 0.15); TopInset 0.3: focus band 1.00, upper band 0.19.
+- the blur is a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv`;
+- the focus sits at the middle of the map area below the top bar;
+- the blur weakens to 35% between 60 km and the 250 km overview.
 
-Profile (1920x1080, DPR 1, render scale 0.80, 3 interleaved runs per configuration):
+URP's far-only Gaussian DoF is retired. Toggle: `tiltshift`; the URL flag `notiltshift` (desktop: `-notiltshift`) boots with
+it off.
+
+**Constants (fix round 1, review I2).** HalfWidth 0.13, Feather 0.17 and MaxRadiusUv 14/1080 (was 0.17, 0.18 and
+10/1080). Full blur now starts 0.30 from the focus. That is the bottom and top 20% with no bar; under the web tier's top
+bar (8.8% of the screen) it is the bottom 15.5%, and 15.5% between the band and the bar. The promo has about 15% at the
+bottom and 20% at the top.
+
+**Edit-mode ratios** (gradient energy shifted / sharp, gameplay pose, 960x540, no bar):
+
+| Tier | top 0.90–0.98 | bottom 0.02–0.10 | middle | top 0.81–0.87 | bottom 0.13–0.19 | top at 1920x1080 |
+|---|---|---|---|---|---|---|
+| Mobile | 0.16 | 0.24 | 1.00 | 0.17 | 0.22 | 0.14 |
+| PC | 0.11 | 0.18 | 1.00 | 0.12 | 0.15 | 0.11 |
+
+TopInset 0.3: focus band 1.00, upper band 0.13. (Before fix round 1: Mobile top 0.22 and bottom 0.31; PC 0.16 and 0.24.)
+
+**WebGL band check, with the real top bar (review m3).** I compared the checkpoint's `gameplay03.png` with a
+`?shot&notiltshift` shot from the same build, using columns 30–80% (clear of the info panel and minimap) and rows measured
+from the top. The bar ends at 0.088.
+- Ratios by row (from the top):
+
+  | Rows | 0.10–0.275 | 0.30 | 0.325 | 0.35 | 0.375 | 0.425–0.675 | 0.70 | 0.725 | 0.75 | 0.775 | 0.80–1.00 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | Ratio | 0.01 | 0.13 | 0.32 | 0.60 | 0.86 | 1.00 | 0.74 | 0.45 | 0.22 | 0.07 | 0.01 |
+
+- The sharp band is centred at about 0.54 from the top. The focus is at (1 − 0.088)/2 = 0.456 from the bottom, so this is
+  the right way up; a flipped composite would centre at 0.456 from the top.
+- The review's check: rows 0.20–0.30 from the top (nearer the bar) keep **0.02** of their detail, and rows 0.70–0.80 keep
+  **0.37**.
+- **Coverage.** Fully blurred (ratio <= 0.05) from the bar to 0.30 (**21% of the screen at the top**) and from 0.80 to the
+  bottom (**20% at the bottom**). The promo has about 20% at the top and 15% at the bottom. By the design weight (weight =
+  1), the coverage is 15.6% at each end.
+
+**Profile** (1920x1080, DPR 1, render scale 0.80, 3 interleaved runs per configuration), fix round 1 build:
 ```
 headless (web_check.py)
-PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.10 spread_ms=0.14 median_p95_ms=3.00
-PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=2.18 spread_ms=0.55 median_p95_ms=3.00
-PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.07 spread_ms=0.53 median_p95_ms=11.00
-PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=9.59 spread_ms=0.59 median_p95_ms=10.00
+PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.96 spread_ms=0.13 median_p95_ms=3.00
+PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=2.21 spread_ms=0.79 median_p95_ms=4.00
+PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.65 spread_ms=0.20 median_p95_ms=10.00
+PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=9.72 spread_ms=0.26 median_p95_ms=11.00
 headed (headed.py profile --dpr 1)
-PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=1.86 spread_ms=0.13 median_p95_ms=3.00
-PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.85 spread_ms=0.01 median_p95_ms=3.00
-PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.57 spread_ms=0.30 median_p95_ms=10.00
-PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=9.50 spread_ms=0.16 median_p95_ms=10.00
+PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.01 spread_ms=0.39 median_p95_ms=3.00
+PROFILE summary visual=-tiltshift pose=gameplay03 runs=3 median_avg_ms=1.89 spread_ms=0.35 median_p95_ms=3.00
+PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.11 spread_ms=0.54 median_p95_ms=11.00
+PROFILE summary visual=-tiltshift pose=diorama02 runs=3 median_avg_ms=10.55 spread_ms=0.59 median_p95_ms=11.00
 ```
-Cost `median(all) - median(-tiltshift)`: headless -0.08 ms (gameplay03) and +0.48 ms (diorama02); headed +0.01 and
-+0.07 ms. All are within the 1.5 ms budget before any spread allowance.
+Cost `median(all) - median(-tiltshift)`, all within the 1.5 ms budget and within the spreads:
+
+| | gameplay03 | diorama02 |
+|---|---|---|
+| headless | −0.25 ms | −0.07 ms |
+| headed | +0.12 ms | −0.44 ms |
+| first build: headless | −0.08 ms | +0.48 ms |
+| first build: headed | +0.01 ms | +0.07 ms |
 
 ## Checkpoints
 | Task | Name | Images | Owner verdict |
 |---|---|---|---|
 | 1 | t01-before | captures/visual/t01-before/*-compare*.png | (owner) |
 | 2 | t02-light | captures/visual/t02-light/*-compare*.png | (owner) Note: at the new 6 km hero zoom the view is filled by the 600-1,800 m placeholder marker cubes, so judge the zoom range, not the close-up art, until the settlement art track replaces them. |
-| 3 | t03-tiltshift | captures/visual/t03-tiltshift/*-compare*.png | (owner) Note: the map labels are still world-space text, so they blur with the map in the top and bottom bands until Task 9 moves them to UI Toolkit. |
+| 3 | t03-tiltshift | captures/visual/t03-tiltshift/*-compare*.png (re-shot in fix round 1: bands 0.13/0.17, radius 14/1080) | (owner) Note: the map labels are still world-space text, so they blur with the map in the top and bottom bands until Task 9 moves them to UI Toolkit. |
