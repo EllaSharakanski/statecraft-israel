@@ -270,6 +270,9 @@ public class MapSceneTests
         Assert.AreEqual("Statecraft/HexSelection", selection.shader.name);
         StringAssert.IsMatch(@"(?m)^\s*Offset\s+-\d+\s*,\s*-\d+", File.ReadAllText(AssetDatabase.GetAssetPath(selection.shader)));
         Assert.Greater(selection.renderQueue, Load(OverlayMatPath).renderQueue, "drawn after the overlay lines");
+        // Fix round 2 (N6): the band is in the depth prepass / camera depth texture too, so depth of field sees its depth.
+        Assert.GreaterOrEqual(selection.FindPass("DepthOnly"), 0, "a DepthOnly pass");
+        Assert.AreEqual("DepthOnly", selection.shader.FindPassTagValue(selection.FindPass("DepthOnly"), new UnityEngine.Rendering.ShaderTagId("LightMode")).name);
         float size = map.Hexes.hex_size_km * 1000f;
         bool Inland(HexJson h)   // whole hex on the terrain, so no corner is clamped to the map's edge
         {
