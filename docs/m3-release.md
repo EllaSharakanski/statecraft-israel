@@ -5,6 +5,7 @@
 - **Built by:** `"$UNITY" -batchmode -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `(cd unity/Builds/Web-brotli && rm -f ../statecraft-m3-web.zip && zip -qr ../statecraft-m3-web.zip .)`.
 - **Verified locally by:** `uv run tools/web_check.py unity/Builds/Web-brotli --query "golden&smoke=5" --expect "GOLDEN OK 1950" --expect "GOLDEN OK 1952" --expect "SMOKE OK 5 turns"`. This runs both golden hashes in the WebGL IL2CPP player, then plays five turns through the UI's own buttons.
   - Result, 2026-10-10: `GOLDEN OK 1950 ee5d0826…`, `GOLDEN OK 1952 91bb6fb5…`, `SMOKE OK 5 turns 1948-06-19 7004c29a…`, then PASS.
+  - Result after the 1948 war-period events (playtest 1 E), on the Disabled build: `GOLDEN OK 1950 a540b52e…`, `GOLDEN OK 1952 16c16d7e…`, `SMOKE OK 5 turns 1948-06-19 3f0f01f9…`, then PASS. The smoke run now answers two events through the card (the IDF founding order on turn 2, the first truce on turn 3).
 - **Size:**
   - The folder is 23 MB (`du -sh`) in 36 files. itch.io allows 1,000 files.
   - The zip is 20 MB (20,862,385 bytes).
