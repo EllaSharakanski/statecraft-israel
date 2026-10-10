@@ -1,0 +1,123 @@
+<p align="center">
+  <img src="docs/images/hero-concept-1936.jpg" alt="Concept art of the target look: a tilt-shift diorama of the coast around Tel Aviv and Jaffa in 1936, with a top resource bar and an event card. This is AI-generated concept art, not the current build." width="100%">
+  <br>
+  <em>Concept art (AI-generated): the look we are building toward. It is not the current build, and it shows things the game does not have. Real screenshots of today's build are <a href="#what-it-looks-like-today">below</a>.</em>
+</p>
+
+# Statecraft: Israel
+
+[![Code license: MIT](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
+[![Assets license: CC BY 4.0](https://img.shields.io/badge/assets-CC%20BY%204.0-lightgrey.svg)](LICENSING.md)
+[![Unity 6000.3.25f1](https://img.shields.io/badge/Unity-6000.3.25f1-black.svg)](unity/ProjectSettings/ProjectVersion.txt)
+![Status: playable 1948–1951 prototype](https://img.shields.io/badge/status-playable%201948%E2%80%931951-orange.svg)
+
+**A Civilization-style strategy game about governing Israel. You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.**
+
+> [!NOTE]
+> This is an independent, non-commercial open-source project. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
+
+## What is this?
+
+You sit in the prime minister's chair from the founding of the state. Each turn you:
+
+- appoint and replace real ministers such as David Ben-Gurion, Eliezer Kaplan and Moshe Sharett, inside a real coalition;
+- divide a tiny budget between security, immigrant absorption, the ma'abarot transit camps and austerity;
+- manage security on a five-level escalation ladder, from routine threats to full war;
+- face real decisions at their real dates, such as the First Truce, the Altalena affair and the Bernadotte assassination, and see why each outcome happened in the "Why?" panel.
+
+A deterministic C# simulation runs underneath. The same choices always give the same result, and a saved game is the seed plus the list of commands. Unity draws a real terrain map of the country built from elevation and climate data.
+
+## What it looks like today
+
+<!-- Screenshots of the current build (M3), taken on 2026-10-10. -->
+<p align="center">
+  <img src="docs/images/build-m3-map.jpg" alt="Current build: the terrain map of the coastal plain and Jerusalem with hex lines, settlement markers, the top bar and an event card" width="820">
+</p>
+<p align="center">
+  <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen listing the Provisional Government's ministers with portraits" width="405">
+  <img src="docs/images/build-m3-why.jpg" alt="Current build: the Why panel explaining a turn's changes" width="405">
+</p>
+
+## Is this any good?
+
+It is an early, honest prototype.
+
+**What works now (M3, 1948–1951):**
+- Turns from 15 May 1948 to the end of 1951.
+- The Cabinet with appointments.
+- The Budget screen.
+- The Defence screen with the escalation ladder and reserve call-up.
+- Sourced historical events from the 1948 war through the 1951 foreign-currency crisis.
+- The "Why?" panel.
+- Autosave and load.
+- The browser (WebGL) build.
+
+**What is missing:**
+- The art in the concept image above. Settlements are still simple markers.
+- Diplomacy.
+- War mode.
+- Anything after 1951.
+- A hosted build you can play with one click.
+
+## Roadmap
+
+- **Visual v1 (next):** shadows at map scale, a two-band tilt-shift, a stylised terrain shader, a graded sea, a cleaner hex grid and serif labels.
+- **M4:** the full 1948–1956 slice, war mode for 1948 and Suez, the legacy report, a historian review and a hosted browser build.
+- **Art track:** era-correct 3D settlements, vegetation and units, toward the concept image.
+
+## Play
+
+There is no hosted build yet; one is planned for M4. To run it locally:
+
+1. Install the tools in [docs/dev-setup.md](docs/dev-setup.md): .NET 10, Unity 6000.3.25f1 with Web Build Support, and `uv`.
+2. Run `tools/build_sim_for_unity.sh`.
+3. Build the web version. The command is in [docs/dev-setup.md](docs/dev-setup.md).
+4. Run `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`, then open http://localhost:8000/.
+
+## History, sources and accuracy
+
+- Every event, minister, date and number in `content/` carries `sources:` with URLs and check dates.
+- No quotes are invented. Text paraphrases its sources.
+- The framing is Israeli. Contested narratives are not presented as parallel accounts.
+- Events about war, terror and the Holocaust are tagged sensitive. They get a sensitivity review before any build is shared.
+- Found an error? Open an issue with a source. A claim without a source can't be acted on.
+
+## Contributing
+
+Help is very welcome:
+- **Programmers:** Unity, C# and Python tools.
+- **Historians and history enthusiasts:** sourcing and fact-checking.
+- **3D artists.**
+- **Game designers and writers.**
+- **Translators.**
+
+Before you start:
+- Read [docs/dev-setup.md](docs/dev-setup.md).
+- Run the tests: `dotnet test sim/Statecraft.sln`, the tools tests, and Unity EditMode.
+- Keep game rules in the sim, not in Unity.
+
+Contribution guidelines, a code of conduct and a contributor agreement are being added.
+
+## AI use
+
+This project is built with heavy AI assistance, disclosed here using itch.io's categories:
+- **Code:** written with AI coding agents and reviewed through tests and review gates.
+- **Graphics:** the concept and promo images in `promo/` are AI-generated. The game's terrain comes from real elevation data. The portraits are public-domain photographs.
+- **Text:** event and content text was drafted with AI, and every fact is checked against the cited source.
+- **Sound:** none yet.
+
+Nothing is generated live while you play.
+
+## License
+
+- **Code:** [MIT](LICENSE).
+- **Original assets, text and data:** [CC BY 4.0](LICENSES/CC-BY-4.0.txt).
+- **AI-generated images:** marked [CC0](LICENSES/CC0-1.0.txt), with no rights claimed.
+- **Files derived from Wikipedia data:** [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt).
+- **Third-party material:** fonts, public-domain portraits and the Unity engine and packages are under their own terms.
+
+Details are in [LICENSING.md](LICENSING.md).
+
+## Credits
+
+Created by Eyal Golan. Source credits live with each fact in `content/`, and the portrait credits are in `content/people.yaml`.

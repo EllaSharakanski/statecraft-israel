@@ -37,3 +37,9 @@ captures/
 unity/Assets/StreamingAssets/content/
 unity/Assets/StreamingAssets/content.meta
 unity/Builds/
+
+# local secrets, licences and agent workspaces
+.env
+*.env
+*.ulf
+.superpowers/

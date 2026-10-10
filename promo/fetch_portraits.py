@@ -7,7 +7,7 @@ public domain or CC are saved; everything is printed so the choice can be checke
 import sys, requests
 from urllib.parse import urlparse
 from pathlib import Path
-UA = {"User-Agent": "israel-game-research/0.1 (eyalgolan96@gmail.com)"}
+UA = {"User-Agent": "statecraft-israel/0.1 (https://github.com/eyalgolan/statecraft-israel)"}
 OUT = Path(sys.argv[1])
 PEOPLE = sys.argv[2:]
 for title in PEOPLE:
