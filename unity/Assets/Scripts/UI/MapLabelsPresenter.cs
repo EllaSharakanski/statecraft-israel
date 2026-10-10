@@ -12,7 +12,8 @@ namespace Statecraft.Game.UI
     /// Refresh (GameRoot.LateUpdate, after the camera has moved) moves each slot with an inline pixel translate to its
     /// marker's top as the camera sees it, LiftPx above it, so no layout pass runs per frame, and returns early when
     /// nothing it reads has changed (the camera's view-projection and rect, the panel's size, the layer's origin, the zoom,
-    /// which panels are shown, and no GeometryChangedEvent since). The mapping assumes the camera's view fills the panel,
+    /// which panels are shown, the pills' sizes, and no GeometryChangedEvent since). A GeometryChangedEvent on the layer or
+    /// on a panel re-places the pills at once, inside the layout pass and before the repaint. The mapping assumes the camera's view fills the panel,
     /// as it does in the game (both span the canvas), so DPR, render scale and the panel's scale cancel out.
     ///
     /// Declutter: pills are placed in priority order (city, then town and Arab town, then the rest, each in file order). A
@@ -65,7 +66,7 @@ namespace Statecraft.Game.UI
         Rect layerRect;                                        // the panel in the layer's coordinates: a pill stays inside it
         readonly EventCallback<GeometryChangedEvent> onOccluderGeometry, onContainerGeometry;
         Matrix4x4 lastViewProjection; Rect lastCameraRect; Vector2 lastPanelSize, lastOrigin; float lastZoom = float.NaN;
-        int lastOccluderMask = -1; bool sizesKnown, geometryDirty = true;
+        int lastOccluderMask = -1; float lastLabelSizes = float.NaN; bool sizesKnown, geometryDirty = true;
 
         public IReadOnlyList<Label> Labels { get; }
         public IReadOnlyList<VisualElement> Slots { get; }
@@ -103,7 +104,7 @@ namespace Statecraft.Game.UI
                 foreach (var it in settlementOrder) if (Priority(it.Settlement.Type) == p) items.Add(it);
             Labels = labels; Slots = slots;
 
-            onOccluderGeometry = _ => geometryDirty = true;
+            onOccluderGeometry = _ => { geometryDirty = true; Refresh(force: true); };   // a panel that appears hides the pills it covers before the repaint (re-review N1)
             onContainerGeometry = _ => { geometryDirty = true; Refresh(force: true); };   // a resize is placed before the repaint (review M4)
             foreach (var name in OccluderNames)
             {
@@ -164,10 +165,12 @@ namespace Statecraft.Game.UI
             var origin = container.worldBound.position;   // slots translate from the layer's top-left
             float distance = Zoom();
             int mask = OccluderMask();
-            if (!force && sizesKnown && !geometryDirty && viewProjection == lastViewProjection && cameraRect == lastCameraRect
+            float labelSizes = 0f;   // a pill that grows or shrinks (a late font, a new text) is re-placed (re-review N2)
+            for (int i = 0; i < items.Count; i++) { var st = items[i].Label.resolvedStyle; if (!float.IsNaN(st.width) && !float.IsNaN(st.height)) labelSizes += st.width + st.height; }
+            if (!force && sizesKnown && !geometryDirty && labelSizes == lastLabelSizes && viewProjection == lastViewProjection && cameraRect == lastCameraRect
                 && screen == lastPanelSize && origin == lastOrigin && distance == lastZoom && mask == lastOccluderMask) return;
             lastViewProjection = viewProjection; lastCameraRect = cameraRect; lastPanelSize = screen; lastOrigin = origin;
-            lastZoom = distance; lastOccluderMask = mask; geometryDirty = false;
+            lastZoom = distance; lastOccluderMask = mask; lastLabelSizes = labelSizes; geometryDirty = false;
             sizesKnown = true;
             bool laidOut = !(float.IsNaN(screen.x) || screen.x <= 0f || float.IsNaN(origin.x) || float.IsNaN(origin.y));
             if (!laidOut) { sizesKnown = false; origin = Vector2.zero; }   // before the first layout: cull by view only, place later

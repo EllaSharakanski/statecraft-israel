@@ -128,3 +128,15 @@ Deviations from the plan text, each forced by a test:
 
   diorama02 costs about 3.4 ms more while turning than still, with or without labels (the rest of the scene).
 
+### Task 9 fix round 2 (re-review N1-N3, shown-set robustness)
+
+- A GeometryChangedEvent on a panel (event card, info panel, minimap, top bar) re-places the pills at once, inside the
+  layout pass, so a card that opens never covers a pill for a frame (N1). The pills' summed sizes are part of the
+  early-out key, so a pill that grows with the camera still is re-placed (N2). `LABELS refresh moving avg_us=28 p95_us=38`.
+- N3: WebGL `?smoke=5&navlog` (`SMOKE OK 5 turns 1948-06-19 d3fdd459...`) shows no layout or style warning in the
+  console; the only non-game lines are the existing `WebGL: INVALID_ENUM: getInternalformatParameter` driver notices.
+- `ShownPillsNeverOverlapAndEachReadsAsItsOwn` pins only unambiguous names (90 km: Tel Aviv, Petah Tikva; overview: Tel
+  Aviv, Jerusalem, Gaza, Beersheba), at least 8 and 7 pills, Hadera or Netanya at the overview, and completeness: every
+  visible marker not decluttered by zoom with no other visible marker within 2 pill heights + MarginPx is labelled.
+  Disabling the anchor fallback turns it red (`overview: shown pills Expected: greater than or equal to 7 But was: 6`).
+

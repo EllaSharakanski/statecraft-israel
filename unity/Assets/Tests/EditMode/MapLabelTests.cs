@@ -258,12 +258,13 @@ public class MapLabelTests
         return tops;
     }
 
-    /// <summary>M2's cluster test, on layout bounds (review I5), widened by review I2/I4: at 90 km (the flythrough's frame 120)
-    /// and at the overview no two shown pills overlap; every shown pill is at most half as far from its own marker top as
-    /// from any other visible marker's top (so none reads as a neighbour's); and the expected names are shown, among them
-    /// a coastal town between Haifa and Tel Aviv at the overview. At 90 km that is every visible marker (Hadera, Zikhron
-    /// Ya'akov and the Galilee lie under the top bar or off screen); at the overview the rest of the Tel Aviv - Lod cluster
-    /// (Jaffa, Ramla, Rishon LeZion, Rehovot, markers 10-30 px apart) and Hadera give way.</summary>
+    /// <summary>M2's cluster test, on layout bounds (review I5), widened by reviews I2/I4 and made robust to terrain changes
+    /// (re-review, task 3). At 90 km (the flythrough's frame 120) and at the overview: no two shown pills overlap; every
+    /// shown pill's marker is visible and the pill is more than twice as far (plus 4 px) from every other visible marker's
+    /// top as from its own, so none reads as a neighbour's; completeness: every visible marker of a place not decluttered
+    /// by zoom with no other visible marker within 2 pill heights + MarginPx is shown; only unambiguous names are pinned
+    /// (well apart from any other marker), with a lower bound on the count; and at the overview a coastal town between
+    /// Haifa and Tel Aviv is labelled. The full shown set is logged, for a new baseline.</summary>
     [UnityTest]
     public IEnumerator ShownPillsNeverOverlapAndEachReadsAsItsOwn()
     {
@@ -271,10 +272,10 @@ public class MapLabelTests
         var labels = new MapLabelsPresenter(hd.Root, map, cam);
         try
         {
-            foreach (var (name, lon, lat, distance, expected, atLeast) in new[]
+            foreach (var (name, lon, lat, distance, pinned, atLeast) in new[]
             {
-                ("90 km", 34.95, 31.3 + (32.9 - 31.3) * 120 / 239.0, 90000f, new[] { "tel_aviv", "jaffa", "petah_tikva", "lod", "ramla", "rishon_lezion", "rehovot", "netanya" }, 8),
-                ("overview", PromoPose.Diorama02.Lon, PromoPose.Diorama02.Lat, CameraController.MaxDistance, new[] { "tel_aviv", "jerusalem", "gaza", "beersheba", "petah_tikva", "lod", "netanya" }, 7),
+                ("90 km", 34.95, 31.3 + (32.9 - 31.3) * 120 / 239.0, 90000f, new[] { "tel_aviv", "petah_tikva" }, 8),
+                ("overview", PromoPose.Diorama02.Lon, PromoPose.Diorama02.Lat, CameraController.MaxDistance, new[] { "tel_aviv", "jerusalem", "gaza", "beersheba" }, 7),
             })
             {
                 Pose(lon, lat, distance);
@@ -283,7 +284,7 @@ public class MapLabelTests
                 var shown = labels.Slots.Where(Shown).Select(s => (id: s.name.Substring("slot-".Length), rect: s.Q<Label>().worldBound)).ToList();
                 TestContext.WriteLine($"{name}: {shown.Count} of {labels.Slots.Count} pills shown: {string.Join(" ", shown.Select(s => s.id))}");
                 TestContext.WriteLine($"{name}: visible markers {string.Join(" ", tops.Select(t => $"{t.Key}@{t.Value.x:F0},{t.Value.y:F0}"))}");
-                foreach (var id in expected) Assert.IsTrue(shown.Any(s => s.id == id), $"{name}: {id} is shown");
+                foreach (var id in pinned) Assert.IsTrue(shown.Any(s => s.id == id), $"{name}: {id} is shown");
                 Assert.GreaterOrEqual(shown.Count, atLeast, $"{name}: shown pills");
                 if (name == "overview") Assert.IsTrue(shown.Any(s => s.id == "hadera" || s.id == "netanya"), "overview: a coastal town between Haifa and Tel Aviv is labelled");
                 for (int i = 0; i < shown.Count; i++)
@@ -296,10 +297,66 @@ public class MapLabelTests
                     foreach (var other in tops.Where(o => o.Key != id))
                         Assert.Greater(Gap(rect, other.Value), 2f * own + 4f, $"{name}: {id} pill is {own:F0} px from its marker but closer to {other.Key}'s");
                 }
+                foreach (var s in map.Settlements.Where(s => tops.ContainsKey(s.Id) && !MapLabelsPresenter.HiddenByZoom(s.Type, distance)))
+                {
+                    float clear = 2f * labels.Labels.Single(l => l.name == "label-" + s.Id).worldBound.height + MapLabelsPresenter.MarginPx;
+                    if (tops.Any(o => o.Key != s.Id && Vector2.Distance(o.Value, tops[s.Id]) <= clear)) continue;
+                    Assert.IsTrue(shown.Any(x => x.id == s.Id), $"{name}: {s.Id} has no visible marker within {clear:F0} px, so it must be labelled");
+                }
                 if (distance > MapLabelsPresenter.DeclutterDistanceM)
                     foreach (var s in map.Settlements.Where(s => MapLabelsPresenter.HiddenByZoom(s.Type, distance)))
                         Assert.IsFalse(Shown(labels.Slots.Single(x => x.name == "slot-" + s.Id)), $"{name}: {s.Id} ({s.Type}) is decluttered");
             }
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Re-review N1: a panel that appears (the event card) hides the pill it covers when its layout lands, from the
+    /// geometry event itself, with no other refresh (in the game that is before the frame is drawn, not one frame later).</summary>
+    [UnityTest]
+    public IEnumerator TheEventCardAppearingHidesAnOverlappedPillAtOnce()
+    {
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
+        try
+        {
+            Pose(34.43, 31.95, 90000f);   // Tel Aviv on the right, where the event card opens
+            yield return Settle(labels);
+            var tlv = labels.Slots.Single(s => s.name == "slot-tel_aviv");
+            var before = tlv.Q<Label>().worldBound;
+            Assert.IsTrue(Shown(tlv), "Tel Aviv is shown before the card opens");
+            var card = hd.Root.Q<VisualElement>("event-card");
+            card.style.minHeight = 500; card.style.display = DisplayStyle.Flex;
+            for (int i = 0; i < 10 && (float.IsNaN(card.worldBound.width) || card.worldBound.width <= 0); i++) yield return null;
+            TestContext.WriteLine($"Tel Aviv {before}, the card {card.worldBound}");
+            Assert.IsTrue(card.worldBound.Overlaps(before), "precondition: the card covers Tel Aviv's pill");
+            var after = tlv.Q<Label>().worldBound;
+            Assert.IsTrue(!Shown(tlv) || !after.Overlaps(card.worldBound), $"Tel Aviv's pill {after} is still under the card {card.worldBound}");
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Re-review N2: a pill that changes size with the camera still (a late font, a new text) is re-placed by the
+    /// next plain refresh: label sizes are part of what Refresh checks before returning early.</summary>
+    [UnityTest]
+    public IEnumerator APillThatGrowsIsRePlacedWithoutACameraChange()
+    {
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
+        try
+        {
+            Pose(34.95, 31.3 + (32.9 - 31.3) * 120 / 239.0, 90000f);
+            yield return Settle(labels);
+            var tlv = labels.Labels.Single(l => l.name == "label-tel_aviv");
+            float width = tlv.resolvedStyle.width;
+            tlv.text = "Tel Aviv, the first Hebrew city, with Jaffa to the south";
+            for (int i = 0; i < 10 && tlv.resolvedStyle.width <= width + 1f; i++) yield return null;
+            Assert.Greater(tlv.resolvedStyle.width, width + 200f, "the pill grew");
+            labels.Refresh();
+            var shown = labels.Slots.Where(Shown).Select(s => (id: s.name, rect: s.Q<Label>().worldBound)).ToList();
+            for (int i = 0; i < shown.Count; i++)
+                for (int j = i + 1; j < shown.Count; j++)
+                    Assert.IsFalse(shown[i].rect.Overlaps(shown[j].rect), $"{shown[i].id} {shown[i].rect} overlaps {shown[j].id} {shown[j].rect}");
         }
         finally { labels.Dispose(); hd.Dispose(); }
     }
