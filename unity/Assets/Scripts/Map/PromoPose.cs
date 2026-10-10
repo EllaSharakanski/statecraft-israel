@@ -25,6 +25,14 @@ namespace Statecraft.Game.Map
 
         public static IReadOnlyList<PromoPose> All { get; } = new[] { Gameplay03, Diorama02 };
 
+        /// <summary>Close checks for the art checkpoint, not promo matches (Task 6 review A3): the 6 km hero zoom over the
+        /// Judean slopes and over the Negev plateau, where texture steps in the baked shading would show. VisualShots shoots
+        /// them after All, with the haze off.</summary>
+        public static IReadOnlyList<PromoPose> CloseChecks { get; } = new[]
+        {
+            new PromoPose("hero06judea", 35.15, 31.78, 6000f, 0f), new PromoPose("hero06negev", 34.90, 30.60, 6000f, 0f),
+        };
+
         public void Apply(CameraRig rig, GeoFrame frame)
         {
             rig.LookAt = frame.ToWorld(Lon, Lat, 0); rig.Distance = Distance; rig.Yaw = Yaw; rig.Apply();

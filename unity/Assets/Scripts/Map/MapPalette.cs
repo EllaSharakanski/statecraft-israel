@@ -10,12 +10,19 @@ namespace Statecraft.Game.Map
     /// only seen where a lake or sea hex's blend reaches the shore; the water itself is shaded from the coast texture.</summary>
     public static class MapPalette
     {
+        /// <summary>Every ground colour is brightened by this factor in sRGB (about 1.25 in linear light) and clamped to
+        /// MaxChannel: the land keeps its luma once the haze no longer lifts it, warm instead of milky (Task 6 review I1).</summary>
+        public const float Brightness = 1.107f, MaxChannel = 0.95f;
+
         public static IReadOnlyDictionary<string, Color> Ground { get; } = new Dictionary<string, Color>
         {
-            ["sea"] = new Color(0.62f, 0.60f, 0.42f), ["lake"] = new Color(0.60f, 0.58f, 0.42f),
-            ["coastal_plain"] = new Color(0.64f, 0.62f, 0.36f), ["hills"] = new Color(0.66f, 0.58f, 0.38f),
-            ["mountains"] = new Color(0.62f, 0.53f, 0.40f), ["valley"] = new Color(0.58f, 0.58f, 0.37f),
-            ["desert"] = new Color(0.84f, 0.70f, 0.48f),
+            ["sea"] = Lit(0.62f, 0.60f, 0.42f), ["lake"] = Lit(0.60f, 0.58f, 0.42f),
+            ["coastal_plain"] = Lit(0.64f, 0.62f, 0.36f), ["hills"] = Lit(0.66f, 0.58f, 0.38f),
+            ["mountains"] = Lit(0.62f, 0.53f, 0.40f), ["valley"] = Lit(0.58f, 0.58f, 0.37f),
+            ["desert"] = Lit(0.84f, 0.70f, 0.48f),
         };
+
+        static Color Lit(float r, float g, float b) =>
+            new Color(Mathf.Min(r * Brightness, MaxChannel), Mathf.Min(g * Brightness, MaxChannel), Mathf.Min(b * Brightness, MaxChannel));
     }
 }

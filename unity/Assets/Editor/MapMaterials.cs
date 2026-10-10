@@ -24,6 +24,7 @@ namespace Statecraft.Game.EditorTools
             var terrain = Make(TerrainPath, "Statecraft/StatecraftTerrain", null);
             terrain.SetTexture("_ScBakeTex", Tex(Statecraft.Game.Map.MapTexturePaths.Bake));
             terrain.SetTexture("_ScCoastTex", Tex(Statecraft.Game.Map.MapTexturePaths.Coast));
+            terrain.SetTexture("_ScAoTex", Tex(Statecraft.Game.Map.MapTexturePaths.Ao));
             EditorUtility.SetDirty(terrain);
             Make(OverlayPath, "Universal Render Pipeline/Unlit", new Color(0.15f, 0.12f, 0.08f, 1f));
             // Settlement boxes: matte URP Lit; SettlementPlacer sets the per-type _BaseColor through a MaterialPropertyBlock.

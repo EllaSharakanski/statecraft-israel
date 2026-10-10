@@ -75,6 +75,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _ScAoTex:
+        m_Texture: {fileID: 2800000, guid: cceebd5d9c12d466089402a2361e524f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ScBakeTex:
         m_Texture: {fileID: 2800000, guid: 2170c5371eef64cf0ae3a9de5631722c, type: 3}
         m_Scale: {x: 1, y: 1}

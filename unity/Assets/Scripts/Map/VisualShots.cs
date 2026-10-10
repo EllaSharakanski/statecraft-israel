@@ -37,16 +37,23 @@ namespace Statecraft.Game.Map
 
         public static IEnumerator Run(CameraRig rig, GeoFrame frame, Action<string> log)
         {
-            foreach (var pose in PromoPose.All)
-            {
-                pose.Apply(rig, frame);
-                for (int i = 0; i < SettleFrames; i++) yield return null;
-                yield return new WaitForEndOfFrame();
-                var tex = ScreenCapture.CaptureScreenshotAsTexture();
-                try { foreach (var line in Lines(pose.Name, tex.EncodeToPNG())) log(line); }
-                finally { UnityEngine.Object.Destroy(tex); }
-            }
+            foreach (var pose in PromoPose.All) yield return Shoot(rig, frame, pose, log);
+            // The close checks look at the ground itself, so the haze (if registered) is off for them and restored after.
+            bool haze = VisualToggles.Names.Contains("haze");
+            if (haze) VisualToggles.Set("haze", false);
+            try { foreach (var pose in PromoPose.CloseChecks) yield return Shoot(rig, frame, pose, log); }
+            finally { if (haze && VisualToggles.Names.Contains("haze")) VisualToggles.Set("haze", true); }
             log("SHOT done");
+        }
+
+        static IEnumerator Shoot(CameraRig rig, GeoFrame frame, PromoPose pose, Action<string> log)
+        {
+            pose.Apply(rig, frame);
+            for (int i = 0; i < SettleFrames; i++) yield return null;
+            yield return new WaitForEndOfFrame();
+            var tex = ScreenCapture.CaptureScreenshotAsTexture();
+            try { foreach (var line in Lines(pose.Name, tex.EncodeToPNG())) log(line); }
+            finally { UnityEngine.Object.Destroy(tex); }
         }
     }
 }

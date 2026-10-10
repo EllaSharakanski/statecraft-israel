@@ -93,7 +93,7 @@ def test_the_textures_are_blackboard_properties_with_the_shaders_names():
     objs, by_id = built()
     graph = objs[0]
     props = [by_id[p["m_Id"]] for p in graph["m_Properties"]]
-    assert [p["m_DefaultReferenceName"] for p in props] == ["_ScBakeTex", "_ScCoastTex"]
+    assert [p["m_DefaultReferenceName"] for p in props] == ["_ScBakeTex", "_ScCoastTex", "_ScAoTex"]
     cat = next(o for o in objs if tg.kind(o) == "CategoryData")
     assert [c["m_Id"] for c in cat["m_ChildObjectList"]] == [p["m_ObjectId"] for p in props]
     assert next(o for o in objs if tg.kind(o) == "UniversalTarget")["m_CastShadows"] is True
@@ -111,3 +111,31 @@ def test_every_edge_is_wired_to_existing_slots_and_the_output_is_deterministic()
             assert e[end]["m_SlotId"] in [by_id[s["m_Id"]]["m_Id"] for s in node["m_Slots"]]
     with pytest.raises(ValueError, match="slot prototypes"):
         tg.build(fixture().replace("Texture2DInputMaterialSlot", "SomethingElse"), GUID)
+
+
+def test_every_added_node_and_the_graph_run_at_single_precision():
+    # Review I2: the template's graph precision is Half (2); a node that inherits it (the UV node has no inputs) would
+    # compute the terrain UV as mediump on GLES3 phones, steps of about 210 m north-south.
+    objs, _ = built()
+    assert objs[0]["m_GraphPrecision"] == tg.GRAPH_SINGLE == 0
+    for k in ("UVNode", "PositionNode", "NormalVectorNode", "PropertyNode", "CustomFunctionNode"):
+        assert all(o["m_Precision"] == 1 for o in objs if tg.kind(o) == k), k
+
+
+def test_only_the_universal_target_is_kept():
+    # Review M3: the template also carries an HDRP target and its data; this project is URP-only.
+    text = fixture_with_hdrp()
+    objs = tg.split(tg.build(text, GUID))
+    assert not [o for o in objs if "HighDefinition" in o["m_Type"]]
+    targets = [o["m_Id"] for o in objs[0]["m_ActiveTargets"]]
+    by_id = {o["m_ObjectId"]: o for o in objs}
+    assert [tg.kind(by_id[t]) for t in targets] == ["UniversalTarget"]
+
+
+def fixture_with_hdrp() -> str:
+    objs = tg.split(fixture())
+    hd_sub = obj("UnityEditor.Rendering.HighDefinition.ShaderGraph.TerrainLitSubTarget", "hdsub")
+    hd = obj("UnityEditor.Rendering.HighDefinition.ShaderGraph.HDTarget", "hd", m_ActiveSubTarget={"m_Id": "hdsub"})
+    objs[0]["m_ActiveTargets"].append({"m_Id": "hd"})
+    objs[0]["m_GraphPrecision"] = 2
+    return tg.join(objs + [hd, hd_sub])

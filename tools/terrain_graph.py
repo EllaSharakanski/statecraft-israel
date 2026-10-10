@@ -3,12 +3,12 @@
 # dependencies = []
 # ///
 """Writes unity/Assets/Shaders/StatecraftTerrain.shadergraph (shader "Statecraft/StatecraftTerrain"): Unity's own
-"Terrain Simple" Terrain Lit template with its sample nodes, groups and notes removed, and one Custom Function node
-(File mode, m_SourceType 0: StatecraftTerrain.hlsl, function StatecraftTerrain, single precision) that takes the terrain UV, the absolute
-world position and normal and two blackboard textures (_ScBakeTex, _ScCoastTex) and feeds every fragment block. All
-shading lives in the HLSL file; re-run this only when the node's inputs or outputs change. Slot objects are copied from
-the template's own slots, so they match the installed Shader Graph version. Object ids are UUID5s: the output is
-deterministic.
+"Terrain Simple" Terrain Lit template with its sample nodes, groups, notes and HDRP target removed, and one Custom
+Function node (File mode, m_SourceType 0: StatecraftTerrain.hlsl, function StatecraftTerrain; the graph and every added
+node at single precision) that takes the terrain UV, the absolute world position and normal and three blackboard
+textures (_ScBakeTex, _ScCoastTex, _ScAoTex) and feeds every fragment block. All shading lives in the HLSL file;
+re-run this only when the node's inputs or outputs change. Slot objects are copied from the template's own slots, so
+they match the installed Shader Graph version. Object ids are UUID5s: the output is deterministic.
 
 Usage: uv run tools/terrain_graph.py
 Needs unity/Library/PackageCache (open the project in Unity once) and unity/Assets/Shaders/StatecraftTerrain.hlsl.meta."""
@@ -26,14 +26,17 @@ GRAPH_PATH = "Statecraft"
 FUNCTION = "StatecraftTerrain"
 NS = uuid.UUID("5b0c1f7e-2f61-4c3a-9a57-7a1d1e0c6f42")
 SG = "UnityEditor.ShaderGraph."
-SINGLE = 1      # Precision.Single
+SINGLE = 1      # Precision.Single (node precision)
+GRAPH_SINGLE = 0   # GraphPrecision.Single (the template's is Half, 2: an inheriting node would run at mediump on GLES3)
+URP = "UnityEditor.Rendering.Universal."
 FILE_MODE = 0   # HlslSourceType.File (Shader Graph: enum HlslSourceType { File, String })
-TEXTURES = [("ScBakeTex", "_ScBakeTex", 3), ("ScCoastTex", "_ScCoastTex", 4)]   # display name, reference, function slot
+# display name, reference, function slot; the AO is its own uncompressed texture (Task 6 fix round 1: BC1 banded it)
+TEXTURES = [("ScBakeTex", "_ScBakeTex", 3), ("ScCoastTex", "_ScCoastTex", 4), ("ScAoTex", "_ScAoTex", 5)]
 INPUTS = [(0, "UV", "Vector2"), (1, "PositionWS", "Vector3"), (2, "NormalWS", "Vector3"),
-          (3, "Bake", "Texture2DInput"), (4, "Coast", "Texture2DInput")]
-OUTPUTS = [(5, "BaseColor", "Vector3", "SurfaceDescription.BaseColor"), (6, "NormalOut", "Vector3", "SurfaceDescription.NormalWS"),
-           (7, "Occlusion", "Vector1", "SurfaceDescription.Occlusion"), (8, "Smoothness", "Vector1", "SurfaceDescription.Smoothness"),
-           (9, "Metallic", "Vector1", "SurfaceDescription.Metallic"), (10, "Emission", "Vector3", "SurfaceDescription.Emission")]
+          (3, "Bake", "Texture2DInput"), (4, "Coast", "Texture2DInput"), (5, "Ao", "Texture2DInput")]
+OUTPUTS = [(6, "BaseColor", "Vector3", "SurfaceDescription.BaseColor"), (7, "NormalOut", "Vector3", "SurfaceDescription.NormalWS"),
+           (8, "Occlusion", "Vector1", "SurfaceDescription.Occlusion"), (9, "Smoothness", "Vector1", "SurfaceDescription.Smoothness"),
+           (10, "Metallic", "Vector1", "SurfaceDescription.Metallic"), (11, "Emission", "Vector3", "SurfaceDescription.Emission")]
 SLOT_KINDS = {"Vector1MaterialSlot", "Vector2MaterialSlot", "Vector3MaterialSlot", "Vector4MaterialSlot",
               "Texture2DMaterialSlot", "Texture2DInputMaterialSlot"}
 
@@ -95,7 +98,8 @@ def build(template_text: str, hlsl_guid: str) -> str:
     block_ids = [b["m_Id"] for ctx in ("m_VertexContext", "m_FragmentContext") for b in graph[ctx]["m_Blocks"]]
     blocks = {by_id[i]["m_SerializedDescriptor"]: by_id[i] for i in block_ids}
 
-    keep = [graph] + [o for o in objs[1:] if ".Rendering." in o["m_Type"] or kind(o) == "CategoryData"]
+    # Only the Universal target and its sub-target: the template's HDRP target is dead weight in this URP project.
+    keep = [graph] + [o for o in objs[1:] if o["m_Type"].startswith(URP) or kind(o) == "CategoryData"]
     for i in block_ids:
         keep.append(by_id[i])
         keep += [by_id[s["m_Id"]] for s in by_id[i]["m_Slots"]]
@@ -105,7 +109,7 @@ def build(template_text: str, hlsl_guid: str) -> str:
             o["m_ReceiveShadows"] = True
 
     uv_out = make_slot(protos, "Vector4", 0, "Out", 1, "uv")
-    uv = make_node("UVNode", "UV", [uv_out], {"m_OutputChannel": 0}, -900, 0)
+    uv = make_node("UVNode", "UV", [uv_out], {"m_OutputChannel": 0}, -900, 0, precision=SINGLE)
     pos_out = make_slot(protos, "Vector3", 0, "Out", 1, "position")
     pos = make_node("PositionNode", "Position", [pos_out], {"m_Space": 4, "m_PositionSource": 0}, -900, 150, version=1, precision=SINGLE)
     nrm_out = make_slot(protos, "Vector3", 0, "Out", 1, "normal")
@@ -122,7 +126,8 @@ def build(template_text: str, hlsl_guid: str) -> str:
              "m_Value": {"m_SerializedTexture": "{\"texture\":{\"instanceID\":0}}", "m_Guid": ""},
              "isMainTexture": False, "useTilingAndOffset": False, "useTexelSize": False, "m_Modifiable": True, "m_DefaultType": 0}
         out = make_slot(protos, "Texture2D", 0, "Out", 1, "prop:" + ref)
-        pn = make_node("PropertyNode", display, [out], {"m_Property": {"m_Id": p["m_ObjectId"]}}, -900, 450 + 120 * len(props))
+        pn = make_node("PropertyNode", display, [out], {"m_Property": {"m_Id": p["m_ObjectId"]}}, -900, 450 + 120 * len(props),
+                       precision=SINGLE)
         props.append(p)
         prop_nodes.append(pn)
         added += [p, pn, out]
@@ -141,7 +146,8 @@ def build(template_text: str, hlsl_guid: str) -> str:
         block = blocks[descriptor]
         edges.append(edge(cf, sid, block, by_id[block["m_Slots"][0]["m_Id"]]["m_Id"]))
 
-    graph.update(m_Path=GRAPH_PATH, m_Properties=[{"m_Id": p["m_ObjectId"]} for p in props], m_Keywords=[], m_Dropdowns=[],
+    graph.update(m_Path=GRAPH_PATH, m_GraphPrecision=GRAPH_SINGLE,
+                 m_ActiveTargets=[{"m_Id": o["m_ObjectId"]} for o in keep if kind(o) == "UniversalTarget"], m_Properties=[{"m_Id": p["m_ObjectId"]} for p in props], m_Keywords=[], m_Dropdowns=[],
                  m_GroupDatas=[], m_StickyNoteDatas=[], m_Edges=edges,
                  m_Nodes=[{"m_Id": i} for i in block_ids] + [{"m_Id": n["m_ObjectId"]} for n in (uv, pos, nrm, *prop_nodes, cf)])
     for o in keep:

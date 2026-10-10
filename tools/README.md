@@ -16,7 +16,8 @@ Offline data tools (uv inline-script Python). Run from the repo root.
 - `package_release.py` zips a Brotli WebGL build for sharing (`unity/Builds/statecraft-m3-web.zip`) and refuses
   (exit 1) until every sensitive event is `sensitivity-reviewed` (docs/m3-release.md).
 - `preview_map.py` renders the geography check image `tools/.cache/map-preview.png`.
-- `terrain_bake.py` writes `unity/Assets/Textures/Map/terrain_bake.png` (AO, curvature, sky-view) and `coast.png`
+- `terrain_bake.py` writes `unity/Assets/Textures/Map/terrain_bake.png` (AO, curvature, sky-view), `ao.png` (the AO
+  alone, imported uncompressed) and `coast.png`
   (exact signed Euclidean distance to the shoreline; lakes under 1 km2 count as land) from the committed heightmap (no
   network). Re-run it whenever the heightmap changes; its PNG bytes are reproducible only on the same toolchain.
 - `terrain_graph.py` writes `unity/Assets/Shaders/StatecraftTerrain.shadergraph` from Unity's "Terrain Simple" template
@@ -39,7 +40,7 @@ Run from the repo root; this installs every pinned dependency (rasterio included
 uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q
 ```
 
-Expected: `169 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
+Expected: `172 passed, 1 skipped` (the skipped one is the headed browser check; add `--headed` and `--with websockets==15.0.1` to run it). Omitting a dependency (e.g. rasterio) silently drops tests or fails collection.
 
 ## Required attribution (Copernicus DEM licence, modified data)
 

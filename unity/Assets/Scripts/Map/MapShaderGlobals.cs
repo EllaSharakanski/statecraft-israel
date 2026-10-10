@@ -12,19 +12,20 @@ namespace Statecraft.Game.Map
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
             HazeRange = Shader.PropertyToID("_ScHazeRange");
 
-        /// <summary>A warm, dusty haze over land (sRGB).</summary>
-        public static readonly Color HazeColour = new Color(0.80f, 0.76f, 0.68f);
-        public const float HazeMax = 0.6f;
+        /// <summary>A warm, dusty haze over land (sRGB): warmer than the ground it covers (R - B 0.26), so the far land reads
+        /// as dust, not as a cool milky veil (Task 6 review I1).</summary>
+        public static readonly Color HazeColour = new Color(0.84f, 0.74f, 0.58f);
+        public const float HazeMax = 0.45f;
         /// <summary>A cooler, weaker haze over water (review I2), so the sea stays the promo's saturated blue towards the
         /// horizon: 0.4 of the land's strength.</summary>
         public static readonly Color WaterHazeColour = new Color(0.62f, 0.74f, 0.86f);
         public const float WaterHazeMax = HazeMax * 0.4f;
-        /// <summary>Distance scale of the aerial haze: 1 - exp(-d / scale); at the gameplay pose's far edge (about 85 km) 19%.</summary>
-        public const float HazeDistanceM = 400000f;
+        /// <summary>The aerial haze is 1 - exp(-max(d - start, 0) / scale), times HazeMax: none within 200 km (the gameplay
+        /// pose, 48-91 km, has none: its depth cue is the tilt-shift), about 2% at the country-wide pose's nearest land
+        /// (about 205 km) and 17% at its horizon (about 400 km): a depth cue, not a veil (review I1).</summary>
+        public const float HazeStartM = 200000f, HazeDistanceM = 250000f;
         /// <summary>Real elevations between which the haze thickens, low in the Jordan rift.</summary>
-        // Whole metres, written as integer literals: HudTests.NoScriptRescalesADisplayedNumberItself would read the float
-        // literal of a hundred as a percent rescale.
-        public const float RiftHazeTopM = -100, RiftHazeFullM = -400;
+        public const float RiftHazeTopM = -100f, RiftHazeFullM = -400f;
 
         static Vector4 haze, hazeWater;
 
@@ -41,7 +42,7 @@ namespace Statecraft.Game.Map
             hazeWater = new Vector4(w.r, w.g, w.b, WaterHazeMax);
             Shader.SetGlobalVector(Haze, haze);
             Shader.SetGlobalVector(HazeWater, hazeWater);
-            Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, 0f));
+            Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, HazeStartM));
             assets.OnTeardown(VisualToggles.Register("haze", on =>
             {
                 Shader.SetGlobalVector(Haze, on ? haze : new Vector4(haze.x, haze.y, haze.z, 0f));
@@ -55,5 +56,7 @@ namespace Statecraft.Game.Map
     {
         public const string Bake = "Assets/Textures/Map/terrain_bake.png";
         public const string Coast = "Assets/Textures/Map/coast.png";
+        /// <summary>The ambient occlusion on its own, uncompressed (R8): BC1 stepped it on broad slopes (Task 6 fix round 1).</summary>
+        public const string Ao = "Assets/Textures/Map/ao.png";
     }
 }

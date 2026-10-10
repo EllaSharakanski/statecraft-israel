@@ -4,12 +4,14 @@
 
 // The Custom Function of StatecraftTerrain.shadergraph (written by tools/terrain_graph.py; keep this signature in step with
 // its INPUTS and OUTPUTS). UV is the terrain UV (0..1 over the map); PositionWS and NormalWS are absolute world space;
-// Bake is terrain_bake.png (r AO, g curvature, b sky-view); Coast is coast.png (0.5 = shore, lower = water).
-void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast,
+// Bake is terrain_bake.png (g curvature, b sky-view; its r is not read); Coast is coast.png (0.5 = shore, lower = water);
+// Ao is ao.png, the ambient occlusion on its own, uncompressed (BC1 banded it: Task 6 fix round 1).
+void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, UnityTexture2D Bake, UnityTexture2D Coast, UnityTexture2D Ao,
     out float3 BaseColor, out float3 NormalOut, out float Occlusion, out float Smoothness, out float Metallic, out float3 Emission)
 {
     float3 n = normalize(NormalWS);
     float4 bake = SAMPLE_TEXTURE2D(Bake.tex, Bake.samplerstate, UV);
+    bake.r = SAMPLE_TEXTURE2D(Ao.tex, Ao.samplerstate, UV).r;
     float coast = SAMPLE_TEXTURE2D(Coast.tex, Coast.samplerstate, UV).r;
     float2 mapM = UV * _ScMap.xy;
     float3 ground = ScGround(UV, mapM, n, PositionWS, bake);

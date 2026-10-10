@@ -152,7 +152,7 @@ namespace Statecraft.Game.Map
             var blender = new BiomeBlender(centres, layerOf, hexes.hex_size_km * 1000f, names.Count);
             int res = BiomeTextureResolution;
             var tex = assets.Own(new Texture2D(res, res, TextureFormat.RGBA32, true, false)
-                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear });
+                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear });
             var px = new Color32[res * res]; var wts = new float[names.Count];
             for (int y = 0; y < res; y++)
                 for (int x = 0; x < res; x++)
@@ -163,7 +163,7 @@ namespace Statecraft.Game.Map
                     c.a = 1f;
                     px[y * res + x] = c;
                 }
-            tex.SetPixels32(px); tex.Apply(true, false);
+            tex.SetPixels32(px); tex.Apply(true, true);   // no CPU copy: nothing reads the pixels back (about 5.6 MB on the heap)
             return tex;
         }
 

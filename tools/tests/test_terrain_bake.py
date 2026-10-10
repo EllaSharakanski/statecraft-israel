@@ -155,7 +155,10 @@ def test_main_writes_both_textures_one_texel_smaller_and_deterministically(tmp_p
     bake = png(tmp_path / "a" / "terrain_bake.png"); coast = png(tmp_path / "a" / "coast.png")
     assert (bake.mode, bake.size) == ("RGB", (n - 1, n - 1))
     assert (coast.mode, coast.size) == ("L", (n - 1, n - 1))
-    for name in ("terrain_bake.png", "coast.png"):
+    ao = png(tmp_path / "a" / "ao.png")
+    assert (ao.mode, ao.size) == ("L", (n - 1, n - 1))
+    assert np.array_equal(np.asarray(ao), np.asarray(bake)[..., 0]), "ao.png is the bake's R channel, on its own"
+    for name in ("terrain_bake.png", "coast.png", "ao.png"):
         assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes()
     c = np.asarray(coast)
     assert c[:, :5].max() < 128 and c[:, 12:].min() > 128                   # water west, land east
@@ -222,3 +225,10 @@ def test_the_committed_bake_shades_real_gorges_ridges_and_plateaus():
     judean = box(b, 35.2, 35.4, 31.5, 31.8)[..., 0].mean()
     coastal = box(b, 34.85, 34.95, 31.9, 32.3)[..., 0].mean()
     assert judean < 0.8 and judean < coastal - 0.1, "the gullied Judean desert is darker than the coastal plain"
+
+
+def test_the_committed_ao_texture_is_the_bake_ao_uncompressed_on_its_own():
+    # Task 6 fix round 1: BC1 stepped the AO by 2+ levels on 59% of the broad Judean slopes; the shader samples this R8 copy.
+    ao = png(ROOT / "unity/Assets/Textures/Map/ao.png")
+    b = np.asarray(png(ROOT / "unity/Assets/Textures/Map/terrain_bake.png"))
+    assert ao.mode == "L" and np.array_equal(np.asarray(ao), b[..., 0])

@@ -8,6 +8,8 @@ Usage: uv run tools/terrain_bake.py   (about 10 seconds)
 Reads unity/Assets/StreamingAssets/map/heightmap.r16 + heightmap.json; writes, 2048 x 2048, row 0 = north:
   unity/Assets/Textures/Map/terrain_bake.png  RGB8: R ambient occlusion (horizon search to AO_RADIUS_M; 1 = open),
       G curvature (0.5 flat, > 0.5 convex), B sky-view factor (horizon search to SKY_RADIUS_M)
+  unity/Assets/Textures/Map/ao.png            L8: the same ambient occlusion as terrain_bake.png's R, on its own so Unity
+      imports it uncompressed (R8): block compression stepped it by 2+ levels on most broad slopes (Task 6 fix round 1)
   unity/Assets/Textures/Map/coast.png         L8: 0.5 + d / (2 COAST_RANGE_M), clamped; d = signed distance (m) to the
       nearest shoreline, < 0 in water (open sea: |elevation| < SEA_EPS_M and connected to the map's border; lakes: flat
       water below LAKE_BELOW_M covering at least MIN_LAKE_AREA_KM2), the rules tools/hexgrid.py uses for its sea and lake
@@ -243,7 +245,8 @@ def main(map_dir: Path = MAP_DIR, out_dir: Path = OUT_DIR) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgb, "RGB").save(out_dir / "terrain_bake.png")
     Image.fromarray(coast, "L").save(out_dir / "coast.png")
-    print(f"wrote {out_dir / 'terrain_bake.png'} and {out_dir / 'coast.png'} ({coast.shape[1]} x {coast.shape[0]}): "
+    Image.fromarray(np.ascontiguousarray(rgb[..., 0]), "L").save(out_dir / "ao.png")
+    print(f"wrote {out_dir / 'terrain_bake.png'}, {out_dir / 'ao.png'} and {out_dir / 'coast.png'} ({coast.shape[1]} x {coast.shape[0]}): "
           f"water {np.mean(coast < 128):.1%} of texels; AO mean {rgb[..., 0].mean() / 255:.3f}, sky-view mean {rgb[..., 2].mean() / 255:.3f}")
 
 
