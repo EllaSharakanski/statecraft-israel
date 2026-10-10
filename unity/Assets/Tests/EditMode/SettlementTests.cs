@@ -130,7 +130,7 @@ public class MapSceneTests
     static string RealYamlPath => Path.Combine(Paths.Content, "map", "settlements_1948.yaml");
 
     const string TerrainMatPath = "Assets/Materials/Terrain.mat", OverlayMatPath = "Assets/Materials/HexOverlay.mat",
-        MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat", SeaMatPath = "Assets/Materials/Sea.mat";
+        MarkerMatPath = "Assets/Materials/SettlementMarker.mat", SelectionMatPath = "Assets/Materials/HexSelection.mat", SeaMatPath = "Assets/Materials/Sea.mat", BorderLandMatPath = "Assets/Materials/BorderLand.mat";
 
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -143,7 +143,7 @@ public class MapSceneTests
     {
         if (withCamera) new GameObject("TestMainCamera") { tag = "MainCamera" }.AddComponent<Camera>();
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         return map;
     }
 
@@ -180,28 +180,172 @@ public class MapSceneTests
             Assert.Less(cam.ViewportPointToRay(new Vector3(x, 1f, 0)).direction.y, 0f, $"top edge at x={x} looks down");
     }
 
-    /// <summary>Fix round 1 (review M7, the sea seam): a lit sea plane at sea level, under the terrain, carries the sea past
-    /// the map's edge, drawn with the editor-made Sea.mat (URP Lit, the sea biome colour, matte like the terrain).</summary>
+    /// <summary>Fix round 2 (R2-1, N1): outside the heightmap's bbox each side continues the terrain edge next to it: sea
+    /// where the edge is sea (Sea.mat), muted land where it is land (BorderLand.mat), so Sinai, Jordan and Lebanon do not
+    /// read as sea. The skirt lies entirely outside the terrain's footprint, so nothing covers land below sea level.</summary>
     [Test]
-    public void ASeaPlaneCarriesTheSeaPastTheTerrain()
+    public void TheBorderSkirtContinuesEachEdgeOutsideTheMap()
     {
         var map = NewMap(); map.Build();
-        var plane = map.Terrain.transform.Find(MapScene.SeaPlaneName);
-        Assert.IsNotNull(plane, "the sea plane exists");
-        var mr = plane.GetComponent<MeshRenderer>();
-        var sea = Load(SeaMatPath);
-        Assert.AreSame(sea, mr.sharedMaterial, "the editor-made sea material, not an instance");
-        Assert.AreEqual("Universal Render Pipeline/Lit", sea.shader.name, "lit like the terrain");
-        var c = sea.GetColor("_BaseColor"); var want = MapBuilder.BiomeColours["sea"];
-        Assert.Less(Mathf.Abs(c.r - want.r) + Mathf.Abs(c.g - want.g) + Mathf.Abs(c.b - want.b), 1e-3f, "the sea biome colour");
+        Assert.IsNull(map.Terrain.transform.Find("SeaPlane"), "no plane over the terrain (fix round 2, N1)");
+        var skirt = map.Terrain.transform.Find(MapScene.BorderSkirtName);
+        Assert.IsNotNull(skirt, "the border skirt exists");
+        var mr = skirt.GetComponent<MeshRenderer>();
+        CollectionAssert.AreEqual(new[] { Load(SeaMatPath), Load(BorderLandMatPath) }, mr.sharedMaterials, "sea, then land: editor-made");
+        Assert.AreEqual("Universal Render Pipeline/Lit", Load(BorderLandMatPath).shader.name);
+        var mesh = skirt.GetComponent<MeshFilter>().sharedMesh;
+        var verts = mesh.vertices;
         var size = map.Terrain.terrainData.size;
-        var b = mr.bounds;
-        Assert.Less(b.min.x, -400000f); Assert.Greater(b.max.x, size.x + 400000f);
-        Assert.Less(b.min.z, -400000f); Assert.Greater(b.max.z, size.z + 400000f);
-        var seaHex = System.Array.Find(map.Hexes.hexes, h => h.biome == "sea");
-        var seaY = map.Terrain.SampleHeight(map.Frame.ToWorld(seaHex.lon, seaHex.lat, 0));
-        Assert.Less(b.max.y, seaY, "under the terrain's sea, so the terrain draws inside its bounds");
-        Assert.Greater(b.max.y, seaY - 100f, "at sea level");
+        // Which submesh covers a point (world x, z) just outside the map, from lon/lat.
+        int Cover(double lat, double lon)
+        {
+            var p = map.Frame.ToWorld(lon, lat, 0);
+            for (int sm = 0; sm < mesh.subMeshCount; sm++)
+            {
+                var t = mesh.GetTriangles(sm);
+                for (int k = 0; k < t.Length; k += 3)
+                    if (Inside(new Vector2(p.x, p.z), verts[t[k]], verts[t[k + 1]], verts[t[k + 2]])) return sm;
+            }
+            return -1;
+        }
+        Assert.AreEqual(1, Cover(31.95, 36.05), "east of the map at Amman's latitude: Jordan, land");
+        Assert.AreEqual(1, Cover(29.30, 34.50), "south of the map: Sinai, land");
+        Assert.AreEqual(0, Cover(32.00, 34.05), "west of the map off the coast: sea");
+        Assert.AreEqual(1, Cover(33.50, 35.60), "north of the map inland: Lebanon, land");
+        Assert.AreEqual(0, Cover(33.50, 34.50), "north-west of the map: sea");
+        Assert.AreEqual(1, Cover(29.40, 34.30), "south-west corner: Sinai, land");
+        // Nothing of the skirt lies over the terrain (N1): every triangle is outside the footprint.
+        for (int sm = 0; sm < mesh.subMeshCount; sm++)
+        {
+            var t = mesh.GetTriangles(sm);
+            for (int k = 0; k < t.Length; k += 3)
+            {
+                var c = (verts[t[k]] + verts[t[k + 1]] + verts[t[k + 2]]) / 3;
+                Assert.IsFalse(c.x > 1f && c.x < size.x - 1f && c.z > 1f && c.z < size.z - 1f, $"skirt triangle over the terrain at {c}");
+            }
+        }
+        // Its inner edge meets the terrain's edge (no gap, no step).
+        var edge = System.Array.FindAll(verts, v => Mathf.Abs(v.x - size.x) < 0.5f && v.z > 1000f && v.z < size.z - 1000f);
+        Assert.Greater(edge.Length, 100);
+        foreach (var v in edge)
+            Assert.AreEqual(map.Terrain.SampleHeight(new Vector3(v.x - 0.5f, 0, v.z)), v.y, 2f, $"east edge at z={v.z}");
+        // Facing up (seen from the camera's side).
+        var used = new HashSet<int>();
+        for (int sm = 0; sm < mesh.subMeshCount; sm++) used.UnionWith(mesh.GetTriangles(sm));
+        var normals = mesh.normals;
+        foreach (var i in used) Assert.Greater(normals[i].y, 0f, $"vertex {i} faces up");
+    }
+
+    static bool Inside(Vector2 p, Vector3 a, Vector3 b, Vector3 c)
+    {
+        float Side(Vector2 p1, Vector3 p2, Vector3 p3) => (p1.x - p3.x) * (p2.z - p3.z) - (p2.x - p3.x) * (p1.y - p3.z);
+        float d1 = Side(p, a, b), d2 = Side(p, b, c), d3 = Side(p, c, a);
+        bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+        return !(neg && pos);
+    }
+
+    /// <summary>Renders the real scene (Map.unity's light, rig and post-processing) looking at <paramref name="look"/> and
+    /// returns the pixel colour of each world point.</summary>
+    static System.Collections.IEnumerator RenderAt(Vector3 look, float distance, Vector3[] points, Color[] colours, int radius = 0, bool darkest = false)
+    {
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        rig.LookAt = look; rig.Distance = distance; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+        var rt = new RenderTexture(1600, 900, 24);
+        var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        try
+        {
+            cam.targetTexture = rt;
+            yield return null;
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
+            for (int i = 0; i < points.Length; i++)
+            {
+                var p = cam.WorldToScreenPoint(points[i]);   // while the camera still renders into the texture
+                var best = tex.GetPixel((int)p.x, (int)p.y);
+                for (int dx = -radius; dx <= radius; dx++)
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        var c = tex.GetPixel((int)p.x + dx, (int)p.y + dy);
+                        if (darkest && c.r + c.g + c.b < best.r + best.g + best.b) best = c;
+                    }
+                colours[i] = best;
+            }
+        }
+        finally
+        {
+            RenderTexture.active = null; cam.targetTexture = null;
+            rt.Release(); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex);
+        }
+    }
+
+    static bool LandColour(Color c) => c.r > c.b + 0.05f;
+    static bool SeaColour(Color c) => c.b > c.r + 0.15f;
+
+    /// <summary>Fix round 2 (R2-1), rendered: just past the east (Amman's latitude) and south (Sinai) edges the backdrop is
+    /// land-coloured, past the west edge sea-coloured.</summary>
+    [UnityTest]
+    public System.Collections.IEnumerator TheBackdropIsLandWhereTheNeighboursAreLand()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        foreach (var (name, lat, lon, land) in new[] { ("east (Jordan)", 31.95, 36.0, true), ("south (Sinai)", 29.38, 34.5, true), ("west (sea)", 32.0, 34.12, false), ("north (Lebanon)", 33.42, 35.6, true) })
+        {
+            var at = map.Frame.ToWorld(lon, lat, 0);
+            var edge = map.Frame.ToWorld(System.Math.Min(System.Math.Max(lon, 34.2), 35.9), System.Math.Min(System.Math.Max(lat, 29.45), 33.35), 0);
+            at.y = edge.y = map.Terrain.SampleHeight(edge);
+            var colours = new Color[1];
+            yield return RenderAt(edge, 90000f, new[] { at }, colours);
+            TestContext.WriteLine($"{name}: {colours[0]}");
+            Assert.IsTrue(land ? LandColour(colours[0]) : SeaColour(colours[0]), $"{name}: {(land ? "land" : "sea")} expected, rendered {colours[0]}");
+        }
+    }
+
+    /// <summary>Fix round 2 (N1), rendered: the land below sea level (the Jordan valley, Beit She'an, the Dead Sea's shores
+    /// and the Arava) shows its biome colour, its hex lines and its settlement markers; nothing covers it.</summary>
+    [UnityTest]
+    public System.Collections.IEnumerator TheRiftBelowSeaLevelIsVisible()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        float size = map.Hexes.hex_size_km * 1000f;
+        // The lowest land hex in each band: Beit She'an valley, the Jordan valley by Jericho, the Arava north of Eilat.
+        foreach (var (name, lat0, lat1) in new[] { ("Beit She'an valley", 32.35, 32.65), ("Jordan valley (Jericho)", 31.75, 32.05), ("Dead Sea shore / northern Arava", 30.6, 31.2) })
+        {
+            HexJson low = null;
+            foreach (var h in map.Hexes.hexes)
+                if (h.land && h.lat >= lat0 && h.lat <= lat1 && h.biome != "lake" && (low == null || h.elev_m < low.elev_m)) low = h;
+            Assert.IsNotNull(low, name);
+            Assert.Less(low.elev_m, -10f, $"{name}: a hex below the old plane's -10 m");
+            var centre = map.Frame.ToWorld(low.lon, low.lat, 0); centre.y = map.Terrain.SampleHeight(centre);
+            var corner2 = HexMath.Corner(new Vector2(centre.x, centre.z), size, 0);
+            var corner = new Vector3(corner2.x, 0, corner2.y); corner.y = map.Terrain.SampleHeight(corner) + MapBuilder.OverlayClearanceM;
+            var colours = new Color[1]; var lines = new Color[1];
+            yield return RenderAt(centre, 40000f, new[] { centre }, colours);
+            yield return RenderAt(centre, 40000f, new[] { corner }, lines, radius: 2, darkest: true);
+            TestContext.WriteLine($"{name} ({low.q}, {low.r}) {low.elev_m:0} m: centre {colours[0]}, line {lines[0]}");
+            Assert.IsTrue(LandColour(colours[0]), $"{name}: the {low.biome} colour, rendered {colours[0]}");
+            Assert.Less(lines[0].r + lines[0].g + lines[0].b, 0.75f * (colours[0].r + colours[0].g + colours[0].b), $"{name}: the hex line shows, rendered {lines[0]}");
+        }
+        // Settlement markers in the rift (below -10 m) are drawn: the pixel at the marker's top is not the sea colour.
+        var root = GameObject.Find("Settlements").transform;
+        int seen = 0;
+        foreach (Transform box in root)
+        {
+            if (box.name.EndsWith("_label") || box.GetComponent<MeshRenderer>() == null) continue;
+            var ground = map.Terrain.SampleHeight(box.position);
+            var realElevation = ground / MapBuilder.VerticalExaggeration + HeightmapLoader.Load(Paths.StreamingMap).meta.elev_min_m;
+            if (realElevation > -10f) continue;
+            var top = box.position + Vector3.up * box.lossyScale.y / 2;
+            var colours = new Color[1];
+            yield return RenderAt(box.position, 40000f, new[] { top }, colours);
+            TestContext.WriteLine($"marker {box.name} at {realElevation:0} m: {colours[0]}");
+            Assert.IsFalse(SeaColour(colours[0]), $"marker {box.name} is hidden ({colours[0]})");
+            seen++;
+        }
+        Assert.Greater(seen, 0, "the rift has settlement markers to check");
     }
 
     /// <summary>Fix round 1 (the sea seam), rendered: at the west and north-west edges of the map, the sea on the terrain and
@@ -316,15 +460,18 @@ public class MapSceneTests
     public void BuildWithoutMaterialsNamesTheMissingField()
     {
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath), Load(SeaMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), null, Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         var ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("markerMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null, Load(SeaMatPath));
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), null, Load(SeaMatPath), Load(BorderLandMatPath));
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("selectionMaterial", ex.Message);
-        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), null);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), null, Load(BorderLandMatPath));
         ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
         StringAssert.Contains("seaMaterial", ex.Message);
+        map.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), null);
+        ex = Assert.Throws<System.InvalidOperationException>(() => map.Build());
+        StringAssert.Contains("borderLandMaterial", ex.Message);
     }
 
     [Test]
@@ -351,7 +498,7 @@ public class MapSceneTests
         var map = NewMap(); map.Build();
         var go = map.gameObject; Object.DestroyImmediate(map);
         var fresh = go.AddComponent<MapScene>();
-        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath));
+        fresh.Configure(Load(TerrainMatPath), Load(OverlayMatPath), Load(MarkerMatPath), Load(SelectionMatPath), Load(SeaMatPath), Load(BorderLandMatPath));
         fresh.Build();
         AssertOneOfEach();
     }

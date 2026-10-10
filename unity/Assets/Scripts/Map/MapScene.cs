@@ -11,7 +11,7 @@ namespace Statecraft.Game.Map
     /// component calls Build(inputs) once the inputs are loaded (fetched on WebGL); editor tools call Build().</summary>
     public sealed class MapScene : MonoBehaviour
     {
-        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial, selectionMaterial, seaMaterial;
+        [SerializeField] Material terrainMaterial, overlayMaterial, markerMaterial, selectionMaterial, seaMaterial, borderLandMaterial;
 
         public GeoFrame Frame { get; private set; }
         /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
@@ -21,12 +21,8 @@ namespace Statecraft.Game.Map
 
         /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
         public const string SelectionName = "HexSelection";
-        /// <summary>The sea past the map's edge: a child of the terrain (so a rebuild destroys it).</summary>
-        public const string SeaPlaneName = "SeaPlane";
-        /// <summary>How far the sea plane reaches past the terrain on every side; the camera never sees farther (MaxDistance).</summary>
-        public const float SeaMarginM = 500_000f;
-        /// <summary>Depth of the sea plane under sea level, so the terrain's own sea draws over it inside the map.</summary>
-        public const float SeaPlaneDropM = 30f;
+        /// <summary>The land and sea past the map's edge: a child of the terrain (so a rebuild destroys it).</summary>
+        public const string BorderSkirtName = "BorderSkirt";
         /// <summary>Highlight colour of the selected hex (the UI's gold, brighter, to read against every biome); MapMaterials
         /// bakes it into the editor-made HexSelection.mat.</summary>
         public static readonly Color SelectionColour = new Color(1f, 0.84f, 0.38f);
@@ -86,8 +82,11 @@ namespace Statecraft.Game.Map
             mr.enabled = true;
         }
 
-        public void Configure(Material terrain, Material overlay, Material marker, Material selection, Material sea)
-        { terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; selectionMaterial = selection; seaMaterial = sea; }
+        public void Configure(Material terrain, Material overlay, Material marker, Material selection, Material sea, Material borderLand)
+        {
+            terrainMaterial = terrain; overlayMaterial = overlay; markerMaterial = marker; selectionMaterial = selection;
+            seaMaterial = sea; borderLandMaterial = borderLand;
+        }
 
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
@@ -100,6 +99,7 @@ namespace Statecraft.Game.Map
             if (markerMaterial == null) throw new InvalidOperationException("MapScene: markerMaterial is not assigned");
             if (selectionMaterial == null) throw new InvalidOperationException("MapScene: selectionMaterial is not assigned");
             if (seaMaterial == null) throw new InvalidOperationException("MapScene: seaMaterial is not assigned");
+            if (borderLandMaterial == null) throw new InvalidOperationException("MapScene: borderLandMaterial is not assigned");
             var cam = Camera.main;
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
@@ -110,7 +110,7 @@ namespace Statecraft.Game.Map
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
-            AddSeaPlane(terrainGo.transform, size, (0f - meta.elev_min_m) * MapBuilder.VerticalExaggeration);
+            AddBorderSkirt(terrainGo, meta.elev_min_m);
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
             var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
@@ -124,20 +124,17 @@ namespace Statecraft.Game.Map
             assets.Own(rig.Volume.profile);
         }
 
-        /// <summary>A lit plane in the sea colour, just under sea level (0 m: heightmap sea), reaching SeaMarginM past the
-        /// terrain: past the map's edge the sea is lit as the terrain's sea is, so no seam shows (fix round 1). Drawn with the
-        /// editor-made Sea.mat on Unity's built-in quad; no collider, so clicks still pick only the terrain.</summary>
-        void AddSeaPlane(Transform terrain, Vector3 size, float seaLevelY)
+        /// <summary>The land and sea past the map's edge (MapBuilder.BuildBorderSkirt), drawn with the editor-made Sea.mat and
+        /// BorderLand.mat; no collider, so clicks still pick only the terrain. It lies outside the terrain's footprint only.</summary>
+        void AddBorderSkirt(GameObject terrainGo, float elevMinM)
         {
-            var plane = new GameObject(SeaPlaneName);
-            plane.transform.SetParent(terrain, false);
-            plane.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Quad.fbx");
-            var renderer = plane.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = seaMaterial;
+            var skirt = new GameObject(BorderSkirtName);
+            skirt.transform.SetParent(terrainGo.transform, false);
+            skirt.AddComponent<MeshFilter>().sharedMesh =
+                MapBuilder.BuildBorderSkirt(Terrain.terrainData, elevMinM, terrainGo.GetComponent<MapRuntimeAssets>());
+            var renderer = skirt.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = new[] { seaMaterial, borderLandMaterial };
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            plane.transform.localPosition = new Vector3(size.x / 2, seaLevelY - SeaPlaneDropM, size.z / 2);
-            plane.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);   // the quad faces -Z; this turns it to face up
-            plane.transform.localScale = new Vector3(size.x + 2 * SeaMarginM, size.z + 2 * SeaMarginM, 1f);
         }
 
         static string MetaPath => "heightmap.json";

@@ -14,6 +14,7 @@ namespace Statecraft.Game.EditorTools
         public const string MarkerPath = Folder + "/SettlementMarker.mat";
         public const string SelectionPath = Folder + "/HexSelection.mat";
         public const string SeaPath = Folder + "/Sea.mat";
+        public const string BorderLandPath = Folder + "/BorderLand.mat";
 
         public static void Create()
         {
@@ -38,6 +39,12 @@ namespace Statecraft.Game.EditorTools
             sea.SetFloat("_SpecularHighlights", 1f); sea.SetFloat("_EnvironmentReflections", 1f);
             sea.DisableKeyword("_SPECULARHIGHLIGHTS_OFF"); sea.DisableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
             EditorUtility.SetDirty(sea);
+            // Neighbouring land past the map's edge (Sinai, Jordan, Lebanon): one muted land tone, lit and matte like the sea
+            // (fix round 2, R2-1).
+            var land = Make(BorderLandPath, "Universal Render Pipeline/Lit", Statecraft.Game.Map.MapBuilder.BorderLandColour);
+            land.SetFloat("_Smoothness", 0f); land.SetFloat("_Metallic", 0f);
+            land.SetFloat("_SpecularHighlights", 1f); land.SetFloat("_EnvironmentReflections", 1f);
+            EditorUtility.SetDirty(land);
             AssetDatabase.SaveAssets();
         }
 
