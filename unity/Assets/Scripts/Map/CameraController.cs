@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace Statecraft.Game.Map
 {
     /// <summary>One frame of camera input, in the units the actions give: Pan in [-1, 1] per axis (keys), DragPan in
-    /// screen pixels (right-button drag), Zoom in scroll units (positive = in), Orbit in [-1, 1] (Q/E).</summary>
+    /// screen pixels (right-button drag), Zoom in wheel notches (positive = in), Orbit in [-1, 1] (Q/E).</summary>
     public struct CameraInput
     {
         public Vector2 Pan, DragPan; public float Zoom, Orbit;
@@ -26,7 +26,7 @@ namespace Statecraft.Game.Map
         public const float MinDistance = 20000f, MaxDistance = 250000f;
         public const float PanPerSecond = 0.8f;        // distances per second at full key press
         public const float DragPanPerPixel = 0.0012f;  // distances per pixel of drag
-        public const float ZoomPerStep = 0.1f;         // fraction of the distance per scroll notch (scroll units are normalised to notches)
+        public const float ZoomPerStep = 0.1f;         // fraction of the distance per wheel notch
         public const float OrbitDegreesPerSecond = 60f;
         public const float MaxFrameSeconds = 0.1f;     // a stalled frame (tab in the background) must not fling the camera
 
@@ -75,7 +75,9 @@ namespace Statecraft.Game.Map
             return new CameraInput
             {
                 Pan = panValue, DragPan = dragValue,
-                Zoom = Mathf.Clamp(zoomRaw / 120f, -3f, 3f),   // browsers report 100-120 per notch; clamp bursts
+                // The Input System's default scroll behaviour (UniformAcrossAllPlatforms) gives 1 per notch on every platform
+                // (measured in headed Chrome on WebGL, Task 24: a 100 px notch -> 1.0); clamp bursts.
+                Zoom = Mathf.Clamp(zoomRaw, -3f, 3f),
                 Orbit = orbitValue, OverUi = over, DragFromUi = dragFromUi,
             };
         }
