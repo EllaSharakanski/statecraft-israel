@@ -1,5 +1,6 @@
 #nullable enable
 using System.Linq;
+using Statecraft.Sim;
 using UnityEngine.UIElements;
 
 namespace Statecraft.Game.UI
@@ -21,19 +22,30 @@ namespace Statecraft.Game.UI
         /// <summary>Unsubscribes from the bridge (the owner calls this when disabled).</summary>
         public void Dispose() { bridge.Changed -= Render; }
 
-        public void Render()
+        GameSession? shownSession; StepResult? shown;
+
+        /// <summary>Shows the session's last turn. Does nothing when that same result is already on screen.</summary>
+        public void Render() => Show(bridge.Session.Last);
+
+        /// <summary>Shows <paramref name="last"/> (a turn's result, or null for "nothing yet"). The same session and result
+        /// as last time are not rebuilt; a new turn, a new game or a loaded save are.</summary>
+        public void Show(StepResult? last)
         {
+            if (shownSession == bridge.Session && shown == last && screen.Q<ScrollView>("why-rows").childCount > 0) return;
+            shownSession = bridge.Session; shown = last;
             var rows = screen.Q<ScrollView>("why-rows");
             rows.Clear();
-            var last = bridge.Session.Last; var prev = bridge.Session.Previous;
+            var prev = bridge.Session.Previous;
             screen.Q<Label>("why-turn").text = last == null || prev == null ? "" : text.Format("why.turn", prev.Date, bridge.State.Date);
             if (last == null) { rows.Add(new Label(text["why.empty"]) { name = "why-empty" }); return; }
+            if (last.Why.Count == 0) { rows.Add(new Label(text["why.nothing"]) { name = "why-nothing" }); return; }
             int i = 0;
+            // Known systems in their fixed order, then any other system last under "Other" (never its raw id).
             foreach (var system in Order.Concat(last.Why.Select(w => w.System).Distinct().Where(sys => !Order.Contains(sys))))
             {
                 var lines = last.Why.Where(w => w.System == system).ToList();
                 if (lines.Count == 0) continue;
-                var header = new Label(Order.Contains(system) ? text["why." + system] : system) { name = "why-group-" + system };
+                var header = new Label(Order.Contains(system) ? text["why." + system] : text["why.other"]) { name = "why-group-" + system };
                 header.AddToClassList("why-group");
                 rows.Add(header);
                 foreach (var w in lines)
