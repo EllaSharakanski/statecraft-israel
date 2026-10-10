@@ -18,6 +18,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Unity-MCP 0.93.3 (`com.ivanmurzak.unity.mcp`, from OpenUPM) as the standard AI-agent bridge in the editor, local
   Custom mode with token auth only (held by `UnityMcpGuard`). It stays offline in batch mode, opens no window there, and is
   left out of player builds.
+- A runtime quality fallback for slow machines in the browser: when frames stay slower than 30 fps, the game lowers its
+  render scale (to 0.9, then 0.8) and then turns the tilt-shift off, and steps back up when frames are comfortably fast
+  again. Presentation only; `?nofallback` turns it off (#44).
 
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),

@@ -14,7 +14,8 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
   `--stall 120`), headed through `headed.py profile`. Both fix the page's viewport to exactly 1920x1080 CSS pixels at the
   DPR over CDP (`Emulation.setDeviceMetricsOverride`, before the page loads), so headed and headless runs draw the same
   pixels even when the laptop screen clamps the headed window (its final composite is then scaled; the backbuffer is not).
-  Every line states `res=` and the render `scale=`, and both tools FAIL on a `res=` other than 1920x1080 times the DPR
+  The runtime quality fallback (issue #44, "Runtime quality fallback") is off under `?vprofile`, `?profile` and `?shot`,
+  so these see the tier's own scale and tilt-shift. Every line states `res=` and the render `scale=`, and both tools FAIL on a `res=` other than 1920x1080 times the DPR
   (and on a stall: no console line for 120 s). Read the `PROFILE summary` lines: a feature costs
   `median(all) - median(-name)`. The WebGL frame clock is quantised to about 1 ms: averages are fine, but every p95 is a
   whole millisecond, so a p95 budget is only good to about 1 ms.
@@ -715,6 +716,7 @@ beyond budget + the larger spread.
 | Baked shading texture | block-compressed | block-compressed | review minor 9: recorded, not changed (mobile browsers are outside the 1920x1080 target) |
 | WebGPU, GPU Resident Drawer, compute | not used | not used | research notes 2.1 (an M5 evaluation) |
 | Weak GPU | SwiftShader run passes golden and shots | — | `captures/visual/t10-swiftshader` (both GOLDEN OK lines and SHOT done; gameplay03 saturation / contrast / warmth 0.5656 / 0.1960 / 0.0773 against the GPU's 0.5655 / 0.1960 / 0.0771) |
+| Runtime quality fallback (issue #44) | on | off | see "Runtime quality fallback" below: when the frame-time p95 stays over the 30 fps floor, render scale 1.0 -> 0.9 -> 0.8, then the tilt-shift off; back up in reverse |
 
 Colour after the decisions (WebGL `?shot`, t10-tiers against t-merge-r3): diorama02 saturation 0.4694 -> 0.4686, contrast
 0.2034 -> 0.2032, warmth 0.1045 -> 0.1038 (bars: warmth 0.087-0.145, saturation <= 0.48); gameplay03 saturation 0.5646 ->
@@ -730,6 +732,51 @@ The `-bloom` lines below come from the temporary toggle (`8d45a93`); in the fina
 *above* `all` (headless 2.51 / 2.40 / 2.40 against 2.03; headed 2.34 / 2.37 / 2.24 against 1.85). `none` cannot really be
 slower than `all`; the pose runs at about 2 ms, at the WebGL clock's ~1 ms resolution, and the readings look bimodal
 (~2.0 / ~2.4 ms). Unexplained; it changes no decision (every gameplay03 cost is far inside its budget).
+
+### Runtime quality fallback (issue #44)
+The Deferred row "Runtime quality fallback" (review I1), sized by the DPR-2 stress numbers above. `QualityFallback`
+(pure logic) and `QualityFallbackDriver` (feeds it `Time.unscaledDeltaTime`, applies its step), attached by
+`CameraRig.Init` through the map's teardown like the visual toggles.
+- **Steps:** level 0 is the tier (scale 1.0, tilt-shift on); 1: scale 0.9; 2: scale 0.8 (the research's 0.8-1.0 dynamic
+  range, notes 2.3); 3: scale 0.8 and the tilt-shift off. One step per decision, up in reverse. The scale is the active
+  URP asset's `renderScale` (never above the tier's own); the tilt-shift uses its own `TiltShift.FallbackOff`, so stepping
+  up never turns on a tilt-shift the player (`?notiltshift`) or a profile turned off. The map's teardown puts both back.
+- **Window: 3 s, back to back, one decision each.** The p95 of a 3 s window is over only when at least 5% of its frames
+  are (5 of 90 at 30 fps), so a one-off hitch (End Turn's redraw, a GC, a first shader compile) never trips it and a real
+  shortfall does within 3 s. Nothing is measured in the first 3 s after the map is built, or 0.5 s after each change; a
+  frame over 1 s (a hidden tab coming back) drops the window; a window needs at least 10 frames.
+- **Down: p95 > 34 ms.** The floor is 33 ms (30 fps). The WebGL frame clock is quantised to about 1 ms, so exactly 30 fps
+  (a 30 Hz cap from a display or a battery saver, or vsync halving 60 Hz) reads as 33 and 34 ms frames: that meets the
+  floor, and a lower quality could not raise a capped rate.
+- **Up: 3 windows in a row (9 s) with p95 < 20 ms; hysteresis.** One step up draws at most 1.27 times the pixels
+  (0.8 -> 0.9, 0.9 -> 1.0), so a fill-bound 20 ms frame lands near 25 ms, under the floor; the tilt-shift costs under
+  1.5 ms (`-tiltshift` above: 0.29 ms at DPR 2). Windows between 20 and 34 ms change nothing and restart the count. A step up
+  undone within two windows doubles the windows the next one needs (3, 6, 12 ... at most 48, 2.4 minutes), so a device on
+  the edge settles instead of flipping.
+- **Web tier only.** `QualityFallback.Wanted` is true only in the WebGL player: the desktop tier is the development and
+  capture target (its renders and `-vprofile` must show the tier's own look), and in the editor a scale change would
+  change the URP asset. Even on WebGL it stays off under `?vprofile`, `?profile` and `?shot` (instruments that must see the
+  tier as configured) and with `?nofallback`; every change logs `QUALITY level=<n> scale=<s> tiltshift=<on|off>
+  p95_ms=<ms>`.
+- **Presentation only:** it reads no sim state and writes only the render scale and the tilt-shift flag, so turns, hashes
+  and saves cannot change. The goldens and the 5-turn smoke match with it in the build: `uv run tools/web_check.py
+  unity/Builds/Web-disabled --query "golden&smoke=5"` with the three `--expect` values from `docs/determinism.md`: PASS.
+- **Tests** (`QualityFallbackTests`, EditMode, synthetic frame times): the step order and range, one step per window and
+  not before a full window, nothing during start-up, hitches, a pause and 33/34 ms frames do not trigger, recovery in
+  reverse only after 3 good windows, the dead band holds and restarts the count, a failed step up doubles the wait (capped);
+  integration: no driver in the editor; with the web tier's answer forced, `MapScene.Build` attaches one, its steps reach
+  the URP asset and `TiltShift.FallbackOff` (not `TiltShift.Enabled`), and a rebuild or teardown removes it and restores the
+  scale.
+- **In a real browser** (headed Chrome for Testing, ANGLE Metal, 1920x1080 at DPR 1, under `machine_lock.py --exclusive
+  --wait-unity`, a scratch CDP script on `headed.Browser`): 30 s idle at `--cpu 1`, no `QUALITY` line. With CPU throttling
+  at 20x from t = 30 s: `QUALITY level=1 scale=0.90 tiltshift=on p95_ms=97.00`, `level=2 scale=0.80 tiltshift=on
+  p95_ms=97.00`, `level=3 scale=0.80 tiltshift=off p95_ms=107.00` (level 3 at t = 39.6 s). Throttling lifted at t = 49.6 s:
+  `level=2 ... tiltshift=on p95_ms=17.00`, `level=1 scale=0.90`, `level=0 scale=1.00` (t = 77.4 s, about 9.5 s apart), then
+  no line in the next 15 s. At DPR 2 (the fill-rate stress proxy, frame rate uncapped) 60 s idle: no `QUALITY` line, as the
+  DPR-2 p95 (20 ms at diorama02) is under the floor.
+- **Boot with it (`headed.py boot --runs 3`, on top of the packed heightmap):** `--cpu 1` `BOOT map_build_ms median=472`,
+  `BOOT first_frame_ms median=3609`; `--cpu 4` `map_build_ms median=1983`, `first_frame_ms median=7158`: within the boot
+  budget (exit 0).
 
 ### Final measurements
 Step 1 headless (scale 0.80):

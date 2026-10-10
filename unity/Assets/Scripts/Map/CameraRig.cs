@@ -28,6 +28,10 @@ namespace Statecraft.Game.Map
         /// (MapScene registers it with MapRuntimeAssets).</summary>
         public Volume Volume { get; private set; }
 
+        /// <summary>Whether Init attaches the runtime quality fallback (QualityFallback.Wanted: the WebGL tier, no instrument
+        /// running). A seam: the integration test forces the web tier's answer in the editor.</summary>
+        internal static Func<bool> FallbackWanted = QualityFallback.Wanted;
+
         public void Init()
         {
             // Undo actions an earlier Init left behind (Init called outside MapScene.Build) run now instead of piling up.
@@ -52,6 +56,9 @@ namespace Statecraft.Game.Map
             TeardownActions.Add(VisualToggles.Register("tiltshift", on => TiltShift.Enabled = on));
             TeardownActions.Add(VisualToggles.Register("grade", on => MapGrade.SetActive(vol.profile, on)));
             if (TiltShift.OffRequested()) TiltShift.Enabled = false;
+            // After the tilt-shift's Reset, so the map's teardown removes the driver (restoring the tier's render scale and
+            // clearing FallbackOff) before resetting the tilt-shift.
+            TeardownActions.Add(QualityFallbackDriver.Attach(gameObject, FallbackWanted()));
             initialised = true;
             Apply();
         }

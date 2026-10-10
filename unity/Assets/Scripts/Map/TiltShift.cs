@@ -19,6 +19,11 @@ namespace Statecraft.Game.Map
         public const float MaxRadiusUv = 14f / 1080f;
         public const float FullStrengthDistanceM = 60000f, MinStrength = 0.35f;
         public static bool Enabled = true;
+        /// <summary>Set by the web tier's runtime quality fallback (QualityFallbackDriver) at its last step. Kept apart from
+        /// Enabled (the "tiltshift" toggle, ?notiltshift), so stepping back up never turns on a tilt-shift the player or a
+        /// profile turned off. The blur draws only when Enabled and not FallbackOff.</summary>
+        public static bool FallbackOff;
+        public static bool Draws => Enabled && !FallbackOff;
 
         /// <summary>HLSL smoothstep(p.y, p.y + p.z, |y - p.x|); a zero feather is a step at the half-width.</summary>
         public static float Weight(float y, Vector4 p)
@@ -45,6 +50,7 @@ namespace Statecraft.Game.Map
         public static void Reset()
         {
             Enabled = true;
+            FallbackOff = false;
             Shader.SetGlobalVector(ParamsId, Vector4.zero);
         }
 
