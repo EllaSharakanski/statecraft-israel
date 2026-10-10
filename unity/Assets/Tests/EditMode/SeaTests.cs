@@ -14,7 +14,7 @@ public class SeaTests
     const string SeaMatPath = "Assets/Materials/Sea.mat";
 
     [TearDown]
-    public void Reset() { RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
+    public void Reset() { MapShaderGlobals.PinWaterTime(null); RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
 
     static MapScene OpenMap()
     {
@@ -95,8 +95,9 @@ public class SeaTests
 
     static float Luma(Color c) => RenderSample.Luma(c);
 
-    /// <summary>Rendered west of Tel Aviv: just offshore (inside the 350 m foam band) is brighter than 1.2 km out, which is
-    /// lighter and greener than the open sea 24 km out. The shore is found in coast.png itself.</summary>
+    /// <summary>Rendered west of Tel Aviv: just offshore (about 120-200 m out, on the swash line: full to 180 m, gone by
+    /// 324 m) is brighter than 1.2 km out (inside the turquoise shallows), which is lighter and greener than the open sea
+    /// 24 km out. The shore is found in coast.png itself.</summary>
     [UnityTest]
     public IEnumerator ShallowsAreLighterThanTheOpenSeaAndFoamLinesTheShore()
     {
@@ -160,9 +161,76 @@ public class SeaTests
         TestContext.WriteLine($"beach {b}, plain {l}");
         // Without the strip the same pixel is the plain's pale coastal edge, RGBA(0.716, 0.656, 0.378): luma 0.65, b/g 0.58.
         // With it RGBA(0.906, 0.771, 0.516): luma 0.78, b/g 0.67.
-        Assert.Greater(Luma(b), Luma(l) + 0.2f, "the sand is lighter than the plain");
+        Assert.Greater(Luma(b), Luma(l) + 0.32f, "the sand is lighter than the plain (0.25 without the strip)");
         Assert.Greater(Luma(b), 0.72f, "pale sand");
         Assert.Greater(b.b / b.g, 0.62f, "sand, not the plain's yellow-green");
+    }
+
+    /// <summary>The coast.png column of the first water texel west of (34.95 E, lat) and its row; row 0 = south.</summary>
+    static (int col, int row) ShoreTexel(float lat)
+    {
+        var coast = new Texture2D(2, 2);
+        coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));   // readable copy
+        int row = Mathf.FloorToInt((lat - 29.45f) / (33.35f - 29.45f) * coast.height);
+        int col = Mathf.FloorToInt((34.95f - 34.2f) / (35.9f - 34.2f) * coast.width);
+        while (col > 0 && coast.GetPixel(col, row).r >= 0.5f) col--;
+        Object.DestroyImmediate(coast);
+        return (col, row);
+    }
+
+    static Vector3 TexelWorld(MapScene map, int col, int row)
+    {
+        double lon = 34.2 + (col + 0.5) / 2048.0 * (35.9 - 34.2), lat = 29.45 + (row + 0.5) / 2048.0 * (33.35 - 29.45);
+        var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w); return w;
+    }
+
+    /// <summary>promo-sea review I2 / M5: the breakers are box-filtered over the pixel, so they never alias. In the surf
+    /// zone west of Tel Aviv (about 400 m out), at the gameplay footprint (30 km at 960x540, about 45 m a pixel), each pixel
+    /// matches the mean of the same view rendered at 4x (its 4x4 block), and the breakers still show (the surf pixel's
+    /// luma spans a range over one breaker cycle). At the overview (250 km) they are their mean: two moments 0.5 s apart
+    /// render the same. Grid off: its pixel-width lines differ between resolutions by design.</summary>
+    [UnityTest]
+    public IEnumerator TheBreakersAreFilteredToThePixel()
+    {
+        var map = OpenMap();
+        yield return null;
+        VisualToggles.Set("grid", false);
+        var (col, row) = ShoreTexel(32.08f);
+        var surf = TexelWorld(map, col - 5, row);
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        rig.LookAt = surf; rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+        MapShaderGlobals.PinWaterTime(100f);
+        var px = new Vector2[1];
+        var lo = RenderSample.Render(cam, 960, 540, new[] { surf }, px);
+        int cx = (int)px[0].x, cy = (int)px[0].y;
+        var hi = RenderSample.Render(cam, 3840, 2160);
+        double err = 0, worst = 0; int n = 0;
+        for (int y = cy - 6; y <= cy + 6; y++)
+            for (int x = cx - 6; x <= cx + 6; x++)
+            {
+                Color sum = Color.clear;
+                for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) sum += hi.At(4 * x + i, 4 * y + j);
+                double e = Mathf.Abs(Luma(lo.At(x, y)) - Luma(sum / 16f));
+                err += e; worst = System.Math.Max(worst, e); n++;
+            }
+        err /= n;
+        float lMin = 1f, lMax = 0f;
+        for (int k = 0; k < 8; k++)
+        {
+            MapShaderGlobals.PinWaterTime(100f + k * 2.5f);   // one breaker cycle is 1 / ScBreakerRate = 20 s
+            var r = RenderSample.Render(cam, 960, 540);
+            float l = Luma(r.Mean(cx, cy, 0)); lMin = Mathf.Min(lMin, l); lMax = Mathf.Max(lMax, l);
+        }
+        rig.Distance = 250000f; rig.Apply();
+        MapShaderGlobals.PinWaterTime(100f);
+        var a = RenderSample.Render(cam, 960, 540, new[] { surf }, px);
+        MapShaderGlobals.PinWaterTime(100.5f);
+        var b = RenderSample.Render(cam, 960, 540);
+        float far = Mathf.Abs(Luma(a.Mean((int)px[0].x, (int)px[0].y, 0)) - Luma(b.Mean((int)px[0].x, (int)px[0].y, 0)));
+        TestContext.WriteLine($"1x against 4x over 13x13 px: mean {err:0.0000}, worst {worst:0.0000}; breaker cycle luma {lMin:0.000}..{lMax:0.000}; overview 0.5 s apart {far:0.0000}");
+        Assert.Less(err, 0.02, "each pixel is its footprint's mean (no aliasing)");
+        Assert.Greater(lMax - lMin, 0.03f, "the breakers roll through at the gameplay zoom");
+        Assert.Less(far, 0.01f, "the overview sees the breakers' mean, not a crawl");
     }
 
     /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>
