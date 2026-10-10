@@ -2,7 +2,11 @@
 start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
 start_rung: 5                     # the war is under way when the slice opens
 attention_per_turn: 4
-attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 2 }
+# Coalition stability lost by replacing a minister (Cabinet.Appoint): a seat taken from the minister's party, or a
+# reshuffle within it.
+appoint_stability_cost_other_party: 0.06
+appoint_stability_cost_same_party: 0.02
 rung_attention_step: 0.25
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]
 ceasefire_weeks: 52               # long enough that the historical armistice events end the war first

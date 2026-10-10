@@ -41,6 +41,14 @@ namespace Statecraft.Sim
         public SecurityOrder(int delta) { Delta = delta; }
     }
 
+    /// <summary>Puts <see cref="Person"/> in <see cref="Office"/> (Cabinet.Appoint has the rules).</summary>
+    public sealed class Appoint : Command
+    {
+        public override string Kind => Cabinet.Kind;
+        public string Office { get; } public string Person { get; }
+        public Appoint(string office, string person) { Office = office; Person = person; }
+    }
+
     public sealed class Rejection
     {
         public Command Command { get; } public string Reason { get; }

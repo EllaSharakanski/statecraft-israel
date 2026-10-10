@@ -334,6 +334,8 @@ namespace Statecraft.Sim
                 ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear),
                 ("capital_inflow_per_year", r.CapitalInflowPerYear), ("fx_crisis_food_per_year", r.FxCrisisFoodPerYear) })
                 Finite("rules.yaml", key, v);
+            Unit("rules.yaml", "appoint_stability_cost_other_party", r.AppointStabilityCostOtherParty);
+            Unit("rules.yaml", "appoint_stability_cost_same_party", r.AppointStabilityCostSameParty);
             if (r.FxCrisisFoodPerYear > 0) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "must be <= 0 (a crisis cuts food imports)");
             if (r.FxCrisisFoodPerYear < 0 && !indicators.Contains("food_supply")) throw new ContentException("rules.yaml", "fx_crisis_food_per_year", "needs a food_supply indicator in model.yaml");
             foreach (var kv in r.InitialPopulation) Count("rules.yaml", $"initial_population.{kv.Key}", kv.Value);

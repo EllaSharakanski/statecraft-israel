@@ -114,7 +114,9 @@ actors:
 start: 1948-05-15
 start_rung: 5
 attention_per_turn: 3
-attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1 }
+attention_cost: { set_policy: 1, allocate_budget: 1, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 1 }
+appoint_stability_cost_other_party: 0.1
+appoint_stability_cost_same_party: 0.03
 rung_attention_step: 0.25
 ceasefire_weeks: 4
 rung_min_mobilization: [0.02, 0.05, 0.15, 0.4, 0.8]

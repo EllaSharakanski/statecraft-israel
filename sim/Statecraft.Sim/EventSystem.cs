@@ -34,7 +34,7 @@ namespace Statecraft.Sim
             {
                 s.FiredEvents.Add(e.Id);
                 s.PendingEvents.Add(e.Id);
-                why.Add(new Cause("events", e.Id, 0, $"New: {Offices.Fill(c, e.Title, FillDate(e, s.Date))}"));
+                why.Add(new Cause("events", e.Id, 0, $"New: {Cabinet.Fill(c, s, e.Title, FillDate(e, s.Date))}"));
             }
         }
 
@@ -56,7 +56,7 @@ namespace Statecraft.Sim
         {
             s.PendingEvents.Remove(eventId);
             var fillDate = FillDate(Get(c, eventId), s.Date);
-            why.Add(new Cause("events", eventId, 0, $"{how}: {Offices.Fill(c, o.Text, fillDate)}"));
+            why.Add(new Cause("events", eventId, 0, $"{how}: {Cabinet.Fill(c, s, o.Text, fillDate)}"));
             foreach (var fx in o.Effects)
             {
                 var change = fx.Delta;
@@ -82,7 +82,7 @@ namespace Statecraft.Sim
             foreach (var id in s.PendingEvents.ToList())
             {
                 var e = Get(c, id);
-                var minister = e.Office == "" ? null : Offices.Holder(c, e.Office, s.Date);
+                var minister = e.Office == "" ? null : Cabinet.Holder(c, s, e.Office);
                 var competence = (minister?.Competence ?? 5) / 10.0;
                 var anchored = s.Mode == Mode.Historical && e.Anchor == "hard" ? e.Options.FirstOrDefault(o => o.Historical) : null;
                 var option = anchored ?? (rng.NextDouble() < competence
@@ -94,5 +94,8 @@ namespace Statecraft.Sim
         }
 
         public static string Render(Content c, GameEvent e, DateTime date) => Offices.Fill(c, e.Text, FillDate(e, date));
+
+        /// <summary>Event text as the player sees it now: names follow the player's appointments.</summary>
+        public static string Render(Content c, GameState s, GameEvent e) => Cabinet.Fill(c, s, e.Text, FillDate(e, s.Date));
     }
 }

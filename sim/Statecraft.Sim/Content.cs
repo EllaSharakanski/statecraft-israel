@@ -129,6 +129,10 @@ namespace Statecraft.Sim
         /// <summary>Change to food_supply per year while the foreign currency crisis lasts (imports of food are cut); &lt;= 0.</summary>
         public double FxCrisisFoodPerYear { get; set; }
         public double MobilizationCostPerYear { get; set; }
+        /// <summary>Coalition stability lost when an appointment takes a seat from the displaced minister's party.</summary>
+        public double AppointStabilityCostOtherParty { get; set; }
+        /// <summary>Coalition stability lost when an appointment replaces a minister with one of the same party.</summary>
+        public double AppointStabilityCostSameParty { get; set; }
         public double NaturalIncreasePerYear { get; set; }
         public Dictionary<string, double> InitialPopulation { get; set; } = new Dictionary<string, double>();
         public Dictionary<string, double> BudgetStart { get; set; } = new Dictionary<string, double>();

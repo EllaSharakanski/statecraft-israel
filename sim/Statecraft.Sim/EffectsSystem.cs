@@ -13,11 +13,12 @@ namespace Statecraft.Sim
             foreach (var e in c.Effects) s.EffectContributions[e.Id] = 0;
         }
 
-        /// <summary>Competence (0.5 + competence/20) times budget factor. No office: 1.0.</summary>
+        /// <summary>Competence (0.5 + competence/20) of the office holder (player appointments included) times budget
+        /// factor. No office: 1.0.</summary>
         public static double Multiplier(Content c, GameState s, string office)
         {
             if (office == "") return 1.0;
-            var holder = Offices.Holder(c, office, s.Date);
+            var holder = Cabinet.Holder(c, s, office);
             var competence = holder == null ? 0.5 : 0.5 + holder.Competence / 20.0;
             return competence * BudgetFactor(s, office);
         }
