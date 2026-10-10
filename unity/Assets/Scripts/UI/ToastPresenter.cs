@@ -7,16 +7,22 @@ namespace Statecraft.Game.UI
 {
     /// <summary>A short message under the top bar: why orders were refused (spec section 7: the UI shows the stated
     /// reason), or a note such as a save warning. Hidden when there is nothing to say; cleared by the next order.</summary>
-    public sealed class ToastPresenter
+    public sealed class ToastPresenter : System.IDisposable
     {
-        readonly Label label; readonly UiText text;
+        readonly Label label; readonly UiText text; readonly SimBridge bridge;
+        readonly System.Action<IReadOnlyList<Statecraft.Sim.Rejection>> onTurnEnded;
 
         public ToastPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
-            label = root.Q<Label>("toast"); this.text = text;
-            bridge.TurnEnded += r => Show(r.Select(x => text.Format("toast.refused", x.Reason)));
+            label = root.Q<Label>("toast"); this.text = text; this.bridge = bridge;
+            onTurnEnded = r => Show(r.Select(x => text.Format("toast.refused", x.Reason)));
+            bridge.TurnEnded += onTurnEnded;
+            bridge.Refused += Refuse;
+            bridge.Changed += Clear;
             Clear();
         }
+
+        public void Dispose() { bridge.TurnEnded -= onTurnEnded; bridge.Refused -= Refuse; bridge.Changed -= Clear; }
 
         /// <summary>Shows the lines as they are (none = hide).</summary>
         public void Show(IEnumerable<string> lines)

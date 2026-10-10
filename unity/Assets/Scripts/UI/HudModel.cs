@@ -30,10 +30,10 @@ namespace Statecraft.Game.UI
             Meter M(double now, double? before, string valueKey, string deltaKey)
             {
                 if (before == null) return new Meter(t.Format(valueKey, now), "", 0);
-                var d = Math.Round(now - before.Value, deltaKey == "hud.delta_money" ? 1 : 0);
+                var d = Math.Round(now - before.Value, deltaKey == "hud.delta_money" ? 1 : 0, MidpointRounding.AwayFromZero);
                 return d == 0 ? new Meter(t.Format(valueKey, now), "", 0) : new Meter(t.Format(valueKey, now), t.Format(deltaKey, d), Math.Sign(d));
             }
-            double Pct(GameState x, string id) => Math.Round(x.Indicators[id] * 100);
+            double Pct(GameState x, string id) => Math.Round(x.Indicators[id] * 100, MidpointRounding.AwayFromZero);
             return new HudModel
             {
                 Year = s.Date.Year.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -42,9 +42,9 @@ namespace Statecraft.Game.UI
                 Attention = t.Format("hud.attention", b.AttentionLeft, c.Rules.AttentionPerTurn),
                 SecurityLevel = t.Format("hud.level", s.Rung),
                 Treasury = M(s.Treasury - s.Debt, prev == null ? (double?)null : prev.Treasury - prev.Debt, "hud.money", "hud.delta_money"),
-                Immigration = M(Arrivals(b.Session.Last), b.BeforeLast == null ? (double?)null : Arrivals(b.BeforeLast), "hud.people", "hud.delta"),
+                Immigration = M(Arrivals(b.Session.Last), b.BeforeLast == null ? (double?)null : Arrivals(b.BeforeLast), "hud.people", "hud.delta_people"),
                 Security = M(Pct(s, "security"), prev == null ? (double?)null : Pct(prev, "security"), "hud.percent", "hud.delta"),
-                Support = M(Math.Round(EffectsSystem.Approval(c, s) * 100), prev == null ? (double?)null : Math.Round(EffectsSystem.Approval(c, prev) * 100), "hud.percent", "hud.delta"),
+                Support = M(Math.Round(EffectsSystem.Approval(c, s) * 100, MidpointRounding.AwayFromZero), prev == null ? (double?)null : Math.Round(EffectsSystem.Approval(c, prev) * 100, MidpointRounding.AwayFromZero), "hud.percent", "hud.delta"),
                 Standing = M(Pct(s, "intl_standing"), prev == null ? (double?)null : Pct(prev, "intl_standing"), "hud.percent", "hud.delta"),
                 Fx = M(s.FxReserves, prev?.FxReserves, "hud.fx", "hud.delta_money"),
             };

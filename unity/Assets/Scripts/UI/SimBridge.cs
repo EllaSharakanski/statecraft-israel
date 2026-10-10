@@ -24,8 +24,16 @@ namespace Statecraft.Game.UI
         public event Action? Changed;
         /// <summary>Raised after End Turn with the orders the simulation refused (possibly none).</summary>
         public event Action<IReadOnlyList<Rejection>>? TurnEnded;
+        /// <summary>Raised when Queue refuses an order, with the player-facing reason.</summary>
+        public event Action<string>? Refused;
 
-        public SimBridge(GameSession session) { Session = session ?? throw new ArgumentNullException(nameof(session)); }
+        readonly UiText text;
+
+        public SimBridge(GameSession session, UiText text)
+        {
+            Session = session ?? throw new ArgumentNullException(nameof(session));
+            this.text = text ?? throw new ArgumentNullException(nameof(text));
+        }
 
         static string Key(Command c) => c switch
         {
@@ -44,16 +52,46 @@ namespace Statecraft.Game.UI
         /// <summary>The queued order with this key, or null.</summary>
         public Command? QueuedLike(Command c) => queue.FirstOrDefault(q => Key(q) == Key(c));
 
-        /// <summary>Queues an order (replacing one with the same key). Returns null, or why it was refused here:
-        /// the game is over, or the order costs more attention than is left.</summary>
+        string? Unknown(string kind, string? id, IEnumerable<string> known) =>
+            !string.IsNullOrEmpty(id) && known.Contains(id) ? null : text.Format("order.unknown", kind, id ?? "");
+
+        /// <summary>Checks every id an order carries against the content, so End Turn can never be handed an id the
+        /// simulation would throw on. Returns the player-facing reason, or null.</summary>
+        string? Validate(Command c)
+        {
+            switch (c)
+            {
+                case SetPolicy p: return Unknown("policy", p.Policy, Content.Policies.Select(x => x.Id));
+                case Appoint a: return Unknown("office", a.Office, Content.Offices.Select(x => x.Id)) ?? Unknown("person", a.Person, Content.People.Select(x => x.Id));
+                case ChooseEventOption e:
+                    var ev = Content.Events.FirstOrDefault(x => x.Id == e.EventId);
+                    return ev == null ? Unknown("event", e.EventId, new string[0]) : Unknown("option", e.OptionId, ev.Options.Select(x => x.Id));
+                case MapAction m: return Unknown("action", m.Action, MapActions.Actions);
+                case AllocateBudget b:
+                    if (b.Shares == null) return text["order.invalid"];
+                    foreach (var k in b.Shares.Keys) { var r = Unknown("budget line", k, Content.Rules.BudgetStart.Keys); if (r != null) return r; }
+                    return null;
+                case SetMobilization _: case SecurityOrder _: return null;
+                default: return text["order.invalid"];
+            }
+        }
+
+        string? Refuse(string reason) { Refused?.Invoke(reason); return reason; }
+
+        /// <summary>Queues an order (replacing one with the same key). Returns null, or why it was refused here: an id
+        /// the content does not have, the game is over, or the order costs more attention than is left. A refusal is
+        /// also raised as <see cref="Refused"/>.</summary>
         public string? Queue(Command c)
         {
             if (c == null) throw new ArgumentNullException(nameof(c));
-            if (State.GameOver != null) return "The game is over";
+            var bad = Validate(c);
+            if (bad != null) return Refuse(bad);
+            if (State.GameOver != null) return Refuse(text["order.game_over"]);
+            if (c is AllocateBudget ab) c = new AllocateBudget(new Dictionary<string, double>(ab.Shares));   // a snapshot: later edits to the caller's dictionary must not change the order
             var old = QueuedLike(c);
             var left = AttentionLeft + (old != null ? Price(old) : 0);
             if (Price(c) > left + 1e-9)
-                return FormattableString.Invariant($"Not enough attention (need {Price(c):0.0}, have {left:0.0})");
+                return Refuse(text.Format("order.no_attention", Price(c), left));
             if (old != null) queue[queue.IndexOf(old)] = c; else queue.Add(c);
             Changed?.Invoke();
             return null;
@@ -64,11 +102,23 @@ namespace Statecraft.Game.UI
             if (queue.Remove(c)) Changed?.Invoke();
         }
 
-        /// <summary>Runs the turn with the queued orders, clears the queue, and notifies.</summary>
+        /// <summary>Runs the turn with the queued orders, clears the queue, and notifies. If the simulation refuses the
+        /// batch outright (ArgumentException), the state is unchanged, the queue is cleared, and the reason is raised
+        /// through TurnEnded like any refusal.</summary>
         public StepResult EndTurn()
         {
-            BeforeLast = Session.Last;
-            var r = Session.Step(queue.ToList());
+            StepResult r;
+            var before = Session.Last;
+            try { r = Session.Step(queue.ToList()); }
+            catch (ArgumentException e)
+            {
+                queue.Clear();
+                var failed = new StepResult(State, new Cause[0], new[] { new Rejection(new SecurityOrder(0), text.Format("order.failed", e.Message)) });
+                Changed?.Invoke();
+                TurnEnded?.Invoke(failed.Rejected);
+                return failed;
+            }
+            BeforeLast = before;
             queue.Clear();
             Changed?.Invoke();
             TurnEnded?.Invoke(r.Rejected);
