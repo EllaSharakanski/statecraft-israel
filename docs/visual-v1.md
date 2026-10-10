@@ -995,9 +995,12 @@ Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are th
   - Breakers through a `ScSurfM` 900 m zone. They are a squared triangle wave in the distance from the shore, spacing
     `ScBreakerSpacingM` 300 m, rolling shoreward at `ScBreakerRate` 0.05 cycles/s (15 m/s, a quarter pixel a frame at
     gameplay03 and 60 fps).
-  - The breakers are box-filtered over 1.5 pixels in closed form (`ScTriSqBox`), so they never alias and tend to their
-    mean (1/3) as the pixel grows. The previous `pow(tri, 5)` crest was about 21 m wide on 45 m pixels: hairline,
-    dashed crests.
+  - The breakers are box-filtered in closed form (`ScTriSqBox`), so they never alias and tend to their mean (1/3) as the
+    pixel grows. The previous `pow(tri, 5)` crest was about 21 m wide on 45 m pixels: hairline, dashed crests.
+  - The box is `fwidth(phase)` x `ScBreakerFilterPx` 1.25, with the phase taken by `ScBreakers` outside the water branch
+    in both callers (re-review N2). The phase's true gradient is not 1 / 300 m: its noise term adds up to 0.0025
+    cycles/m and the 8-bit coast's slope varies up to 2x, so a width from the nominal spacing was up to 2x too narrow in
+    places.
   - The 300 m break-up noise fades to its mean between 75 and 150 m pixels.
 - **Beach** (`ScShore`).
   - A sand strip along every sea-level coast (above -100 m): the Mediterranean and the Gulf of Eilat, both sand beaches,
@@ -1080,16 +1083,25 @@ New tests:
   - Strip off: RGBA(0.716, 0.656, 0.378), luma 0.65, b/g 0.58, 0.25 over the plain.
   - Strip on: RGBA(0.906, 0.771, 0.516), luma 0.78, b/g 0.67, 0.39 over the plain.
   - Bounds 0.72, 0.62 and +0.32: all three fail with the strip off.
-- `TheBreakersAreFilteredToThePixel`.
-  - A 960x540 render matches its 4x render's 4x4 block means: mean 0.0027, worst 0.017 (bound 0.02).
-  - The surf pixel spans luma 0.647-0.781 over one breaker cycle (bound 0.03).
-  - The overview is still: 0.0000 over 0.5 s (bound 0.01).
+- `TheBreakersAreFilteredToThePixel` (re-review N1).
+  - It renders at 30 km and 960x540, about 45 m a pixel: the same footprint as gameplay03's 60 km at 1920x1080. There an
+    unfiltered crest is sub-pixel but not yet faded.
+  - Each water pixel of a 49x49 patch around the surf zone (6067 pixels over four moments of a cycle) must match its 4x4
+    block in the same view rendered at 4x. Pixels touching land or markers are left out: the shoreline's step and the
+    markers' edges are not filtered by design.
+  - With the filter: p99 0.0082, worst 0.0176 (bounds 0.014 and 0.035).
+  - Red with Round 0's crest swapped back in temporarily: p99 0.0200, worst 0.0620, and the test fails.
+  - The same squared crest without its box measured p99 0.0087, worst 0.0247. At 300 m spacing it is about two pixels
+    wide by itself, so the box is what keeps it exact as the zoom changes.
+  - The surf pixel spans luma 0.642-0.788 over one breaker cycle (bound 0.03).
+  - The overview is still: 0.0036 over 0.5 s (bound 0.01).
 
 In motion (`MapCapture.SurfFrames`, a 200x400 px coast crop at gameplay03):
 - Over one second of consecutive 60 fps frames, no pixel changes more than 2/255 from one frame to the next, either
   before or after the change.
 - Over the whole second, the old crests moved single pixels by up to 46/255 (2.8% of the crop over 2/255). The filtered
-  breakers move them by at most 9/255 (2.5%).
+  breakers move them by at most 9/255 (2.5%), the same with the `fwidth(phase)` box. The open sea's waves move them by
+  at most 14/255 (1.7%).
 - A 15 s clip at `-surfDt 0.25` shows soft crests rolling in, broken along the shore.
 
 Frame time: headless, the machine loaded by other sessions (load average 4-12), so the absolutes are inflated; read the
@@ -1129,6 +1141,14 @@ Each item below was ruled to the art track (controller, rank 10). None blocks la
    biome is for the owner to judge.
 6. **Overview shadow overrun.** The shadow pass overruns the budget by 0.1-0.4 ms at the overview pose; the levers are in
    "Tier decisions".
+7. **Sea brightness spread (promo-sea re-review N3).** The sea's luma p90 - p10 is 0.12 at gameplay03 against promo 03's
+   0.39, and 0.08 at diorama02 against promo 02's 0.15. Its saturation p10/p90 is narrower too (0.43/0.55 against
+   0.29/0.58). The means match ("promo-sea", Measured). The causes:
+   - promo 03's dark tail is boat hulls and building shadows on the water. Boats are out of scope: navy ships are units,
+     and there are no civilian boats (owner).
+   - Its bright tail is foam lace and glints. The glint is held at 0.06 by the seam test (Task 7), and the surf is a
+     smooth band, not lace.
+   - diorama02's sea has a near-to-far gradient that ours keeps flat.
 
 ### Rulings digest
 One line each: ruling - reason.

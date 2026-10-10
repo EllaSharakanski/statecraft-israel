@@ -27,8 +27,9 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     // The pixel's footprint for the water's chop and breakers, taken here in uniform control flow (derivatives are
     // undefined inside the branch).
     float footprintM = max(length(ddx(mapM)), length(ddy(mapM)));
+    float2 breakers = ScBreakers(coast, mapM);
     float3 waterColour = 0;
-    [branch] if (water > 0.0) waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM, footprintM), PositionWS);
+    [branch] if (water > 0.0) waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM, footprintM, breakers), PositionWS);
     ground = ScShore(ground, coast, elevM, n, mapM);   // the beach and the Dead Sea's salt flats (promo-sea)
     // The hex grid (visual v1 Task 8), light and faint on land and water, thinner towards the overview: the same lines as
     // Sea.shader past the edge. Computed outside the branch: its fwidth needs uniform control flow.

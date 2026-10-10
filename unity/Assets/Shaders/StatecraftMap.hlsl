@@ -89,13 +89,28 @@ float ScTriSqBox(float x, float w)
     return (ScTriSqIntegral(x + 0.5 * w) - ScTriSqIntegral(x - 0.5 * w)) / w;
 }
 
+// The water's clock: Unity's time, or the pinned seconds (MapShaderGlobals.PinWaterTime).
+float ScWaterClock() { return _ScWaterTime.y > 0.5 ? _ScWaterTime.x : _Time.y; }
+
+// The breakers' phase (cycles; crests at whole numbers) and its box width: fwidth(phase) x ScBreakerFilterPx. The phase's
+// true gradient is not 1 / ScBreakerSpacingM: its noise term adds up to 0.0025 cycles/m and the 8-bit coast's slope varies
+// up to 2x, so the width comes from the phase itself (review N2). Call it in uniform control flow (outside any [branch]);
+// pass the result to ScWaterShade.
+static const float ScBreakerFilterPx = 1.25;
+float2 ScBreakers(float coast, float2 mapM)
+{
+    float offshoreM = saturate(0.5 - coast) * 2.0 * ScCoastRangeM;
+    float phase = offshoreM / ScBreakerSpacingM + ScWaterClock() * ScBreakerRate + ScNoise(mapM / 1200.0) * 2.0;
+    return float2(phase, fwidth(phase) * ScBreakerFilterPx);
+}
+
 // The water's lit colour before haze (callers apply ScHazeWater and output it as is): the depth ramp above; the Dead Sea
 // (below -300 m) pale turquoise with a white salt rim, the Sea of Galilee a fresher teal; a long swell and a finer chop
 // (scrolling noise, the chop faded by the footprint) tilt a wave normal for Lambert from the sun (with its shadows: cliffs
 // shade the water) plus sky fill and a small glint; the surf along the shore. elevM is the real elevation of the water
 // surface; mapM metres east and north of the map's south-west corner; footprintM the metres one pixel covers (from fwidth,
-// taken by the caller in uniform control flow).
-float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, float footprintM)
+// taken by the caller in uniform control flow); breakers ScBreakers' (phase, box width).
+float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, float footprintM, float2 breakers)
 {
     if (_ScWaterOn < 0.5) return SRGBToLinear(ScFlatSeaSrgb) * 0.8;
     float offshoreM = saturate(0.5 - coast) * 2.0 * ScCoastRangeM;
@@ -109,7 +124,7 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     c = lerp(c, SRGBToLinear(float3(0.45, 0.78, 0.78)), salt * 0.8);
     c = lerp(c, SRGBToLinear(ScGalileeSrgb), fresh * 0.7);
 
-    float time = _ScWaterTime.y > 0.5 ? _ScWaterTime.x : _Time.y;
+    float time = ScWaterClock();
     float2 p = mapM / 700.0;
     float2 g = float2(ScNoise(p + float2(time * 0.05, 0.0)) - ScNoise(p + float2(0.37 + time * 0.05, 0.0)),
                       ScNoise(p.yx + float2(0.0, time * 0.04)) - ScNoise(p.yx + float2(0.0, 0.41 + time * 0.04)));
@@ -140,12 +155,11 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     lit += pow(saturate(dot(reflect(-l, n), v)), 80.0) * 0.06 * lc * shadow;
 
     // Surf: the swash line, then breakers (crests every ScBreakerSpacingM, rolling in: the phase grows with time towards
-    // the shore; filtered over 1.5 pixels) whose crests break up along the coast (a 300 m noise, faded to its mean once a
+    // the shore; box-filtered over ScBreakers' width) whose crests break up along the coast (a 300 m noise, faded to its mean once a
     // pixel covers 75-150 m). Neither on the Dead Sea, which keeps its salt rim.
     float swash = 1.0 - smoothstep(ScSwashM, ScSwashM * 1.8, offshoreM);
     float zone = 1.0 - smoothstep(ScSwashM, ScSurfM, offshoreM);
-    float phase = offshoreM / ScBreakerSpacingM + time * ScBreakerRate + ScNoise(mapM / 1200.0) * 2.0;
-    float crest = ScTriSqBox(phase, 1.5 * footprintM / ScBreakerSpacingM);
+    float crest = ScTriSqBox(breakers.x, breakers.y);
     float broken = smoothstep(0.3, 0.7, ScNoise(mapM / 300.0 + float2(0.0, time * 0.02)));
     broken = lerp(0.5, broken, 1.0 - smoothstep(75.0, 150.0, footprintM));
     float rim = salt * (1.0 - smoothstep(0.0, 900.0, offshoreM));
