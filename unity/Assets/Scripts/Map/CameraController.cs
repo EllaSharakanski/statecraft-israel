@@ -88,7 +88,8 @@ namespace Statecraft.Game.Map
             var zoom = input.OverUi ? 0f : input.Zoom;
             var drag = input.DragFromUi ? Vector2.zero : input.DragPan;
             rig.Yaw = Mathf.Repeat(rig.Yaw + input.Orbit * OrbitDegreesPerSecond * dt, 360f);
-            rig.Distance = Mathf.Clamp(rig.Distance * (1f - zoom * ZoomPerStep), MinDistance, MaxDistance);
+            // (1 - step)^zoom: one notch in is exactly ZoomPerStep closer, and n notches out undo n notches in (Task 24 review M3).
+            rig.Distance = Mathf.Clamp(rig.Distance * Mathf.Pow(1f - ZoomPerStep, zoom), MinDistance, MaxDistance);
             var yaw = Quaternion.Euler(0, rig.Yaw, 0);
             var move = input.Pan * (PanPerSecond * dt) - drag * DragPanPerPixel;
             var delta = yaw * new Vector3(move.x, 0, move.y) * rig.Distance;

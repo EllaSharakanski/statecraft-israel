@@ -250,4 +250,26 @@ public class CameraInputTests
         }
         finally { Object.DestroyImmediate(go); }
     }
+
+    /// <summary>Task 24 review M3: zooming in then out by the same notches returns to the same distance.</summary>
+    [Test]
+    public void ZoomingInThenOutReturnsToTheStart()
+    {
+        var c = NewController(out var go);
+        try
+        {
+            var rig = go.GetComponent<CameraRig>();
+            foreach (var notches in new[] { 1f, 3f, 0.5f })
+            {
+                rig.Distance = 120000f;
+                CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, notches, 0, false, null), 0.016f, Map);
+                CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, -notches, 0, false, null), 0.016f, Map);
+                Assert.AreEqual(120000f, rig.Distance, 1f, $"{notches} notches in, then out");
+            }
+            rig.Distance = 120000f;
+            CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, -1f, 0, false, null), 0.016f, Map);
+            Assert.AreEqual(120000f / 0.9f, rig.Distance, 1f, "one notch out undoes one notch in (10%)");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
 }
