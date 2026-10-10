@@ -84,3 +84,11 @@ def test_pr_template_has_evidence_and_no_cla_item():
     text = read(".github/pull_request_template.md")
     assert "## Evidence" in text and "LICENSING.md" in text and "ASSETS.yaml" in text
     assert "CLA" not in text and "contributors/" not in text
+
+
+def test_content_policy_claims_no_mechanism_that_does_not_exist():
+    # Review I1: living-people exclusion, share-alike refusal and a claim verifier have no code behind them.
+    text = " ".join(read("docs/CONTENT_POLICY.md").split())
+    for phrase in ("excluded from release builds", "share-alike sources are refused", "A separate verifier",
+                   "any mismatch blocks the text", "marked AI-generated in `ASSETS.yaml`"):
+        assert phrase not in text, phrase

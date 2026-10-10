@@ -32,11 +32,11 @@ These rules protect the game and the people in it. They are not a viewpoint:
    tests enforce this (`dotnet test`).
 4. **The Holocaust is an event the player reacts to, never one the player plays.** It is shown without swastikas.
 5. **Real people.** People appear in their public roles and documented acts. Competence and loyalty values are game
-   balance, not judgements of the person, and `content/people.yaml` labels them so. People who are alive are excluded
-   from release builds until a legal review is recorded. Portraits are public-domain or CC0 photographs only; share-alike
-   sources are refused.
-6. **AI-assisted writing** drafts only from a provided source packet and lists its factual claims. A separate verifier
-   checks each claim against the packet, and any mismatch blocks the text. A human reviews before `fact-checked`.
+   balance, not judgements of the person, and `content/people.yaml` labels them so. The maintainer does not add living
+   people, and records a legal review before any release that includes one. Portraits are public-domain or CC0
+   photographs only; the maintainer refuses share-alike portraits at review.
+6. **AI-assisted writing** is a draft. A human checks every factual claim in it against its sources, one by one,
+   before the entry is marked `fact-checked`; the maintainer applies this rule at review.
 
 ## 3. How to dispute a fact
 
@@ -59,6 +59,6 @@ Facts are open to correction. The framing (section 1) is not.
 - Quotes, speeches or letters that are not sourced verbatim.
 - Mechanics or text that reward or celebrate violence against civilians, from any side.
 - Images of real people that are not public domain or CC0. AI-generated likenesses of real people appear only in
-  concept art (`promo/final/04`, `08`), are marked AI-generated in `ASSETS.yaml`, and are never presented as photographs
+  concept art (`promo/final/04`, `08`), are recorded as AI-generated in the asset provenance records, and are never presented as photographs
   or used in the game.
 - Hate speech, slurs or dehumanising language about any group, in content, code comments, issues or commits.
