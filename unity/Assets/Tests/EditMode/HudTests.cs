@@ -418,4 +418,24 @@ public class HudTests
         }
         finally { nav.Dispose(); }
     }
+
+    /// <summary>Fix round 3 (m-1): the top bar's change agrees with the two values it shows.</summary>
+    [Test]
+    public void TheShownChangeAgreesWithTheShownValues()
+    {
+        var bridge = NewBridge();
+        bridge.EndTurn();
+        var prev = bridge.Session.Previous!;
+        var now = bridge.State;
+        now.Indicators["security"] = 0.634; prev.Indicators["security"] = 0.626;     // "63%" -> "63%"
+        var m = HudModel.From(bridge, Text);
+        Assert.AreEqual("63%", m.Security.Value);
+        Assert.AreEqual("", m.Security.Delta, "no change shown between two equal shown values");
+        Assert.AreEqual(0, m.Security.Sign);
+        now.Indicators["security"] = 0.626; prev.Indicators["security"] = 0.624;     // "62%" -> "63%"
+        m = HudModel.From(bridge, Text);
+        Assert.AreEqual("63%", m.Security.Value);
+        Assert.AreEqual("+1%", m.Security.Delta);
+        Assert.AreEqual(1, m.Security.Sign);
+    }
 }

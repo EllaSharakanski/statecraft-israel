@@ -41,8 +41,9 @@ namespace Statecraft.Game.UI
             {
                 var value = PlayerText.Percent(now);                   // the one formatter (fix round 2, N4)
                 if (before == null) return new Meter(value, "", 0);
-                var delta = PlayerText.PercentChange(now - before.Value, 0);
-                return delta == "0%" ? new Meter(value, "", 0) : new Meter(value, delta, Math.Sign(now - before.Value));
+                // The difference of the two shown values, so the change always agrees with them (fix round 3, m-1).
+                var points = PlayerText.ShownPoints(now) - PlayerText.ShownPoints(before.Value);
+                return points == 0 ? new Meter(value, "", 0) : new Meter(value, PlayerText.PercentChangeShown(before.Value, now), Math.Sign(points));
             }
             Meter People(double now, double? before)
             {
