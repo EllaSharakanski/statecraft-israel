@@ -25,4 +25,9 @@ public class PixelErrorProfileTests
         Assert.IsTrue(PixelErrorProfile.Requested(null, new[] { "Statecraft", "-profile" }, false));
         Assert.IsFalse(PixelErrorProfile.Requested("http://x/?profile", new[] { "Statecraft" }, false));
     }
+
+    /// <summary>Task 24 review M6: no frames is an argument error, not an index error.</summary>
+    [Test]
+    public void AnEmptyFrameListIsAnArgumentError() =>
+        Assert.Throws<System.ArgumentException>(() => PixelErrorProfile.Line(1f, new List<float>()));
 }
