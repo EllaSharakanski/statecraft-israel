@@ -103,3 +103,5 @@ Result: (owner fills in)
 - English only.
 - The headless smoke plays five turns; a full-slice smoke is M4.
 - Three hidden URP utility shaders are unsupported on WebGL 2 (see above).
+- The wheel-zoom step (one notch = 10%) was measured in Chrome on macOS only. Firefox reports wheel deltas in lines and
+  Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's itch.io check.
