@@ -167,11 +167,17 @@ namespace Statecraft.Game.Map
             return tex;
         }
 
-        /// <summary>Distances (m) of the border skirt's rings from the map's edge: land falls from the edge's height to sea
-        /// level across the first rings, then stays flat to the last, beyond anything the camera can see.</summary>
+        /// <summary>Distances (m) of the border skirt's rings from the map's edge: land holds the edge's height across the
+        /// first rings and reaches sea level only at the last, beyond anything the camera can see (SkirtFall).</summary>
         public static readonly float[] SkirtRings = { 0f, 4000f, 20000f, 60000f, 600000f };
-        /// <summary>Share of the fall to sea level reached at each ring (land samples only).</summary>
-        static readonly float[] SkirtFall = { 0f, 0.4f, 0.85f, 1f, 1f };
+        /// <summary>Share of the fall to sea level reached at each ring (land samples only). Visual v1 Task 7: the edge's height
+        /// is held for 20 km (the Jordanian plateau, about 900 m, continues past the edge instead of sagging at once) and
+        /// eases to sea level by the last ring, beyond anything the camera sees.</summary>
+        public static readonly float[] SkirtFall = { 0f, 0.05f, 0.15f, 0.45f, 1f };
+        /// <summary>Half-width (m) of the along-edge average the land skirt holds past its inner ring (Task 7): holding each
+        /// edge vertex's own height for 20 km drew its ridges and gullies out as long stripes across the skirt, so the rings
+        /// past the edge hold the edge's broad height (the plateau) and only ring 0 follows the terrain's edge exactly.</summary>
+        public const float SkirtHoldSmoothingM = 8000f;
         /// <summary>A heightmap sample this close to 0 m is sea (tools/dem_to_heightmap.py writes open sea as exactly 0 m).</summary>
         public const float SeaToleranceM = 0.5f;
 
@@ -189,15 +195,23 @@ namespace Statecraft.Game.Map
             int samples = data.heightmapResolution - 1;
             var verts = new List<Vector3>(); var sea = new List<int>(); var land = new List<int>();
             bool IsLand(float h) => Mathf.Abs(h / VerticalExaggeration + elevMinM) > SeaToleranceM;
+            // The edge's height averaged along the edge over +-SkirtHoldSmoothingM (17 samples, clamped to the map).
+            float Held(Vector2 p, Vector2 outward)
+            {
+                var along = new Vector2(outward.y, -outward.x);
+                float sum = 0f;
+                for (int j = -8; j <= 8; j++) sum += Height(p + along * (SkirtHoldSmoothingM * j / 8f));
+                return sum / 17f;
+            }
             // One ring of vertices outward from an edge point; returns the index of its first vertex.
             int Spoke(Vector2 p, Vector2 outward, bool isLand, Vector2? outward2 = null)
             {
-                float h = data.GetInterpolatedHeight(Mathf.Clamp01(p.x / size.x), Mathf.Clamp01(p.y / size.z));
+                float h = Height(p), held = isLand ? Held(p, outward) : seaY;
                 int first = verts.Count;
                 for (int k = 0; k < SkirtRings.Length; k++)
                 {
                     var q = p + (outward + (outward2 ?? Vector2.zero)) * SkirtRings[k];
-                    float y = isLand ? Mathf.Lerp(h, seaY, SkirtFall[k]) : seaY;
+                    float y = isLand ? Mathf.Lerp(held, seaY, SkirtFall[k]) : seaY;
                     if (k == 0) y = h;                                     // meets the terrain's edge exactly
                     verts.Add(new Vector3(q.x, y, q.y));
                 }

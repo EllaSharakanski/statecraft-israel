@@ -10,7 +10,7 @@ namespace Statecraft.Game.Map
     {
         public static readonly int Map = Shader.PropertyToID("_ScMap"), MapOrigin = Shader.PropertyToID("_ScMapOrigin"),
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
-            HazeRange = Shader.PropertyToID("_ScHazeRange");
+            HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn");
 
         /// <summary>A warm, dusty haze over land (sRGB): warmer than the ground it covers (R - B 0.26), so the far land reads
         /// as dust, not as a cool milky veil (Task 6 review I1).</summary>
@@ -43,6 +43,8 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(Haze, haze);
             Shader.SetGlobalVector(HazeWater, hazeWater);
             Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, HazeStartM));
+            Shader.SetGlobalFloat(WaterOn, 1f);
+            assets.OnTeardown(VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f)));
             assets.OnTeardown(VisualToggles.Register("haze", on =>
             {
                 Shader.SetGlobalVector(Haze, on ? haze : new Vector4(haze.x, haze.y, haze.z, 0f));

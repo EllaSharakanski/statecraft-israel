@@ -46,6 +46,55 @@ float3 ScHazeWater(float3 colour, float3 positionWS)
 // 1 in water, 0 on land; coast is the signed distance texture (0.5 at the shore, tools/terrain_bake.py).
 float ScWater(float coast) { return 1.0 - smoothstep(0.497, 0.503, coast); }
 
+static const float ScCoastRangeM = 12000.0;   // tools/terrain_bake.py COAST_RANGE_M
+float _ScWaterOn;                              // 1 = shaded water, 0 = the flat sea colour (the "water" toggle)
+
+// The water's lit colour before haze (callers apply ScHazeWater and output it as is): a turquoise -> teal -> navy ramp with
+// distance from the shore; the Dead Sea (below -300 m) pale turquoise with a white salt rim, the Sea of Galilee a fresher
+// teal; two scrolling noise layers tilt a wave normal for Lambert from the sun (with its shadows: cliffs shade the water)
+// plus sky fill and a small glint; animated foam bands within 350 m of the shore. elevM is the real elevation of the water
+// surface; mapM metres east and north of the map's south-west corner.
+float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM)
+{
+    if (_ScWaterOn < 0.5) return SRGBToLinear(float3(0.16, 0.42, 0.55)) * 0.8;
+    float offshoreM = saturate(0.5 - coast) * 2.0 * ScCoastRangeM;
+    float t = pow(saturate(offshoreM / ScCoastRangeM), 0.55);
+    float3 shallow = SRGBToLinear(float3(0.38, 0.74, 0.72));
+    float3 mid = SRGBToLinear(float3(0.13, 0.47, 0.58));
+    float3 deep = SRGBToLinear(float3(0.06, 0.24, 0.40));
+    float3 c = t < 0.5 ? lerp(shallow, mid, t * 2.0) : lerp(mid, deep, t * 2.0 - 1.0);
+    float salt = step(elevM, -300.0);
+    float fresh = step(elevM, -100.0) * (1.0 - salt);
+    c = lerp(c, SRGBToLinear(float3(0.45, 0.78, 0.78)), salt * 0.8);
+    c = lerp(c, SRGBToLinear(float3(0.15, 0.48, 0.60)), fresh * 0.7);
+
+    float time = _Time.y;
+    float2 p = mapM / 700.0;
+    float2 g = float2(ScNoise(p + float2(time * 0.05, 0.0)) - ScNoise(p + float2(0.37 + time * 0.05, 0.0)),
+                      ScNoise(p.yx + float2(0.0, time * 0.04)) - ScNoise(p.yx + float2(0.0, 0.41 + time * 0.04)));
+    float3 n = normalize(float3(g.x * 0.15, 1.0, g.y * 0.15));
+#if defined(UNIVERSAL_REALTIME_LIGHTS_INCLUDED) && !defined(SHADERGRAPH_PREVIEW)
+    Light sun = GetMainLight(TransformWorldToShadowCoord(positionWS));   // review I6: the water receives the sun's shadows
+    float3 l = sun.direction, lc = sun.color;
+    float shadow = sun.shadowAttenuation;
+#else
+    float3 l = normalize(float3(-0.83, 0.5, 0.22)), lc = float3(1.0, 0.84, 0.64);   // passes without lights (depth, preview)
+    float shadow = 1.0;
+#endif
+    float3 v = normalize(_WorldSpaceCameraPos - positionWS);
+    float3 lit = c * (0.55 + 0.45 * saturate(dot(n, l)) * lc * shadow);
+    // A small glint (Task 7: 0.06, not the plan's 0.25). Where the camera's pitch meets the sun's height (50 deg each with
+    // Map.unity's default sun, at yaw 180) the 0.25 lobe lit a warm patch rising 0.08 in sRGB red over 6 km of open sea, a
+    // view-dependent gradient that read as a seam between samples 5 km apart either side of the map's edge.
+    lit += pow(saturate(dot(reflect(-l, n), v)), 80.0) * 0.06 * lc * shadow;
+
+    float band = 1.0 - smoothstep(0.0, 350.0, offshoreM);
+    float waves = 0.7 + 0.3 * sin(offshoreM / 90.0 - time * 1.3);
+    float rim = salt * (1.0 - smoothstep(0.0, 900.0, offshoreM));
+    float foam = saturate(band * waves * (1.0 - salt) + rim);
+    return lerp(lit, SRGBToLinear(float3(0.93, 0.95, 0.94)), foam * 0.85);
+}
+
 // The painted ground: biome colour, warmer stone high up, a dusty rift floor, rock on steep slopes, two octaves of
 // breakup, curvature (ridges light, hollows dark) and the baked occlusion (bake: r AO from ao.png, g curvature, b sky-view).
 float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake)

@@ -376,36 +376,28 @@ public class MapSceneTests
     [UnityTest]
     public System.Collections.IEnumerator TheSeaBeyondTheEdgeMatchesTheTerrainSea()
     {
+        // Visual v1 Task 7: both sides now shade with StatecraftMap.hlsl ScWaterShade, whose waves vary over a few hundred
+        // metres, so 7x7-pixel patch means are compared (still 0.012), at four yaws (Review Focus 1).
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
+        yield return null;
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var size = map.Terrain.terrainData.size;
-        var rt = new RenderTexture(1600, 900, 24);
-        var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
-        try
-        {
+        foreach (var yaw in new[] { 0f, 90f, 180f, 270f })
             foreach (var (look, inside, beyond) in new[] {
                 (new Vector3(3000, 0, size.z * 0.55f), new Vector3(2500, 0, size.z * 0.55f), new Vector3(-2500, 0, size.z * 0.55f)),
                 (new Vector3(3000, 0, size.z - 3000), new Vector3(2500, 0, size.z - 2500), new Vector3(-2500, 0, size.z + 2500)) })
             {
-                rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = 0; rig.Apply();
-                cam.targetTexture = rt;
-                yield return null;
-                cam.Render();
-                RenderTexture.active = rt;
-                tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
-                // Project while the camera still renders into the texture, so the points are in its pixels.
-                Color Px(Vector3 w) { var p = cam.WorldToScreenPoint(w); return tex.GetPixel((int)p.x, (int)p.y); }
-                var a = Px(new Vector3(inside.x, map.Terrain.SampleHeight(inside), inside.z));
-                var b = Px(new Vector3(beyond.x, map.Terrain.SampleHeight(inside), beyond.z));
-                RenderTexture.active = null; cam.targetTexture = null;
+                rig.LookAt = look; rig.Distance = 120000f; rig.Yaw = yaw; rig.TopInset = 0; rig.Apply();
+                var y = map.Terrain.SampleHeight(inside);
+                var px = new Vector2[2];
+                var s = RenderSample.Render(cam, 1600, 900, new[] { new Vector3(inside.x, y, inside.z), new Vector3(beyond.x, y, beyond.z) }, px);
+                Color a = s.Mean((int)px[0].x, (int)px[0].y, 3), b = s.Mean((int)px[1].x, (int)px[1].y, 3);
                 var diff = Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
-                TestContext.WriteLine($"seam at {look}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
-                Assert.Less(diff, 0.012f, $"seam at {look}: terrain sea {a}, beyond {b}");
+                TestContext.WriteLine($"seam at {look}, yaw {yaw}: terrain sea {a}, beyond {b}, difference {diff:0.000}");
+                Assert.Less(diff, 0.012f, $"seam at {look}, yaw {yaw}: terrain sea {a}, beyond {b}");
             }
-        }
-        finally { rt.Release(); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex); }
     }
 
     /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is
