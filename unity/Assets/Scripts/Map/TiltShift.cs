@@ -48,9 +48,6 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(ParamsId, Vector4.zero);
         }
 
-        /// <summary>True when a rig has set a band with a radius. With the zero global (before the map's first Apply, or after
-        /// its teardown) smoothstep(0, 0, |y|) is about 1 everywhere, so the composite would replace the whole frame with its
-        /// half-resolution copy at full cost.</summary>
         /// <summary>"notiltshift" in the page URL (-notiltshift on desktop): boot with the tilt-shift off, so a WebGL shot
         /// with the real top bar can be compared with one that has it (review m3). CameraRig.Init reads it.</summary>
         public static bool OffRequested() =>
@@ -59,6 +56,9 @@ namespace Statecraft.Game.Map
         public static bool OffRequested(string? url, string[] args, bool webgl) =>
             webgl ? UrlFlags.Has(url, "notiltshift") : args.Contains("-notiltshift");
 
+        /// <summary>True when a rig has set a band with a radius. With the zero global (before the map's first Apply, or after
+        /// its teardown) smoothstep(0, 0, |y|) is about 1 everywhere, so the composite would replace the whole frame with its
+        /// half-resolution copy at full cost.</summary>
         public static bool HasBand => Shader.GetGlobalVector(ParamsId).w > 0f;
     }
 
