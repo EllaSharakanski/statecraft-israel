@@ -119,4 +119,86 @@ public class DefenceScreenTests
             Assert.AreEqual("untouched", ui.Q<Label>("defence-command").text);
         }
     }
+
+    [Test]
+    public void CallUpCanBeRaisedButNotPast100Percent()
+    {
+        var (ui, bridge, defence) = Open();
+        using (ui)
+        {
+            for (int i = 0; i < 6; i++) ui.Press("mob-up");
+            Assert.AreEqual(1.0, defence.ProposedMobilization, 1e-9);
+            StringAssert.StartsWith("100% of reserves called up", ui.Q<Label>("mob-level").text);
+            bridge.EndTurn();
+            Assert.AreEqual(1.0, bridge.State.Mobilization, 1e-9);
+        }
+    }
+
+    [Test]
+    public void TheCeasefireClockCountsDownEachTurn()
+    {
+        var (ui, bridge, _) = Open();
+        using (ui)
+        {
+            bridge.EndTurn();
+            Assert.AreEqual("A UN ceasefire will be imposed in 51 weeks", ui.Q<Label>("ceasefire").text);
+            Assert.AreEqual(51, bridge.State.CeasefireWeeksLeft);
+        }
+    }
+
+    [Test]
+    public void AQueuedDropFromFullWarSaysTheClockStops()
+    {
+        var (ui, bridge, _) = Open();
+        using (ui)
+        {
+            ui.Press("de-escalate");
+            Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("ceasefire").style.display.value);
+            Assert.AreEqual("The UN ceasefire clock stops if the level is lowered", ui.Q<Label>("ceasefire").text);
+            ui.Press("escalate");
+            Assert.AreEqual("A UN ceasefire will be imposed in 52 weeks", ui.Q<Label>("ceasefire").text);
+        }
+    }
+
+    [Test]
+    public void AQueuedRaiseToFullWarShowsTheClockItWillStart()
+    {
+        var (ui, bridge, _) = Open();
+        using (ui)
+        {
+            ui.Press("de-escalate");
+            bridge.EndTurn();
+            Assert.AreEqual(DisplayStyle.None, ui.Q<Label>("ceasefire").style.display.value);
+            ui.Press("escalate");
+            Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("ceasefire").style.display.value);
+            Assert.AreEqual($"UN ceasefire: {C.Rules.CeasefireWeeks} weeks once level 5 is reached", ui.Q<Label>("ceasefire").text);
+            bridge.EndTurn();
+            Assert.AreEqual(5, bridge.State.Rung);
+            Assert.AreEqual(C.Rules.CeasefireWeeks - 1, bridge.State.CeasefireWeeksLeft);   // the clock started and ran one week
+        }
+    }
+
+    [Test]
+    public void ACallUpOrderThatBecomesANoOpIsWithdrawn()
+    {
+        var (ui, bridge, defence) = Open();
+        using (ui)
+        {
+            ui.Press("de-escalate");
+            ui.Press("mob-down");
+            Assert.AreEqual(2, bridge.Queued.Count);
+            ui.Press("escalate");                                   // back at level 5, where 75% is raised to 80% anyway
+            Assert.AreEqual(0, bridge.Queued.Count);
+            Assert.AreEqual(bridge.State.Mobilization, defence.ProposedMobilization, 1e-9);
+        }
+    }
+
+    [Test]
+    public void EveryTurnLengthHasAStringAndAnUnknownOneFailsLoudly()
+    {
+        var text = Text;
+        foreach (System.Enum v in System.Enum.GetValues(typeof(TurnLength)))
+            Assert.DoesNotThrow(() => { var _ = text[DefencePresenter.TurnKey((TurnLength)v)]; }, v.ToString());
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => DefencePresenter.TurnKey((TurnLength)99));
+    }
 }

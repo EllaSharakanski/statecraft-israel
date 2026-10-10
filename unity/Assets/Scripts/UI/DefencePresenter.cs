@@ -39,11 +39,15 @@ namespace Statecraft.Game.UI
         /// <summary>The call-up level the turn will end with: the queued order's, else today's.</summary>
         public double ProposedMobilization => (bridge.QueuedLike(new SetMobilization(0)) as SetMobilization)?.Level ?? bridge.State.Mobilization;
 
+        /// <summary>The security level the turn will end with: today's, moved by the queued order.</summary>
+        int TargetRung => SecuritySystem.ClampRung(bridge.State.Rung + QueuedDelta);
+
         void Order(int step)
         {
             var s = bridge.State;
-            var target = Math.Max(1, Math.Min(5, s.Rung + QueuedDelta + step));
+            var target = SecuritySystem.ClampRung(s.Rung + QueuedDelta + step);
             if (target == s.Rung) Withdraw(new SecurityOrder(0)); else bridge.Queue(new SecurityOrder(target - s.Rung));
+            DropNoOpCallUp();
         }
 
         void Withdraw(Command like)
@@ -52,13 +56,35 @@ namespace Statecraft.Game.UI
             if (queued != null) bridge.Withdraw(queued);
         }
 
-        /// <summary>The call-up minimum at the level the turn will end with (the sim raises a lower call-up to it).</summary>
-        double Floor => bridge.Content.Rules.RungMinMobilization[Math.Max(1, Math.Min(5, bridge.State.Rung + QueuedDelta)) - 1];
+        /// <summary>The call-up the turn will end with if <paramref name="level"/> is ordered (the sim raises a lower one to the minimum).</summary>
+        double EffectiveAt(double level) => SecuritySystem.EffectiveMobilization(bridge.Content, TargetRung, level);
+
+        bool SameAsToday(double level) => Math.Abs(EffectiveAt(level) - EffectiveAt(bridge.State.Mobilization)) < 1e-9;
+
+        /// <summary>A queued call-up order that would change nothing (after the minimum is applied) is withdrawn, so it
+        /// neither costs attention nor shows a stale proposed level.</summary>
+        void DropNoOpCallUp()
+        {
+            if (bridge.QueuedLike(new SetMobilization(0)) is SetMobilization q && SameAsToday(q.Level)) bridge.Withdraw(q);
+        }
 
         void Mobilize(double step)
         {
-            var level = Math.Max(Floor, Math.Min(1, Math.Round((Math.Max(ProposedMobilization, Floor) + step) / MobilizationStep) * MobilizationStep));
-            if (Math.Abs(level - bridge.State.Mobilization) < 1e-9) Withdraw(new SetMobilization(0)); else bridge.Queue(new SetMobilization(level));
+            var floor = SecuritySystem.MinMobilization(bridge.Content, TargetRung);
+            var level = Math.Max(floor, Math.Min(1, Math.Round((EffectiveAt(ProposedMobilization) + step) / MobilizationStep) * MobilizationStep));
+            if (SameAsToday(level)) Withdraw(new SetMobilization(0)); else bridge.Queue(new SetMobilization(level));
+        }
+
+        /// <summary>The string key for a turn length. A switch, so a new TurnLength value fails loudly (and in a test).</summary>
+        public static string TurnKey(TurnLength length)
+        {
+            switch (length)
+            {
+                case TurnLength.Quarter: return "defence.turn_quarter";
+                case TurnLength.Month: return "defence.turn_month";
+                case TurnLength.Week: return "defence.turn_week";
+                default: throw new ArgumentOutOfRangeException(nameof(length), length, "no string for this turn length");
+            }
         }
 
         public void Render()
@@ -67,22 +93,26 @@ namespace Statecraft.Game.UI
             for (int rung = 1; rung <= 5; rung++)
             {
                 screen.Q<Label>($"rung-{rung}-name").text = text[$"defence.rung{rung}"];
-                screen.Q<Label>($"rung-{rung}-turn").text = text["defence.turn_" + SecuritySystem.TurnLengthFor(rung).ToString().ToLowerInvariant()];
+                screen.Q<Label>($"rung-{rung}-turn").text = text[TurnKey(SecuritySystem.TurnLengthFor(rung))];
                 screen.Q<VisualElement>($"rung-{rung}").EnableInClassList("rung-current", rung == s.Rung);
             }
             screen.Q<Label>("defence-command").text = text.Format("defence.command",
                 Cabinet.Holder(c, s, "defense_minister")?.Name ?? "-", Cabinet.Holder(c, s, "chief_of_staff")?.Name ?? "-");
-            var ceasefire = screen.Q<Label>("ceasefire");
-            ceasefire.text = s.Rung == 5 ? text.Format("defence.ceasefire", s.CeasefireWeeksLeft) : "";
-            ceasefire.style.display = s.Rung == 5 ? DisplayStyle.Flex : DisplayStyle.None;
             var delta = QueuedDelta;
-            screen.Q<Label>("order-pending").text = delta == 0 ? "" : text.Format("defence.order", s.Rung, s.Rung + delta);
-            var floor = Floor;
-            var proposed = Math.Max(ProposedMobilization, floor);   // what the call-up will be: the sim raises a lower order to the floor
-            screen.Q<Label>("mob-level").text = text.Format("defence.mob", proposed * 100, s.Rung + delta, floor * 100);
-            screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", c.Rules.MobilizationCostPerYear * Math.Max(proposed, floor));
-            screen.Q<Button>("escalate").SetEnabled(s.Rung + delta < 5);
-            screen.Q<Button>("de-escalate").SetEnabled(s.Rung + delta > 1);
+            var target = TargetRung;
+            var ceasefire = screen.Q<Label>("ceasefire");
+            if (s.Rung == 5 && target == 5) ceasefire.text = text.Format("defence.ceasefire", s.CeasefireWeeksLeft);
+            else if (s.Rung == 5) ceasefire.text = text["defence.ceasefire_stops"];                       // a lowering is queued
+            else if (target == 5) ceasefire.text = text.Format("defence.ceasefire_starts", SecuritySystem.CeasefireWeeksAfter(c, s.Rung, s.CeasefireWeeksLeft, target));
+            else ceasefire.text = "";
+            ceasefire.style.display = ceasefire.text == "" ? DisplayStyle.None : DisplayStyle.Flex;
+            screen.Q<Label>("order-pending").text = delta == 0 ? "" : text.Format("defence.order", s.Rung, target);
+            var floor = SecuritySystem.MinMobilization(c, target);
+            var proposed = EffectiveAt(ProposedMobilization);   // what the call-up will be: the sim raises a lower order to the minimum
+            screen.Q<Label>("mob-level").text = text.Format("defence.mob", proposed * 100, target, floor * 100);
+            screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", c.Rules.MobilizationCostPerYear * proposed);
+            screen.Q<Button>("escalate").SetEnabled(target < 5);
+            screen.Q<Button>("de-escalate").SetEnabled(target > 1);
         }
     }
 }
