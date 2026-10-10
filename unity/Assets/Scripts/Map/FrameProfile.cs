@@ -21,12 +21,24 @@ namespace Statecraft.Game.Map
     public static class FrameProfile
     {
         public const int WarmupFrames = 60, MeasuredFrames = 300, Repeats = 3;
+        /// <summary>The moving variant's turn (degrees of yaw per frame, about the look-at point).</summary>
+        public const float MovingDegreesPerFrame = 0.5f;
 
         public static bool Requested() =>
             Requested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
 
         public static bool Requested(string? url, string[] args, bool webgl) =>
             webgl ? UrlFlags.Has(url, "vprofile") : args.Contains("-vprofile");
+
+        /// <summary>The moving variant ("vmoving" with "vprofile" in the WebGL URL, or -vmoving on desktop; Task 9 fix round 1):
+        /// every run restarts from its pose and turns the camera MovingDegreesPerFrame each frame, warm-up and measured
+        /// frames alike, so features that work only when the view changes (the map labels' placement) are priced too. Its
+        /// lines carry the pose name with "-moving".</summary>
+        public static bool MovingRequested() =>
+            MovingRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
+
+        public static bool MovingRequested(string? url, string[] args, bool webgl) =>
+            webgl ? UrlFlags.Has(url, "vmoving") : args.Contains("-vmoving");
 
         public static string Line(string label, string pose, string resolution, float renderScale, int rep, IReadOnlyList<float> frameMs)
         {
@@ -59,7 +71,10 @@ namespace Statecraft.Game.Map
             }
         }
 
-        public static IEnumerator Run(CameraRig rig, GeoFrame frame, Action<string> log, bool quitWhenDone)
+        public static IEnumerator Run(CameraRig rig, GeoFrame frame, Action<string> log, bool quitWhenDone) =>
+            Run(rig, frame, log, quitWhenDone, MovingRequested());
+
+        public static IEnumerator Run(CameraRig rig, GeoFrame frame, Action<string> log, bool quitWhenDone, bool moving)
         {
             var configs = new List<(string label, string? off)> { ("all", null) };
             foreach (var name in VisualToggles.Names) configs.Add(("-" + name, name));
@@ -80,6 +95,7 @@ namespace Statecraft.Game.Map
                         for (int f = 0; f < WarmupFrames; f++) yield return null;
                     }
                 }
+                var poseName = moving ? pose.Name + "-moving" : pose.Name;
                 var results = configs.ToDictionary(c => c.label, c => new List<(float avg, float p95)>());
                 for (int rep = 0; rep < Repeats; rep++)
                     foreach (var i in Order(configs.Count, rep))
@@ -87,18 +103,22 @@ namespace Statecraft.Game.Map
                         var (label, off) = configs[i];
                         VisualToggles.SetAll(off != "*");
                         if (off != null && off != "*") VisualToggles.Set(off, false);
-                        for (int f = 0; f < WarmupFrames; f++) yield return null;
+                        if (moving) pose.Apply(rig, frame);   // every run follows the same path
+                        for (int f = 0; f < WarmupFrames; f++) { if (moving) Turn(rig); yield return null; }
                         var times = new List<float>(MeasuredFrames);
-                        for (int f = 0; f < MeasuredFrames; f++) { yield return null; times.Add(Time.unscaledDeltaTime * 1000f); }
+                        for (int f = 0; f < MeasuredFrames; f++) { if (moving) Turn(rig); yield return null; times.Add(Time.unscaledDeltaTime * 1000f); }
                         var scale = UniversalRenderPipeline.asset != null ? UniversalRenderPipeline.asset.renderScale : 1f;
-                        log(Line(label, pose.Name, $"{Screen.width}x{Screen.height}", scale, rep, times));
+                        log(Line(label, poseName, $"{Screen.width}x{Screen.height}", scale, rep, times));
                         results[label].Add(FrameStats.Summary(times));
                     }
-                foreach (var (label, _) in configs) log(Summary(label, pose.Name, results[label]));
+                foreach (var (label, _) in configs) log(Summary(label, poseName, results[label]));
+                if (moving) pose.Apply(rig, frame);
             }
             VisualToggles.SetAll(true);
             log("PROFILE visual done");
             if (quitWhenDone) Application.Quit(0);
         }
+
+        static void Turn(CameraRig rig) { rig.Yaw += MovingDegreesPerFrame; rig.Apply(); }
     }
 }

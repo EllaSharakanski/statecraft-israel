@@ -149,14 +149,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     border-width: 1px;
     border-color: var(--gold);
     border-radius: 12px;
-    padding: 1px 8px 2px 8px;
+    padding: 1px 10px 2px 10px;
     margin: 0;
     -unity-text-align: middle-center;
     white-space: nowrap;
 }
-/* Tel Aviv's pill, centred on its marker, must end clear of Petah Tikva's marker 10 km east at the overview (about 61 px
-   apart there; MapLabelTests.ShownPillsNeverOverlapAndEachReadsAsItsOwn): 20 px and 8 px side padding, not 22 and 10. */
-.map-label-city { font-size: 20px; }
+.map-label-city { font-size: 22px; }
 .map-label-town, .map-label-arab_town { font-size: 19px; }
 .anchor-lower-centre { translate: -50% -100%; }
 .anchor-lower-left { translate: 0 -100%; }

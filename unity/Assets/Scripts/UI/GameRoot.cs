@@ -163,7 +163,7 @@ namespace Statecraft.Game.UI
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
             labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>()));
-            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); };
+            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
             // One console line per turn, so a browser run (reload, Continue) can be checked against the hash.

@@ -95,8 +95,36 @@ Deviations from the plan text, each forced by a test:
   avoid a neighbour's marker with any anchor (Rishon LeZion's pill ended 10 px under Jaffa's marker). A pill other than
   a city's is now also hidden when it comes within `NeighbourClearPx` (2 x LiftPx + MarginPx = 16 px) of another
   settlement's marker top. At 90 km this hides nothing (11 of 25 shown, as before); at the overview 10 of 25 are shown.
-- City pills: 20 px text and 8 px side padding (plan: 22 px and 10 px), so Tel Aviv's centred pill ends clear of Petah
-  Tikva's marker at the overview.
+- City pills: 20 px text and 8 px side padding at first. Fix round 1 restores the plan's 22 px and 10 px (see below).
 - `ThePillIsEbGaramondOnNavyWithAGoldEdgeAndHiddenWhileLoading` uses a 1920x1080 panel instead of `UiTestKit`'s: the
   batch-mode screen gives that panel about 0.39 px per point, and UI Toolkit rounds the 1 px border up to one physical
   pixel (2.57 points).
+
+### Task 9 fix round 1 (review I1-I5, M1-M7)
+
+- Panels: pills are culled against the cached rects of the top bar, the info panel, the minimap and the event card,
+  marked dirty by GeometryChangedEvent; a pill must lie wholly on screen, and a marker under a panel is no one's
+  neighbour. A container resize re-places the pills before the repaint (M4).
+- Anchors: the USS anchor class is tried first, then lower right, lower left, lower centre and centred below the marker,
+  as a pixel shift on the slot's translate. The legibility rule (more than 2 x own gap + MarginPx from every other
+  visible marker top) applies to every pill; a city whose anchors all crowd a neighbour keeps the first that is clear of
+  panels and pills. A pill hidden in the last refresh needs HysteresisPx = 2 more (M7).
+- Shown sets (MapLabelTests): 90 km: tel_aviv jaffa lod ramla petah_tikva rishon_lezion rehovot netanya (every visible
+  marker); overview: jerusalem tel_aviv lod gaza beersheba petah_tikva netanya; diorama02 with the top-bar inset also
+  labels Hadera (checkpoint).
+- City pills are back to the plan's 22 px and 10 px padding (towns 19 px), so cities read larger (M5). At the
+  overview Tel Aviv's pill takes the lower-right anchor, over the sea.
+- Refresh allocates nothing (`Is.Not.AllocatingGCMemory`). Editor Mono, 240 refreshes while turning and zooming:
+  `LABELS refresh moving avg_us=27 p95_us=38`.
+- `?vprofile&vmoving` (FrameProfile, additive): every run restarts at its pose and turns 0.5 degrees per frame.
+  Headless, DPR 1, `res=1920x1080 scale=0.80`:
+
+| Pose | all | -labels | none | all - (-labels) | budget |
+|---|---|---|---|---|---|
+| gameplay03-moving | 2.24 (spread 0.65) | 2.28 (0.78) | 2.44 (0.63) | -0.04 ms | <= 1 + 0.78 ms: within |
+| diorama02-moving | 10.21 (0.10) | 10.20 (0.16) | 10.10 (0.34) | +0.01 ms | <= 1 + 0.16 ms: within |
+| gameplay03 (still) | 2.47 (0.51) | 2.44 (0.04) | 2.35 (0.34) | +0.03 ms | within |
+| diorama02 (still) | 6.76 (0.38) | 6.53 (0.29) | 6.58 (0.41) | +0.23 ms | within |
+
+  diorama02 costs about 3.4 ms more while turning than still, with or without labels (the rest of the scene).
+
