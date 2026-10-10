@@ -14,9 +14,7 @@ namespace Statecraft.Game.UI
     [UxmlElement]
     public partial class UiIcon : VisualElement
     {
-        public const string ClassName = "ui-icon";
-
-        /// <summary>Every glyph this element can draw (UiIconTests checks each one draws).</summary>
+        /// <summary>Every glyph this element can draw (PromoHudTests.EveryGlyphDraws paints each one).</summary>
         public static IReadOnlyCollection<string> Glyphs => Painters.Keys;
 
         string glyph = "";
@@ -25,12 +23,8 @@ namespace Statecraft.Game.UI
         [UxmlAttribute]
         public string Glyph { get => glyph; set { glyph = value ?? ""; MarkDirtyRepaint(); } }
 
-        public UiIcon() : this("") { }
-
-        public UiIcon(string glyph)
+        public UiIcon()
         {
-            this.glyph = glyph;
-            AddToClassList(ClassName);
             pickingMode = PickingMode.Ignore;
             generateVisualContent += Draw;
         }
@@ -251,7 +245,7 @@ namespace Statecraft.Game.UI
         }
 
         // --- terrain signs for the info panel (drawn dark on the biome's own map colour) ---
-        static readonly Color Ink = new Color32(14, 22, 38, 170), InkLight = new Color32(255, 250, 236, 150);
+        static readonly Color Ink = new Color32(14, 22, 38, 170), InkLight = new Color32(255, 250, 236, 220);   // waves at >= 3:1 on sea and lake
 
         static void Waves(Painter2D p, Func<float, float, Vector2> at, float s)
         {

@@ -43,8 +43,11 @@ namespace Statecraft.Game.UI
 
         /// <summary>End Turn's hourglass, in the button's left padding (Statecraft.uss .end-turn), painted into the button so it
         /// stays a leaf sized by its text (UiIcon.Paint).</summary>
-        static void PaintHourglass(MeshGenerationContext m) =>
+        static void PaintHourglass(MeshGenerationContext m)
+        {
+            if (!m.visualElement.enabledInHierarchy) return;   // no bright sign on a disabled End Turn (game over)
             UiIcon.Paint(m, "hourglass", new UnityEngine.Rect(10f, (m.visualElement.layout.height - 22f) / 2f, 22f, 22f));
+        }
 
         void Set(string name, string value) => root.Q<Label>(name).text = value;
 

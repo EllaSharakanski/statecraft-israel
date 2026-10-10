@@ -13,6 +13,7 @@
     --ink-dim: rgb(170, 164, 150);
     --up: rgb(126, 196, 120);
     --down: rgb(222, 120, 104);
+    --focus: rgb(120, 98, 58);       /* keyboard focus fill: >= 3:1 against --navy-deep (WCAG 2.4.13) */
 }
 
 .root {
@@ -59,8 +60,10 @@
 }
 Button:hover { border-color: var(--gold); background-color: var(--navy-raised); }
 /* Keyboard focus shows as a bright gold edge (navigation with Tab and the arrow keys). */
-Button:focus { border-color: var(--gold-light); }
+Button:focus { border-color: var(--gold-light); background-color: var(--focus); }
 Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4); background-color: var(--navy-deep); }
+/* A screen button stays transparent around its disc in every state. */
+.nav-button:disabled, .nav-button:focus { background-color: rgba(0, 0, 0, 0); border-width: 0; }
 
 /* Top bar: the date badge, the national indicators (icon, name, value and change), the round screen buttons, attention
    and End Turn. */
@@ -76,7 +79,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .top-bar Label { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
 /* The date badge: a raised, trimmed box at the left, as the promo's "1936 / Turn 1 / January 1936" plate. */
 .date-box {
-    width: 190px; flex-shrink: 1; min-width: 150px; height: 82px; justify-content: center;
+    flex-shrink: 0; min-width: 150px; height: 82px;   /* sized to its widest line ("Turn 120  30 September 1956") */ justify-content: center;
     padding: 0 12px 0 18px; margin-right: 10px;
     background-color: var(--navy-raised); border-width: 1px; border-color: var(--gold-dim); border-radius: 2px;
 }
@@ -109,14 +112,17 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 }
 .nav-button:hover { background-color: rgba(0, 0, 0, 0); color: var(--ink); }
 .nav-button:hover .nav-disc { border-color: var(--gold); background-color: var(--navy-raised); }
-.nav-button:focus { color: var(--ink); }
-.nav-button:focus .nav-disc { border-color: var(--gold-light); }
-/* The open screen's button (ScreenNav). */
+/* Two separate signals: "open" (ScreenNav's nav-open) is a gold-light rim on a raised disc with a gold caption; keyboard
+   focus is an ink rim on the warm focus fill, which a pointer click clears (ScreenNav blurs the button). */
 .nav-open { color: var(--gold-light); }
 .nav-open .nav-disc { border-color: var(--gold-light); background-color: var(--navy-raised); }
+.nav-button:focus { color: var(--ink); }
+.nav-button:focus .nav-disc { border-color: var(--ink); background-color: var(--focus); }
 /* A window too narrow for the icons (HudPresenter sets top-bar--compact below HudPresenter.CompactBelowPx): the meters
    drop their icons and tighten, as the bar was before the icons. */
 .top-bar--compact .meter-icon { display: none; }
+.top-bar--compact .date-box { padding: 0 10px 0 12px; margin-right: 6px; }
+.top-bar--compact .date-row Label { font-size: 16px; margin-right: 6px; }
 .top-bar--compact .meter { padding: 0 8px; }
 .top-bar--compact .nav-button { width: 62px; }
 .top-bar--compact .nav-disc { left: 6px; }

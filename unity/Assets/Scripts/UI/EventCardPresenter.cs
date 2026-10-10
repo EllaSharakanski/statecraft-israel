@@ -68,7 +68,7 @@ namespace Statecraft.Game.UI
 
         /// <summary>The round sign in an option's left padding (Statecraft.uss .event-option), painted into the button so it
         /// stays a leaf whose wrapped text Yoga measures (UiIcon.Paint).</summary>
-        public const float SignRadius = 15f, SignLeft = 9f;
+        const float SignRadius = 15f, SignLeft = 9f;
 
         static void PaintSign(MeshGenerationContext m) =>
             UiIcon.PaintDisc(m, "chevron", new UnityEngine.Vector2(SignLeft + SignRadius, m.visualElement.layout.height / 2f), SignRadius);

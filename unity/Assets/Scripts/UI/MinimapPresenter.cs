@@ -69,7 +69,7 @@ namespace Statecraft.Game.UI
             var biome = new System.Collections.Generic.Dictionary<(int, int), string>();
             foreach (var h in hexes.hexes) biome[(h.q, h.r)] = h.biome;
             var b = hexes.bounds;
-            var tex = new Texture2D(width, height, TextureFormat.RGB24, false) { name = "Minimap", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var tex = new Texture2D(width, height, TextureFormat.RGB24, false) { name = "Minimap", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
             var pixels = new Color[width * height];
             for (int y = 0; y < height; y++)
                 for (int x = 0; x < width; x++)

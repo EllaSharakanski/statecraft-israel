@@ -8,7 +8,8 @@ namespace Statecraft.Game.UI
     /// edge, a thin gold rule inset inside the border, and a gold corner bracket with a small diamond at each corner. It is
     /// an absolute overlay that fills its parent (Statecraft.uss ".ui-frame"), takes no clicks and lays nothing out, so a
     /// panel's layout is the same with or without it. Inside a panel that clips (overflow: hidden) the shadow is clipped
-    /// away and only the trim shows. In UXML: <c>&lt;Statecraft.Game.UI.UiFrame /&gt;</c> as a panel's first child.</summary>
+    /// away and only the trim shows. In UXML: <c>&lt;Statecraft.Game.UI.UiFrame /&gt;</c> as a panel's last child, so the trim is drawn over the content (the
+    /// top bar's shadow-only frame is its first child: it draws nothing inside).</summary>
     [UxmlElement]
     public partial class UiFrame : VisualElement
     {
