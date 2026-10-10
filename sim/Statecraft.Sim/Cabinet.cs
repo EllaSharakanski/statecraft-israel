@@ -65,6 +65,7 @@ namespace Statecraft.Sim
         /// the sitting President, is not the serving Chief of Staff (for any other office) and does not already hold it; a
         /// government is in office; a Chief of Staff must be a career officer (has held the post in people.yaml); a
         /// minister's party, if any, must be in the coalition.</summary>
+        /// <remarks>Holding two portfolios is allowed by design: historically Ben-Gurion was Prime Minister and Defence, and Shapira held three.</remarks>
         public static string? Check(Content c, GameState s, string officeId, string personId)
         {
             var office = c.Offices.FirstOrDefault(o => o.Id == officeId);

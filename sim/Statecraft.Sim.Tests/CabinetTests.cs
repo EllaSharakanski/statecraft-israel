@@ -99,6 +99,99 @@ public class CabinetTests
         Assert.Equal("def_two", Cabinet.Holder(C, r.State, "finance_minister")!.Id);
     }
 
+    // ---- refusal paths that need offices and people the plain fixture lacks ----
+    const string RichOffices = @"
+  - id: president
+    title: President of Israel
+  - id: chief_of_staff
+    title: IDF Chief of the General Staff
+  - id: old_office
+    title: Old Office
+    until: 1948-12-01
+";
+    const string RichPeople = @"
+  - id: pres
+    name: Pres Ident
+    living: false
+    competence: 5
+    loyalty: 5
+    offices:
+      - office: president
+        from: 1948-05-14
+  - id: cos
+    name: Cos One
+    living: false
+    competence: 6
+    loyalty: 6
+    offices:
+      - office: chief_of_staff
+        from: 1948-05-14
+";
+    static readonly Content Rich = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+    {
+        ["offices.yaml"] = Fixture.Files["offices.yaml"] + RichOffices,
+        ["people.yaml"] = Fixture.Files["people.yaml"] + ExtraPeople + RichPeople,
+    }));
+
+    [Fact]
+    public void TheSittingPresidentCannotBeAppointed()
+    {
+        var s = Simulation.NewGame(Rich, 42, Mode.Historical);
+        Assert.Equal("Pres Ident is the President", Cabinet.Check(Rich, s, "finance_minister", "pres"));
+    }
+
+    [Fact]
+    public void TheServingChiefOfStaffCannotBeAppointedToAnotherOffice()
+    {
+        var s = Simulation.NewGame(Rich, 42, Mode.Historical);
+        Assert.Equal("Cos One is the serving Chief of Staff", Cabinet.Check(Rich, s, "finance_minister", "cos"));
+    }
+
+    [Fact]
+    public void NoGovernmentInOfficeIsARefusal()
+    {
+        var s = new GameState { Date = new DateTime(1948, 1, 1) };           // before every government
+        Assert.Equal("No government is in office", Cabinet.Check(C, s, "finance_minister", "loyalist"));
+    }
+
+    [Fact]
+    public void OnlyACareerOfficerCanBeChiefOfStaff()
+    {
+        var s = Simulation.NewGame(Rich, 42, Mode.Historical);
+        Assert.Equal("Loy Alist is not an IDF career officer", Cabinet.Check(Rich, s, "chief_of_staff", "loyalist"));
+    }
+
+    [Fact]
+    public void AnAbolishedOfficeCannotBeFilled()
+    {
+        var s = new GameState { Date = new DateTime(1948, 12, 1) };
+        Assert.Equal("The office of Old Office was abolished on 1948-12-01", Cabinet.Check(Rich, s, "old_office", "loyalist"));
+    }
+
+    /// <summary>Step refills attention at the end of the turn, so the spend is observed through what the same turn can still
+    /// afford: at the starting rung one appointment costs 2 of the 3 points.</summary>
+    [Fact]
+    public void ARejectedAppointCostsNoAttention()
+    {
+        var s0 = Simulation.NewGame(C, 42, Mode.Historical);
+        var cost = AttentionSystem.Cost(C, s0, Cabinet.Kind);
+        Assert.True(cost > s0.Attention / 2, "the fixture must make two appointments unaffordable");
+        var bad = new Appoint("finance_minister", "outsider");
+        var r = Simulation.Step(C, s0, new Command[] { bad, bad, bad });
+        Assert.All(r.Rejected, x => Assert.Equal("Out Sider's party (Beta) is not in the coalition", x.Reason));   // never "Not enough attention"
+        Assert.Equal(3, r.Rejected.Count);
+    }
+
+    [Fact]
+    public void ALegalAppointSpendsTheFixtureCost()
+    {
+        var s0 = Simulation.NewGame(C, 42, Mode.Historical);
+        var cost = AttentionSystem.Cost(C, s0, Cabinet.Kind);
+        var r = Simulation.Step(C, s0, new Command[] { new Appoint("finance_minister", "loyalist"), new Appoint("defense_minister", "loyal_two") });
+        Assert.Equal(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Not enough attention (need {0:0.0}, have {1:0.0})", cost, s0.Attention - cost),
+            r.Rejected.Single().Reason);
+    }
+
     [Fact]
     public void ThePartyRuleFollowsTheCoalitionOfTheDay()
     {
