@@ -42,12 +42,17 @@ Shader "Statecraft/Route"
             CBUFFER_END
 
             // Colours (sRGB) after the promo's gameplay frame (promo/final/03): pale packed dirt; a grey-brown ballast bed
-            // with dark timber sleepers and dark steel rails.
+            // with dark timber sleepers and light steel rails (promo video 0:21).
             static const float3 RoadSrgb = float3(0.86, 0.78, 0.62);
             static const float3 RutSrgb = float3(0.72, 0.63, 0.48);
-            static const float3 BallastSrgb = float3(0.58, 0.53, 0.46);
-            static const float3 SleeperSrgb = float3(0.34, 0.25, 0.18);
-            static const float3 RailSrgb = float3(0.27, 0.27, 0.29);
+            static const float3 BallastSrgb = float3(0.50, 0.46, 0.41);
+            static const float3 BankSrgb = float3(0.42, 0.37, 0.31);     // the embankment's shoulders, darker
+            static const float3 SleeperSrgb = float3(0.30, 0.22, 0.15);
+            // Far off (a pixel over FarFromM, full by FarToM: the country-wide pose), pale dirt on pale ground would vanish,
+            // so a road darkens to a grey-brown line, as the promo's diorama draws its roads (a symbolic far look).
+            static const float3 RoadFarSrgb = float3(0.50, 0.44, 0.36);
+            static const float FarFromM = 60.0, FarToM = 150.0;
+            static const float3 RailSrgb = float3(0.72, 0.70, 0.66);     // light worn steel, as the promo video's close-up
             // The railway's pattern, in metres along (v) and as a share of the ribbon across (u).
             static const float SleeperSpacingM = 150.0, SleeperDuty = 0.4, SleeperHalfSpan = 0.29;
             static const float RailOffset = 0.12, RailHalfWidth = 0.018;
@@ -98,7 +103,7 @@ Shader "Statecraft/Route"
                 float alpha;
                 [branch] if (_Kind > 0.5)
                 {
-                    albedo = SRGBToLinear(BallastSrgb);
+                    albedo = lerp(SRGBToLinear(BankSrgb), SRGBToLinear(BallastSrgb), smoothstep(0.12, 0.3, 0.5 - abs(u - 0.5)));
                     float across = Band(u, 0.5, SleeperHalfSpan, du);
                     float sleeper = across * PulseBox(v, dv, SleeperSpacingM, SleeperDuty);
                     albedo = lerp(albedo, SRGBToLinear(SleeperSrgb), sleeper);
@@ -111,6 +116,7 @@ Shader "Statecraft/Route"
                     albedo = SRGBToLinear(RoadSrgb);
                     float ruts = saturate(Band(u, 0.5 - RutOffset, RutHalfWidth, du) + Band(u, 0.5 + RutOffset, RutHalfWidth, du));
                     albedo = lerp(albedo, SRGBToLinear(RutSrgb), 0.6 * ruts);
+                    albedo = lerp(albedo, SRGBToLinear(RoadFarSrgb), smoothstep(FarFromM, FarToM, dv));
                     alpha = smoothstep(0.0, 0.3, u) * smoothstep(1.0, 0.7, u);
                 }
                 albedo = lerp(albedo, SRGBToLinear(ScGridLandSrgb), grid * _ScGrid.x);

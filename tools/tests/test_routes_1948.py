@@ -65,11 +65,12 @@ def test_each_path_passes_near_every_waypoint(route):
 
 
 def test_no_segment_jumps():
-    """Consecutive points are at most a few km apart: a long straight jump would be a trace that left its symbol."""
+    """Consecutive points are at most 8 km apart: a longer straight jump would be a trace that left its symbol. (The
+    longest real straight is 6.5 km, on the Tel Aviv-Haifa road across the Sharon plain.)"""
     for r in PATHS:
         pts = [tuple(p) for p in r["points"]]
         worst = max(rt.km_between(a, b) for a, b in zip(pts, pts[1:]))
-        assert worst < 6.0, (r["id"], worst)
+        assert worst < 8.0, (r["id"], worst)
 
 
 def test_the_jaffa_jerusalem_railway_is_its_real_length():
@@ -134,3 +135,13 @@ def test_a_trace_follows_a_drawn_road():
     cost = rt.cost_raster(img, "road")
     path = rt.least_cost_path(cost, (rr[0], 0), (rr[-1], 199))
     assert max(abs(r - rr[c]) for r, c in path) <= 3
+
+
+def test_trim_end_hooks_drops_a_hook_at_either_end():
+    hook = [(0, 0), (-3, 0), (-3, 1), (0, 1)]
+    line = [(x, 1) for x in range(1, 30)]
+    out = rt.trim_end_hooks(hook + line, 4.0)
+    assert out[0][0] >= 0 and out[-1] == (29, 1)
+    assert rt.trim_end_hooks(line, 4.0) == line, "a line that only moves away from its ends is kept whole"
+    back = rt.trim_end_hooks((hook + line)[::-1], 4.0)
+    assert back[0] == (29, 1) and back[-1] == (0, 1), "the same hook at the end"

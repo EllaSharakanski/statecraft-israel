@@ -14,10 +14,11 @@ namespace Statecraft.Game.Map.Routes
     /// six transforms set per frame from a precomputed table; no physics, no allocation after Spawn.</summary>
     public sealed class RouteTrain : MonoBehaviour
     {
-        /// <summary>Times real size, measured on the promo's gameplay frame: its six-car train is about 250 px long at 1920 px
-        /// (about 35 m/px there), about 8.8 km, so about 65 times a real 135 m train; the settlements' blocks are about 60x
-        /// (owner ruling, 2026-10-11).</summary>
-        public const float Scale = 65f;
+        /// <summary>Times real size along the line, measured on the promo's gameplay frame: its six-car train is about 250 px
+        /// long at 1920 px (about 35 m/px there), about 8.8 km, so about 80 times this 110 m consist (the settlements' blocks
+        /// are about 60x, owner ruling 2026-10-11). Across and up it is <see cref="Chunk"/> times more, as the promo's
+        /// miniature train is stockier than a real one (a first checkpoint at a uniform 65x drew it a thin dark line).</summary>
+        public const float Scale = 80f, Chunk = 1.5f;
         /// <summary>Symbolic speed along the line (m/s of map), so the train moves visibly at the gameplay zoom (about 9 px a
         /// second); and the stop at each end (s).</summary>
         public const float SpeedMps = 300f, DwellSeconds = 6f;
@@ -121,7 +122,7 @@ namespace Statecraft.Game.Map.Routes
                 assets.Own(mesh); mesh.UploadMeshData(true);
                 var car = new GameObject(name);
                 car.transform.SetParent(go.transform, false);
-                car.transform.localScale = Vector3.one * Scale;
+                car.transform.localScale = new Vector3(Scale * Chunk, Scale * Chunk, Scale);
                 car.AddComponent<MeshFilter>().sharedMesh = mesh;
                 car.AddComponent<MeshRenderer>().sharedMaterial = paint;
                 float half = lengthM * Scale / 2f;

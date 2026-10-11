@@ -53,7 +53,8 @@ KINDS = ("rail", "road", "track")
 SNAP_M = 1500.0           # a waypoint (a town's or a station's coordinates) snaps to its symbol this close
 WINDOW_MARGIN_M = 3000.0  # the search window around two waypoints: their box grown by this (or 35% of their distance)
 SPUR_M = 130.0            # a trace that comes back this close to where it was cuts the loop (a waypoint off the line)
-SMOOTH_PX = 5             # moving average over the traced pixels (ends kept), so the 16 m pixel staircase goes
+SMOOTH_PX = 15            # moving average over the traced pixels (ends kept): the 16 m pixel staircase and the trace
+                          # hopping between the two edges of a thick symbol drew a 100-200 m wobble at close zoom
 SIMPLIFY_M = 35.0         # Douglas-Peucker tolerance of the written line: about two map pixels, a tenth of a road's width
 OFF_SYMBOL_COST = 40.0    # cost of a pixel off the symbol (on it: 1), so a gap in the scan of up to ~40 px is bridged
 THIN_RAIL_COST = 4.0      # a rail trace's cost on a thin dark line (cost_raster)
@@ -242,6 +243,31 @@ def remove_spurs(chain: list[tuple[int, int]], radius_px: float) -> list[tuple[i
     return out
 
 
+def trim_end_hooks(chain: list[tuple[int, int]], radius_px: float) -> list[tuple[int, int]]:
+    """Cuts a hook at either end: a waypoint snapped a little off the route's end makes the line go out (to the town)
+    and come back, within radius_px of its end, which remove_spurs's smaller radius does not catch. Near the start, if
+    the distance from the first point rises and then falls again by more than a fifth of radius_px, the line starts at
+    that fall's lowest point (where it turns back onto the route); likewise at the end. A line that only moves away
+    from its ends is kept whole."""
+    def cut(c: list[tuple[int, int]]) -> int:
+        d = [math.dist(p, c[0]) for p in c]
+        window = next((k for k, v in enumerate(d) if v > radius_px), len(c))
+        if window < 2:
+            return 0
+        best, low, top = 0.0, 0, 0.0
+        for k in range(window):                 # the largest fall below the farthest point so far
+            top = max(top, d[k])
+            if top - d[k] > best:
+                best, low = top - d[k], k
+        return low if best > radius_px / 5 else 0
+
+    if len(chain) < 3:
+        return chain
+    chain = chain[cut(chain):]
+    rev = chain[::-1]
+    return rev[cut(rev):][::-1]
+
+
 def smooth(points: list[tuple[float, float]], window: int) -> list[tuple[float, float]]:
     """Moving average over `window` points (odd), shrinking at the ends so both end points stay where they are."""
     if window < 3 or len(points) < 3:
@@ -315,6 +341,7 @@ def trace_route(route: dict, fetch: bool, preview: Path | None = None) -> list[t
             img.save(preview / f"{route['id']}_{len(list(preview.glob(route['id'] + '_*.png'))):02d}.png")
     route["_on_symbol"] = on_symbol / max(total, 1)
     chain = remove_spurs(chain, SPUR_M / metres_per_px(via[0][1]))
+    chain = trim_end_hooks(chain, 6 * SPUR_M / metres_per_px(via[0][1]))   # a 400 m hook at the Burma Road's start
     lonlat = [px_to_lonlat(x + 0.5, y + 0.5) for x, y in chain]
     # Simplify in metres (a local equirectangular frame), then back to lon/lat.
     lat0 = math.radians(sum(p[1] for p in lonlat) / len(lonlat))

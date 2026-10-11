@@ -7,7 +7,7 @@ namespace Statecraft.Game.Map.Routes
 {
     /// <summary>The train's cars as painted miniatures (MiniatureMesh and the units' palette), in real metres, facing +Z,
     /// origin on the rail at the car's middle: a tender locomotive (boiler, smokebox, chimney, dome, cab, red buffer beam),
-    /// its tender and four coaches (dark green sides, a window band and a pale roof), after the promo's train. Generic
+    /// its tender and four coaches (olive-brown sides, a window band and a light grey roof), after the promo's train. Generic
     /// period shapes for the map's far zoom, not a model of a particular Palestine Railways class: the close zoom's
     /// authored models are the AI-3D track's (owner ruling, 2026-10-11). Pure geometry: the same calls give the same mesh.</summary>
     public static class TrainModels
@@ -59,9 +59,9 @@ namespace Statecraft.Game.Map.Routes
         {
             var m = new MiniatureMesh();
             m.Box(Box(0, 0.75f, 0, 2.3f, 1.1f, 18f), UnitPalette.Waterline);        // bogies and underframe
-            m.Box(Box(0, 2.35f, 0, 2.9f, 2.5f, 19.4f), UnitPalette.CamoGreen);      // body
+            m.Box(Box(0, 2.35f, 0, 2.9f, 2.5f, 19.4f), UnitPalette.Trousers);       // body: olive-brown, as the promo's
             m.Box(Box(0, 2.85f, 0, 2.96f, 0.7f, 17.4f), UnitPalette.Glass);         // window band
-            m.Ellipsoid(Matrix4x4.TRS(new Vector3(0, 3.6f, 0), Quaternion.identity, new Vector3(1.55f, 0.35f, 9.9f)), UnitPalette.Deck, 12, 6);   // roof
+            m.Ellipsoid(Matrix4x4.TRS(new Vector3(0, 3.6f, 0), Quaternion.identity, new Vector3(1.55f, 0.35f, 9.9f)), UnitPalette.Underside, 12, 6);   // roof: light grey
             return m.Build(name);
         }
     }

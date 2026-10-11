@@ -11,7 +11,7 @@ namespace Statecraft.Game.Map.Routes
     /// Statecraft/Route materials in Resources (no runtime Shader.Find, no new serialized field on MapScene), plus a
     /// steam train shuttling on the Jaffa–Jerusalem line between Jaffa and Lydda. Widths are symbolic, measured on the
     /// promo's gameplay frame like the settlements and units (docs/routes.md): a road about 8 px and the railway about
-    /// 16 px wide at 1920 px, so they read at the gameplay zoom as the promo draws them. Registers the "routes" (ribbons)
+    /// 16 px wide at 1920 px (the soft edges take about a sixth of the railway's width, so its bed is drawn 680 m), so they read at the gameplay zoom as the promo draws them. Registers the "routes" (ribbons)
     /// and "train" visual toggles, so the frame profile prices each. Pure geometry from the data: the same file gives the
     /// same meshes, vertex for vertex.</summary>
     public static class RouteLayer
@@ -21,7 +21,7 @@ namespace Statecraft.Game.Map.Routes
         public const string Folder = "Assets/Resources/Routes";
 
         /// <summary>Full ribbon widths (m), soft edges included (the shader fades the outer 16-30%).</summary>
-        public const float RailWidthM = 560f, RoadWidthM = 300f, TrackWidthM = 200f;
+        public const float RailWidthM = 680f, RoadWidthM = 300f, TrackWidthM = 200f;
         /// <summary>Spacing (m) of the ribbon's cross-sections along its line: under the heightmap's 211 m N-S spacing, so
         /// every terrain row gets a section; about 3 px at the gameplay zoom.</summary>
         public const float StepM = 120f;
