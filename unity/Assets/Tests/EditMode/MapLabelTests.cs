@@ -395,7 +395,9 @@ public class MapLabelTests
                 foreach (var (id, rect) in shown)
                 {
                     Assert.IsTrue(tops.ContainsKey(id), $"{name}: {id} is shown but its marker is not visible");
-                    float own = RectGap(rect, KitRectOf(hd, id));
+                    // The pill's gap to its own kit (issue #214), as the presenter measures it: at most LiftPx, since its
+                    // kit columns may reach a few px past the drawn vertices this test projects.
+                    float own = Mathf.Min(RectGap(rect, KitRectOf(hd, id)), MapLabelsPresenter.LiftPx);
                     foreach (var other in tops.Where(o => o.Key != id))
                         Assert.Greater(Gap(rect, other.Value), 2f * own + 4f, $"{name}: {id} pill is {own:F0} px from its kit but closer to {other.Key}'s marker");
                 }
