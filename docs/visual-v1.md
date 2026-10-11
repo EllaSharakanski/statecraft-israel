@@ -1168,3 +1168,32 @@ One line each: ruling - reason.
 - Bloom, SSAO and the depth/opaque copies off - bloom changed at most 2/255 of any pixel; see "Tier decisions" for the costs.
 - NOT taken: dropping the bake's R channel - zero memory gain (BC1 either way) and it churns the assets; R stays as the AO reference.
 - NOT taken: deduplicating the `OpenMap` helper across `SeaTests` and `TerrainShaderTests` - test-only duplication; refactor risk with no behaviour gain.
+
+## Art spike: procedural settlement kits and trees (branch `promo-art`)
+Question: can code-generated settlement and vegetation art at Civ-style symbolic scale bring gameplay03 close to promo 03?
+Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id by `KitRandom`, no sim state touched),
+`Assets/Shaders/Kit.shader` (`Kit.mat` buildings, `Tree.mat` instanced trees), `KitTests`.
+- **Archetypes** (`SettlementKits`): white city (Tel Aviv, Haifa: 2-9 storey flat-roof blocks, ribbon windows and
+  balcony lines in the shader, L-shaped wings, roof rooms), old town (Jaffa, Acre, Gaza, Jerusalem: packed stone houses,
+  domes; Jaffa's clock tower, belfry, mosque, breakwater, lighthouse and boats), Arab town (tan cubes on slopes, a mosque),
+  moshava/kibbutz/moshav (red gable roofs, yards, a water tower; Nahalal as a ring). One merged mesh per settlement.
+- **Footprint** = (1945 population / 60,000) hexes (`KitPopulation`: Village Statistics, 1945, owner-verify), floored at
+  0.08 hex; towns share seams (distance over radius), stay on land, and tint their ground in the baked biome texture.
+- **Trees** (`Vegetation`, `VegetationLayer`): citrus groves in 2x2 patches round the coastal-plain towns, olives over
+  the hills (and lone ones on the plain), palms by the coastal towns, cypress windbreaks; `Graphics.RenderMeshInstanced`
+  per 30 km tile from `beginCameraRendering`, thinned as (110 km / distance)^2 past 110 km. The WebGL cost is per instance,
+  not per triangle (a 30% triangle cut changed nothing; the 2x2 patches took the instances from 51,000 to 21,165 and the
+  gameplay03 cost from 2.9 to 1.3 ms).
+- **Scale**: `KitScale` defaults to the ruling (25x buildings and trees). Promo 03 measures about 60x for its city blocks
+  and about 115x for its houses and trees (block, house and tree widths against the hex width); `?kitscale=60&treescale=100`
+  shows that layout in the player (counts fall with the square of the scale).
+- **#37**: `KitTests.AKitShadowStartsAtItsWalls` walks out from a lone box's shadow-side wall on both tiers at 60 and
+  250 km: the first sample (10 m) is already in shadow with `Kit.mat` (depth bias x0.25, normal bias x0, receiver offset
+  60 m) and with the old marker material alike, so no bias gap reproduces in this probe.
+- **Measured** (`c21d7cf`, headless WebGL, `machine_lock.py --exclusive --wait-unity`, load 4-8, other sessions running):
+  gameplay03 all 3.67 ms (p95 5), -trees 2.35, -kits 3.61, none 2.37; diorama02 all 11.22 (p95 12), -trees 10.30, -kits
+  11.00, none 6.96: trees 1.32 / 0.92 ms, kits 0.06 / 0.22 ms, all - none 1.30 / 4.26 ms (within budget). The `main` build
+  in the same session: gameplay03 all 2.80, diorama02 all 9.95. Headed DPR 1: trees 1.22 / 0.82 ms; DPR 2: all p95 6 / 20 ms.
+  At 60x/100x: trees -0.51 / 0.78 ms. Boot (`headed.py boot --runs 3`, `main` then this build): cpu 1 map_build 470 -> 568,
+  first_frame 3584 -> 3680; cpu 4 1879 -> 2255, 6867 -> 7257 (within max(300 ms, 50%)). Uncompressed WebGL build
+  +308,850 bytes (wasm +279,316, data +26,861, framework +2,673). Goldens and the 5-turn smoke match.

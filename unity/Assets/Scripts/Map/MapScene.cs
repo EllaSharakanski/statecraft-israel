@@ -12,6 +12,9 @@ namespace Statecraft.Game.Map
     public sealed class MapScene : MonoBehaviour
     {
         [SerializeField] Material terrainMaterial, markerMaterial, selectionMaterial, seaMaterial, borderLandMaterial;
+        /// <summary>The art spike's procedural settlement kits and trees (Kit.mat, Tree.mat: Statecraft/Kit). Optional: without
+        /// them the map keeps the placeholder marker boxes.</summary>
+        [SerializeField] Material kitMaterial, treeMaterial;
 
         public GeoFrame Frame { get; private set; }
         /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
@@ -94,6 +97,12 @@ namespace Statecraft.Game.Map
             seaMaterial = sea; borderLandMaterial = borderLand;
         }
 
+        /// <summary>The settlement kits' and trees' materials (null, null: placeholder markers only).</summary>
+        public void ConfigureKits(Material kit, Material tree) { kitMaterial = kit; treeMaterial = tree; }
+
+        /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
+        public Kits.KitLayer.Stats KitStats { get; private set; }
+
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
 
@@ -113,17 +122,46 @@ namespace Statecraft.Game.Map
             DiagLog.BootPhase("heightmap decoded");
             Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
             DiagLog.BootPhase("hexes parsed");
-            var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial);
+            var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
+            Settlements = list;
+            bool kitsOn = kitMaterial != null && treeMaterial != null;
+            if (kitsOn)
+                Kits.KitPopulation.Use(string.IsNullOrWhiteSpace(inputs.PopulationYaml)
+                    ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName));
+            float hexSizeM = Hexes.hex_size_km * 1000f;
+            var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial,
+                kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, list, hexSizeM) : null);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
             AddBorderSkirt(terrainGo, meta.elev_min_m);
             DiagLog.BootPhase("border skirt");
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
-            var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
-            Settlements = list;
-            SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
+            var markers = SettlementPlacer.Place(list, Frame, Terrain, markerMaterial);
+            markers.transform.SetParent(transform, true);
             DiagLog.BootPhase("settlements placed");
+            KitStats = null;
+            if (kitsOn)
+            {
+                // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city
+                // blocks, houses, trees), clamped to KitScale.Min..Max; docs/dev-setup.md lists the flags.
+                if (Application.platform == RuntimePlatform.WebGLPlayer)
+                {
+                    var url = Application.absoluteURL;
+                    int ks = UrlFlags.Int(url, "kitscale"), hs = UrlFlags.Int(url, "housescale"), ts = UrlFlags.Int(url, "treescale");
+                    if (ks > 0) Kits.KitScale.CityBlocks = Kits.KitScale.Clamp(ks);
+                    if (hs > 0) Kits.KitScale.Houses = Kits.KitScale.Clamp(hs);
+                    if (ts > 0) Kits.KitScale.Trees = Kits.KitScale.Clamp(ts);
+                }
+                // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
+                // "kits" toggle turns the kits off (so settlements are never left undrawn).
+                var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats);
+                kits.transform.SetParent(transform, true);
+                KitStats = stats;
+                DiagLog.BootPhase("kits built");
+                Debug.Log(stats.ToString());
+            }
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
             rig.LookAt = Frame.ToWorld(34.95, 31.95, 0); rig.Init(); // central Israel: Tel Aviv–Jerusalem corridor

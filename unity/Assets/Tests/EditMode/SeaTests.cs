@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
 using UnityEditor;
@@ -115,6 +116,8 @@ public class SeaTests
             var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w); return w;
         }
         Vector3 foam = At(col - 2), shallow = At(col - 15), deep = At(col - 300);
+        // The water itself: Tel Aviv's shore palms and blocks (the settlement kits) stand in front of the foam line at this pose.
+        foreach (var n in new[] { "kits", "trees" }) if (VisualToggles.Names.Contains(n)) VisualToggles.Set(n, false);
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         rig.LookAt = shallow; rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
         var px = new Vector2[2];

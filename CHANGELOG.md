@@ -28,6 +28,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
   promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
   authored model can replace a code-built one per unit type (docs/units.md).
+- Map: procedural settlement kits and instanced trees (placeholder art) replace the marker boxes: a white Tel Aviv,
+  stone Jaffa with its harbour, Arab towns, moshavot and kibbutzim sized by their 1945 population
+  (`content/map/settlement_population_1945.yaml`), with citrus groves, olives, palms and cypresses, at the owner's
+  symbolic scale (about 60x real size for city blocks, 100x for houses and trees). Presentation only (#31, #32, #34).
 
 ### Changed
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
