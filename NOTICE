@@ -25,7 +25,8 @@ coordinates come from the Wikipedia API; each entry lists its source URLs.
 
 Sub-district boundaries (content/map/subdistricts_1948.geojson): digitised from the Survey of Palestine map
 "Administrative Divisions" (1946, overprinted May 1947) and the Administrative Divisions (Amendment) Proclamation, 1947
-(Palestine Gazette No. 1552), Government of Palestine works (public domain; see the file's licence note); scans from
+(Palestine Gazette No. 1552), Government of Palestine works (public domain in Israel and the UK; US status under review,
+decision D-B in docs/oss/DECISIONS.md; see the file's licence note); scans from
 the National Library of Israel via Wikimedia Commons. Hebrew and Arabic names from Wikipedia (CC BY-SA 4.0).
 
 Portraits: public-domain and CC0 photographs from Wikimedia Commons; per-file records in ASSETS.portraits.yaml.

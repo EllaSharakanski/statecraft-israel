@@ -1027,24 +1027,37 @@ WebGL frame profile can no longer draw it), and `?borderproof` / `-borderproof` 
 **Data: the 1948 sub-districts (promo-borderdata).** The sixteen sub-districts of six districts in force on 15 May 1948,
 the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (Palestine Gazette No. 1552, Supplement No. 2,
 30 Jan 1947, pp. 125-133, in force 1 Jan 1947) revoked and replaced the whole Schedule, so it alone defines them; the 1942
-(No. 1163) and 1945 (No. 1415) changes are superseded (cited, not read). No later amendment was found.
+(No. 1163) and 1945 (No. 1415) changes are superseded (cited, not read). No later amendment was found (two web searches,
+2026-10-11); **the check stays open**: the Palestine Gazette's 1947 and 1948 indexes, or "Laws of Palestine 1947"
+(subsidiary legislation) at the National Library of Israel, would close it, and the entries stay `draft` until then.
 - *True lines:* `content/map/subdistricts_1948.geojson` (status `draft`, checked 2026-10-11; names as in the Gazette,
   Hebrew and Arabic from Wikipedia), written by `tools/borders_digitise.py` from the Survey of Palestine map
   "Administrative Divisions" (1:750,000, drawn April 1946, red boundary overprint May 1947; map 6 of the "Maps of
   Palestine" prepared for UNSCOP, June 1947), two Commons scans of different prints (National Library of Israel), SHA-256
   checked. Method: the graticule (35-36 E x 30-33 N) georeferences each scan (affine, rms 5-6 px, about 0.2 km); the red
   overprint plus the black dots between its dashes, with the district lettering and the name underlines erased, is closed
-  and flood-labelled from each sub-district's chief town (a leak fails the run); six connectors where a line runs under a
-  black label or stops short of the coast are recorded as uncertain segments; water (sea, the Dead Sea at its 1948 level)
+  and flood-labelled from each sub-district's chief town (a leak fails the run); a fine closing then gives the narrow
+  salients the coarse one filled back to their own side, and Gazette-listed Metulla (Safad, p. 127), which the 1:750,000
+  map draws on the frontier's tip, is kept in Safad; six connectors where a line runs under a black label or stops short
+  of the coast, and the Metulla tip, are recorded as uncertain segments; water (sea, the Dead Sea at its 1948 level)
   from the game's DEM, so the coast is the game's coast. Accuracy about +-1 km: areas within -4.1% to +3.7% of Village
-  Statistics 1945; the second print agrees to a mean 0.11-0.23 km, at most 1.23 km (per feature in the file).
+  Statistics 1945 (which follows the 1945 Schedule; Beersheba's rounded figure makes its check nominal); the second print
+  agrees to a mean 0.11-0.23 km, at most 1.23 km (per feature in the file); 41 Gazette-listed places, none of them a
+  digitiser seed, fall in their sub-district (Ra'anana 0.1 km over the Jaffa/Tulkarm line, within the accuracy). The
+  file is written one vertex per line and is byte-identical on a rerun.
 - *Display:* `tools/borders_bake.py` gives each land hex the sub-district containing its centre (a shore hex whose centre
-  is in the water: the nearest within a hex), land beyond the Mandate frontier the `outside` region (style none, so the
+  is in the water: the side of its nearest land, so the hexes off Taba, west of Rafah and by the Lisan in the Dead Sea are
+  outside, and Rafah's own hex is Gaza), land beyond the Mandate frontier the `outside` region (style none, so the
   bands run along the frontier and nothing is drawn beyond it), sea and lake hexes none (no coast band) ->
   `content/map/subdistrict_hexes_1948.yaml`. Every sub-district is Primary (blue). `GameRoot.Begin` and
-  `MapCapture.Promo` draw it (`Subdistricts1948.Show`); the info panel names a hex's sub-district and district and that
-  its true line is drawn to the nearest hex edge. The "Why" screen lists sim causes only, so it does not name map lines
-  (the sim must not read this file).
+  `MapCapture.Promo` draw it (`Subdistricts1948.Show`); the info panel names a hex's sub-district and district ("Jaffa
+  Sub-District, Lydda District (Mandate sub-districts, 1947)"). Snapping moves a line by up to half a hex (about 4 km);
+  the true line is the GeoJSON's. The "Why" screen lists sim causes only, so it does not name map lines (the sim must not
+  read this file).
+- *When it shows (owner ruling, 2026-10-11):* from the 1948 start until the 1949 armistice lines replace it, each front
+  switching to its armistice line on that agreement's date (February-July 1949) once that data is built; until then the
+  layer stays, labelled on screen "Mandate sub-districts, 1947" (the baked file's `label`, `shown_from: 1948-05-15`,
+  `shown_until: null`; `Subdistricts1948.ShowsOn`, applied on every turn; `SubdistrictTests`). Recorded in decision D-B.
 - *Kept out of the sim:* the sim reads files by name and its content hash covers only those, so neither file moves the
   hash or the goldens (`SubdistrictTests.TheSimIgnoresTheFileTheContentHashDoesNotMove`; `test_the_sim_never_reads_the_border_files`).
 - *Licence:* Government of Palestine works of 1945-47, public domain in Israel and the UK, with a possible URAA US

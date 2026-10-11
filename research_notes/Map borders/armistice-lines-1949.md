@@ -39,7 +39,7 @@ has a blank page there (checked): the map plates are not in it.
 
 | Line | Method | Expected accuracy |
 |---|---|---|
-| Syria (and its DMZs) | Type the Annex I MR points; convert Palestine grid (Cassini-Soldner, EPSG:28193) to WGS84; follow "along the Wady / shoreline / border" stretches on the annexed 1:50,000 map (georeferenced on its own grid ticks) and on the Mandate boundary for border stretches. DMZ polygons = between this line and the international boundary. | Points: +-0.1 km (the MR precision) plus datum shift (tens of metres). Traced stretches: +-0.1-0.2 km at 1:50,000. |
+| Syria (and its DMZs) | Type the Annex I MR points; convert from the **Palestine Grid, EPSG:28191** (Palestine 1923 / Palestine Grid, Cassini-Soldner; MR values are km eastings and northings with no false-northing offset; EPSG:28193 is the Israeli CS Grid, which adds 1,000 km to northings, and is wrong here) to WGS84. Checked with pyproj 3.8.0 on 2026-10-11: Syria Annex I MR 208.7-294.2 -> 33.243 N 35.626 E (the Lebanon-Syria-Palestine tripoint); El Auja MR 0875-0468 -> 31.009 N 34.346 E; Jordan Art. V MR 1925-0958 -> 31.454 N 35.447 E (on the Dead Sea's west shore); follow "along the Wady / shoreline / border" stretches on the annexed 1:50,000 map (georeferenced on its own grid ticks) and on the Mandate boundary for border stretches. DMZ polygons = between this line and the international boundary. | Points: +-0.1 km (the MR precision) plus datum shift (tens of metres). Traced stretches: +-0.1-0.2 km at 1:50,000. |
 | Egypt: Gaza-Rafah line | Text: the Wadi Hasi mouth, Deir Suneid, the highway +3 km offset line, to the frontier; MR points for outposts. Needs the 13 Nov 1948 Memorandum and any annex map (to verify); the 1950 modus vivendi map for the later zones. | Points +-0.1 km; the "3 km east of the highway, parallel" line depends on which 1948 road alignment is meant: +-0.5 km until a map is found. |
 | Egypt: El Auja DMZ | MR points in Art. VIII.2 plus the 1906 Egypt-Palestine frontier. | +-0.1 km (points); the frontier from Mandate sheets. |
 | Lebanon | The 1923 international boundary (boundary pillars) from Mandate survey sheets (1:20,000/1:100,000), as Art. V.1 adopts it. | +-0.1-0.3 km. |
@@ -51,8 +51,8 @@ has a blank page there (checked): the map plates are not in it.
 - **Jerusalem:** two lines (Israeli and Jordanian forward lines) with **no-man's-land** between them, from the 30 November
   1948 cease-fire as adopted by Art. V.1(b); the map is map 2 of the Jordan agreement.
 - **Mount Scopus enclave:** the Agreement for the Demilitarization of the Mount Scopus Area, **7 July 1948** (UN-supervised;
-  Hadassah Hospital, the Hebrew University, Augusta Victoria and Issawiya; its own map, not yet found), modified by an
-  annex of 30 November 1948. An Israeli-held enclave inside the Jordanian lines until 1967. Text:
+  Hadassah Hospital, the Hebrew University, Augusta Victoria and Issawiya; its own map, not yet found), reportedly modified by
+  an annex of 30 November 1948 (secondary sources only: **to verify** against the 30 November 1948 cease-fire texts). An Israeli-held enclave inside the Jordanian lines until 1967. Text:
   https://jewishvirtuallibrary.org/agreement-for-the-demilitarization-of-the-mount-scopus-area (to replace with the UN
   copy).
 - **Latrun no-man's-land:** the area between the two lines of map 1 around Latrun (held by neither party); its outline is
@@ -67,7 +67,7 @@ Every feature carries `from`, optional `until`, sources with check dates, and `s
 `sensitivity-reviewed`). Dates the texts already fix:
 
 - Egypt line: from **24 Feb 1949**; the El Auja DMZ from the same date; the 1950 zones from **22 Feb 1950**.
-- Lebanon: from **23 Mar 1949** (Israeli withdrawal to the line within ten days, Art. V.3: a separate dated note).
+- Lebanon: from **23 Mar 1949** (withdrawal to the line and reduction to defensive strength "within ten days of the signing", Art. V.3, read in UNTS vol. 42 No. 655 on 2026-10-11: a separate dated note).
 - Jordan: from **3 Apr 1949** for sectors (a), (b), (d); the **Iraqi sector "A"** comes into force in stages (Art. VI.3):
   west of the Baqa-Jaljulia road and east of Kafr Qasim within five weeks (by **8 May 1949**), Wadi Ara north of the
   Baqa-Zubeiba line within seven weeks (by **22 May 1949**), the rest within fifteen weeks (by **17 July 1949**); until

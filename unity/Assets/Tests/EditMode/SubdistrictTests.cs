@@ -64,16 +64,50 @@ public class SubdistrictTests
         Assert.AreEqual("Jerusalem Sub-District", s.SubdistrictAt(jlm.Q, jlm.R)?.Name);
     }
 
+    const string Head = "layer: x\nlabel: L\nshown_from: 1948-05-15\n";
     [TestCase("", "empty")]
-    [TestCase("layer: x\nregions: []\n", "no regions")]
-    [TestCase("layer: x\nregions:\n  - { id: 1, key: a, name: A, district: D, style: purple }\nhexes: []\n", "unknown style")]
-    [TestCase("layer: x\nregions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes:\n  - [0, 0, 2]\n", "not listed")]
-    [TestCase("layer: x\nregions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes:\n  - [0, 0, 1]\n  - [0, 0, 1]\n", "twice")]
-    [TestCase("layer: x\nregions:\n  - { id: 0, key: a, name: A, district: D, style: primary }\nhexes: []\n", "outside 1..")]
+    [TestCase(Head + "regions: []\n", "no regions")]
+    [TestCase("layer: x\nshown_from: 1948-05-15\nregions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes: []\n", "no label")]
+    [TestCase("layer: x\nlabel: L\nshown_from: 15/05/1948\nregions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes: []\n", "not a yyyy-MM-dd")]
+    [TestCase("layer: x\nlabel: L\nshown_from: 1948-05-15\nshown_until: 1948-05-15\nregions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes: []\n", "not after")]
+    [TestCase(Head + "regions:\n  - { id: 1, key: a, name: A, district: D, style: purple }\nhexes: []\n", "unknown style")]
+    [TestCase(Head + "regions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes:\n  - [0, 0, 2]\n", "not listed")]
+    [TestCase(Head + "regions:\n  - { id: 1, key: a, name: A, district: D, style: primary }\nhexes:\n  - [0, 0, 1]\n  - [0, 0, 1]\n", "twice")]
+    [TestCase(Head + "regions:\n  - { id: 0, key: a, name: A, district: D, style: primary }\nhexes: []\n", "outside 1..")]
     public void MalformedFilesAreRefusedNamingTheFile(string yaml, string why)
     {
         var e = Assert.Throws<InvalidDataException>(() => Subdistricts1948.Parse(yaml));
         StringAssert.Contains(Subdistricts1948.FileName, e.Message); StringAssert.Contains(why, e.Message);
+    }
+
+    /// <summary>Owner ruling 2026-10-11 (review I4): the layer shows from the game's start until the 1949 armistice lines
+    /// replace it (no end date until that data exists), labelled "Mandate sub-districts, 1947" on screen.</summary>
+    [Test]
+    public void TheLayerShowsFromTheStartUntilReplacedAndIsLabelled()
+    {
+        var s = Subdistricts1948.Parse(FileText);
+        Assert.AreEqual(new System.DateTime(1948, 5, 15), s.ShownFrom);
+        Assert.IsNull(s.ShownUntil, "no end until the armistice lines exist");
+        Assert.IsFalse(s.ShowsOn(new System.DateTime(1948, 5, 14)));
+        Assert.IsTrue(s.ShowsOn(new System.DateTime(1948, 5, 15)));
+        Assert.IsTrue(s.ShowsOn(new System.DateTime(1952, 12, 31)));
+        Assert.AreEqual("Mandate sub-districts, 1947", s.Label);
+        Assert.AreEqual(s.Label, s.Layer.Banner, "the label goes on screen with the layer");
+        var ended = Subdistricts1948.Parse(FileText.Replace("shown_until: null", "shown_until: 1949-02-24"));
+        Assert.IsTrue(ended.ShowsOn(new System.DateTime(1949, 2, 23)));
+        Assert.IsFalse(ended.ShowsOn(new System.DateTime(1949, 2, 24)));
+    }
+
+    [Test]
+    public void ALayerWithAnEndComesOffTheMapOnItsDate()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var s = Subdistricts1948.Parse(FileText.Replace("shown_until: null", "shown_until: 1949-02-24"));
+        s.Apply(new System.DateTime(1948, 5, 15));
+        Assert.AreSame(s.Layer, MapBorders.Current);
+        s.Apply(new System.DateTime(1949, 2, 24));
+        Assert.IsNull(MapBorders.Current, "off on its end date");
     }
 
     [Test]
@@ -108,6 +142,7 @@ public class SubdistrictTests
         var current = MapBorders.Current;
         Assert.IsNotNull(current, "play draws a region layer without any flag");
         Assert.AreEqual("subdistricts_1948", current!.Name);
+        Assert.AreEqual("Mandate sub-districts, 1947", current.Banner, "labelled on screen");
         Assert.AreEqual(Subdistricts1948.Parse(FileText).Layer.Count, current.Count);
     }
 
