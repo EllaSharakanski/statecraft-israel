@@ -367,6 +367,14 @@ namespace Statecraft.Sim
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
             }
+            foreach (var o in c.Offices.Where(o => o.From.HasValue))
+            {
+                if (o.Until.HasValue && o.Until.Value <= o.From!.Value)
+                    throw new ContentException("offices.yaml", $"offices[{o.Id}].until", FormattableString.Invariant($"must be after from ({o.From:yyyy-MM-dd})"));
+                foreach (var p in c.People)
+                    foreach (var t in p.Offices.Where(t => t.Office == o.Id && t.From < o.From!.Value))
+                        throw new ContentException("people.yaml", $"people[{p.Id}].offices.{o.Id}.from", FormattableString.Invariant($"must be on or after {o.From:yyyy-MM-dd}, when the office was established"));
+            }
             foreach (var o in c.Offices.Where(o => o.Until.HasValue))
                 foreach (var p in c.People)
                     foreach (var t in p.Offices.Where(t => t.Office == o.Id))

@@ -115,6 +115,12 @@ namespace Statecraft.Game.Map
         /// buildings. The map labels keep clear of it (issue #214).</summary>
         public bool TryKitColumns(string id, out Bounds[] columns) => kitColumns.TryGetValue(id, out columns);
 
+        MeshRenderer kitProbe;   // one kit's renderer: the "kits" toggle enables or disables them all together
+
+        /// <summary>Whether the kits are drawn (built, and the "kits" toggle on); when not, the marker boxes are, and the map
+        /// labels keep clear of those instead.</summary>
+        public bool KitsShown => kitProbe != null && kitProbe.enabled;
+
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
 
@@ -130,7 +136,7 @@ namespace Statecraft.Game.Map
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
             Clear();
-            kitColumns.Clear();
+            kitColumns.Clear(); kitProbe = null;
             var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16z, MetaPath);
             DiagLog.BootPhase("heightmap decoded");
             Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
@@ -183,6 +189,7 @@ namespace Statecraft.Game.Map
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
                     terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes), kitColumns);
                 kits.transform.SetParent(transform, true);
+                kitProbe = kits.GetComponentInChildren<MeshRenderer>(true);
                 KitStats = stats;
                 DiagLog.BootPhase("kits built");
                 Debug.Log(stats.ToString());

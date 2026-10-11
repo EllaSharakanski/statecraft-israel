@@ -28,9 +28,11 @@ namespace Statecraft.Game.Map
     /// - Settle: frames in the first 0.5 s after a change are not measured (the change reallocates render targets), nor
     ///   the first 3 s after start (scene load and shader compiles).
     /// - A frame over 1 s is a pause (a stalled load, a tab coming back), not load: it drops the window.
-    /// - A hidden page is not measured (issue #216, integration B18): a browser throttles a background tab or a window
-    ///   behind others to a few frames a second (170-200 ms frames, each under the 1 s pause line), which says nothing
-    ///   about the device. While Background is set (QualityFallbackDriver reads document.hidden) frames are ignored and
+    /// - A hidden page is not measured (issue #216, integration B18): a browser throttles a background tab or a minimised
+    ///   window to a few frames a second (170-200 ms frames, each under the 1 s pause line), which says nothing about the
+    ///   device. Chromium on Windows and macOS also marks a window covered by others hidden (B18 was one); Firefox and
+    ///   Safari do not, and there only the 1 s pause line catches a stall. While Background is set
+    ///   (QualityFallbackDriver reads document.hidden) frames are ignored and
     ///   the partial window is dropped; on coming back the first ResumeSettleSeconds are not measured either. The level and
     ///   the count of good windows towards a step up are kept, so a level that a real shortfall set recovers as usual
     ///   once the page is in front: RecoverNeeded windows in a row under RecoverMs.
@@ -65,7 +67,8 @@ namespace Statecraft.Game.Map
         /// <summary>Windows in a row under RecoverMs that the next step up needs (doubles after a failed step up).</summary>
         public int RecoverNeeded { get; private set; } = RecoverWindows;
 
-        /// <summary>Whether the page is hidden (a background tab, a window behind others): frames are not measured.</summary>
+        /// <summary>Whether the page is hidden (document.hidden: a background tab or a minimised window, and in Chromium a
+        /// covered one): frames are not measured.</summary>
         public bool Background { get; private set; }
 
         /// <summary>Sets <see cref="Background"/>. Going hidden drops the partial window; coming back starts a

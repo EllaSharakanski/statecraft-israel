@@ -14,15 +14,19 @@ namespace Statecraft.Game.UI
     {
         readonly VisualElement panel; readonly SimBridge bridge; readonly UiText text;
         readonly Button campButton, housingButton; readonly System.Action onCamp, onHousing;
-        readonly Label title, subtitle, settlements, placement, reason;
+        readonly Label title, subtitle, region, settlements, placement, reason;
         readonly UiIcon thumb;
         readonly IReadOnlyDictionary<string, string> settlementNames;
+        readonly Subdistricts1948? subdistricts;
 
-        public InfoPanelPresenter(VisualElement root, SimBridge bridge, UiText text, IReadOnlyDictionary<string, string> settlementNames)
+        /// <summary><paramref name="subdistricts"/>: the 1948 sub-districts the map outlines; the panel names the selected hex's
+        /// (null: no region line).</summary>
+        public InfoPanelPresenter(VisualElement root, SimBridge bridge, UiText text, IReadOnlyDictionary<string, string> settlementNames,
+            Subdistricts1948? subdistricts = null)
         {
             panel = root.Q<VisualElement>("info-panel"); this.bridge = bridge; this.text = text;
-            this.settlementNames = settlementNames;
-            title = panel.Q<Label>("info-title"); subtitle = panel.Q<Label>("info-subtitle"); settlements = panel.Q<Label>("info-settlements");
+            this.settlementNames = settlementNames; this.subdistricts = subdistricts;
+            title = panel.Q<Label>("info-title"); subtitle = panel.Q<Label>("info-subtitle"); region = panel.Q<Label>("info-region"); settlements = panel.Q<Label>("info-settlements");
             placement = panel.Q<Label>("info-placement"); reason = panel.Q<Label>("info-reason");
             thumb = panel.Q<UiIcon>("info-thumb");
             campButton = panel.Q<Button>("build-camp"); housingButton = panel.Q<Button>("build-housing");
@@ -37,7 +41,15 @@ namespace Statecraft.Game.UI
 
         public (int q, int r)? Selected { get; private set; }
 
-        public void Show(int q, int r) { Selected = (q, r); Render(); }
+        /// <summary>Shows the hex; ignored while a screen covers the panel (a wide screen, or any screen in the two-row HUD),
+        /// so a map click cannot change a panel the player cannot see.</summary>
+        public void Show(int q, int r)
+        {
+            var hud = panel.parent;
+            if (hud != null && (hud.ClassListContains(ScreenNav.WideOpenClass)
+                                || (hud.ClassListContains(ScreenNav.ScreenOpenClass) && hud.ClassListContains(HudPresenter.TwoRowClass)))) return;   // covered (#210)
+            Selected = (q, r); Render();
+        }
 
         void Build(string action)
         {
@@ -64,7 +76,7 @@ namespace Statecraft.Game.UI
             if (Selected == null)
             {
                 title.text = text["info.hint"];
-                subtitle.text = settlements.text = placement.text = reason.text = "";
+                subtitle.text = region.text = settlements.text = placement.text = reason.text = "";
                 camp.style.display = DisplayStyle.None; housing.style.display = DisplayStyle.None;
                 ShowThumb(null);
                 return;
@@ -75,6 +87,9 @@ namespace Statecraft.Game.UI
             var owned = c.SettlementHexes.Where(x => x.Q == q && x.R == r).Select(x => settlementNames[x.Id]).ToList();   // strict: every settlement hex has a name (final review M4)
             title.text = owned.Count > 0 ? owned[0] : hex == null ? text["info.off_map"] : text["info.biome." + hex.Biome];
             subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)
+            // The sub-district on 15 May 1948, and that its true line is drawn to the nearest hex edge (the owner's ruling).
+            var sub = subdistricts != null && subdistricts.Shown ? subdistricts.SubdistrictAt(q, r) : null;   // only while the map shows the layer
+            region.text = sub == null ? "" : text.Format("info.region", sub.Name, sub.District);
             settlements.text = owned.Count > 0 ? text.Format("info.owned", string.Join(", ", owned)) : "";
             var here = MapActions.At(s, q, r);
             var queued = bridge.QueuedLike(new MapAction(MapActions.Housing, q, r)) as MapAction;

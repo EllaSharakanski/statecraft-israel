@@ -109,7 +109,7 @@ public class QualityFallbackTests
         Assert.IsNotEmpty(steps, "35 ms is over"); Assert.AreEqual(1, steps[0]);
     }
 
-    /// <summary>Issue #216 (integration B18): a window behind others ran at about 5 fps (168-204 ms frames, each under the
+    /// <summary>Issue #216 (integration B18): a Chromium window behind others (document.hidden) ran at about 5 fps (168-204 ms frames, each under the
     /// 1 s pause line) and stepped to level 3 within 90 s. Frame times alone cannot tell that from a slow device (the same
     /// frames with the page in front do step down), so the hidden page is not measured at all.</summary>
     [Test]

@@ -18,24 +18,26 @@ namespace Statecraft.Game.UI
     ///
     /// Kits (issue #214): a pill keeps clear of its settlement's kit, as the promo hangs its names above the towns. Each
     /// refresh projects the kit's columns (MapScene.TryKitColumns, a few world boxes that hold its buildings; the marker
-    /// box when there is no kit) to a screen rectangle, and every spot a pill may take is placed against that rectangle: above it (centred, or to the left or
-    /// right of its centre), then beside it on the right or the left, then below it. Only when none of those fits may a
-    /// pill sit over its kit, its bottom centre LiftPx above the settlement's point, and only if it covers at most
-    /// MaxKitCover of the kit's rectangle (a big city's name over its own streets, never a kibbutz's roofs under a pill).
+    /// box when there is no kit, or while the "kits" toggle is off and the boxes are drawn) to a screen rectangle, and
+    /// every spot a pill may take is placed against that rectangle: above it (centred, or to the left or right of its
+    /// centre), then beside it on the right or the left, then below it. Only when none of those fits may a pill sit over
+    /// its kit, its bottom centre LiftPx above the settlement's point, and only if it covers at most MaxKitCover of the
+    /// kit's rectangle (a big city's name over its own streets, never a kibbutz's roofs under a pill).
     ///
     /// Declutter: pills are placed in priority order (city, then town and Arab town, then the rest, each in file order). A
     /// pill is hidden (visibility, so it keeps its size and the choice does not flicker) when its marker is behind the
-    /// camera, off screen or under a panel (the top bar, the info panel, the minimap, the event card), when it is a minor
-    /// place (village, kibbutz, moshav) beyond DeclutterDistanceM, or when no spot fits. Its anchor class (USS) picks
-    /// which of the three spots above the kit is tried first; the spots are applied as a pixel shift on the slot's
-    /// translate (no class change, so no style pass). A spot fits when the pill lies wholly on screen and clear of every
-    /// panel, does not overlap an already placed pill (its last laid-out size plus MarginPx), covers at most MaxKitCover
-    /// of its own kit's rectangle and of every other visible kit's, and is more than twice as far from every other visible
-    /// marker's top as from its own kit, plus MarginPx, so no name reads as a neighbour's. A city whose spots all crowd a
-    /// neighbour keeps the first that is clear of panels, pills and its own kit. A pill hidden in the last refresh needs
-    /// HysteresisPx more room to come back, so it does not blink at a threshold. Refresh allocates nothing. The dense Tel
-    /// Aviv - Lod cluster keeps M2's anchor classes. The kits' bounds are read once, when the presenter is created (a later
-    /// MapScene.Build needs a new presenter; GameRoot makes one per Begin).</summary>
+    /// camera, off screen or under a panel (OccluderNames), when it is a minor
+    /// place (village, kibbutz, moshav) beyond DeclutterDistanceM, or when no spot fits. Its anchor class (USS) picks which
+    /// of the three spots above the kit is tried first; the spots are applied as a pixel shift on the slot's translate (no
+    /// class change, so no style pass). A spot fits when the pill lies wholly on screen and clear of every panel
+    /// (OccluderNames: the top bar, the info panel, the minimap and its map-layer caption, the event card), does not
+    /// overlap an already placed pill (its last laid-out size plus MarginPx), covers at most MaxKitCover of its own kit's
+    /// rectangle and of every other visible kit's, and is more than twice as far from every other visible marker's top as
+    /// from its own kit, plus MarginPx, so no name reads as a neighbour's. A city whose spots all crowd a neighbour keeps
+    /// the first that is clear of panels, pills and its own kit. A pill hidden in the last refresh needs HysteresisPx more
+    /// room to come back, so it does not blink at a threshold. Refresh allocates nothing. The dense Tel Aviv - Lod cluster
+    /// keeps M2's anchor classes. The kits' bounds are read once, when the presenter is created (a later MapScene.Build
+    /// needs a new presenter; GameRoot makes one per Begin).</summary>
     public sealed class MapLabelsPresenter : IDisposable
     {
         public const string ContainerName = "map-labels", SlotClass = "map-label-slot", LabelClass = "map-label";
@@ -46,7 +48,7 @@ namespace Statecraft.Game.UI
         /// visible kit's.</summary>
         public const float MaxKitCover = 0.1f;
         /// <summary>The panels a pill never sits under (Game.uxml names).</summary>
-        public static readonly string[] OccluderNames = { "top-bar", "info-panel", "minimap", "event-card" };
+        public static readonly string[] OccluderNames = { "top-bar", "info-panel", "minimap", "map-layer", "event-card" };
 
         const string Centre = "anchor-lower-centre", Left = "anchor-lower-left", Right = "anchor-lower-right";
 
@@ -63,13 +65,14 @@ namespace Statecraft.Game.UI
 
         sealed class Item
         {
-            public Settlement Settlement = null!; public Vector3 MarkerTop; public Bounds[] Kit = null!; public VisualElement Slot = null!;
+            public Settlement Settlement = null!; public Vector3 MarkerTop; public Bounds[] Kit = null!, Marker = null!; public VisualElement Slot = null!;
             public Label Label = null!; public Spot First; public bool IsCity, TopVisible, KitInFront, ShownLast = true;
             public Vector2 TopPanel; public Rect KitPanel;
         }
 
         readonly VisualElement container;
         readonly Camera camera;
+        readonly MapScene map;
         readonly CameraRig? rig;
         readonly Func<float>? zoomDistance;
         readonly List<Item> items = new List<Item>();        // in placing (priority) order
@@ -80,6 +83,7 @@ namespace Statecraft.Game.UI
         Rect layerRect;                                        // the panel in the layer's coordinates: a pill stays inside it
         readonly EventCallback<GeometryChangedEvent> onOccluderGeometry, onContainerGeometry;
         Matrix4x4 lastViewProjection; Rect lastCameraRect; Vector2 lastPanelSize, lastOrigin; float lastZoom = float.NaN;
+        bool lastKitsShown;
         int lastOccluderMask = -1; float lastLabelSizes = float.NaN; bool sizesKnown, geometryDirty = true;
         Action? removeToggle;   // the labels switch's removal token (VisualToggles.Register): a disposed presenter never removes a newer one
 
@@ -90,6 +94,7 @@ namespace Statecraft.Game.UI
         {
             container = root.Q<VisualElement>(ContainerName) ?? throw new InvalidOperationException($"Game.uxml has no '{ContainerName}' element");
             this.camera = camera;
+            this.map = map;
             this.zoomDistance = zoomDistance;
             rig = camera.TryGetComponent(out CameraRig r) ? r : null;
             container.Clear();   // one layer, one owner: the newest presenter (GameRoot makes one per Begin)
@@ -109,7 +114,7 @@ namespace Statecraft.Game.UI
                 var top = MarkerTop(map, s);
                 settlementOrder.Add(new Item
                 {
-                    Settlement = s, MarkerTop = top, Kit = KitBounds(map, s, top), Slot = slot, Label = label, IsCity = s.Type == "city",
+                    Settlement = s, MarkerTop = top, Kit = KitBounds(map, s, top), Marker = MarkerBox(s, top), Slot = slot, Label = label, IsCity = s.Type == "city",
                     First = anchorClass == Left ? Spot.AboveLeft : anchorClass == Right ? Spot.AboveRight : Spot.AboveCentre,
                 });
             }
@@ -142,10 +147,14 @@ namespace Statecraft.Game.UI
             return p;
         }
 
-        /// <summary>The world boxes a settlement's pill keeps clear of: its kit's columns, or without a kit its marker box.</summary>
-        public static Bounds[] KitBounds(MapScene map, Settlement s, Vector3 markerTop)
+        /// <summary>The world boxes a settlement's pill keeps clear of while the kits are drawn: its kit's columns, or
+        /// without a kit its marker box.</summary>
+        public static Bounds[] KitBounds(MapScene map, Settlement s, Vector3 markerTop) =>
+            map.TryKitColumns(s.Id, out var columns) ? columns : MarkerBox(s, markerTop);
+
+        /// <summary>A settlement's marker box (what is drawn while the "kits" toggle is off).</summary>
+        public static Bounds[] MarkerBox(Settlement s, Vector3 markerTop)
         {
-            if (map.TryKitColumns(s.Id, out var columns)) return columns;
             float h = SettlementPlacer.MarkerHeightM(s.Type);
             return new[] { new Bounds(markerTop - Vector3.up * (h / 2f), new Vector3(h, h, h)) };
         }
@@ -211,13 +220,14 @@ namespace Statecraft.Game.UI
             var screen = panel.visualTree.layout.size;    // the whole panel, which the camera's view fills
             var origin = container.worldBound.position;   // slots translate from the layer's top-left
             float distance = Zoom();
+            bool kitsShown = map != null && map.KitsShown;   // with the "kits" toggle off the marker boxes are drawn instead
             int mask = OccluderMask();
             float labelSizes = 0f;   // a pill that grows or shrinks (a late font, a new text) is re-placed (re-review N2)
             for (int i = 0; i < items.Count; i++) { var st = items[i].Label.resolvedStyle; if (!float.IsNaN(st.width) && !float.IsNaN(st.height)) labelSizes += st.width + st.height; }
             if (!force && sizesKnown && !geometryDirty && labelSizes == lastLabelSizes && viewProjection == lastViewProjection && cameraRect == lastCameraRect
-                && screen == lastPanelSize && origin == lastOrigin && distance == lastZoom && mask == lastOccluderMask) return;
+                && screen == lastPanelSize && origin == lastOrigin && distance == lastZoom && mask == lastOccluderMask && kitsShown == lastKitsShown) return;
             lastViewProjection = viewProjection; lastCameraRect = cameraRect; lastPanelSize = screen; lastOrigin = origin;
-            lastZoom = distance; lastOccluderMask = mask; lastLabelSizes = labelSizes; geometryDirty = false;
+            lastZoom = distance; lastOccluderMask = mask; lastKitsShown = kitsShown; lastLabelSizes = labelSizes; geometryDirty = false;
             sizesKnown = true;
             bool laidOut = !(float.IsNaN(screen.x) || screen.x <= 0f || float.IsNaN(origin.x) || float.IsNaN(origin.y));
             if (!laidOut) { sizesKnown = false; origin = Vector2.zero; }   // before the first layout: cull by view only, place later
@@ -238,7 +248,7 @@ namespace Statecraft.Game.UI
                 var t = camera.WorldToViewportPoint(it.MarkerTop);
                 it.TopPanel = ToPanel(t, cameraRect, screen, origin);
                 it.TopVisible = t.z > 0f && t.x >= 0f && t.x <= 1f && t.y >= 0f && t.y <= 1f && !UnderAPanel(it.TopPanel);   // a marker under a panel is no one's neighbour
-                it.KitInFront = ProjectBoxes(it.Kit, viewProjection, cameraRect, screen, origin, out it.KitPanel);
+                it.KitInFront = ProjectBoxes(kitsShown ? it.Kit : it.Marker, viewProjection, cameraRect, screen, origin, out it.KitPanel);
             }
 
             placed.Clear();

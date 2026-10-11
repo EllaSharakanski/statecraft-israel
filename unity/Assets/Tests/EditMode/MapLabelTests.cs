@@ -120,6 +120,42 @@ public class MapLabelTests
         foreach (var s in map.Settlements) Assert.IsTrue(map.TryKitColumns(s.Id, out var c) && c.Length > 0, s.Id + " has kit columns");
     }
 
+    /// <summary>Review C-m3: with the "kits" toggle off the marker boxes are drawn, and a pill sits just above its box, not
+    /// above the hidden kit; turning the kits back on moves it back above the kit.</summary>
+    [UnityTest]
+    public IEnumerator WithTheKitsOffAPillSitsAboveItsMarker()
+    {
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
+        try
+        {
+            var deg = map.Settlements.Single(s => s.Id == "degania_alef");
+            Pose(deg.Lon, deg.Lat, 10000f);
+            var pill = labels.Labels.Single(l => l.name == "label-degania_alef");
+            Assert.IsTrue(map.KitsShown);
+            yield return Settle(labels);
+            var withKit = pill.worldBound;
+            VisualToggles.Set("kits", false);
+            Assert.IsFalse(map.KitsShown);
+            labels.Refresh(); yield return null;
+            var box = GameObject.Find("Settlements").transform.Find("degania_alef");
+            float top = float.MaxValue;
+            for (int c = 0; c < 8; c++)
+            {
+                var corner = box.position + Vector3.Scale(box.lossyScale, new Vector3((c & 1) - 0.5f, ((c >> 1) & 1) - 0.5f, ((c >> 2) & 1) - 0.5f));
+                top = Mathf.Min(top, hd.ToPanel(corner, out _).y);
+            }
+            var withMarker = pill.worldBound;
+            TestContext.WriteLine($"Degania pill with the kit {withKit}, with the marker {withMarker}, marker top {top:F0}");
+            Assert.AreEqual(top - MapLabelsPresenter.LiftPx, withMarker.yMax, 2f, "LiftPx above the marker box");
+            Assert.Greater(withMarker.yMax, withKit.yMax + 2f, "lower than above the (hidden) kit");
+            VisualToggles.Set("kits", true);
+            labels.Refresh(); yield return null;
+            Assert.AreEqual(withKit.yMax, pill.worldBound.yMax, 0.5f, "back above the kit");
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
     /// <summary>Issue #214: the spots a pill may take against its kit's screen rectangle, LiftPx clear of it.</summary>
     [Test]
     public void SpotsSitClearOfTheKit()
@@ -490,6 +526,7 @@ public class MapLabelTests
                 var bar = hd.Root.Q<VisualElement>("top-bar").worldBound;
                 var info = hd.Root.Q<VisualElement>("info-panel").worldBound;
                 var mini = hd.Root.Q<VisualElement>("minimap").worldBound;
+                var layer = hd.Root.Q<VisualElement>("map-layer").worldBound;   // the minimap's caption (#234)
                 int count = 0;
                 foreach (var slot in labels.Slots.Where(Shown))
                 {
@@ -497,6 +534,7 @@ public class MapLabelTests
                     Assert.GreaterOrEqual(r.yMin, bar.yMax - 0.5f, $"{pose.Name}: {slot.name} {r} reaches under the top bar {bar}");
                     Assert.IsFalse(r.Overlaps(info), $"{pose.Name}: {slot.name} {r} under the info panel {info}");
                     Assert.IsFalse(r.Overlaps(mini), $"{pose.Name}: {slot.name} {r} under the minimap {mini}");
+                    Assert.IsFalse(layer.width > 0 && r.Overlaps(layer), $"{pose.Name}: {slot.name} {r} under the map-layer caption {layer}");
                 }
                 var zikhron = labels.Slots.Single(s => s.name == "slot-zikhron_yaakov");
                 TestContext.WriteLine($"{pose.Name}: {count} shown; Zikhron Ya'akov shown={Shown(zikhron)} {zikhron.Q<Label>().worldBound}; bar {bar}");
