@@ -86,7 +86,7 @@ def main():
     ap.add_argument('--seed', type=int, default=1)
     ap.add_argument('--texture-size', type=int, default=1024)
     ap.add_argument('rest', nargs='+')
-    a = ap.parse_args()
+    a = ap.parse_intermixed_args()
     rundir = None if a.check else os.path.abspath(a.rest[0])
     jobs = [s.split(':', 1) for s in (a.rest if a.check else a.rest[1:])]
     rep = preflight(jobs); say('preflight', json.dumps(rep))
