@@ -35,16 +35,17 @@ def bilinear_drawn(enc: np.ndarray, use_b: bool, scale: int = 4) -> tuple[np.nda
     d = np.hypot(ch[0] * 255 / 127 - 1, ch[1] * 255 / 127 - 1) * lb.TRACK_RANGE_M
     cov = np.clip((55.0 - d) / 30.0 + 0.5, 0, 1)
     if use_b:
-        t = np.clip((ch[2] - 0.9) / 0.1, 0, 1)
+        t = np.clip((ch[2] - lb.B_FADE[0]) / (lb.B_FADE[1] - lb.B_FADE[0]), 0, 1)
         cov = cov * t * t * (3 - 2 * t)
     return (X + 0.5) / SX, (Y + 0.5) / SY, cov > 0.5
 
 
 def test_no_phantom_track_appears_next_to_texels_without_a_track():
     # Review I1: one diagonal SW-NE track. Filtering its offsets with the "no track" texels (255, 255 = +1008, +1008 m)
-    # passes through zero about 1 km south-east of it: drawn without the B mask, faded with it.
+    # passes through zero about 1 km south-east of it: drawn without the B mask, faded with it (and pruned).
     pts = [(40.0 + t, 140.0 - t) for t in np.arange(0.0, 12.0, 0.04)]   # x east, y south: going north-east
     off, valid = lb.track_offsets(pts, META)
+    valid = lb.prune_phantoms(off, valid, pts, META)
     r0, r1, c0, c1 = int(136 * SY), int(142 * SY), int(38 * SX), int(54 * SX)
     enc = lb.encode_offsets(off, valid)[r0:r1, c0:c1]
 
@@ -58,6 +59,27 @@ def test_no_phantom_track_appears_next_to_texels_without_a_track():
     assert far_drawn(use_b=True) == 0
     x, y, drawn = bilinear_drawn(enc, use_b=True)
     assert drawn.sum() > 0, "the real track still draws"
+
+
+def test_the_committed_tracks_draw_no_phantom_and_keep_their_lines():
+    # Re-review R3: over the whole map (the committed tracks.png, filtered as the GPU does at 4x), no track is drawn more
+    # than PHANTOM_M from a real track, also at the meanders' tight bends, and the real lines keep at least 98% of the
+    # coverage they have with no mask at all (the B mask at first cost 3.8% of it near junctions).
+    import terrain_bake as tb
+    elev, meta = tb.load_heightmap(lb.MAP_DIR)
+    towns = lb.settlements_km(meta)
+    pts = lb.track_points(towns, lb.track_links(towns))
+    enc = np.asarray(Image.open(lb.OUT_TRACKS)).astype(np.float64) / 255.0
+    dist = lb.sample_distance(pts, meta)
+    h, w = enc.shape[:2]
+    Y, X = np.meshgrid((np.arange(h * 4) + 0.5) / 4 - 0.5, (np.arange(w * 4) + 0.5) / 4 - 0.5, indexing="ij")
+    ch = [lb.bilinear(enc[..., k], Y, X) for k in range(3)]
+    cov = np.clip((55.0 - np.hypot(ch[0] * 255 / 127 - 1, ch[1] * 255 / 127 - 1) * lb.TRACK_RANGE_M) / 30.0 + 0.5, 0, 1)
+    t = np.clip((ch[2] - lb.B_FADE[0]) / (lb.B_FADE[1] - lb.B_FADE[0]), 0, 1)
+    drawn, unmasked = cov * t * t * (3 - 2 * t) > 0.5, cov > 0.5
+    assert not np.any(drawn & (dist > lb.PHANTOM_M))
+    real = dist < 40.0
+    assert np.sum(drawn & real) >= 0.98 * np.sum(unmasked & real)
 
 
 def test_medial_axes_between_two_tracks_draw_no_phantom():

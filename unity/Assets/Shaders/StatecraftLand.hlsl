@@ -24,9 +24,10 @@ float3 ScLandUse(float3 g, float4 land, float3 track, float coast, float fp)
     float3 c = lerp(g, land.rgb, land.a * shore);
     float dTrack = length(track.rg * (255.0 / 127.0) - 1.0) * ScTrackRangeM;   // tools/land_bake.py encode_offsets
     // Box-filtered coverage of a 2 x ScTrackHalfM line, scaled down where a pixel is wider than the line (review M1: it
-    // stayed at half opacity at any footprint); faded where filtering mixed in a texel that may not draw a track (b).
+    // stayed at half opacity at any footprint); faded where filtering mixed in enough of a texel that may not draw a track
+    // (b; tools/land_bake.py B_FADE: a gentler fade keeps the junctions' lines, prune_phantoms masks the bends' phantoms).
     float w = max(fp, 1e-3);
-    float cover = saturate((ScTrackHalfM - dTrack) / w + 0.5) * saturate(2.0 * ScTrackHalfM / w) * smoothstep(0.9, 1.0, track.b);
+    float cover = saturate((ScTrackHalfM - dTrack) / w + 0.5) * saturate(2.0 * ScTrackHalfM / w) * smoothstep(0.4, 0.7, track.b);
     return lerp(c, ScDustLin, cover * shore * 0.85);
 }
 
