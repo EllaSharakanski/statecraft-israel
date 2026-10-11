@@ -338,7 +338,7 @@ public class UnitsInPlayTests
             float a = Mathf.PI / 8f * k;
             Assert.GreaterOrEqual(y + 0.01f, H(1000f + Mathf.Cos(a) * r * 0.99f, 2000f + Mathf.Sin(a) * r * 0.99f), "no boot sinks into the slope");
         }
-        Assert.LessOrEqual(y - H(1000f, 2000f), Mathf.Sqrt(slope * slope + 0.04f) * r / Mathf.Cos(Mathf.PI / 8f) + 0.01f, "the float is bounded by the slope over the foot");
+        Assert.LessOrEqual(y - H(1000f, 2000f), Mathf.Sqrt(slope * slope + 0.04f) * r / Mathf.Cos(Mathf.PI / 16f) + 0.01f, "the float is bounded by the slope over the foot");
     }
 
     /// <summary>The same on the map's real hills: every rifleman of every army anchor of the war stands no lower than the
@@ -357,9 +357,9 @@ public class UnitsInPlayTests
                 foreach (var f in map.Terrain.transform.Find(UnitLayer.RootName).Find("Tokens").GetComponentsInChildren<Transform>().Where(t => t.name.StartsWith("Rifleman")))
                 {
                     var p = f.position; float lowest = float.MaxValue;
-                    for (int k = 0; k < 16; k++)
+                    for (int k = 0; k < 24; k++)   // between the stand's sample directions, at 0.9 of the foot radius
                     {
-                        float a = Mathf.PI / 8f * k;
+                        float a = Mathf.PI / 12f * k + 0.1f;
                         var q = UnitShowcase.Ground(map, p + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * UnitShowcase.FootRadiusM * 0.9f);
                         Assert.LessOrEqual(q.y, p.y + 25f, $"{f.parent.name}/{f.name} on {d:yyyy-MM-dd}: a boot sinks into the ground");
                         lowest = Mathf.Min(lowest, q.y);
@@ -504,6 +504,7 @@ public class UnitsInPlayTests
             Assert.AreEqual(DisplayStyle.Flex, defence.style.display.value);
             UiTestKit.Press(defence);
             Assert.AreEqual("defence", nav.Current);
+            nav.Open(null);   // the Defence screen covers the panel; close it before clicking the map again
             GameRoot.OnHexClicked(map, layer, info, golani.Q, golani.R);
             Assert.IsNull(layer.Selected, "a second click shows the hex and its map actions");
             Assert.IsNull(root.Find("SelectionRing"));

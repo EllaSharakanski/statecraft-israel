@@ -211,8 +211,8 @@ namespace Statecraft.Game.Map.Units
         /// <summary>A figure's boots reach about 0.2 m from its centre: at <see cref="FigureScale"/>, 400 m on the map.</summary>
         public const float FootRadiusM = 0.2f * FigureScale;
 
-        /// <summary>Where a figure stands at <paramref name="p"/> (world x, z): on the highest ground under its boots (the
-        /// centre and eight points at <see cref="FootRadiusM"/>), so on a slope no boot sinks into the hill; the downhill
+        /// <summary>Where a figure stands at <paramref name="p"/> (world x, z): on the highest ground under its boots
+        /// (<see cref="StandHeight"/> over <see cref="FootRadiusM"/>), so on a slope no boot sinks into the hill; the downhill
         /// boot floats by at most the slope's rise over the foot radius (owner question, 2026-10-11: units on hard terrain).</summary>
         public static Vector3 Stand(MapScene map, Vector3 p)
         {
@@ -220,16 +220,18 @@ namespace Statecraft.Game.Map.Units
             return p;
         }
 
-        /// <summary>The highest of <paramref name="heightAt"/> at (x, z) and at the eight corners of an octagon drawn round
-        /// the circle of radius r (at r / cos 22.5 degrees), so on a planar slope no point of the circle is higher.</summary>
+        /// <summary>The highest of <paramref name="heightAt"/> at (x, z), on two rings inside the circle of radius r (at a
+        /// half and three quarters of it) and at the corners of a 16-gon drawn round it (at r / cos 11.25 degrees), sixteen
+        /// points each: on a planar slope no point of the circle is higher, and a ridge under the boots is caught too.</summary>
         public static float StandHeight(Func<float, float, float> heightAt, float x, float z, float r)
         {
-            float top = heightAt(x, z), corner = r / Mathf.Cos(Mathf.PI / 8f);
-            for (int k = 0; k < 8; k++)
-            {
-                float a = Mathf.PI / 4f * k;
-                top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * corner, z + Mathf.Sin(a) * corner));
-            }
+            float top = heightAt(x, z);
+            foreach (var ring in new[] { 0.5f * r, 0.75f * r, r / Mathf.Cos(Mathf.PI / 16f) })
+                for (int k = 0; k < 16; k++)
+                {
+                    float a = Mathf.PI / 8f * k;
+                    top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * ring, z + Mathf.Sin(a) * ring));
+                }
             return top;
         }
 
