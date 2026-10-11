@@ -175,6 +175,8 @@ public static class MapCapture
             Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
             ShowStartUnits(map);
         }
+        // The border renderer's synthetic proof only when asked (-borderproof, from tools/art_checkpoint.sh --borderproof).
+        if (System.Array.IndexOf(args, "-" + BorderProof.Flag) >= 0) BorderProof.Show(map);
         var rig = Camera.main.GetComponent<CameraRig>();
         int saved = QualitySettings.GetQualityLevel();
         try

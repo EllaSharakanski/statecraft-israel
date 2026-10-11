@@ -222,6 +222,8 @@ namespace Statecraft.Game.UI
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
+            // The border renderer's synthetic, labelled proof (?borderproof / -borderproof): development builds only.
+            if (Application.isPlaying && BorderProof.Requested()) BorderProof.Show(map);
             // The visual track's instruments (docs/visual-v1.md): both move the camera, so one per run.
             if (Application.isPlaying && FrameProfile.Requested())
                 StartCoroutine(FrameProfile.Run(camRig, map.Frame, Debug.Log, Application.platform != RuntimePlatform.WebGLPlayer));
