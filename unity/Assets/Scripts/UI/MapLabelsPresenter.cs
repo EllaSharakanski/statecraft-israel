@@ -10,48 +10,62 @@ namespace Statecraft.Game.UI
     /// <summary>Settlement names as UI Toolkit pills (EB Garamond SemiBold on navy with a gold edge, Statecraft.uss
     /// ".map-label") in the click-through "map-labels" layer under the panels. Each pill sits in a zero-size absolute slot;
     /// Refresh (GameRoot.LateUpdate, after the camera has moved) moves each slot with an inline pixel translate to its
-    /// marker's top as the camera sees it, LiftPx above it, so no layout pass runs per frame, and returns early when
+    /// kit's top edge as the camera sees it, LiftPx above it, so no layout pass runs per frame, and returns early when
     /// nothing it reads has changed (the camera's view-projection and rect, the panel's size, the layer's origin, the zoom,
     /// which panels are shown, the pills' sizes, and no GeometryChangedEvent since). A GeometryChangedEvent on the layer or
     /// on a panel re-places the pills at once, inside the layout pass and before the repaint. The mapping assumes the camera's view fills the panel,
     /// as it does in the game (both span the canvas), so DPR, render scale and the panel's scale cancel out.
     ///
+    /// Kits (issue #214): a pill keeps clear of its settlement's kit, as the promo hangs its names above the towns. Each
+    /// refresh projects the kit's columns (MapScene.TryKitColumns, a few world boxes that hold its buildings; the marker
+    /// box when there is no kit) to a screen rectangle, and every spot a pill may take is placed against that rectangle: above it (centred, or to the left or
+    /// right of its centre), then beside it on the right or the left, then below it. Only when none of those fits may a
+    /// pill sit over its kit, its bottom centre LiftPx above the settlement's point, and only if it covers at most
+    /// MaxKitCover of the kit's rectangle (a big city's name over its own streets, never a kibbutz's roofs under a pill).
+    ///
     /// Declutter: pills are placed in priority order (city, then town and Arab town, then the rest, each in file order). A
     /// pill is hidden (visibility, so it keeps its size and the choice does not flicker) when its marker is behind the
     /// camera, off screen or under a panel (the top bar, the info panel, the minimap, the event card), when it is a minor
-    /// place (village, kibbutz, moshav) beyond DeclutterDistanceM, or when no anchor fits. Its anchor class (USS) is tried
-    /// first, then the others (lower right, lower left, lower centre, then centred below the marker), applied as a pixel
-    /// shift on the slot's translate (no class change, so no style pass). An anchor fits when the pill lies wholly on
-    /// screen and clear of every panel, does not overlap an already placed pill (its last laid-out size plus MarginPx), and is more than twice
-    /// as far from every other visible marker's top as from its own, plus MarginPx, so no name reads as a neighbour's. A
-    /// city whose anchors all crowd a neighbour keeps the first that is clear of panels and pills. A pill hidden in the
-    /// last refresh needs HysteresisPx more room to come back, so it does not blink at a threshold. Refresh allocates
-    /// nothing. The dense Tel Aviv - Lod cluster keeps M2's anchor classes and Ramla's nudge west. The anchors are read
-    /// once, when the presenter is created (a later MapScene.Build needs a new presenter; GameRoot makes one per Begin).</summary>
+    /// place (village, kibbutz, moshav) beyond DeclutterDistanceM, or when no spot fits. Its anchor class (USS) picks
+    /// which of the three spots above the kit is tried first; the spots are applied as a pixel shift on the slot's
+    /// translate (no class change, so no style pass). A spot fits when the pill lies wholly on screen and clear of every
+    /// panel, does not overlap an already placed pill (its last laid-out size plus MarginPx), covers at most MaxKitCover
+    /// of its own kit's rectangle and of every other visible kit's, and is more than twice as far from every other visible
+    /// marker's top as from its own kit, plus MarginPx, so no name reads as a neighbour's. A city whose spots all crowd a
+    /// neighbour keeps the first that is clear of panels, pills and its own kit. A pill hidden in the last refresh needs
+    /// HysteresisPx more room to come back, so it does not blink at a threshold. Refresh allocates nothing. The dense Tel
+    /// Aviv - Lod cluster keeps M2's anchor classes. The kits' bounds are read once, when the presenter is created (a later
+    /// MapScene.Build needs a new presenter; GameRoot makes one per Begin).</summary>
     public sealed class MapLabelsPresenter : IDisposable
     {
         public const string ContainerName = "map-labels", SlotClass = "map-label-slot", LabelClass = "map-label";
         public const float LiftPx = 6f, MarginPx = 4f, DeclutterDistanceM = 150000f;
         /// <summary>Extra room a pill hidden in the last refresh needs before it is shown again (review M7).</summary>
         public const float HysteresisPx = 2f;
+        /// <summary>The most of a kit's screen rectangle a pill may cover (issue #214): its own kit's, and any other
+        /// visible kit's.</summary>
+        public const float MaxKitCover = 0.1f;
         /// <summary>The panels a pill never sits under (Game.uxml names).</summary>
         public static readonly string[] OccluderNames = { "top-bar", "info-panel", "minimap", "event-card" };
 
-        const string Centre = "anchor-lower-centre", Left = "anchor-lower-left", Right = "anchor-lower-right", Below = "below";
-        static readonly string[] Fallbacks = { Right, Left, Centre, Below };
+        const string Centre = "anchor-lower-centre", Left = "anchor-lower-left", Right = "anchor-lower-right";
+
+        /// <summary>Where a pill sits against its kit's screen rectangle: above it (centred on it, starting at its centre,
+        /// or ending at it), beside it, below it, or over it (its bottom centre above the settlement's point).</summary>
+        public enum Spot { AboveCentre, AboveLeft, AboveRight, BesideRight, BesideLeft, Below, Over }
+        static readonly Spot[] Fallbacks = { Spot.AboveRight, Spot.AboveLeft, Spot.AboveCentre, Spot.BesideRight, Spot.BesideLeft, Spot.Below, Spot.Over };
         static readonly HashSet<string> MinorTypes = new HashSet<string> { "village", "kibbutz", "moshav" };
         static readonly Dictionary<string, string> AnchorClass = new Dictionary<string, string>
         {
             ["jaffa"] = Right, ["rishon_lezion"] = Right, ["lod"] = Left,
             ["petah_tikva"] = Left, ["safed"] = Right, ["rosh_pinna"] = Left,
         };
-        static readonly Dictionary<string, float> OffsetEastM = new Dictionary<string, float> { ["ramla"] = -1500f };
 
         sealed class Item
         {
-            public Settlement Settlement = null!; public Vector3 Anchor, MarkerTop, MarkerBase; public VisualElement Slot = null!;
-            public Label Label = null!; public string AnchorClass = ""; public bool IsCity, TopVisible, AnchorInFront, ShownLast = true;
-            public Vector2 TopPanel, AnchorPanel, BasePanel;
+            public Settlement Settlement = null!; public Vector3 MarkerTop; public Bounds[] Kit = null!; public VisualElement Slot = null!;
+            public Label Label = null!; public Spot First; public bool IsCity, TopVisible, KitInFront, ShownLast = true;
+            public Vector2 TopPanel; public Rect KitPanel;
         }
 
         readonly VisualElement container;
@@ -92,12 +106,11 @@ namespace Statecraft.Game.UI
                 slot.Add(label);
                 container.Add(slot);
                 labels.Add(label); slots.Add(slot);
-                var anchor = Anchor(map, s);
-                var top = map.Frame.ToWorld(s.Lon, s.Lat, 0); top.y = anchor.y;
+                var top = MarkerTop(map, s);
                 settlementOrder.Add(new Item
                 {
-                    Settlement = s, Anchor = anchor, MarkerTop = top, MarkerBase = top - Vector3.up * SettlementPlacer.MarkerHeightM(s.Type),
-                    Slot = slot, Label = label, AnchorClass = anchorClass, IsCity = s.Type == "city",
+                    Settlement = s, MarkerTop = top, Kit = KitBounds(map, s, top), Slot = slot, Label = label, IsCity = s.Type == "city",
+                    First = anchorClass == Left ? Spot.AboveLeft : anchorClass == Right ? Spot.AboveRight : Spot.AboveCentre,
                 });
             }
             // Stable sort: priority, then file order.
@@ -120,13 +133,46 @@ namespace Statecraft.Game.UI
             Refresh(force: true);
         }
 
-        /// <summary>The world point a settlement's label hangs from: its marker's top, nudged east or west for a few crowded names.</summary>
-        public static Vector3 Anchor(MapScene map, Settlement s)
+        /// <summary>The top of a settlement's marker box: the point a pill over its kit hangs from, and the point that says
+        /// whether the place is on screen.</summary>
+        public static Vector3 MarkerTop(MapScene map, Settlement s)
         {
             var p = map.Frame.ToWorld(s.Lon, s.Lat, 0);
-            p.x += OffsetEastM.TryGetValue(s.Id, out var dx) ? dx : 0f;
             p.y = map.Terrain.SampleHeight(p) + map.Terrain.transform.position.y + SettlementPlacer.MarkerHeightM(s.Type);
             return p;
+        }
+
+        /// <summary>The world boxes a settlement's pill keeps clear of: its kit's columns, or without a kit its marker box.</summary>
+        public static Bounds[] KitBounds(MapScene map, Settlement s, Vector3 markerTop)
+        {
+            if (map.TryKitColumns(s.Id, out var columns)) return columns;
+            float h = SettlementPlacer.MarkerHeightM(s.Type);
+            return new[] { new Bounds(markerTop - Vector3.up * (h / 2f), new Vector3(h, h, h)) };
+        }
+
+        /// <summary>The pill's rectangle at <paramref name="spot"/> against the kit's screen rectangle <paramref name="kit"/>
+        /// (LiftPx clear of it); Over hangs it LiftPx above <paramref name="point"/> instead.</summary>
+        public static Rect SpotRect(Spot spot, Rect kit, Vector2 point, Vector2 size)
+        {
+            float above = kit.yMin - LiftPx - size.y, cx = kit.center.x, cy = kit.center.y;
+            return spot switch
+            {
+                Spot.AboveCentre => new Rect(cx - size.x / 2f, above, size.x, size.y),
+                Spot.AboveLeft => new Rect(cx, above, size.x, size.y),
+                Spot.AboveRight => new Rect(cx - size.x, above, size.x, size.y),
+                Spot.BesideRight => new Rect(kit.xMax + LiftPx, cy - size.y / 2f, size.x, size.y),
+                Spot.BesideLeft => new Rect(kit.xMin - LiftPx - size.x, cy - size.y / 2f, size.x, size.y),
+                Spot.Below => new Rect(cx - size.x / 2f, kit.yMax + LiftPx, size.x, size.y),
+                _ => new Rect(point.x - size.x / 2f, point.y - LiftPx - size.y, size.x, size.y),
+            };
+        }
+
+        /// <summary>The share of <paramref name="kit"/>'s area that <paramref name="pill"/> covers (0 for an empty kit).</summary>
+        public static float Cover(Rect pill, Rect kit)
+        {
+            float w = Mathf.Min(pill.xMax, kit.xMax) - Mathf.Max(pill.xMin, kit.xMin), h = Mathf.Min(pill.yMax, kit.yMax) - Mathf.Max(pill.yMin, kit.yMin);
+            float area = kit.width * kit.height;
+            return w <= 0f || h <= 0f || area <= 0f ? 0f : w * h / area;
         }
 
         /// <summary>Placing order: lower first. Cities, then towns and Arab towns, then villages, kibbutzim and moshavim.</summary>
@@ -192,18 +238,15 @@ namespace Statecraft.Game.UI
                 var t = camera.WorldToViewportPoint(it.MarkerTop);
                 it.TopPanel = ToPanel(t, cameraRect, screen, origin);
                 it.TopVisible = t.z > 0f && t.x >= 0f && t.x <= 1f && t.y >= 0f && t.y <= 1f && !UnderAPanel(it.TopPanel);   // a marker under a panel is no one's neighbour
-                var v = camera.WorldToViewportPoint(it.Anchor);
-                it.AnchorInFront = OnScreen(v);
-                it.AnchorPanel = ToPanel(v, cameraRect, screen, origin);
-                it.BasePanel = ToPanel(camera.WorldToViewportPoint(it.MarkerBase), cameraRect, screen, origin);
+                it.KitInFront = ProjectBoxes(it.Kit, viewProjection, cameraRect, screen, origin, out it.KitPanel);
             }
 
             placed.Clear();
             for (int i = 0; i < items.Count; i++)
             {
                 var it = items[i];
-                bool shown = it.AnchorInFront && it.TopVisible && !HiddenByZoom(it.Settlement.Type, distance);
-                var at = new Vector2(it.AnchorPanel.x, it.AnchorPanel.y - LiftPx);
+                bool shown = it.KitInFront && it.TopVisible && !HiddenByZoom(it.Settlement.Type, distance);
+                var at = new Vector2(it.KitPanel.center.x, it.KitPanel.yMin - LiftPx);   // the slot: the USS anchor puts the pill above the kit
                 var shift = Vector2.zero;
                 if (shown)
                 {
@@ -212,15 +255,15 @@ namespace Statecraft.Game.UI
                     else
                     {
                         float extra = it.ShownLast ? 0f : HysteresisPx;
-                        var home = PillRect(at, size, it.AnchorClass);
-                        bool found = TryPlace(it, at, size, home, it.AnchorClass, extra, true, ref shift);
+                        var home = SpotRect(it.First, it.KitPanel, it.TopPanel, size);   // where the USS anchor class draws it
+                        bool found = TryPlace(it, size, home, it.First, extra, true, ref shift);
                         for (int k = 0; !found && k < Fallbacks.Length; k++)
-                            if (Fallbacks[k] != it.AnchorClass) found = TryPlace(it, at, size, home, Fallbacks[k], extra, true, ref shift);
+                            if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, true, ref shift);
                         if (!found && it.IsCity)
                         {
-                            found = TryPlace(it, at, size, home, it.AnchorClass, extra, false, ref shift);
+                            found = TryPlace(it, size, home, it.First, extra, false, ref shift);
                             for (int k = 0; !found && k < Fallbacks.Length; k++)
-                                if (Fallbacks[k] != it.AnchorClass) found = TryPlace(it, at, size, home, Fallbacks[k], extra, false, ref shift);
+                                if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, false, ref shift);
                         }
                         shown = found;
                     }
@@ -231,25 +274,25 @@ namespace Statecraft.Game.UI
             }
         }
 
-        /// <summary>Whether the pill fits with <paramref name="anchor"/>; if so records it as placed and sets the shift from
+        /// <summary>Whether the pill fits at <paramref name="spot"/>; if so records it as placed and sets the shift from
         /// its USS anchor's rectangle <paramref name="home"/>.</summary>
-        bool TryPlace(Item it, Vector2 at, Vector2 size, Rect home, string anchor, float extra, bool clearOfNeighbours, ref Vector2 shift)
+        bool TryPlace(Item it, Vector2 size, Rect home, Spot spot, float extra, bool clearOfNeighbours, ref Vector2 shift)
         {
-            var r = anchor == Below
-                ? new Rect(it.BasePanel.x - size.x / 2f, it.BasePanel.y + LiftPx, size.x, size.y)
-                : PillRect(at, size, anchor);
+            var r = SpotRect(spot, it.KitPanel, it.TopPanel, size);
             float m = MarginPx + extra;
             var grown = new Rect(r.x - m, r.y - m, r.width + 2f * m, r.height + 2f * m);
             if (r.xMin < layerRect.xMin || r.yMin < layerRect.yMin || r.xMax > layerRect.xMax || r.yMax > layerRect.yMax) return false;
             for (int i = 0; i < occluderRects.Count; i++) if (occluderRects[i].Overlaps(r)) return false;
             for (int i = 0; i < placed.Count; i++) if (placed[i].Overlaps(grown)) return false;
+            if (Cover(r, it.KitPanel) > MaxKitCover) return false;
             if (clearOfNeighbours)
             {
-                float need = 2f * Gap(r, it.TopPanel) + MarginPx + extra;
+                float need = 2f * Gap(r, it.KitPanel) + MarginPx + extra;
                 for (int i = 0; i < items.Count; i++)
                 {
                     var other = items[i];
-                    if (other != it && other.TopVisible && Gap(r, other.TopPanel) <= need) return false;
+                    if (other == it || !other.TopVisible) continue;
+                    if (Gap(r, other.TopPanel) <= need || (other.KitInFront && Cover(r, other.KitPanel) > MaxKitCover)) return false;
                 }
             }
             placed.Add(r);
@@ -263,7 +306,27 @@ namespace Statecraft.Game.UI
             return false;
         }
 
-        static bool OnScreen(Vector3 v) => v.z > 0f && v.x > -0.05f && v.x < 1.05f && v.y > -0.05f && v.y < 1.05f;
+        /// <summary>The screen rectangle of world boxes (their corners' hull in the layer's coordinates), projected with the
+        /// camera's view-projection as Camera.WorldToViewportPoint does; false when a corner is behind the camera.</summary>
+        static bool ProjectBoxes(Bounds[] boxes, Matrix4x4 vp, Rect cameraRect, Vector2 screen, Vector2 origin, out Rect rect)
+        {
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            for (int k = 0; k < boxes.Length; k++)
+            {
+                var min = boxes[k].min; var max = boxes[k].max;
+                for (int c = 0; c < 8; c++)
+                {
+                    float x = (c & 1) == 0 ? min.x : max.x, y = (c & 2) == 0 ? min.y : max.y, z = (c & 4) == 0 ? min.z : max.z;
+                    float w = vp.m30 * x + vp.m31 * y + vp.m32 * z + vp.m33;
+                    if (w <= 0f) { rect = default; return false; }
+                    var v = new Vector3(((vp.m00 * x + vp.m01 * y + vp.m02 * z + vp.m03) / w + 1f) * 0.5f, ((vp.m10 * x + vp.m11 * y + vp.m12 * z + vp.m13) / w + 1f) * 0.5f, w);
+                    var p = ToPanel(v, cameraRect, screen, origin);
+                    x0 = Mathf.Min(x0, p.x); y0 = Mathf.Min(y0, p.y); x1 = Mathf.Max(x1, p.x); y1 = Mathf.Max(y1, p.y);
+                }
+            }
+            rect = Rect.MinMaxRect(x0, y0, x1, y1);
+            return true;
+        }
 
         /// <summary>Viewport to the layer's coordinates through the camera's own rect, not
         /// RuntimePanelUtils.CameraTransformWorldToPanel: that flips y with Screen.height, which is wrong whenever the camera
@@ -273,6 +336,10 @@ namespace Statecraft.Game.UI
 
         static float Gap(Rect r, Vector2 p) =>
             new Vector2(Mathf.Max(0f, Mathf.Max(r.xMin - p.x, p.x - r.xMax)), Mathf.Max(0f, Mathf.Max(r.yMin - p.y, p.y - r.yMax))).magnitude;
+
+        /// <summary>The distance between two rectangles (0 when they touch or overlap).</summary>
+        static float Gap(Rect a, Rect b) =>
+            new Vector2(Mathf.Max(0f, Mathf.Max(a.xMin - b.xMax, b.xMin - a.xMax)), Mathf.Max(0f, Mathf.Max(a.yMin - b.yMax, b.yMin - a.yMax))).magnitude;
 
         /// <summary>Removes only this presenter's own pills and callbacks, so an older presenter disposed after a newer one
         /// was made leaves the newer one's pills (review M2).</summary>

@@ -90,6 +90,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
+  now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
+  any town. Presentation only.
+- The web build's quality fallback no longer lowers the quality while the page is hidden (#216). A background tab or a
+  window behind others runs at a few frames a second, which had counted as load. Presentation only.
 - The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
   onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
