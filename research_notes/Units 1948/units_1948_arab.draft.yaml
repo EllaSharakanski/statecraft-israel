@@ -1,0 +1,858 @@
+# DRAFT: the Arab forces of 1948-49 as map tokens, for the owner's ruling of 2026-10-11 (research only; nothing reads
+# this file yet). Research note: research_notes/Units 1948/arab-armies-1948.md.
+#
+# Schema: the same as content/map/units_1948.yaml on branch units-in-play (see that file's header for anchors, `since`,
+# `precision`, `end_basis`, `front`, `hidden`, `wikipedia_only`, `status`), plus:
+#   side: arab (every row here).
+#   army: egypt | transjordan | iraq | syria | lebanon | ala | palestinian_local. The `armies` block below gives each
+#     army's proposed colour, badge and sourced appearance.
+#   echelon: brigade | brigade_group | regiment | battalion | force. The owner ruled brigade-scale tokens; rows below
+#     brigade are flagged (research note, "Owner questions" 1).
+#   commanders: only where a source names them; card text stays military (name, place, date).
+#   to_verify: a claim the snippet supports only in part; the row is a draft until the printed page is checked.
+#   conflicts: where the sources disagree; the row keeps one value and says which.
+#   sources: each {url, checked}; book pages add `cite`. A books.google.com URL is a Google Books search-inside snippet
+#     of the printed page, read on the check date (not the full page).
+# Fronts for end_basis front_armistice: egypt 1949-02-24, lebanon 1949-03-23, jordan 1949-04-03, syria 1949-07-20
+#   (https://en.wikipedia.org/wiki/1949_Armistice_Agreements, checked 2026-10-11). The Iraqi sector ends on the jordan
+#   date: Iraq signed no armistice; the Israel-Jordan agreement covered the Iraqi-held front (Morris 2008, p. 388).
+# Coordinates: the place's Wikipedia article (API prop=coordinates), Hebrew Wikipedia or Wikidata where noted.
+# Short cites: Tal = David Tal, War in Palestine, 1948: Israeli and Arab Strategy and Diplomacy (Routledge, 2004),
+#   Google Books Vs2PAgAAQBAJ. Morris = Benny Morris, 1948: A History of the First Arab-Israeli War (Yale, 2008),
+#   Google Books CC7381HrLqcC.
+
+armies:
+  egypt:
+    label: Egyptian Army (Egyptian Expeditionary Force)
+    colour: {hex: '#1E6B3A', basis: "The green field of the Kingdom of Egypt's flag (en.wiki Flag of Egypt: a white crescent and three white stars on green, adopted under King Fuad and kept until 1958)."}
+    badge: {glyph: crescent_three_stars, basis: "The same flag's white crescent and three stars."}
+    appearance: "British-pattern khaki; in the Faluja pocket, 1948: battledress, peaked caps, berets and side caps, Brodie steel helmets (the photographs listed). Officers' tarboosh is not attested in a 1948 field photo here: not drawn."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Flag_of_Egypt', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Nasser_at_Faluja_Palestine.png', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Taha_and_Rabin.jpg', checked: '2026-10-11'}
+  transjordan:
+    label: Arab Legion (Transjordan)
+    colour: {hex: '#A3242B', basis: "The red chevron of the Transjordan flag (adopted 16 April 1928; en.wiki Flag of Jordan) and the Legion's red-and-white shemagh."}
+    badge: {glyph: seven_pointed_star, basis: "The white seven-pointed star in the flag's red triangle."}
+    appearance: "Checked shemagh with black agal, the cap badge worn on the agal; khaki shirts and trousers, leather bandoliers (photos: near Ramallah, 20 July 1948; Old City walls, 1948). Red-and-white colour: en.wiki Keffiyeh ties the red-and-white shemagh to Jordan and to Glubb's Jordanian troops; the 1948 photographs are black and white, so the colour in 1948 is from that article only (to verify)."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Flag_of_Jordan', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Keffiyeh', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:John_Bagot_Glubb_and_soldiers_in_Ramallah_July_20_1948.webp', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Arab_Legion_Platoon_on_the_walls_of_Old_Jerusalem_(1948).jpg', checked: '2026-10-11'}
+  iraq:
+    label: Iraqi Army (expeditionary force)
+    colour: {hex: '#2B2B2B', basis: "The black band of the Kingdom of Iraq's flag (black-white-green with a red trapezoid and two white seven-pointed stars; en.wiki Flag of Iraq)."}
+    badge: {glyph: two_seven_pointed_stars, basis: "The two stars of the same flag."}
+    appearance: "Khaki drill shirts and shorts, the sidara (Faisaliyya) side cap, puttees; Humber armoured car (photo at Jenin, 1948; its provenance is weak: an uploader's public-domain claim)."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Flag_of_Iraq', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Sidara', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Iraqi_army_in_jeneen_palestine_1948.jpg', checked: '2026-10-11'}
+  syria:
+    label: Syrian Army
+    colour: {hex: '#5A6B7A', basis: "Slate, chosen to be distinct (the 1946-58 flag is green-white-black with three red stars, en.wiki Flag of Syria; its green and black are taken by Egypt and Iraq)."}
+    badge: {glyph: three_stars, basis: "The three red stars of the 1946-58 flag."}
+    appearance: "Not sourced to a 1948 photograph here. French-built R 35 and R 37 tanks (en.wiki 1948 Arab-Israeli War); the Degania A photograph shows a captured tank with an Arabic hull number. Figures use a neutral khaki default until a source is found."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Flag_of_Syria', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Degania_A.jpg', checked: '2026-10-11'}
+  lebanon:
+    label: Lebanese Army
+    colour: {hex: '#C8C8C0', basis: "The white band of the 1943 flag (red-white-red with a green cedar; en.wiki Flag of Lebanon)."}
+    badge: {glyph: cedar, basis: "The flag's cedar."}
+    appearance: "Not sourced to a 1948 photograph here; neutral khaki default."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Flag_of_Lebanon', checked: '2026-10-11'}
+  ala:
+    label: Arab Liberation Army
+    colour: {hex: '#B08D57', basis: "Sand, chosen to be distinct; the army had no national flag."}
+    badge: {glyph: neutral_crossed_rifles, basis: "SENSITIVE: the ALA's own emblem was a dagger stabbing a Star of David (Commons, the captured armoured car and the 1948 al-Musawwar page). It is not to be drawn; a neutral glyph is proposed (research note, Sensitivity 1)."}
+    appearance: "Keffiyeh with agal, khaki shirts and trousers, ammunition bandoliers, slung rifles (photo: ALA on parade, 1948)."
+    sources:
+    - {url: 'https://commons.wikimedia.org/wiki/File:ALA_i.jpg', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Qawuqjis_armored_vehicle.jpg', checked: '2026-10-11'}
+    - {url: 'https://commons.wikimedia.org/wiki/File:Arab_Liberation_Army.svg', checked: '2026-10-11'}
+  palestinian_local:
+    label: Local Arab forces (Army of the Holy War)
+    colour: {hex: '#7A6A58', basis: "Stone brown, chosen to be distinct; no flag or emblem is sourced for the force."}
+    badge: {glyph: neutral_rifle, basis: "No sourced emblem; a neutral glyph."}
+    appearance: "Mixed: civilian dress with keffiyeh and agal, some in khaki or battledress, a Brodie steel helmet; STEN and Thompson guns (photo: Holy War Army fighters, Jerusalem, 1948, from before the game's window)."
+    sources:
+    - {url: 'https://commons.wikimedia.org/wiki/File:Arab_fighters_of_the_Holy_War_Army_in_Jerusalem_1948.jpg', checked: '2026-10-11'}
+
+units:
+# --- Egypt ----------------------------------------------------------------------------------------------------------
+- id: egy_brigade_group
+  name: Egyptian Expeditionary Force, main brigade group
+  number: Reinforced brigade group (1st, 6th and 9th battalions)
+  side: arab
+  army: egypt
+  echelon: brigade_group
+  service: army
+  formed: "Crossed into Palestine on 15-16 May 1948"
+  commanders: "Maj. Gen. Ahmad Ali al-Muwawi (expeditionary force); deputy Col. Mohammed Neguib (Morris p. 233)"
+  sector: "The coast road north from Rafah through Gaza and Majdal to Isdud."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Morris p. 205 counts two Egyptian brigade groups at the invasion; p. 233 describes one reinforced brigade group (1st, 6th, 9th battalions) crossing on 15-16 May, joined later by the 2nd and 4th brigade groups. The row follows p. 233."
+  anchors:
+  - place: Gaza
+    lon: 34.45972
+    lat: 31.5075
+    from: '1948-05-16'
+    since: 15-16 May 1948
+    to: '1948-05-24'
+    end_basis: source
+    end_note: "en.wiki: on 24 May the Egyptians reached Majdal and made it their headquarters. Tal p. 177: the advance was held up at the Gaza headquarters until 19 May."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA233', cite: 'Morris 2008, p. 233', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA177', cite: 'Tal 2004, p. 177', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Gaza_City', checked: '2026-10-11'}
+  - place: Majdal
+    lon: 34.54611
+    lat: 31.66194
+    from: '1948-05-24'
+    since: 24 May 1948
+    to: '1948-05-29'
+    end_basis: source
+    end_note: "en.wiki: on 28-29 May the advance stopped at the destroyed bridge north of Isdud; Morris p. 244: by the end of May al-Muwawi had dug in just north of Isdud."
+    note: "Coordinate from he.wiki al-Majdal (Ashkelon); en.wiki Ashkelon gives 34.56667, 31.66667, within one hex."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA237', cite: 'Morris 2008, p. 237', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%90%D7%9C-%D7%9E%D7%92%27%D7%93%D7%9C_(%D7%90%D7%A9%D7%A7%D7%9C%D7%95%D7%9F)', checked: '2026-10-11'}
+  - place: Isdud
+    lon: 34.66167
+    lat: 31.75361
+    from: '1948-05-29'
+    since: 29 May 1948
+    to: '1948-07-08'
+    end_basis: source
+    end_note: "From 8 July the sources name the 2nd Brigade at Isdud (Morris p. 275); the group's battalions then appear under the 2nd and 4th brigades (Morris pp. 275-276, 322)."
+    note: "Tal p. 182: three infantry battalions and an artillery battalion deployed at the ruins of the bridge into Israel; Tal p. 186: the 2nd Battalion between Isdud station and the village."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA244', cite: 'Morris 2008, p. 244', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA182', cite: 'Tal 2004, p. 182', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA186', cite: 'Tal 2004, p. 186', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Isdud', checked: '2026-10-11'}
+- id: egy_2nd_brigade
+  name: Egyptian 2nd Brigade
+  number: 2nd Brigade
+  side: arab
+  army: egypt
+  echelon: brigade
+  service: army
+  sector: "July 1948: the 6th and 7th battalions and a newly arrived Sudanese battalion, from the Isdud area (Morris p. 275). October: the section from Hamama to Isdud (Tal p. 375), the northernmost brigade (Morris p. 331)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Isdud
+    lon: 34.66167
+    lat: 31.75361
+    from: '1948-07-08'
+    since: July 1948
+    to: '1948-10-27'
+    end_basis: source
+    end_note: "Morris p. 331: Isdud was evacuated on 26-27 October."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA275', cite: 'Morris 2008, p. 275', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA375', cite: 'Tal 2004, p. 375', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA331', cite: 'Morris 2008, p. 331', checked: '2026-10-11'}
+  - place: Majdal
+    lon: 34.54611
+    lat: 31.66194
+    from: '1948-10-27'
+    since: late October 1948
+    to: '1948-11-05'
+    end_basis: source
+    end_note: "Tal p. 394: the Egyptian forces withdrew from Majdal on 5 November."
+    note: "Morris p. 331 has the brigade dug in around Majdal and Isdud when Isdud was evacuated."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA331', cite: 'Morris 2008, p. 331', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA394', cite: 'Tal 2004, p. 394', checked: '2026-10-11'}
+- id: egy_4th_brigade
+  name: Egyptian 4th Brigade
+  number: 4th Brigade
+  side: arab
+  army: egypt
+  echelon: brigade
+  service: army
+  commanders: "Col. Sayyid Taha (in the Faluja pocket; Morris p. 335, he.wiki)"
+  sector: "July 1948: the 2nd and 9th battalions from Majdal (Morris p. 276). October: reinforced (1st, 2nd, 6th, 9th battalions), the coast road from Yad Mordechai through Majdal to Hamama and the Majdal-Iraq al-Manshiya wedge (Morris p. 322); then encircled at Faluja-Iraq al-Manshiya until the armistice."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Majdal
+    lon: 34.54611
+    lat: 31.66194
+    from: '1948-07-08'
+    since: July 1948
+    to: '1948-10-15'
+    end_basis: source
+    end_note: "From the eve of Operation Yoav (15 October) the sources put the brigade along the Majdal-Iraq al-Manshiya wedge (Morris p. 322; Tal p. 375) and then encircled around Faluja (Morris p. 332; Tal pp. 387, 392)."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA276', cite: 'Morris 2008, p. 276', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA286', cite: 'Tal 2004, p. 286', checked: '2026-10-11'}
+  - place: Faluja
+    lon: 34.74778
+    lat: 31.62472
+    from: '1948-10-15'
+    since: October 1948
+    to: '1949-02-24'
+    end_basis: front_armistice
+    front: egypt
+    note: "The pocket was evacuated after the armistice: 26 February 1949 (en.wiki Al-Faluja) or 27 February (he.wiki Faluja pocket). Rule C1 ends the window on the armistice; whether to show the two or three days after it is an owner question."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA322', cite: 'Morris 2008, p. 322', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA332', cite: 'Morris 2008, p. 332', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA335', cite: 'Morris 2008, p. 335', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA387', cite: 'Tal 2004, p. 387', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%9B%D7%99%D7%A1_%D7%A4%D7%9C%D7%95%D7%92%27%D7%94', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Al-Faluja', checked: '2026-10-11'}
+- id: egy_3rd_brigade
+  name: Egyptian 3rd Brigade
+  number: 3rd Brigade
+  side: arab
+  army: egypt
+  echelon: brigade
+  service: army
+  sector: "October 1948: from El Arish to Gaza (Morris p. 322), or from al-Arish to south of Yad Mordechai, with the 3rd Infantry Battalion, five volunteer battalions, an armoured company and a tank platoon (Tal p. 375)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Gaza
+    lon: 34.45972
+    lat: 31.5075
+    from: '1948-10-15'
+    since: October 1948
+    to: '1949-02-24'
+    end_basis: front_armistice
+    front: egypt
+    note: "One place picked from the sector: Gaza, which both sources name. Tal p. 286 has three brigade commands in Gaza and Majdal in July, unnumbered, so the window opens on the sourced October deployment."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA322', cite: 'Morris 2008, p. 322', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA375', cite: 'Tal 2004, p. 375', checked: '2026-10-11'}
+- id: egy_eastern_force
+  name: Egyptian eastern force (Light Forces Command from July)
+  number: "Egyptian troops and volunteers; the Light Forces Command from July 1948"
+  side: arab
+  army: egypt
+  echelon: force
+  service: army
+  commanders: "Ahmad Abd al-Aziz (Tal pp. 176-177, 216)"
+  sector: "Split from the main force; through Beersheba and Hebron to the Bethlehem area and the southern outskirts of Jerusalem. October 1948: the Hebron hills and Bethlehem (Morris p. 322); from Hebron to Sur Bahir (Tal p. 435)."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Arrival near Bethlehem: Tal p. 216 says 20 May; Morris p. 234 says three days after leaving Beersheba on 19 May. The row uses 22 May, the later date and the day of the joint attack at Ramat Rachel (Morris p. 234)."
+  anchors:
+  - place: Bethlehem
+    lon: 35.20639
+    lat: 31.70444
+    from: '1948-05-22'
+    since: 22 May 1948
+    to: '1949-02-24'
+    end_basis: front_armistice
+    front: egypt
+    note: "Morris p. 377: in the armistice talks Israel demanded that Egypt withdraw from the Bethlehem area, so the force was still there."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA234', cite: 'Morris 2008, p. 234', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA322', cite: 'Morris 2008, p. 322', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA377', cite: 'Morris 2008, p. 377', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA216', cite: 'Tal 2004, p. 216', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA375', cite: 'Tal 2004, p. 375', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA435', cite: 'Tal 2004, p. 435', checked: '2026-10-11'}
+- id: egy_beersheba_garrison
+  name: Egyptian garrison, Beersheba
+  number: "About a reinforced battalion (in October)"
+  side: arab
+  army: egypt
+  echelon: battalion
+  service: army
+  sector: "Beersheba, occupied by the eastern force on its way north."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Occupation: Morris p. 234 (19 May) and en.wiki (19 May) against Tal p. 177 (the irregulars reached Be'er Sheva on 17 May). The row uses 19 May."
+  anchors:
+  - place: Beersheba
+    lon: 34.7867
+    lat: 31.2522
+    from: '1948-05-19'
+    since: 19 May 1948
+    to: '1948-10-21'
+    end_basis: source
+    end_note: "en.wiki: the IDF captured Beersheba on 21 October (Operation Yoav)."
+    note: "The garrison's strength is given only for October: about a reinforced battalion (he.wiki Operation Yoav)."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA234', cite: 'Morris 2008, p. 234', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA177', cite: 'Tal 2004, p. 177', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%9E%D7%91%D7%A6%D7%A2_%D7%99%D7%95%D7%90%D7%91', checked: '2026-10-11'}
+- id: saudi_contingent
+  name: Saudi contingent
+  number: "Up to about 1,200 men, attached to the Egyptian command"
+  side: arab
+  army: egypt
+  echelon: battalion
+  service: army
+  sector: "By July 1948 stationed as guards between Gaza and Rafah (en.wiki, citing Morris pp. 322, 326)."
+  wikipedia_only: true
+  status: draft
+  hidden: "Below brigade scale and attached to the Egyptian force; en.wiki's 'three brigades' is not checked against Morris. Owner question 1."
+  anchors: []
+  sources:
+  - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+# --- Arab Legion (Transjordan) ---------------------------------------------------------------------------------------
+- id: legion_1st_brigade
+  name: Arab Legion 1st Brigade
+  number: 1st Brigade (1st and 3rd Regiments)
+  side: arab
+  army: transjordan
+  echelon: brigade
+  service: army
+  commanders: "Col. Desmond Goldie (Morris p. 194; en.wiki)"
+  sector: "The Nablus military zone (en.wiki); in July, the fighting at Qula and Deir Tarif in Operation Dani."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Tal p. 205 sets a brigade headquarters at Bituniya, west of Ramallah, with the 1st Battalion responsible for the Nablus area; the snippet does not show which brigade's headquarters. The row places the brigade at Nablus, the zone both en.wiki and Tal give."
+  - "July: en.wiki says the Legion's 4th Regiment joined the fighting around Lydda on 10 July; Morris p. 287 says the 1st Regiment. The row follows Morris."
+  anchors:
+  - place: Nablus
+    lon: 35.26083
+    lat: 32.22111
+    from: '1948-05-15'
+    to: '1948-05-23'
+    note: "The Legion entered Palestine on 15 May (en.wiki Arab Legion); rule I1 gives no 'since' on the game's first day."
+    end_basis: source
+    end_note: "Tal p. 216: Iraqi troops left Jisr al-Majami on 22 May for Nablus and relieved the Legion's 1st Battalion, which moved to Latrun."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Arab_Legion', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA205', cite: 'Tal 2004, p. 205', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA216', cite: 'Tal 2004, p. 216', checked: '2026-10-11'}
+  - place: Bayt Nabala
+    lon: 34.95667
+    lat: 31.98556
+    from: '1948-07-10'
+    since: 10 July 1948
+    to: '1948-07-18'
+    end_basis: source
+    end_note: "en.wiki: the fighting at Qula went on until 18 July, when the second truce began; no later position for the brigade is sourced."
+    note: "Morris p. 289: the 1st Regiment reached Beit Nabala and engaged the 8th Brigade outside Deir Tarif; Morris p. 292: an effort on 11 July to take Deir Tarif from the 1st Regiment failed."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA287', cite: 'Morris 2008, p. 287', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA289', cite: 'Morris 2008, p. 289', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA292', cite: 'Morris 2008, p. 292', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+- id: legion_3rd_brigade
+  name: Arab Legion 3rd Brigade
+  number: 3rd Brigade (2nd and 4th Regiments)
+  side: arab
+  army: transjordan
+  echelon: brigade
+  service: army
+  commanders: "Col. T. Ashton; 4th Regiment Lt Col Habis al-Majali; 2nd Regiment Maj. Geoffrey Lockett (Morris pp. 220-221; en.wiki Battles of Latrun)"
+  sector: "Latrun and Bab al-Wad: the 4th Regiment held Latrun village, the fort and Imwas; the 2nd Regiment joined it (Morris p. 221). Still holding Latrun in July (Morris p. 287)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Latrun
+    lon: 34.98139
+    lat: 31.83194
+    from: '1948-05-17'
+    since: 17 May 1948
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    note: "The first 40 legionnaires arrived on the night of 15-16 May and the rest of the 4th Regiment on 17 May (en.wiki Battles of Latrun); Morris p. 220: the troops deployed between Bab al-Wad and Latrun that night and cut the road on 18 May. Latrun stayed in Jordanian hands at the armistice."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA220', cite: 'Morris 2008, p. 220', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA221', cite: 'Morris 2008, p. 221', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA287', cite: 'Morris 2008, p. 287', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Latrun', checked: '2026-10-11'}
+- id: legion_4th_brigade
+  name: Arab Legion 4th Brigade
+  number: 4th Brigade (5th and 6th battalions)
+  side: arab
+  army: transjordan
+  echelon: brigade
+  service: army
+  commanders: "Col. Ahmad Sidqi al-Jundi (Tal pp. 205, 217)"
+  sector: "Headquarters in Ramallah; its 6th Battalion fought in Jerusalem (Tal p. 205)."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "en.wiki's table (citing Abu Nawar and Morris) puts the 5th and 6th Regiments in a '2nd Brigade' (support force) and gives the 4th Brigade, under al-Jundi, 'support: Ramallah, Hebron and Ramla'. Tal pp. 205-206 puts the 5th and 6th battalions in the 4th Brigade. The row follows Tal for the brigade's composition; both give al-Jundi and Ramallah."
+  anchors:
+  - place: Ramallah
+    lon: 35.20167
+    lat: 31.89694
+    from: '1948-05-15'
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    note: "The Legion entered Palestine on 15 May (en.wiki Arab Legion); rule I1 gives no 'since' on the game's first day. Coordinate from Wikidata Q158119 (the en.wiki article returned none)."
+    sources:
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA205', cite: 'Tal 2004, p. 205', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA206', cite: 'Tal 2004, p. 206', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://www.wikidata.org/wiki/Q158119', checked: '2026-10-11'}
+- id: legion_6th_regiment
+  name: Arab Legion 6th Regiment
+  number: 6th Regiment (battalion-sized; 4th Brigade per Tal)
+  side: arab
+  army: transjordan
+  echelon: regiment
+  service: army
+  commanders: "Abdullah al-Tall (Tal p. 213; Morris p. 218)"
+  sector: "Jerusalem: from 18 May al-Tall took command of the Arab forces in the city (Tal p. 213); the Old City's Jewish Quarter fighting (Morris p. 218)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Jerusalem, Old City
+    lon: 35.23417
+    lat: 31.77667
+    from: '1948-05-18'
+    since: 18 May 1948
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    note: "Three of the battalion's four companies came; the fourth stayed at Damiya (Tal p. 213). The Old City stayed in Jordanian hands at the armistice."
+    sources:
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA213', cite: 'Tal 2004, p. 213', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA218', cite: 'Morris 2008, p. 218', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Old_City_of_Jerusalem', checked: '2026-10-11'}
+- id: legion_3rd_regiment
+  name: Arab Legion 3rd Regiment
+  number: 3rd Regiment (battalion-sized; 1st Brigade)
+  side: arab
+  army: transjordan
+  echelon: regiment
+  service: army
+  commanders: "Lt Col William Newman (Morris p. 216)"
+  sector: "Ordered from Samaria to Jerusalem; advanced from Shu'fat through Sheikh Jarrah to the Old City's northern walls (Morris p. 216)."
+  wikipedia_only: false
+  status: draft
+  to_verify:
+  - "The day it entered: en.wiki gives the Legion's entry into Jerusalem as 19 May; the Morris snippet does not show the date. No later position is sourced, so the window runs to the armistice by rule."
+  anchors:
+  - place: Sheikh Jarrah
+    lon: 35.23194
+    lat: 31.79444
+    from: '1948-05-19'
+    since: 19 May 1948
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA216', cite: 'Morris 2008, p. 216', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Battle_for_Jerusalem', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Sheikh_Jarrah', checked: '2026-10-11'}
+# --- Iraq ------------------------------------------------------------------------------------------------------------
+- id: iraq_gesher_force
+  name: Iraqi expeditionary force at Gesher
+  number: "2nd Brigade Group (Morris) or 1st Brigade with the mechanised force (he.wiki)"
+  side: arab
+  army: iraq
+  echelon: brigade_group
+  service: army
+  commanders: "Gen. Nur al-Din Mahmud (the expeditionary force; Morris p. 188); the mechanised force under Amid Tahir al-Zubaydi (he.wiki)"
+  sector: "Crossed the Jordan on 15 May and attacked kibbutz Gesher and its police fort, taking Camel Hill."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Morris p. 247: Iraq's 2nd Brigade Group (two infantry battalions, an armoured-car battalion and a 25-pounder battalion) arrived at Mafraq at the end of April. he.wiki: the infantry was at first the Iraqi 1st Brigade, later the 4th. Tal p. 161: Iraq had the 1st and 3rd brigades, the 4th being formed. The card should give no number until this is settled."
+  anchors:
+  - place: Jisr al-Majami (Naharayim)
+    lon: 35.57285
+    lat: 32.6444
+    from: '1948-05-15'
+    to: '1948-05-22'
+    end_basis: source
+    end_note: "Tal p. 216: the Iraqi troops withdrew from Jisr al-Majami on 22 May and went to Nablus."
+    note: "The force crossed the Jordan on 15 May (Morris p. 247; he.wiki); rule I1 gives no 'since' on the game's first day. Coordinate of Naharayim (en.wiki); Gesher is 2.5 km away (35.55222, 32.62139), within one hex."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA247', cite: 'Morris 2008, p. 247', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA216', cite: 'Tal 2004, p. 216', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%97%D7%99%D7%9C_%D7%94%D7%9E%D7%A9%D7%9C%D7%95%D7%97_%D7%94%D7%A2%D7%99%D7%A8%D7%90%D7%A7%D7%99_%D7%91%D7%9E%D7%9C%D7%97%D7%9E%D7%AA_%D7%94%D7%A2%D7%A6%D7%9E%D7%90%D7%95%D7%AA', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Battle_of_Gesher', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Naharayim', checked: '2026-10-11'}
+- id: iraq_4th_brigade
+  name: Iraqi 4th Brigade
+  number: 4th Brigade
+  side: arab
+  army: iraq
+  echelon: brigade
+  service: army
+  sector: "The northern sector of the Iraqi line, from the Jordan River to the Lajjun area, with an artillery battery and an armoured company (Tal p. 233)."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "Morris p. 248 has the 4th and 5th brigade groups joining the Iraqi force later (five brigades by September); Tal p. 233 has the 4th Brigade holding the northern sector at the IDF's attack on Jenin (31 May-4 June). The row follows Tal, the more specific."
+  anchors:
+  - place: Jenin
+    lon: 35.3
+    lat: 32.46111
+    from: '1948-05-31'
+    since: the end of May 1948
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    note: "One place picked from the sector: Jenin, where the Iraqi forces fought the IDF from 31 May (en.wiki Battle of Jenin; Tal pp. 232-234). The window opens on the day of the IDF attack, when Tal describes the deployment. he.wiki: the Iraqis left Samaria only in April 1949, under the Israel-Jordan agreement."
+    sources:
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA233', cite: 'Tal 2004, p. 233', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA250', cite: 'Morris 2008, p. 250', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Battle_of_Jenin_(1948)', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Jenin', checked: '2026-10-11'}
+- id: iraq_1st_brigade
+  name: Iraqi 1st Brigade
+  number: 1st Brigade
+  side: arab
+  army: iraq
+  echelon: brigade
+  service: army
+  sector: "The western sector of the Iraqi line, from Baqa al-Gharbiyya, with an artillery battery, an armoured company, a mechanised battalion and two Palestinian battalions (Tal p. 233)."
+  wikipedia_only: false
+  status: draft
+  to_verify:
+  - "The Google Books snippet of Tal p. 233 runs two columns together; the reading 'the western sector, from Baqa al-Gharbiyya to Dayr [...], was held by the 1st Brigade' needs the printed page."
+  anchors:
+  - place: Baqa al-Gharbiyya
+    lon: 35.04222
+    lat: 32.42028
+    from: '1948-05-31'
+    since: the end of May 1948
+    to: '1949-04-03'
+    end_basis: front_armistice
+    front: jordan
+    note: "One place picked: the sector's first-named place. Same dating as the 4th Brigade."
+    sources:
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA233', cite: 'Tal 2004, p. 233', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Baqa_al-Gharbiyye', checked: '2026-10-11'}
+- id: iraq_other_brigades
+  name: Iraqi 3rd and 5th brigades (and the 2nd after Gesher)
+  number: "Brigade groups that joined the Iraqi force in the West Bank (Morris p. 248)"
+  side: arab
+  army: iraq
+  echelon: brigade
+  service: army
+  sector: "The Jenin-Nablus-Tulkarm triangle; by September 1948 the force had five brigades and 18,000 soldiers (Morris p. 248)."
+  wikipedia_only: false
+  status: draft
+  hidden: "The sources name the brigades but give none of them a place."
+  anchors: []
+  sources:
+  - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA248', cite: 'Morris 2008, p. 248', checked: '2026-10-11'}
+# --- Syria -----------------------------------------------------------------------------------------------------------
+- id: syria_1st_brigade
+  name: Syrian 1st Brigade
+  number: 1st Brigade
+  side: arab
+  army: syria
+  echelon: brigade
+  service: army
+  commanders: "Col. Abd al-Wahab al-Hakim (Morris p. 251; Tal p. 162); Husni al-Za'im by 18 May (en.wiki Battles of the Kinarot Valley)"
+  sector: "May 1948: south of the Sea of Galilee, Samakh and the Deganias. June: Mishmar HaYarden and the Bnot Ya'akov bridgehead. October: five battalions holding the whole sector (Tal p. 426)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Samakh
+    lon: 35.5875
+    lat: 32.705
+    from: '1948-05-16'
+    since: 16 May 1948
+    to: '1948-05-21'
+    end_basis: source
+    end_note: "en.wiki Battles of the Kinarot Valley: the Haganah returned to Samakh on 21 May, after the Syrian defeat at Degania Alef on 20 May."
+    note: "The brigade camped at Tel al-Qasr on the night of 15-16 May, attacked Samakh on 16-17 May and took it on 18 May; on 20 May it shelled Degania Alef from the Samakh police station (en.wiki Kinarot; Morris pp. 253-257). Tel al-Qasr has no coordinate in Wikipedia or Wikidata and lies within a hex of Samakh."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA253', cite: 'Morris 2008, p. 253', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA257', cite: 'Morris 2008, p. 257', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Battles_of_the_Kinarot_Valley', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Samakh,_Tiberias', checked: '2026-10-11'}
+  - place: Mishmar HaYarden
+    lon: 35.62084
+    lat: 33.0138
+    from: '1948-06-10'
+    since: 10 June 1948
+    to: '1949-07-20'
+    end_basis: front_armistice
+    front: syria
+    note: "Morris p. 257: elements of the 2nd Brigade joined the 1st in the June offensive on Mishmar HaYarden; en.wiki: taken on 10 June. Tal p. 340 has two infantry brigades in the bridgehead in July; Morris p. 350: the Syrians held the Mishmar HaYarden enclave at the armistice. Coordinate: the original moshava (he.wiki), not the later moshav."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA257', cite: 'Morris 2008, p. 257', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA262', cite: 'Tal 2004, p. 262', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA340', cite: 'Tal 2004, p. 340', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA426', cite: 'Tal 2004, p. 426', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA350', cite: 'Morris 2008, p. 350', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%9E%D7%A9%D7%9E%D7%A8_%D7%94%D7%99%D7%A8%D7%93%D7%9F_(%D7%9E%D7%95%D7%A9%D7%91%D7%94)', checked: '2026-10-11'}
+- id: syria_2nd_brigade
+  name: Syrian 2nd Brigade
+  number: 2nd Brigade
+  side: arab
+  army: syria
+  echelon: brigade
+  service: army
+  sector: "15 May: attacked Ein Gev from the east as a diversion (Morris p. 253). June: reserve at Quneitra (Tal p. 262); elements joined the Mishmar HaYarden attack (Morris p. 257). October: from the Lebanese border to Tall Azaziyat (Tal p. 426)."
+  wikipedia_only: false
+  status: draft
+  hidden: "Every sourced position is on the Syrian side of the border or a diversion; no place in Palestine is given for the brigade itself."
+  anchors: []
+  sources:
+  - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA253', cite: 'Morris 2008, p. 253', checked: '2026-10-11'}
+  - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA262', cite: 'Tal 2004, p. 262', checked: '2026-10-11'}
+- id: syria_bridgehead_brigade_oct
+  name: Syrian 3rd or 4th Brigade (the bridgehead, October 1948)
+  number: "3rd Brigade (two ALA battalions taken into the Syrian Army and a new battalion) or the 4th, formed in October"
+  side: arab
+  army: syria
+  echelon: brigade
+  service: army
+  sector: "Tal p. 426: a brigade under Adib al-Shishakli held the Mishmar HaYarden bridgehead in October."
+  wikipedia_only: false
+  status: draft
+  hidden: "The Google Books snippet does not show whether the brigade is the 3rd or the 4th; needs the printed page."
+  anchors: []
+  sources:
+  - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA426', cite: 'Tal 2004, p. 426', checked: '2026-10-11'}
+# --- Lebanon ---------------------------------------------------------------------------------------------------------
+- id: lebanon_3rd_battalion
+  name: Lebanese Army 3rd Battalion
+  number: 3rd Battalion (the only Lebanese unit in battle)
+  side: arab
+  army: lebanon
+  echelon: battalion
+  service: army
+  sector: "With a Syrian battalion and the ALA, retook al-Malikiyya and Qadas in early June, handed them to the ALA and withdrew on 8 July."
+  wikipedia_only: false
+  status: draft
+  conflicts:
+  - "The attack: 5 June (he.wiki Battles of Malkiyya) or 5-6 June (en.wiki). The row opens on 6 June, the day the village fell."
+  - "15 May: Lorch's The Edge of the Sword and Palmach veterans describe a Lebanese Army counter-attack at Malkiyya; he.wiki reports a broad research consensus (Guy Maayan, from the official Lebanese account) that the force on 15 May was the ALA. This file follows the newer research (the ALA row)."
+  anchors:
+  - place: al-Malikiyya
+    lon: 35.50806
+    lat: 33.10528
+    from: '1948-06-06'
+    since: 6 June 1948
+    to: '1948-07-08'
+    end_basis: source
+    end_note: "en.wiki (citing Morris 2008, p. 260): the Lebanese handed the villages to the ALA and withdrew on 8 July."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA260', cite: 'Morris 2008, p. 260', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%A7%D7%A8%D7%91%D7%95%D7%AA_%D7%9E%D7%9C%D7%9B%D7%99%D7%94', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Al-Malkiyya', checked: '2026-10-11'}
+# --- Arab Liberation Army --------------------------------------------------------------------------------------------
+- id: ala_2nd_yarmuk
+  name: ALA 2nd Yarmuk Battalion
+  number: 2nd Yarmuk Battalion (Arab Liberation Army)
+  side: arab
+  army: ala
+  echelon: battalion
+  service: army
+  commanders: "Adib al-Shishakli (he.wiki; en.wiki Arab Liberation Army)"
+  sector: "The al-Malikiyya-Qadas-Bar'am sector on the Lebanese border."
+  wikipedia_only: false
+  status: draft
+  to_verify:
+  - "Second window: Tal p. 334 has a Yarmuk battalion 'enhanced with a company' in the al-Malikiyya-Sa'sa area in July, but the snippet cuts off its number, and has Shishakli's 2nd Yarmuk Brigade in reserve in South Lebanon. That the 2nd Yarmuk Battalion held al-Malikiyya from June to October needs the printed page."
+  anchors:
+  - place: al-Malikiyya
+    lon: 35.50806
+    lat: 33.10528
+    from: '1948-05-15'
+    to: '1948-05-29'
+    note: "The battalion fought the Palmach at al-Malikiyya on 15 May (he.wiki); rule I1 gives no 'since' on the game's first day."
+    end_basis: source
+    end_note: "en.wiki and he.wiki: the Yiftach Brigade retook al-Malikiyya on the night of 28-29 May."
+    sources:
+    - {url: 'https://he.wikipedia.org/wiki/%D7%A7%D7%A8%D7%91%D7%95%D7%AA_%D7%9E%D7%9C%D7%9B%D7%99%D7%94', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Arab_Liberation_Army', checked: '2026-10-11'}
+  - place: al-Malikiyya
+    lon: 35.50806
+    lat: 33.10528
+    from: '1948-06-06'
+    since: 6 June 1948
+    to: '1948-10-31'
+    end_basis: source
+    end_note: "he.wiki: in Operation Hiram the 7th Brigade took al-Malikiyya at dawn on 31 October."
+    sources:
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA260', cite: 'Morris 2008, p. 260', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA334', cite: 'Tal 2004, p. 334', checked: '2026-10-11'}
+    - {url: 'https://he.wikipedia.org/wiki/%D7%A7%D7%A8%D7%91%D7%95%D7%AA_%D7%9E%D7%9C%D7%9B%D7%99%D7%94', checked: '2026-10-11'}
+- id: ala_3rd_yarmuk
+  name: ALA 3rd Yarmuk Brigade
+  number: 3rd Yarmuk Brigade (Hittin Battalion, a reserve battalion and local forces)
+  side: arab
+  army: ala
+  echelon: brigade
+  service: army
+  commanders: "Mahdi Salah (Tal p. 334)"
+  sector: "July 1948: deployed over the central Galilee with its headquarters in Nazareth (Tal p. 334). October 1948: the Tarshiha area (he.wiki Operation Hiram)."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Nazareth
+    lon: 35.30333
+    lat: 32.70194
+    from: '1948-06-11'
+    since: 11 June 1948
+    to: '1948-07-16'
+    end_basis: source
+    end_note: "en.wiki Operation Dekel: Nazareth surrendered on the evening of 16 July."
+    note: "Tal p. 266: al-Qawuqji completed his move to Nazareth as the first truce came into effect (11 June). Morris p. 278: in July the ALA force in Nazareth was a 'brigade' of the Hittin and Mahdi battalions, about a thousand men."
+    sources:
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA266', cite: 'Tal 2004, p. 266', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA334', cite: 'Tal 2004, p. 334', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA278', cite: 'Morris 2008, p. 278', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Operation_Dekel', checked: '2026-10-11'}
+  - place: Tarshiha
+    lon: 35.26833
+    lat: 33.00897
+    from: '1948-10-22'
+    since: October 1948
+    to: '1948-10-31'
+    end_basis: source
+    end_note: "Operation Hiram (29-31 October) drove the ALA from the Galilee; he.wiki: on 31 October the 9th Brigade cleared the area between Eilon and Sa'sa; Tal p. 424: by the end of October the whole Galilee was in Israeli hands."
+    note: "he.wiki gives the deployment in its account of the week before the operation, without a date; the window opens on 22 October, the day the ALA attacked Manara and the third truce began (en.wiki), the first dated event of that week. Coordinate: the village (Wikidata Q134496896). Tal p. 419 has a brigade headquarters in Tarshiha after the second truce; en.wiki ALA calls it the ALA's headquarters."
+    sources:
+    - {url: 'https://he.wikipedia.org/wiki/%D7%9E%D7%91%D7%A6%D7%A2_%D7%97%D7%99%D7%A8%D7%9D', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA419', cite: 'Tal 2004, p. 419', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA424', cite: 'Tal 2004, p. 424', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Arab_Liberation_Army', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+    - {url: 'https://www.wikidata.org/wiki/Q134496896', checked: '2026-10-11'}
+- id: ala_1st_yarmuk
+  name: ALA 1st Yarmuk Brigade
+  number: 1st Yarmuk Brigade (about 1,500 men)
+  side: arab
+  army: ala
+  echelon: brigade
+  service: army
+  sector: "After the second truce: the southern part of the ALA-held area, along the Safad-Acre road (Tal p. 419). Morris p. 340: in October the ALA's three 'brigades' each amounted to a battalion."
+  wikipedia_only: false
+  status: draft
+  hidden: "The source gives a road, not a place or headquarters."
+  anchors: []
+  sources:
+  - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA419', cite: 'Tal 2004, p. 419', checked: '2026-10-11'}
+  - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA340', cite: 'Morris 2008, p. 340', checked: '2026-10-11'}
+# --- Local Arab (Palestinian) forces ---------------------------------------------------------------------------------
+- id: holy_war_lydda_ramle
+  name: Army of the Holy War, Lydda-Ramle sector
+  number: "Hasan Salama's command (Jaysh al-Jihad al-Muqaddas)"
+  side: arab
+  army: palestinian_local
+  echelon: force
+  service: army
+  commanders: "Hasan Salama (died 2 June 1948)"
+  sector: "The Lydda district, at the entry to the Tel Aviv-Jerusalem road; headquarters near Ramla."
+  wikipedia_only: false
+  status: draft
+  anchors:
+  - place: Ramla
+    lon: 34.8625
+    lat: 31.9275
+    from: '1948-05-15'
+    since: February 1948
+    to: '1948-06-02'
+    end_basis: source
+    end_note: "Tal pp. 226, 238 and en.wiki: Salama was mortally wounded at Ras al-Ein and died on 2 June in the hospital at Ramla; his death left his forces in Ramla and its vicinity without leadership."
+    note: "Since: en.wiki Hasan Salama, his assignment to the Lydda district reconfirmed in Damascus on 5 February 1948, with a headquarters near Ramla from March. Tal p. 227: in late May the forces in Lydda and Ramla were under his command."
+    sources:
+    - {url: 'https://en.wikipedia.org/wiki/Hasan_Salama', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Army_of_the_Holy_War', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA226', cite: 'Tal 2004, p. 226', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA227', cite: 'Tal 2004, p. 227', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA238', cite: 'Tal 2004, p. 238', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Ramla', checked: '2026-10-11'}
+- id: holy_war_jerusalem
+  name: Army of the Holy War, Jerusalem
+  number: "Jaysh al-Jihad al-Muqaddas, Jerusalem command"
+  side: arab
+  army: palestinian_local
+  echelon: force
+  service: army
+  commanders: "Ibrahim Abu Dayyeh, the senior commander in the Jerusalem area after April 1948 (he.wiki); Tal p. 213 names Khalid al-Husayni and Munir Abu Fadl as commanders of the local forces in the city on 18 May."
+  sector: "Jerusalem."
+  wikipedia_only: false
+  status: draft
+  to_verify:
+  - "Tal p. 213 says 'local forces', not the Holy War Army by name; the force's presence in the city after 15 May rests on he.wiki."
+  anchors:
+  - place: Jerusalem, Old City
+    lon: 35.23417
+    lat: 31.77667
+    from: '1948-05-15'
+    since: December 1947
+    to: '1948-10-03'
+    end_basis: source
+    end_note: "he.wiki: on 3 October 1948 Jordan ordered the Arab Legion to disarm the Holy War units (en.wiki: October 1948); he.wiki adds that in practice they went on until spring 1949."
+    note: "One place picked: the sources place the force in the city without a quarter. Since: Abd al-Qadir al-Husayni arrived in Jerusalem in December 1947 (en.wiki, he.wiki); he was killed at al-Qastal on 8 April 1948, before the game's window."
+    sources:
+    - {url: 'https://he.wikipedia.org/wiki/%D7%A6%D7%91%D7%90_%D7%94%D7%92%27%D7%99%D7%94%D7%90%D7%93_%D7%94%D7%A7%D7%93%D7%95%D7%A9', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Army_of_the_Holy_War', checked: '2026-10-11'}
+    - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA213', cite: 'Tal 2004, p. 213', checked: '2026-10-11'}
+- id: holy_war_nazareth
+  name: Army of the Holy War, Nazareth
+  number: "Jaysh al-Jihad al-Muqaddas, Nazareth force"
+  side: arab
+  army: palestinian_local
+  echelon: force
+  service: army
+  sector: "The Nazareth area."
+  wikipedia_only: true
+  status: draft
+  to_verify:
+  - "One uncited sentence in he.wiki ('another Holy War force operated in the Nazareth area until its capture by the IDF in mid-July'). Needs a published source before it ships."
+  anchors:
+  - place: Nazareth
+    lon: 35.30333
+    lat: 32.70194
+    from: '1948-05-15'
+    to: '1948-07-16'
+    end_basis: source
+    end_note: "en.wiki Operation Dekel: Nazareth surrendered on 16 July."
+    note: "No start is sourced, so the card gives none."
+    sources:
+    - {url: 'https://he.wikipedia.org/wiki/%D7%A6%D7%91%D7%90_%D7%94%D7%92%27%D7%99%D7%94%D7%90%D7%93_%D7%94%D7%A7%D7%93%D7%95%D7%A9', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Operation_Dekel', checked: '2026-10-11'}
+- id: iraqi_attached_palestinian_battalions
+  name: Palestinian battalions with the Iraqi 1st Brigade
+  number: Two battalions
+  side: arab
+  army: palestinian_local
+  echelon: battalion
+  service: army
+  sector: "The western sector of the Iraqi line (Tal p. 233)."
+  wikipedia_only: false
+  status: draft
+  hidden: "Unnamed in the source, and the snippet is garbled (see iraq_1st_brigade)."
+  anchors: []
+  sources:
+  - {url: 'https://books.google.com/books?id=Vs2PAgAAQBAJ&pg=PA233', cite: 'Tal 2004, p. 233', checked: '2026-10-11'}
+- id: lydda_ramle_town_militias
+  name: Lydda and Ramla town militias
+  number: "About 1,000 Lydda residents, with an Arab Legion contingent of 125-300"
+  side: arab
+  army: palestinian_local
+  echelon: force
+  service: army
+  sector: "Lydda and Ramla, until the towns fell on 11 and 12 July 1948 (Operation Dani)."
+  wikipedia_only: true
+  status: draft
+  hidden: "The sources describe the towns' militias but give them no name (owner's rule: a token only for a named force). The Legion's 5th Infantry Company in Lydda (Khalidi, cited by en.wiki) is below brigade scale."
+  anchors: []
+  sources:
+  - {url: 'https://en.wikipedia.org/wiki/1948_Arab%E2%80%93Israeli_War', checked: '2026-10-11'}
+  - {url: 'https://en.wikipedia.org/wiki/1948_Palestinian_expulsion_from_Lydda_and_Ramle', checked: '2026-10-11'}
