@@ -173,12 +173,13 @@ namespace Statecraft.Game.UI
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
-            // A click on a unit's hex selects the unit (its ring and card); anywhere else shows the hex.
+            // A click on a unit's hex selects the unit (its ring and card); a second click on it, or a click anywhere
+            // else, shows the hex (so a token never hides the hex's map actions).
             Action<int, int> onHex = (q, r) =>
             {
-                var hit = unitLayer.At(q, r);
-                unitLayer.Select(hit?.Token.Unit.Id);
-                if (hit != null) info.ShowUnit(); else info.Show(q, r);
+                var id = unitLayer.UnitToSelectAt(q, r);
+                unitLayer.Select(id);
+                if (id != null) info.ShowUnit(); else info.Show(q, r);
             };
             pointer.HexClicked += onHex;
             var camRig = rig = cameraController.GetComponent<CameraRig>();

@@ -284,7 +284,9 @@ public class UnitsInPlayTests
             var root = map.Terrain.transform.Find(UnitLayer.RootName);
             var golani = layer.Tokens.Single(p => p.Token.Unit.Id == "golani");
             Assert.AreEqual(golani, layer.At(golani.Q, golani.R));
+            Assert.AreEqual("golani", layer.UnitToSelectAt(golani.Q, golani.R), "a click on its hex selects the unit");
             layer.Select("golani");
+            Assert.IsNull(layer.UnitToSelectAt(golani.Q, golani.R), "a second click shows the hex and its map actions");
             info.ShowUnit();
             Assert.IsNotNull(root.Find("SelectionRing"), "the promo's white ring round the selected token");
             Assert.IsTrue(info.ShowsUnit);

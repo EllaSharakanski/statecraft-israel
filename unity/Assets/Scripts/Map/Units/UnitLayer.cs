@@ -30,6 +30,8 @@ namespace Statecraft.Game.Map.Units
         IReadOnlyList<UnitEntry> units = Array.Empty<UnitEntry>();
         IReadOnlyList<MapHex> hexes = Array.Empty<MapHex>();
         Vector2[] hexXZ = Array.Empty<Vector2>();
+        /// <summary>The route corridors with their bounds grown by the clearance, so a figure far from a route skips it.</summary>
+        (List<Vector2> line, float half, Rect bounds)[] corridors = Array.Empty<(List<Vector2>, float, Rect)>();
         MapRuntimeAssets assets = null!;
         Material paint = null!, ringTemplate = null!;
         readonly Dictionary<string, Mesh> meshes = new Dictionary<string, Mesh>();
@@ -67,6 +69,12 @@ namespace Statecraft.Game.Map.Units
             var layer = root.AddComponent<UnitLayer>();
             layer.map = map; layer.units = units; layer.hexes = hexes; layer.still = still;
             layer.hexXZ = hexes.Select(h => { var w = map.Frame.ToWorld(h.Lon, h.Lat, 0); return new Vector2(w.x, w.z); }).ToArray();
+            layer.corridors = map.RouteCorridors.Where(c => c.line.Count > 0).Select(c =>
+            {
+                float minX = c.line.Min(p => p.x), maxX = c.line.Max(p => p.x), minY = c.line.Min(p => p.y), maxY = c.line.Max(p => p.y);
+                float grow = c.halfWidth + FigureClearanceM;
+                return (c.line, c.halfWidth, Rect.MinMaxRect(minX - grow, minY - grow, maxX + grow, maxY + grow));
+            }).ToArray();
             layer.assets = root.AddComponent<MapRuntimeAssets>();
             var palette = layer.assets.Own(UnitPalette.MakeTexture(readable: false));
             layer.paint = layer.assets.Own(new Material(template) { name = "UnitMiniature (palette)" });
@@ -89,6 +97,14 @@ namespace Statecraft.Game.Map.Units
             Rebuild();
             if (Selected != null && !placed.Any(p => p.Token.Unit.Id == Selected)) Select(null); else Select(Selected);
             return true;
+        }
+
+        /// <summary>What a click on hex (q, r) selects: the unit standing there, unless it is already selected (a second
+        /// click shows the hex, so a token never hides the hex's map actions); null means show the hex.</summary>
+        public string? UnitToSelectAt(int q, int r)
+        {
+            var hit = At(q, r);
+            return hit != null && hit.Value.Token.Unit.Id != Selected ? hit.Value.Token.Unit.Id : null;
         }
 
         /// <summary>The token on hex (q, r), or null.</summary>
@@ -134,9 +150,10 @@ namespace Statecraft.Game.Map.Units
             foreach (var p in points)
             {
                 if (!LandAt(p)) return false;
-                foreach (var (line, half) in map.RouteCorridors)
-                    for (int i = 0; i + 1 < line.Count; i++)
-                        if (DistanceToSegment(p, line[i], line[i + 1]) < half + FigureClearanceM) return false;
+                foreach (var (line, half, bounds) in corridors)
+                    if (bounds.Contains(p))
+                        for (int i = 0; i + 1 < line.Count; i++)
+                            if (DistanceToSegment(p, line[i], line[i + 1]) < half + FigureClearanceM) return false;
             }
             return true;
         }
