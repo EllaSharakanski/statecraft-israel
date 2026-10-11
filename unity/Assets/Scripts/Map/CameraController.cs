@@ -153,22 +153,30 @@ namespace Statecraft.Game.Map
         /// corner rays of the visible area (below the top inset) cut with the plane y = ShadowFit.GroundY, the terrain's lowest
         /// point. Every real ground hit is nearer than the plane's, so the box holds everything the view can show (the frustum
         /// meets a plane in a convex quad, so its corners bound it). A rig without a camera shows a point (Rect.zero); a
-        /// corner that does not look down gives an infinite box. Reads the camera as the rig's last Apply left it.</summary>
+        /// corner that does not look down gives an infinite box. Worked from the rig's pose relative to the look-at point and
+        /// the camera's projection (aspect, FOV, the inset's shift), not Camera.ViewportPointToRay: that unprojects through
+        /// the 1000 km far plane in world coordinates, and its rays strayed by up to kilometres (measured: 0.25-4 km).</summary>
         public static Rect ViewFootprint(CameraRig rig)
         {
             var cam = rig.GetComponent<Camera>();
             if (cam == null) return Rect.zero;
+            var rot = Quaternion.Euler(CameraRig.Pitch, rig.Yaw, 0);
+            var eye = -(rot * Vector3.forward) * rig.Distance;          // the camera, relative to the look-at point
+            float height = rig.LookAt.y + eye.y - ShadowFit.GroundY;
+            // NDC x = m00 x / -z - m02, NDC y = m11 y / -z - m12 (CameraRig.ApplyProjection): one unit ahead, the ray through (x, y).
+            var m = cam.projectionMatrix;
             float top = 1f - Mathf.Clamp(rig.TopInset, 0f, CameraRig.MaxTopInset);
             float x0 = float.PositiveInfinity, x1 = float.NegativeInfinity, z0 = float.PositiveInfinity, z1 = float.NegativeInfinity;
             foreach (var c in FootprintCorners)
             {
-                var ray = cam.ViewportPointToRay(new Vector3(c.x, c.y * top, 0f));
-                if (ray.direction.y > -1e-4f)
+                float nx = 2f * c.x - 1f, ny = 2f * c.y * top - 1f;
+                var dir = rot * new Vector3((nx + m[0, 2]) / m[0, 0], (ny + m[1, 2]) / m[1, 1], 1f);
+                if (dir.y > -1e-4f)
                     return Rect.MinMaxRect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
-                var hit = ray.origin + ray.direction * ((ShadowFit.GroundY - ray.origin.y) / ray.direction.y);
+                var hit = eye + dir * (-height / dir.y);
                 x0 = Mathf.Min(x0, hit.x); x1 = Mathf.Max(x1, hit.x); z0 = Mathf.Min(z0, hit.z); z1 = Mathf.Max(z1, hit.z);
             }
-            return Rect.MinMaxRect(x0 - rig.LookAt.x, z0 - rig.LookAt.z, x1 - rig.LookAt.x, z1 - rig.LookAt.z);
+            return Rect.MinMaxRect(x0, z0, x1, z1);
         }
 
         /// <summary>One axis of the look-at point: within [lo, hi] such that [v + viewMin, v + viewMax] stays in it. A view
