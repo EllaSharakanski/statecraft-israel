@@ -142,7 +142,15 @@ namespace Statecraft.Game.UI
             var names = SettlementPlacer.Parse(inputs.Map.SettlementsYaml).ToDictionary(s => s.Id, s => s.Name);
             // The 1948 sub-districts, outlined on the map (display only: the sim never reads them; docs/visual-v1.md).
             var subdistricts = Subdistricts1948.Show(inputs.Map.RegionsYaml, bridge.State.Date);
-            Action onDate = () => subdistricts.Apply(bridge.State.Date);   // shown from the start until replaced (owner ruling)
+            var layerLabel = root.Q<Label>("map-layer");
+            layerLabel.text = subdistricts.Label;
+            // Shown from the start until replaced (owner ruling 2026-10-11), with its label while drawn.
+            Action onDate = () =>
+            {
+                subdistricts.Apply(bridge.State.Date);
+                layerLabel.style.display = subdistricts.Shown ? DisplayStyle.Flex : DisplayStyle.None;
+            };
+            onDate();
             bridge.Changed += onDate;
             owned.Add(new Undo(() => bridge.Changed -= onDate));
             var info = Own(new InfoPanelPresenter(root, bridge, text, names, subdistricts));

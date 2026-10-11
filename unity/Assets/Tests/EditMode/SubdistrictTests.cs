@@ -92,7 +92,7 @@ public class SubdistrictTests
         Assert.IsTrue(s.ShowsOn(new System.DateTime(1948, 5, 15)));
         Assert.IsTrue(s.ShowsOn(new System.DateTime(1952, 12, 31)));
         Assert.AreEqual("Mandate sub-districts, 1947", s.Label);
-        Assert.AreEqual(s.Label, s.Layer.Banner, "the label goes on screen with the layer");
+        Assert.IsNull(s.Layer.Banner, "the label is the game's UI label, not the 3D banner (the tilt-shift blurs that)");
         var ended = Subdistricts1948.Parse(FileText.Replace("shown_until: null", "shown_until: 1949-02-24"));
         Assert.IsTrue(ended.ShowsOn(new System.DateTime(1949, 2, 23)));
         Assert.IsFalse(ended.ShowsOn(new System.DateTime(1949, 2, 24)));
@@ -142,7 +142,9 @@ public class SubdistrictTests
         var current = MapBorders.Current;
         Assert.IsNotNull(current, "play draws a region layer without any flag");
         Assert.AreEqual("subdistricts_1948", current!.Name);
-        Assert.AreEqual("Mandate sub-districts, 1947", current.Banner, "labelled on screen");
+        var label = Object.FindFirstObjectByType<UIDocument>().rootVisualElement.Q<Label>("map-layer");
+        Assert.AreEqual("Mandate sub-districts, 1947", label.text, "labelled on screen");
+        Assert.AreEqual(DisplayStyle.Flex, label.style.display.value, "shown while the layer is drawn");
         Assert.AreEqual(Subdistricts1948.Parse(FileText).Layer.Count, current.Count);
     }
 

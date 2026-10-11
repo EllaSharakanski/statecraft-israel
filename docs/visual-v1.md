@@ -1056,7 +1056,9 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   read this file).
 - *When it shows (owner ruling, 2026-10-11):* from the 1948 start until the 1949 armistice lines replace it, each front
   switching to its armistice line on that agreement's date (February-July 1949) once that data is built; until then the
-  layer stays, labelled on screen "Mandate sub-districts, 1947" (the baked file's `label`, `shown_from: 1948-05-15`,
+  layer stays, labelled on screen "Mandate sub-districts, 1947" (a UI label above the minimap while the layer is drawn;
+  not the renderer's 3D banner, which the tilt-shift blurs; editor-only renders have no UI and so no label) (the baked
+  file's `label`, `shown_from: 1948-05-15`,
   `shown_until: null`; `Subdistricts1948.ShowsOn`, applied on every turn; `SubdistrictTests`). Recorded in decision D-B.
 - *Kept out of the sim:* the sim reads files by name and its content hash covers only those, so neither file moves the
   hash or the goldens (`SubdistrictTests.TheSimIgnoresTheFileTheContentHashDoesNotMove`; `test_the_sim_never_reads_the_border_files`).

@@ -16,7 +16,7 @@ namespace Statecraft.Game.Map
     /// lake hexes are in none, so the coast is not outlined. Display only: the sim never reads the file. Owner ruling
     /// (2026-10-11): it shows from the game's start (<see cref="ShownFrom"/>) until the 1949 armistice lines replace it, each
     /// front on its agreement's date once that data exists (<see cref="ShownUntil"/> null until then), labelled on screen
-    /// with <see cref="Label"/>.</summary>
+    /// with <see cref="Label"/> (GameRoot's "map-layer" label above the minimap, while the layer is drawn).</summary>
     public sealed class Subdistricts1948
     {
         public const string FileName = "subdistrict_hexes_1948.yaml";
@@ -84,7 +84,8 @@ namespace Statecraft.Game.Map
                 hexes[(h[0], h[1])] = h[2];
             }
             RegionLayer layer;
-            try { layer = new RegionLayer(doc.Layer, hexes, styles, doc.Label); }
+            // The label goes in the game's UI (GameRoot, the "map-layer" label), not the 3D banner, which the tilt-shift blurs.
+            try { layer = new RegionLayer(doc.Layer, hexes, styles); }
             catch (ArgumentException e) { throw new InvalidDataException($"{FileName}: {e.Message}", e); }
             return new Subdistricts1948(layer, doc.Title, doc.Line, doc.Label, from, until, regions);
         }
@@ -106,6 +107,8 @@ namespace Statecraft.Game.Map
         }
 
         bool? shown;
+        /// <summary>Whether the last <see cref="Apply"/> drew the layer.</summary>
+        public bool Shown => shown == true;
         /// <summary>Draws the layer if <paramref name="date"/> is in its window and takes it off once it is not; a call that
         /// changes nothing leaves the map alone (so a test pattern drawn over it in a development build stays).</summary>
         public void Apply(DateTime date)
