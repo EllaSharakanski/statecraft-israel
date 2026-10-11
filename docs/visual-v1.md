@@ -1010,24 +1010,44 @@ Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id 
 - **Archetypes** (`SettlementKits`): white city (Tel Aviv, Haifa: 2-9 storey flat-roof blocks, ribbon windows and
   balcony lines in the shader, L-shaped wings, roof rooms), old town (Jaffa, Acre, Gaza, Jerusalem: packed stone houses,
   domes; Jaffa's clock tower, belfry, mosque, breakwater, lighthouse and boats), Arab town (tan cubes on slopes, a mosque),
-  moshava/kibbutz/moshav (red gable roofs, yards, a water tower; Nahalal as a ring). One merged mesh per settlement.
-- **Footprint** = (1945 population / 60,000) hexes (`KitPopulation`: Village Statistics, 1945, owner-verify), floored at
-  0.08 hex; towns share seams (distance over radius), stay on land, and tint their ground in the baked biome texture.
-- **Trees** (`Vegetation`, `VegetationLayer`): citrus groves in 2x2 patches round the coastal-plain towns, olives over
-  the hills (and lone ones on the plain), palms by the coastal towns, cypress windbreaks; `Graphics.RenderMeshInstanced`
-  per 30 km tile from `beginCameraRendering`, thinned as (110 km / distance)^2 past 110 km. The WebGL cost is per instance,
-  not per triangle (a 30% triangle cut changed nothing; the 2x2 patches took the instances from 51,000 to 21,165 and the
-  gameplay03 cost from 2.9 to 1.3 ms).
-- **Scale**: `KitScale` defaults to the ruling (25x buildings and trees). Promo 03 measures about 60x for its city blocks
-  and about 115x for its houses and trees (block, house and tree widths against the hex width); `?kitscale=60&treescale=100`
-  shows that layout in the player (counts fall with the square of the scale).
-- **#37**: `KitTests.AKitShadowStartsAtItsWalls` walks out from a lone box's shadow-side wall on both tiers at 60 and
-  250 km: the first sample (10 m) is already in shadow with `Kit.mat` (depth bias x0.25, normal bias x0, receiver offset
-  60 m) and with the old marker material alike, so no bias gap reproduces in this probe.
-- **Measured** (`c21d7cf`, headless WebGL, `machine_lock.py --exclusive --wait-unity`, load 4-8, other sessions running):
-  gameplay03 all 3.67 ms (p95 5), -trees 2.35, -kits 3.61, none 2.37; diorama02 all 11.22 (p95 12), -trees 10.30, -kits
-  11.00, none 6.96: trees 1.32 / 0.92 ms, kits 0.06 / 0.22 ms, all - none 1.30 / 4.26 ms (within budget). The `main` build
-  in the same session: gameplay03 all 2.80, diorama02 all 9.95. Headed DPR 1: trees 1.22 / 0.82 ms; DPR 2: all p95 6 / 20 ms.
-  At 60x/100x: trees -0.51 / 0.78 ms. Boot (`headed.py boot --runs 3`, `main` then this build): cpu 1 map_build 470 -> 568,
-  first_frame 3584 -> 3680; cpu 4 1879 -> 2255, 6867 -> 7257 (within max(300 ms, 50%)). Uncompressed WebGL build
-  +308,850 bytes (wasm +279,316, data +26,861, framework +2,673). Goldens and the 5-turn smoke match.
+  moshava/kibbutz/moshav (red gable roofs, yards, a water tower; Nahalal as a ring). One merged mesh per settlement; all
+  towns share one lot list, so a smaller neighbour never overlaps a bigger town's buildings. The `kits` toggle off shows
+  the marker boxes again.
+- **Footprint** = (1945 population / 60,000) hexes, floored at 0.08 hex. The populations live in
+  `content/map/settlement_population_1945.yaml` (Village Statistics, 1945, read from the Wikipedia table on 2026-10-11:
+  owner-verify until checked against a scan; Beersheba's row there is garbled, 5,570 is its likely reading), read through
+  `MapInputs.PopulationYaml`. The sim never reads the file: `SaveGameTests.TheKitPopulationFileIsOutsideTheContentHash`, and
+  the player's `BOOT OK content 96035735...` is unchanged. Towns share seams (distance over radius), stay on land, and tint
+  their ground in the baked biome texture.
+- **Trees** (`Vegetation`, `VegetationLayer`): citrus groves in 2x2 patches (every tree of a patch checked for water and
+  towns, else one tree) round the coastal-plain towns, olives over the hills (and lone ones on the plain), palms by the
+  coastal towns, cypress windbreaks; `Graphics.RenderMeshInstanced` per 30 km tile from `beginCameraRendering`, thinned as
+  (110 km / distance)^2 past 110 km. The WebGL cost is per instance, not per triangle (at 25x a 30% triangle cut changed
+  nothing; the 2x2 patches took the instances from 51,000 to 21,165 and the gameplay03 cost from 2.9 to 1.3 ms).
+- **Scale (owner ruling 2026-10-11, superseding 10-25x):** buildings and trees match promo 03's measured scale per class:
+  city blocks about 60x real size, houses and trees about 100x (`KitScale`; landmarks take the city-block scale). Counts
+  were tuned at 25x and fall with the square of the scale. `?kitscale=`, `?housescale=`, `?treescale=` (clamped to 5-200)
+  override them in the player; `MapCapture.Kits` takes `-kitScale`, `-houseScale`, `-treeScale`.
+- **#37:** the kits use the sun's own URP shadow bias, unchanged (review I3: a kit-only bias and receiver offset were
+  removed, as the probe could not show a need for them). `KitTests.AKitShadowStartsAtItsWalls` walks out from a lone box's
+  shadow-side wall from 1 m in 1 m steps, on both tiers: the first shadowed sample is 3 m out at 12 km (pixel 7 m), 10 m at
+  60 km (pixel 35 m) and 1 m at 250 km, the same as with the old marker material, and the sunlit roof darkens at most 1.9%
+  with shadows on (no acne). No bias gap reproduces, so the floating look of the old markers was not a bias gap.
+- **Grid readability:** `KitTests.TheGridStaysReadableThroughTownsAndGroves`: at gameplay03, 76 of the 90 land edge
+  midpoints whose line shows on bare ground still show it with kits and trees on (84%; the floor is 75%).
+- **Measured at the 60x/100x defaults** (`d4e7275`, headless WebGL, `machine_lock.py --exclusive --wait-unity`, load 4-9,
+  other sessions running; "none" means every visual feature off, not only the kits and trees):
+  gameplay03 all 2.34 ms (p95 3), -trees 2.57, -kits 2.34, none 2.34; diorama02 all 11.22 (p95 12), -trees 10.41, -kits
+  11.35, none 7.29. Trees -0.23 / 0.81 ms and kits 0.00 / -0.13 ms (gameplay03 sits in the ~1 ms clock's bimodal
+  2.0 / 2.4 ms noise, so its negative costs are noise): every feature is within budget, all - none 0.00 / 3.93 ms, p95
+  3 / 12 ms. The `main` build in the same session: gameplay03 all 2.78, diorama02 all 10.12 (so +1.10 ms at diorama02).
+  The diorama02 shadow overrun is unchanged (2.95 ms against `main`'s 2.91). Headed DPR 1: all 2.46 / 10.95, trees
+  -0.24 / 0.75. Headed DPR 2: all p95 6 / 20 ms (floor 33), trees 0.35 / 0.89. Boot (`headed.py boot --runs 3`, `main`
+  then this build): cpu 1 map_build 491 -> 508, first_frame 3631 -> 3610; cpu 4 1874 -> 2035, 6795 -> 6991 (within
+  max(300 ms, 50%)). The player logs `KITS buildings=306 vertices=12374 triangles=8556 trees=8147 build_ms=20 plant_ms=19`.
+- **Build size** (WebGL, `main` -> this branch): uncompressed +318,885 bytes (+0.44%: wasm +286,873, data +28,978,
+  framework.js +3,034); Brotli (quality 11, as shipped) +33,407 bytes (+0.17%: wasm +13,092, data +20,091). No texture or
+  model files: everything is generated at load.
+- **Authored meshes later:** trees swap as is (`Vegetation.Build(kind)` returns a mesh in real metres). Buildings will need
+  `Emit` to return placements (archetype, variant, position, yaw, scale) drawn through the same tile instancing and a
+  textured, instanced variant of `Kit.shader`; that refactor waits for the first authored mesh.
