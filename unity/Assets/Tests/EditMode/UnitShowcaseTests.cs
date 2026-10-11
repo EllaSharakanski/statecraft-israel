@@ -15,6 +15,7 @@ public class UnitShowcaseTests
         UnitModels.Rifleman(UnitModels.Headgear.SteelHelmet, UnitModels.RiflePose.Grounded, true, "b"),
         UnitModels.Rifleman(UnitModels.Headgear.WoolCap, UnitModels.RiflePose.Slung, false, "c"),
         UnitModels.Spitfire("s"), UnitModels.SpitfirePropeller("p"), UnitModels.Corvette("k"),
+        UnitModels.AviaS199(false, "v"), UnitModels.AviaS199(true, "w"), UnitModels.S199Propeller("q"),
     };
 
     [Test]

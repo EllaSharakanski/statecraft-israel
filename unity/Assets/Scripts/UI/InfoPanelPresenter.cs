@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Statecraft.Game.Map;
+using Statecraft.Game.Map.Units;
 using Statecraft.Sim;
 using UnityEngine.UIElements;
 
@@ -9,16 +10,24 @@ namespace Statecraft.Game.UI
 {
     /// <summary>The info panel (bottom-left): the selected hex's land, height and the settlements it owns, what the player
     /// built there, and the two map actions (transit camp, housing project) with the reason when one is not possible
-    /// (MapActions.Check). Tile yields are deliberately not shown (owner decision, M3 rulings 2).</summary>
+    /// (MapActions.Check). Tile yields are deliberately not shown (owner decision, M3 rulings 2). A selected unit
+    /// (<see cref="ShowUnit"/>) shows its read-only card instead (<see cref="UnitCard"/>): no orders, only a button to the
+    /// Defence screen (owner ruling, 2026-10-11).</summary>
     public sealed class InfoPanelPresenter : System.IDisposable
     {
         readonly VisualElement panel; readonly SimBridge bridge; readonly UiText text;
-        readonly Button campButton, housingButton; readonly System.Action onCamp, onHousing;
+        readonly Button campButton, housingButton, defenceButton; readonly System.Action onCamp, onHousing, onDefence;
+        readonly System.Func<PlacedToken?> selectedUnit;
+        bool unitMode;
         readonly Label title, subtitle, settlements, placement, reason;
         readonly UiIcon thumb;
         readonly IReadOnlyDictionary<string, string> settlementNames;
 
-        public InfoPanelPresenter(VisualElement root, SimBridge bridge, UiText text, IReadOnlyDictionary<string, string> settlementNames)
+        /// <param name="nav">Opens the Defence screen from a unit's card (null: the button does nothing).</param>
+        /// <param name="selectedUnit">The selected unit's token now (null: none), read at every render so the card follows
+        /// the state.</param>
+        public InfoPanelPresenter(VisualElement root, SimBridge bridge, UiText text, IReadOnlyDictionary<string, string> settlementNames,
+            ScreenNav? nav = null, System.Func<PlacedToken?>? selectedUnit = null)
         {
             panel = root.Q<VisualElement>("info-panel"); this.bridge = bridge; this.text = text;
             this.settlementNames = settlementNames;
@@ -28,16 +37,27 @@ namespace Statecraft.Game.UI
             campButton = panel.Q<Button>("build-camp"); housingButton = panel.Q<Button>("build-housing");
             onCamp = () => Build(MapActions.TransitCamp); onHousing = () => Build(MapActions.Housing);
             campButton.clicked += onCamp; housingButton.clicked += onHousing;
+            defenceButton = panel.Q<Button>("info-defence");
+            this.selectedUnit = selectedUnit ?? (() => null);
+            onDefence = () => nav?.Open("defence");
+            defenceButton.clicked += onDefence;
+            defenceButton.text = text["unit.defence"];
             bridge.Changed += Render;
             Render();
         }
 
         /// <summary>Unsubscribes from the bridge and the buttons (the owner calls this when disabled).</summary>
-        public void Dispose() { bridge.Changed -= Render; campButton.clicked -= onCamp; housingButton.clicked -= onHousing; }
+        public void Dispose() { bridge.Changed -= Render; campButton.clicked -= onCamp; housingButton.clicked -= onHousing; defenceButton.clicked -= onDefence; }
 
         public (int q, int r)? Selected { get; private set; }
 
-        public void Show(int q, int r) { Selected = (q, r); Render(); }
+        /// <summary>True while the panel shows a unit's card.</summary>
+        public bool ShowsUnit => unitMode && selectedUnit() != null;
+
+        public void Show(int q, int r) { unitMode = false; Selected = (q, r); Render(); }
+
+        /// <summary>Shows the selected unit's card (the unit comes from the selectedUnit callback).</summary>
+        public void ShowUnit() { unitMode = true; Selected = null; Render(); }
 
         void Build(string action)
         {
@@ -60,6 +80,18 @@ namespace Statecraft.Game.UI
         {
             var c = bridge.Content; var s = bridge.State;
             var camp = campButton; var housing = housingButton;
+            var unit = unitMode ? selectedUnit() : null;
+            defenceButton.style.display = unit != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (unit != null)
+            {
+                var card = UnitCard.For(unit.Value, s, text);
+                panel.EnableInClassList("info-empty", false);
+                title.text = card.Title; subtitle.text = card.Subtitle; settlements.text = card.Body;
+                placement.text = card.Footer; reason.text = card.Note;
+                camp.style.display = DisplayStyle.None; housing.style.display = DisplayStyle.None;
+                ShowThumb(null);
+                return;
+            }
             panel.EnableInClassList("info-empty", Selected == null);
             if (Selected == null)
             {

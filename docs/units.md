@@ -6,7 +6,8 @@ era-correct riflemen with a selection ring, a mounted rider, and aircraft with I
 This page records the slice that matches it, the pipeline choice behind it, the scale, and the sources for every uniform,
 aircraft and ship.
 
-The slice is a **showcase only**. It reads nothing from the sim and changes no game state. Where units stand, move and
+The slice is a **showcase only**. It reads nothing from the sim and changes no game state. Normal play draws the units
+from the sim's state and sourced map-only data with the same models: see "Units in play" below. Where units move and
 fight is war mode's job (#104, with the sim side in #21). The golden hashes do not move.
 
 ## How to see it
@@ -17,7 +18,8 @@ fight is war mode's job (#104, with the sim side in #21). The golden hashes do n
   editor renders. With `shot` the aircraft holds a fixed point, so the screenshots repeat.
 - **Desktop player:** run with `-units`.
 - **Editor:** `MapCapture.Promo` renders it when given `-units`.
-- **Frame cost:** `?vprofile&units` prices it as the `units` toggle (`median(all) - median(-units)`).
+- **Frame cost:** `?vprofile&units` prices it as the `unitshowcase` toggle (`median(all) - median(-unitshowcase)`). The
+  `units` toggle is the units in play.
 
 Code: `unity/Assets/Scripts/Map/Units/`. The materials are made by `UnitMaterialAssets.Create` in
 `unity/Assets/Resources/Units/`. Tests: `UnitShowcaseTests`.
@@ -53,6 +55,101 @@ Not in the slice:
 - **The mounted rider.** No 1948 IDF mounted unit was sourced for this slice. The promo's rider belongs to 1936, so it
   waits for the Yishuv era (#49) and a source.
 - **Civilian boats.** The owner ruled them out of scope; navy ships are units.
+
+## Units in play
+
+Normal play draws one token per unit from two inputs: the sim's state and `content/map/units_1948.yaml`.
+- **The state** gives the date, the security level and the reserve call-up (`GameState.Date`, `Rung`, `Mobilization`).
+  Nothing else in the sim describes the military: it has no formations and no positions (design:
+  `docs/superpowers/specs/2026-10-11-units-in-play-design.md`).
+- **The data file** is map-only. `ContentLoader` never reads it, so the content hash and the goldens do not move
+  (`UnitsInPlayTests.TheUnitFileDoesNotMoveTheContentHash`). The WebGL manifest ships it.
+
+Code: `UnitData` (the file), `UnitRoster` (which units now), `UnitPlacer` (which hex), `UnitLayer` (the tokens and the
+ring), `UnitCard` and `InfoPanelPresenter` (the card). Tests: `UnitsInPlayTests`.
+
+### Owner rulings (2026-10-11)
+
+1. One token per brigade.
+2. The number of figures follows the call-up: 3 at or above the security-level-4 floor (`rung_min_mobilization`,
+   0.4), 2 at or above the level-3 floor (0.15), else 1.
+3. 101 Squadron shows an Avia S-199 until the Spitfire's sourced date (21 October 1948), then the Spitfire.
+4. The four brigades with no sourced position (Carmeli, Alexandroni, the 8th, Oded) are listed in the file and hidden.
+
+The controller adopted the design's defaults for the rest:
+- tokens stand only at dated, sourced positions and do not move with operation events;
+- after the armistices only what a source says continued is shown (no source gives a later position yet, so no token
+  shows after 20 July 1949);
+- there are no orders: the unit's card links to the Defence screen.
+
+### What the player sees
+
+| Unit | Positions (from the sources, dated) |
+|---|---|
+| Golani (1st) | Yavne'el, May–November 1948; the Julis camp from December 1948 |
+| Kiryati (4th) | Tel Aviv |
+| Givati (5th) | Gedera (the first of the three places its source names) |
+| Etzioni (6th) | Jerusalem |
+| 7th Brigade | Latrun, 24 May–31 May 1948; Ein Shemer, June 1948 |
+| Harel (10th) | Sha'ar HaGai, to 21 December 1948 (Operation Horev, in the south, gives no place for it) |
+| Yiftach (11th) | Lydda, 9–19 July 1948 (Operation Dani) |
+| Negev (12th) | the Mekorot camp near Nir Am |
+| 101 Squadron | Ekron, 20–29 May 1948; the Herzliya strip, 30 May–September 1948; Hatzor from October 1948 |
+| INS Haganah, INS Wedgwood | Haifa harbour |
+
+A position with no stated end runs to 20 July 1949, the last armistice. Every row, date and coordinate has its source
+and check date in the file. Rows marked `wikipedia_only` (all but 101 Squadron, whose markings come from Eduard) are
+drafts until checked against a published history (Netanel Lorch, *The Edge of the Sword*, 1961) or the IDF and Defense
+Establishment Archives.
+
+**Placement.** A token stands on the nearest hex to its anchor that is clear (`UnitPlacer`, at most 3 hexes away):
+- the ring's disc stays off every settlement footprint (the kits' discs, times 1.1);
+- an army token's three figure spots (always three, so the hex does not change with the call-up) and a parked
+  aircraft's centre are on land and at least 700 m beyond every railway and road corridor;
+- a ship needs a sea hex, and no two tokens share a hex.
+
+So Kiryati stands east of Tel Aviv, not inside it: the offset is presentation, not a claim about the position.
+`UnitsInPlayTests.EveryTokenOfTheWarStandsClearOfTheTownsAndTheRoutes` checks every week of the war.
+
+**Look.** The models and the authored-prefab hook are the slice's.
+- An army token is 1 to 3 riflemen.
+- The squadron flies the slice's loop over its base at security level 4 or 5 and stands parked below that.
+- A ship is the K-20 corvette model; Wedgwood was the same modified Flower class.
+
+Clicking a token's hex selects it: the white ring goes round the hex and the info panel shows a read-only card.
+- The card gives the name, the number and the service, where the unit stands and since when, its formation and first
+  commander where sourced, and the sector in the source's words.
+- It also shows the national values the token reflects ("Reserve call-up 80% · security level 5 of 5") and the source
+  hosts, with a draft note.
+- It has no orders; a button opens the Defence screen.
+
+**The Avia S-199** (`UnitModels.AviaS199`; types `avia-s199-101sqn-1948` and, from 15 October 1948,
+`avia-s199-101sqn-1948-10`):
+- The Bf 109G airframe, 8.94 m long with a 9.92 m span, with the Jumo 211F's wide three-blade paddle propeller and the
+  MG 151 pods under the wings (Avia S-199 article).
+- One green on all surfaces: Avia's standard finish, and "the same shade of green" on D-123 in Israel (Eduard Info
+  11/2025, pp. 53–54). The exact shade is unverified.
+- Two white bands round the rear fuselage, and Star of David roundels under the wings. These come from the 101 Squadron
+  photographs of 1948 on Wikimedia Commons: the roundels show from a low camera in front of a nose-up aircraft, so they
+  are on the lower surface.
+- From Operation Ten Plagues (later Yoav, 15–22 October 1948) it adds the red spinner, the red and white rudder stripes
+  and roundels atop the wings, "for the first time" (Eduard p. 53).
+- The squadron's skull badge on the nose is too small to read at map scale and is left out.
+
+**Cost.** MEASURE_PLACEHOLDER
+
+**Left open.**
+- The rows are drafts from Wikipedia (and Eduard for the markings) until a historian checks them against Lorch or the
+  archives.
+- 101 Squadron's move from Herzliya to Hatzor is October 1948 in en.wiki, and November 1948 in he.wiki and Eduard
+  p. 54. The map follows en.wiki.
+- Wedgwood's Israeli name and pennant number conflict between its two articles. The card shows "INS Wedgwood" and no
+  number.
+- No source yet places any unit after 20 July 1949, so the map shows no units after the armistices.
+- The Spitfire's red spinner and striped rudder are attested on the Spitfires for January 1949. Eduard dates the
+  squadron's markings to October 1948, so the October–December 1948 Spitfire markings rest on that.
+- In the historical playthrough the call-up stays at or above 0.4 until the armistices, so the tokens keep three
+  figures.
 
 ## Pipeline choice: code-built miniatures
 
@@ -146,5 +243,24 @@ Navy:
 - Photograph of K-20 in Haifa harbour, 1948: light grey, mast at the bridge, funnel aft of it. Public domain.
   https://commons.wikimedia.org/wiki/File:Hagana_K-20_ship_Israel.jpg
 - Photograph of INS Haganah, about 1949. Public domain. https://commons.wikimedia.org/wiki/File:INSHaganah.jpg
+
+Avia S-199 (units in play):
+- Type, dimensions, the Jumo 211F with its paddle-bladed propeller, the underwing MG 151 kit; the first four arrived on
+  20 May 1948 and flew first on 29 May; mostly withheld by the end of October 1948.
+  https://en.wikipedia.org/wiki/Avia_S-199
+- Eduard Info 11/2025, p. 53: 101 Squadron at Herzliya (July–August 1948) and Hatzor (October 1948); D-123 in "the same
+  shade of green"; for Operation Ten Plagues (15–22 October 1948) red spinners, red and white rudder stripes, and Star
+  of David roundels "applied atop the wings for the first time". https://info.eduard.com/en/11-2025-1/strana-53
+- Eduard Info 11/2025, p. 54: Avia-built aircraft "bore the standard MNO Smalt Avion 2036.02 paint scheme on all
+  surfaces"; 101 Squadron moved to Qastina (Hatzor) on 21 November 1948. https://info.eduard.com/en/11-2025-1/strana-54
+- Photographs of 101 Squadron S-199s in 1948 (public domain): the white rear-fuselage bands, the roundels on the lower
+  wing surfaces, the paddle propeller.
+  https://commons.wikimedia.org/wiki/File:Avia-S-199-IAF-101Sqn-Tel-Nof-Israel-1948-01.jpg and
+  https://commons.wikimedia.org/wiki/File:Avia_S-199_in_June_1948_(Israeli_Air_Force).png
+- The Spitfire from 21 October 1948: IAF Spitfires fought Egyptian Spitfires that day, and a 101 Squadron pilot claimed
+  a victory. https://en.wikipedia.org/wiki/Supermarine_Spitfire_operational_history
+
+Brigades, the squadron's bases and the ships: every position, date and coordinate has its own sources and check date
+in `content/map/units_1948.yaml`.
 
 The photographs are references only: no image file is copied into the repository.

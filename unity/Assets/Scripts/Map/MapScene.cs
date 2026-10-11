@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Statecraft.Game.Boot;
 using UnityEngine;
 
@@ -103,6 +104,14 @@ namespace Statecraft.Game.Map
         /// <summary>The settlement kits' and trees' materials (null, null: placeholder markers only).</summary>
         public void ConfigureKits(Material kit, Material tree) { kitMaterial = kit; treeMaterial = tree; }
 
+        /// <summary>Each settlement's footprint on the ground plane (centre x, z; radius m): the kits' discs
+        /// (SettlementKits.FootprintRadiusM), so the units keep their tokens off the buildings (UnitLayer). Empty before Build.</summary>
+        public IReadOnlyList<(Vector2 centre, float radius)> SettlementFootprints { get; private set; } = new List<(Vector2, float)>();
+
+        /// <summary>The railways' and roads' corridors (RouteLayer.Corridors), every route whatever its date, so the units keep
+        /// their figures off them. Empty before Build.</summary>
+        public IReadOnlyList<(List<Vector2> line, float halfWidth)> RouteCorridors { get; private set; } = new List<(List<Vector2>, float)>();
+
         /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
         public Kits.KitLayer.Stats KitStats { get; private set; }
 
@@ -156,6 +165,8 @@ namespace Statecraft.Game.Map
             KitStats = null;
             // The 1948 railways and roads (issue #35), read before the kits so buildings and trees keep off them.
             var routes = Routes.RoutePaths.ReadOrNone(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Debug.LogWarning);
+            RouteCorridors = Routes.RouteLayer.Corridors(Frame, routes);
+            SettlementFootprints = list.Select(s => { var w = Frame.ToWorld(s.Lon, s.Lat, 0); return (new Vector2(w.x, w.z), Kits.SettlementKits.FootprintRadiusM(s, hexSizeM)); }).ToList();
             if (kitsOn)
             {
                 // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city
@@ -171,7 +182,7 @@ namespace Statecraft.Game.Map
                 // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
-                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes));
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, RouteCorridors);
                 kits.transform.SetParent(transform, true);
                 KitStats = stats;
                 DiagLog.BootPhase("kits built");

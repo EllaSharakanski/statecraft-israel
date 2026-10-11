@@ -1,6 +1,24 @@
 # Units in play: design (2026-10-11)
 
-Status: design only. No product code in this round.
+Status: decided and implemented on `units-in-play` (2026-10-11). The rulings are below; the built behaviour, its
+sources and what is left open are in `docs/units.md`, "Units in play".
+
+## Rulings (2026-10-11)
+
+The owner ruled on questions 1–4 and the controller adopted the defaults for 5–7:
+1. One token per brigade.
+2. The figure count follows the call-up (1, 2 or 3).
+3. An Avia S-199 until the Spitfire's sourced date (21 October 1948), then the Spitfire.
+4. The four brigades with no sourced position are hidden; the rest ship.
+5. Dated, sourced positions only; no movement in operation events.
+6. After the armistices, only what a source says continued is shown.
+7. No orders; the unit's card links to the Defence screen.
+
+Corrections found while implementing:
+- Wedgwood's pennant number: the earlier draft said K-18 without a source. Its two articles conflict (the Beauharnois
+  article gives Hashomer, K 20), so the map shows "INS Wedgwood" and no number.
+- Positions now come with dates from the sources, including Hebrew Wikipedia: Golani at Yavne'el, then Julis from
+  December 1948; the Negev Brigade at the Mekorot camp near Nir Am; the 7th Brigade at Latrun, then Ein Shemer.
 
 Goal: the PR #139 unit art (`docs/units.md`, today behind `?units`) in normal play, looking like
 `promo/final/03-gameplay-1936.png`, driven only by sim state plus sourced map-only data. The sim and goldens do not move.
@@ -90,8 +108,8 @@ Avia S-199 first and the Spitfire later (docs/units.md, "Aircraft").
 ### Navy
 
 The navy began with four ex-Aliyah Bet ships impounded in Haifa harbour (/wiki/Israeli_Navy). Three are sourced by
-name: Haganah K-20 (/wiki/HMCS_Norsyd), Wedgwood K-18, Flower class like K-20 (/wiki/HMCS_Beauharnois_(K540)), and the
-flagship Eilat (/wiki/USCGC_Northland_(WPG-49)). K-20 and K-18 are drawn off Haifa with the existing corvette model;
+name: Haganah K-20 (/wiki/HMCS_Norsyd), Wedgwood, Flower class like K-20 (/wiki/HMCS_Beauharnois_(K540)), and the
+flagship Eilat (/wiki/USCGC_Northland_(WPG-49)). Haganah and Wedgwood are drawn off Haifa with the existing corvette model;
 Eilat waits for a model; the fourth ship is not drawn until it is named.
 
 ## 3. Interaction
@@ -130,7 +148,7 @@ diorama02 already reads 17 ms p95 on a loaded machine (docs/routes.md:220), so m
 - **Data lint:** every date and anchor has `url` and `checked`; anchors resolve to land hexes (sea for ships);
   `art_type` exists; `from` < `to`; ids unique; a null anchor draws nothing.
 - **Roster cases:**
-  - 1948-05-15 at rung 5 with call-up 0.8: every sourced brigade has 3 figures, the aircraft flies, K-20 and K-18 are
+  - 1948-05-15 at rung 5 with call-up 0.8: every sourced brigade has 3 figures, the aircraft flies, Haganah and Wedgwood are
     off Haifa;
   - call-up 0.10: 1 figure each;
   - after a brigade's `to` date: its token is gone;
@@ -140,7 +158,7 @@ diorama02 already reads 17 ms p95 on a loaded machine (docs/routes.md:220), so m
   `unity/Assets/Tests`. It is not a sim golden.
 - **Art checkpoint:** a gameplay03 render with units on, plus `?vprofile` against the budget above.
 
-## 6. Open owner questions
+## 6. Owner questions (decided 2026-10-11: see "Rulings" above)
 
 1. **Token granularity:** one per brigade (12), or one per front (north, centre, Jerusalem, south)?
    *Default: per brigade.*

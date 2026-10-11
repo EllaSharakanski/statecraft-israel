@@ -15,7 +15,7 @@ namespace Statecraft.Game.Map.Units
         public const int Skin = 0, Shirt = 1, Trousers = 2, Webbing = 3, Helmet = 4, SlouchHat = 5, WoolCap = 6, Boots = 7,
             RifleWood = 8, RifleMetal = 9, Hair = 10, ShirtFaded = 11,
             CamoGrey = 12, CamoGreen = 13, Underside = 14, RoundelWhite = 15, RoundelBlue = 16, PropBlack = 17, Glass = 18,
-            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, MarkingRed = 23, Count = 24;
+            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, MarkingRed = 23, AviaGreen = 24, Count = 25;
 
         /// <summary>Texels per slot along u: the sample at a slot's centre never reaches its neighbours (bilinear, no mips).</summary>
         public const int SlotWidth = 4, Rows = 32;
@@ -46,6 +46,7 @@ namespace Statecraft.Game.Map.Units
             new Color(0.12f, 0.12f, 0.13f),   // Waterline
             new Color(0.30f, 0.31f, 0.32f),   // Funnel top
             new Color(0.72f, 0.12f, 0.10f),   // MarkingRed: 101 Squadron's spinner and rudder stripes
+            new Color(0.30f, 0.34f, 0.23f),   // AviaGreen: the S-199's one green on all surfaces (Eduard Info 11/2025 pp. 53-54; the exact shade is unverified)
         };
 
         /// <summary>u of a slot's column centre.</summary>

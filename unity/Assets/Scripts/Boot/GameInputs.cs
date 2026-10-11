@@ -16,6 +16,9 @@ namespace Statecraft.Game.Boot
         public string HeightmapJson = "", HexesJson = "", SettlementsYaml = "";
         /// <summary>content/map/route_paths_1948.yaml: the traced railways and roads the map draws (issue #35; map-only).</summary>
         public string RoutesYaml = "";
+        /// <summary>content/map/units_1948.yaml: the sourced units the map draws in play (docs/units.md; map-only, "" when
+        /// absent).</summary>
+        public string UnitsYaml = "";
         /// <summary>content/map/settlement_population_1945.yaml (the settlement kits' footprints; "" when absent). The sim
         /// never reads it.</summary>
         public string PopulationYaml = "";
@@ -38,6 +41,7 @@ namespace Statecraft.Game.Boot
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
             RoutesYaml = ReadIfExists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName)),
+            UnitsYaml = ReadIfExists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Units.UnitData.DefaultFileName)),
             PopulationYaml = File.Exists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName))
                 ? File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName)) : "",
         };
@@ -61,6 +65,7 @@ namespace Statecraft.Game.Boot
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
                     RoutesYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName, out var routes) ? routes : "",
+                    UnitsYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Units.UnitData.DefaultFileName, out var unitsYaml) ? unitsYaml : "",
                     PopulationYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Kits.KitPopulation.FileName, out var pop) ? pop : "",
                 },
             };

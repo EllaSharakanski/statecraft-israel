@@ -114,6 +114,7 @@
                 <ui:VisualElement class="row">
                     <ui:Button name="build-camp" />
                     <ui:Button name="build-housing" />
+                    <ui:Button name="info-defence" />
                 </ui:VisualElement>
                 <ui:Label name="info-reason" class="reason" />
             </ui:VisualElement>

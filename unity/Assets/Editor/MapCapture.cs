@@ -133,8 +133,9 @@ public static class MapCapture
 
     /// <summary>Renders each promo pose (PromoPose.All) at 1920x1080 once per quality tier (0 = Mobile, the WebGL tier;
     /// 1 = PC) into &lt;-captureDir&gt; (default captures/visual/editor) as &lt;tier&gt;-&lt;pose&gt;.png. Editor renders show no UI
-    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. With -units it adds the unit
-    /// art slice (UnitShowcase), still.</summary>
+    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. The units in play are drawn as
+    /// a new game starts (UnitLayer, as the player shows them on its first turn), still; with -units it adds the unit art
+    /// slice (UnitShowcase), still.</summary>
     public static void Promo()
     {
         var args = System.Environment.GetCommandLineArgs();
@@ -143,6 +144,7 @@ public static class MapCapture
         var map = OpenAndBuild();
         // The unit art slice only when asked (-units, from tools/art_checkpoint.sh --units), as ?shot&units shows it.
         if (System.Array.IndexOf(args, "-units") >= 0) Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
+        ShowStartUnits(map);
         var rig = Camera.main.GetComponent<CameraRig>();
         int saved = QualitySettings.GetQualityLevel();
         try
@@ -158,6 +160,15 @@ public static class MapCapture
             }
         }
         finally { QualitySettings.SetQualityLevel(saved, true); }
+    }
+
+    /// <summary>The units in play as a new game starts (golden seed, historical mode): what the player draws on turn 1.</summary>
+    static void ShowStartUnits(MapScene map)
+    {
+        var content = Statecraft.Sim.ContentLoader.Load(Paths.Content);
+        var units = Statecraft.Game.Map.Units.UnitData.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Statecraft.Game.Map.Units.UnitData.DefaultFileName)));
+        var layer = Statecraft.Game.Map.Units.UnitLayer.Create(map, units, content.Hexes, still: true);
+        layer.Show(content, Statecraft.Sim.Simulation.NewGame(content, Statecraft.Sim.GoldenRun.Seed, Statecraft.Sim.Mode.Historical));
     }
 
     /// <summary>Art-track iteration renders (editor, WebGL tier = quality level 0): the promo poses plus a 30 km look at the

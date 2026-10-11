@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
+  dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
+  reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from 21 October 1948),
+  and selecting a token shows the promo's ring and a read-only card with a link to the Defence screen. The goldens do
+  not move.
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).

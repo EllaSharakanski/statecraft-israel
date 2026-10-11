@@ -158,6 +158,73 @@ namespace Statecraft.Game.Map.Units
             return m.Build(name, AircraftShade);
         }
 
+        /// <summary>An Avia S-199 of 101 Squadron, IAF, 1948 (sources in docs/units.md): the Bf 109G airframe with the Jumo 211F
+        /// and its wide paddle-bladed propeller (Avia S-199 article), 8.94 m long with a 9.92 m span, one green on all
+        /// surfaces (Eduard Info 11/2025, pp. 53-54), two white bands round the rear fuselage and Star of David roundels under
+        /// the wings (101 Squadron photographs of 1948 on Wikimedia Commons), and the MG 151 cannon pods under the wings.
+        /// With <paramref name="yoavMarkings"/> (from 15 October 1948, Operation Ten Plagues, later Yoav: Eduard p. 53) it
+        /// adds the red spinner, the red and white rudder stripes and roundels on top of the wings. The 101 Squadron
+        /// skull badge on the nose is too small to read at map scale and is left out. The propeller is a separate mesh
+        /// (<see cref="S199Propeller"/>). Faces +Z, centre of gravity at the origin.</summary>
+        public static Mesh AviaS199(bool yoavMarkings, string name)
+        {
+            var m = new MiniatureMesh();
+            var shape = TRS(Vector3.zero, V(90f, 0, 0), V(0.70f, 1f, 1.05f));
+            var body = new List<Vector2> { new Vector2(-5.5f, 0.06f), new Vector2(-4.6f, 0.26f), new Vector2(-2.6f, 0.46f), new Vector2(-0.8f, 0.56f),
+                new Vector2(0.9f, 0.58f), new Vector2(2.2f, 0.55f), new Vector2(2.95f, 0.46f) };
+            m.Lathe(shape, body, P.AviaGreen, 12);
+            // Two white bands round the rear fuselage.
+            foreach (var z in new[] { -3.45f, -3.85f })
+            {
+                float r = Mathf.Lerp(0.26f, 0.46f, (z + 4.6f) / 2.0f) + 0.015f;
+                m.Lathe(shape, new List<Vector2> { new Vector2(z - 0.1f, r), new Vector2(z + 0.1f, r) }, P.RoundelWhite, 12);
+            }
+            // Spinner: the big Jumo spinner; red from October 1948, else the airframe's green.
+            m.Lathe(TRS(V(0, 0.02f, 2.95f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.40f), new Vector2(0.30f, 0.30f), new Vector2(0.55f, 0f) },
+                yoavMarkings ? P.MarkingRed : P.AviaGreen, 10);
+            m.Ellipsoid(TRS(V(0, 0.58f, -0.6f), Vector3.zero, V(0.30f, 0.28f, 0.85f)), P.Glass);
+            // Straight tapered wing with rounded tips: semi-span 4.6 m beyond the fuselage, low on it, 6.5 degree dihedral.
+            float semi = 4.6f;
+            System.Func<float, float> tip = s => s < 0.8f ? 1f : 0.15f + 0.85f * Mathf.Sqrt(Mathf.Max(0f, 1f - Mathf.Pow((s - 0.8f) / 0.2f, 2f)));
+            foreach (var side in new[] { 1f, -1f })
+            {
+                var w = TRS(V(side * 0.35f, -0.40f, 0.25f), V(0, 0, side * 6.5f), V(side, 1f, 1f));
+                m.Wing(w, s => (0.70f - 0.20f * s) * tip(s), s => (1.30f - 0.60f * s) * tip(s), semi, 0.06f, (i, j) => P.AviaGreen, (i, j) => P.AviaGreen,
+                    spanSteps: 10, chordSteps: 3);
+                var rp = w.MultiplyPoint3x4(V(semi * 0.62f, 0f, -0.25f));
+                Roundel(m, TRS(rp - V(0, 0.11f, 0), V(0, 0, side * 6.5f), V(1f, -1f, 1f)), 0.48f);   // underneath
+                if (yoavMarkings) Roundel(m, TRS(rp + V(0, 0.11f, 0), V(0, 0, side * 6.5f), Vector3.one), 0.48f);
+                // The MG 151 pod and the radiator under each wing.
+                var pod = w.MultiplyPoint3x4(V(1.65f, -0.12f, 0f));
+                m.Rod(pod + V(0, 0, -0.3f), pod + V(0, 0, 1.0f), 0.10f, 0.07f, P.AviaGreen, segments: 6);
+                m.Box(TRS(w.MultiplyPoint3x4(V(1.0f, -0.14f, -0.5f)), V(0, 0, side * 6.5f), V(0.55f, 0.18f, 0.9f)), P.AviaGreen);
+                // Tailplane.
+                var tp = TRS(V(side * 0.12f, 0.25f, -4.9f), Vector3.zero, V(side, 1f, 1f));
+                m.Wing(tp, s => (0.45f - 0.15f * s) * tip(s), s => (0.45f - 0.10f * s) * tip(s), 1.45f, 0.05f, (i, j) => P.AviaGreen, (i, j) => P.AviaGreen,
+                    spanSteps: 5, chordSteps: 2);
+            }
+            // Fin and rudder: the rear half striped red and white from October 1948 (stripes across, as on the Spitfire).
+            System.Func<int, int, int> fin = (i, j) => j == 0 || !yoavMarkings ? P.AviaGreen : (i % 2 == 0 ? P.MarkingRed : P.RoundelWhite);
+            m.Wing(TRS(V(0, 0.35f, -5.05f), V(0, 0, 90f), Vector3.one), s => (0.55f - 0.15f * s) * tip(s), s => (0.55f - 0.10f * s) * tip(s),
+                1.35f, 0.05f, fin, fin, spanSteps: 5, chordSteps: 2);
+            return m.Build(name, AircraftShade);
+        }
+
+        /// <summary>The S-199's three paddle blades (the Jumo 211F's propeller: Avia S-199 article), centred on its hub; turns
+        /// about +Z. Placed at <see cref="S199PropellerHub"/> in the aircraft's frame.</summary>
+        public static Mesh S199Propeller(string name)
+        {
+            var m = new MiniatureMesh();
+            for (int b = 0; b < 3; b++)
+            {
+                var dir = Quaternion.Euler(0, 0, 120f * b + 30f) * Vector3.up;
+                m.Rod(dir * 0.25f, dir * 1.55f, 0.20f, 0.17f, P.PropBlack, segments: 5);
+            }
+            return m.Build(name, AircraftShade);
+        }
+
+        public static readonly Vector3 S199PropellerHub = new Vector3(0f, 0.02f, 3.5f);
+
         /// <summary>The Spitfire's four-blade propeller, centred on its hub; turns about +Z. Placed at
         /// <see cref="SpitfirePropellerHub"/> in the aircraft's frame.</summary>
         public static Mesh SpitfirePropeller(string name)
