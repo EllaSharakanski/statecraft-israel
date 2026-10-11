@@ -4,7 +4,8 @@
 # tiers, and side-by-side images against the promo with colour-blind simulations. Re-checks both golden hashes in the same
 # player run and fails if a screenshot is missing or blank. The art log lives in the main checkout's captures/ so every
 # worktree appends to one history. --units adds the unit art slice (docs/units.md) to both the WebGL shots (&units) and the
-# editor renders (-units); without it the captures stay comparable across tracks. Usage:
+# editor renders (-units), and its art-log rows are named <checkpoint-name>-units, so they cannot be mistaken for plain
+# checkpoints; without it the captures stay comparable across tracks. Usage:
 # tools/art_checkpoint.sh [--no-build] [--units] <checkpoint-name>
 set -euo pipefail
 build=1; units_query=""; units_arg=()
@@ -50,5 +51,5 @@ for pose in $poses; do
 done
 shared "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" ${units_arg[@]+"${units_arg[@]}"} -logFile "$root/unity-capture-promo.log"
 git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality (no unstaged edits: checked above)
-uv run tools/art_compare.py "$out" "$name" --log "$main_root/captures/visual/art-log.tsv"
+uv run tools/art_compare.py "$out" "$name${units_query:+-units}" --log "$main_root/captures/visual/art-log.tsv"
 echo "ART CHECKPOINT $name: $(ls "$out"/*-compare*.png "$out"/editor/*-compare*.png | tr '\n' ' ')"

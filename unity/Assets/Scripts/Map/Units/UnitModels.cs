@@ -106,8 +106,9 @@ namespace Statecraft.Game.Map.Units
             m.Rod(Vector3.Lerp(butt, muzzle, 0.34f), muzzle, 0.016f, 0.014f, P.RifleMetal, segments: 5);
         }
 
-        /// <summary>A Supermarine Spitfire LF Mk IXe of 101 Squadron, IAF, as from Operation Yoav (October 1948) into January
-        /// 1949 (sources in docs/units.md): 11.23 m elliptical wing (the promo's; many IAF IXes had clipped tips), 9.47 m
+        /// <summary>A Supermarine Spitfire LF Mk IXe of 101 Squadron, IAF, late 1948 to January 1949 (sources in
+        /// docs/units.md; the red spinner and striped rudder are attested on the Spitfires for January 1949, while the
+        /// October 1948 date is attested only for the squadron's S-199s): 11.23 m elliptical wing (the promo's; many IAF IXes had clipped tips), 9.47 m
         /// fuselage, four-blade propeller, the squadron's red spinner and red-and-white striped rudder, and the IAF roundel of
         /// 1948-49, a blue Star of David on a white disc with no outer ring, on the wings and fuselage. The camouflage (RAF
         /// ocean grey and dark green over medium sea grey) is UNVERIFIED: one hobby source, and a report of brown overpaint
@@ -122,7 +123,7 @@ namespace Statecraft.Game.Map.Units
             m.Lathe(TRS(Vector3.zero, V(90f, 0, 0), V(0.78f, 1f, 1.05f)), body, P.CamoGreen, 12);
             m.Lathe(TRS(V(0, -0.22f, 0), V(90f, 0, 0), V(0.62f, 1f, 0.72f)), new List<Vector2> { new Vector2(-2.6f, 0.2f), new Vector2(-1.0f, 0.62f),
                 new Vector2(1.6f, 0.62f), new Vector2(2.6f, 0.42f) }, P.Underside, 12);
-            // Spinner: 101 Squadron red from October 1948.
+            // Spinner: 101 Squadron red (on its Spitfires by January 1949).
             m.Lathe(TRS(V(0, 0.02f, 3.0f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.36f), new Vector2(0.45f, 0.26f), new Vector2(0.75f, 0f) }, P.MarkingRed, 10);
             // Canopy.
             m.Ellipsoid(TRS(V(0, 0.68f, -0.4f), Vector3.zero, V(0.34f, 0.32f, 1.0f)), P.Glass);

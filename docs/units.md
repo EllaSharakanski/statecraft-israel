@@ -46,7 +46,7 @@ it, and there are no level-of-detail switches yet.
 | Piece | Model | Where (PromoPose.Gameplay03) |
 |---|---|---|
 | Rifle trio | three 1948 IDF riflemen: bush hat with rifle held ready, Mk II steel helmet with rifle grounded, Palmach stocking cap with rifle slung | on the centre of the hex nearest 34.88 E, 32.01 N (east of Tel Aviv, clear of the settlement labels), inside a white selection ring that fits within the hex |
-| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, as from Operation Yoav (October 1948) into January 1949: red spinner, red-and-white rudder, roundel without an outer ring | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
+| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, late 1948 – January 1949: red spinner and red-and-white rudder (attested on Spitfires for January 1949), roundel without an outer ring | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
 | Navy | modified Flower-class corvette INS Haganah (K-20), 1948, 63.4 m | off Jaffa (34.63 E, 32.02 N) |
 
 Not in the slice:
@@ -113,7 +113,8 @@ Aircraft:
   https://commons.wikimedia.org/wiki/File:Spitfire-MkIX-hatzerim-1-1.jpg
   Many IAF IXes had clipped wing tips (Fundekals review, below). The slice keeps the full elliptical wing that the promo
   shows.
-- Variant **LF.IXe**, and 101 Squadron's **red spinner** and **red-and-white striped rudder**. Two hobby sources agree:
+- Variant **LF.IXe**, and 101 Squadron's **red spinner** and **red-and-white striped rudder**. On the Spitfires these are
+  attested for **January 1949** (IsraDecal); the slice is dated "late 1948 – January 1949".
   - IsraDecal Studio, "Spitfire Mk.IX, Israeli Air Force" (IAF-123, 1:24) marking instructions, May 2023. It lists
     "Spitfire LF.IXe 2011/26, 101 Squadron, January 1949", painted in RAF colours, with a red spinner and the rudder
     painted "in White. Paint Red stripes".
@@ -121,6 +122,8 @@ Aircraft:
   - Eduard Info 11/2025: "In preparation for Operation Ten Plagues (October 15-22, 1948), later renamed Operation Yoav,
     101 Tayeset fighters obtained high visibility markings consisting of red spinners and red and white stripes on the
     rudders". https://info.eduard.com/en/11-2025-1/strana-53
+    The page shows the squadron's Avia S-199s ("Messers"), not its Spitfires. So it dates the squadron's markings to
+    October 1948, but **on the Spitfires the October 1948 date is unverified**.
   - A Fundekals decal review also says 101 Squadron "had the white and red stripes on the rudder".
     https://mail.modelingmadness.com/scott/decals/fundekals/fd48idfspit.htm
   - **Unverified:** the stripes' direction. The slice draws them across the rudder.
