@@ -280,7 +280,8 @@ public class UnitsInPlayTests
                 var w = map.Frame.ToWorld(a.Lon, a.Lat, 0);
                 var c = new Vector2((float)s.X, (float)s.Z);
                 float km = (c - new Vector2(w.x, w.z)).magnitude / 1000f;
-                log.Add($"{at} -> {s} {km:0.0} km");
+                var (slon, slat) = map.Frame.ToLonLat(new Vector3((float)s.X, 0, (float)s.Z));
+                log.Add(FormattableString.Invariant($"{at} -> {s} {km:0.0} km at {slon:0.000} E {slat:0.000} N"));
                 Assert.LessOrEqual(km * 1000f, Mathf.Sqrt(3f) * hex + 1f, $"{at}: more than one hex step from its anchor");
                 Assert.AreEqual(u.Service != UnitData.Navy, hexAt[(s.Q, s.R)].Land, $"{at}: land for the army and the air force, sea for ships");
                 if (u.Service == UnitData.Navy) continue;
@@ -320,6 +321,56 @@ public class UnitsInPlayTests
             var etzioni = layer.Spots[anchors.Single(x => x.u.Id == "etzioni").a];
             var wj = map.Frame.ToWorld(35.21944, 31.78194, 0);
             Assert.Less((new Vector2((float)etzioni.X, (float)etzioni.Z) - new Vector2(wj.x, wj.z)).magnitude, 2500f, "Etzioni stands in West Jerusalem");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Owner question (units on hard terrain): on a steep slope a figure stands on the highest ground under its
+    /// boots, so no boot sinks into the hill, and the downhill boot floats by no more than the slope's rise.</summary>
+    [Test]
+    public void AFigureStandsOnASteepSlopeWithoutSinking()
+    {
+        const float slope = 0.6f, r = UnitShowcase.FootRadiusM;   // a 31-degree hillside (steeper than the 3x relief's hills)
+        float H(float x, float z) => 100f + slope * x + 0.2f * z;
+        float y = UnitShowcase.StandHeight(H, 1000f, 2000f, r);
+        for (int k = 0; k < 16; k++)
+        {
+            float a = Mathf.PI / 8f * k;
+            Assert.GreaterOrEqual(y + 0.01f, H(1000f + Mathf.Cos(a) * r * 0.99f, 2000f + Mathf.Sin(a) * r * 0.99f), "no boot sinks into the slope");
+        }
+        Assert.LessOrEqual(y - H(1000f, 2000f), Mathf.Sqrt(slope * slope + 0.04f) * r + 0.01f, "the float is bounded by the slope over the foot");
+    }
+
+    /// <summary>The same on the map's real hills: every rifleman of every army anchor of the war stands no lower than the
+    /// ground anywhere under its boots.</summary>
+    [Test]
+    public void NoRiflemanSinksIntoTheHillsOfTheMap()
+    {
+        var map = BuildMap();
+        try
+        {
+            var layer = UnitLayer.Create(map, Units, C.Hexes, still: true);
+            var checkedFigures = 0; float worstFloat = 0f;
+            foreach (var d in new[] { new DateTime(1948, 5, 29), new DateTime(1948, 6, 5), new DateTime(1948, 7, 12), new DateTime(1948, 12, 4) })
+            {
+                layer.Show(C, StateAt(d, 5, 0.8));
+                foreach (var f in map.Terrain.transform.Find(UnitLayer.RootName).Find("Tokens").GetComponentsInChildren<Transform>().Where(t => t.name.StartsWith("Rifleman")))
+                {
+                    var p = f.position; float lowest = float.MaxValue;
+                    for (int k = 0; k < 16; k++)
+                    {
+                        float a = Mathf.PI / 8f * k;
+                        var q = UnitShowcase.Ground(map, p + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * UnitShowcase.FootRadiusM * 0.9f);
+                        Assert.LessOrEqual(q.y, p.y + 25f, $"{f.parent.name}/{f.name} on {d:yyyy-MM-dd}: a boot sinks into the ground");
+                        lowest = Mathf.Min(lowest, q.y);
+                    }
+                    worstFloat = Mathf.Max(worstFloat, p.y - lowest);
+                    checkedFigures++;
+                }
+            }
+            Debug.Log($"UNITS slope: {checkedFigures} riflemen, worst float {worstFloat:0} m");
+            Assert.Greater(checkedFigures, 40);
+            Assert.Less(worstFloat, 600f, "a figure 3.6 km tall floats less than a sixth of its height on the steepest spot");
         }
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }

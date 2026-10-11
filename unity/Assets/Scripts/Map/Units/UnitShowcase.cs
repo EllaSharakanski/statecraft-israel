@@ -126,7 +126,7 @@ namespace Statecraft.Game.Map.Units
             for (int i = 0; i < looks.Length; i++)
             {
                 var (type, hat, pose, faded, offset, heading) = looks[i];
-                var p = Ground(map, centre + new Vector3(offset.x, 0, offset.y) * TrioSpread * hex);
+                var p = Stand(map, centre + new Vector3(offset.x, 0, offset.y) * TrioSpread * hex);
                 Piece(root.transform, $"Rifleman{i}", type, () => Built(UnitModels.Rifleman(hat, pose, faded, $"Rifleman1948-{i}")),
                     paint, p, Quaternion.Euler(0, heading, 0), FigureScale);
             }
@@ -206,6 +206,30 @@ namespace Statecraft.Game.Map.Units
         {
             p.y = map.Terrain.SampleHeight(p) + map.Terrain.transform.position.y;
             return p;
+        }
+
+        /// <summary>A figure's boots reach about 0.2 m from its centre: at <see cref="FigureScale"/>, 400 m on the map.</summary>
+        public const float FootRadiusM = 0.2f * FigureScale;
+
+        /// <summary>Where a figure stands at <paramref name="p"/> (world x, z): on the highest ground under its boots (the
+        /// centre and eight points at <see cref="FootRadiusM"/>), so on a slope no boot sinks into the hill; the downhill
+        /// boot floats by at most the slope's rise over the foot radius (owner question, 2026-10-11: units on hard terrain).</summary>
+        public static Vector3 Stand(MapScene map, Vector3 p)
+        {
+            p.y = StandHeight((x, z) => map.Terrain.SampleHeight(new Vector3(x, 0, z)) + map.Terrain.transform.position.y, p.x, p.z, FootRadiusM);
+            return p;
+        }
+
+        /// <summary>The highest of <paramref name="heightAt"/> at (x, z) and at eight points round it at radius r.</summary>
+        public static float StandHeight(Func<float, float, float> heightAt, float x, float z, float r)
+        {
+            float top = heightAt(x, z);
+            for (int k = 0; k < 8; k++)
+            {
+                float a = Mathf.PI / 4f * k;
+                top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * r, z + Mathf.Sin(a) * r));
+            }
+            return top;
         }
 
         /// <summary>The highest ground under the loop (sampled every 5 degrees and at its centre), so the aircraft never

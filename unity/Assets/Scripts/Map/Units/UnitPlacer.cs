@@ -37,8 +37,8 @@ namespace Statecraft.Game.Map.Units
     /// the unit's own side (review MF1), the nearest to that, among the following; an anchor with a sourced `place_hex`
     /// considers only that hex:
     /// 1. the centres of the anchor's own hex and its six neighbours, drawn full size;
-    /// 2. then, when none is clear, those centres and six points inside each hex (at <see cref="InsideOffset"/> of the hex
-    ///    circumradius), drawn compact;
+    /// 2. then, when none is clear, those centres and eighteen points inside each hex (six on each of
+    ///    <see cref="InsideOffsets"/> of the hex circumradius), drawn compact;
     /// 3. then, when the anchor's whole neighbourhood is town (Tel Aviv), the same compact points with the ring allowed
     ///    into the town: the one that reaches least deep into it (then the nearest; with a `toward` point, simply the nearest
     ///    to it) is taken, and the kits keep a clearing for it (MapScene), so the token never stands in a building.
@@ -51,8 +51,9 @@ namespace Statecraft.Game.Map.Units
     {
         /// <summary>Hexes from the anchor's own hex (axial distance).</summary>
         public const int MaxShift = 1;
-        /// <summary>The inside points' distance from a hex centre, as a fraction of the circumradius (inside the inradius).</summary>
-        public const double InsideOffset = 0.45;
+        /// <summary>The inside points' distances from a hex centre, as fractions of the circumradius (all inside the
+        /// inradius, 0.87): six points on each ring.</summary>
+        public static readonly double[] InsideOffsets = { 0.25, 0.45, 0.65 };
 
         /// <param name="toXZ">lon, lat to the map's ground plane (metres).</param>
         /// <param name="clear">(service, x, z, compact, inTown, anchor x, anchor z): true when a token of that service may
@@ -92,9 +93,10 @@ namespace Statecraft.Game.Map.Units
                             if (h.Land == sea || MapActions.Distance(h.Q, h.R, hq, hr) > MaxShift) continue;
                             if (a.PlaceHex != null && (h.Q != a.PlaceHex[0] || h.R != a.PlaceHex[1])) continue;
                             if (held.Exists(x => x.q == h.Q && x.r == h.R && x.from < to && from < x.to)) continue;
-                            for (int k = compact ? 0 : -1; k < (compact ? 7 : 0); k++)
+                            int points = compact ? 1 + 6 * InsideOffsets.Length : 1;
+                            for (int k = 0; k < points; k++)
                             {
-                                var (x, z) = k <= 0 ? centres[i] : Inside(centres[i], k - 1, hexSizeM);
+                                var (x, z) = k == 0 ? centres[i] : Inside(centres[i], k - 1, hexSizeM);
                                 if (Math.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) > maxOffset) continue;
                                 double d = Math.Sqrt((x - target.x) * (x - target.x) + (z - target.z) * (z - target.z));
                                 // Round 3 ranks by depth into the town first (rounded to a metre), then by distance; with a
@@ -129,8 +131,8 @@ namespace Statecraft.Game.Map.Units
 
         static (double x, double z) Inside((double x, double z) c, int k, double hexSizeM)
         {
-            double ang = Math.PI / 3.0 * k;
-            return (c.x + Math.Cos(ang) * InsideOffset * hexSizeM, c.z + Math.Sin(ang) * InsideOffset * hexSizeM);
+            double ang = Math.PI / 3.0 * (k % 6), off = InsideOffsets[k / 6] * hexSizeM;
+            return (c.x + Math.Cos(ang) * off, c.z + Math.Sin(ang) * off);
         }
 
         static int Nearest((double x, double z)[] centres, (double x, double z) p)
