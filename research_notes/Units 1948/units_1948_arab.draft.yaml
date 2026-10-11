@@ -6,8 +6,8 @@
 #   side: arab (every row here).
 #   army: egypt | transjordan | iraq | syria | lebanon | ala | palestinian_local. The `armies` block below gives each
 #     army's proposed colour, badge and sourced appearance.
-#   echelon: brigade | brigade_group | regiment | battalion | force. The owner ruled brigade-scale tokens; rows below
-#     brigade are flagged (research note, "Owner questions" 1).
+#   echelon: brigade | brigade_group | regiment | battalion | force. Rows below brigade are shown as the formations they
+#     were, at a brigade token's size (ruling 3).
 #   commanders: only where a source names them; card text stays military (name, place, date).
 #   to_verify: a claim the snippet supports only in part; the row is a draft until the printed page is checked.
 #   conflicts: where the sources disagree; the row keeps one value and says which.
@@ -21,6 +21,21 @@
 #   Google Books Vs2PAgAAQBAJ. Morris = Benny Morris, 1948: A History of the First Arab-Israeli War (Yale, 2008),
 #   Google Books CC7381HrLqcC.
 
+# Rulings, 2026-10-11 (owner 1-3; controller 4-9, owner-delegated). Research note, "Rulings".
+#   1. The category label is "Local Arab forces"; each force keeps the name it used ("Army of the Holy War").
+#   2. al-Malikiyya, 15 May: the newer research (the ALA); the Lebanese 3rd Battalion from 6 June. The card notes
+#      Lorch's account (`card_note`).
+#   3. Rows below brigade are shown as the formations they were, at the same token size as a brigade.
+#   4. Every Arab token has a constant 3 figures (`figures`).
+#   5. Faluja ends on the Egyptian armistice (24 February 1949); the row notes the evacuation on 26-27 February.
+#   6. A window that opens on a source's later description is accepted; the source's date is the opening.
+#   7. The Holy War, Nazareth row is hidden until a published source is found.
+#   8. The ALA's emblem (a dagger stabbing a Star of David) is never used; the neutral badge is. The Legion's shemagh
+#      colour stays unsourced (the 1948 photographs are black and white): it is rendered neutral.
+#   9. Placement follows the Israeli units' rule: at most one hex from the anchor, never on ground the other side
+#      held; where front data is missing, the token is offset within the anchor hex.
+figures: 3
+
 armies:
   egypt:
     label: Egyptian Army (Egyptian Expeditionary Force)
@@ -33,9 +48,9 @@ armies:
     - {url: 'https://commons.wikimedia.org/wiki/File:Taha_and_Rabin.jpg', checked: '2026-10-11'}
   transjordan:
     label: Arab Legion (Transjordan)
-    colour: {hex: '#A3242B', basis: "The red chevron of the Transjordan flag (adopted 16 April 1928; en.wiki Flag of Jordan) and the Legion's red-and-white shemagh."}
+    colour: {hex: '#A3242B', basis: "The red chevron of the Transjordan flag (adopted 16 April 1928; en.wiki Flag of Jordan)."}
     badge: {glyph: seven_pointed_star, basis: "The white seven-pointed star in the flag's red triangle."}
-    appearance: "Checked shemagh with black agal, the cap badge worn on the agal; khaki shirts and trousers, leather bandoliers (photos: near Ramallah, 20 July 1948; Old City walls, 1948). Red-and-white colour: en.wiki Keffiyeh ties the red-and-white shemagh to Jordan and to Glubb's Jordanian troops; the 1948 photographs are black and white, so the colour in 1948 is from that article only (to verify)."
+    appearance: "Checked shemagh with black agal, the cap badge worn on the agal; khaki shirts and trousers, leather bandoliers (photos: near Ramallah, 20 July 1948; Old City walls, 1948). Red-and-white colour: en.wiki Keffiyeh ties the red-and-white shemagh to Jordan and to Glubb's Jordanian troops; the 1948 photographs are black and white, so the colour in 1948 is from that article only. Ruling 8: the shemagh is rendered in a neutral colour until a period source is found."
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Flag_of_Jordan', checked: '2026-10-11'}
     - {url: 'https://en.wikipedia.org/wiki/Keffiyeh', checked: '2026-10-11'}
@@ -68,14 +83,14 @@ armies:
   ala:
     label: Arab Liberation Army
     colour: {hex: '#B08D57', basis: "Sand, chosen to be distinct; the army had no national flag."}
-    badge: {glyph: neutral_crossed_rifles, basis: "SENSITIVE: the ALA's own emblem was a dagger stabbing a Star of David (Commons, the captured armoured car and the 1948 al-Musawwar page). It is not to be drawn; a neutral glyph is proposed (research note, Sensitivity 1)."}
+    badge: {glyph: neutral_crossed_rifles, basis: "Ruling 8: never the ALA's own emblem. SENSITIVE: that emblem was a dagger stabbing a Star of David (Commons, the captured armoured car and the 1948 al-Musawwar page). It is not to be drawn; a neutral glyph is proposed (research note, Sensitivity 1)."}
     appearance: "Keffiyeh with agal, khaki shirts and trousers, ammunition bandoliers, slung rifles (photo: ALA on parade, 1948)."
     sources:
     - {url: 'https://commons.wikimedia.org/wiki/File:ALA_i.jpg', checked: '2026-10-11'}
     - {url: 'https://commons.wikimedia.org/wiki/File:Qawuqjis_armored_vehicle.jpg', checked: '2026-10-11'}
     - {url: 'https://commons.wikimedia.org/wiki/File:Arab_Liberation_Army.svg', checked: '2026-10-11'}
   palestinian_local:
-    label: Local Arab forces (Army of the Holy War)
+    label: Local Arab forces
     colour: {hex: '#7A6A58', basis: "Stone brown, chosen to be distinct; no flag or emblem is sourced for the force."}
     badge: {glyph: neutral_rifle, basis: "No sourced emblem; a neutral glyph."}
     appearance: "Mixed: civilian dress with keffiyeh and agal, some in khaki or battledress, a Brodie steel helmet; STEN and Thompson guns (photo: Holy War Army fighters, Jerusalem, 1948, from before the game's window)."
@@ -205,7 +220,7 @@ units:
     to: '1949-02-24'
     end_basis: front_armistice
     front: egypt
-    note: "The pocket was evacuated after the armistice: 26 February 1949 (en.wiki Al-Faluja) or 27 February (he.wiki Faluja pocket). Rule C1 ends the window on the armistice; whether to show the two or three days after it is an owner question."
+    note: "The pocket was evacuated after the armistice: 26 February 1949 (en.wiki Al-Faluja) or 27 February (he.wiki Faluja pocket). Ruling 5: the window ends on the armistice."
     sources:
     - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA322', cite: 'Morris 2008, p. 322', checked: '2026-10-11'}
     - {url: 'https://books.google.com/books?id=CC7381HrLqcC&pg=PA332', cite: 'Morris 2008, p. 332', checked: '2026-10-11'}
@@ -626,6 +641,7 @@ units:
 # --- Lebanon ---------------------------------------------------------------------------------------------------------
 - id: lebanon_3rd_battalion
   name: Lebanese Army 3rd Battalion
+  card_note: "Lorch's The Edge of the Sword describes a Lebanese Army counter-attack at al-Malikiyya on 15 May; later research has the Arab Liberation Army there that day (ruling 2)."
   number: 3rd Battalion (the only Lebanese unit in battle)
   side: arab
   army: lebanon
@@ -654,6 +670,7 @@ units:
 # --- Arab Liberation Army --------------------------------------------------------------------------------------------
 - id: ala_2nd_yarmuk
   name: ALA 2nd Yarmuk Battalion
+  card_note: "On 15 May: Lorch's The Edge of the Sword has the Lebanese Army at al-Malikiyya; later research has this battalion (ruling 2)."
   number: 2nd Yarmuk Battalion (Arab Liberation Army)
   side: arab
   army: ala
@@ -810,23 +827,14 @@ units:
   army: palestinian_local
   echelon: force
   service: army
-  sector: "The Nazareth area."
+  sector: "The Nazareth area, until the town surrendered on 16 July 1948 (en.wiki Operation Dekel)."
   wikipedia_only: true
   status: draft
-  to_verify:
-  - "One uncited sentence in he.wiki ('another Holy War force operated in the Nazareth area until its capture by the IDF in mid-July'). Needs a published source before it ships."
-  anchors:
-  - place: Nazareth
-    lon: 35.30333
-    lat: 32.70194
-    from: '1948-05-15'
-    to: '1948-07-16'
-    end_basis: source
-    end_note: "en.wiki Operation Dekel: Nazareth surrendered on 16 July."
-    note: "No start is sourced, so the card gives none."
-    sources:
-    - {url: 'https://he.wikipedia.org/wiki/%D7%A6%D7%91%D7%90_%D7%94%D7%92%27%D7%99%D7%94%D7%90%D7%93_%D7%94%D7%A7%D7%93%D7%95%D7%A9', checked: '2026-10-11'}
-    - {url: 'https://en.wikipedia.org/wiki/Operation_Dekel', checked: '2026-10-11'}
+  hidden: "Ruling 7: hidden until a published source is found. The only source is one uncited he.wiki sentence ('another Holy War force operated in the Nazareth area until its capture by the IDF in mid-July'). If sourced, the anchor would be Nazareth (35.30333, 32.70194), from 1948-05-15 with no since, to 1948-07-16 (end_basis source)."
+  anchors: []
+  sources:
+  - {url: 'https://he.wikipedia.org/wiki/%D7%A6%D7%91%D7%90_%D7%94%D7%92%27%D7%99%D7%94%D7%90%D7%93_%D7%94%D7%A7%D7%93%D7%95%D7%A9', checked: '2026-10-11'}
+  - {url: 'https://en.wikipedia.org/wiki/Operation_Dekel', checked: '2026-10-11'}
 - id: iraqi_attached_palestinian_battalions
   name: Palestinian battalions with the Iraqi 1st Brigade
   number: Two battalions

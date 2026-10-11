@@ -41,7 +41,7 @@ sources were checked on 2026-10-11.
 
 ## The formations found
 
-Twenty-eight rows: 21 shown, 7 hidden. The windows are the map's (from inclusive, to exclusive). "Armistice" means the
+Twenty-eight rows: 20 shown, 8 hidden (after ruling 7, the Holy War Nazareth row is hidden). The windows are the map's (from inclusive, to exclusive). "Armistice" means the
 window ends on the signing of the agreement for its front: Egypt 24 Feb 1949, Lebanon 23 Mar, Jordan 3 Apr, Syria 20 Jul.
 
 | Army | Formation (echelon) | Where and when (shown) | Main sources |
@@ -66,9 +66,9 @@ window ends on the signing of the agreement for its front: Egypt 24 Feb 1949, Le
 | ALA | 3rd Yarmuk Brigade (Mahdi Salah) | Nazareth 11 Jun-16 Jul; Tarshiha 22-31 Oct | Tal 266, 334, 419, 424; Morris 278; he.wiki Hiram |
 | Local | Army of the Holy War, Lydda-Ramle (Hasan Salama) | Ramla 15 May-2 Jun | en.wiki; Tal 226-227, 238 |
 | Local | Army of the Holy War, Jerusalem | Old City 15 May-3 Oct | he.wiki; en.wiki; Tal 213 |
-| Local | Army of the Holy War, Nazareth | Nazareth 15 May-16 Jul (one uncited he.wiki sentence) | he.wiki only |
 
 **Hidden** (listed, not drawn):
+- the Army of the Holy War, Nazareth: one uncited he.wiki sentence (ruling 7);
 - the Saudi contingent: below brigade scale, Gaza-Rafah from July;
 - the Iraqi 3rd and 5th brigades, and the 2nd after Gesher: no place;
 - the Syrian 2nd Brigade: every place is on the Syrian side;
@@ -98,7 +98,7 @@ window ends on the signing of the agreement for its front: Egypt 24 Feb 1949, Le
 - **The Faluja pocket.** The 4th Brigade, under Col. Sayyid Taha, about 4,000 men (he.wiki), was encircled around
   Faluja-Iraq al-Manshiya (Morris pp. 332-335; Tal pp. 382-392). It was evacuated on 26 February (en.wiki) or
   27 February 1949 (he.wiki), after the 24 February armistice. The window ends on the armistice (rule C1); owner
-  question 3.
+  ruling 5.
 - **The eastern arm.** Egyptian troops and volunteers under Ahmad Abd al-Aziz occupied Beersheba on 19 May. They passed
   through Hebron to the Bethlehem area and the edge of Jerusalem, and joined the Legion and local irregulars at Ramat
   Rachel on 22-24 May (Morris p. 234; Tal pp. 177, 216).
@@ -136,7 +136,7 @@ window ends on the signing of the agreement for its front: Egypt 24 Feb 1949, Le
   - In Operation Dani its 1st Regiment fought at Beit Nabala and Deir Tarif (Morris pp. 287-292), and the brigade fought
     at Qula until 18 July (en.wiki).
   - en.wiki has the "4th Regiment" joining at Lydda on 10 July; Morris has the 1st. The row follows Morris.
-- **Echelon.** Two Legion rows are regiments (battalion-sized): owner question 1.
+- **Echelon.** Two Legion rows are regiments (battalion-sized), shown as such (ruling 3).
 - **Not covered:**
   - the 1st Brigade between 23 May and 10 July;
   - the 5th Regiment;
@@ -189,7 +189,7 @@ window ends on the signing of the agreement for its front: Egypt 24 Feb 1949, Le
 - **Conflict over 15 May.** Lorch's account, and the Palmach veterans', has a Lebanese Army counter-attack at
   al-Malikiyya on 15 May. he.wiki reports a "general and rare agreement" in later research, drawing on Guy Maayan's
   translation of the official Lebanese account, that the force on 15 May was the ALA. The draft follows the later
-  research; owner question 5.
+  research (ruling 2).
 
 ### The Arab Liberation Army (ALA)
 
@@ -224,7 +224,7 @@ The rule is the same: a token only for a named force at a sourced place and date
     that they went on in practice until spring 1949; the window ends on the order.
   - Tal says "local forces", not the Holy War by name (`to_verify`).
 - **Army of the Holy War, Nazareth.** One uncited sentence in he.wiki: "another Holy War force operated in the Nazareth
-  area until its capture in mid-July". Shown in the draft, but it needs a published source before it ships.
+  area until its capture in mid-July". Hidden until a published source is found (ruling 7).
 
 **Hidden:**
 - the two Palestinian battalions with the Iraqi 1st Brigade (Tal p. 233): unnamed;
@@ -283,6 +283,7 @@ mentions civilians. Each item below is something the owner should rule on before
    strictly military. Should the card say "Army of the Holy War (Jaysh al-Jihad al-Muqaddas)", or something else?
    Should the category be labelled "Local Arab forces", the usual Israeli term, or "Palestinian Arab forces" (Tal's
    wording)?
+   Ruled (1): the category is "Local Arab forces"; the force keeps its own name, "Army of the Holy War".
 3. **The Muslim Brotherhood volunteers** were part of the Egyptian eastern force. The draft names the force by its
    commander and command, not by the Brotherhood.
 4. **Events next to token positions that the cards do not mention.** Listed so the owner can confirm they stay off the
@@ -308,7 +309,7 @@ mentions civilians. Each item below is something the owner should rule on before
 5. **Iraq never signed an armistice.** The Iraqi rows end on the Israel-Jordan agreement, which covered the Iraqi
    front. The card should not say "armistice with Iraq".
 6. **al-Malikiyya.** The draft departs from Lorch, the Israeli official account, in favour of the later research
-   (ALA, not the Lebanese Army, on 15 May). Owner question 5.
+   (ALA, not the Lebanese Army, on 15 May). Ruling 2 confirms it; the card notes Lorch's account.
 7. **Crowding in Jerusalem.** Within a few kilometres stand the 6th Regiment and the Holy War (Old City, the same
    coordinate), the 3rd Regiment (Sheikh Jarrah) and the Israeli Etzioni Brigade (Jerusalem, 35.22556 E). The placer's
    one-hex offset could put an Arab token on ground Israel held. With no front data yet (rule I2), the owner may prefer
@@ -318,30 +319,37 @@ mentions civilians. Each item below is something the owner should rule on before
    - Nazareth: ALA and Holy War, 11 June-16 July;
    - Latrun: the Legion 3rd Brigade and the Israeli 7th Brigade on the same coordinate, 24 May-1 June;
    - Lydda: Yiftach, 11-19 July, beside the Legion at Bayt Nabala.
-   The token placement needs the front line, or a rule that keeps opposing tokens apart.
+   Ruled (9): the Israeli units' placement rule applies, with offsets inside the anchor hex where front data is
+   missing.
 
-## Owner questions
+## Rulings (2026-10-11)
 
-1. **Echelon.** The ruling is brigade-scale tokens. These rows are below brigade:
-   - the Legion's 6th and 3rd Regiments (battalion-sized, about 1,000 men each; Tal p. 206): the only way to show the
-     Old City and Sheikh Jarrah;
-   - the Lebanese 3rd Battalion (Lebanon's only unit in battle);
-   - the ALA 2nd Yarmuk Battalion (al-Malikiyya; Morris p. 340 says every ALA "brigade" was a battalion);
-   - the Egyptian Beersheba garrison;
-   - the hidden Saudi contingent.
-   Show them, hide them, or merge them into their brigades?
-2. **Figure count.** The Israeli tokens follow Israel's call-up (1-3 figures). No sim state describes the Arab armies.
-   The draft assumes a fixed count, perhaps 3 for brigades and 2 for battalions and forces. Owner's choice.
-3. **The Faluja pocket.** It held out two to three days past the Egyptian armistice (evacuated 26 or 27 February 1949).
-   Rule C1 ends it on 24 February. Keep C1, or show the sourced evacuation?
-4. **Windows opened on a source's later description.** Three rows open on the first date a source places the
-   formation, even though it was probably there earlier:
-   - the Egyptian 3rd Brigade at Gaza from 15 October;
-   - the Iraqi brigades from 31 May;
-   - the ALA at Tarshiha from 22 October.
-   That leaves gaps, for example Gaza from 24 May to 15 October. Acceptable under "no invented dates"?
-5. **al-Malikiyya on 15 May:** Lorch (Lebanese Army) or the later research (ALA)?
-6. **The Holy War, Nazareth row** rests on one uncited Hebrew Wikipedia sentence. Hide it until sourced?
+The owner ruled on 1-3; the controller ruled on 4-9 (owner-delegated). The draft YAML records them in its header and
+in the rows they touch.
+
+1. **Category label: "Local Arab forces".** Each force keeps the name it called itself, for example "Army of the Holy
+   War".
+2. **al-Malikiyya, 15 May: the newer research.** The ALA held it on 15 May; the Lebanese 3rd Battalion fought there from
+   6 June. The card notes Lorch's account (`card_note` on both rows).
+3. **Rows below brigade are shown as the formations they were**, at the same token size as a brigade: the Legion's 6th
+   and 3rd Regiments, the Lebanese 3rd Battalion, the ALA 2nd Yarmuk Battalion and the Beersheba garrison. The Saudi
+   contingent stays hidden: it has no sourced place, only a stretch of coast road.
+4. **Figures: a constant 3 per Arab token** (`figures: 3`). No sim state describes the Arab armies, so the count does
+   not vary.
+5. **Faluja ends on the Egyptian armistice (24 February 1949)**, consistent with `end_basis`. The row notes the
+   evacuation of 26-27 February.
+6. **A window that opens on a source's later description is accepted**, with the source's date as the opening: the
+   Egyptian 3rd Brigade at Gaza from 15 October, the Iraqi brigades from 31 May and the ALA at Tarshiha from 22 October.
+7. **The Holy War, Nazareth row is hidden** until a published source is found. Its would-be window is kept in the
+   `hidden` text.
+8. **Badges and colours.** The ALA's dagger-and-Star-of-David emblem is never used; the neutral badge is. The Legion's
+   shemagh colour stays unsourced (the 1948 photographs are black and white) and is rendered neutral until a period
+   source is found. The Legion's plate colour (`#A3242B`) now rests on the flag alone.
+9. **Placement follows the Israeli units' rule:** at most one hex from the anchor, never on ground the other side held.
+   Where front data is missing, the token is offset within its anchor hex. This settles the crowding in Jerusalem and
+   the shared hexes listed under Sensitivity 7 and 8.
+
+With these rulings the draft has 28 rows: 20 shown and 8 hidden.
 
 ## Coverage gaps (what a historian should check next)
 
