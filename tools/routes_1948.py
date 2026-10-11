@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
+from datetime import date
 import os
 import sys
 import urllib.error
@@ -116,7 +118,9 @@ def erode(mask: np.ndarray, k: int) -> np.ndarray:
 def symbol_mask(rgb: np.ndarray, kind: str) -> np.ndarray:
     """Where the map shows a route of this kind (RGB uint8 image -> bool). Tuned on the 1946 sheets:
     road: the red fill of a main road: red over green by more than 90 with green and blue within 50 of each other (the
-          hill tint is orange, green well over blue, and passed a plain red-over-green test), red above 130;
+          hill tint is orange, green well over blue, and passed a plain red-over-green test), red above 130; or, where
+          the road is printed over the valleys' green tint and reads darker (about 146, 64, 42 by the Sea of
+          Galilee), red over green by more than 65 with green and blue within 35 (the orange tint's are 60+ apart);
     rail: dark, not blue, strokes at least about 4 px thick once the white dashes inside the line are closed, which
           drops the thin double-dashed cart tracks, hairlines and road casings (lettering stays, but it is short);
     track: any dark, not blue, pixel, dilated by one so a dashed track reads as continuous."""
@@ -125,7 +129,7 @@ def symbol_mask(rgb: np.ndarray, kind: str) -> np.ndarray:
     c = rgb.astype(np.int16)
     r, g, b = c[..., 0], c[..., 1], c[..., 2]
     if kind == "road":
-        return ((r - g) > 90) & (np.abs(g - b) < 50) & (r > 130)
+        return (((r - g) > 90) & (np.abs(g - b) < 50) & (r > 130)) | (((r - g) > 65) & (np.abs(g - b) < 35) & (r > 125))
     dark = (np.maximum(np.maximum(r, g), b) < 110) & ((b - r) < 25)
     if kind == "track":
         return dilate(dark, 3)
@@ -312,6 +316,8 @@ def trace_route(route: dict, fetch: bool, preview: Path | None = None) -> list[t
     kind = route.get("trace", route["kind"])
     chain: list[tuple[int, int]] = []          # global pixel (x, y)
     on_symbol = total = 0
+    off: set[tuple[int, int]] = set()           # global pixels traced off the symbol
+    on_limit = THIN_RAIL_COST if kind == "rail" else 1.0   # a rail's thin stretches are still its symbol
     for a, b in zip(via, via[1:]):
         mpp = metres_per_px((a[1] + b[1]) / 2)
         ax, ay = lonlat_to_px(*a)
@@ -326,7 +332,11 @@ def trace_route(route: dict, fetch: bool, preview: Path | None = None) -> list[t
         start = (chain[-1][1] - y0, chain[-1][0] - x0) if chain else snap(cost, (int(ay - y0), int(ax - x0)), rad)
         end = snap(cost, (int(by - y0), int(bx - x0)), rad)
         seg = least_cost_path(cost, start, end)
-        on_symbol += sum(1 for r, c in seg if cost[r, c] <= 1.0)
+        for r, c in seg:
+            if cost[r, c] <= on_limit:
+                on_symbol += 1
+            else:
+                off.add((c + x0, r + y0))
         total += len(seg)
         glob = [(c + x0, r + y0) for r, c in seg]
         chain += glob if not chain else glob[1:]
@@ -342,6 +352,15 @@ def trace_route(route: dict, fetch: bool, preview: Path | None = None) -> list[t
     route["_on_symbol"] = on_symbol / max(total, 1)
     chain = remove_spurs(chain, SPUR_M / metres_per_px(via[0][1]))
     chain = trim_end_hooks(chain, 6 * SPUR_M / metres_per_px(via[0][1]))   # a 400 m hook at the Burma Road's start
+    # The longest run of the kept line off its symbol (a stretch the trace bridged: a name over the road, a town).
+    gap = worst = 0
+    at = chain[0]
+    for p in chain:
+        gap = gap + 1 if p in off else 0
+        if gap > worst:
+            worst, at = gap, p
+    route["_max_gap_m"] = worst * metres_per_px(via[0][1])
+    route["_gap_at"] = px_to_lonlat(*at)
     lonlat = [px_to_lonlat(x + 0.5, y + 0.5) for x, y in chain]
     # Simplify in metres (a local equirectangular frame), then back to lon/lat.
     lat0 = math.radians(sum(p[1] for p in lonlat) / len(lonlat))
@@ -360,6 +379,14 @@ def load_routes(path: Path = ROUTES) -> dict:
 def json_bounds() -> dict:
     import json
     return json.loads(HEXES.read_text())["bounds"]
+
+
+DATE_RULE = re.compile(r"\d{4}(-\d{2}-\d{2})?")
+
+
+def _as_date(v: str) -> date:
+    """A 'YYYY' (1 January) or 'YYYY-MM-DD' window bound."""
+    return date(int(v), 1, 1) if len(v) == 4 else date.fromisoformat(v)
 
 
 def validate_routes(doc: dict, bounds: dict) -> None:
@@ -381,8 +408,22 @@ def validate_routes(doc: dict, bounds: dict) -> None:
             raise ValueError(f"{rid}: status must be one of {STATUSES}")
         if not r.get("name"):
             raise ValueError(f"{rid}: name required")
-        if "opened" in r and (not isinstance(r["opened"], int) or r["opened"] > 1948):
+        if "opened" in r and (isinstance(r["opened"], bool) or not isinstance(r["opened"], int) or r["opened"] > 1948):
             raise ValueError(f"{rid}: opened, when given, must be a year <= 1948")
+        window = []
+        for key in ("from", "to"):
+            if key not in r:
+                continue
+            v = r[key]
+            if not isinstance(v, str) or not DATE_RULE.fullmatch(v):
+                raise ValueError(f"{rid}: {key} must be a quoted 'YYYY' or 'YYYY-MM-DD'")
+            window.append(_as_date(v))
+        if "from" not in r:
+            raise ValueError(f"{rid}: from is required (the date the map shows the route from)")
+        if len(window) == 2 and window[1] <= window[0]:
+            raise ValueError(f"{rid}: to must be after from")
+        if "opened" in r and window[0].year < r["opened"]:
+            raise ValueError(f"{rid}: from ({r['from']}) is before opened ({r['opened']})")
         via = r.get("via") or []
         if len(via) < 2:
             raise ValueError(f"{rid}: needs at least two waypoints")
@@ -401,7 +442,9 @@ def validate_routes(doc: dict, bounds: dict) -> None:
 HEADER = """\
 # GENERATED by tools/routes_1948.py from routes_1948.yaml and the Survey of Palestine 1:250,000 map of 1946 (public
 # domain; tiles by Palestine Open Maps). Do not edit by hand: change the waypoints in routes_1948.yaml and re-run.
-# Each route: its id, kind and status (from routes_1948.yaml), its length and its line as [lon, lat] pairs, 5 decimals.
+# Each route: its id, kind, status and display window (from, to) from routes_1948.yaml; the trace's quality (on_symbol:
+# the share of traced pixels on the route's own map symbol; max_gap_m: the longest run off it, in metres); its length
+# and its line as [lon, lat] pairs, 5 decimals.
 # Map-only: the sim never reads this file, so it does not move the content hash.
 """
 
@@ -410,7 +453,10 @@ def dump_paths(routes: list[dict], lines: dict[str, list[tuple[float, float]]]) 
     out = [HEADER, "routes:\n"]
     for r in routes:
         pts = lines[r["id"]]
-        out.append(f"- id: {r['id']}\n  kind: {r['kind']}\n  status: {r['status']}\n")
+        out.append(f"- id: {r['id']}\n  kind: {r['kind']}\n  status: {r['status']}\n  from: '{r['from']}'\n")
+        if "to" in r:
+            out.append(f"  to: '{r['to']}'\n")
+        out.append(f"  on_symbol: {r['_on_symbol']:.2f}\n  max_gap_m: {round(r['_max_gap_m'])}\n")
         out.append(f"  length_km: {length_km(pts):.1f}\n  points:\n")
         for lon, lat in pts:
             out.append(f"  - [{lon:.5f}, {lat:.5f}]\n")
@@ -428,15 +474,17 @@ def main(argv: list[str] | None = None) -> int:
     old = {}
     if PATHS.exists():
         for r in (yaml.safe_load(PATHS.read_text(encoding="utf-8")) or {}).get("routes", []):
-            old[r["id"]] = [tuple(p) for p in r["points"]]
+            old[r["id"]] = r
     lines = {}
     for r in routes:
         if args.only and r["id"] not in args.only and r["id"] in old:
-            lines[r["id"]] = old[r["id"]]
+            lines[r["id"]] = [tuple(p) for p in old[r["id"]]["points"]]
+            r["_on_symbol"], r["_max_gap_m"] = old[r["id"]]["on_symbol"], old[r["id"]]["max_gap_m"]
             continue
         lines[r["id"]] = trace_route(r, args.fetch, args.preview)
         print(f"{r['id']:32} {r['kind']:5} {len(lines[r['id']]):5} points {length_km(lines[r['id']]):7.1f} km"
-              f"  on its symbol {r['_on_symbol']:.0%}")
+              f"  on its symbol {r['_on_symbol']:.0%}, longest gap {r['_max_gap_m']:.0f} m"
+              + (" ending at %.4f, %.4f" % r["_gap_at"] if "_gap_at" in r else ""))
     PATHS.write_text(dump_paths(routes, lines), encoding="utf-8")
     print(f"wrote {PATHS.relative_to(ROOT)}")
     return 0

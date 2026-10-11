@@ -17,13 +17,19 @@
 # to_verify: what the sources leave open; a route with a to_verify line is not to be relied on beyond it.
 # opened: the year a cited source gives for the route's opening; left out where no source states it. Every route
 # except the Burma Road (1948) is on the 1946 map, so it ran by 1946 at the latest.
+# from / to: the window in which the map draws the route (RouteLayer shows it while the game date is inside it): a year
+# or a 'YYYY-MM-DD' date, quoted. `from` is the earliest date the cited sources support for the whole line as drawn
+# (1946, the map's date, where no source gives an earlier one); `to` is left out while the line still exists.
 map_source:
   name: Survey of Palestine, Palestine 1:250,000, 1946 (three sheets)
   url: https://palopenmaps.org/en/maps?basemap=pal250k1946
   tiles: https://palopenmaps.org/tiles/pal250k-1946/{z}/{x}/{y}.jpg
   licence: Public-Domain
-  note: British Mandate government survey published 1946; Crown copyright on published works lasts 50 years, so it
-    expired by 1997. Palestine Open Maps scanned and georeferenced it; checked against station coordinates (about 100 m).
+  note: PD-UKGov (expired Crown copyright, 50 years from publication for published works; HMSO treats the expiry as
+    worldwide) and PD-scan, as Wikimedia Commons files these sheets (e.g. File:Gaza_sh._04,_1946.jpg). Palestine Open
+    Maps scanned and georeferenced it; its About page calls its maps public domain under the UK Copyright, Designs and
+    Patents Act and publishes no terms of its own for the tiles or the georeferencing. The traced lines are our own
+    derivative and copy none of its layers. Checked against station coordinates (about 100 m).
   checked: '2026-10-11'
 routes:
 # --- Railways (Palestine Railways, 1920-1948) ------------------------------------------------------------------------
@@ -31,10 +37,15 @@ routes:
   name: Jaffa–Jerusalem railway
   kind: rail
   opened: 1892
+  from: '1920-10-05'
   status: draft
-  note: Jaffa terminus to Lydda junction, then Ramla, the Sorek valley and Battir to Jerusalem. The promo's train line.
-    Regular trains between Ramla and Jerusalem stopped in the 1948 war and resumed in March 1950; Jaffa station closed
-    in August 1948.
+  note: Jaffa terminus to Lydda junction, then Ramla, the Sorek valley and Battir to Jerusalem; opened 1892 as a metre
+    gauge line. The Jaffa–Lydda track was removed by the Ottoman army in 1915 (Palestine Railways), relaid as a 600 mm
+    line in February 1918, and rebuilt to standard gauge, finished in September 1920 and inaugurated on 5 October 1920
+    (Jaffa–Jerusalem railway), so the line as drawn dates from then. Service stopped during the 1948 war (Jaffa–Jerusalem
+    railway); regular trains between Ramla and Jerusalem resumed in March 1950 (Palestine Railways).
+  to_verify:
+  - The Jaffa station's closing date (August 1948 in the earlier note) is not in the cited articles' text.
   via:
   - {name: Jaffa railway station, lon: 34.7614, lat: 32.059, url: 'https://en.wikipedia.org/wiki/Jaffa_railway_station'}
   - {name: Lod railway station, lon: 34.87556, lat: 31.94583, url: 'https://en.wikipedia.org/wiki/Lod_railway_station'}
@@ -51,9 +62,14 @@ routes:
   name: Haifa–El Kantara main line (Lydda to Rafah)
   kind: rail
   opened: 1920
+  from: '1946'
   status: draft
-  note: The Palestine Railways main line south of Lydda, opened to passengers 1 November 1920 by Yibna, Isdud and
-    Majdal to Gaza and Rafah (on to El Kantara in Egypt, beyond the map). Severed at the Gaza front in 1948.
+  note: The Palestine Railways main line south of Lydda. It opened to passengers on 1 November 1920, linking El Kantara
+    by Gaza and Majdal to Lydda (Lod–Ashkelon railway); the more direct section Majdal–Isdud–Yibna–Lydda drawn here (the
+    1946 map's) was built after it. Severed at the Gaza front in 1948; freight ran Lod–Majdal (Lod–Ashkelon railway).
+  to_verify:
+  - The year the direct Majdal–Isdud–Yibna–Lydda section opened (not given by the cited source), so the line as drawn
+    is dated from the 1946 map.
   via:
   - {name: Lod railway station, lon: 34.87556, lat: 31.94583, url: 'https://en.wikipedia.org/wiki/Lod_railway_station'}
   - {name: Rehovot railway station, lon: 34.80639, lat: 31.90889, url: 'https://en.wikipedia.org/wiki/Rehovot_railway_station'}
@@ -75,10 +91,14 @@ routes:
   name: Eastern Railway (Lydda to Hadera)
   kind: rail
   opened: 1915
+  from: '1915'
   status: draft
   note: Built by the Ottoman army in 1915 and converted to standard gauge by the British; the main north-south line of
-    the Mandate. Mandate stations Lydda, Kafr Jinis, Rantiya, Rosh HaAyin, Qalqilya, Tulkarm, Qaqun, Hadera. In August
-    1948 Israel bypassed the stretch through Tulkarm (not drawn here).
+    the Mandate. Mandate stations Lydda, Kafr Jinis, Rantiya, Rosh HaAyin, Qalqilya, Tulkarm, Qaqun, Hadera. Israel
+    later bypassed the stretch through Tulkarm (not drawn here).
+  to_verify:
+  - The Tulkarm bypass date. The sources disagree. Palestine Railways says August 1948; Eastern Railway (Israel) says
+    1949.
   via:
   - {name: Lod railway station, lon: 34.87556, lat: 31.94583, url: 'https://en.wikipedia.org/wiki/Lod_railway_station'}
   - {name: Rosh HaAyin South railway station, lon: 34.93472, lat: 32.10417, url: 'https://www.wikidata.org/wiki/Q7223530'}
@@ -95,9 +115,11 @@ routes:
   name: Main line, Hadera to Haifa
   kind: rail
   opened: 1918
+  from: '1918'
   status: draft
-  note: The British Army's 1918 standard gauge extension from Hadera north along the coast to Haifa, part of the main
-    line.
+  note: The British Army's standard gauge line from Tulkarm "on a new route northwest to the coast and then northwards,
+    reaching Haifa by the end of 1918" (Palestine Railways); part of the main line. In 1948 Israel's trains ran on it
+    from Haifa as far south as Hadera (Palestine Railways).
   via:
   - {name: Hadera East railway station, lon: 34.95, lat: 32.44611, url: 'https://www.wikidata.org/wiki/Q7012759'}
   - {name: Binyamina railway station, lon: 34.94972, lat: 32.51389, url: 'https://en.wikipedia.org/wiki/Binyamina_railway_station'}
@@ -112,10 +134,14 @@ routes:
   name: Haifa–Acre line and the Haifa–Beirut–Tripoli railway
   kind: rail
   opened: 1913
+  from: '1942'
   status: draft
   note: Haifa to Acre (an extension of the Jezreel Valley line from Balad al-Sheikh, finished at the end of 1912 or in
-    1913; the Jezreel Valley railway article gives both), continued north along the coast by the 1942 wartime Haifa–Beirut
-    –Tripoli line through Nahariya and the Ras an-Naqura tunnels.
+    1913; the Jezreel Valley railway article gives both), continued north along the coast in 1942 by the wartime
+    Haifa–Beirut–Tripoli line through Nahariya and the Ras an-Naqura tunnels (Rosh HaNikra grottoes), so the whole line
+    as drawn dates from 1942. The Palmach destroyed the railway bridge at Rosh HaNikra in late February 1948, cutting the
+    line at the border (Rosh HaNikra grottoes); in 1948 Israel's trains ran north from Haifa to Kiryat Motzkin and later
+    Nahariya (Palestine Railways).
   to_verify:
   - The map's 1946 sheets show the line north of Acre; the Haifa–Acre alignment is the one the sheet shows, not checked
     against the 1913 branch's own plans.
@@ -129,14 +155,20 @@ routes:
     checked: '2026-10-11'
   - url: https://en.wikipedia.org/wiki/Palestine_Railways
     checked: '2026-10-11'
+  - url: https://en.wikipedia.org/wiki/Rosh_HaNikra_grottoes
+    checked: '2026-10-11'
 - id: jezreel_valley_railway
   name: Jezreel Valley railway (Haifa to Samakh and al-Hamma)
   kind: rail
   opened: 1905
+  from: '1905-10-15'
   status: draft
   trace: track
-  note: The narrow gauge branch of the Hejaz Railway, Haifa to Daraa (beyond the map). Israel used parts of it
-    irregularly after 1948 until the early 1950s; Beit She'an station closed on 14 May 1948.
+  note: The narrow gauge branch of the Hejaz Railway, Haifa to Daraa (beyond the map), inaugurated on 15 October 1905.
+    Its bridge between Samakh and al-Hamma was blown up in the Night of the Bridges (June 1946), cutting it off from
+    the rest of the Hejaz line; a bridge near Geva was blown on 2 March 1948 and the Jordan bridge at Gesher on 14 May
+    1948 (Jezreel Valley railway). Israel Railways repaired Haifa–Afula; that service ended in 1949, with occasional use
+    until September 1951 (Jezreel Valley railway). The track stays drawn, as it still lay on the ground.
   via:
   - {name: Haifa East railway station, lon: 35.00472, lat: 32.81194, url: 'https://en.wikipedia.org/wiki/Haifa_East_railway_station'}
   - {name: Kfar Yehoshua, lon: 35.15389, lat: 32.68361, url: 'https://en.wikipedia.org/wiki/Kfar_Yehoshua'}
@@ -153,6 +185,7 @@ routes:
 - id: jaffa_jerusalem_road
   name: Jaffa–Jerusalem road (by Latrun and Bab al-Wad)
   kind: road
+  from: '1946'
   status: draft
   note: The road the convoys of the 1947-48 siege of Jerusalem drove; from Bab al-Wad (Sha'ar HaGai) it climbs past
     Saris and al-Qastal. The Arab Legion held Latrun from 18 May 1948.
@@ -173,9 +206,12 @@ routes:
   name: Burma Road (1948)
   kind: track
   opened: 1948
+  from: '1948-06-14'
   status: draft
-  note: The makeshift bypass of Latrun built in May-June 1948, from east of Dayr Muhaysin by Bayt Jiz and Bayt Susin,
-    up to Bayt Mahsir and Saris, joining the old Jerusalem road; finished 14 June 1948.
+  note: The makeshift bypass of Latrun built in May-June 1948, from just east of Dayr Muhaysin by Bayt Jiz and Bayt
+    Susin, up to Bayt Mahsir and Saris, joining the old Jerusalem road. The first jeep attempt failed on the night of
+    30-31 May and a second got through the next night (31 May - 1 June); the steepest section opened to vehicles on 10
+    June and the road was completed on 14 June 1948 (Burma Road (Israel)), the date the map shows it from.
   to_verify:
   - Built after the 1946 map, so the trace follows the tracks the map shows between the places the source names; the
     1948 line differs where the builders cut new road (the steep ascent above Bayt Susin).
@@ -192,6 +228,7 @@ routes:
   name: Tel Aviv–Haifa road (by Ra'anana and Hadera)
   kind: road
   opened: 1937
+  from: '1937'
   status: draft
   note: The inland coastal-plain road the 1946 map shows from Tel Aviv by Ra'anana, Kefar Yona and Hadera, then along
     the foot of Mount Carmel by Fureidis and Atlit to Haifa.
@@ -215,6 +252,7 @@ routes:
 - id: coastal_road_south
   name: Coastal road south (Jaffa to Gaza and Rafah)
   kind: road
+  from: '1946'
   status: draft
   note: The main road south from Jaffa by Yibna, Isdud and Majdal to Gaza, Khan Yunis and Rafah.
   via:
@@ -233,6 +271,7 @@ routes:
   name: Haifa–Acre–Ras an-Naqura road
   kind: road
   opened: 1933
+  from: '1933'
   status: draft
   note: The coast road north from Haifa by Acre and Nahariya to the Lebanese border at Ras an-Naqura.
   via:
@@ -248,6 +287,7 @@ routes:
 - id: jerusalem_hebron_beersheba_road
   name: Jerusalem–Hebron–Beersheba road
   kind: road
+  from: '1946'
   status: draft
   note: South from Jerusalem by Bethlehem and Hebron, then down to Beersheba by ad-Dhahiriya.
   via:
@@ -264,6 +304,7 @@ routes:
 - id: jerusalem_nablus_nazareth_road
   name: Jerusalem–Nablus–Jenin–Nazareth road
   kind: road
+  from: '1946'
   status: draft
   note: The hill-country road north from Jerusalem by al-Bireh (Ramallah), Sinjil and Huwara to Nablus, then by Deir
     Sharaf and Jaba' to Jenin, across the Jezreel
@@ -285,6 +326,7 @@ routes:
 - id: tel_aviv_tulkarm_nablus_road
   name: Tel Aviv–Petah Tikva–Tulkarm–Nablus road
   kind: road
+  from: '1946'
   status: draft
   note: East from Tel Aviv by Petah Tikva and Ras al-Ein, north by Qalqilya to Tulkarm, then up into the hills by
     Anabta and Deir Sharaf to Nablus.
@@ -303,6 +345,7 @@ routes:
 - id: haifa_nazareth_tiberias_road
   name: Haifa–Nazareth–Tiberias road
   kind: road
+  from: '1946'
   status: draft
   note: South-east from Haifa through the Jezreel Valley by Nahalal to Nazareth, then by Kafr Kanna down to Tiberias.
   via:
@@ -317,6 +360,7 @@ routes:
 - id: jerusalem_jericho_road
   name: Jerusalem–Jericho road
   kind: road
+  from: '1946'
   status: draft
   note: East from Jerusalem by al-Eizariya (Bethany) down to Jericho.
   via:
@@ -329,6 +373,7 @@ routes:
 - id: tiberias_metula_road
   name: Tiberias–Rosh Pinna–Metula road
   kind: road
+  from: '1946'
   status: draft
   note: North from Tiberias along the Sea of Galilee to Rosh Pinna, then up the Hula Valley to Metula.
   via:
@@ -341,6 +386,7 @@ routes:
 - id: gaza_beersheba_road
   name: Gaza–Beersheba road
   kind: road
+  from: '1946'
   status: draft
   note: South-east from Gaza across the northern Negev to Beersheba.
   via:
@@ -354,6 +400,7 @@ routes:
 - id: beersheba_auja_road
   name: Beersheba–Auja al-Hafir road
   kind: road
+  from: '1946'
   status: draft
   note: South-west from Beersheba across the Negev to Auja al-Hafir (Nitzana) on the Egyptian border.
   via:

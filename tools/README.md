@@ -18,6 +18,9 @@ Offline data tools (uv inline-script Python). Run from the repo root.
   into `tools/.cache/pal250k-1946/`, not committed): it reads the hand-written routes, sources and waypoints in
   `content/map/routes_1948.yaml` and writes the traced lines to `content/map/route_paths_1948.yaml` (committed; the map
   draws it, the sim never reads it). `--preview` writes each traced segment over the map for checking by eye.
+- `routes_accuracy.py [--fetch]` measures how far those traced lines lie from OpenHistoricalMap (CC0) and OpenStreetMap
+  (ODbL) lines, downloaded with `--fetch` into `tools/.cache/routes-accuracy/` (never committed or copied into content),
+  and prints the accuracy table of `docs/routes.md`.
 - `web_check.py` serves a WebGL build on http://localhost and opens it in headless Chrome for Testing (Playwright's
   cache; macOS only, arm64 or x64); it passes when the console shows the expected lines (`GOLDEN OK ...`, `SMOKE OK ...`).
 - `package_release.py` zips a Brotli WebGL build for sharing (`unity/Builds/statecraft-m3-web.zip`) and refuses

@@ -65,12 +65,52 @@ def test_each_path_passes_near_every_waypoint(route):
 
 
 def test_no_segment_jumps():
-    """Consecutive points are at most 8 km apart: a longer straight jump would be a trace that left its symbol. (The
-    longest real straight is 6.5 km, on the Tel Aviv-Haifa road across the Sharon plain.)"""
+    """Consecutive points are at most 7 km apart (the longest real straight is 6.5 km, on the Tel Aviv-Haifa road across
+    the Sharon plain); and the trace itself never bridged more than 800 m off its symbol (max_gap_m, measured by the
+    tool on the kept line), so no invented chord hides inside a straight."""
     for r in PATHS:
         pts = [tuple(p) for p in r["points"]]
         worst = max(rt.km_between(a, b) for a, b in zip(pts, pts[1:]))
-        assert worst < 8.0, (r["id"], worst)
+        assert worst < 7.0, (r["id"], worst)
+        assert r["max_gap_m"] <= 800, (r["id"], r["max_gap_m"])
+
+
+def test_each_trace_follows_its_symbol():
+    """At least 85% of every route's traced pixels lie on its own map symbol (the rest: names over the road, towns)."""
+    for r in PATHS:
+        assert r["on_symbol"] >= 0.85, (r["id"], r["on_symbol"])
+
+
+def test_display_windows():
+    """Every route has a display window; the Burma Road shows from its completion on 14 June 1948 (C1), so it is not on
+    the map at the 15 May 1948 start; the rest are on the 1946 map and show from 1946 at the latest."""
+    for src in ROUTES["routes"]:
+        assert BY_ID[src["id"]]["from"] == src["from"] and BY_ID[src["id"]].get("to") == src.get("to")
+        if src["id"] != "burma_road":
+            assert rt._as_date(src["from"]) <= rt._as_date("1946"), src["id"]
+    assert BY_ID["burma_road"]["from"] == "1948-06-14"
+
+
+@pytest.mark.parametrize("change, message", [
+    ({"opened": True}, "opened"),
+    ({"opened": 1950}, "opened"),
+    ({"from": 1946}, "from must be a quoted"),
+    ({"from": "1946-6-1"}, "from must be a quoted"),
+    ({"from": "1890"}, "is before opened"),
+    ({"to": "1900"}, "to must be after from"),
+])
+def test_validate_rejects_bad_dates(change, message):
+    doc = yaml.safe_load((ROOT / "content" / "map" / "routes_1948.yaml").read_text(encoding="utf-8"))
+    doc["routes"][0].update(change)
+    with pytest.raises(ValueError, match=message):
+        rt.validate_routes(doc, BOUNDS)
+
+
+def test_validate_requires_from():
+    doc = yaml.safe_load((ROOT / "content" / "map" / "routes_1948.yaml").read_text(encoding="utf-8"))
+    del doc["routes"][0]["from"]
+    with pytest.raises(ValueError, match="from is required"):
+        rt.validate_routes(doc, BOUNDS)
 
 
 def test_the_jaffa_jerusalem_railway_is_its_real_length():
@@ -115,6 +155,8 @@ def test_symbol_masks_on_the_map_colours():
         return np.array([[rgb]], np.uint8)
     road, orange, cream, ink = px(205, 45, 50), px(235, 155, 70), px(252, 232, 182), px(30, 28, 25)
     assert rt.symbol_mask(road, "road")[0, 0]
+    assert rt.symbol_mask(px(146, 64, 42), "road")[0, 0]          # a road over the valleys' green tint
+    assert not rt.symbol_mask(px(200, 120, 40), "road")[0, 0]     # darker orange tint
     assert not rt.symbol_mask(orange, "road")[0, 0]          # the hill tint is not a road
     assert not rt.symbol_mask(cream, "road")[0, 0]
     assert rt.symbol_mask(ink, "track")[0, 0]
@@ -145,3 +187,13 @@ def test_trim_end_hooks_drops_a_hook_at_either_end():
     assert rt.trim_end_hooks(line, 4.0) == line, "a line that only moves away from its ends is kept whole"
     back = rt.trim_end_hooks((hook + line)[::-1], 4.0)
     assert back[0] == (29, 1) and back[-1] == (0, 1), "the same hook at the end"
+
+
+def test_accuracy_script_pure_parts():
+    """tools/routes_accuracy.py (the docs' accuracy table): densifying keeps the ends and the step; the 1948 filter."""
+    ra = pytest.importorskip("routes_accuracy")
+    d = ra.densify([(34.5, 31.5), (34.6, 31.5)], 20)
+    assert np.allclose(d[0], ra.xy(34.5, 31.5)) and np.allclose(d[-1], ra.xy(34.6, 31.5))
+    assert np.all(np.linalg.norm(np.diff(d, axis=0), axis=1) <= 20.01)
+    assert ra.valid_1948({"start_date": "1937-05"}) and ra.valid_1948({})
+    assert not ra.valid_1948({"start_date": "1975"}) and not ra.valid_1948({"end_date": "1948-01"})
