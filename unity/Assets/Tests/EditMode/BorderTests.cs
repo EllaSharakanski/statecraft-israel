@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 /// <summary>promo-borders: the region border renderer (MapBorders, StatecraftBorders.hlsl). The rendered tests draw the
-/// synthetic BorderProof rings: the repository holds no real region data yet, and the game draws none.</summary>
+/// synthetic BorderProof rings; the real 1948 sub-districts, which play draws (GameRoot), are SubdistrictTests'.</summary>
 public class BorderTests
 {
     [TearDown]
@@ -77,8 +77,9 @@ public class BorderTests
         Assert.Throws<System.InvalidOperationException>(() => MapBorders.Use(null));
     }
 
-    /// <summary>The game ships no region data, so the borders change no pixel: the "borders" toggle exists, and the frame is
-    /// identical with it on and off. Once a layer is in use the toggle removes it, and an empty layer draws nothing.</summary>
+    /// <summary>A map built with no layer (MapScene.Build alone; GameRoot adds the 1948 sub-districts) changes no pixel: the
+    /// "borders" toggle exists, and the frame is identical with it on and off. Once a layer is in use the toggle removes it,
+    /// and an empty layer draws nothing.</summary>
     [UnityTest]
     public IEnumerator WithoutRegionDataNothingIsDrawn()
     {

@@ -14,6 +14,8 @@ namespace Statecraft.Game.Boot
     public sealed class MapInputs
     {
         public string HeightmapJson = "", HexesJson = "", SettlementsYaml = "";
+        /// <summary>content/map/subdistrict_hexes_1948.yaml: the 1948 sub-districts the map outlines (display only).</summary>
+        public string RegionsYaml = "";
         /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
         public byte[] HeightmapR16z = new byte[0];
     }
@@ -32,6 +34,7 @@ namespace Statecraft.Game.Boot
             HeightmapR16z = File.ReadAllBytes(Path.Combine(mapDir, HeightmapCodec.FileName)),
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
+            RegionsYaml = File.ReadAllText(Path.Combine(contentDir, "map", Subdistricts1948.FileName)),
         };
 
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
@@ -49,6 +52,7 @@ namespace Statecraft.Game.Boot
                 {
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
+                    RegionsYaml = texts["map/" + Subdistricts1948.FileName],
                 },
             };
         }

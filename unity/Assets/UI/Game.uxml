@@ -82,6 +82,7 @@
         <ui:VisualElement name="info-panel" class="panel info-panel">
             <ui:Label name="info-title" class="title" />
             <ui:Label name="info-subtitle" class="muted" />
+            <ui:Label name="info-region" class="muted" />
             <ui:Label name="info-settlements" />
             <ui:Label name="info-placement" class="muted" />
             <ui:VisualElement class="row">
