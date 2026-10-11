@@ -3,17 +3,19 @@ using UnityEngine;
 
 namespace Statecraft.Game.Map.Units
 {
-    /// <summary>The paint pots of the unit miniatures: one column per slot, one row per shade. The colours follow the
-    /// references cited in docs/units.md (1948 IDF khaki drill and British 37-pattern webbing; RAF day-fighter camouflage on
-    /// the Czech-supplied Spitfire LF.IX; the early IAF roundel; Royal Canadian Navy grey on the ex-RCN corvettes), pushed
-    /// a little warmer and lighter than the photographs so they read at map scale under the warm grade, as the promo's
-    /// painted figures do. The texture is made at runtime (no file ships), owned by the map.</summary>
+    /// <summary>The paint pots of the unit miniatures: one column per slot, one row per shade. Sources are in docs/units.md:
+    /// 1948 IDF khaki drill and British 37-pattern webbing (photographs); the IAF roundel (a blue star on a white disc);
+    /// 101 Squadron's red spinner and red-and-white rudder (two hobby sources agree). The Spitfire's RAF day-fighter colours
+    /// (ocean grey and dark green over medium sea grey) have a single hobby source and are unverified; a forum report of a
+    /// brown overpaint in theatre is an open question. The corvette's light grey follows its 1948 photograph. Colours are
+    /// pushed a little warmer and lighter than the photographs so they read at map scale under the warm grade, as the
+    /// promo's painted figures do. The texture is made at runtime (no file ships), owned by the showcase.</summary>
     public static class UnitPalette
     {
         public const int Skin = 0, Shirt = 1, Trousers = 2, Webbing = 3, Helmet = 4, SlouchHat = 5, WoolCap = 6, Boots = 7,
             RifleWood = 8, RifleMetal = 9, Hair = 10, ShirtFaded = 11,
             CamoGrey = 12, CamoGreen = 13, Underside = 14, RoundelWhite = 15, RoundelBlue = 16, PropBlack = 17, Glass = 18,
-            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, Count = 23;
+            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, MarkingRed = 23, Count = 24;
 
         /// <summary>Texels per slot along u: the sample at a slot's centre never reaches its neighbours (bilinear, no mips).</summary>
         public const int SlotWidth = 4, Rows = 32;
@@ -43,9 +45,8 @@ namespace Statecraft.Game.Map.Units
             new Color(0.48f, 0.46f, 0.42f),   // Deck
             new Color(0.12f, 0.12f, 0.13f),   // Waterline
             new Color(0.30f, 0.31f, 0.32f),   // Funnel top
+            new Color(0.72f, 0.12f, 0.10f),   // MarkingRed: 101 Squadron's spinner and rudder stripes
         };
-
-        public static Color Colour(int slot) => Base[slot];
 
         /// <summary>u of a slot's column centre.</summary>
         public static float U(int slot) => (slot * SlotWidth + SlotWidth * 0.5f) / (Count * SlotWidth);
@@ -61,7 +62,9 @@ namespace Statecraft.Game.Map.Units
             return Color.Lerp(shaded, dust * 0.8f, 0.25f * (1f - Mathf.SmoothStep(0f, 0.12f, v)));
         }
 
-        public static Texture2D MakeTexture()
+        /// <summary>The palette texture. <paramref name="readable"/> false frees its CPU copy after the upload (the runtime
+        /// path; tests read the pixels back).</summary>
+        public static Texture2D MakeTexture(bool readable = true)
         {
             int w = Count * SlotWidth;
             var tex = new Texture2D(w, Rows, TextureFormat.RGBA32, false, false)
@@ -73,7 +76,7 @@ namespace Statecraft.Game.Map.Units
                     var c = Shade(x / SlotWidth, (y + 0.5f) / Rows); c.a = 1f;
                     px[y * w + x] = c;
                 }
-            tex.SetPixels(px); tex.Apply(false, false);
+            tex.SetPixels(px); tex.Apply(false, !readable);
             return tex;
         }
     }

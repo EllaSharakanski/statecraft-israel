@@ -23,7 +23,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   again. Presentation only; `?nofallback` turns it off (#44).
 - The unit art slice (a showcase for the art track, not gameplay): a 1948 IDF rifle trio with a selection ring, an IAF
   Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
-  promo's symbolic scale. Shown only with `?units`, in `?shot` screenshots and in editor renders (docs/units.md).
+  promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
+  authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),

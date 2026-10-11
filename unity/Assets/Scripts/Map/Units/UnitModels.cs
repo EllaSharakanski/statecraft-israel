@@ -6,7 +6,7 @@ using P = Statecraft.Game.Map.Units.UnitPalette;
 namespace Statecraft.Game.Map.Units
 {
     /// <summary>The unit miniatures, built in real metres (a man 1.78 m tall, the Spitfire's 11.2 m span, the corvette's
-    /// 62.5 m hull) and scaled up to the map's symbolic scale by <see cref="UnitShowcase"/>. Each model faces +Z with its
+    /// 63.4 m hull) and scaled up to the map's symbolic scale by <see cref="UnitShowcase"/>. Each model faces +Z with its
     /// origin on the ground (the aircraft: its centre of gravity). References and their check dates: docs/units.md.
     /// Rifles, straps and hat brims are thicker than real so they survive at 60 km (a painted miniature's exaggeration).</summary>
     public static class UnitModels
@@ -106,10 +106,13 @@ namespace Statecraft.Game.Map.Units
             m.Rod(Vector3.Lerp(butt, muzzle, 0.34f), muzzle, 0.016f, 0.014f, P.RifleMetal, segments: 5);
         }
 
-        /// <summary>A Supermarine Spitfire LF Mk IX as the IAF flew it in 1948 (sources in docs/units.md): 11.23 m elliptical
-        /// wing, 9.47 m fuselage, four-blade propeller, two-tone camouflage over a light underside, and the early IAF roundel
-        /// (a blue Star of David on a white disc ringed in blue) on the wings and fuselage. The propeller is a separate mesh
-        /// (<see cref="SpitfirePropeller"/>) so it can turn. Faces +Z, centre of gravity at the origin.</summary>
+        /// <summary>A Supermarine Spitfire LF Mk IXe of 101 Squadron, IAF, as from Operation Yoav (October 1948) into January
+        /// 1949 (sources in docs/units.md): 11.23 m elliptical wing (the promo's; many IAF IXes had clipped tips), 9.47 m
+        /// fuselage, four-blade propeller, the squadron's red spinner and red-and-white striped rudder, and the IAF roundel of
+        /// 1948-49, a blue Star of David on a white disc with no outer ring, on the wings and fuselage. The camouflage (RAF
+        /// ocean grey and dark green over medium sea grey) is UNVERIFIED: one hobby source, and a report of brown overpaint
+        /// in theatre is open. The propeller is a separate mesh (<see cref="SpitfirePropeller"/>) so it can turn. Faces +Z,
+        /// centre of gravity at the origin. Built with one mid shade (<see cref="AircraftShade"/>), not by height.</summary>
         public static Mesh Spitfire(string name)
         {
             var m = new MiniatureMesh();
@@ -119,8 +122,8 @@ namespace Statecraft.Game.Map.Units
             m.Lathe(TRS(Vector3.zero, V(90f, 0, 0), V(0.78f, 1f, 1.05f)), body, P.CamoGreen, 12);
             m.Lathe(TRS(V(0, -0.22f, 0), V(90f, 0, 0), V(0.62f, 1f, 0.72f)), new List<Vector2> { new Vector2(-2.6f, 0.2f), new Vector2(-1.0f, 0.62f),
                 new Vector2(1.6f, 0.62f), new Vector2(2.6f, 0.42f) }, P.Underside, 12);
-            // Spinner.
-            m.Lathe(TRS(V(0, 0.02f, 3.0f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.36f), new Vector2(0.45f, 0.26f), new Vector2(0.75f, 0f) }, P.PropBlack, 10);
+            // Spinner: 101 Squadron red from October 1948.
+            m.Lathe(TRS(V(0, 0.02f, 3.0f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.36f), new Vector2(0.45f, 0.26f), new Vector2(0.75f, 0f) }, P.MarkingRed, 10);
             // Canopy.
             m.Ellipsoid(TRS(V(0, 0.68f, -0.4f), Vector3.zero, V(0.34f, 0.32f, 1.0f)), P.Glass);
             // Elliptical wing: semi-span 5.6 m, root chord 2.5 m, low on the fuselage, with a 6 degree dihedral.
@@ -132,25 +135,26 @@ namespace Statecraft.Game.Map.Units
             foreach (var side in new[] { 1f, -1f })
             {
                 var w = TRS(V(side * 0.4f, -0.38f, 0.3f), V(0, 0, side * 6f), V(side, 1f, 1f));
-                m.Wing(w, lead, trail, semi, 0.06f, camo, P.Underside, spanSteps: 12, chordSteps: 4);
+                m.Wing(w, lead, trail, semi, 0.06f, camo, (i, j) => P.Underside, spanSteps: 12, chordSteps: 4);
                 // Wing roundel near the tip, on top and below.
                 var rp = w.MultiplyPoint3x4(V(semi * 0.66f, 0.12f, -0.15f));
                 Roundel(m, TRS(rp, V(0, 0, side * 6f), Vector3.one), 0.62f);
-                Roundel(m, TRS(rp - V(0, 0.24f, 0), V(0, 0, side * 6f), Vector3.one), 0.62f);
+                Roundel(m, TRS(rp - V(0, 0.24f, 0), V(0, 0, side * 6f), V(1f, -1f, 1f)), 0.62f);   // underneath: stacked downwards
                 // Tailplane: small ellipses.
                 var tp = TRS(V(side * 0.2f, 0.1f, -5.6f), Vector3.zero, V(side, 1f, 1f));
                 m.Wing(tp, s => 0.45f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.02f, s => 0.55f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.02f,
-                    1.55f, 0.05f, (i, j) => (i + j) % 3 == 0 ? P.CamoGreen : P.CamoGrey, P.Underside, spanSteps: 5, chordSteps: 2);
+                    1.55f, 0.05f, (i, j) => (i + j) % 3 == 0 ? P.CamoGreen : P.CamoGrey, (i, j) => P.Underside, spanSteps: 5, chordSteps: 2);
                 // Fuselage roundel.
                 Roundel(m, TRS(V(side * 0.58f, 0.15f, -2.6f), V(0, 0, side * 90f), Vector3.one), 0.48f);
                 // Radiator under each wing.
                 m.Box(TRS(V(side * 1.7f, -0.62f, 0.0f), Vector3.zero, V(0.42f, 0.28f, 1.3f)), P.Underside);
             }
-            // Fin and rudder: the elliptic Spitfire fin, a vertical surface.
+            // Fin and rudder: the elliptic Spitfire fin, a vertical surface; the rear half (the rudder) striped red and white on
+            // both sides. The stripes' direction is not in the sources; they are drawn across the rudder.
+            System.Func<int, int, int> fin = (i, j) => j == 0 ? (i % 2 == 0 ? P.CamoGreen : P.CamoGrey) : (i % 2 == 0 ? P.MarkingRed : P.RoundelWhite);
             m.Wing(TRS(V(0, 0.4f, -5.5f), V(0, 0, 90f), Vector3.one), s => 0.55f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.05f,
-                s => 0.75f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.05f, 1.55f, 0.05f, (i, j) => i % 2 == 0 ? P.CamoGreen : P.CamoGrey, P.CamoGrey,
-                spanSteps: 5, chordSteps: 2);
-            return m.Build(name);
+                s => 0.75f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.05f, 1.55f, 0.05f, fin, fin, spanSteps: 5, chordSteps: 2);
+            return m.Build(name, AircraftShade);
         }
 
         /// <summary>The Spitfire's four-blade propeller, centred on its hub; turns about +Z. Placed at
@@ -161,19 +165,22 @@ namespace Statecraft.Game.Map.Units
             for (int b = 0; b < 4; b++)
             {
                 var dir = Quaternion.Euler(0, 0, 90f * b + 20f) * Vector3.up;
-                m.Rod(dir * 0.2f, dir * 1.6f, 0.13f, 0.08f, P.PropBlack, segments: 5, shade: 0.8f);
+                m.Rod(dir * 0.2f, dir * 1.6f, 0.13f, 0.08f, P.PropBlack, segments: 5);
             }
-            return m.Build(name);
+            return m.Build(name, AircraftShade);
         }
 
         public static readonly Vector3 SpitfirePropellerHub = new Vector3(0f, 0.02f, 3.55f);
 
-        /// <summary>The early IAF roundel: a blue ring, a white disc and a blue six-pointed star of two triangles, stacked a
-        /// hair apart so they never z-fight; its plane is the local XZ, facing +Y.</summary>
+        /// <summary>The aircraft's one shade row: the palette's base colour, a touch under its top highlight.</summary>
+        public const float AircraftShade = 0.72f;
+
+        /// <summary>The IAF roundel of 1948-49: a white disc and a blue six-pointed star of two triangles whose points stay
+        /// clear of the disc's edge, with no outer ring (the ring is a 1950s Mosquito and Meteor marking; FOTW, citing Born
+        /// in Battle). Stacked a hair apart so they never z-fight; its plane is the local XZ, facing +Y.</summary>
         static void Roundel(MiniatureMesh m, Matrix4x4 at, float radius)
         {
-            m.Plate(at, Circle(radius, 20), P.RoundelBlue, shade: 0.8f);
-            m.Plate(at * T(0, 0.012f, 0), Circle(radius * 0.86f, 20), P.RoundelWhite, shade: 0.8f);
+            m.Plate(at, Circle(radius, 20), P.RoundelWhite, shade: 0.8f);
             for (int k = 0; k < 2; k++)
             {
                 var tri = new List<Vector2>();
@@ -182,7 +189,7 @@ namespace Statecraft.Game.Map.Units
                     float a = Mathf.Deg2Rad * (90f + 60f * k + 120f * i);
                     tri.Add(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius * 0.74f);
                 }
-                m.Plate(at * T(0, 0.024f + 0.002f * k, 0), tri, P.RoundelBlue, shade: 0.8f);
+                m.Plate(at * T(0, 0.012f + 0.002f * k, 0), tri, P.RoundelBlue, shade: 0.8f);
             }
         }
 
@@ -194,14 +201,14 @@ namespace Statecraft.Game.Map.Units
         }
 
         /// <summary>A modified Flower-class corvette as the Israeli Navy commissioned it in 1948 (INS Haganah, K-20, ex-HMCS
-        /// Norsyd; sources in docs/units.md): a 62.5 m hull with a raised forecastle, a bridge, one tall funnel, a mast and a
+        /// Norsyd; sources in docs/units.md): a 63.4 m (208 ft) hull with a raised forecastle, a bridge, one tall funnel, a mast and a
         /// single gun forward. Origin at the waterline amidships, bow towards +Z.</summary>
         public static Mesh Corvette(string name)
         {
             var m = new MiniatureMesh();
             // Hull: a lathe along Z, flattened into a hull section, its keel below the waterline (hidden by the sea).
-            var hull = new List<Vector2> { new Vector2(-31f, 1.2f), new Vector2(-26f, 4.2f), new Vector2(-10f, 5.0f), new Vector2(8f, 5.0f),
-                new Vector2(20f, 4.0f), new Vector2(28f, 2.0f), new Vector2(31.2f, 0.2f) };
+            var hull = new List<Vector2> { new Vector2(-31.7f, 1.2f), new Vector2(-26f, 4.2f), new Vector2(-10f, 5.0f), new Vector2(8f, 5.0f),
+                new Vector2(20f, 4.0f), new Vector2(28.5f, 2.0f), new Vector2(31.7f, 0.2f) };
             m.Lathe(TRS(V(0, 0.6f, 0), V(90f, 0, 0), V(1f, 1f, 0.95f)), hull, P.HullGrey, 14, shade: 0.75f);
             m.Lathe(TRS(V(0, -0.2f, 0), V(90f, 0, 0), V(1.01f, 1f, 0.55f)), hull, P.Waterline, 14, shade: 0.5f);
             // Decks: main deck and raised forecastle.

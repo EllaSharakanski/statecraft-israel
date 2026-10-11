@@ -9,7 +9,7 @@ namespace Statecraft.Game.Map.Units
     {
         Vector3 centre; float radius, altitude, seconds, bank; Transform? propeller; float? still;
 
-        public void Configure(Vector3 centre, float radius, float altitude, float seconds, float bank, Transform propeller, float? stillPhase)
+        public void Configure(Vector3 centre, float radius, float altitude, float seconds, float bank, Transform? propeller, float? stillPhase)
         {
             this.centre = centre; this.radius = radius; this.altitude = altitude; this.seconds = seconds; this.bank = bank;
             this.propeller = propeller; still = stillPhase;
@@ -22,7 +22,7 @@ namespace Statecraft.Game.Map.Units
         {
             if (still.HasValue) return;
             Place(Time.time / seconds % 1f);
-            if (propeller != null) propeller.localRotation = Quaternion.Euler(0, 0, -Time.time * 1500f);
+            if (propeller != null) propeller.localRotation = Quaternion.Euler(0, 0, -Mathf.Repeat(Time.time * 1500f, 360f));
         }
 
         /// <summary>Puts the aircraft at phase <paramref name="t"/> (0..1) of the loop, flying anticlockwise seen from above.</summary>

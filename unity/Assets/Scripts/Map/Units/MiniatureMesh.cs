@@ -18,10 +18,15 @@ namespace Statecraft.Game.Map.Units
         readonly List<float> shadeOverride = new List<float>();   // NaN: shade by height
         readonly List<int> tris = new List<int>();
 
-        public int VertexCount => verts.Count;
-        public int TriangleCount => tris.Count / 3;
+        // The normal matrix of the part being built: every builder places all its vertices with one matrix, so it is
+        // inverted once per part, not once per vertex.
+        Matrix4x4 normalOf = Matrix4x4.identity, normalMatrix = Matrix4x4.identity;
 
-        static Vector3 N(Matrix4x4 m, Vector3 n) => m.inverse.transpose.MultiplyVector(n).normalized;
+        Vector3 N(Matrix4x4 m, Vector3 n)
+        {
+            if (m != normalOf) { normalOf = m; normalMatrix = m.inverse.transpose; }
+            return normalMatrix.MultiplyVector(n).normalized;
+        }
 
         int Add(Matrix4x4 m, Vector3 p, Vector3 n, int slot, float shade)
         {
@@ -137,10 +142,10 @@ namespace Statecraft.Game.Map.Units
 
         /// <summary>A thin lifting surface along local +X (span) with chord along Z: the leading edge at z = +lead(s), the
         /// trailing edge at z = -trail(s) for s in [0, 1] from root to tip, thickness <paramref name="thickness"/> times the
-        /// local chord. <paramref name="topSlot"/> paints each upper panel (by its span and chord index), the lower surface is
-        /// <paramref name="bottomSlot"/>. Flat-shaded panels, so the camouflage reads as painted patches.</summary>
+        /// local chord. <paramref name="topSlot"/> and <paramref name="bottomSlot"/> paint each upper and lower panel by its
+        /// span and chord index. Flat-shaded panels, so the camouflage reads as painted patches.</summary>
         public MiniatureMesh Wing(Matrix4x4 m, Func<float, float> lead, Func<float, float> trail, float span, float thickness,
-            Func<int, int, int> topSlot, int bottomSlot, int spanSteps = 8, int chordSteps = 3)
+            Func<int, int, int> topSlot, Func<int, int, int> bottomSlot, int spanSteps = 8, int chordSteps = 3)
         {
             Vector3 P(int i, int j, float side)
             {
@@ -154,7 +159,7 @@ namespace Statecraft.Game.Map.Units
                 for (int j = 0; j < chordSteps; j++)
                 {
                     Quad(m, P(i, j, 1), P(i + 1, j, 1), P(i + 1, j + 1, 1), P(i, j + 1, 1), topSlot(i, j), up: true);
-                    Quad(m, P(i, j, -1), P(i, j + 1, -1), P(i + 1, j + 1, -1), P(i + 1, j, -1), bottomSlot, up: false);
+                    Quad(m, P(i, j, -1), P(i, j + 1, -1), P(i + 1, j + 1, -1), P(i + 1, j, -1), bottomSlot(i, j), up: false);
                 }
             return this;
         }
@@ -174,7 +179,12 @@ namespace Statecraft.Game.Map.Units
         /// highlight; a part built with an explicit shade keeps it. Every triangle is wound here to face along its vertices'
         /// normals (Unity's front face: Cross(p1 - p0, p2 - p0) points out), so the builders above need not track winding
         /// through mirrored or rotated matrices.</summary>
-        public Mesh Build(string name)
+        public Mesh Build(string name) => Build(name, float.NaN);
+
+        /// <summary>As <see cref="Build(string)"/>, but every part built without an explicit shade takes
+        /// <paramref name="shade"/> instead of its height: for models whose height says nothing about wear (an aircraft's
+        /// wings sit lowest in its airframe and would otherwise take the feet's dark wash).</summary>
+        public Mesh Build(string name, float shade)
         {
             float lo = float.MaxValue, hi = float.MinValue;
             foreach (var p in verts) { lo = Mathf.Min(lo, p.y); hi = Mathf.Max(hi, p.y); }
@@ -182,7 +192,7 @@ namespace Statecraft.Game.Map.Units
             var uv = new List<Vector2>(verts.Count);
             for (int i = 0; i < verts.Count; i++)
             {
-                float v = float.IsNaN(shadeOverride[i]) ? (verts[i].y - lo) / range : shadeOverride[i];
+                float v = !float.IsNaN(shadeOverride[i]) ? shadeOverride[i] : !float.IsNaN(shade) ? shade : (verts[i].y - lo) / range;
                 uv.Add(new Vector2(UnitPalette.U(slots[i]), Mathf.Clamp01(v)));
             }
             var flipped = new int[tris.Count];

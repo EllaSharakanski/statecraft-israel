@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
@@ -17,16 +18,17 @@ public class UnitShowcaseTests
     };
 
     [Test]
-    public void ShowcaseIsAskedForOnlyByUnitsOrShot()
+    public void ShowcaseIsAskedForOnlyByUnits()
     {
         Assert.IsTrue(UnitShowcase.Requested("https://x/index.html?units", new string[0], true));
-        Assert.IsTrue(UnitShowcase.Requested("https://x/index.html?golden&shot", new string[0], true));
+        Assert.IsTrue(UnitShowcase.Requested("https://x/index.html?golden&shot&units", new string[0], true));
+        Assert.IsFalse(UnitShowcase.Requested("https://x/index.html?golden&shot", new string[0], true), "a plain ?shot stays comparable across tracks");
         Assert.IsFalse(UnitShowcase.Requested("https://x/index.html?golden&smoke=5", new string[0], true));
         Assert.IsFalse(UnitShowcase.Requested("https://x/index.html?vprofile", new string[0], true), "profiles price it only with &units");
         Assert.IsFalse(UnitShowcase.Requested("https://x/units/index.html?unitsx", new string[0], true));
         Assert.IsTrue(UnitShowcase.Requested(null, new[] { "player", "-units" }, false));
-        Assert.IsFalse(UnitShowcase.Requested(null, new[] { "player" }, false));
-        Assert.IsTrue(UnitShowcase.StillRequested("https://x/?shot", new string[0], true));
+        Assert.IsFalse(UnitShowcase.Requested(null, new[] { "player", "-shot" }, false));
+        Assert.IsTrue(UnitShowcase.StillRequested("https://x/?shot&units", new string[0], true));
         Assert.IsFalse(UnitShowcase.StillRequested("https://x/?units", new string[0], true));
     }
 
@@ -63,6 +65,32 @@ public class UnitShowcaseTests
                 if (Vector3.Dot(face, n[t[i]] + n[t[i + 1]] + n[t[i + 2]]) < 0f) bad++;
             }
             Assert.AreEqual(0, bad, $"{mesh.name}: {bad} of {counted} triangles face against their normals");
+            Object.DestroyImmediate(mesh);
+        }
+    }
+
+    /// <summary>The builders' normals point out of each solid (the winding test above only checks Build against the
+    /// normals, so it cannot catch an inside-out builder). Convex parts, placed by rotated, scaled and mirrored matrices.</summary>
+    [Test]
+    public void BuilderNormalsPointOutwards()
+    {
+        var at = Matrix4x4.TRS(new Vector3(3, 1, -2), Quaternion.Euler(20, 35, -10), new Vector3(1.5f, 0.6f, 2f));
+        var mirrored = Matrix4x4.TRS(new Vector3(-4, 0, 1), Quaternion.Euler(0, 0, 6), new Vector3(-1f, 1f, 1f));
+        var parts = new (string name, MiniatureMesh mesh, Vector3 centre)[]
+        {
+            ("ellipsoid", new MiniatureMesh().Ellipsoid(at, 0), at.MultiplyPoint3x4(Vector3.zero)),
+            ("mirrored ellipsoid", new MiniatureMesh().Ellipsoid(mirrored, 0), mirrored.MultiplyPoint3x4(Vector3.zero)),
+            ("capped cone", new MiniatureMesh().Lathe(at, new[] { new Vector2(0f, 1f), new Vector2(2f, 0.4f) }, 0), at.MultiplyPoint3x4(new Vector3(0, 1f, 0))),
+            ("tapered rod", new MiniatureMesh().Rod(new Vector3(0, 0, 0), new Vector3(1, 2, 0.5f), 0.3f, 0.2f, 0), new Vector3(0.5f, 1f, 0.25f)),
+            ("box", new MiniatureMesh().Box(at, 0), at.MultiplyPoint3x4(Vector3.zero)),
+        };
+        foreach (var (name, builder, centre) in parts)
+        {
+            var mesh = builder.Build(name);
+            var v = mesh.vertices; var n = mesh.normals;
+            int inward = 0;
+            for (int i = 0; i < v.Length; i++) if (Vector3.Dot(n[i], v[i] - centre) < -1e-4f) inward++;
+            Assert.AreEqual(0, inward, $"{name}: {inward} of {v.Length} normals point inwards");
             Object.DestroyImmediate(mesh);
         }
     }
@@ -112,13 +140,30 @@ public class UnitShowcaseTests
         finally { Object.DestroyImmediate(go); Object.DestroyImmediate(prop); }
     }
 
-    [Test]
-    public void SpawnBuildsTheSliceAtGameplay03AndTheToggleHidesIt()
+    static MapScene BuildMap()
     {
         EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var map = new GameObject("MapScene").AddComponent<MapScene>();
         map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
         map.Build();
+        return map;
+    }
+
+    /// <summary>Everything a spawn made that must be freed with it: meshes, the palette material and its texture.</summary>
+    static List<Object> SpawnedAssets(GameObject root)
+    {
+        var list = new List<Object>();
+        foreach (var f in root.GetComponentsInChildren<MeshFilter>(true)) list.Add(f.sharedMesh);
+        var paint = root.transform.Find("Rifleman0").GetComponent<MeshRenderer>().sharedMaterial;
+        list.Add(paint); list.Add(paint.GetTexture("_BaseMap"));
+        Assert.IsTrue(list.All(o => o != null));
+        return list;
+    }
+
+    [Test]
+    public void SpawnBuildsTheSliceAtGameplay03AndTheToggleHidesIt()
+    {
+        var map = BuildMap();
         try
         {
             var root = UnitShowcase.Spawn(map, still: true);
@@ -126,6 +171,7 @@ public class UnitShowcaseTests
             Assert.AreEqual(3, root.GetComponentsInChildren<MeshFilter>().Count(f => f.name.StartsWith("Rifleman")));
             Assert.IsNotNull(root.transform.Find("SelectionRing"));
             Assert.IsNotNull(root.transform.Find("Corvette1948"));
+            Assert.IsNotNull(root.transform.Find("Spitfire1948/Propeller"));
             var plane = root.GetComponentInChildren<ShowcaseFlight>();
             Assert.AreEqual(UnitShowcase.StillPhase, plane.StillPhase);
             // Each figure stands on the ground under it.
@@ -147,13 +193,67 @@ public class UnitShowcaseTests
             Assert.IsFalse(root.activeSelf);
             VisualToggles.Set(UnitShowcase.ToggleName, true);
             Assert.IsTrue(root.activeSelf);
-            // A second spawn replaces the first rather than stacking.
+            // A second spawn replaces the first rather than stacking, and frees the first one's assets.
+            var first = SpawnedAssets(root);
             UnitShowcase.Spawn(map, still: true);
             int count = 0; foreach (Transform c in map.Terrain.transform) if (c.name == UnitShowcase.RootName) count++;
             Assert.AreEqual(1, count);
+            Assert.IsTrue(first.All(o => o == null), "the replaced spawn's meshes, material and palette are destroyed");
+            CollectionAssert.Contains(VisualToggles.Names, UnitShowcase.ToggleName, "the new spawn keeps its switch");
         }
         finally { Object.DestroyImmediate(map.gameObject); }
         CollectionAssert.DoesNotContain(VisualToggles.Names, UnitShowcase.ToggleName, "the map's teardown removes the switch");
+    }
+
+    [Test]
+    public void TheTrioStandsOnAHexCentreAndTheMapFreesTheSlice()
+    {
+        var map = BuildMap();
+        List<Object> assets;
+        try
+        {
+            var root = UnitShowcase.Spawn(map, still: true);
+            var ring = root.transform.Find("SelectionRing").GetComponent<Renderer>().bounds.center;
+            float nearest = float.MaxValue;
+            foreach (var h in map.Hexes.hexes)
+            {
+                var c = map.Frame.ToWorld(h.lon, h.lat, 0);
+                nearest = Mathf.Min(nearest, new Vector2(c.x - ring.x, c.z - ring.z).magnitude);
+            }
+            Assert.Less(nearest, 50f, "the ring (and the trio inside it) is centred on a hex");
+            // The ring fits inside its hex: its outer edge is short of the hex's inscribed circle.
+            float hex = map.Hexes.hex_size_km * 1000f;
+            Assert.Less(UnitShowcase.RingRadius * hex * (1f + UnitShowcase.RingWidth), hex * Mathf.Sqrt(3f) / 2f);
+            assets = SpawnedAssets(root);
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+        Assert.IsTrue(assets.All(o => o == null), "destroying the map destroys every mesh, the material and the palette");
+    }
+
+    [Test]
+    public void AnAuthoredModelReplacesTheCodeBuiltOneForItsType()
+    {
+        var map = BuildMap();   // first: a new scene would destroy the stand-in models
+        var helmet = new GameObject("authored-helmet"); new GameObject("AuthoredMarker").transform.SetParent(helmet.transform);
+        var spitfire = new GameObject("authored-spitfire"); new GameObject("AuthoredMarker").transform.SetParent(spitfire.transform);
+        var saved = UnitShowcase.AuthoredModel;
+        UnitShowcase.AuthoredModel = type => type == UnitShowcase.RiflemanHelmetType ? helmet : type == UnitShowcase.SpitfireType ? spitfire : null;
+        try
+        {
+            var root = UnitShowcase.Spawn(map, still: true);
+            Assert.IsNotNull(root.transform.Find("Rifleman1/AuthoredMarker"), "the helmet rifleman is the authored model");
+            Assert.IsNull(root.transform.Find("Rifleman1").GetComponent<MeshFilter>(), "no code-built mesh for it");
+            Assert.IsNotNull(root.transform.Find("Rifleman0").GetComponent<MeshFilter>(), "the others stay code-built");
+            Assert.AreEqual(UnitShowcase.FigureScale, root.transform.Find("Rifleman1").localScale.x, 1e-3f, "placed and scaled as the code-built one");
+            Assert.IsNotNull(root.transform.Find("Spitfire1948/Airframe/AuthoredMarker"));
+            Assert.IsNull(root.transform.Find("Spitfire1948/Propeller"), "an authored aircraft brings its own propeller");
+            Assert.IsNotNull(root.transform.Find("Corvette1948").GetComponent<MeshFilter>());
+        }
+        finally
+        {
+            UnitShowcase.AuthoredModel = saved;
+            Object.DestroyImmediate(map.gameObject); Object.DestroyImmediate(helmet); Object.DestroyImmediate(spitfire);
+        }
     }
 
     static Material Load(string name) => AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/{name}.mat");
