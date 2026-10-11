@@ -14,6 +14,8 @@ namespace Statecraft.Game.EditorTools
         public const string SelectionPath = Folder + "/HexSelection.mat";
         public const string SeaPath = Folder + "/Sea.mat";
         public const string BorderLandPath = Folder + "/BorderLand.mat";
+        public const string KitPath = Folder + "/Kit.mat";
+        public const string TreePath = Folder + "/Tree.mat";
 
         public static void Create()
         {
@@ -41,6 +43,14 @@ namespace Statecraft.Game.EditorTools
             land.SetFloat("_Smoothness", 0f); land.SetFloat("_Metallic", 0f);
             land.SetFloat("_SpecularHighlights", 1f); land.SetFloat("_EnvironmentReflections", 1f);
             EditorUtility.SetDirty(land);
+            // Settlement kits and trees (art spike): Assets/Shaders/Kit.shader. Buildings are merged static meshes (no tint
+            // jitter: each building's colour is in its vertices); trees are GPU-instanced and get a per-instance tint.
+            var kit = Make(KitPath, "Statecraft/Kit", Color.white);
+            kit.SetFloat("_Jitter", 0f);
+            EditorUtility.SetDirty(kit);
+            var tree = Make(TreePath, "Statecraft/Kit", Color.white);
+            tree.SetFloat("_Jitter", 0.16f); tree.SetFloat("_WindowDark", 0f);
+            EditorUtility.SetDirty(tree);
             AssetDatabase.SaveAssets();
         }
 

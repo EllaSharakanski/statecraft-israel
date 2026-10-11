@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
 using UnityEditor;
@@ -16,13 +17,16 @@ public class SeaTests
     [TearDown]
     public void Reset() { MapShaderGlobals.PinWaterTime(null); RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
 
-    static MapScene OpenMap()
+    static MapScene OpenMap(bool reopen = true)
     {
-        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        if (reopen) EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
         // Every render here measures colour or local detail: Track A's tilt-shift blurs the top and bottom bands (task-3
         // carry m6, applied at the merge point), so it is off; the TearDown turns it back on.
         RenderSample.TiltShift(false);
+        // The water and shore themselves: the settlement kits' shore palms, harbour and town blocks stand on and in front of
+        // the coast samples, so they are off for every sea render (the map's teardown removes the switches).
+        foreach (var n in new[] { "kits", "trees" }) if (VisualToggles.Names.Contains(n)) VisualToggles.Set(n, false);
         return map;
     }
 
@@ -135,11 +139,14 @@ public class SeaTests
 
     /// <summary>promo-sea: a sand strip lines the Mediterranean shore (promo 03's beach). Rendered on the same row west of
     /// Tel Aviv: about 200 m inland of the shore the ground is pale sand, lighter than the plain 5 km inland and less
-    /// yellow-green than the bare coastal edge it covers.</summary>
+    /// yellow-green than the bare coastal edge it covers. The map is built without the settlement kits, which pave the ground
+    /// of a town's footprint (Tel Aviv's covers that plain sample).</summary>
     [UnityTest]
     public IEnumerator ASandStripLinesTheMediterraneanShore()
     {
-        var map = OpenMap();
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().ConfigureKits(null, null);   // the scene is not saved
+        var map = OpenMap(reopen: false);
         yield return null;
         var coast = new Texture2D(2, 2);
         coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));   // readable copy; row 0 = south
