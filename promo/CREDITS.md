@@ -20,6 +20,11 @@ CC0: "Moshe Dayan met mgr. A.C. Ramselaar (cropped).jpg" (1962).
 - Golda Meir: crop of Willem van de Poll / Nationaal Archief 255-4314, 1964, {{Cc-zero}}:
   https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
 
+- Chaim Weizmann: crop of Bain News Service / Library of Congress ggbain.32095, ca. 1915-1920,
+  {{PD-Bain}} / {{PD-old-70-expired}} (including explicit US-expired status):
+  https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+  https://www.loc.gov/pictures/item/2014712248/
+  Earlier likeness, not a photograph of his presidential term.
 - Zalman Shazar: crop of Yoichi Okamoto / LBJ Library, 2 August 1966, {{PD-USGov}}:
   https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
   (official White House photograph; later than the game period; human likeness and era review required).

@@ -205,6 +205,18 @@ rules:
   status: verified
   commons: CC0; CC-zero, Cc-zero
   artist: Willem van de Poll
+- glob: promo/ref/people/Chaim_Weizmann_Bain.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+  status: verified
+  commons: Public domain; PD-Bain, PD-Layout, PD-US-expired-text, PD-old-70-1923, PD-old-70-expired, PD-old-X-expired, PD-old-text
+  artist: Bain News Service, publisher
+- glob: unity/Assets/UI/Portraits/weizmann.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+  status: verified
+  commons: Public domain; PD-Bain, PD-Layout, PD-US-expired-text, PD-old-70-1923, PD-old-70-expired, PD-old-X-expired, PD-old-text
+  artist: Bain News Service, publisher
 - glob: promo/ref/people/Moshe_Dayan_1962_CC0.jpg
   licence: CC0-1.0
   source: https://commons.wikimedia.org/wiki/File:Moshe_Dayan_met_mgr._A.C._Ramselaar_(cropped).jpg
