@@ -83,6 +83,46 @@ public class BorderTests
         Assert.IsFalse(BorderProof.Requested("https://example.invalid/?borderproofx", new string[0], webgl: true, devBuild: true));
     }
 
+    /// <summary>Re-review: the label really renders (a legacy TextMesh under URP), in the upper left, at 16:9 and at 4:3:
+    /// the upper-left region changes between renders with the label shown and hidden, nothing else does, and its left end
+    /// is on screen.</summary>
+    [UnityTest]
+    public IEnumerator TheProofLabelRendersAtTheTopLeft()
+    {
+        var (map, cam, rig) = Open();
+        yield return null;
+        PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
+        BorderProof.Show(map);
+        var banner = Camera.main.transform.Find("BorderBanner").gameObject;
+        foreach (var (w, h) in new[] { (1920, 1080), (1440, 1080) })
+        {
+            var on = RenderSample.Render(cam, w, h);
+            banner.SetActive(false);
+            var off = RenderSample.Render(cam, w, h);
+            banner.SetActive(true);
+            int topLeft = 0, elsewhere = 0;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    Color a = on.At(x, y), b = off.At(x, y);
+                    if (Mathf.Max(Mathf.Abs(a.r - b.r), Mathf.Max(Mathf.Abs(a.g - b.g), Mathf.Abs(a.b - b.b))) <= 0.1f) continue;
+                    if (x < w * 0.75f && y > h * 0.5f) topLeft++; else elsewhere++;   // row 0 is the bottom
+                }
+            TestContext.WriteLine($"{w}x{h}: {topLeft} label pixels at the top left, {elsewhere} elsewhere");
+            Assert.Greater(topLeft, w * h / 2000, $"{w}x{h}: the label draws at the top left");
+            Assert.AreEqual(0, elsewhere, $"{w}x{h}: and nowhere else");
+            // Its left end is on screen: some changed pixel within the first 8% of the width.
+            bool leftEnd = false;
+            for (int y = (int)(h * 0.5f); y < h && !leftEnd; y++)
+                for (int x = 0; x < w * 0.08f && !leftEnd; x++)
+                {
+                    Color a = on.At(x, y), b = off.At(x, y);
+                    leftEnd = Mathf.Max(Mathf.Abs(a.r - b.r), Mathf.Max(Mathf.Abs(a.g - b.g), Mathf.Abs(a.b - b.b))) > 0.1f;
+                }
+            Assert.IsTrue(leftEnd, $"{w}x{h}: the label starts at the left edge, not off screen");
+        }
+    }
+
     /// <summary>Review I3: whenever the proof is drawn its label is on screen, and it goes with the drawing.</summary>
     [Test]
     public void TheProofIsLabelledOnScreenWhileDrawn()
