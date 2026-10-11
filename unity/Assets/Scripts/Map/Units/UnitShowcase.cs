@@ -256,7 +256,7 @@ namespace Statecraft.Game.Map.Units
             float drop = feet.y - low;
             if (drop <= BaseFromRiseM) return;
             var go = Piece(figure.parent, "Base" + figure.name, mesh, paint, feet, Quaternion.identity, 1f);
-            go.transform.localScale = new Vector3(FootRadiusM, drop + 5f, FootRadiusM);
+            go.transform.localScale = new Vector3(FootRadiusM, drop + 30f, FootRadiusM);   // 30 m into the ground: the lowest sample is not the lowest point
         }
 
         /// <summary>The highest ground under the loop (sampled every 5 degrees and at its centre), so the aircraft never
