@@ -37,7 +37,13 @@ namespace Statecraft.Game.UI
 
         public (int q, int r)? Selected { get; private set; }
 
-        public void Show(int q, int r) { Selected = (q, r); Render(); }
+        /// <summary>Shows the hex; ignored while a wide screen covers the panel (ScreenNav.WideOpenClass), so a map click
+        /// cannot change a panel the player cannot see.</summary>
+        public void Show(int q, int r)
+        {
+            if (panel.parent?.ClassListContains(ScreenNav.WideOpenClass) == true) return;
+            Selected = (q, r); Render();
+        }
 
         void Build(string action)
         {

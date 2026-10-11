@@ -13,6 +13,17 @@ namespace Statecraft.Game.UI
         public static readonly string[] Screens = { "cabinet", "budget", "defence", "why" };
         /// <summary>The class on the open screen's button (Statecraft.uss lights its ring).</summary>
         public const string OpenClass = "nav-open";
+        /// <summary>The class on the "root" element while a wide screen (class <see cref="WideClass"/>: Cabinet, Defence) is
+        /// open: Statecraft.uss hides the info panel it covers, so its buttons take no focus and no clicks.</summary>
+        public const string WideOpenClass = "wide-screen-open", WideClass = "screen-wide";
+
+        /// <summary>Asks to be told, synchronously, whenever <paramref name="screen"/> is opened (a presenter that skips
+        /// rendering while its screen is hidden catches up then).</summary>
+        public static void OnOpened(VisualElement screen, System.Action action) => screen.userData = action;
+
+        /// <summary>True when <paramref name="screen"/> is open (ScreenNav shows it inline; the stylesheet hides it).</summary>
+        public static bool IsOpen(VisualElement screen) =>
+            screen.style.display.keyword == StyleKeyword.Undefined && screen.style.display.value == DisplayStyle.Flex;
         readonly VisualElement root;
         readonly List<(Button, System.Action)> hooks = new List<(Button, System.Action)>();
 
@@ -30,7 +41,7 @@ namespace Statecraft.Game.UI
             Open(null);
         }
 
-        public void Dispose() { foreach (var (b, h) in hooks) b.clicked -= h; hooks.Clear(); }
+        public void Dispose() { foreach (var (b, h) in hooks) b.clicked -= h; hooks.Clear(); (root.Q("root") ?? root).RemoveFromClassList(WideOpenClass); }
 
         /// <summary>The open screen's name, or null.</summary>
         public string? Current { get; private set; }
@@ -44,11 +55,16 @@ namespace Statecraft.Game.UI
         public void Open(string? screen)
         {
             Current = screen;
+            var wide = false;
             foreach (var s in Screens)
             {
-                root.Q<VisualElement>("screen-" + s).style.display = s == screen ? DisplayStyle.Flex : DisplayStyle.None;
+                var element = root.Q<VisualElement>("screen-" + s);
+                element.style.display = s == screen ? DisplayStyle.Flex : DisplayStyle.None;
                 root.Q<Button>("nav-" + s).EnableInClassList(OpenClass, s == screen);   // the open screen's button is lit
+                if (s == screen) wide = element.ClassListContains(WideClass);
             }
+            (root.Q("root") ?? root).EnableInClassList(WideOpenClass, wide);
+            if (screen != null) (root.Q<VisualElement>("screen-" + screen).userData as System.Action)?.Invoke();
         }
     }
 }

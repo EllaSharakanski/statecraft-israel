@@ -82,6 +82,8 @@ public class PromoScreensTests
         }
     }
 
+    /// <summary>Review I1: the majority line runs, row by row, between the last seat of a majority and the next, clear of
+    /// every dot, on the 37-seat Provisional State Council (promo 04) and the 120-seat Knesset; the layout keeps dots apart.</summary>
     [Test]
     public void TheMajorityLineSeparatesAMajorityFromTheRest()
     {
@@ -92,47 +94,76 @@ public class PromoScreensTests
             for (int i = 1; i < seats.Count; i++)
                 Assert.GreaterOrEqual(Mathf.Atan2(seats[i - 1].y, seats[i - 1].x) + 1e-4f, Mathf.Atan2(seats[i].y, seats[i].x), $"{size}: left to right");
             foreach (var p in seats) Assert.LessOrEqual(p.magnitude, 1.0001f, $"{size}: inside the unit half circle");
-            // No two dots overlap.
             var r = Hemicycle.DotRadius(size);
             for (int i = 0; i < seats.Count; i++)
                 for (int j = i + 1; j < seats.Count; j++)
                     Assert.Greater((seats[i] - seats[j]).magnitude, 2 * r, $"{size}: dots {i} and {j} overlap");
+            Assert.LessOrEqual(Hemicycle.RowCounts(size).Count(n => n % 2 == 1), 1, $"{size}: at most one seat at the top");
         }
-        var house = new Hemicycle();
-        house.Set(new[] { new Hemicycle.Group("a", 30, Color.blue, true), new Hemicycle.Group("b", 7, Color.gray, false) }, 37);
-        var line = house.MajorityAngle();
-        var layout = Hemicycle.Layout(37);
-        // Seats sharing the line's angle (the middle column, when rows hold odd counts) may sit on it.
-        for (int i = 0; i < 37; i++)
+        foreach (var size in new[] { 37, 120, 61, 7 })
         {
-            var angle = Mathf.Atan2(layout[i].y, layout[i].x);
-            if (i < house.Majority) Assert.GreaterOrEqual(angle, line - 1e-4f, $"seat {i} is on the majority side");
-            else Assert.LessOrEqual(angle, line + 1e-4f, $"seat {i} is on the other side");
+            var house = new Hemicycle();
+            house.Set(new[] { new Hemicycle.Group("a", size / 2 + 1, Color.blue, true), new Hemicycle.Group("b", size - size / 2 - 1, Color.gray, false) }, size);
+            var line = house.MajorityLine;
+            var places = Hemicycle.Places(size);
+            var dot = Hemicycle.DotRadius(size);
+            Assert.Greater(line.Count, 1, size + ": a line");
+            // No dot touches the line: every seat centre is more than a dot's radius from every segment.
+            for (int i = 0; i < size; i++)
+                for (int k = 1; k < line.Count; k++)
+                {
+                    var d = SegmentDistance(places[i].Position, line[k - 1], line[k]);
+                    Assert.Greater(d, dot, $"{size}: seat {i + 1} is {d:0.000} from the line (dot radius {dot:0.000})");
+                }
+            // In each row, the first Majority seats from the left lie left of the line's step in that row, the rest right.
+            var cuts = house.MajorityCuts;
+            for (int i = 0; i < size; i++)
+                Assert.AreEqual(i < house.Majority, places[i].Angle > cuts[places[i].Row], $"{size}: seat {i + 1} (row {places[i].Row}) is on the wrong side of the line");
         }
-        Assert.Throws<ArgumentException>(() => house.Set(new[] { new Hemicycle.Group("a", 38, Color.blue, true) }, 37), "never more seats than the body has");
-        house.Set(new[] { new Hemicycle.Group("a", 30, Color.blue, true) }, 37);
-        Assert.AreEqual(7, house.SeatColours().Count(c => c == null), "unassigned seats stay unassigned, never given to a party");
+        var h = new Hemicycle();
+        Assert.Throws<ArgumentException>(() => h.Set(new[] { new Hemicycle.Group("a", 38, Color.blue, true) }, 37), "never more seats than the body has");
+        h.Set(new[] { new Hemicycle.Group("a", 30, Color.blue, true) }, 37);
+        Assert.AreEqual(7, h.SeatColours().Count(c => c == null), "unassigned seats stay unassigned, never given to a party");
+        var changes = h.Changes;
+        h.Set(new[] { new Hemicycle.Group("a", 30, Color.blue, true) }, 37);
+        Assert.AreEqual(changes, h.Changes, "the same house again is not redrawn (review I2)");
     }
 
-    /// <summary>Each card is its office holder's people.yaml record; the Prime Minister's card lists every office the PM
-    /// holds (Ben-Gurion was also Minister of Defense in 1948).</summary>
+    static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a; var t = ab.sqrMagnitude == 0 ? 0 : Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+        return (p - (a + t * ab)).magnitude;
+    }
+
+    /// <summary>Each card is its office holder's people.yaml record. The Prime Minister's card lists every office the PM
+    /// holds (Ben-Gurion was also Minister of Defense in 1948); those offices get no second card (review M5) but stay
+    /// selectable from a button under the PM card, so no real office is hidden.</summary>
     [Test]
     public void EveryCardShowsItsHoldersRealRecord()
     {
         var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
         using var ui = new UiTestKit();
-        new CabinetPresenter(ui.Root, new SimBridge(g, Text), Text, null);
+        var cabinet = new CabinetPresenter(ui.Root, new SimBridge(g, Text), Text, null);
         var lineup = Cabinet.Lineup(C, g.State);
+        var pm = Cabinet.Holder(C, g.State, "prime_minister")!;
         foreach (var seat in lineup)
         {
             var id = "seat-" + seat.Office.Id;
-            Assert.IsNotNull(ui.Root.Q<Button>(id), id);
+            Assert.IsNotNull(ui.Root.Q<Button>(id), id + ": every office can be selected");
+            if (seat.Office.Id != CabinetPresenter.PrimeMinister && seat.Holder?.Id == pm.Id)
+            {
+                Assert.AreEqual(seat.Office.Title, ui.Q<Button>(id).text, id + ": the PM's other office, under the PM card");
+                Assert.IsNull(ui.Q<ScrollView>("cabinet-seats").Q<Button>(id), id + ": no second card for the PM");
+                UiTestKit.Press(ui.Q<Button>(id));
+                Assert.AreEqual(seat.Office.Id, cabinet.Selected, id + ": selectable");
+                continue;
+            }
             if (seat.Office.Id != CabinetPresenter.PrimeMinister)
                 Assert.AreEqual(seat.Office.Title, ui.Q<Label>(id + "-office").text, id);
             if (seat.Holder == null)
             {
                 Assert.AreEqual("(vacant)", ui.Q<Label>(id + "-holder").text, id);
-                Assert.IsNull(ui.Root.Q<UiBar>(id + "-competence"), id + ": no bars for a vacancy");
+                Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>(id + "-competence-row").style.display.value, id + ": no bars for a vacancy");
                 continue;
             }
             var p = seat.Holder;
@@ -145,12 +176,17 @@ public class PromoScreensTests
             Assert.AreEqual(p.Competence.ToString(), ui.Q<Label>(id + "-competence-value").text, id);
             Assert.AreEqual(p.Loyalty.ToString(), ui.Q<Label>(id + "-loyalty-value").text, id);
         }
-        var pm = Cabinet.Holder(C, g.State, "prime_minister")!;
         var held = lineup.Where(x => x.Holder?.Id == pm.Id).Select(x => x.Office.Title).ToList();
         Assert.AreEqual(string.Join(" · ", held), ui.Q<Label>("seat-prime_minister-office").text);
         CollectionAssert.Contains(held, "Minister of Defense", "Ben-Gurion held Defence too");
         Assert.AreEqual("Party: Mapai", ui.Q<Label>("seat-prime_minister-party").text);
         Assert.IsNull(ui.Q<ScrollView>("cabinet-seats").Q<Button>("seat-prime_minister"), "the PM is the side card, not a grid card");
+        cabinet.Dispose();
+        // Review M3: a disposed screen keeps no card, chip or seat.
+        Assert.AreEqual(0, ui.Q<ScrollView>("cabinet-seats").contentContainer.childCount);
+        Assert.AreEqual(0, ui.Q<VisualElement>("cabinet-parties").childCount);
+        Assert.AreEqual(0, ui.Q<Button>("seat-prime_minister").childCount);
+        Assert.AreEqual(0, ui.Q<Hemicycle>("cabinet-hemicycle").Size);
     }
 
     [Test]
@@ -188,23 +224,38 @@ public class PromoScreensTests
     {
         var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
         using var ui = new UiTestKit();
+        ui.Q<VisualElement>("screen-defence").style.display = DisplayStyle.Flex;
         var bridge = new SimBridge(g, Text);
         new ToastPresenter(ui.Root, bridge, Text);
         var defence = new DefencePresenter(ui.Root, bridge, Text);
+        // One card per person (review M5): Ben-Gurion's card lists Prime Minister and Minister of Defense; the Chief of Staff has his own.
+        var shown = new List<string>();
         foreach (var office in DefencePresenter.Leaders)
         {
             var holder = Cabinet.Holder(C, g.State, office)!;
+            var card = ui.Q<VisualElement>("lead-" + office);
+            var first = DefencePresenter.Leaders.First(o => Cabinet.Holder(C, g.State, o)?.Id == holder.Id);
+            if (first != office)
+            {
+                Assert.AreEqual(DisplayStyle.None, card.style.display.value, office + ": merged into " + first);
+                StringAssert.Contains(C.Offices.First(o => o.Id == office).Title, ui.Q<Label>("lead-" + first + "-office").text, office);
+                continue;
+            }
+            shown.Add(office);
             Assert.AreEqual(holder.Name, ui.Q<Label>("lead-" + office + "-holder").text, office);
-            Assert.AreEqual(C.Offices.First(o => o.Id == office).Title, ui.Q<Label>("lead-" + office + "-office").text, office);
+            StringAssert.StartsWith(C.Offices.First(o => o.Id == office).Title, ui.Q<Label>("lead-" + office + "-office").text, office);
             Assert.AreEqual(holder.Competence / 10f, ui.Q<UiBar>("lead-" + office + "-competence").Value, 1e-6f, office);
             Assert.AreEqual(holder.Loyalty / 10f, ui.Q<UiBar>("lead-" + office + "-loyalty").Value, 1e-6f, office);
         }
+        CollectionAssert.AreEqual(new[] { "prime_minister", "chief_of_staff" }, shown, "1948: Ben-Gurion once, Dori once");
+        Assert.AreEqual("Prime Minister · Minister of Defense", ui.Q<Label>("lead-prime_minister-office").text);
         var bar = ui.Q<UiBar>("mob-bar");
         Assert.AreEqual((float)g.State.Mobilization, bar.Value, 1e-6f);
         Assert.AreEqual((float)SecuritySystem.MinMobilization(C, g.State.Rung), bar.Mark!.Value, 1e-6f, "the level's minimum is marked");
         Assert.AreEqual(PlayerText.Percent(g.State.Mobilization), ui.Q<Label>("mob-percent").text);
         Assert.AreEqual((float)g.State.Budget[DefencePresenter.BudgetLine], ui.Q<UiBar>("defence-budget-bar").Value, 1e-6f);
         Assert.AreEqual($"{PlayerText.Percent(g.State.Budget[DefencePresenter.BudgetLine])} of budget spending", ui.Q<Label>("defence-budget-share").text);
+        Assert.AreEqual("LEADERSHIP", ui.Q<Label>("defence-title-leadership").text, "the caption from strings, in capitals");
         // An order to lower the level: the target rung is marked, and the bar's minimum follows it.
         ui.Press("de-escalate");
         Assert.IsTrue(ui.Q<VisualElement>("rung-4").ClassListContains("rung-target"));
@@ -215,12 +266,21 @@ public class PromoScreensTests
         Assert.AreEqual((float)defence.ProposedMobilization, bar.Value, 1e-6f, "the bar shows the ordered call-up");
         ui.Press("escalate");
         Assert.IsFalse(ui.Root.Query<VisualElement>(className: "rung-target").ToList().Any(), "no order, no target");
+        // Review M4: a queued budget moves the share as a queued call-up moves the call-up.
+        var shares = new Dictionary<string, double>(g.State.Budget);
+        var other = shares.Keys.First(k => k != DefencePresenter.BudgetLine);
+        shares[DefencePresenter.BudgetLine] -= 0.05; shares[other] += 0.05;
+        Assert.IsNull(bridge.Queue(new AllocateBudget(shares)));
+        Assert.AreEqual((float)shares[DefencePresenter.BudgetLine], ui.Q<UiBar>("defence-budget-bar").Value, 1e-6f);
+        Assert.AreEqual($"{PlayerText.Percent(shares[DefencePresenter.BudgetLine])} of budget spending", ui.Q<Label>("defence-budget-share").text);
         defence.Dispose();
+        foreach (var office in DefencePresenter.Leaders) Assert.AreEqual(0, ui.Q<VisualElement>("lead-" + office).childCount, office + ": emptied on Dispose");
+        Assert.IsNull(bar.Mark);
     }
 
-    /// <summary>Every number printed on either screen, and every bar, comes from the sim's data: the figures the sim's own
-    /// formatting gives for real values (competence, loyalty, seats, size, majority, stability, call-up, its minimum and
-    /// cost, the budget share, the ceasefire clock, the levels), so no promo figure (readiness, strength) slipped in.</summary>
+    /// <summary>Review I5: each figure on either screen is bound to its own source. Every text with a digit in it, and every
+    /// bar, must be one this test names, with its exact expected value from the sim: a new number or bar fails until it is
+    /// bound on purpose, so no promo figure (readiness, strength) can slip in.</summary>
     [Test]
     public void NoFigureOnEitherScreenIsInvented()
     {
@@ -232,29 +292,54 @@ public class PromoScreensTests
             var bridge = new SimBridge(g, Text);
             var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
             var defence = new DefencePresenter(ui.Root, bridge, Text);
-            var allowed = new HashSet<string>();
-            void Add(string formatted) { foreach (Match m in Number.Matches(formatted)) allowed.Add(m.Value); }
+            var where = s.Date.ToString("yyyy-MM-dd");
+            var texts = new Dictionary<string, string>();
+            var bars = new Dictionary<string, float>();
             var leg = Offices.Legislature(C, s.Date)!;
-            foreach (var p in C.People) { Add(p.Competence.ToString()); Add(p.Loyalty.ToString()); }
-            foreach (var v in leg.Seats.Values) Add(v.ToString());
+            var gov = Offices.Government(C, s.Date);
             var (seats, size) = PoliticsSystem.CoalitionSeats(C, s.Date);
-            Add(seats.ToString()); Add(size.ToString()); Add((size / 2 + 1).ToString()); Add((size - seats).ToString());
-            Add(PlayerText.Percent(s.CoalitionStability));
-            for (int rung = 1; rung <= 5; rung++) { Add(rung.ToString()); Add(PlayerText.Percent(SecuritySystem.MinMobilization(C, rung))); }
-            Add(PlayerText.Percent(s.Mobilization)); Add(PlayerText.Money(C, "treasury", EconomySystem.MobilizationCost(C, s.Mobilization)));
-            Add(PlayerText.Percent(s.Budget[DefencePresenter.BudgetLine]));
-            Add(s.CeasefireWeeksLeft.ToString()); Add(C.Rules.CeasefireWeeks.ToString());
-            Add(leg.Size.ToString());
-            Add(PlayerText.Percent(DefencePresenter.MobilizationStep));   // the -5% / +5% buttons
+            var blocks = CabinetPresenter.Blocks(C, leg, gov);
+            texts["cabinet-coalition"] = $"Coalition: {seats} of {size} seats · stability {PlayerText.Percent(s.CoalitionStability)}";
+            texts["cabinet-opposition"] = $"Opposition: {leg.Seats.Where(kv => gov == null || !gov.Coalition.Contains(kv.Key)).Sum(kv => kv.Value)} seats";
+            texts["cabinet-majority"] = $"Majority: {leg.Size / 2 + 1} seats";
+            var top = leg.Seats.OrderByDescending(kv => kv.Value).First();
+            texts["cabinet-largest"] = $"Largest party: {C.Parties.First(p => p.Id == top.Key).Name}, {top.Value} seats";
+            texts["cabinet-legislature"] = $"Answerable to the {leg.Body} · {leg.Size} members";
+            texts["cabinet-house-size"] = leg.Size.ToString();
+            foreach (var b in blocks) texts["party-" + b.Party + "-label"] = $"{C.Parties.First(p => p.Id == b.Party).Name} {leg.Seats[b.Party]}";
+            bars["cabinet-stability"] = (float)s.CoalitionStability;
+            void Person(string prefix, Person? p)
+            {
+                if (p == null) return;
+                texts[prefix + "-competence-value"] = p.Competence.ToString(); texts[prefix + "-loyalty-value"] = p.Loyalty.ToString();
+                bars[prefix + "-competence"] = p.Competence / 10f; bars[prefix + "-loyalty"] = p.Loyalty / 10f;
+            }
+            foreach (var seat in Cabinet.Lineup(C, s)) Person("seat-" + seat.Office.Id, seat.Holder);
+            foreach (var office in DefencePresenter.Leaders) Person("lead-" + office, Cabinet.Holder(C, s, office));
+            for (int rung = 1; rung <= 5; rung++) texts[$"rung-{rung}-name"] = Text[$"defence.rung{rung}"];
+            var floor = SecuritySystem.MinMobilization(C, s.Rung);
+            var callUp = SecuritySystem.EffectiveMobilization(C, s.Rung, s.Mobilization);
+            texts["mob-percent"] = PlayerText.Percent(callUp);
+            texts["mob-level"] = $"{PlayerText.Percent(callUp)} of reserves called up (level {s.Rung} needs at least {PlayerText.Percent(floor)})";
+            texts["mob-cost"] = $"Costs {PlayerText.Money(C, "treasury", EconomySystem.MobilizationCost(C, callUp))} a year in pay and lost work";
+            texts["mob-down"] = "-5%"; texts["mob-up"] = "+5%";   // the step, DefencePresenter.MobilizationStep
+            Assert.AreEqual(0.05, DefencePresenter.MobilizationStep, 1e-12);
+            texts["ceasefire"] = s.Rung == 5 ? $"A UN ceasefire will be imposed in {s.CeasefireWeeksLeft} weeks" : "";
+            texts["defence-budget-share"] = $"{PlayerText.Percent(s.Budget[DefencePresenter.BudgetLine])} of budget spending";
+            bars["mob-bar"] = (float)callUp; bars["defence-budget-bar"] = (float)s.Budget[DefencePresenter.BudgetLine];
             foreach (var name in new[] { "screen-cabinet", "screen-defence" })
-                foreach (var label in ui.Q<VisualElement>(name).Query<TextElement>().ToList().Where(l => !string.IsNullOrEmpty(l.text)))
-                    foreach (Match m in Number.Matches(label.text))
-                        if (!allowed.Contains(m.Value) && !IsDatePart(label.text, m)) Assert.Fail($"{s.Date:yyyy-MM-dd}: '{m.Value}' in {label.name} \"{label.text}\" is not a figure the sim has");
-            // Bars: each is a real value on its scale.
-            var real = new List<float> { (float)s.CoalitionStability, (float)s.Mobilization, (float)s.Budget[DefencePresenter.BudgetLine] };
-            real.AddRange(C.People.SelectMany(p => new[] { p.Competence / 10f, p.Loyalty / 10f }));
-            foreach (var bar in ui.Q<VisualElement>("screen-cabinet").Query<UiBar>().ToList().Concat(ui.Q<VisualElement>("screen-defence").Query<UiBar>().ToList()))
-                Assert.IsTrue(real.Any(v => Mathf.Abs(v - bar.Value) < 1e-6f), $"{s.Date:yyyy-MM-dd}: bar {bar.name} = {bar.Value} is no sim value");
+            {
+                foreach (var t in ui.Q<VisualElement>(name).Query<TextElement>().ToList().Where(t => t.text.Any(char.IsDigit)))
+                {
+                    Assert.IsTrue(texts.ContainsKey(t.name), $"{where}: '{t.text}' in {t.name} is a figure no test binds to the sim");
+                    Assert.AreEqual(texts[t.name], t.text, $"{where}: {t.name}");
+                }
+                foreach (var bar in ui.Q<VisualElement>(name).Query<UiBar>().ToList().Where(b => b.resolvedStyle.display != DisplayStyle.None && b.parent.style.display != DisplayStyle.None))
+                {
+                    Assert.IsTrue(bars.ContainsKey(bar.name), $"{where}: bar {bar.name} = {bar.Value} is bound to nothing");
+                    Assert.AreEqual(bars[bar.name], bar.Value, 1e-6f, $"{where}: bar {bar.name}");
+                }
+            }
             // No promo figure the sim lacks.
             var words = string.Join("\n", ui.Q<VisualElement>("screen-defence").Query<TextElement>().ToList().Select(l => l.text));
             foreach (var missing in new[] { "Readiness", "Strength", "Intelligence", "Procurement", "Stance", "Air Force", "Navy" })
@@ -262,11 +347,6 @@ public class PromoScreensTests
             cabinet.Dispose(); defence.Dispose();
         }
     }
-
-    static readonly Regex Number = new Regex(@"\d+(?:[.,]\d+)*");
-
-    /// <summary>A day or a year inside a "15 May 1948" date (an appointment date in a candidate's reason).</summary>
-    static bool IsDatePart(string text, Match m) => Regex.IsMatch(text, @"\b\d{1,2} [A-Z][a-z]+ \d{4}\b") && Regex.Matches(text, @"\b(\d{1,2}) [A-Z][a-z]+ (\d{4})\b").Cast<Match>().Any(d => d.Index <= m.Index && m.Index < d.Index + d.Length);
 
     static float Lum(Color c, Color under)
     {
@@ -304,8 +384,13 @@ public class PromoScreensTests
                 Assert.GreaterOrEqual(ratio, 3f, $"{bar.name} ({modifier}): fill on track {ratio:0.00}:1");
             }
             CollectionAssert.IsSupersetOf(seen, new[] { "ui-bar--competence", "ui-bar--loyalty", "ui-bar--stability", "ui-bar--mobilization", "ui-bar--budget" });
-            foreach (var colour in CabinetPresenter.CoalitionColours.Concat(CabinetPresenter.OppositionColours))
-                Assert.GreaterOrEqual(Contrast(colour, ScreenNavy, ScreenNavy), 3f, $"party colour {colour}");
+            foreach (var colour in new[] { CabinetPresenter.CoalitionColour, CabinetPresenter.OppositionColour })
+                Assert.GreaterOrEqual(Contrast(colour, ScreenNavy, ScreenNavy), 3f, $"seat colour {colour}");
+            // Review M2: two flat colours, coalition and opposition; a colour never stands for one party.
+            Assert.AreNotEqual(CabinetPresenter.CoalitionColour, CabinetPresenter.OppositionColour);
+            var house = ui.Q<Hemicycle>("cabinet-hemicycle");
+            CollectionAssert.AreEquivalent(new[] { CabinetPresenter.CoalitionColour, CabinetPresenter.OppositionColour }, house.Groups.Select(b => b.Colour).Distinct());
+            foreach (var b in house.Groups) Assert.AreEqual(b.Coalition ? CabinetPresenter.CoalitionColour : CabinetPresenter.OppositionColour, b.Colour, b.Party);
         }
         finally { cabinet.Dispose(); defence.Dispose(); }
     }
@@ -421,6 +506,103 @@ public class PromoScreensTests
             }
         }
         Assert.IsEmpty(problems, string.Join("\n", problems.Take(40)));
+    }
+
+    /// <summary>Review I2: a hidden screen does no work on a change (an order, End Turn) and catches up when it is opened;
+    /// an open screen updates its cards in place, so they are the same elements and a focused card or Appoint button keeps
+    /// its focus; an unchanged house is not redrawn.</summary>
+    [UnityTest]
+    public IEnumerator AHiddenScreenDoesNoWorkAndAnOpenOneKeepsFocus()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
+        var defence = new DefencePresenter(ui.Root, bridge, Text);
+        var nav = new ScreenNav(ui.Root);
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");
+        try
+        {
+            int cab = cabinet.Renders, def = defence.Renders;
+            bridge.Queue(new SetMobilization(0.9));
+            bridge.EndTurn();
+            Assert.AreEqual(cab, cabinet.Renders, "hidden Cabinet: no render on an order or End Turn");
+            Assert.AreEqual(def, defence.Renders, "hidden Defence: no render");
+            nav.Open("defence");
+            Assert.AreEqual(def + 1, defence.Renders, "opening catches up, once");
+            Assert.AreEqual(PlayerText.Percent(bridge.State.Mobilization), ui.Q<Label>("mob-percent").text, "with today's figures");
+            nav.Open("cabinet");
+            Assert.AreEqual(cab + 1, cabinet.Renders);
+            nav.Open("defence"); nav.Open("cabinet");
+            Assert.AreEqual(cab + 1, cabinet.Renders, "nothing changed: no second render on reopening");
+
+            yield return null; yield return null;
+            var house = ui.Q<Hemicycle>("cabinet-hemicycle");
+            var card = ui.Q<Button>("seat-finance_minister");
+            card.Focus();
+            for (int i = 0; i < 10 && card.focusController.focusedElement != card; i++) yield return null;
+            var changes = house.Changes;
+            Assert.IsNull(bridge.Queue(new SetMobilization(0.85)));                      // a change while Cabinet is open
+            Assert.AreSame(card, ui.Q<Button>("seat-finance_minister"), "the card is updated in place");
+            Assert.AreSame(card, card.focusController.focusedElement, "and keeps the keyboard focus");
+            Assert.AreEqual(changes, house.Changes, "an unchanged house is not redrawn");
+            bridge.Withdraw(bridge.QueuedLike(new SetMobilization(0))!);                // frees the attention for the appointment
+            Assert.AreSame(card, card.focusController.focusedElement, "a withdrawal keeps the focus too");
+            cabinet.Select("finance_minister");
+            var appoint = ui.Q<ScrollView>("cabinet-candidates").Query<Button>().ToList().First(b => b.enabledSelf);
+            appoint.Focus();
+            for (int i = 0; i < 10 && appoint.focusController.focusedElement != appoint; i++) yield return null;
+            UiTestKit.Press(appoint);                                                    // Enter on Appoint queues the order
+            Assert.AreEqual(1, bridge.Queued.OfType<Appoint>().Count());
+            Assert.AreSame(appoint, ui.Q<Button>(appoint.name), "the candidate row is updated in place");
+            Assert.AreSame(appoint, appoint.focusController.focusedElement, "Appoint keeps the focus");
+        }
+        finally { nav.Dispose(); cabinet.Dispose(); defence.Dispose(); }
+    }
+
+    /// <summary>The review's idle probe as a test: with Cabinet or Defence open (and with neither), 120 idle frames cause no
+    /// relayout and no repaint anywhere on either screen.</summary>
+    [UnityTest]
+    public IEnumerator AnOpenScreenIsStillWhenIdle()
+    {
+        foreach (var open in new string?[] { null, "cabinet", "defence" })
+        {
+            var rt = new RenderTexture(1920, 1080, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("ScreensIdle");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var owned = new List<IDisposable>();
+            try
+            {
+                for (int i = 0; i < 20 && !(root.Q("top-bar").worldBound.width > 0); i++) yield return null;
+                root.Q("root").RemoveFromClassList("loading");
+                var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+                owned.Add(new CabinetPresenter(root, bridge, Text, null));
+                owned.Add(new DefencePresenter(root, bridge, Text));
+                var nav = new ScreenNav(root); owned.Add(nav);
+                nav.Open(open);
+                for (int i = 0; i < 30; i++) yield return null;                          // settle
+                int geometry = 0, painted = 0; var what = new List<string>();
+                foreach (var e in new[] { root.Q("screen-cabinet"), root.Q("screen-defence") }.SelectMany(s => s.Query<VisualElement>().ToList()))
+                {
+                    var name = e.name;
+                    e.RegisterCallback<GeometryChangedEvent>(_ => { geometry++; what.Add("layout " + name); });
+                    e.generateVisualContent += _ => { painted++; what.Add("paint " + name); };
+                }
+                for (int i = 0; i < 120; i++) yield return null;
+                Assert.AreEqual(0, geometry + painted, $"open={open ?? "none"}: {string.Join(", ", what.Distinct().Take(10))}");
+            }
+            finally
+            {
+                for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
+                Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+            }
+        }
     }
 
     /// <summary>The nearest box an element belongs in: a card, a Defence panel or the house.</summary>

@@ -11,7 +11,9 @@ namespace Statecraft.Game.UI
     /// section 3) with the current level, the ordered one and each level's turn length, the UN ceasefire clock in full war,
     /// security orders to raise or lower the level, the reserve call-up as a bar with the level's minimum marked and its
     /// yearly cost, and the defence share of the national budget. Orders are queued for End Turn. The promo's forces
-    /// readiness and strength, intelligence and procurement panels are left out: the sim does not model them yet.</summary>
+    /// readiness and strength, intelligence and procurement panels are left out: the sim does not model them yet. The call-up
+    /// and the budget share show what the turn will end with (a queued order's value, else today's). The screen renders only
+    /// while it is open (a change while it is hidden is caught up when ScreenNav opens it).</summary>
     public sealed class DefencePresenter : IDisposable
     {
         public const double MobilizationStep = 0.05;
@@ -31,15 +33,45 @@ namespace Statecraft.Game.UI
             onEscalate = () => Order(+1); onDeEscalate = () => Order(-1);
             onMobUp = () => Mobilize(+MobilizationStep); onMobDown = () => Mobilize(-MobilizationStep);
             escalate.clicked += onEscalate; deEscalate.clicked += onDeEscalate; mobUp.clicked += onMobUp; mobDown.clicked += onMobDown;
-            bridge.Changed += Render;
+            foreach (var (name, key) in Sections) screen.Q<Label>(name).text = text[key].ToUpperInvariant();   // the promo's capitals; a caseless script is unchanged
+            bridge.Changed += OnChanged;
+            ScreenNav.OnOpened(screen, () => { if (dirty) Render(); });
             Render();
         }
 
-        /// <summary>Unsubscribes from the bridge and the buttons (the owner calls this when disabled).</summary>
+        /// <summary>The section captions and their strings.</summary>
+        static readonly (string name, string key)[] Sections =
+        {
+            ("defence-title-leadership", "defence.section_leadership"), ("defence-title-ladder", "defence.section_ladder"),
+            ("defence-title-callup", "defence.section_callup"), ("defence-title-budget", "defence.section_budget"),
+        };
+
+        bool dirty;
+
+        /// <summary>How many times the screen was rendered (a hidden screen is not).</summary>
+        public int Renders { get; private set; }
+
+        void OnChanged() { if (ScreenNav.IsOpen(screen)) Render(); else dirty = true; }
+
+        /// <summary>Unsubscribes from the bridge and the buttons and empties the leadership cards (the owner calls this when disabled).</summary>
         public void Dispose()
         {
-            bridge.Changed -= Render;
+            bridge.Changed -= OnChanged;
+            if (screen.userData is System.Action) screen.userData = null;
             escalate.clicked -= onEscalate; deEscalate.clicked -= onDeEscalate; mobUp.clicked -= onMobUp; mobDown.clicked -= onMobDown;
+            foreach (var office in Leaders) PersonCard.Clear(screen.Q<VisualElement>("lead-" + office));
+            screen.Q<UiBar>("mob-bar").Mark = null;
+        }
+
+        /// <summary>The defence share of spending the turn will end with: a queued budget's, else today's (as the call-up).</summary>
+        public double? ProposedBudgetShare
+        {
+            get
+            {
+                var queued = (bridge.QueuedLike(new AllocateBudget(new System.Collections.Generic.Dictionary<string, double>())) as AllocateBudget)?.Shares;
+                if (queued != null && queued.TryGetValue(BudgetLine, out var q)) return q;
+                return bridge.State.Budget.TryGetValue(BudgetLine, out var today) ? today : (double?)null;
+            }
         }
 
         int QueuedDelta => (bridge.QueuedLike(new SecurityOrder(0)) as SecurityOrder)?.Delta ?? 0;
@@ -97,6 +129,7 @@ namespace Statecraft.Game.UI
 
         public void Render()
         {
+            dirty = false; Renders++;
             var c = bridge.Content; var s = bridge.State;
             var delta = QueuedDelta;
             var target = TargetRung;
@@ -110,13 +143,20 @@ namespace Statecraft.Game.UI
             }
             screen.Q<Label>("defence-command").text = text.Format("defence.command",
                 Cabinet.Holder(c, s, "defense_minister")?.Name ?? text["cabinet.vacant"], Cabinet.Holder(c, s, "chief_of_staff")?.Name ?? text["cabinet.vacant"]);
+            // One card per person: a leader who holds several of these offices (Ben-Gurion, Prime Minister and Minister of
+            // Defense) has one card listing them all; a vacancy keeps its own card.
             var lineup = Cabinet.Lineup(c, s);
-            foreach (var office in Leaders)
+            var seats = Leaders.Select(o => lineup.FirstOrDefault(x => x.Office.Id == o)).ToList();
+            for (int i = 0; i < Leaders.Length; i++)
             {
-                var card = screen.Q<VisualElement>("lead-" + office);
-                var seat = lineup.FirstOrDefault(x => x.Office.Id == office);
-                card.style.display = seat == null ? DisplayStyle.None : DisplayStyle.Flex;
-                if (seat != null) PersonCard.Fill(card, "lead-" + office, c, s, seat.Holder, seat.Office.Title, seat.Appointed, text, portraits, LeaderPortrait);
+                var card = screen.Q<VisualElement>("lead-" + Leaders[i]);
+                var seat = seats[i];
+                var shownEarlier = seat?.Holder != null && seats.Take(i).Any(x => x?.Holder?.Id == seat.Holder.Id);
+                card.style.display = seat == null || shownEarlier ? DisplayStyle.None : DisplayStyle.Flex;
+                if (seat == null || shownEarlier) continue;
+                var titles = seat.Holder == null ? seat.Office.Title
+                    : string.Join(text["card.offices_separator"], seats.Skip(i).Where(x => x?.Holder?.Id == seat.Holder.Id).Select(x => x!.Office.Title));
+                PersonCard.Fill(card, "lead-" + Leaders[i], c, s, seat.Holder, titles, seat.Appointed, text, portraits, LeaderPortrait);
             }
             var ceasefire = screen.Q<Label>("ceasefire");
             if (s.Rung == 5 && target == 5) ceasefire.text = text.Format("defence.ceasefire", s.CeasefireWeeksLeft);
@@ -131,9 +171,9 @@ namespace Statecraft.Game.UI
             screen.Q<Label>("mob-percent").text = PlayerText.Percent(proposed);
             var bar = screen.Q<UiBar>("mob-bar");
             bar.Value = (float)proposed; bar.Mark = (float)floor;
-            var hasLine = s.Budget.TryGetValue(BudgetLine, out var share);
-            screen.Q<UiBar>("defence-budget-bar").Value = hasLine ? (float)share : 0f;
-            screen.Q<Label>("defence-budget-share").text = hasLine ? text.Format("defence.budget_share", PlayerText.Percent(share)) : text["defence.budget_none"];
+            var share = ProposedBudgetShare;
+            screen.Q<UiBar>("defence-budget-bar").Value = share.HasValue ? (float)share.Value : 0f;
+            screen.Q<Label>("defence-budget-share").text = share.HasValue ? text.Format("defence.budget_share", PlayerText.Percent(share.Value)) : text["defence.budget_none"];
             screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", PlayerText.Money(c, "treasury", EconomySystem.MobilizationCost(c, proposed)));
             screen.Q<Button>("escalate").SetEnabled(target < 5);
             screen.Q<Button>("de-escalate").SetEnabled(target > 1);

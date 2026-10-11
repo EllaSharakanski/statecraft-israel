@@ -47,10 +47,7 @@ public class UiLayoutTests
                     foreach (var f in Fixed)
                     {
                         if (f == "info-panel" && root.Q(s).ClassListContains("screen-wide"))
-                        {
-                            Assert.Greater(root.Q("root").IndexOf(root.Q(s)), root.Q("root").IndexOf(root.Q(f)), $"{s} is drawn above the info panel");
-                            continue;
-                        }
+                            continue;   // checked below: hidden while the wide screen is open
                         Assert.IsFalse(R(s).Overlaps(R(f)), $"{w}x{h}: {s} {R(s)} overlaps {f} {R(f)}");
                     }
                 Assert.LessOrEqual(R("meters").xMax, R("nav").xMin + 0.5f, $"{w}x{h}: the meters run into the screen buttons");
@@ -77,6 +74,60 @@ public class UiLayoutTests
     }
 
     static readonly Content C = ContentLoader.Load(Paths.Content);
+
+    /// <summary>Review I3: a wide screen (Cabinet, Defence) covers the info panel, so while it is open the panel is hidden:
+    /// it is drawn under the screen, takes no keyboard focus (its build buttons cannot be reached with Tab), and a map
+    /// click does not change it. A narrow screen (Budget) leaves it as it was.</summary>
+    [UnityTest]
+    public IEnumerator AWideScreenHidesTheInfoPanelItCovers()
+    {
+        var rt = new RenderTexture(1920, 1080, 0);
+        var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+        ps.targetTexture = rt;
+        var go = new GameObject("WideTest");
+        go.SetActive(false);
+        var doc = go.AddComponent<UIDocument>();
+        doc.panelSettings = ps;
+        doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+        go.SetActive(true);
+        var root = doc.rootVisualElement;
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var info = new InfoPanelPresenter(root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id));
+        var nav = new ScreenNav(root);
+        try
+        {
+            root.Q("root").RemoveFromClassList("loading");
+            var tlv = C.SettlementHexes.Single(x => x.Id == "tel_aviv");
+            info.Show(tlv.Q, tlv.R);
+            for (int i = 0; i < 4; i++) yield return null;
+            var panel = root.Q("info-panel");
+            var build = root.Q<Button>("build-camp");
+            Assert.AreEqual(DisplayStyle.Flex, panel.resolvedStyle.display, "precondition: the panel shows");
+            foreach (var s in new[] { "cabinet", "defence" })
+            {
+                nav.Open(s);
+                for (int i = 0; i < 3; i++) yield return null;
+                Assert.IsTrue(root.Q("screen-" + s).ClassListContains(ScreenNav.WideClass), s);
+                Assert.Greater(root.Q("root").IndexOf(root.Q("screen-" + s)), root.Q("root").IndexOf(panel), $"{s} is drawn above the info panel");
+                Assert.IsTrue(root.Q("screen-" + s).worldBound.Overlaps(panel.worldBound) || panel.resolvedStyle.display == DisplayStyle.None, s);
+                Assert.AreEqual(DisplayStyle.None, panel.resolvedStyle.display, $"{s}: the covered info panel is hidden");
+                Assert.IsFalse(build.canGrabFocus, $"{s}: its build button cannot take the keyboard focus");
+                build.Focus();
+                Assert.AreNotSame(build, build.focusController?.focusedElement, $"{s}: focus does not reach it");
+                info.Show(tlv.Q + 3, tlv.R);
+                Assert.AreEqual((tlv.Q, tlv.R), info.Selected, $"{s}: a map click does not change the hidden panel");
+            }
+            nav.Open("budget");
+            for (int i = 0; i < 3; i++) yield return null;
+            Assert.AreEqual(DisplayStyle.Flex, panel.resolvedStyle.display, "a narrow screen leaves the panel");
+            nav.Open(null);
+            for (int i = 0; i < 3; i++) yield return null;
+            Assert.AreEqual(DisplayStyle.Flex, panel.resolvedStyle.display, "closing brings it back");
+            info.Show(tlv.Q + 3, tlv.R);
+            Assert.AreEqual((tlv.Q + 3, tlv.R), info.Selected, "and map clicks reach it again");
+        }
+        finally { nav.Dispose(); info.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+    }
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
 
     /// <summary>The window sizes a player is likely to have: 16:9, 5:4, the playtest's wide-and-short browser window

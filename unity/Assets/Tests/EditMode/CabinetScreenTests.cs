@@ -14,6 +14,14 @@ public class CabinetScreenTests
     static readonly Content C = ContentLoader.Load(Paths.Content);
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
 
+    /// <summary>The UI with the Cabinet screen open, as ScreenNav opens it (a hidden screen does not re-render).</summary>
+    static UiTestKit Shown()
+    {
+        var ui = new UiTestKit();
+        ui.Q<VisualElement>("screen-cabinet").style.display = DisplayStyle.Flex;
+        return ui;
+    }
+
     /// <summary>The historical game on 26 February 1950: the First Government, whose next turn ends before it falls.</summary>
     static SimBridge In1950()
     {
@@ -25,7 +33,7 @@ public class CabinetScreenTests
     [Test]
     public void TheScreenListsTheGovernmentAndRefusesIllegalAppointmentsWithAReason()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         Assert.AreEqual("First Government", ui.Q<Label>("cabinet-government").text);
@@ -49,7 +57,7 @@ public class CabinetScreenTests
     [Test]
     public void AppointingTakesEffectAtEndTurn()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         cabinet.Select("finance_minister");
@@ -64,7 +72,7 @@ public class CabinetScreenTests
     [Test]
     public void APortraitShowsOnlyWhenTheCatalogHasOne()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var catalog = ScriptableObject.CreateInstance<PortraitCatalog>();
         try
@@ -74,7 +82,9 @@ public class CabinetScreenTests
             var kaplan = ui.Q<Button>("seat-finance_minister").Q<VisualElement>(className: PersonCard.PortraitClass);
             Assert.AreEqual(Texture2D.whiteTexture, kaplan.style.backgroundImage.value.texture);
             Assert.AreEqual(DisplayStyle.Flex, kaplan.style.display.value);
-            foreach (var seat in Cabinet.Lineup(C, bridge.State).Where(x => x.Holder != null && x.Holder.Id != "kaplan"))
+            var pm = Cabinet.Holder(C, bridge.State, "prime_minister")!;
+            // Every card but Kaplan's; the PM's other offices are listed on the PM card, not given cards of their own.
+            foreach (var seat in Cabinet.Lineup(C, bridge.State).Where(x => x.Holder != null && x.Holder.Id != "kaplan" && (x.Holder.Id != pm.Id || x.Office.Id == "prime_minister")))
                 Assert.AreEqual(DisplayStyle.None, ui.Q<Button>("seat-" + seat.Office.Id).Q<VisualElement>(className: PersonCard.PortraitClass).style.display.value, "no invented portrait for " + seat.Office.Id);
         }
         finally { UnityEngine.Object.DestroyImmediate(catalog); }
@@ -83,7 +93,7 @@ public class CabinetScreenTests
     [Test]
     public void EveryCandidateIsListedAndOnlyCheckDecidesWhoCanBeAppointed()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         foreach (var office in new[] { "finance_minister", "chief_of_staff", "president", "prime_minister" })
@@ -101,7 +111,7 @@ public class CabinetScreenTests
     [Test]
     public void ARefusalAtQueueTimeIsShown()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         new ToastPresenter(ui.Root, bridge, Text);
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
@@ -116,7 +126,7 @@ public class CabinetScreenTests
     [Test]
     public void SelectingNothingClosesTheListAndADisposedScreenHearsNothing()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         cabinet.Select("finance_minister");
@@ -139,7 +149,7 @@ public class CabinetScreenTests
     [Test]
     public void ANewGovernmentRefreshesTheScreenAndEndsTheAppointment()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         cabinet.Select("finance_minister");
@@ -161,7 +171,7 @@ public class CabinetScreenTests
     [Test]
     public void ReplacingTheSessionRedrawsTheScreen()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         new CabinetPresenter(ui.Root, bridge, Text, null);
         Assert.AreEqual("First Government", ui.Q<Label>("cabinet-government").text);
@@ -182,7 +192,7 @@ public class CabinetScreenTests
             if (vacant == null) g.Step(HistoricalAI.Commands(C, g.State));
         }
         Assert.IsNotNull(vacant, "the historical game has a vacant seat to test with");
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var catalog = ScriptableObject.CreateInstance<PortraitCatalog>();
         try
         {
@@ -198,7 +208,7 @@ public class CabinetScreenTests
     [Test]
     public void ASelectedOfficeThatDisappearsIsDeselected()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         var ending = C.Offices.Where(o => o.Until.HasValue && o.Until > bridge.State.Date).OrderBy(o => o.Until).First();
@@ -213,7 +223,7 @@ public class CabinetScreenTests
     [Test]
     public void DisposeHidesThePickPanel()
     {
-        using var ui = new UiTestKit();
+        using var ui = Shown();
         var bridge = In1950();
         var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
         cabinet.Select("finance_minister");

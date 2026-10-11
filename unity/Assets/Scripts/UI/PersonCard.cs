@@ -9,9 +9,10 @@ namespace Statecraft.Game.UI
     /// <summary>A person card in the promo's style (promo/final/04 and 08), shared by the Cabinet and Defence screens: the
     /// framed portrait (or, with none in the catalog, a plain plate with the initials: never an invented likeness), the
     /// name, the office, the party, and competence and loyalty as two bars with their values out of 10 (people.yaml). A
-    /// vacant office shows its title and "(vacant)" only. Element names start with the given prefix
-    /// (<c>{prefix}-holder</c>, <c>-office</c>, <c>-party</c>, <c>-portrait</c>, <c>-initials</c>, <c>-competence</c>,
-    /// <c>-competence-value</c>, <c>-loyalty</c>, <c>-loyalty-value</c>).</summary>
+    /// vacant office shows its title and "(vacant)" only. The card's elements are made once and updated in place, so a
+    /// focused card keeps its focus. Element names start with the given prefix (<c>{prefix}-holder</c>, <c>-office</c>,
+    /// <c>-party</c>, <c>-portrait</c>, <c>-initials</c>, <c>-competence</c>, <c>-competence-value</c>, <c>-loyalty</c>,
+    /// <c>-loyalty-value</c>).</summary>
     public static class PersonCard
     {
         public const string PortraitClass = "card-portrait", InitialsClass = "card-initials", NameClass = "card-name",
@@ -28,17 +29,29 @@ namespace Statecraft.Game.UI
             return words.Length == 1 ? words[0].Substring(0, 1) : words[0].Substring(0, 1) + words[words.Length - 1].Substring(0, 1);
         }
 
-        /// <summary>Fills <paramref name="card"/> (cleared first). <paramref name="office"/> is the line under the name;
-        /// <paramref name="portraitSize"/> is the portrait box in logical pixels (Statecraft.uss), used to keep the face in
-        /// view.</summary>
+        /// <summary>Makes the card's elements inside <paramref name="card"/> (cleared first), empty.</summary>
+        public static void Build(VisualElement card, string prefix, UiText text)
+        {
+            card.Clear();
+            var plate = Element(prefix + "-plate", "card-plate");
+            plate.Add(Element(prefix + "-portrait", PortraitClass));
+            plate.Add(Text(prefix + "-initials", InitialsClass));
+            card.Add(plate);
+            card.Add(Text(prefix + "-holder", NameClass));
+            card.Add(Text(prefix + "-office", OfficeClass));
+            card.Add(Text(prefix + "-party", PartyClass));
+            card.Add(Stat(prefix + "-competence", text["card.competence"], "ui-bar--competence"));
+            card.Add(Stat(prefix + "-loyalty", text["card.loyalty"], "ui-bar--loyalty"));
+        }
+
+        /// <summary>Fills <paramref name="card"/> in place, building it first if it has not been built with this prefix.
+        /// <paramref name="office"/> is the line under the name; <paramref name="portraitSize"/> is the portrait box in
+        /// logical pixels (Statecraft.uss), used to keep the face in view.</summary>
         public static void Fill(VisualElement card, string prefix, Content c, GameState s, Person? person, string office, bool appointed,
                                 UiText text, PortraitCatalog? portraits, Vector2 portraitSize, bool partyLabel = false)
         {
-            card.Clear();
-            var plate = new VisualElement { name = prefix + "-plate", pickingMode = PickingMode.Ignore };
-            plate.AddToClassList("card-plate");
-            var portrait = new VisualElement { name = prefix + "-portrait", pickingMode = PickingMode.Ignore };
-            portrait.AddToClassList(PortraitClass);
+            if (card.Q(prefix + "-plate") == null) Build(card, prefix, text);
+            var portrait = card.Q(prefix + "-portrait");
             var entry = portraits?.Find(person?.Id);
             var tex = entry?.image;
             if (tex != null)
@@ -47,45 +60,63 @@ namespace Statecraft.Game.UI
                 portrait.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top,
                     new Length(PortraitFraming.PositionYPercent(tex.width, tex.height, portraitSize.x, portraitSize.y, entry!.Value.focusY), LengthUnit.Percent));
             }
+            else portrait.style.backgroundImage = StyleKeyword.None;
             portrait.style.display = tex != null ? DisplayStyle.Flex : DisplayStyle.None;   // never an invented portrait
-            plate.Add(portrait);
-            var initials = new Label(person == null || tex != null ? "" : Initials(person.Name)) { name = prefix + "-initials", pickingMode = PickingMode.Ignore };
-            initials.AddToClassList(InitialsClass);
+            var initials = card.Q<Label>(prefix + "-initials");
+            initials.text = person == null || tex != null ? "" : Initials(person.Name);
             initials.style.display = tex == null ? DisplayStyle.Flex : DisplayStyle.None;
-            plate.Add(initials);
-            card.Add(plate);
 
-            var holder = new Label(person == null ? text["cabinet.vacant"] : person.Name + (appointed ? text["cabinet.appointed"] : "")) { name = prefix + "-holder", pickingMode = PickingMode.Ignore };
-            holder.AddToClassList(NameClass);
+            var holder = card.Q<Label>(prefix + "-holder");
+            holder.text = person == null ? text["cabinet.vacant"] : appointed ? text.Format("card.appointed_name", person.Name) : person.Name;
             holder.EnableInClassList("appointed", appointed);
-            card.Add(holder);
-            var officeLabel = new Label(office) { name = prefix + "-office", pickingMode = PickingMode.Ignore };
-            officeLabel.AddToClassList(OfficeClass);
-            card.Add(officeLabel);
-            if (person == null) return;
+            card.Q<Label>(prefix + "-office").text = office;
 
+            var party = card.Q<Label>(prefix + "-party");
+            var shown = person != null ? DisplayStyle.Flex : DisplayStyle.None;
+            party.style.display = shown;
+            card.Q(prefix + "-competence-row").style.display = shown;
+            card.Q(prefix + "-loyalty-row").style.display = shown;
+            if (person == null) return;
             var partyId = Offices.PartyOf(c, person, s.Date);
             var partyName = partyId == "" ? text["cabinet.no_party"] : c.Parties.First(x => x.Id == partyId).Name;
-            var party = new Label(partyLabel ? text.Format("card.party", partyName) : partyName) { name = prefix + "-party", pickingMode = PickingMode.Ignore };
-            party.AddToClassList(PartyClass);
-            card.Add(party);
-            card.Add(Stat(prefix + "-competence", text["card.competence"], person.Competence, "ui-bar--competence"));
-            card.Add(Stat(prefix + "-loyalty", text["card.loyalty"], person.Loyalty, "ui-bar--loyalty"));
+            party.text = partyLabel ? text.Format("card.party", partyName) : partyName;
+            SetStat(card, prefix + "-competence", person.Competence);
+            SetStat(card, prefix + "-loyalty", person.Loyalty);
         }
 
-        static VisualElement Stat(string name, string caption, int value, string modifier)
+        /// <summary>Empties a card (a disposed screen keeps no stale person or texture).</summary>
+        public static void Clear(VisualElement card) => card.Clear();
+
+        static void SetStat(VisualElement card, string name, int value)
         {
-            var row = new VisualElement { name = name + "-row", pickingMode = PickingMode.Ignore };
-            row.AddToClassList(StatClass);
+            card.Q<UiBar>(name).Value = (float)value / Scale;
+            card.Q<Label>(name + "-value").text = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        static VisualElement Element(string name, string className)
+        {
+            var e = new VisualElement { name = name, pickingMode = PickingMode.Ignore };
+            e.AddToClassList(className);
+            return e;
+        }
+
+        static Label Text(string name, string className)
+        {
+            var l = new Label { name = name, pickingMode = PickingMode.Ignore };
+            l.AddToClassList(className);
+            return l;
+        }
+
+        static VisualElement Stat(string name, string caption, string modifier)
+        {
+            var row = Element(name + "-row", StatClass);
             var label = new Label(caption) { pickingMode = PickingMode.Ignore };
             label.AddToClassList("card-stat-name");
             row.Add(label);
-            var bar = new UiBar { name = name, Value = (float)value / Scale };
+            var bar = new UiBar { name = name };
             bar.AddToClassList(modifier);
             row.Add(bar);
-            var number = new Label(value.ToString(System.Globalization.CultureInfo.InvariantCulture)) { name = name + "-value", pickingMode = PickingMode.Ignore };
-            number.AddToClassList("card-stat-value");
-            row.Add(number);
+            row.Add(Text(name + "-value", "card-stat-value"));
             return row;
         }
     }

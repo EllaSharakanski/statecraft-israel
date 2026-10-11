@@ -227,6 +227,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    info panel (an opaque reading screen; the info panel is about a hex, not needed while reading a screen). The event card
    and the minimap stay in view (UiLayoutTests). */
 .screen-wide { left: 16px; }
+/* The info panel under an open wide screen is hidden (ScreenNav sets wide-screen-open): no focus, no clicks, no updates. */
+.wide-screen-open .info-panel { display: none; }
 .section-title {
     -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf");
     color: var(--gold); letter-spacing: 3px; font-size: 17px; margin: 0 0 8px 2px; padding: 0;
@@ -282,6 +284,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .pm-card .card-stat-name { font-size: 16px; width: 96px; }
 .pm-card .ui-bar { height: 10px; }
 #cabinet-pick { flex-shrink: 1; min-height: 0; }
+.pm-offices { flex-direction: row; flex-wrap: wrap; margin: -2px 0 8px 0; }
+.pm-office { font-size: 15px; padding: 3px 10px; margin: 0 6px 4px 0; border-color: rgba(196, 160, 92, 0.6); }
 .cabinet-house {
     flex-direction: row; flex-wrap: wrap; align-items: center; flex-shrink: 0; margin: 0 5px 8px 5px; padding: 10px 14px;
     background-color: rgba(5, 9, 18, 0.55); border-width: 1px; border-color: var(--gold-dim); border-radius: 2px;

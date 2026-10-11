@@ -59,15 +59,18 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Narrower windows get a compact top bar, and windows narrower than about square get a taller one that puts each change
   under its value. Keyboard focus has a fill at least 3:1 against the unfocused button, and a mouse click leaves no
   focus behind. Presentation only.
-- The Cabinet and Defence screens are laid out as the promo (`promo/final/04`, `08`), wider, over the hex panel:
-  - Cabinet: the Prime Minister's card at the side, the legislature as a half circle of seats by party with the majority
-    line and the coalition's and opposition's seats, and a card per office with portrait (or initials), party, and
-    competence and loyalty as bars;
-  - Defence: the Prime Minister, Minister of Defense and Chief of Staff as cards, the escalation ladder with the ordered
-    level marked, the reserve call-up as a bar with its minimum, and the defence share of the budget.
+- The Cabinet and Defence screens are laid out as the promo (`promo/final/04`, `08`), wider, over the hex panel (which
+  is hidden while they are open, so its buttons take no focus):
+  - Cabinet: the Prime Minister's card at the side (with every office the PM holds), the legislature as a half circle of
+    seats, coalition and opposition, with the majority line and each party's seats, and a card per office with portrait
+    (or initials), party, and competence and loyalty as bars;
+  - Defence: the Prime Minister, Minister of Defense and Chief of Staff as cards (one per person), the escalation
+    ladder with the ordered level marked, the reserve call-up as a bar with its minimum, and the defence share of the
+    budget.
 
   Every figure is the sim's; the promo's forces, intelligence and procurement panels are left out because the sim does
-  not model them yet. Party colours are a UI palette (coalition blues, opposition greys). Presentation only.
+  not model them yet. A hidden screen does no work when the game changes, and an open one updates in place, keeping
+  keyboard focus. Presentation only.
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
