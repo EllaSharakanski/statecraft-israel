@@ -4,6 +4,9 @@
 layer: subdistricts_1948
 title: "Sub-districts of Mandatory Palestine in force on 15 May 1948 (true lines, not hex-snapped)"
 line: "The true lines are the Survey of Palestine map of the 1947 Administrative Divisions Schedule (content/map/subdistricts_1948.geojson, status draft); shown here to the nearest hex edge, up to half a hex (about 4 km) from the true line."
+label: "Mandate sub-districts, 1947"   # shown on screen while the layer is drawn (owner ruling 2026-10-11)
+shown_from: 1948-05-15   # the game's start
+shown_until: null   # until the 1949 armistice lines replace it, each front on its agreement's date, once that data exists
 regions:
   - { id: 1, key: acre, name: "Acre Sub-District", district: "Galilee District", style: primary }
   - { id: 2, key: beisan, name: "Beisan Sub-District", district: "Galilee District", style: primary }
@@ -365,7 +368,7 @@ hexes:   # [q, r, region id], ordered by r then q
   - [2, 29, 17]
   - [3, 29, 17]
   - [4, 29, 17]
-  - [-15, 30, 15]
+  - [-15, 30, 17]
   - [-14, 30, 15]
   - [-13, 30, 16]
   - [-12, 30, 16]
@@ -397,7 +400,7 @@ hexes:   # [q, r, region id], ordered by r then q
   - [-5, 31, 16]
   - [-4, 31, 10]
   - [-3, 31, 10]
-  - [-2, 31, 16]
+  - [-2, 31, 17]
   - [-1, 31, 17]
   - [0, 31, 17]
   - [1, 31, 17]
@@ -882,7 +885,7 @@ hexes:   # [q, r, region id], ordered by r then q
   - [-24, 57, 17]
   - [-23, 57, 17]
   - [-22, 57, 17]
-  - [-21, 57, 16]
+  - [-21, 57, 17]
   - [-19, 57, 17]
   - [-18, 57, 17]
   - [-17, 57, 17]

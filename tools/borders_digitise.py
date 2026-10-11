@@ -43,19 +43,20 @@ MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 CHECKED = "2026-10-11"
 F = 2           # processing at half the scan's resolution (about 66 m a pixel)
 CLOSE_R = 20    # closing radius, processing pixels
+FINE_R = 6      # the second, fine closing that gives back the land the coarse one fills in narrow salients (Metulla)
 DEAD_SEA_1948_M = -392.0
 SIMPLIFY_DEG = 0.0012   # coverage simplification tolerance (about 120 m), well inside the stated accuracy
 MIN_PART_KM2 = 0.5      # coastal slivers of the DEM shore below this are dropped
 
 SCANS = {
     "93c4bded807015b10804d158f6f3f39d3a1a171ebb0f0680b6987a50a0bdfc18": {
-        "label": "UNSCOP compendium copy (National Library of Israel, Pal 1143), Wikimedia Commons",
+        "label": "UNSCOP compendium copy, National Library of Israel (accession per Commons: 'Pal 1143; Pal 1143b; Pal 1196?'); Commons tag {{PD-UK-Gov}} in the Map template's permission field",
         "url": "https://commons.wikimedia.org/wiki/File:06_Palestine-_Administrative_divisions.jpg",
         # expected graticule intersections, scan pixels (lon, lat, x, y); found within about 40 px
         "graticule": [[35, 33, 3594, 1858], [35, 32, 3603, 5355], [35, 31, 3612, 8843], [35, 30, 3621, 12327],
                       [36, 33, 6519, 1849], [36, 32, 6528, 5353], [36, 31, 6536, 8841], [36, 30, 6545, 12329]]},
     "84f2bdac9d39cfc39063d04f2a7e440d2a4786f548ce539837cc919202912792": {
-        "label": "Eran Laor Cartographic Collection copy (National Library of Israel, FL147392105), Wikimedia Commons",
+        "label": "Eran Laor Cartographic Collection copy, National Library of Israel (FL147392105, published 1947-06 per Commons); Commons tags {{PD-UKGov}}{{PD-IsraelGov}}",
         "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Palestine,_Maps_of_Palestine_06-Adm-Divisions_(FL147392105_2367029).jpg",
         "graticule": [[35, 33, 3398, 1707], [35, 32, 3412, 5205], [35, 31, 3420, 8696], [35, 30, 3425, 12182],
                       [36, 33, 6343, 1691], [36, 32, 6348, 5198], [36, 31, 6354, 8694], [36, 30, 6359, 12186]]},
@@ -119,6 +120,13 @@ PATCHES = {
         ([(34.99361, 29.55667), (34.99290, 29.54808), (34.99148, 29.53089)], "Gulf of Aqaba: the Transjordan frontier extended a few pixels to the DEM sea"),
         ([(34.74761, 31.99228), (34.73566, 31.99745), (34.71857, 32.00176)], "Jaffa/Ramle boundary: its coastal end extended a few pixels to the DEM sea"),
     ],
+    # Gazette-listed villages at a frontier tip that the 1:750,000 line clips (the map draws the village on the line): land
+    # labelled outside within radius_km of the village goes to its sub-district. (sub-district id, village, lon, lat,
+    # radius km, Gazette page, coordinate source)
+    "villages": [
+        ("safad", "Metulla", 35.5744, 33.2789, 0.8, "p. 127 (Safad Sub-District: 'Metulla (includes Deir Mamas, Hura and Kafr Kila)')",
+         "https://en.wikipedia.org/wiki/Metula"),
+    ],
     # red sub-district name underlines (the map's convention, not boundaries): lon0, lat0, lon1, lat1
     "erase": [[35.45522, 32.94759, 35.51709, 32.94066], [35.01132, 32.92102, 35.06806, 32.91468],
               [35.45535, 32.76454, 35.54150, 32.75731], [35.30604, 32.68962, 35.40621, 32.68237],
@@ -157,10 +165,10 @@ SOURCES = [
 LICENCE_NOTE = (
     "Government of Palestine works of 1945-47. Copyright: the Copyright Act 1911, extended to Palestine in 1924, gave "
     "government works 50 years from publication, so these ran out by the end of 1997 in Palestine's successor law (Israel "
-    "kept the 1911 Act until 2008) and in the UK (Crown copyright, CDPA 1988 s.163 and its transition). Commons tags the "
-    "scans {{PD-UKGov}} / {{PD-IsraelGov}}. Caveat: like the 1948-60 Government Press Office photos (docs/oss/DECISIONS.md "
+    "kept the 1911 Act until its 2007 Copyright Act took effect in 2008) and in the UK (Crown copyright, CDPA 1988 s.163 and its "
+    "transition). Commons tags scan (a) {{PD-UK-Gov}} and scan (b) {{PD-UKGov}}{{PD-IsraelGov}}. Caveat: like the 1948-60 Government Press Office photos (docs/oss/DECISIONS.md "
     "D-P) they were still protected on 1 January 1996, so the URAA may have restored a US copyright in the map's drawing "
-    "until 2042-43. What this file takes is factual: where legally defined administrative lines run (the Proclamation is "
+    "until about 2041-42 (95 years from 1946-47). What this file takes is factual: where legally defined administrative lines run (the Proclamation is "
     "a legislative text), redrawn by our own method; no image is copied. The owner rules on it (decision D-B). This "
     "file, like content/, is CC BY-SA 4.0; its coast follows the Copernicus DEM (NOTICE).")
 
@@ -301,10 +309,31 @@ def label_scan(scan: Path, log=print) -> dict:
     for c in outside:
         lut[c] = 99
     labels = lut[lab]
+    # Fine pass: the coarse closing also fills narrow salients of a solid line (the Metulla finger of the frontier) and the
+    # nearest-label step then gives them to whichever side is nearer. With a fine closing those salients stay open and
+    # join their own region; a fine component whose coarse-labelled pixels all carry one label passes it to its filled
+    # pixels. A component with two labels (a dash gap the fine closing leaves open) changes nothing, so this cannot leak.
+    yf, xf = np.mgrid[-FINE_R:FINE_R + 1, -FINE_R:FINE_R + 1]
+    fine = ndi.binary_closing(np.pad(ink2, FINE_R), structure=xf ** 2 + yf ** 2 <= FINE_R * FINE_R)[FINE_R:-FINE_R, FINE_R:-FINE_R] | ink2
+    fl, fn = ndi.label(~fine & ~ndi.binary_dilation(water, iterations=3))
+    lo_lab = np.zeros(fn + 1, np.int64); hi_lab = np.zeros(fn + 1, np.int64)
+    has = (fl > 0) & (labels > 0)
+    np.maximum.at(hi_lab, fl[has], labels[has]); lo_lab[:] = 1 << 30; np.minimum.at(lo_lab, fl[has], labels[has])
+    one = np.where((hi_lab == lo_lab) & (hi_lab > 0), hi_lab, 0)
+    give = (labels == 0) & (fl > 0) & (one[fl] > 0)
+    labels[give] = one[fl[give]]
+    log(f"fine pass: {int(give.sum())} pixels given back")
     _, (ir, ic) = ndi.distance_transform_edt(labels == 0, return_indices=True)
     labels = labels[ir, ic]
+    ys2, xs2 = np.mgrid[0:h2, 0:w2]
+    for sid, name, vlon, vlat, rad, _page, _src in PATCHES["villages"]:
+        vx, vy = to_px(cx, cy, vlon, vlat)
+        near_v = (np.hypot(xs2 - vx / F, ys2 - vy / F) * F * 0.033 <= rad) & (labels == 99)
+        labels[near_v] = 1 + [s_[0] for s_ in SUBDISTRICTS].index(sid)
+        log(f"{name}: {int(near_v.sum())} pixels moved from outside to {sid}")
     labels[water] = 0
-    return {"labels": labels, "cx": cx, "cy": cy, "rms": rms, "graticule": grat, "info": info, "sha256": digest}
+    return {"labels": labels, "cx": cx, "cy": cy, "rms": rms, "graticule": grat, "info": info, "sha256": digest,
+            "ink": ink2, "closed": closed, "water": water}
 
 
 def polygons(res: dict) -> dict:
@@ -359,7 +388,10 @@ def accuracy(main: dict, feats: list, cross: dict | None) -> str:
         means = [v["mean_offset_km"] for k, v in cross.items() if not k.startswith("_")]
         maxes = [v["max_offset_km"] for k, v in cross.items() if not k.startswith("_")]
         text += f"; a second print digitised alike agrees to a mean {min(means):.2f}-{max(means):.2f} km, at most {max(maxes):.2f} km"
-    return text + ". Uncertain segments (under labels, connectors) to about +-1.5 km."
+    return text + (". Caveats: the Village Statistics areas follow the 1945 Schedule (Gazette No. 1415), not the 1947 one, so 1947 "
+                   "adjustments count as error; Beersheba's figure (12,577,000 dunams) is a rounded estimate, so its check is nominal; "
+                   "Gaza low and Beersheba high point at the Gaza/Beersheba line (the Bureir connector). Uncertain segments (under "
+                   "labels, connectors, the Metulla tip) to about +-1.5 km.")
 
 
 def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
@@ -392,12 +424,20 @@ def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
         "coast": "Seaward edges follow the game's Copernicus DEM coastline (sea at 0 m) and the Dead Sea at its 1948 level "
                  "(-392 m): coast, not a boundary. Lake Tiberias is inside the Tiberias sub-district.",
         "uncertain_segments": [{"points": [list(p) for p in seg], "why": why} for seg, why in PATCHES["draw"]]
+                              + [{"point": [vlon, vlat], "radius_km": rad, "why": f"{name}: listed under {sid} in the 1947 Schedule ({page}) but drawn on the frontier's tip at 1:750,000; land within {rad} km kept in {sid} (coordinates: {src})"}
+                                 for sid, name, vlon, vlat, rad, page, src in PATCHES["villages"]]
+                              + [{"why": f"narrow salients of solid lines (the frontier): the coarse closing fills them; a fine closing ({FINE_R} px) gives each back to the region on its side where that side is unambiguous"}]
                               + [{"box": b, "why": "boundary under a district name's red lettering, joined by the closing"} for b in PATCHES["labels"]]
                               + [{"box": b, "why": "boundary crossing a sub-district name's red underline, joined by the closing"} for b in PATCHES["erase"]],
-        "open_questions": ["No amendment after the 1947 Schedule was found (search 2026-10-11); one between mid-1947 and "
-                           "14 May 1948 cannot be ruled out.",
+        "open_questions": ["No amendment after the 1947 Schedule was found (web searches 2026-10-11, twice); one between "
+                           "mid-1947 and 14 May 1948 cannot be ruled out. To close it: the Palestine Gazette's 1947 and 1948 "
+                           "indexes, or 'Laws of Palestine 1947' (subsidiary legislation), at the National Library of Israel. "
+                           "Status stays draft until then.",
                            "Hebrew and Arabic names come from Wikipedia (secondary); the Gazette's Hebrew and Arabic "
-                           "editions were not reachable."],
+                           "editions were not reachable. Owner review, in particular 'נפת ביסאן' (Beisan) and the Arabic "
+                           "for Samaria District, 'لواء السامرة' ('لواء نابلس' is also common in Mandate-era Arabic usage).",
+                           "Known near-line place: Ra'anana (Jaffa Sub-District in the 1947 Schedule, p. 132) falls 0.1 km "
+                           "inside Tulkarm on these lines, within the stated accuracy."],
     }
     if cross:
         meta["cross_check"] = {"scan": cross["_scan"], "sha256": cross["_sha256"]}
@@ -405,8 +445,22 @@ def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
 
 
 def write(doc: dict, path: Path) -> None:
-    """Stable text: one feature per line block, coordinates as written (5 decimals)."""
-    path.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    """Deterministic, diff-friendly text: the metadata indented, then per feature one line of properties and one line per
+    vertex (5-decimal coordinates), so a moved stretch of line shows as changed vertices in a diff."""
+    def ring(r) -> str:   # one vertex per line
+        return "[" + ",\n    ".join(json.dumps(v, separators=(",", ":")) for v in r) + "]"
+    def ring_lines(geom: dict) -> str:
+        if geom["type"] == "Polygon":
+            inner = ",\n   ".join(ring(r) for r in geom["coordinates"])
+        else:
+            inner = ",\n   ".join("[" + ",\n    ".join(ring(r) for r in poly) + "]" for poly in geom["coordinates"])
+        return '{"type":"' + geom["type"] + '","coordinates":[\n   ' + inner + "]}"
+    meta = json.dumps({k: v for k, v in doc.items() if k != "features"}, ensure_ascii=False, indent=1)
+    feats = ",\n".join('{"type":"Feature",\n  "properties":' + json.dumps(f["properties"], ensure_ascii=False, separators=(",", ":"))
+                       + ',\n  "geometry":' + ring_lines(f["geometry"]) + "}" for f in doc["features"])
+    text = meta[:-2] + ',\n "features":[\n' + feats + "\n]}\n"
+    assert json.loads(text) == json.loads(json.dumps(doc)), "write() must round-trip"
+    path.write_text(text, encoding="utf-8")
 
 
 def main() -> None:

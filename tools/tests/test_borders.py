@@ -67,11 +67,17 @@ def test_rings_are_closed_counter_clockwise_and_in_the_map():
                 assert (ring[:, 1] >= b["lat0"]).all() and (ring[:, 1] <= b["lat1"]).all()
 
 
+# Village Statistics 1945 follows the 1945 Schedule, so 1947 adjustments count as error; Beersheba's figure is a rounded
+# estimate (nominal check) and Gaza against Beersheba is their shared line (the Bureir connector): 5% for those two.
+AREA_TOLERANCE = {"gaza": 0.05, "beersheba": 0.05}
+
+
 def test_areas_agree_with_village_statistics_1945():
-    """The independent check: each digitised area within 5% of the Government's own land area for it."""
+    """The independent check: each digitised area within 4% of the Government's own land area for it (5% for Gaza and
+    Beersheba, see AREA_TOLERANCE)."""
     for f in SOURCE["features"]:
         p = f["properties"]
-        assert abs(p["area_km2"] / p["vs1945_area_km2"] - 1) < 0.05, p["id"]
+        assert abs(p["area_km2"] / p["vs1945_area_km2"] - 1) < AREA_TOLERANCE.get(p["id"], 0.04), p["id"]
 
 
 def test_two_prints_of_the_map_agree():
@@ -138,13 +144,20 @@ def test_every_sub_district_shows_and_its_hex_count_matches_its_area():
         assert n >= 1 and abs(n - expected) <= max(3, 0.25 * expected), (f["properties"]["id"], n, expected)
 
 
-@pytest.mark.parametrize("town, sub", [("acre", "acre"), ("haifa", "haifa"), ("safed", "safad"), ("tiberias", "tiberias"),
-                                       ("nazareth", "nazareth"), ("jerusalem", "jerusalem"), ("tel_aviv", "jaffa"),
-                                       ("jaffa", "jaffa"), ("ramla", "ramle"), ("gaza", "gaza"), ("beersheba", "beersheba")])
-def test_towns_fall_in_their_sub_district(town, sub):
-    t = TOWNS[town]
-    q, r = hg.settlement_hex(t["lon"], t["lat"], HEXES)
-    assert region_of(q, r) == sub
+def test_a_town_a_hex_deep_inside_its_sub_district_has_its_hex_there():
+    """The snap moves a line by up to about half a hex, so a town at least one hex size (5 km) from every line of its
+    sub-district must be drawn in it (settlements_1948.yaml and the places below)."""
+    shapes = {f["properties"]["id"]: bb.rings(f["geometry"]) for f in SOURCE["features"]}
+    km_lon = hg.km_per_deg_lon(HEXES["bounds"])
+    checked = 0
+    for name, (lon, lat) in [(t, (TOWNS[t]["lon"], TOWNS[t]["lat"])) for t in TOWNS] + [(k, v[1:3]) for k, v in PLACES.items()]:
+        inside = [k for k, sh in shapes.items() if bb.contains(sh, lon, lat)]
+        if len(inside) != 1 or bb.distance_km(shapes[inside[0]], lon, lat, km_lon) < HEXES["hex_size_km"]:
+            continue
+        q, r = hg.settlement_hex(lon, lat, HEXES)
+        assert region_of(q, r) == inside[0], name
+        checked += 1
+    assert checked >= 12   # 14 on 2026-10-11
 
 
 @pytest.mark.parametrize("lon, lat", [(35.25, 33.30), (35.85, 32.55), (34.35, 30.40), (35.75, 30.50)])
@@ -152,6 +165,19 @@ def test_land_beyond_the_frontier_is_outside(lon, lat):
     (q,), (r,) = hg.point_to_hex(np.array([(lon - HEXES["bounds"]["lon0"]) * hg.km_per_deg_lon(HEXES["bounds"])]),
                                  np.array([(HEXES["bounds"]["lat1"] - lat) * hg.KM_PER_DEG_LAT]), HEXES["hex_size_km"])
     assert region_of(q, r) == bb.OUTSIDE
+
+
+@pytest.mark.parametrize("hexqr, key", [((-21, 57), bb.OUTSIDE), ((-20, 56), "beersheba"), ((-15, 30), bb.OUTSIDE), ((-14, 30), "gaza")])
+def test_shore_hexes_follow_their_own_coast(hexqr, key):
+    """Review M7: a shore hex takes the side of its nearest land. Off the Sinai coast at Taba the hex is outside, Umm
+    Rashrash (Eilat) is Beersheba; west of Rafah's frontier outside, Rafah's own hex Gaza (p. 133)."""
+    assert region_of(*hexqr) == key
+
+
+def test_the_layer_shows_from_the_start_until_replaced_with_its_label():
+    """Owner ruling 2026-10-11 (I4): from the 1948 start until the armistice lines replace it, labelled."""
+    assert BAKED["label"] == "Mandate sub-districts, 1947"
+    assert str(BAKED["shown_from"]) == "1948-05-15" and BAKED["shown_until"] is None
 
 
 def test_regions_are_the_sub_districts_then_outside_and_drawn_primary():
@@ -168,19 +194,54 @@ def test_the_sim_never_reads_the_border_files():
         assert not re.search(r"subdistrict", text, re.IGNORECASE), cs
 
 
-# Settlement -> sub-district as listed in the 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2, pp. 125-133;
-# read from the page images, 2026-10-11): the true polygons must contain each town's coordinates (settlements_1948.yaml).
-GAZETTE_MEMBERS = {
-    "acre": "acre", "safed": "safad", "rosh_pinna": "safad", "tiberias": "tiberias", "degania_alef": "tiberias",
-    "nazareth": "nazareth", "nahalal": "nazareth", "ein_harod": "beisan", "haifa": "haifa", "hadera": "haifa",
-    "zikhron_yaakov": "haifa", "netanya": "tulkarm", "tel_aviv": "jaffa", "jaffa": "jaffa", "petah_tikva": "jaffa",
-    "lod": "ramle", "ramla": "ramle", "rishon_lezion": "ramle", "rehovot": "ramle", "jerusalem": "jerusalem",
-    "gaza": "gaza", "beersheba": "beersheba",
+# Places -> sub-district as listed in the 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2; pages as printed,
+# 125-133; read 2026-10-11, the page images where the text layer was unclear). None of them is a digitiser seed (review I3):
+# the seeds are the chief towns, so those would pass by construction. Mostly near a line on purpose.
+GAZETTE_MEMBERS = {   # settlements_1948.yaml rows
+    "jaffa": ("jaffa", "p. 132"), "petah_tikva": ("jaffa", "p. 132"), "haifa": ("haifa", "p. 128"),
+    "hadera": ("haifa", "p. 128"), "zikhron_yaakov": ("haifa", "p. 128"), "netanya": ("tulkarm", "p. 130"),
+    "lod": ("ramle", "p. 132"), "rishon_lezion": ("ramle", "p. 133"), "rehovot": ("ramle", "p. 133"),
+    "rosh_pinna": ("safad", "p. 127"), "degania_alef": ("tiberias", "p. 127"), "nahalal": ("nazareth", "p. 126"),
+    "ein_harod": ("beisan", "p. 126"),
 }
+# Further places: sub-district, lon, lat (Wikipedia coordinates via the API, prop=coordinates, 2026-10-11), Gazette page.
+PLACES = {
+    "Kefar Sava": ("jaffa", 34.90833, 32.17139, "p. 132"), "Kafr Saba": ("tulkarm", 34.93722, 32.18111, "p. 130"),
+    "Herzliya": ("jaffa", 34.84583, 32.16528, "p. 132"), "Ra'anana": ("jaffa", 34.86667, 32.18333, "p. 132"),
+    "Holon": ("jaffa", 34.76667, 32.01667, "p. 132"), "Bat Yam": ("jaffa", 34.75000, 32.01667, "p. 132"),
+    "Kafr Qasim": ("tulkarm", 34.97510, 32.11510, "p. 130"), "Jaljuliya": ("tulkarm", 34.95180, 32.15353, "p. 130"),
+    "Qalqiliya": ("tulkarm", 34.96861, 32.19028, "p. 130"), "Yibna": ("ramle", 34.74639, 31.86611, "p. 133"),
+    "Latrun": ("ramle", 34.98139, 31.83194, "p. 132"), "Gedera": ("ramle", 34.77722, 31.81194, "p. 132"),
+    "Faluja": ("gaza", 34.74778, 31.62472, "p. 133"), "Isdud": ("gaza", 34.66167, 31.75361, "p. 133"),
+    "Negba": ("gaza", 34.68306, 31.66083, "p. 133"), "Be'er Tuvya": ("gaza", 34.72389, 31.73611, "p. 133"),
+    "Qastina": ("gaza", 34.76222, 31.73917, "p. 133"), "Ruhama": ("beersheba", 34.70556, 31.49667, "p. 133"),
+    "Beit Jibrin": ("hebron", 34.89833, 31.60528, "p. 130"), "Umm el Fahm": ("jenin", 35.15361, 32.51944, "p. 129"),
+    "Afula": ("nazareth", 35.28806, 32.60639, "p. 126"), "Kafr Kanna": ("nazareth", 35.35000, 32.75000, "p. 126"),
+    "Nahariya": ("acre", 35.09889, 33.00583, "p. 125"), "Kafr Bir'im": ("safad", 35.41417, 33.04361, "p. 127"),
+    "Metulla": ("safad", 35.57444, 33.27889, "p. 127"), "Ein Gev": ("tiberias", 35.63972, 32.78278, "p. 127"),
+    "Bir Zeit": ("ramallah", 35.19556, 31.97222, "p. 131"), "Bethlehem": ("jerusalem", 35.20639, 31.70444, "p. 131"),
+}
+# A place within this of its own sub-district passes outside it: the stated accuracy is about +-1 km, and these are known
+# near-line cases (also in the GeoJSON's open_questions).
+NEAR_LINE_KM = 0.3
+NEAR_LINE = {"Ra'anana"}
 
 
-@pytest.mark.parametrize("town, sub", sorted(GAZETTE_MEMBERS.items()))
-def test_the_true_lines_put_each_listed_town_in_its_gazette_sub_district(town, sub):
-    t = TOWNS[town]
-    inside = [f["properties"]["id"] for f in SOURCE["features"] if bb.contains(bb.rings(f["geometry"]), t["lon"], t["lat"])]
-    assert inside == [sub], (town, inside)
+def check_member(name: str, sub: str, lon: float, lat: float) -> None:
+    shapes = {f["properties"]["id"]: bb.rings(f["geometry"]) for f in SOURCE["features"]}
+    inside = [k for k, sh in shapes.items() if bb.contains(sh, lon, lat)]
+    if inside == [sub]:
+        return
+    km = bb.distance_km(shapes[sub], lon, lat, hg.km_per_deg_lon(HEXES["bounds"]))
+    assert name in NEAR_LINE and km <= NEAR_LINE_KM, (name, inside, f"{km:.2f} km from {sub}")
+
+
+@pytest.mark.parametrize("town", sorted(GAZETTE_MEMBERS))
+def test_the_true_lines_put_each_listed_town_in_its_gazette_sub_district(town):
+    check_member(town, GAZETTE_MEMBERS[town][0], TOWNS[town]["lon"], TOWNS[town]["lat"])
+
+
+@pytest.mark.parametrize("place", sorted(PLACES))
+def test_the_true_lines_put_each_listed_place_in_its_gazette_sub_district(place):
+    sub, lon, lat, _page = PLACES[place]
+    check_member(place, sub, lon, lat)
