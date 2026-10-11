@@ -106,7 +106,8 @@ public class PromoScreensTests
             house.Set(new[] { new Hemicycle.Group("a", size / 2 + 1, Color.blue, true), new Hemicycle.Group("b", size - size / 2 - 1, Color.gray, false) }, size);
             var line = house.MajorityLine;
             var places = Hemicycle.Places(size);
-            var dot = Hemicycle.DotRadius(size);
+            // The dot plus half the line's 2 px stroke, in unit radii at the shipped box (Statecraft.uss .hemicycle-box, 320 x 168).
+            var dot = Hemicycle.DotRadius(size) + Hemicycle.LineWidth / 2f / Hemicycle.ScaleFor(HemicycleBox - new Vector2(1.5f, 1.5f), size);
             Assert.Greater(line.Count, 1, size + ": a line");
             // No dot touches the line: every seat centre is more than a dot's radius from every segment.
             for (int i = 0; i < size; i++)
@@ -128,6 +129,9 @@ public class PromoScreensTests
         h.Set(new[] { new Hemicycle.Group("a", 30, Color.blue, true) }, 37);
         Assert.AreEqual(changes, h.Changes, "the same house again is not redrawn (review I2)");
     }
+
+    /// <summary>The half circle's box in logical pixels (Statecraft.uss .hemicycle-box); BothScreensFitEveryWindowShape checks it.</summary>
+    static readonly Vector2 HemicycleBox = new Vector2(320f, 168f);
 
     static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)
     {
@@ -248,7 +252,7 @@ public class PromoScreensTests
             Assert.AreEqual(holder.Loyalty / 10f, ui.Q<UiBar>("lead-" + office + "-loyalty").Value, 1e-6f, office);
         }
         CollectionAssert.AreEqual(new[] { "prime_minister", "chief_of_staff" }, shown, "1948: Ben-Gurion once, Dori once");
-        Assert.AreEqual("Prime Minister · Minister of Defense", ui.Q<Label>("lead-prime_minister-office").text);
+        Assert.AreEqual("Prime Minister\nMinister of Defense", ui.Q<Label>("lead-prime_minister-office").text);
         var bar = ui.Q<UiBar>("mob-bar");
         Assert.AreEqual((float)g.State.Mobilization, bar.Value, 1e-6f);
         Assert.AreEqual((float)SecuritySystem.MinMobilization(C, g.State.Rung), bar.Mark!.Value, 1e-6f, "the level's minimum is marked");
@@ -491,8 +495,9 @@ public class PromoScreensTests
                     }
                     if (s == "cabinet")
                     {
-                        var hemi = root.Q("cabinet-hemicycle").worldBound;
-                        if (!(hemi.width > 100 && hemi.height > 60)) problems.Add($"{where}: the half circle is {hemi}");
+                        var hemi = root.Q("cabinet-hemicycle");
+                        if (hemi.layout.width < HemicycleBox.x - 1.5f || hemi.layout.height < HemicycleBox.y - 1.5f)   // pixel snapping at a fractional scale moves it by under 1.5 px
+                            problems.Add($"{where}: the half circle is {hemi.layout.size}, not the {HemicycleBox} the line test assumes");
                         var cards = root.Q<ScrollView>("cabinet-seats").Query<Button>(className: "seat").ToList();
                         if (cards.Count < 5) problems.Add($"{where}: {cards.Count} cards");
                         if (!(cards[0].worldBound.yMin < root.Q<ScrollView>("cabinet-seats").contentViewport.worldBound.yMax - 100)) problems.Add($"{where}: no card row in view");

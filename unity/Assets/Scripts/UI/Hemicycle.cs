@@ -134,7 +134,7 @@ namespace Statecraft.Game.UI
             var rowGap = rows == 1 ? 1f : (1f - Inner) / (rows - 1);
             var outer = RowCounts(seatCount)[rows - 1];
             var seatGap = outer <= 1 ? 1f : Mathf.PI / (outer - 1);
-            return 0.42f * Mathf.Min(rowGap, seatGap);
+            return 0.34f * Mathf.Min(rowGap, seatGap);   // leaves room for the majority line and its stroke between dots
         }
 
         /// <summary>Where the majority line crosses each row (radians, inner row first; NaN for an empty row): between the
@@ -182,13 +182,26 @@ namespace Statecraft.Game.UI
             return line;
         }
 
+        /// <summary>The majority line's stroke, in pixels.</summary>
+        public const float LineWidth = 2f;
+
+        /// <summary>The margin round the unit half circle: the dots, and the line's ends half a row gap out.</summary>
+        static float Margin(int seatCount) => Mathf.Max(DotRadius(seatCount), (1f - Inner) / Mathf.Max(1, Rows(seatCount) - 1) / 2f);
+
+        /// <summary>Pixels per unit radius when the house is fitted into a box of <paramref name="box"/> pixels.</summary>
+        public static float ScaleFor(Vector2 box, int seatCount)
+        {
+            var m = Margin(seatCount);
+            return Mathf.Min(box.x / (2f + 2f * m), box.y / (1f + 2f * m));
+        }
+
         void Draw(MeshGenerationContext mgc)
         {
             var box = contentRect;
             if (size == 0 || !(box.width > 8) || !(box.height > 8)) return;
             // The unit half circle plus a margin, fitted into the box and sat on its bottom edge.
-            var margin = Mathf.Max(dot, (1f - Inner) / Mathf.Max(1, Rows(size) - 1) / 2f);   // the dots, and the line's ends
-            var scale = Mathf.Min(box.width / (2f + 2f * margin), box.height / (1f + 2f * margin));
+            var margin = Margin(size);
+            var scale = ScaleFor(box.size, size);
             var centre = new Vector2(box.center.x, box.yMax - margin * scale);
             Vector2 At(Vector2 unit) => centre + new Vector2(unit.x, -unit.y) * scale;
             var p = mgc.painter2D;
@@ -200,7 +213,7 @@ namespace Statecraft.Game.UI
                 else { p.strokeColor = Unrecorded; p.lineWidth = 1.2f; p.Stroke(); }
             }
             if (boundary.Count < 2) return;
-            p.strokeColor = Gold; p.lineWidth = 2f; p.lineCap = LineCap.Round; p.lineJoin = LineJoin.Round;
+            p.strokeColor = Gold; p.lineWidth = LineWidth; p.lineCap = LineCap.Round; p.lineJoin = LineJoin.Round;
             p.BeginPath(); p.MoveTo(At(boundary[0]));
             for (int i = 1; i < boundary.Count; i++) p.LineTo(At(boundary[i]));
             p.Stroke();

@@ -155,7 +155,7 @@ namespace Statecraft.Game.UI
                 card.style.display = seat == null || shownEarlier ? DisplayStyle.None : DisplayStyle.Flex;
                 if (seat == null || shownEarlier) continue;
                 var titles = seat.Holder == null ? seat.Office.Title
-                    : string.Join(text["card.offices_separator"], seats.Skip(i).Where(x => x?.Holder?.Id == seat.Holder.Id).Select(x => x!.Office.Title));
+                    : string.Join("\n", seats.Skip(i).Where(x => x?.Holder?.Id == seat.Holder.Id).Select(x => x!.Office.Title));   // one office a line: the narrow card measured "A · B" as two lines but drew one (a blank line at 1366x768)
                 PersonCard.Fill(card, "lead-" + Leaders[i], c, s, seat.Holder, titles, seat.Appointed, text, portraits, LeaderPortrait);
             }
             var ceasefire = screen.Q<Label>("ceasefire");

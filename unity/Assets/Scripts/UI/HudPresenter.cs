@@ -42,8 +42,9 @@ namespace Statecraft.Game.UI
         /// editor's; PromoHudTests.EveryWindowShapeFitsTheBarAfterATurn asserts it).</summary>
         public const float SpareShare = 0.05f;
 
-        /// <summary>The meters' predicted growth when roomy: six icons 30 -> 38 px, values 22 -> 25 px (about 14% wider).</summary>
-        public static float RoomyGrowth(float valueWidths) => 6 * 8f + 0.14f * valueWidths;
+        /// <summary>The meters' predicted growth when roomy: six icons 30 -> 38 px, values 22 -> 25 px (about 14% wider), and
+        /// each wrapped caption back to its one-line width (<paramref name="captionGrowth"/>).</summary>
+        public static float RoomyGrowth(float valueWidths, float captionGrowth = 0f) => 6 * 8f + 0.14f * valueWidths + captionGrowth;
 
         public HudPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
@@ -94,7 +95,14 @@ namespace Statecraft.Game.UI
             else
             {
                 var values = meters.Sum(m => m.Q<Label>(className: "meter-value")?.worldBound.width ?? 0f);
-                if (spare - RoomyGrowth(values) >= SpareShare * used + 8f) bar.AddToClassList(RoomyClass);
+                var captions = meters.Sum(m =>
+                {
+                    var c = m.Q<Label>(className: "meter-name");
+                    if (c == null || string.IsNullOrEmpty(c.text)) return 0f;
+                    var oneLine = c.MeasureTextSize(c.text, 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined).x;
+                    return UnityEngine.Mathf.Max(0f, oneLine - c.worldBound.width);
+                });
+                if (spare - RoomyGrowth(values, captions) >= SpareShare * used + 8f) bar.AddToClassList(RoomyClass);
             }
         }
 

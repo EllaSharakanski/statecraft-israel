@@ -173,6 +173,9 @@ public class PromoHudTests
                         Assert.GreaterOrEqual(icon.worldBound.width, 36f, $"1920x1080: the {icon.Glyph} icon is promo-sized");
                     foreach (var v in root.Q("meters").Query<Label>(className: "meter-value").ToList())
                         Assert.GreaterOrEqual(v.resolvedStyle.fontSize, 24f, $"1920x1080: '{v.text}' is promo-sized");
+                    // Integration bug B8: on the roomy bar every caption keeps one line, as in the promo.
+                    foreach (var c in root.Q("meters").Query<Label>(className: "meter-name").ToList().Where(c => c.name != "security-level"))
+                        Assert.Less(c.worldBound.height, c.resolvedStyle.fontSize * 2f, $"1920x1080: '{c.text}' wraps");
                 }
                 // The widest realistic changes, formatted as HudModel formats them, and the widest date line.
                 foreach (var (name, delta) in new[] { ("treasury", PlayerText.MoneyChange(C, "treasury", -12.4)), ("immigration", Text.Format("hud.delta_people", 12345.0)),
@@ -401,5 +404,143 @@ public class PromoHudTests
             LogAssert.NoUnexpectedReceived();
         }
         finally { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+    }
+
+    /// <summary>Integration bug B6: the camera keys never move UI focus or press a button. The UI action map binds no
+    /// keyboard keys to Navigate, and NavigationGuard drops every directional move at the root, so with focus on a HUD button
+    /// the WASD/arrow moves (and the W/A/S/D key presses) leave focus where it is, press nothing and never arm New Game.
+    /// Tab (Next) still moves focus, so the HUD stays keyboard-reachable.</summary>
+    [UnityTest]
+    public IEnumerator CameraKeysNeverMoveFocusOrPressAButton()
+    {
+        // The input asset: no keyboard binding on the UI map's Navigate action.
+        var actions = AssetDatabase.LoadAssetAtPath<UnityEngine.InputSystem.InputActionAsset>("Assets/InputSystem_Actions.inputactions");
+        Assert.IsNotNull(actions);
+        foreach (var b in actions.FindActionMap("UI", true).FindAction("Navigate", true).bindings)
+            StringAssert.DoesNotStartWith("<Keyboard>", b.path, "Navigate must not read a camera key");
+
+        using var ui = new UiTestKit();
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "statecraft-b6-" + System.Guid.NewGuid().ToString("N"));
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        bridge.Replace(g);
+        var toast = new ToastPresenter(ui.Root, bridge, Text);
+        var newGame = new NewGamePresenter(ui.Root, bridge, new SaveStore(dir), toast, Text, () => 4UL);
+        var card = new EventCardPresenter(ui.Root, bridge, Text, null);
+        var guard = new NavigationGuard(ui.Root);
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");
+        var presses = 0;
+        var buttons = ui.Root.Query<Button>().ToList();
+        System.Action count = () => presses++;
+        foreach (var b in buttons) b.clicked += count;
+        try
+        {
+            foreach (var name in new[] { "nav-cabinet", "new-game", "end-turn", "option-sign" })
+            {
+                var start = ui.Q<Button>(name);
+                start.Focus();
+                for (int i = 0; i < 10 && start.focusController.focusedElement != start; i++) yield return null;
+                Assert.AreSame(start, start.focusController.focusedElement, name + ": precondition, focused");
+                foreach (var d in new[] { NavigationMoveEvent.Direction.Right, NavigationMoveEvent.Direction.Left,
+                                          NavigationMoveEvent.Direction.Up, NavigationMoveEvent.Direction.Down })
+                {
+                    using (var e = NavigationMoveEvent.GetPooled(d)) { e.target = start; start.SendEvent(e); }
+                    yield return null;
+                    Assert.AreSame(start, start.focusController.focusedElement, $"{name}: a {d} move left focus where it was");
+                }
+                foreach (var key in new[] { KeyCode.W, KeyCode.A, KeyCode.S, KeyCode.D, KeyCode.UpArrow, KeyCode.DownArrow, KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.Q, KeyCode.E })
+                {
+                    using (var e = KeyDownEvent.GetPooled((char)0, key, EventModifiers.None)) { e.target = start; start.SendEvent(e); }
+                    yield return null;
+                    Assert.AreSame(start, start.focusController.focusedElement, $"{name}: {key} left focus where it was");
+                }
+                Assert.AreEqual(0, presses, name + ": the camera keys pressed no button");
+                Assert.IsFalse(newGame.Armed, name + ": New Game is not armed");
+            }
+            // Tab still moves focus: the HUD stays reachable from the keyboard.
+            var from = ui.Q<Button>("nav-cabinet");
+            from.Focus();
+            for (int i = 0; i < 10 && from.focusController.focusedElement != from; i++) yield return null;
+            using (var e = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Next)) { e.target = from; from.SendEvent(e); }
+            yield return null;
+            Assert.AreNotSame(from, from.focusController.focusedElement, "Tab moves focus on");
+            Assert.AreEqual(0, presses, "Tab pressed no button");
+        }
+        finally
+        {
+            foreach (var b in buttons) b.clicked -= count;
+            guard.Dispose(); card.Dispose(); newGame.Dispose(); toast.Dispose();
+            if (System.IO.Directory.Exists(dir)) System.IO.Directory.Delete(dir, true);
+        }
+    }
+
+    /// <summary>Integration bug B7: the toast is opaque and never covers an open screen or the event column.</summary>
+    [UnityTest]
+    public IEnumerator TheToastIsOpaqueAndClearOfTheScreens()
+    {
+        using var ui = new UiTestKit();
+        var nav = new ScreenNav(ui.Root);
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");
+        var toast = ui.Q<Label>("toast");
+        toast.text = "Not done: Not enough attention (need 4.0, have 2.0)";
+        toast.style.display = DisplayStyle.Flex;
+        try
+        {
+            foreach (var s in ScreenNav.Screens)
+            {
+                nav.Open(s);
+                for (int i = 0; i < 3; i++) yield return null;
+                Assert.AreEqual(1f, toast.resolvedStyle.backgroundColor.a, 1e-3f, "opaque");
+                Assert.IsFalse(toast.worldBound.Overlaps(ui.Q<VisualElement>("screen-" + s).worldBound), $"the toast {toast.worldBound} covers {s}");
+                Assert.IsFalse(toast.worldBound.Overlaps(ui.Q<VisualElement>("right-column").worldBound), "the toast covers the event column");
+                Assert.GreaterOrEqual(toast.worldBound.yMin, ui.Q<VisualElement>("top-bar").worldBound.yMax, "the toast starts under the bar");
+            }
+        }
+        finally { nav.Dispose(); }
+    }
+
+    /// <summary>Integration bug B5, for the promo Cabinet (promo-screens): the "Appoint to ..." heading sits in the side
+    /// column under the Prime Minister's card, clear of the portrait grid and its scroll bar and of the candidate list's
+    /// scroll bar, inside the column; with the longest office title it breaks only between words (no word is wider than
+    /// the column) and takes at most two lines.</summary>
+    [UnityTest]
+    public IEnumerator TheAppointHeadingHasRoom()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var nav = new ScreenNav(ui.Root);
+        var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");
+        try
+        {
+            nav.Open("cabinet");
+            var longest = Cabinet.Lineup(C, bridge.State).Select(x => x.Office).OrderByDescending(o => o.Title.Length).First();
+            foreach (var office in new[] { "health_minister", longest.Id })
+            {
+                cabinet.Select(office);
+                for (int i = 0; i < 5; i++) yield return null;
+                var title = ui.Q<Label>("cabinet-pick-title");
+                StringAssert.StartsWith("Appoint to ", title.text);
+                var r = title.worldBound;
+                var side = ui.Q<VisualElement>("cabinet-side").worldBound;
+                var grid = ui.Q<ScrollView>("cabinet-seats");
+                Assert.IsFalse(r.Overlaps(grid.worldBound), $"{office}: the heading {r} overlaps the portrait grid {grid.worldBound}");
+                Assert.IsFalse(r.Overlaps(grid.verticalScroller.worldBound), $"{office}: the heading overlaps the grid's scroll bar");
+                var list = ui.Q<ScrollView>("cabinet-candidates");
+                if (list.verticalScroller.resolvedStyle.display == DisplayStyle.Flex)
+                    Assert.IsFalse(r.Overlaps(list.verticalScroller.worldBound), $"{office}: the heading overlaps the candidates' scroll bar");
+                Assert.GreaterOrEqual(r.xMin, side.xMin - 0.5f, $"{office}: the heading leaves the side column");
+                Assert.LessOrEqual(r.xMax, side.xMax + 0.5f, $"{office}: the heading leaves the side column");
+                foreach (var word in title.text.Split(' '))
+                {
+                    var w = title.MeasureTextSize(word, 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined).x;
+                    Assert.LessOrEqual(w, title.contentRect.width + 0.5f, $"{office}: '{word}' ({w:0} px) is wider than the heading ({title.contentRect.width:0} px) and breaks");
+                }
+                var line = title.MeasureTextSize("A", 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined).y;
+                Assert.LessOrEqual(title.contentRect.height, line * 2f + 1f, $"{office}: '{title.text}' takes more than two lines ({title.contentRect.height:0} px, line {line:0} px)");
+            }
+        }
+        finally { cabinet.Dispose(); nav.Dispose(); }
     }
 }
