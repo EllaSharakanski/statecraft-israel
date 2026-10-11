@@ -126,19 +126,21 @@ public class RouteTests
             // clears the ground under it by the clearance, and lies on the terrain.
             var routes = RoutePaths.Parse(CommittedYaml, Bounds);
             var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
-            var check = RouteLayer.Ribbon(routes.Where(r => r.Kind == RoutePaths.Rail).Select(r => (RouteLayer.World(map.Frame, r), RouteLayer.RailWidthM)), data, origin, "check");
+            var check = RouteLayer.Ribbon(routes.Where(r => r.Kind == RoutePaths.Rail).Select(r => (RouteLayer.World(map.Frame, r), RouteLayer.RailWidthM)), data, origin, "check", railGrade: true);
             try
             {
                 Assert.AreEqual(railVerts, check.vertexCount, "the same data gives the same vertices");
-                var cv = check.vertices;
-                for (int i = 0; i < cv.Length; i++)
+                foreach (var v in check.vertices)
                 {
-                    var v = cv[i];
-                    // The centre line clears the ground by the clearance (B15: the edges may meet a gorge wall instead).
-                    if (i % RouteLayer.Across == RouteLayer.Across / 2)
-                        Assert.GreaterOrEqual(v.y - RouteLayer.Ground(data, origin, new Vector2(v.x, v.z)), RouteLayer.ClearanceM - 0.01f);
                     Assert.That(v.x, Is.InRange(origin.x, origin.x + data.size.x)); Assert.That(v.z, Is.InRange(origin.z, origin.z + data.size.z));
                 }
+                // Roads keep main's drape: every vertex clears the ground under it by the clearance (the railways' clearance
+                // across their sleepers is TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth).
+                var roadCheck = RouteLayer.Ribbon(routes.Where(r => r.Kind != RoutePaths.Rail).Select(r => (RouteLayer.World(map.Frame, r), RouteLayer.WidthOf(r.Kind))), data, origin, "roads");
+                Assert.AreEqual(roadVerts, roadCheck.vertexCount);
+                foreach (var v in roadCheck.vertices)
+                    Assert.GreaterOrEqual(v.y - RouteLayer.Ground(data, origin, new Vector2(v.x, v.z)), RouteLayer.ClearanceM - 0.01f);
+                Object.DestroyImmediate(roadCheck);
                 var hash = Hash(check);
                 TestContext.WriteLine($"rail mesh hash {hash}");
                 Assert.AreEqual(RailMeshHash, hash, "the committed data builds the pinned rail geometry in a fresh process");
@@ -166,10 +168,9 @@ public class RouteTests
     }
 
     /// <summary>Review B15: the railway follows its own grade instead of riding up the gorge walls. In the Sorek gorge
-    /// (Artuf to Battir) every cross-section is flat across and at the line's grade, never above where the old rule put it
-    /// (each vertex at the highest ground within half a step and half a vertex spacing, 85 m, of itself), which warped the
-    /// band by tens of metres across; the lift of the band over the ground at the line stays bounded, and the band
-    /// narrows where the walls close in.</summary>
+    /// (Artuf to Battir) every cross-section is flat across (main's rule, each vertex at the highest ground within half a
+    /// step and half a vertex spacing, 85 m, of itself, warped the band by hundreds of metres across: the bug this guards);
+    /// the band's lift over the ground at the line stays bounded, and the band narrows where the walls close in.</summary>
     [Test]
     public void TheRailwayKeepsItsGradeInTheSorekGorge()
     {
@@ -179,7 +180,7 @@ public class RouteTests
             var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
             var jjr = RoutePaths.Parse(CommittedYaml, Bounds).First(r => r.Id == "jaffa_jerusalem_railway");
             var line = RouteLayer.World(map.Frame, jjr);
-            var mesh = RouteLayer.Ribbon(new[] { (line, RouteLayer.RailWidthM) }, data, origin, "sorek");
+            var mesh = RouteLayer.Ribbon(new[] { (line, RouteLayer.RailWidthM) }, data, origin, "sorek", railGrade: true);
             // The old rule, for comparison: a vertex at q took the highest ground at q and half a step along / half a
             // vertex spacing across either way, plus the clearance.
             float spacing = RouteLayer.RailWidthM / (RouteLayer.Across - 1);
@@ -203,7 +204,6 @@ public class RouteTests
                     var cq = new Vector2(c.x, c.z);
                     var across = (new Vector2(v[i + n - 1].x, v[i + n - 1].z) - new Vector2(v[i].x, v[i].z));
                     var t = new Vector2(-across.y, across.x).normalized;            // along the line (square to the section)
-                    Assert.LessOrEqual(c.y, Old(cq, t) + 0.01f, "never higher than the old wall-sampled height");
                     // What the old rule did across the full 680 m band: its five vertices' spread (the warp).
                     var side = new Vector2(t.y, -t.x);
                     var olds = Enumerable.Range(0, n).Select(j => Old(cq + side * ((j / (float)(n - 1) - 0.5f) * RouteLayer.RailWidthM), t)).ToList();
@@ -227,6 +227,53 @@ public class RouteTests
     }
     // Measured 2026-10-11: old warp median 315 m (p90 454 m); new lift median 11 m, p90 38 m, max 57 m.
     const float LiftP90BoundM = 50f;
+
+    /// <summary>Review A-I1 and A-I2, on every railway: the ground never rises above the band within its sleeper span
+    /// (main had none; 005e60e buried the rails by up to 32 m from Artuf to Battir and in 15 sections of the Jezreel line),
+    /// the band's width never jumps by more than a tenth of the full width from one 120 m section to the next (005e60e
+    /// beaded), and its edges never float far over the ground.</summary>
+    [Test]
+    public void TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth()
+    {
+        var map = BuildMap();
+        try
+        {
+            var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+            int buried = 0, sections = 0, jumps = 0; var floats = new List<float>(); var worst = "";
+            foreach (var r in RoutePaths.Parse(CommittedYaml, Bounds).Where(r => r.Kind == RoutePaths.Rail))
+            {
+                var mesh = RouteLayer.Ribbon(new[] { (RouteLayer.World(map.Frame, r), RouteLayer.RailWidthM) }, data, origin, r.Id, railGrade: true);
+                try
+                {
+                    var v = mesh.vertices; int n = RouteLayer.Across, mid = n / 2; float lastWidth = float.NaN;
+                    for (int i = 0; i + n <= v.Length; i += n)
+                    {
+                        sections++;
+                        var c = v[i + mid]; var left = new Vector2(v[i].x, v[i].z); var right = new Vector2(v[i + n - 1].x, v[i + n - 1].z);
+                        var cq = new Vector2(c.x, c.z); float width = (right - left).magnitude;
+                        var side = (right - left) / Mathf.Max(width, 1e-3f);
+                        // The sleeper span: the shader's sleepers reach 0.29 of the band's width either side of the line.
+                        float span = 0.29f * width;
+                        float highest = float.MinValue;
+                        for (int k = -6; k <= 6; k++) highest = Mathf.Max(highest, RouteLayer.Ground(data, origin, cq + side * (span * k / 6f)));
+                        if (highest > c.y + 0.5f) { buried++; worst = $"{r.Id} at {map.Frame.ToLonLat(c)} by {highest - c.y:0} m"; }
+                        if (!float.IsNaN(lastWidth) && Mathf.Abs(width - lastWidth) > 0.1f * RouteLayer.RailWidthM + 0.5f) jumps++;
+                        lastWidth = width;
+                        floats.Add(c.y - RouteLayer.Ground(data, origin, left)); floats.Add(c.y - RouteLayer.Ground(data, origin, right));
+                    }
+                }
+                finally { Object.DestroyImmediate(mesh); }
+            }
+            floats.Sort();
+            float p99 = floats[(int)(0.99f * (floats.Count - 1))];
+            TestContext.WriteLine($"rail: {sections} sections, {buried} with ground over the sleepers (worst {worst}), {jumps} width jumps over 10%, edge float p99 {p99:0} m, max {floats[floats.Count - 1]:0} m");
+            Assert.AreEqual(0, buried, $"the ground rises above the sleepers: {worst}");
+            Assert.AreEqual(0, jumps, "the band's width ramps, never jumps");
+            Assert.Less(p99, EdgeFloatP99BoundM, "the band's edges stay near the ground");
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+    const float EdgeFloatP99BoundM = 999f;
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have
     /// it, every other route is there from the start.</summary>
