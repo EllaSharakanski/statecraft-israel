@@ -129,6 +129,7 @@ namespace Statecraft.Game.UI
         void ApplyPhotoFloor()
         {
             band.style.flexShrink = PhotoAlt != null && ShortWindow ? new StyleFloat(0.001f) : new StyleFloat(StyleKeyword.Null);
+            band.style.height = StyleKeyword.Null;   // back to the stylesheet's 200 px; FitPhoto trims it again if it must
         }
 
         /// <summary>The smallest height of the picture left visible above its credit strip (Statecraft.uss .event-photo
@@ -160,7 +161,16 @@ namespace Statecraft.Game.UI
             if (PhotoAlt == null) return;
             var h = band.layout.height; var needs = PhotoNeeds;
             if (float.IsNaN(h) || float.IsNaN(needs)) return;
-            if (h < needs - 0.5f) SetPhotoShown(false);
+            if (h < needs - 0.5f) { SetPhotoShown(false); return; }
+            // On a short window the band hardly shrinks (ApplyPhotoFloor), and Yoga does not hand the body's leftover
+            // shortfall back to it once the body is at its minimum. So when the options would be cut, the band is trimmed
+            // by that much, and dropped if that leaves it short of PhotoNeeds. It only ever shrinks, so this converges.
+            if (!ShortWindow) return;
+            var over = options.worldBound.yMax - card.worldBound.yMax;
+            if (float.IsNaN(over) || over <= 0.5f) return;
+            var target = h - over - 1f;
+            if (target < needs) SetPhotoShown(false);
+            else band.style.height = target;
         }
 
         void OnPhotoGeometry(GeometryChangedEvent evt) => FitPhoto();
