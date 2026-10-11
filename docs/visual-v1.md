@@ -1222,3 +1222,40 @@ Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id 
 - **Authored meshes later:** trees swap as is (`Vegetation.Build(kind)` returns a mesh in real metres). Buildings will need
   `Emit` to return placements (archetype, variant, position, yaw, scale) drawn through the same tile instancing and a
   textured, instanced variant of `Kit.shader`; that refactor waits for the first authored mesh.
+
+## The 1948 localities and Bedouin camps (branch `promo-villages`)
+Owner rulings (2026-10-11): show the places of 1,000 or more people first (by their 1948 names, with today's name in a
+tooltip), as town and village kits beside the 25 game settlements, and a light Bedouin encampment scatter sized by the
+Village Statistics tribal totals, inventing no names or points.
+- **Data:** `content/map/localities_1948.yaml` (status draft; its header lists every field and rule): 272 places (293 of
+  1,000+ in VS 1945, less the 20 game settlements among them and the Jahalin tribe row, whose Wikidata point is not a 1948
+  one), and 8 camp areas (65,770 people: Beersheba 47,980, Jerusalem 8,170, Ramle 3,780, Jaffa 2,270, Hebron 2,000, Safad
+  820, Gaza 530, Nablus 220; Tulkarm's "Tribal Units" row has no figure). It is presentation only, outside the content hash
+  (`SaveGameTests.TheLocalitiesFileIsOutsideTheContentHash`), read through `MapInputs.LocalitiesYaml`; `tools/tests/
+  test_localities.py` checks it. Left for later rounds: places under 1,000, the 70 VS rows with no point, the 29 foundings
+  dated only "1948".
+- **Kits:** villages and Arab towns take the Arab-town archetype (`village` type: a smaller mosque), Jewish places the
+  red-roofed one (kibbutz, moshav ring, moshava; the 14 Jewish towns too: the repo maps them to `town`, and several began as moshavot). No Templer colony
+  reaches 1,000, so none is drawn this round (when they come, the moshava archetype is the closest: red-tiled gabled
+  houses). The landmark follows VS's religion columns: a church in the 11 Christian-majority places, none in the 5 Druze
+  villages. Every place shares the one lot list; each locality claims its heart before any town's houses (otherwise
+  Tel Aviv's blocks covered Jammasin). Localities and camps are merged into one mesh per 30 km tile.
+- **Camps:** one per 1,000 of an area's total (at least one: 67 camps, 189 tents), each at a seeded spot in one of the
+  sub-district's land hexes (from `subdistrict_hexes_1948.yaml` on `promo-borderdata`, a draft), dry, gentle and outside
+  every town; two to four brown goat-hair tents in a row at the house scale.
+- **Labels:** smaller pills (`.map-label-locality`), only nearer than 40 km (`MapLabelsPresenter.LocalityDistanceM`), placed
+  after every game settlement with the same declutter rules; hovering one shows "Today: <name>" under it (desktop only:
+  touch has no hover).
+- **Grid readability** with the villages: 73% (66 of 90 edge midpoints) at gameplay03, against 84% before; the test floor
+  is now 70%.
+- **Start of game only.** The file records no later fate, depopulation date or post-May-1948 status, and the test
+  `test_start_of_game_only_no_later_fate` keeps it so. A dated map (#61) needs the owner's framing decision first: whether
+  the settlement layer is ever dated after the start, and if so how places that ceased to exist are shown (the research
+  note `.superpowers/handover-2026-10-11/promo/localities-1948.md`, "Sensitivity note", lists the options).
+- **Measured** (WebGL `Web-disabled`, this branch against promo-art 4a72ff3): the player logs `KITS buildings=1890
+  vertices=80978 triangles=63486 trees=8755 build_ms=26 plant_ms=25 localities=272 locality_buildings=1413 camps=67
+  tents=189 draws=65` (promo-art: `buildings=307 ... trees=7568 build_ms=15 plant_ms=41`); the content hash
+  (`BOOT OK content 892c9dce...`) and both goldens are unchanged. Build: wasm +111,913 bytes, data +14,441, plus the
+  255,557-byte file (25,956 gzipped) fetched at boot. A first version scanned every lot and footprint linearly and took
+  350 ms (kits) and 330 ms (trees) in the editor; `DiscIndex` (a 4 km grid) brought that to about 30 ms each. Frame time
+  and boot against the budgets: pending a quiet machine (see the report).
