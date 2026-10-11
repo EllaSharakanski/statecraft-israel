@@ -559,22 +559,28 @@ namespace Statecraft.Game.Map.Kits
                     float yaw = rnd.Range(-25f, 25f), ca = Mathf.Cos(yaw * Mathf.Deg2Rad), sa = Mathf.Sin(yaw * Mathf.Deg2Rad);
                     int n = rnd.Range(2, 5), pitched = 0;
                     var km = tile(c);
+                    float along = -(n - 1) * 11f * m;
                     for (int k = 0; k < n; k++)
                     {
-                        float tw = rnd.Range(9f, 15f) * m, td = rnd.Range(4.5f, 6f) * m, along = (k - (n - 1) * 0.5f) * 20f * m;
-                        var p = c + new Vector2(along * ca, along * sa) + new Vector2(-sa, ca) * rnd.Range(-4f, 4f) * m;
+                        // A loose, uneven line (a neat row of equal boxes read as a train): each tent its own length, gap,
+                        // offset and angle.
+                        float tw = rnd.Range(7f, 12f) * m, td = rnd.Range(4f, 5.5f) * m;
+                        var p = c + new Vector2(along * ca, along * sa) + new Vector2(-sa, ca) * rnd.Range(-9f, 9f) * m;
+                        along += rnd.Range(16f, 28f) * m;
+                        float tyaw = yaw + rnd.Range(-20f, 20f);
                         float lotR = 0.55f * Mathf.Sqrt(tw * tw + td * td);
                         if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR)) continue;
                         lots.Add(new Lot { c = p, r = lotR, id = "camp:" + area.Subdistrict });
-                        var (bottom, top) = GroundSpan(p, yaw, tw, td, ground, m);
+                        var (bottom, top) = GroundSpan(p, tyaw, tw, td, ground, m);
                         // Goat-hair cloth, a warm dark brown rather than black: at the overview a black row read as a scratch.
+                        // Low side walls under a peaked roof, so it reads as a tent rather than a shed.
                         var cloth = Jitter(C(0.33f, 0.27f, 0.21f), ref rnd, 0.08f);
-                        km.Box(p.x, p.y, yaw, tw, td, bottom, top, 1.7f * m, Jitter(C(0.42f, 0.35f, 0.27f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
-                        km.Gable(p.x, p.y, yaw, tw, td, top + 1.7f * m, 0.9f * m, cloth, cloth);
+                        km.Box(p.x, p.y, tyaw, tw, td, bottom, top, 1.1f * m, Jitter(C(0.42f, 0.35f, 0.27f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
+                        km.Gable(p.x, p.y, tyaw, tw, td, top + 1.1f * m, 1.4f * m, cloth, cloth);
                         pitched++;
                     }
                     if (pitched == 0) continue;
-                    ground.Footprints.Add((c, ((n - 1) * 10f + 8f) * m, "camp:" + area.Subdistrict));   // the row's half length: groves stay out
+                    ground.Footprints.Add((c, Mathf.Abs(along) * 0.5f + 8f * m, "camp:" + area.Subdistrict));   // about the row's half length: groves stay out
                     camps++; tents += pitched;
                     break;
                 }
