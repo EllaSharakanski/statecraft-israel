@@ -16,17 +16,22 @@ namespace Statecraft.Game.Map.Kits
 
         public sealed class Stats
         {
-            public int Buildings, Vertices, Triangles, Trees; public float BuildMs, PlantMs;
+            public int Buildings, Vertices, Triangles, Trees, CorridorSegments; public float BuildMs, PlantMs;
             public override string ToString() =>
-                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} build_ms={BuildMs:0} plant_ms={PlantMs:0}";
+                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} route_segments={CorridorSegments} build_ms={BuildMs:0} plant_ms={PlantMs:0}";
         }
 
         public static GameObject Build(IReadOnlyList<Settlement> settlements, Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
-            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats)
+            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null)
         {
             stats = new Stats();
             var root = new GameObject(RootName);
             var ground = new KitGround(terrain, frame, hexes, elevMinM);
+            // Buildings and trees stay off the railways and roads (RouteLayer.Corridors): every route, whatever its date,
+            // since the kits are not rebuilt when a dated route (the Burma Road) appears.
+            if (corridors != null) foreach (var (line, half) in corridors) ground.AddCorridor(line, half);
+            stats.CorridorSegments = ground.CorridorSegments;
             var clock = System.Diagnostics.Stopwatch.StartNew();
             var built = SettlementKits.Build(settlements, ground, out var lots);
             foreach (var l in lots) ground.Lots.Add((l.centre, l.radius));

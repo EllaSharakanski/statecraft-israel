@@ -277,6 +277,59 @@ public class RouteTests
         finally { Object.DestroyImmediate(map.gameObject); }
     }
 
+    /// <summary>Kits and routes together (#179 on main): no kit building, landmark or tree reaches into any route's
+    /// corridor, half the drawn width plus RouteLayer.CorridorMarginM, the Burma Road included (the kits are built once,
+    /// not per date). Checked by brute force against every segment, independent of KitGround's grid.</summary>
+    [Test]
+    public void NoKitBuildingOrTreeStandsOnARoute()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        try
+        {
+            map.Build();
+            Assert.IsNotNull(map.KitStats, "Map.unity builds the kits");
+            var routes = RoutePaths.Parse(CommittedYaml, Bounds);
+            var corridors = RouteLayer.Corridors(map.Frame, routes);
+            Assert.AreEqual(corridors.Sum(c => c.line.Count - 1), map.KitStats.CorridorSegments, "the map hands every route to the kits");
+            Assert.IsTrue(routes.Any(r => r.Id == "burma_road"), "the dated Burma Road keeps its corridor from the start");
+
+            // The same placement the map runs, with the same corridors.
+            var g = new Statecraft.Game.Map.Kits.KitGround(map.Terrain, map.Frame, map.Hexes, HeightmapLoader.Load(Paths.StreamingMap).meta.elev_min_m);
+            foreach (var (line, half) in corridors) g.AddCorridor(line, half);
+            var built = Statecraft.Game.Map.Kits.SettlementKits.Build(map.Settlements, g, out var lots);
+            foreach (var k in built) Object.DestroyImmediate(k.mesh);
+            foreach (var l in lots) g.Lots.Add((l.centre, l.radius));
+            var trees = Statecraft.Game.Map.Kits.Vegetation.Plant(map.Settlements, g);
+            Assert.Greater(lots.Count, 200); Assert.Greater(trees.Count, 1000);   // 264 lots and about 7,000 trees (306 lots without the corridors)
+
+            float Clearance(Vector2 p) => corridors.Min(c =>
+            {
+                float best = float.MaxValue;
+                for (int i = 0; i + 1 < c.line.Count; i++)
+                    best = Mathf.Min(best, Statecraft.Game.Map.Kits.KitGround.SegmentDistance(p, c.line[i], c.line[i + 1]) - c.halfWidth);
+                return best;
+            });
+            int badLots = lots.Count(l => Clearance(l.centre) < l.radius - 0.01f);
+            int badTrees = trees.Count(t =>
+            {
+                Vector3 p = t.Item2.GetColumn(3);
+                float crown = Statecraft.Game.Map.Kits.Vegetation.CrownRadiusM(t.Item1) * ((Vector3)t.Item2.GetColumn(0)).magnitude;
+                return Clearance(new Vector2(p.x, p.z)) < crown - 0.01f;
+            });
+            TestContext.WriteLine($"{lots.Count} lots, {trees.Count} trees, {map.KitStats.CorridorSegments} route segments: {badLots} lots and {badTrees} trees on a route");
+            Assert.AreEqual(0, badLots, "no building or landmark lot reaches a route corridor");
+            Assert.AreEqual(0, badTrees, "no tree crown reaches a route corridor");
+            Assert.AreEqual(map.Settlements.Count, lots.Select(l => l.id).Distinct().Count(), "every town still has buildings");
+        }
+        finally
+        {
+            Object.DestroyImmediate(map.gameObject);
+            Statecraft.Game.Map.Kits.KitScale.Reset();
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        }
+    }
+
     /// <summary>I1 and M11: the train is a showcase. Editor renders and `?shot` hold it still (the promo frames); `?train`
     /// or `?units` runs it; normal play has none.</summary>
     [Test]

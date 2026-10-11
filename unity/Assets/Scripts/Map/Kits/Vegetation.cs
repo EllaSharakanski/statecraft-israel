@@ -98,7 +98,9 @@ namespace Statecraft.Game.Map.Kits
             {
                 // No crown reaches into a building's or landmark's lot (integration bug B9: palms through Tel Aviv's roofs,
                 // grove rows through blocks).
-                if (ground.OnLot(x, z, CrownRadiusM(k) * s * size * 1.15f)) return;
+                // Nor into a railway's or road's corridor (the routes run through the groves otherwise).
+                float crown = CrownRadiusM(k) * s * size * 1.15f;
+                if (ground.OnLot(x, z, crown) || ground.OnRoute(new Vector2(x, z), crown)) return;
                 float y = ground.Y(x, z);
                 var scale = s * size * rnd.Range(0.85f, 1.15f);
                 float yaw = float.IsNaN(yawDeg) ? rnd.Range(0f, 360f) : yawDeg;

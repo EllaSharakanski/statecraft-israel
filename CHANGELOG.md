@@ -46,7 +46,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Eastern Railway, Hadera–Haifa, Haifa–Acre–Ras an-Naqura and the Jezreel Valley line, with 13 main roads, traced on
   the public-domain 1946 Survey of Palestine map (`content/map/routes_1948.yaml`, sources per route), drawn as pale dirt
   roads and ballasted track with sleepers at the promo's scale. Each route shows only from its sourced date: the Burma
-  Road appears on 14 June 1948, when it was completed. A steam train is a showcase only (`?train`, `?units` and the
+  Road appears on 14 June 1948, when it was completed. Settlement buildings and trees keep clear of every route. A steam train is a showcase only (`?train`, `?units` and the
   promo screenshots), not normal play. Map-only: the sim does not read them (#35).
 
 ### Changed

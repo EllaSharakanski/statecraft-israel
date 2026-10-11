@@ -179,6 +179,15 @@ measurement in `docs/units.md`:
 
 **Toggles.** `routes` (the ribbons) and `train` (when there is one) are visual toggles, so `?vprofile` prices each one.
 
+**Kits keep off the routes** (settlement kits and trees, #179).
+- `MapScene` reads the routes before building the kits, and hands `KitLayer.Build` every route's corridor
+  (`RouteLayer.Corridors`): half the drawn width plus `CorridorMarginM` (100 m).
+- `KitGround.OnRoute` (a 2 km segment grid) keeps building lots, landmarks and tree crowns out of these corridors.
+  B9 still keeps trees out of building lots.
+- Every route gets its corridor, whatever its date: the kits are built once, not per date, so the Burma Road's corridor
+  stays clear from the start.
+- `RouteTests.NoKitBuildingOrTreeStandsOnARoute` checks every lot and tree against every segment by brute force.
+
 ## Measurements
 
 All of these are on `promo-roads`.

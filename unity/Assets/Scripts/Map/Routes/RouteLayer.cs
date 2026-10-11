@@ -71,6 +71,16 @@ namespace Statecraft.Game.Map.Routes
             foreach (var g in ribbons.GetComponentsInChildren<RouteGroup>(true)) g.gameObject.SetActive(g.Window.Covers(date));
         }
 
+        /// <summary>Clearance (m) beyond a ribbon's drawn half-width that kit buildings and trees keep from it, so a lot's or
+        /// crown's edge never touches the soft edge of the road or the ballast.</summary>
+        public const float CorridorMarginM = 100f;
+
+        /// <summary>Every route's line (world x, z) with the half-width kits must keep clear of: half the drawn width plus
+        /// <see cref="CorridorMarginM"/>. All routes, whatever their window: the kits are built once, not per date, so a route
+        /// that appears later (the Burma Road) has its corridor from the start.</summary>
+        public static List<(List<Vector2> line, float halfWidth)> Corridors(GeoFrame frame, IEnumerable<RoutePath> routes) =>
+            routes.Select(r => (World(frame, r), WidthOf(r.Kind) / 2f + CorridorMarginM)).ToList();
+
         public static float WidthOf(string kind) => kind switch
         {
             RoutePaths.Rail => RailWidthM,
