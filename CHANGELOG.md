@@ -54,3 +54,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
   planes, one zlib stream) replaces the raw 8.4 MB `heightmap.r16`, which was served outside Unity's build compression.
   It decodes to the same bytes, so the terrain is unchanged (#44).
+
+### Fixed
+- The open sea no longer shows a blocky checker up close (about 6-20 km): its waves now come from smooth gradient noise
+  on rotated lattices instead of value noise differenced along the map's axes. Presentation only.
