@@ -79,9 +79,10 @@ namespace Statecraft.Game.EditorTools
             PlayerSettings.WebGL.compressionFormat = Compression(name);
             PlayerSettings.WebGL.decompressionFallback = false;   // itch.io serves .br/.gz with Content-Encoding
             var savedSubtarget = EditorUserBuildSettings.webGLBuildSubtarget;
-            if (TextureSubtarget(Arg("-textureSubtarget")) is WebGLTextureSubtarget sub) EditorUserBuildSettings.webGLBuildSubtarget = sub;
+            var sub = TextureSubtarget(Arg("-textureSubtarget"));
+            if (sub.HasValue) EditorUserBuildSettings.webGLBuildSubtarget = sub.Value;
             bool ok;
-            try { ok = Run(BuildTarget.WebGL, Arg("-out") ?? "Builds/Web-" + name); }
+            try { ok = Run(BuildTarget.WebGL, Arg("-out") ?? "Builds/Web-" + name, sub.HasValue ? (int)sub.Value : 0); }
             finally { EditorUserBuildSettings.webGLBuildSubtarget = savedSubtarget; ProjectSetup.Apply(); }   // back to the committed settings
             ExitIfFailed(ok);
         }
@@ -108,11 +109,12 @@ namespace Statecraft.Game.EditorTools
             return Directory.Exists(path) ? new DirectoryInfo(path).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length) / 1048576.0 : 0;
         }
 
-        static bool Run(BuildTarget target, string location)
+        static bool Run(BuildTarget target, string location, int subtarget = 0)
         {
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
                 scenes = new[] { ProjectSetup.BootScene }, locationPathName = location, target = target, options = BuildOptions.None,
+                subtarget = subtarget,   // WebGL: the texture subtarget (0, Generic: the project's own setting)
             });
             var s = report.summary;
             Debug.Log($"BUILD {s.result} {target} -> {location}: {OutputMegabytes(location):0.0} MB on disk, {s.totalErrors} errors, {s.totalTime.TotalSeconds:0}s");
