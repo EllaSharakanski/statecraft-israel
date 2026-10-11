@@ -1211,6 +1211,11 @@ Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id 
   -0.24 / 0.75. Headed DPR 2: all p95 6 / 20 ms (floor 33), trees 0.35 / 0.89. Boot (`headed.py boot --runs 3`, `main`
   then this build): cpu 1 map_build 491 -> 508, first_frame 3631 -> 3610; cpu 4 1874 -> 2035, 6795 -> 6991 (within
   max(300 ms, 50%)). The player logs `KITS buildings=306 vertices=12374 triangles=8556 trees=8147 build_ms=20 plant_ms=19`.
+- **After merging `main` with promo-sea and promo-units** (`689880d`, headless, load 18.7 at the start and 4.4 at the end,
+  so absolute times are noisy): gameplay03 all 9.57 (p95 11), -trees 8.75, -kits 9.45, none 7.47; diorama02 all 14.99
+  (p95 16), -trees 14.28, -kits 15.40, none 10.92. Trees 0.82 / 0.71 ms and kits 0.12 / -0.41 ms stay within budget, as
+  do all - none (2.10 / 4.07 ms) and p95 (11 / 16 ms). The rise in "none" (2.34 -> 7.47 ms at gameplay03) is not the kits
+  (both "none" runs draw no kits or trees); it should be re-measured on a quiet machine against `main`.
 - **Build size** (WebGL, `main` -> this branch): uncompressed +318,885 bytes (+0.44%: wasm +286,873, data +28,978,
   framework.js +3,034); Brotli (quality 11, as shipped) +33,407 bytes (+0.17%: wasm +13,092, data +20,091). No texture or
   model files: everything is generated at load.
