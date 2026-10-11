@@ -191,6 +191,15 @@ def test_a_listed_places_hex_takes_its_sub_district():
     assert hg.settlement_hex(35.57444, 33.27889, HEXES) == (15, 1) and region_of(15, 1) == "safad"
 
 
+def test_two_sub_districts_listed_on_one_hex_fail_the_bake_even_if_one_matches_the_centre():
+    """Review 3 of rule 5: a hex holding listed places of two sub-districts is a conflict to resolve by hand, even when
+    the centre rule already gives one of them; the bake must not pass it quietly."""
+    places = [("town_a", "gaza", 34.25861, 31.27250), ("town_b", "beersheba", 34.25861, 31.27250)]
+    ids = {"gaza": 1, "beersheba": 2}
+    with pytest.raises(ValueError, match="different sub-districts"):
+        bb.apply_places({(-15, 31): ids["gaza"]}, places, HEXES, ids)
+
+
 def test_the_layer_shows_from_the_start_until_replaced_with_its_label():
     """Owner ruling 2026-10-11 (I4): from the 1948 start until the armistice lines replace it, labelled."""
     assert BAKED["label"] == "Mandate sub-districts, 1947"

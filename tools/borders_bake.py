@@ -252,11 +252,8 @@ def place_hexes(places: list, hexes: dict) -> dict:
 def apply_places(cells: dict, places: list, hexes: dict, ids: dict) -> None:
     """Rule 5, in place: a listed place's hex takes its sub-district."""
     for qr, subs in sorted(place_hexes(places, hexes).items()):
-        current = cells[qr]
-        if any(ids[sub] == current for sub in subs):
-            continue
         if len(subs) > 1:
-            raise ValueError(f"hex {qr}: listed places of different sub-districts {subs}, none matching the centre rule")
+            raise ValueError(f"hex {qr}: listed places of different sub-districts {subs}")
         cells[qr] = ids[next(iter(subs))]
 
 
