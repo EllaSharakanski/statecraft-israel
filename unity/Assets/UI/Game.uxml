@@ -130,6 +130,7 @@
                     <ui:VisualElement name="cabinet-pm-offices" class="pm-offices" />
                     <ui:VisualElement name="cabinet-pick" class="grow">
                         <ui:Label name="cabinet-pick-title" class="meter-name" />
+                        <ui:Label name="cabinet-pick-reason" class="reason" />
                         <ui:ScrollView name="cabinet-candidates" class="grow" />
                     </ui:VisualElement>
                     <ui:Label name="cabinet-status" class="muted" />

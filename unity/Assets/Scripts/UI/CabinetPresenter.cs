@@ -190,13 +190,20 @@ namespace Statecraft.Game.UI
             }
             if (Selected == null) return;
             screen.Q<Label>("cabinet-pick-title").text = text.Format("cabinet.pick", c.Offices.First(o => o.Id == Selected).Title);
-            foreach (var (person, reason) in Cabinet.Candidates(c, s, Selected))
+            var list = Cabinet.Candidates(c, s, Selected);
+            // A refusal about the office itself (the Prime Minister's or the President's, an abolished one) is the same for
+            // everyone: it is said once under the heading, not under every name (#215).
+            var shared = list.Count > 0 && list.All(x => x.reason != null && x.reason == list[0].reason) ? list[0].reason : null;
+            var common = screen.Q<Label>("cabinet-pick-reason");
+            common.text = shared ?? "";
+            common.style.display = shared == null ? DisplayStyle.None : DisplayStyle.Flex;
+            foreach (var (person, reason) in list)
             {
                 if (!rows.TryGetValue(person.Id, out var r)) continue;
                 r.appoint.text = Describe(person);
                 r.appoint.SetEnabled(reason == null);
-                r.reason.text = reason ?? "";
-                r.reason.style.display = reason == null ? DisplayStyle.None : DisplayStyle.Flex;
+                r.reason.text = shared == null ? reason ?? "" : "";
+                r.reason.style.display = reason == null || shared != null ? DisplayStyle.None : DisplayStyle.Flex;
             }
         }
 

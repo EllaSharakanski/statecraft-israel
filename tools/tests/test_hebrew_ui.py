@@ -36,3 +36,12 @@ def test_hebrew_is_not_enabled_without_runtime_review():
     guid = re.search(r'^guid: ([0-9a-f]{32})$', meta, re.M).group(1)
     assert guid not in english_meta
     assert 'TextScriptImporter:' in meta
+
+
+def test_hebrew_review_wording_is_count_neutral_and_uses_knesset_terms():
+    he = strings('strings.he.yaml')
+    assert he['event.more'] == 'החלטות ממתינות נוספות: {0}'
+    assert 'מנדטים' in he['budget.vote_needed']
+    assert 'מנדטים' in he['cabinet.coalition']
+    assert he['order.no_attention'] == 'אין מספיק תשומת לב (נדרש {0:0.0}, יש {1:0.0})'
+    assert he['defence.rung5'] == '5  מלחמה כוללת'

@@ -16,6 +16,9 @@ namespace Statecraft.Game.UI
         /// <summary>The class on the "root" element while a wide screen (class <see cref="WideClass"/>: Cabinet, Defence) is
         /// open: Statecraft.uss hides the info panel it covers, so its buttons take no focus and no clicks.</summary>
         public const string WideOpenClass = "wide-screen-open", WideClass = "screen-wide";
+        /// <summary>The class on the "root" element while any screen is open: in the two-row (narrow) HUD every screen takes
+        /// the full width, so Statecraft.uss hides the event column and the info panel under it (#210).</summary>
+        public const string ScreenOpenClass = "screen-open";
 
         /// <summary>Asks to be told, synchronously, whenever <paramref name="screen"/> is opened (a presenter that skips
         /// rendering while its screen is hidden catches up then).</summary>
@@ -26,10 +29,16 @@ namespace Statecraft.Game.UI
             screen.style.display.keyword == StyleKeyword.Undefined && screen.style.display.value == DisplayStyle.Flex;
         readonly VisualElement root;
         readonly List<(Button, System.Action)> hooks = new List<(Button, System.Action)>();
+        readonly EventCallback<NavigationCancelEvent> onCancel;
 
         public ScreenNav(VisualElement root)
         {
             this.root = root;
+            // Escape (the UI map's Cancel, from any focused element or the panel) closes the open screen. NavigationGuard
+            // handles only NavigationMoveEvent, so the two never meet. GameRoot also polls the Escape key for the case where
+            // no element has the focus (CloseOnEscape).
+            onCancel = e => { if (Close()) e.StopPropagation(); };
+            root.RegisterCallback(onCancel, TrickleDown.TrickleDown);
             foreach (var s in Screens)
             {
                 var screen = s;
@@ -41,7 +50,22 @@ namespace Statecraft.Game.UI
             Open(null);
         }
 
-        public void Dispose() { foreach (var (b, h) in hooks) b.clicked -= h; hooks.Clear(); (root.Q("root") ?? root).RemoveFromClassList(WideOpenClass); }
+        public void Dispose()
+        {
+            foreach (var (b, h) in hooks) b.clicked -= h;
+            hooks.Clear();
+            root.UnregisterCallback(onCancel, TrickleDown.TrickleDown);
+            var r = root.Q("root") ?? root;
+            r.RemoveFromClassList(WideOpenClass); r.RemoveFromClassList(ScreenOpenClass);
+        }
+
+        /// <summary>Closes the open screen (Escape); false when none was open.</summary>
+        public bool Close()
+        {
+            if (Current == null) return false;
+            Open(null);
+            return true;
+        }
 
         /// <summary>The open screen's name, or null.</summary>
         public string? Current { get; private set; }
@@ -64,6 +88,7 @@ namespace Statecraft.Game.UI
                 if (s == screen) wide = element.ClassListContains(WideClass);
             }
             (root.Q("root") ?? root).EnableInClassList(WideOpenClass, wide);
+            (root.Q("root") ?? root).EnableInClassList(ScreenOpenClass, screen != null);
             if (screen != null) (root.Q<VisualElement>("screen-" + screen).userData as System.Action)?.Invoke();
         }
     }

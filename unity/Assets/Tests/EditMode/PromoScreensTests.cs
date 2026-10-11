@@ -442,7 +442,7 @@ public class PromoScreensTests
     {
         var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
         var problems = new List<string>();
-        foreach (var (w, h) in new[] { (1920, 1080), (1366, 768), (1280, 720), (1440, 900), (1920, 1200), (1024, 768), (1280, 1024), (1531, 784), (1024, 1024), (960, 1080), (800, 1000) })
+        foreach (var (w, h) in new[] { (1920, 1080), (1366, 768), (1280, 720), (1440, 900), (1920, 1200), (1024, 768), (1280, 1024), (1531, 784), (1024, 1024), (960, 1080), (800, 1000), (960, 600), (390, 844) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -472,8 +472,9 @@ public class PromoScreensTests
                     var screen = root.Q("screen-" + s); var sr = screen.worldBound;
                     if (!(sr.width > 300)) { problems.Add($"{where}: the screen is {sr}"); continue; }
                     if (sr.yMin < root.Q("top-bar").worldBound.yMax - 0.5f) problems.Add($"{where}: starts over the top bar");
-                    foreach (var f in new[] { "right-column" })
-                        if (sr.Overlaps(root.Q(f).worldBound)) problems.Add($"{where}: overlaps {f} {root.Q(f).worldBound}");
+                    // Clear of the event column, or (two-row HUD, #210) full width with the column hidden.
+                    var column = root.Q("right-column");
+                    if (column.resolvedStyle.display != DisplayStyle.None && sr.Overlaps(column.worldBound)) problems.Add($"{where}: overlaps the event column {column.worldBound}");
                     var parent = root.Q("root");
                     if (parent.IndexOf(screen) < parent.IndexOf(root.Q("info-panel"))) problems.Add($"{where}: drawn under the info panel");
                     // Everything shown stays inside the screen sideways, and inside its panel (a card, a Defence panel, the house).
@@ -608,6 +609,124 @@ public class PromoScreensTests
                 Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
             }
         }
+    }
+
+    /// <summary>Escape (the UI Cancel event) closes the open screen, from a focused card or from the panel; with nothing open
+    /// it is left alone. GameRoot also calls Close on the Escape key when nothing has the focus.</summary>
+    [UnityTest]
+    public IEnumerator EscapeClosesTheOpenScreen()
+    {
+        using var ui = new UiTestKit();
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        var cabinet = new CabinetPresenter(ui.Root, bridge, Text, null);
+        var nav = new ScreenNav(ui.Root);
+        var guard = new NavigationGuard(ui.Root);
+        ui.Q<VisualElement>("root").RemoveFromClassList("loading");
+        try
+        {
+            nav.Open("cabinet");
+            yield return null; yield return null;
+            var card = ui.Q<Button>("seat-finance_minister");
+            card.Focus();
+            for (int i = 0; i < 10 && card.focusController.focusedElement != card; i++) yield return null;
+            using (var e = NavigationCancelEvent.GetPooled()) { e.target = card; card.SendEvent(e); }
+            Assert.IsNull(nav.Current, "Escape on a focused card closes the Cabinet");
+            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("screen-cabinet").style.display.value);
+            Assert.IsFalse(ui.Q<Button>("nav-cabinet").ClassListContains(ScreenNav.OpenClass), "its button is unlit");
+            Assert.IsFalse(ui.Q<VisualElement>("root").ClassListContains(ScreenNav.WideOpenClass), "the info panel comes back");
+            nav.Open("defence");
+            using (var e = NavigationCancelEvent.GetPooled()) { e.target = ui.Root; ui.Root.SendEvent(e); }
+            Assert.IsNull(nav.Current, "Escape with nothing focused closes Defence");
+            nav.Open("budget");
+            Assert.IsTrue(nav.Close(), "Close (GameRoot's Escape key) closes Budget");
+            Assert.IsFalse(nav.Close(), "and is a no-op with nothing open");
+            // The camera's arrow keys still never move UI focus (NavigationGuard), with a screen open.
+            nav.Open("cabinet");
+            card = ui.Q<Button>("seat-finance_minister");
+            card.Focus();
+            for (int i = 0; i < 10 && card.focusController.focusedElement != card; i++) yield return null;
+            using (var e = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Right)) { e.target = card; card.SendEvent(e); }
+            yield return null;
+            Assert.AreSame(card, card.focusController.focusedElement, "an arrow key does not move the focus");
+            Assert.AreEqual("cabinet", nav.Current, "and does not close the screen");
+        }
+        finally { guard.Dispose(); nav.Dispose(); cabinet.Dispose(); }
+    }
+
+    /// <summary>#210: at a phone-shaped 390x844 and at 960x600 every screen is usable: at least 500 logical px wide and
+    /// 300 tall, under the top bar. In the two-row HUD (390x844) a screen takes the full width, the event column and the
+    /// info panel under it are hidden and ignore map clicks, and the toast sits below the screen.</summary>
+    [UnityTest]
+    public IEnumerator EveryScreenIsUsableInANarrowWindow()
+    {
+        var problems = new List<string>();
+        foreach (var (w, h) in new[] { (390, 844), (960, 600) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("NarrowTest");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var owned = new List<IDisposable>();
+            try
+            {
+                for (int i = 0; i < 20 && !(root.Q("top-bar").worldBound.width > 0); i++) yield return null;
+                root.Q("root").RemoveFromClassList("loading");
+                var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+                owned.Add(new HudPresenter(root, bridge, Text));
+                owned.Add(new CabinetPresenter(root, bridge, Text, null));
+                owned.Add(new DefencePresenter(root, bridge, Text));
+                owned.Add(new BudgetPresenter(root, bridge, Text));
+                owned.Add(new WhyPresenter(root, bridge, Text));
+                var info = new InfoPanelPresenter(root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id)); owned.Add(info);
+                var nav = new ScreenNav(root); owned.Add(nav);
+                var toast = root.Q<Label>("toast");
+                toast.text = "Not done: Not enough attention (need 4.0, have 2.0)";
+                toast.style.display = DisplayStyle.Flex;
+                for (int i = 0; i < 6; i++) yield return null;
+                bool twoRow = root.Q("root").ClassListContains(HudPresenter.TwoRowClass);
+                if ((w, h) == (390, 844) && !twoRow) problems.Add("390x844 is not the two-row HUD");
+                var bar = root.Q("top-bar").worldBound;
+                foreach (var s in ScreenNav.Screens)
+                {
+                    nav.Open(s);
+                    for (int i = 0; i < 4; i++) yield return null;
+                    var where = $"{w}x{h} {s}";
+                    var r = root.Q("screen-" + s).worldBound;
+                    if (!(r.width >= 500f && r.height >= 300f)) problems.Add($"{where}: the screen is only {r.width:0} x {r.height:0}");
+                    if (r.yMin < bar.yMax - 0.5f) problems.Add($"{where}: starts over the top bar");
+                    var t = toast.worldBound;
+                    if (t.Overlaps(r)) problems.Add($"{where}: the toast {t} covers the screen {r}");
+                    if (twoRow)
+                    {
+                        var panel = root.panel.visualTree.worldBound;
+                        if (r.width < panel.width - 40f) problems.Add($"{where}: not full width ({r.width:0} of {panel.width:0})");
+                        foreach (var hidden in new[] { "right-column", "info-panel" })
+                            if (root.Q(hidden).resolvedStyle.display != DisplayStyle.None) problems.Add($"{where}: {hidden} shows under the screen");
+                        var before = info.Selected;
+                        var tlv = C.SettlementHexes.Single(x => x.Id == "tel_aviv");
+                        info.Show(tlv.Q, tlv.R);
+                        if (info.Selected != before) problems.Add($"{where}: a map click changed the hidden info panel");
+                    }
+                    else if (r.Overlaps(root.Q("right-column").worldBound)) problems.Add($"{where}: overlaps the event column");
+                }
+                nav.Open(null);
+                for (int i = 0; i < 3; i++) yield return null;
+                foreach (var shown in new[] { "right-column", "info-panel" })
+                    if (root.Q(shown).resolvedStyle.display == DisplayStyle.None) problems.Add($"{w}x{h}: {shown} stays hidden after closing");
+            }
+            finally
+            {
+                for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
+                Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+            }
+        }
+        Assert.IsEmpty(problems, string.Join("\n", problems));
     }
 
     /// <summary>The nearest box an element belongs in: a card, a Defence panel or the house.</summary>

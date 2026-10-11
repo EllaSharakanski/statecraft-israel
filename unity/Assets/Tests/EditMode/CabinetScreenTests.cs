@@ -99,11 +99,19 @@ public class CabinetScreenTests
         foreach (var office in new[] { "finance_minister", "chief_of_staff", "president", "prime_minister" })
         {
             cabinet.Select(office);
-            foreach (var (person, reason) in Cabinet.Candidates(C, bridge.State, office))
+            var list = Cabinet.Candidates(C, bridge.State, office);
+            // #215: a refusal shared by every candidate (the office itself) is said once under the heading.
+            var shared = list.All(x => x.reason != null && x.reason == list[0].reason) ? list[0].reason : null;
+            Assert.AreEqual(office == "prime_minister" || office == "president", shared != null, office + ": an office-level refusal");
+            Assert.AreEqual(shared ?? "", ui.Q<Label>("cabinet-pick-reason").text, office);
+            Assert.AreEqual(shared == null ? DisplayStyle.None : DisplayStyle.Flex, ui.Q<Label>("cabinet-pick-reason").style.display.value, office);
+            foreach (var (person, reason) in list)
             {
                 Assert.AreEqual(Cabinet.Check(C, bridge.State, office, person.Id), reason, office + " " + person.Id);   // Candidates is Check, row by row
                 Assert.AreEqual(reason == null, ui.Q<Button>("appoint-" + person.Id).enabledSelf, office + " " + person.Id);
-                if (reason != null) Assert.AreEqual(reason, ui.Q<Label>("cand-" + person.Id + "-reason").text);
+                var row = ui.Q<Label>("cand-" + person.Id + "-reason");
+                if (shared != null) Assert.AreEqual(DisplayStyle.None, row.style.display.value, office + " " + person.Id + ": not repeated");
+                else if (reason != null) Assert.AreEqual(reason, row.text);
             }
         }
     }

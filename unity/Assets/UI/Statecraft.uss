@@ -203,9 +203,11 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Full screens (Cabinet, Budget, Defence, Why) open in the centre, one at a time. */
 /* Hidden until ScreenNav opens one (never visible while loading; playtest 2, P2-1). Right edge clear of the 480px column. */
 .screen { display: none; position: absolute; left: 552px; right: 512px; top: 112px; bottom: 16px; padding: 18px; background-color: rgb(11, 18, 32); }   /* opaque: a reading screen, and the map labels must not show through */
-.screen-header { flex-direction: row; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 10px; padding-bottom: 4px; }
+.screen-header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 10px; padding-bottom: 4px; }
 /* Screen titles and section names in gold, letter-spaced, as the promo's "DEFENSE" and "LEADERSHIP". */
 .screen-header > .title { color: var(--gold-light); letter-spacing: 1px; }
+/* A header subtitle wraps under the title, and within the screen, in a narrow window (#211). */
+.screen-header > Label { white-space: normal; flex-shrink: 1; min-width: 0; }
 .screen .meter-name { color: var(--gold); letter-spacing: 2px; font-size: 16px; margin-top: 8px; }
 .row { flex-direction: row; align-items: center; }
 .grow { flex-grow: 1; }
@@ -356,6 +358,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Square and narrower windows: a slimmer side column leaves room for two columns of cards. */
 .hud-two-row .cabinet-side { width: 250px; }
 .hud-two-row .pm-card .card-plate { height: 210px; }
+/* #210: in the two-row (narrow) HUD every screen takes the full width under the bar. While one is open the event column
+   and the info panel under it are hidden (no focus, no clicks), and the toast takes the strip below the screen. */
+.hud-two-row .screen { left: 16px; right: 16px; bottom: 100px; }
+.hud-two-row.screen-open .right-column, .hud-two-row.screen-open .info-panel { display: none; }
+.hud-two-row.screen-open .toast { top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; padding: 6px 12px; }
+.hud-two-row .cabinet-house { justify-content: center; }
 
 /* Loading (playtest 2, P2-1): until GameRoot is ready only this line shows; the bar's values, the info panel and the
    right-hand column are kept out of sight (visibility, so the layout does not jump when they appear). */
