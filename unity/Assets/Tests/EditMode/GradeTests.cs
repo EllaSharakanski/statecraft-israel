@@ -126,12 +126,15 @@ public class GradeTests
         map.Select(-9999, -9999);
     }
 
-    /// <summary>promo-borders: colour-blind players tell the two border styles apart and see each against the land. At the
-    /// gameplay pose, across the border proof's primary-secondary edge, under simulated deuteranopia and protanopia (Machado
-    /// 2009, severity 1): the blue and the red-orange stripes stay at deltaE76 >= 15 from each other; each band's stronger
-    /// stripe stays >= 15 from the land under it (the bound the coast and the selection meet above); and each band's two
-    /// stripes, dark against light, stay >= 20 apart, so the band reads as a line on any ground. The red-orange stripe alone
-    /// can come near dry grass for these players (logged, not asserted): the two-tone band carries it, as in the promo.</summary>
+    /// <summary>promo-borders: colour-blind players tell the two border styles apart and see each against the land, under
+    /// simulated deuteranopia and protanopia (Machado 2009, severity 1), on two grounds at gameplay03's zoom: a proof edge on
+    /// the olive coastal plain and one on the Negev's pale sand, five points along each. Asserted per point: the blue and
+    /// red-orange stripes >= 15 apart; each band's stronger stripe >= 15 from the land (the bound the coast and the
+    /// selection meet above); its two stripes, dark against light, >= 20 apart, so it reads as a line on any ground; and its
+    /// weaker stripe >= 5 (review M5: a band must not quietly read as one stripe), unless the stronger one stands >= 25 from
+    /// the land. Why not >= 15 for both stripes: a light stripe is meant to be light, and on the Negev's pale sand the
+    /// promo's cream stripe melts into the ground for every player (normal vision logged alongside); the band then reads by
+    /// its red-orange stripe, which the 25 bound holds well clear.</summary>
     [UnityTest]
     public IEnumerator ColourBlindPlayersTellTheBorderStylesApart()
     {
@@ -140,25 +143,32 @@ public class GradeTests
         try
         {
             VisualToggles.Set("tiltshift", false);
-            PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0f; rig.Apply();
             BorderProof.Show(map);
-            var (inner, outer) = BorderTests.ProofEdge(map);
-            foreach (var w in BorderTests.WalkEdge(map, cam, inner, outer, 3, 1920, 1080))
+            foreach (var (biome, lon, lat) in new[] { ("coastal_plain", PromoPose.Gameplay03.Lon, PromoPose.Gameplay03.Lat), ("desert", 34.80, 30.90) })
             {
-                var p = BorderTests.Read(w, -1, BorderTests.Blueness); var s = BorderTests.Read(w, +1, BorderTests.Redness);
-                foreach (var kind in new[] { RenderSample.Cvd.Deuteranopia, RenderSample.Cvd.Protanopia })
+                var (inner, outer) = BorderTests.ProofEdge(map, lon, lat, biome);
+                BorderTests.LookAtEdge(map, rig, inner);
+                foreach (var w in BorderTests.WalkEdge(map, cam, inner, outer, 5, 1920, 1080))
                 {
-                    Color Sim(Color c) => RenderSample.SimulateCvd(c, kind);
-                    float styles = RenderSample.DeltaE(Sim(p.Stripe), Sim(s.Stripe));
-                    float pColour = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Land)), pLight = RenderSample.DeltaE(Sim(p.Light), Sim(p.Land));
-                    float sColour = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Land)), sLight = RenderSample.DeltaE(Sim(s.Light), Sim(s.Land));
-                    float pPair = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Light)), sPair = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Light));
-                    TestContext.WriteLine($"{kind}: blue-orange {styles:0.0}; primary colour-land {pColour:0.0}, light-land {pLight:0.0}, colour-light {pPair:0.0}; secondary colour-land {sColour:0.0}, light-land {sLight:0.0}, colour-light {sPair:0.0}");
-                    Assert.GreaterOrEqual(styles, 15f, $"{kind}: the two styles");
-                    Assert.GreaterOrEqual(Mathf.Max(pColour, pLight), 15f, $"{kind}: the primary band on land");
-                    Assert.GreaterOrEqual(Mathf.Max(sColour, sLight), 15f, $"{kind}: the secondary band on land");
-                    Assert.GreaterOrEqual(pPair, 20f, $"{kind}: the primary band's two stripes");
-                    Assert.GreaterOrEqual(sPair, 20f, $"{kind}: the secondary band's two stripes");
+                    var p = BorderTests.Read(w, -1, BorderTests.Blueness, 0.45f); var s = BorderTests.Read(w, +1, BorderTests.Redness);
+                    TestContext.WriteLine($"{biome} normal vision: secondary colour-land {RenderSample.DeltaE(s.Stripe, s.Land):0.0}, light-land {RenderSample.DeltaE(s.Light, s.Land):0.0}; primary colour-land {RenderSample.DeltaE(p.Stripe, p.Land):0.0}, light-land {RenderSample.DeltaE(p.Light, p.Land):0.0}");
+                    foreach (var kind in new[] { RenderSample.Cvd.Deuteranopia, RenderSample.Cvd.Protanopia })
+                    {
+                        Color Sim(Color c) => RenderSample.SimulateCvd(c, kind);
+                        float styles = RenderSample.DeltaE(Sim(p.Stripe), Sim(s.Stripe));
+                        float pColour = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Land)), pLight = RenderSample.DeltaE(Sim(p.Light), Sim(p.Land));
+                        float sColour = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Land)), sLight = RenderSample.DeltaE(Sim(s.Light), Sim(s.Land));
+                        float pPair = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Light)), sPair = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Light));
+                        TestContext.WriteLine($"{biome} {kind}: blue-orange {styles:0.0}; primary colour-land {pColour:0.0}, light-land {pLight:0.0}, colour-light {pPair:0.0}; secondary colour-land {sColour:0.0}, light-land {sLight:0.0}, colour-light {sPair:0.0}");
+                        string at = $"{biome} {kind}";
+                        Assert.GreaterOrEqual(styles, 15f, $"{at}: the two styles");
+                        Assert.GreaterOrEqual(Mathf.Max(pColour, pLight), 15f, $"{at}: the primary band on land");
+                        Assert.GreaterOrEqual(Mathf.Max(sColour, sLight), 15f, $"{at}: the secondary band on land");
+                        if (Mathf.Max(pColour, pLight) < 25f) Assert.GreaterOrEqual(Mathf.Min(pColour, pLight), 5f, $"{at}: the primary band's weaker stripe");
+                        if (Mathf.Max(sColour, sLight) < 25f) Assert.GreaterOrEqual(Mathf.Min(sColour, sLight), 5f, $"{at}: the secondary band's weaker stripe");
+                        Assert.GreaterOrEqual(pPair, 20f, $"{at}: the primary band's two stripes");
+                        Assert.GreaterOrEqual(sPair, 20f, $"{at}: the secondary band's two stripes");
+                    }
                 }
             }
         }

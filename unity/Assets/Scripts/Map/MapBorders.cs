@@ -16,20 +16,25 @@ namespace Statecraft.Game.Map
     /// listed belongs to no region, and no band is drawn against it (the coast, the edge of the data). Region ids run from 1
     /// to <see cref="MaxId"/>. The renderer draws only what a layer says, so a layer must come from real, sourced data (owner
     /// ruling, 2026-10-11: no invented political boundaries): the 1945-48 districts and sub-districts, the 1949 armistice
-    /// lines when dated, fronts. None is in the repository yet (docs/visual-v1.md, "Region borders"), so the game draws no
-    /// border; <see cref="BorderProof"/> is a synthetic pattern for tests and captures only.</summary>
+    /// lines when dated, fronts. Play draws the 1948 sub-districts (<see cref="Subdistricts1948"/>); the rest are research
+    /// items (docs/visual-v1.md, "Region borders"); <see cref="BorderProof"/> is a synthetic pattern for tests only.</summary>
     public sealed class RegionLayer
     {
         public const int MaxId = 65535;   // two texel bytes
 
         public readonly string Name;
+        /// <summary>A label shown on screen while the layer is drawn (null: none). The synthetic proof sets one, so no
+        /// screenshot of it can pass for real boundaries.</summary>
+        public readonly string? Banner;
         readonly Dictionary<(int q, int r), int> regionOf;
         readonly Dictionary<int, BorderStyle> styleOf;
 
         /// <summary>Throws ArgumentException naming the layer for an id outside 1..MaxId, a hex's region with no style, or an
         /// undefined style.</summary>
-        public RegionLayer(string name, IReadOnlyDictionary<(int q, int r), int> hexRegions, IReadOnlyDictionary<int, BorderStyle> styles)
+        public RegionLayer(string name, IReadOnlyDictionary<(int q, int r), int> hexRegions, IReadOnlyDictionary<int, BorderStyle> styles,
+            string? banner = null)
         {
+            Banner = banner;
             Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentException("a region layer needs a name", nameof(name)) : name;
             if (hexRegions == null) throw new ArgumentNullException(nameof(hexRegions));
             if (styles == null) throw new ArgumentNullException(nameof(styles));
@@ -53,7 +58,7 @@ namespace Statecraft.Game.Map
 
     /// <summary>The region borders (promo-borders): the promo 03 look of coloured, two-tone bands along hex edges, drawn by
     /// the terrain shader (StatecraftBorders.hlsl) from one texel per hex. <see cref="Apply"/> runs on every map build
-    /// (MapShaderGlobals.Apply): it allocates the hex texture, draws nothing, and registers the "borders" toggle;
+    /// (MapBuilder.Build, after MapShaderGlobals.Apply): it allocates the hex texture, draws nothing, and registers the "borders" toggle;
     /// <see cref="Use"/> gives the built map a layer. Visual only: it reads no sim state and changes none.</summary>
     public static class MapBorders
     {
@@ -77,23 +82,32 @@ namespace Statecraft.Game.Map
 
         /// <summary>The promo's blue line (6 + 6 px of blue and white with a 10 px wash at 2752 px; 125,140,182 and
         /// 251,251,248): the heavier of the two.</summary>
-        public static readonly Style Primary = new Style(new Color(0.40f, 0.50f, 0.80f), new Color(1.08f, 1.08f, 1.06f), 300f, 0.5f, 0.9f, 0.40f);
-        /// <summary>The promo's red-orange line (4 + 3 px with an 8 px wash; 176,93,61 and 246,188,124), a little darker than
-        /// the promo's so it keeps its lightness contrast against dry grass for colour-blind players (GradeTests).</summary>
-        public static readonly Style Secondary = new Style(new Color(0.64f, 0.28f, 0.17f), new Color(1.05f, 0.76f, 0.48f), 230f, 0.6f, 1.0f, 0.18f);
-        /// <summary>The band never draws thinner than this (the overview), nor, with its wash, wider than this share of a hex's
-        /// inradius (so a far hex is never filled by its outline).</summary>
+        public static readonly Style Primary = new Style(new Color(0.40f, 0.50f, 0.80f), new Color(1.08f, 1.08f, 1.06f), 230f, 0.5f, 0.9f, 0.40f);
+        /// <summary>The promo's red-orange line (4 + 3 px with an 8 px wash; 176,93,61 and 246,188,124), a little more
+        /// saturated than the promo's so it keeps a contrast against both olive and dry-grass ground for colour-blind players
+        /// (GradeTests).</summary>
+        public static readonly Style Secondary = new Style(new Color(0.75f, 0.31f, 0.13f), new Color(1.05f, 0.76f, 0.48f), 200f, 0.6f, 1.0f, 0.18f);
+        /// <summary>The band draws at least MinBandPx wide (the overview), unless that would make it, with its wash, wider than
+        /// MaxShareOfInradius of a hex's inradius: that cap wins (below about 8 px of inradius on screen the band goes under
+        /// 2 px), so a far hex is never filled by its outline.</summary>
         public const float MinBandPx = 2f, MaxShareOfInradius = 0.5f;
 
         static Texture2D? texture;
+        static MapRuntimeAssets? owner;
+        static GameObject? banner;
         static bool hasLayer, toggleOn = true;
+        static bool noEarlyOut;
+
+        /// <summary>Test seam (_ScBorders.z): true draws every pixel the long way, with no early-out, so a test can prove the
+        /// early-out exact (the two renders must match pixel for pixel).</summary>
+        internal static bool NoEarlyOut { get => noEarlyOut; set { noEarlyOut = value; Push(); } }
         static int qMin, rMin;
         static readonly HashSet<(int q, int r)> mapHexes = new HashSet<(int q, int r)>();
 
         /// <summary>The layer the map draws now (null: none).</summary>
         public static RegionLayer? Current { get; private set; }
 
-        /// <summary>Called by MapShaderGlobals.Apply on every build: a cleared hex texture over hexes.json's (q, r) range (owned
+        /// <summary>Called by MapBuilder.Build (after MapShaderGlobals.Apply) on every build: a cleared hex texture over hexes.json's (q, r) range (owned
         /// by the map), the styles' globals, no layer, and the "borders" toggle (on), all undone by the map's teardown.</summary>
         public static void Apply(HexFile hexes, MapRuntimeAssets assets)
         {
@@ -108,15 +122,15 @@ namespace Statecraft.Game.Map
                 name = "RegionHexes", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp,
             });
             tex.SetPixels32(new Color32[w * h]); tex.Apply(false, false);
-            texture = tex;
-            Current = null; hasLayer = false; toggleOn = true;
+            texture = tex; owner = assets; banner = null;
+            Current = null; hasLayer = false; toggleOn = true; noEarlyOut = false;
             Shader.SetGlobalTexture(RegionTex, tex);
             Shader.SetGlobalVector(RegionInfo, new Vector4(qMin, rMin, w, h));
             SetStyle(Colour1, Light1, Shape1, Primary);
             SetStyle(Colour2, Light2, Shape2, Secondary);
             Push();
             assets.OnTeardown(VisualToggles.Register(ToggleName, on => { toggleOn = on; Push(); }));
-            assets.OnTeardown(() => { texture = null; Current = null; hasLayer = false; Push(); });
+            assets.OnTeardown(() => { texture = null; owner = null; banner = null; Current = null; hasLayer = false; noEarlyOut = false; Push(); });
         }
 
         /// <summary>Draws <paramref name="layer"/> on the built map (null: none). Throws ArgumentException for a hex that is
@@ -134,8 +148,12 @@ namespace Statecraft.Game.Map
                 }
             texture.SetPixels32(px); texture.Apply(false, false);
             Current = layer; hasLayer = layer != null && layer.Count > 0;
+            if (banner != null) { DestroyObject(banner); banner = null; }
+            if (layer?.Banner != null && owner != null) banner = Banner.Create(layer.Banner, owner);
             Push();
         }
+
+        static void DestroyObject(UnityEngine.Object o) { if (Application.isPlaying) UnityEngine.Object.Destroy(o); else UnityEngine.Object.DestroyImmediate(o); }
 
         /// <summary>The texel of a hex: r + 256 g the region id, b the style (StatecraftBorders.hlsl, ScRegionAt).</summary>
         public static Color32 Encode(int id, BorderStyle style) => new Color32((byte)(id & 0xFF), (byte)(id >> 8), (byte)style, 255);
@@ -148,45 +166,94 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(shape, new Vector4(s.BandM, s.ColourShare, s.Wash, s.WashStrength));
         }
 
-        static void Push() => Shader.SetGlobalVector(Borders, new Vector4(MinBandPx, MaxShareOfInradius, 0f, toggleOn && hasLayer && texture != null ? 1f : 0f));
+        static void Push()
+        {
+            bool drawn = toggleOn && hasLayer && texture != null;
+            Shader.SetGlobalVector(Borders, new Vector4(MinBandPx, MaxShareOfInradius, noEarlyOut ? 1f : 0f, drawn ? 1f : 0f));
+            if (banner != null) banner.SetActive(drawn);
+        }
+
+        /// <summary>The banner that labels a layer on screen: white text with a dark drop copy, a child of the main camera
+        /// at a fixed place in view (top left, inside the tilt-shift's sharp band), drawn by the camera itself so editor
+        /// renders, tests and players all carry it. Owned by the map (destroyed with it).</summary>
+        static class Banner
+        {
+            public static GameObject? Create(string text, MapRuntimeAssets assets)
+            {
+                var cam = Camera.main;
+                if (cam == null) return null;
+                var root = assets.Own(new GameObject("BorderBanner"));
+                root.transform.SetParent(cam.transform, false);
+                float d = cam.nearClipPlane * 4f, halfH = d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad), halfW = halfH * 16f / 9f;
+                root.transform.localPosition = new Vector3(-0.94f * halfW, 0.62f * halfH, d);
+                root.transform.localRotation = Quaternion.identity;
+                var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                float height = 0.05f * halfH;   // about 2.5% of the screen's height per line
+                Line(root.transform, text, font, height, new Color(0.08f, 0.06f, 0.05f), new Vector3(height * 0.06f, -height * 0.06f, height * 0.01f));
+                Line(root.transform, text, font, height, new Color(1f, 0.98f, 0.9f), Vector3.zero);
+                return root;
+            }
+
+            static void Line(Transform parent, string text, Font font, float height, Color colour, Vector3 offset)
+            {
+                var go = new GameObject("Line");
+                go.transform.SetParent(parent, false);
+                go.transform.localPosition = offset;
+                var tm = go.AddComponent<TextMesh>();
+                tm.text = text; tm.font = font; tm.fontSize = 64; tm.characterSize = height / 6.4f; tm.anchor = TextAnchor.UpperLeft;
+                tm.color = colour;
+                var mr = go.GetComponent<MeshRenderer>();
+                mr.sharedMaterial = font.material;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+            }
+        }
     }
 
-    /// <summary>A synthetic region pattern that shows the border renderer at work, for tests, captures and the frame
-    /// profile only: concentric hex rings <see cref="RingWidth"/> hexes wide around the hex at a given point, the inner disc
-    /// outlined Primary and every ring Secondary; sea and lake hexes in no region (so no band runs along the coast). It is
-    /// plainly not geography (hexagonal rings) and appears only when asked for: "borderproof" in the WebGL page URL or
-    /// -borderproof on desktop and in the editor's promo renders; normal play never shows it.</summary>
+    /// <summary>A synthetic region pattern that shows the border renderer at work, for tests and captures only: a checker of
+    /// <see cref="BlockSize"/> x <see cref="BlockSize"/> axial hex blocks (parallelograms, a regular lattice over the whole
+    /// map, unrelated to any town or line), alternately Primary and Secondary; sea and lake hexes in no region. It carries
+    /// the on-screen label <see cref="Label"/> while drawn, and only the editor and development builds honour its flag
+    /// ("borderproof" in the WebGL page URL, -borderproof on desktop and in the editor's promo renders): a release
+    /// (shareable) build never shows it (review I3).</summary>
     public static class BorderProof
     {
         public const string Flag = "borderproof";
-        public const int RingWidth = 3;
-        /// <summary>The rings' centre: gameplay03's look-at, so both styles and their double band are in that frame.</summary>
-        public static readonly (double lon, double lat) Centre = (PromoPose.Gameplay03.Lon, PromoPose.Gameplay03.Lat);
+        public const string Label = "SYNTHETIC TEST PATTERN \u2014 not real boundaries";
+        public const int BlockSize = 4;
 
         public static bool Requested() =>
-            Requested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
+            Requested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer,
+                Application.isEditor || Debug.isDebugBuild);
 
-        public static bool Requested(string? url, string[] args, bool webgl) => webgl ? UrlFlags.Has(url, Flag) : args.Contains("-" + Flag);
+        /// <summary>Whether the flag is given and honoured: never in a release build (<paramref name="devBuild"/> false).</summary>
+        public static bool Requested(string? url, string[] args, bool webgl, bool devBuild) =>
+            devBuild && (webgl ? UrlFlags.Has(url, Flag) : args.Contains("-" + Flag));
 
-        /// <summary>The pattern on <paramref name="hexes"/>, centred on axial hex <paramref name="centre"/>.</summary>
-        public static RegionLayer Build(HexFile hexes, (int q, int r) centre)
+        /// <summary>The checker on <paramref name="hexes"/>' land hexes.</summary>
+        public static RegionLayer Build(HexFile hexes)
         {
             var regions = new Dictionary<(int q, int r), int>(); var styles = new Dictionary<int, BorderStyle>();
             foreach (var h in hexes.hexes)
             {
                 if (!h.land) continue;
-                int ring = Distance((h.q, h.r), centre) / RingWidth, id = ring + 1;
+                var (bq, br) = Block(h.q, h.r);
+                int id = 1 + (bq + 64) + 128 * br;
                 regions[(h.q, h.r)] = id;
-                styles[id] = ring == 0 ? BorderStyle.Primary : BorderStyle.Secondary;
+                styles[id] = ((bq + br) & 1) == 0 ? BorderStyle.Primary : BorderStyle.Secondary;
             }
-            return new RegionLayer("border proof (synthetic rings)", regions, styles);
+            return new RegionLayer("border proof (synthetic checker)", regions, styles, Label);
         }
 
-        /// <summary>The pattern centred on the hex under <see cref="Centre"/> of the built map; drawn at once.</summary>
+        /// <summary>The checker block of axial hex (q, r).</summary>
+        public static (int bq, int br) Block(int q, int r) => (FloorDiv(q, BlockSize), FloorDiv(r, BlockSize));
+
+        static int FloorDiv(int a, int b) => a >= 0 ? a / b : -((-a + b - 1) / b);
+
+        /// <summary>The pattern on the built map, drawn at once, with its label.</summary>
         public static RegionLayer Show(MapScene map)
         {
             if (map == null || map.Terrain == null || map.Hexes == null) throw new InvalidOperationException("BorderProof needs a built map");
-            var layer = Build(map.Hexes, HexAt(map, Centre.lon, Centre.lat));
+            var layer = Build(map.Hexes);
             MapBorders.Use(layer);
             return layer;
         }

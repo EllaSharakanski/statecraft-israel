@@ -132,6 +132,7 @@ namespace Statecraft.Game.UI
             var toast = Own(new ToastPresenter(root, bridge, text));
             Own(new HudPresenter(root, bridge, text));
             Own(new ScreenNav(root));                                      // every screen starts hidden (USS); ScreenNav opens one at a time
+            Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             var card = Own(new EventCardPresenter(root, bridge, text, portraits));
             Own(new DefencePresenter(root, bridge, text));
@@ -203,7 +204,7 @@ namespace Statecraft.Game.UI
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
-            // The border renderer's synthetic proof (?borderproof / -borderproof): tests, captures and the frame profile only.
+            // The border renderer's synthetic, labelled proof (?borderproof / -borderproof): development builds only.
             if (Application.isPlaying && BorderProof.Requested()) BorderProof.Show(map);
             // The visual track's instruments (docs/visual-v1.md): both move the camera, so one per run.
             if (Application.isPlaying && FrameProfile.Requested())
