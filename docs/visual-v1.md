@@ -990,8 +990,9 @@ Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are th
   - a 170 m chop moving the other way, `ScChopGain` 1.4 times the swell, full under a 40 m pixel and gone by 170 m.
 
   The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to
-  `ScWaveTiltFar` 0.10 by 120 m (Task 7's 0.15 until sea-fix): the far sea reads calm, and the seam test's patch means stay within bound (at a flat 0.6, one 7x7 patch
-  at 120 km carried 0.032 against 0.012). Glint unchanged (0.06).
+  `ScWaveTiltFar` 0.10 by 120 m (Task 7's 0.15 until sea-fix): the far sea reads calm, and the seam test's patch means
+  stay within bound (at a flat 0.6, one 7x7 patch at 120 km carried 0.032 against 0.012). The glint (0.06) fades out
+  between 60 and 120 m pixels (sea-fix, below).
 
   Bug B10 (sea-fix): both layers were value noise differenced along the map's axes, on axis-aligned lattices. Their
   slope jumped at every cell edge, so the open sea showed a blocky checker at 6-20 km. Both layers are now gradient noise

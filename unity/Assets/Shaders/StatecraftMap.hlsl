@@ -166,7 +166,7 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     // The wave tilt: ScWaveTilt near (pixels under 50 m: the gameplay zoom shows the chop and sparkle), easing to 0.10 by
     // 120 m, where a pixel spans a good part of a swell cell: the far sea reads as a calm surface, and patch means either
     // side of the map's edge stay within the seam test's 0.012 (at 0.6 a single 7x7 patch at 120 km carried 0.03; with the
-    // gradient-noise swell (sea-fix) Task 7's far 0.15 left single patches up to 0.010-0.011 apart).
+    // gradient-noise swell (sea-fix) Task 7's far 0.15 left single patches up to 0.016 apart).
     float tilt = lerp(ScWaveTilt, ScWaveTiltFar, smoothstep(50.0, 120.0, footprintM));
     float3 n = normalize(float3(g.x * tilt, 1.0, g.y * tilt));
 #if defined(UNIVERSAL_REALTIME_LIGHTS_INCLUDED) && !defined(SHADERGRAPH_PREVIEW)
