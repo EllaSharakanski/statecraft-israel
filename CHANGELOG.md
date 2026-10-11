@@ -10,6 +10,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Added
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
+- A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
@@ -66,6 +67,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
+  reworded attention and full-war labels (#193).
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
   shows as vacant from then until Serlin and Sapir are authored (#26).
 - The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
