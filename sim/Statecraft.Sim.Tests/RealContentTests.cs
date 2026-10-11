@@ -40,6 +40,60 @@ public class RealContentTests
         Assert.All(all, s => { Assert.StartsWith("https://", s.Url); Assert.True(s.Checked >= Checked, $"{s.Url} checked {s.Checked:yyyy-MM-dd}, before {Checked:yyyy-MM-dd}"); });   // later re-checks are allowed
     }
 
+    [Theory]
+    [InlineData("deputy_agriculture_minister", "efrati", 1951, 2, 26, 1951, 10, 8)]
+    [InlineData("deputy_agriculture_minister", "efrati", 1951, 11, 4, 1952, 6, 25)]
+    [InlineData("deputy_transportation_minister", "shari", 1951, 4, 2, 1951, 10, 8)]
+    [InlineData("deputy_education_minister", "kahana", 1951, 11, 4, 1952, 12, 24)]
+    public void DeputyTitlesHaveDatedTermsAndNoCabinetPowers(string office, string person,
+        int y1, int m1, int d1, int y2, int m2, int d2)
+    {
+        var from = new DateTime(y1, m1, d1);
+        var to = new DateTime(y2, m2, d2);
+        Assert.True(C.Offices.Single(o => o.Id == office).HistoricalOnly);
+        Assert.Null(Offices.Holder(C, office, from.AddDays(-1)));
+        Assert.Equal(person, Offices.Holder(C, office, from)?.Id);
+        Assert.Equal(person, Offices.Holder(C, office, to.AddDays(-1))?.Id);
+        Assert.Null(Offices.Holder(C, office, to));
+        var state = Simulation.NewGame(C, 42, Mode.Historical);
+        state.Date = from;
+        Assert.DoesNotContain(Cabinet.Lineup(C, state), seat => seat.Office.Id == office);
+        Assert.NotNull(Cabinet.Check(C, state, office, "ben_gurion"));
+    }
+
+    [Fact]
+    public void KaplanDeputyPrimeMinisterTitleFollowsHisDepartureFromFinance()
+    {
+        var change = new DateTime(1952, 6, 25);
+        var end = new DateTime(1952, 7, 13);
+        Assert.True(C.Offices.Single(o => o.Id == "deputy_prime_minister").HistoricalOnly);
+        Assert.Null(Offices.Holder(C, "deputy_prime_minister", change.AddDays(-1)));
+        Assert.Equal("kaplan", Offices.Holder(C, "finance_minister", change.AddDays(-1))?.Id);
+        Assert.Equal("eshkol", Offices.Holder(C, "agriculture_minister", change.AddDays(-1))?.Id);
+        Assert.Equal("naftali", Offices.Holder(C, "minister_without_portfolio", change.AddDays(-1))?.Id);
+        Assert.Equal("kaplan", Offices.Holder(C, "deputy_prime_minister", change)?.Id);
+        Assert.Equal("kaplan", Offices.Holder(C, "minister_without_portfolio", change)?.Id);
+        Assert.Equal("eshkol", Offices.Holder(C, "finance_minister", change)?.Id);
+        Assert.Equal("naftali", Offices.Holder(C, "agriculture_minister", change)?.Id);
+        Assert.Equal("kaplan", Offices.Holder(C, "deputy_prime_minister", end.AddDays(-1))?.Id);
+        Assert.Null(Offices.Holder(C, "deputy_prime_minister", end));
+        Assert.Null(Offices.Holder(C, "minister_without_portfolio", end));
+        // The new Finance/Agriculture terms stay open until #26 adds the Fourth Government (24 December 1952).
+        Assert.Equal("eshkol", Offices.Holder(C, "finance_minister", new DateTime(1952, 12, 24))?.Id);
+        Assert.Equal("naftali", Offices.Holder(C, "agriculture_minister", new DateTime(1952, 12, 24))?.Id);
+        var state = Simulation.NewGame(C, 42, Mode.Historical);
+        state.Date = change.AddDays(-1);
+        Assert.Equal(0.9, EffectsSystem.Multiplier(C, state, "agriculture_minister") /
+            EffectsSystem.BudgetFactor(state, "agriculture_minister"), 10);
+        state.Date = change;
+        Assert.Equal(0.85, EffectsSystem.Multiplier(C, state, "agriculture_minister") /
+            EffectsSystem.BudgetFactor(state, "agriculture_minister"), 10);
+        Assert.Equal("kaplan", Cabinet.Holder(C, state, "minister_without_portfolio")?.Id);
+        Assert.DoesNotContain(Cabinet.Lineup(C, state), seat => seat.Office.Id == "deputy_prime_minister");
+        state.Date = end;
+        Assert.Equal("Eliezer Kaplan died on " + PlayerText.Date(end), Cabinet.Check(C, state, "finance_minister", "kaplan"));
+    }
+
     [Fact]
     public void OpenQuestionsAreExactlyTheKnownOnes()
     {
@@ -125,7 +179,11 @@ public class RealContentTests
         Assert.Equal("ben_gurion", Who("education_minister", 1951, 5, 19));
         Assert.Equal("dinur", Who("education_minister", 1951, 10, 8));
         Assert.Equal("lavon", Who("rationing_minister", 1950, 11, 1));
-        Assert.Equal("(vacant)", Who("rationing_minister", 1951, 10, 8));
+        Assert.Equal("lavon", Who("rationing_minister", 1951, 10, 7));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1951, 10, 8));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1951, 12, 31));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1952, 12, 23));
+        Assert.Equal("(vacant)", Who("rationing_minister", 1952, 12, 24));
         Assert.Equal("dov_yosef", Who("transportation_minister", 1951, 1, 1));
         Assert.Equal("pinkas", Who("transportation_minister", 1951, 10, 8));
         Assert.Equal("lavon", Who("agriculture_minister", 1951, 1, 1));
