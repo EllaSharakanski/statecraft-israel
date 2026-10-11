@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- A local multi-size favicon for the WebGL page.
+- Hebrew names and sourced birth and death dates for all 29 people (issue #1).
+- Successors for offices left by deaths in 1952: Ben-Gurion takes Transportation after Pinkas (14 August 1952) and
+  Yitzhak Ben-Zvi becomes President on 16 December 1952 after Weizmann; the presidency is vacant in between, while
+  the Speaker was acting President (issue #1).
 - A portrait of Golda Meir: a 1964 Nationaal Archief photo by Willem van de Poll (CC0; #6).
 - Historical-only deputy titles and sourced 1951 terms; Kaplan's June 1952 Deputy Prime Minister title and the linked Finance/Agriculture succession (issue #4).
 - People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
@@ -41,6 +46,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   promo screenshots), not normal play. Map-only: the sim does not read them (#35).
 
 ### Changed
+- The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
+  means their Prime Minister placeholder doesn't need a holder after his death in 1973.
 - Ben-Gurion's in-game portrait is now a crop of Abbie Rowe's 8 May 1951 White House photo (NARA 200318,
   PD-USGov) instead of a Government Press Office photo with no clear US status (#30, decision D-P).
 - Later death dates can be recorded for people with open-ended terms in the latest authored government; explicit term ends still cannot pass the holder's death.
