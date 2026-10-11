@@ -22,6 +22,19 @@ public class LandUseTests
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear();
     }
 
+    /// <summary>The map built for measuring the ground itself (integration bug B4): without the settlement kits, whose
+    /// blocks, trees and paved town ground stand on the sampled plain once promo-art is merged. By name and by reflection,
+    /// as SeaTests does (promo-art 689880d), so this compiles and runs where the kits do not exist yet.</summary>
+    static MapScene OpenMapWithoutKits()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);   // the scene is not saved
+        var map = Object.FindFirstObjectByType<MapScene>();
+        typeof(MapScene).GetMethod("ConfigureKits")?.Invoke(map, new object?[] { null, null });
+        map.Build();
+        foreach (var n in new[] { "kits", "trees" }) if (System.Linq.Enumerable.Contains(VisualToggles.Names, n)) VisualToggles.Set(n, false);
+        return map;
+    }
+
     static Texture2D Read(string path)
     {
         var png = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
@@ -123,8 +136,7 @@ public class LandUseTests
     [UnityTest]
     public IEnumerator TheFieldsAddDetailToThePlainWithoutChangingItsColour()
     {
-        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
-        var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
+        var map = OpenMapWithoutKits();
         RenderSample.TiltShift(false);
         yield return null;
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();

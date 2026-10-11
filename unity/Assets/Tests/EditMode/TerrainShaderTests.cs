@@ -51,6 +51,8 @@ public class TerrainShaderTests
                     $"pass '{sub.GetPass(p).Name}' computes the terrain UV at half precision");
         }
         var map = OpenMap();
+        // The ground itself: Lod's settlement kit (promo-art) stands on this plain point; off by name, so this runs on main too.
+        foreach (var n in new[] { "kits", "trees" }) if (VisualToggles.Names.Contains(n)) VisualToggles.Set(n, false);
         yield return null;
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         // A flat coastal-plain point (review N7): no rock blend and no stone tint can stand between the texture and the screen.
