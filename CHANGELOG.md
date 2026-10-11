@@ -24,6 +24,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.
+- Event cards have a promo-style header photograph: real archival photographs for 25 of the 31 events (Meitar
+  Collection / National Library of Israel under CC BY 4.0, Nationaal Archief under CC0, and the US National Archives),
+  shown in black and white with a subtle sepia/navy grade and a gold frame, with a credit line and alt text. The six
+  events without a free photograph keep the minister's portrait. Sensitive pictures need the owner's review before a
+  `-shareable` build (docs/event-images.md). Presentation only: the content hash and saves are unchanged.
 - The unit art slice (a showcase for the art track, not gameplay): a 1948 IDF rifle trio with a selection ring, an IAF
   Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
   promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an

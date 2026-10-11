@@ -5,8 +5,10 @@ using UnityEngine.UIElements;
 
 namespace Statecraft.Game.UI
 {
-    /// <summary>The event card (right of the screen): the first pending event the player has not yet answered, with the
-    /// responsible minister's portrait, the text with today's office holders filled in, and one button per option.
+    /// <summary>The event card (right of the screen): the first pending event the player has not yet answered, with its
+    /// header picture (an archival photograph of the event with its credit line, as the promo's card; EventImageCatalog) or,
+    /// when the event has none, the responsible minister's portrait, the text with today's office holders filled in, and
+    /// one button per option.
     /// A choice is an order: it takes effect at End Turn, and an unanswered event is delegated to the minister.</summary>
     public sealed class EventCardPresenter : System.IDisposable
     {
@@ -16,16 +18,22 @@ namespace Statecraft.Game.UI
         public const string OptionClass = "event-option";
 
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
-        
-        public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits)
+        readonly EventImageCatalog? photos;
+
+        public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits, EventImageCatalog? photos = null)
         {
-            card = root.Q<VisualElement>("event-card"); this.bridge = bridge; this.text = text; this.portraits = portraits;
+            card = root.Q<VisualElement>("event-card"); this.bridge = bridge; this.text = text; this.portraits = portraits; this.photos = photos;
+            card.Q<VisualElement>("event-photo").RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             bridge.Changed += Render;
             Render();
         }
 
         /// <summary>Unsubscribes from the bridge, removes the option buttons and hides the card (the owner calls this when disabled).</summary>
-        public void Dispose() { bridge.Changed -= Render; card.Q<VisualElement>("event-options")?.Clear(); card.style.display = DisplayStyle.None; }
+        public void Dispose()
+        {
+            bridge.Changed -= Render; card.Q<VisualElement>("event-photo").UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            card.Q<VisualElement>("event-options")?.Clear(); card.style.display = DisplayStyle.None;
+        }
 
         /// <summary>The event the card shows, or null when every pending event has a queued answer.</summary>
         public GameEvent? Shown { get; private set; }
@@ -41,8 +49,11 @@ namespace Statecraft.Game.UI
             var e = Shown;
             var date = EventSystem.FillDate(e, s.Date);
             var holder = e.Office == "" ? null : Cabinet.Holder(c, s, e.Office, date);
+            // The header photograph when the event has one; otherwise the minister's portrait plate (the fallback).
+            var photo = photos?.Find(e.Id);
+            ShowPhoto(photo);
             var image = card.Q<VisualElement>("event-image");
-            var entry = portraits?.Find(holder?.Id);
+            var entry = photo == null ? portraits?.Find(holder?.Id) : null;
             var portrait = entry?.image;
             image.style.backgroundImage = portrait == null ? (StyleBackground)StyleKeyword.None : new StyleBackground(portrait);
             image.style.display = portrait == null ? DisplayStyle.None : DisplayStyle.Flex;
@@ -65,6 +76,36 @@ namespace Statecraft.Game.UI
             }
             card.Q<Label>("event-count").text = open.Count > 1 ? text.Format("event.more", open.Count - 1) : "";
         }
+
+        /// <summary>Shows the event's photograph with its credit line, its alt text as the picture's tooltip, or hides both.</summary>
+        void ShowPhoto(EventImageCatalog.Entry? photo)
+        {
+            var band = card.Q<VisualElement>("event-photo");
+            var credit = card.Q<Label>("event-photo-credit");
+            var shown = photo != null ? DisplayStyle.Flex : DisplayStyle.None;
+            band.style.display = shown; credit.style.display = shown;
+            band.style.backgroundImage = photo == null ? (StyleBackground)StyleKeyword.None : new StyleBackground(photo.Value.image);
+            band.tooltip = photo?.alt ?? "";
+            credit.text = photo?.credit ?? "";
+            PhotoAlt = photo?.alt;
+        }
+
+        /// <summary>The smallest useful height of the photograph band (Statecraft.uss .event-photo shrinks first). On a window
+        /// too short for a long event, the band would be a sliver: it is dropped for that render instead, so the body and the
+        /// options keep their room and the card reads as a card without a picture (its credit goes with it).</summary>
+        public const float MinPhotoHeight = 48f;
+
+        void OnPhotoGeometry(GeometryChangedEvent evt)
+        {
+            if (PhotoAlt == null || !(evt.newRect.height < MinPhotoHeight)) return;
+            var band = card.Q<VisualElement>("event-photo");
+            band.style.display = DisplayStyle.None;
+            band.style.backgroundImage = StyleKeyword.None;
+            PhotoAlt = null;
+        }
+
+        /// <summary>The shown photograph's alt text (what it depicts), or null when the card shows no photograph.</summary>
+        public string? PhotoAlt { get; private set; }
 
         /// <summary>The round sign in an option's left padding (Statecraft.uss .event-option), painted into the button so it
         /// stays a leaf whose wrapped text Yoga measures (UiIcon.Paint).</summary>

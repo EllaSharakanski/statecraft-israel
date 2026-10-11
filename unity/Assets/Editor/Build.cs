@@ -35,25 +35,42 @@ namespace Statecraft.Game.EditorTools
         };
 
         /// <summary>Why a shareable build may not be made, or null: every event with a sensitive tag needs the owner's
-        /// sensitivity review first (status sensitivity-reviewed; docs/m3-release.md, M3 final review I4).</summary>
-        public static string? ShareableRefusal(Statecraft.Sim.Content c)
+        /// sensitivity review first (status sensitivity-reviewed; docs/m3-release.md, M3 final review I4), and so does every
+        /// sensitive event photograph the build would carry (EventImageCatalog; docs/event-images.md).</summary>
+        public static string? ShareableRefusal(Statecraft.Sim.Content c, Statecraft.Game.UI.EventImageCatalog? photos)
         {
             var open = Statecraft.Sim.ReleaseGate.SensitiveUnreviewed(c);
+            var reasons = new System.Collections.Generic.List<string>();
+            if (open.Count > 0)
+                reasons.Add("a shareable build needs the owner's sensitivity review of: " + string.Join(", ", open) + " (set status: sensitivity-reviewed; see docs/m3-release.md)");
+            if (EventImageRefusal(photos) is string pictures) reasons.Add(pictures);
+            return reasons.Count == 0 ? null : string.Join("; ", reasons);
+        }
+
+        /// <summary>Why the event photographs may not ship in a shareable build, or null: a picture marked sensitive needs
+        /// the owner's sensitivity review (sensitivity_reviewed: true in Assets/UI/EventImages/event-images.yaml, then
+        /// EventImageImport.Run). An OWNER step, like the event review.</summary>
+        public static string? EventImageRefusal(Statecraft.Game.UI.EventImageCatalog? photos)
+        {
+            var open = photos != null ? photos.SensitiveUnreviewed() : (System.Collections.Generic.IReadOnlyList<string>)Array.Empty<string>();
             return open.Count == 0 ? null
-                : "a shareable build needs the owner's sensitivity review of: " + string.Join(", ", open) + " (set status: sensitivity-reviewed; see docs/m3-release.md)";
+                : "a shareable build needs the owner's sensitivity review of the event photographs: " + string.Join(", ", open)
+                  + " (set sensitivity_reviewed: true in " + Statecraft.Game.UI.EventImageMapping.Path + ", run EventImageImport; see docs/event-images.md)";
         }
 
         /// <summary>The gate for a build made with these command-line args: a -shareable build (Web or Mac) is refused
-        /// until the review is done; a dev build is never gated (web_check and the golden checks need them).</summary>
-        public static string? GateRefusal(string[] args, Statecraft.Sim.Content c) =>
-            Array.IndexOf(args, "-shareable") >= 0 ? ShareableRefusal(c) : null;
+        /// until the reviews are done; a dev build is never gated (web_check and the golden checks need them).</summary>
+        public static string? GateRefusal(string[] args, Statecraft.Sim.Content c, Statecraft.Game.UI.EventImageCatalog? photos) =>
+            Array.IndexOf(args, "-shareable") >= 0 ? ShareableRefusal(c, photos) : null;
 
-        /// <summary>Logs "BUILD REFUSED ..." and exits 1 when the gate refuses this build; true if it did.</summary>
+        /// <summary>Logs "BUILD REFUSED ..." and exits 1 when the gate refuses this build; true if it did. The photographs
+        /// checked are the catalog the build ships (Resources/EventImageCatalog.asset).</summary>
         static bool RefuseUnlessShareable()
         {
             var args = Environment.GetCommandLineArgs();
             if (Array.IndexOf(args, "-shareable") < 0) return false;
-            if (!(GateRefusal(args, Statecraft.Sim.ContentLoader.Load(Paths.Content)) is string refusal)) return false;
+            var photos = AssetDatabase.LoadAssetAtPath<Statecraft.Game.UI.EventImageCatalog>(EventImageImport.CatalogPath);
+            if (!(GateRefusal(args, Statecraft.Sim.ContentLoader.Load(Paths.Content), photos) is string refusal)) return false;
             Debug.LogError("BUILD REFUSED " + refusal);
             EditorApplication.Exit(1);
             return true;

@@ -293,7 +293,10 @@ public class UiLayoutTests
             // The real portraits: a minister's portrait adds the 200 px image row, so the tallest card is a portrait card.
             var portraits = AssetDatabase.LoadAssetAtPath<PortraitCatalog>("Assets/UI/Portraits/PortraitCatalog.asset");
             Assert.IsNotNull(portraits);
-            var card = new EventCardPresenter(root, bridge, Text, portraits);
+            // And the real event photographs: a photograph card adds the 200 px header band and its credit line.
+            var photos = AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset");
+            Assert.IsNotNull(photos);
+            var card = new EventCardPresenter(root, bridge, Text, portraits, photos);
             float tallest = 0; string tallestId = "";
             try
             {

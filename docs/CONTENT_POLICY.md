@@ -58,7 +58,18 @@ Facts are open to correction. The framing (section 1) is not.
 - Content without sources, or with a source that does not support the claim.
 - Quotes, speeches or letters that are not sourced verbatim.
 - Mechanics or text that reward or celebrate violence against civilians, from any side.
-- Images of real people that are not public domain or CC0. AI-generated likenesses of real people appear only in
-  concept art (`promo/final/04`, `08`), are recorded as AI-generated in the asset provenance records, and are never presented as photographs
-  or used in the game.
+- Portraits of real people that are not public domain or CC0. This rule stays strict for portraits. Event photographs
+  follow the owner's ruling of 2026-10-11, quoted exactly:
+  1. "CC BY 4.0 archival EVENT photos are allowed with a credit line (photographer, Meitar Collection, National Library
+     of Israel, CC BY 4.0). The content-policy rule for real people (docs/CONTENT_POLICY.md §4) stays strict for
+     portraits."
+  2. "Show photos as authentic black and white with a subtle warm sepia/navy grade and the gold frame. No AI
+     colourising, no content alteration beyond grade, crop and resize. Record the adaptation per CC BY ("graded and
+     cropped")."
+
+  Each event photograph's credit, alt text and sensitivity review are recorded in
+  `unity/Assets/UI/EventImages/event-images.yaml` and `ASSETS.yaml` (see `docs/event-images.md`).
+
+  AI-generated likenesses of real people appear only in concept art (`promo/final/04`, `08`), are recorded as
+  AI-generated in the asset provenance records, and are never presented as photographs or used in the game.
 - Hate speech, slurs or dehumanising language about any group, in content, code comments, issues or commits.

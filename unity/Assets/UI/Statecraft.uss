@@ -157,7 +157,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    window is short the portrait and then the text (it scrolls) give way, never the option buttons. */
 .right-column { position: absolute; right: 16px; top: 112px; bottom: 16px; width: 480px; }
 .right-gap { flex-grow: 1; flex-shrink: 0; min-height: 16px; }
-.event-card { flex-shrink: 1; min-height: 0; max-height: 560px; overflow: hidden; }
+.event-card { flex-shrink: 1; min-height: 0; max-height: 600px; overflow: hidden; }   /* 600: room for a photograph card; the column still bounds it */
 .event-card > * { flex-shrink: 0; }
 .event-card > .event-scroll { flex-shrink: 1; min-height: 48px; }
 #event-options { flex-shrink: 0; }
@@ -173,6 +173,18 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .event-image {
     width: 96px; height: 128px; flex-shrink: 0; margin-right: 12px; background-size: cover; background-color: var(--navy-deep);
     border-width: 1px; border-color: var(--gold);
+}
+/* The header photograph (promo 03 and 05): full width, 9:4, a gold frame, its credit as a caption strip along the bottom
+   (so the credit costs the card no height). It gives way first on a short window (the large flex-shrink takes the
+   shortfall before the text); below EventCardPresenter.MinPhotoHeight it is dropped for that render, so the body and the
+   options never scroll for it. */
+.event-card > .event-photo {
+    display: none; height: 200px; min-height: 0; flex-shrink: 1000; margin-bottom: 4px; overflow: hidden;
+    justify-content: flex-end; background-size: cover; background-color: var(--navy-deep); border-width: 1px; border-color: var(--gold);
+}
+.event-photo-credit {
+    font-size: 12px; white-space: normal; -unity-text-align: middle-center; margin: 0; padding: 2px 8px 3px 8px;
+    color: var(--ink); background-color: rgba(5, 9, 18, 0.92); -unity-font-style: italic;   /* 0.92: blending is linear, so less reads grey */
 }
 .event-office { white-space: normal; -unity-text-align: middle-center; font-size: 18px; }
 /* Options wrap inside the card (playtest 2, P2-2); each has a round gold-rimmed sign at its left, as the promo's choices. */
