@@ -93,6 +93,38 @@ public class KitTests
         TestContext.WriteLine(map.KitStats);
     }
 
+    /// <summary>Review N1: with the kits on, a map without its population file refuses to build in the editor (a player
+    /// would warn and give every town the smallest footprint).</summary>
+    [Test]
+    public void AMissingPopulationFileIsAnErrorInTheEditor()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
+        inputs.PopulationYaml = "";
+        var ex = Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs));
+        StringAssert.Contains(KitPopulation.FileName, ex.Message);
+        map.ConfigureKits(null, null);   // without the kits the file is not needed (the scene is not saved)
+        Assert.DoesNotThrow(() => map.Build(inputs));
+    }
+
+    /// <summary>Review N2: no two towns' lots overlap, landmarks (mosques, water towers, Jaffa's clock tower and church)
+    /// included: a landmark looks for a free spot near its town's heart and is left out when there is none.</summary>
+    [Test]
+    public void NoTownsBuildingsOrLandmarksOverlapAnotherTowns()
+    {
+        var map = OpenMap();
+        var built = SettlementKits.Build(map.Settlements, Ground(map), out var lots);
+        int overlaps = 0;
+        for (int i = 0; i < lots.Count; i++)
+            for (int j = i + 1; j < lots.Count; j++)
+                if (lots[i].id != lots[j].id && (lots[i].centre - lots[j].centre).magnitude < lots[i].radius + lots[j].radius - 1f) overlaps++;
+        foreach (var k in built) Object.DestroyImmediate(k.mesh);
+        TestContext.WriteLine($"{lots.Count} lots over {lots.Select(l => l.id).Distinct().Count()} towns");
+        Assert.AreEqual(0, overlaps, "lots of different towns overlap");
+        Assert.AreEqual(map.Settlements.Count, lots.Select(l => l.id).Distinct().Count(), "every town claimed ground");
+    }
+
     /// <summary>Review M6: switching the kits off shows the marker boxes again, so a settlement is never left undrawn.</summary>
     [Test]
     public void TheKitsToggleSwapsKitsAndMarkers()

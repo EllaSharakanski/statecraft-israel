@@ -183,6 +183,7 @@ namespace Statecraft.Game.Map.Kits
                 float R = SettlementKits.FootprintRadiusM(st, ground.HexSizeM);
                 var arch = SettlementKits.ArchetypeOf(st);
                 bool coastal = ground.SeaDistance(c.x, c.y, 6000f) < 6000f;
+                float beachKeep = 6.5f * s;   // about a palm crown's radius plus the sand strip, in metres
                 if (coastal)
                 {
                     int n = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(Mathf.Max(KitPopulation.Of(st.Id), 400)) * 0.9f / (ks * ks)), 4, 260);
@@ -198,7 +199,8 @@ namespace Statecraft.Game.Map.Kits
                         for (int k = 0; k < clump; k++)
                         {
                             float px = x + rnd.Range(-1f, 1f) * 6f * s, pz = z + rnd.Range(-1f, 1f) * 6f * s;
-                            if (!ground.Water(px, pz)) Add(TreeKind.Palm, px, pz, ref rnd);
+                            // Back from the beach: a crown never overhangs promo-sea's sand strip (review N3).
+                            if (!ground.Water(px, pz) && ground.SeaDistance(px, pz, beachKeep) >= beachKeep) Add(TreeKind.Palm, px, pz, ref rnd);
                         }
                     }
                 }
