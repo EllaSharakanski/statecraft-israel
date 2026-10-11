@@ -68,7 +68,7 @@ Normal play draws one token per unit from two inputs: the sim's state and `conte
 Code:
 - `UnitData`: the file.
 - `UnitRoster`: which units show now.
-- `UnitPlacer`: each anchor's spot.
+- `UnitPlacer` and `UnitGround`: each anchor's spot.
 - `UnitLayer`: the tokens and the ring.
 - `UnitBadge`: the badge.
 - `UnitCard` and `InfoPanelPresenter`: the card.
@@ -140,7 +140,11 @@ another unit appears. Its spot is the nearest to the sourced place, at most one 
 centres on 5 km hexes). The candidates are tried in two rounds:
 1. The centres of the anchor's own hex and its six neighbours, with the token at full size.
 2. If none is clear, those centres plus six points inside each hex, with the token **compact**: half the ring and half
-   the trio's spread, to fit beside a town. Kiryati beside Tel Aviv is an example.
+   the trio's spread, to fit beside a town. Yiftach at Lydda and the squadron at Herzliya stand compact.
+3. If the whole neighbourhood is town, the compact point that reaches least deep into it (then the nearest). The map
+   then keeps a clearing of the compact ring's radius free of the kits' buildings and trees there (`MapScene.UnitClearings`,
+   computed before the kits from the same data). So the token stands at the town's edge and never in a building. Kiryati
+   (Tel Aviv) and Etzioni (Jerusalem) stand this way.
 
 A spot is clear when:
 - the ring's disc stays off every settlement footprint (the kits' discs, times 1.1);

@@ -20,23 +20,13 @@ namespace Statecraft.Game.Map.Units
     public sealed class UnitLayer : MonoBehaviour
     {
         public const string RootName = "Units", ToggleName = "units";
-        /// <summary>A footprint's buildings and tinted ground reach 1.1 of its radius (SettlementKits.PaintGround).</summary>
-        public const float FootprintMargin = 1.1f;
-        /// <summary>Clearance (m) between a figure's centre and a railway's or road's corridor: about half a figure's width
-        /// at <see cref="UnitShowcase.FigureScale"/> (0.6 m x 2000 = 1.2 km across) plus a margin.</summary>
-        public const float FigureClearanceM = 700f;
-        /// <summary>A compact token (beside a town, UnitPlacer) draws its ring and trio at this share of the full size.</summary>
-        public const float CompactScale = 0.5f;
         /// <summary>A parked aircraft's centre of gravity above the ground, in real metres (on its undercarriage).</summary>
         public const float ParkedHeightM = 1.4f;
         public const float ParkedHeadingDegrees = 200f;
 
         MapScene map = null!;
         IReadOnlyList<UnitEntry> units = Array.Empty<UnitEntry>();
-        IReadOnlyList<MapHex> hexes = Array.Empty<MapHex>();
-        Vector2[] hexXZ = Array.Empty<Vector2>();
-        /// <summary>The route corridors with their bounds grown by the clearance, so a figure far from a route skips it.</summary>
-        (List<Vector2> line, float half, Rect bounds)[] corridors = Array.Empty<(List<Vector2>, float, Rect)>();
+        UnitGround ground = null!;
         Dictionary<UnitAnchor, AnchorSpot> spots = new Dictionary<UnitAnchor, AnchorSpot>();
         MapRuntimeAssets assets = null!;
         Material paint = null!, ringTemplate = null!, badgePlate = null!, badgeGlyph = null!;
@@ -52,6 +42,8 @@ namespace Statecraft.Game.Map.Units
         public IReadOnlyList<PlacedToken> Tokens => placed;
         /// <summary>Every anchor's spot, from the data alone.</summary>
         public IReadOnlyDictionary<UnitAnchor, AnchorSpot> Spots => spots;
+        /// <summary>The ground the anchors were placed on.</summary>
+        public UnitGround PlacementGround => ground;
         /// <summary>The selected unit's id, or null.</summary>
         public string? Selected { get; private set; }
 
@@ -77,16 +69,10 @@ namespace Statecraft.Game.Map.Units
             root.transform.SetParent(terrain.transform, false);
             root.transform.position = Vector3.zero;   // children are placed in world space
             var layer = root.AddComponent<UnitLayer>();
-            layer.map = map; layer.units = units; layer.hexes = hexes; layer.still = still;
-            layer.hexXZ = hexes.Select(h => { var w = map.Frame.ToWorld(h.Lon, h.Lat, 0); return new Vector2(w.x, w.z); }).ToArray();
-            layer.corridors = map.RouteCorridors.Where(c => c.line.Count > 0).Select(c =>
-            {
-                float minX = c.line.Min(p => p.x), maxX = c.line.Max(p => p.x), minY = c.line.Min(p => p.y), maxY = c.line.Max(p => p.y);
-                float grow = c.halfWidth + FigureClearanceM;
-                return (c.line, c.halfWidth, Rect.MinMaxRect(minX - grow, minY - grow, maxX + grow, maxY + grow));
-            }).ToArray();
-            layer.spots = UnitPlacer.PlaceAll(units, hexes, map.Hexes.hex_size_km * 1000.0,
-                (lon, lat) => { var w = map.Frame.ToWorld(lon, lat, 0); return (w.x, w.z); }, layer.IsClear, Debug.LogWarning);
+            layer.map = map; layer.units = units; layer.still = still;
+            // The same ground and the same placement as MapScene's (which keeps the kits off a token in a town).
+            layer.ground = Ground(map, hexes);
+            layer.spots = layer.ground.Place(units, XZ(map), Debug.LogWarning);
             layer.assets = root.AddComponent<MapRuntimeAssets>();
             var palette = layer.assets.Own(UnitPalette.MakeTexture(readable: false));
             layer.paint = layer.assets.Own(new Material(template) { name = "UnitMiniature (palette)" });
@@ -157,58 +143,15 @@ namespace Statecraft.Game.Map.Units
             ring = UnitShowcase.Ring(map, assets, ringTemplate, transform, Centre(hit.Spot), UnitShowcase.RingRadius * hex * Scale(hit.Spot));
         }
 
-        static float Scale(AnchorSpot s) => s.Compact ? CompactScale : 1f;
+        static float Scale(AnchorSpot s) => s.Compact ? UnitGround.CompactScale : 1f;
 
         Vector3 Centre(AnchorSpot s) => UnitShowcase.Ground(map, new Vector3((float)s.X, 0f, (float)s.Z));
 
-        /// <summary>The figures' ground points of a token standing at (x, z): the full trio, so a spot does not change with
-        /// the call-up.</summary>
-        internal Vector2[] FigurePoints(Vector2 centre, bool compact)
-        {
-            float hex = map.Hexes.hex_size_km * 1000f, k = UnitShowcase.TrioSpread * hex * (compact ? CompactScale : 1f);
-            return UnitShowcase.FigureOffsets(3).Select(o => centre + o * k).ToArray();
-        }
+        /// <summary>The ground the units are placed on (footprints, routes, land) for a built map.</summary>
+        public static UnitGround Ground(MapScene map, IReadOnlyList<MapHex> hexes) =>
+            new UnitGround(map.SettlementFootprints, map.RouteCorridors, hexes, XZ(map), map.Hexes.hex_size_km * 1000f);
 
-        /// <summary>UnitPlacer's test: the ring (full or compact) stays off every settlement footprint, and the figures (an
-        /// army token's full trio; a parked aircraft's centre) stand on land and off the railways and roads. A ship needs
-        /// only the sea hex UnitPlacer already checked.</summary>
-        internal bool IsClear(string service, double x, double z, bool compact)
-        {
-            if (service == UnitData.Navy) return true;
-            float hex = map.Hexes.hex_size_km * 1000f;
-            var centre = new Vector2((float)x, (float)z);
-            float disc = UnitShowcase.RingRadius * hex * (compact ? CompactScale : 1f);
-            foreach (var (fc, fr) in map.SettlementFootprints)
-                if ((fc - centre).magnitude < fr * FootprintMargin + disc) return false;
-            var points = service == UnitData.Army ? FigurePoints(centre, compact) : new[] { centre };
-            foreach (var p in points)
-            {
-                if (!LandAt(p)) return false;
-                foreach (var (line, half, bounds) in corridors)
-                    if (bounds.Contains(p))
-                        for (int i = 0; i + 1 < line.Count; i++)
-                            if (DistanceToSegment(p, line[i], line[i + 1]) < half + FigureClearanceM) return false;
-            }
-            return true;
-        }
-
-        bool LandAt(Vector2 p)
-        {
-            int best = -1; float bestD = float.MaxValue;
-            for (int i = 0; i < hexXZ.Length; i++)
-            {
-                float d = (hexXZ[i] - p).sqrMagnitude;
-                if (d < bestD) { bestD = d; best = i; }
-            }
-            return best >= 0 && hexes[best].Land;
-        }
-
-        internal static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
-        {
-            var ab = b - a; float len2 = ab.sqrMagnitude;
-            float t = len2 > 0f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / len2) : 0f;
-            return (p - (a + t * ab)).magnitude;
-        }
+        static Func<double, double, Vector2> XZ(MapScene map) => (lon, lat) => { var w = map.Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); };
 
         Mesh MeshFor(string key, Func<Mesh> build)
         {

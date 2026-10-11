@@ -119,6 +119,10 @@ namespace Statecraft.Game.Map
         /// their figures off them. Empty before Build.</summary>
         public IReadOnlyList<(List<Vector2> line, float halfWidth)> RouteCorridors { get; private set; } = new List<(List<Vector2>, float)>();
 
+        /// <summary>The spots of the units that stand in a town (UnitPlacer's last round), where the kits keep a clearing of
+        /// UnitGround.ClearingRadius so no token stands in a building. Empty before Build or without the unit file.</summary>
+        public IReadOnlyList<Vector2> UnitClearings { get; private set; } = new List<Vector2>();
+
         /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
         public Kits.KitLayer.Stats KitStats { get; private set; }
 
@@ -174,6 +178,16 @@ namespace Statecraft.Game.Map
             var routes = Routes.RoutePaths.ReadOrNone(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Debug.LogWarning);
             RouteCorridors = Routes.RouteLayer.Corridors(Frame, routes);
             SettlementFootprints = list.Select(s => { var w = Frame.ToWorld(s.Lon, s.Lat, 0); return (new Vector2(w.x, w.z), Kits.SettlementKits.FootprintRadiusM(s, hexSizeM)); }).ToList();
+            // The units' spots depend only on the footprints, the routes and the land, so they are known before the kits:
+            // a unit placed in a town gets a clearing the kits keep free (UnitLayer places it the same way).
+            var unitData = Units.UnitData.ReadOrNone(inputs.UnitsYaml, Debug.LogWarning);
+            var unitHexes = Hexes.hexes.Select(h => new Statecraft.Sim.MapHex { Q = h.q, R = h.r, Lon = h.lon, Lat = h.lat, ElevM = h.elev_m, Land = h.land, Biome = h.biome }).ToList();
+            var unitGround = new Units.UnitGround(SettlementFootprints, RouteCorridors, unitHexes,
+                (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, hexSizeM);
+            var clearingRadius = unitGround.ClearingRadius;
+            UnitClearings = unitData.Count == 0 ? new List<Vector2>()
+                : unitGround.Place(unitData, (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, null)
+                    .Values.Where(s => s.InTown).Select(s => new Vector2((float)s.X, (float)s.Z)).Distinct().ToList();
             if (kitsOn)
             {
                 // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city
@@ -189,7 +203,8 @@ namespace Statecraft.Game.Map
                 // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
-                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, RouteCorridors);
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats,
+                    RouteCorridors.Concat(UnitClearings.Select(c => (new List<Vector2> { c, c + Vector2.right }, clearingRadius))).ToList());
                 kits.transform.SetParent(transform, true);
                 KitStats = stats;
                 DiagLog.BootPhase("kits built");

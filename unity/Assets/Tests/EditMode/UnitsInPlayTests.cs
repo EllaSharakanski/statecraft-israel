@@ -245,6 +245,9 @@ public class UnitsInPlayTests
         EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var map = new GameObject("MapScene").AddComponent<MapScene>();
         map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
+        // The towns' footprints as the game sizes them (its kits read the 1945 populations), whatever an earlier test left.
+        Statecraft.Game.Map.Kits.KitPopulation.Use(Statecraft.Game.Map.Kits.KitPopulation.Parse(
+            File.ReadAllText(Path.Combine(Paths.Content, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName))));
         map.Build();
         return map;
     }
@@ -275,18 +278,26 @@ public class UnitsInPlayTests
                 var w = map.Frame.ToWorld(a.Lon, a.Lat, 0);
                 var c = new Vector2((float)s.X, (float)s.Z);
                 float km = (c - new Vector2(w.x, w.z)).magnitude / 1000f;
-                log.Add($"{at} -> ({s.Q},{s.R}){(s.Compact ? " compact" : "")} {km:0.0} km");
+                log.Add($"{at} -> {s} {km:0.0} km");
                 Assert.LessOrEqual(km * 1000f, Mathf.Sqrt(3f) * hex + 1f, $"{at}: more than one hex step from its anchor");
                 Assert.AreEqual(u.Service != UnitData.Navy, hexAt[(s.Q, s.R)].Land, $"{at}: land for the army and the air force, sea for ships");
                 if (u.Service == UnitData.Navy) continue;
-                float disc = UnitShowcase.RingRadius * hex * (s.Compact ? UnitLayer.CompactScale : 1f);
-                foreach (var (fc, fr) in map.SettlementFootprints)
-                    Assert.GreaterOrEqual((fc - c).magnitude, fr * UnitLayer.FootprintMargin + disc, $"{at}: the ring reaches a town's buildings");
-                var points = u.Service == UnitData.Army ? layer.FigurePoints(c, s.Compact) : new[] { c };
+                if (s.InTown)
+                {
+                    Assert.IsTrue(s.Compact, at);
+                    CollectionAssert.Contains(map.UnitClearings, c, $"{at}: a token in a town has the kits' clearing, so it stands in no building");
+                }
+                else
+                {
+                    float disc = UnitShowcase.RingRadius * hex * (s.Compact ? UnitGround.CompactScale : 1f);
+                    foreach (var (fc, fr) in map.SettlementFootprints)
+                        Assert.GreaterOrEqual((fc - c).magnitude, fr * UnitGround.FootprintMargin + disc, $"{at}: the ring reaches a town's buildings");
+                }
+                var points = u.Service == UnitData.Army ? layer.PlacementGround.FigurePoints(c, s.Compact) : new[] { c };
                 foreach (var f in points)
                     foreach (var (line, half) in map.RouteCorridors)
                         for (int i = 0; i + 1 < line.Count; i++)
-                            Assert.GreaterOrEqual(UnitLayer.DistanceToSegment(f, line[i], line[i + 1]), half + UnitLayer.FigureClearanceM, $"{at}: a figure stands on a railway or road");
+                            Assert.GreaterOrEqual(UnitGround.DistanceToSegment(f, line[i], line[i + 1]), half + UnitGround.FigureClearanceM, $"{at}: a figure stands on a railway or road");
             }
             for (int i = 0; i < anchors.Count; i++)
                 for (int j = i + 1; j < anchors.Count; j++)
