@@ -127,7 +127,7 @@ namespace Statecraft.Game.Map.Kits
                 {
                     float a = 2f * Mathf.PI * k / around, d = ring * r * 0.5f;
                     var p = want + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
-                    if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !FreeAt(lots, p, r)) continue;
+                    if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !FreeAt(lots, p, r) || ground.OnRoute(p, r)) continue;
                     lots.Add(new Lot { c = p, r = r, id = owner }); at = p; return true;
                 }
             }
@@ -176,7 +176,7 @@ namespace Statecraft.Game.Map.Kits
                 if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !Mine(p)) continue;
                 float t = rr / R;   // 0 at the heart, 1 at the edge
                 var b = Pick(arch, t, ref rnd, m);
-                if (!Free(p, b.lotR)) continue;
+                if (!Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;   // off the railways and roads too
                 if (ground.Slope(p.x, p.y, b.w) > (arch == Archetype.ArabTown || arch == Archetype.OldTown ? 0.6f : 0.35f)) continue;
                 // Corner and seaward checks: the whole footprint is dry.
                 if (ground.Water(p.x + b.w * 0.5f, p.y) || ground.Water(p.x - b.w * 0.5f, p.y) || ground.Water(p.x, p.y + b.d * 0.5f) || ground.Water(p.x, p.y - b.d * 0.5f)) continue;

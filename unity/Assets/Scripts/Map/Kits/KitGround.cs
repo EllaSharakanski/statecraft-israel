@@ -76,6 +76,65 @@ namespace Statecraft.Game.Map.Kits
             return false;
         }
 
+        // Route corridors (the railways' and roads' ribbons, RouteLayer.Corridors): segments with their clear half-width, in
+        // a 2 km grid so a placement test scans only the segments near it.
+        const float CorridorCellM = 2000f;
+        readonly List<(Vector2 a, Vector2 b, float half)> corridorSegments = new List<(Vector2, Vector2, float)>();
+        readonly Dictionary<(int, int), List<int>> corridorCells = new Dictionary<(int, int), List<int>>();
+        float corridorMaxHalf;
+
+        /// <summary>Route segments registered with <see cref="AddCorridor"/>.</summary>
+        public int CorridorSegments => corridorSegments.Count;
+
+        /// <summary>Keeps buildings and trees off a route: no lot or crown may come within <paramref name="halfWidth"/> of
+        /// the polyline <paramref name="line"/> (world x, z). Call before SettlementKits.Build and Vegetation.Plant.</summary>
+        public void AddCorridor(IReadOnlyList<Vector2> line, float halfWidth)
+        {
+            for (int i = 0; i + 1 < line.Count; i++)
+            {
+                var a = line[i]; var b = line[i + 1];
+                int index = corridorSegments.Count;
+                corridorSegments.Add((a, b, halfWidth));
+                corridorMaxHalf = Mathf.Max(corridorMaxHalf, halfWidth);
+                int x0 = Mathf.FloorToInt((Mathf.Min(a.x, b.x) - halfWidth) / CorridorCellM), x1 = Mathf.FloorToInt((Mathf.Max(a.x, b.x) + halfWidth) / CorridorCellM);
+                int z0 = Mathf.FloorToInt((Mathf.Min(a.y, b.y) - halfWidth) / CorridorCellM), z1 = Mathf.FloorToInt((Mathf.Max(a.y, b.y) + halfWidth) / CorridorCellM);
+                for (int cz = z0; cz <= z1; cz++)
+                    for (int cx = x0; cx <= x1; cx++)
+                    {
+                        if (!corridorCells.TryGetValue((cx, cz), out var list)) corridorCells[(cx, cz)] = list = new List<int>();
+                        list.Add(index);
+                    }
+            }
+        }
+
+        /// <summary>True when a disc of radius <paramref name="r"/> at <paramref name="p"/> reaches into any route corridor.</summary>
+        public bool OnRoute(Vector2 p, float r)
+        {
+            if (corridorSegments.Count == 0) return false;
+            float reach = r + corridorMaxHalf;
+            int x0 = Mathf.FloorToInt((p.x - reach) / CorridorCellM), x1 = Mathf.FloorToInt((p.x + reach) / CorridorCellM);
+            int z0 = Mathf.FloorToInt((p.y - reach) / CorridorCellM), z1 = Mathf.FloorToInt((p.y + reach) / CorridorCellM);
+            for (int cz = z0; cz <= z1; cz++)
+                for (int cx = x0; cx <= x1; cx++)
+                {
+                    if (!corridorCells.TryGetValue((cx, cz), out var list)) continue;
+                    foreach (var i in list)
+                    {
+                        var (a, b, half) = corridorSegments[i];
+                        if (SegmentDistance(p, a, b) < half + r) return true;
+                    }
+                }
+            return false;
+        }
+
+        /// <summary>Distance from <paramref name="p"/> to the segment a-b.</summary>
+        public static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)
+        {
+            var ab = b - a; float len2 = ab.sqrMagnitude;
+            float t = len2 > 0f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / len2) : 0f;
+            return (p - (a + ab * t)).magnitude;
+        }
+
         public bool InTown(float x, float z, float share = 1f)
         {
             foreach (var f in Footprints)

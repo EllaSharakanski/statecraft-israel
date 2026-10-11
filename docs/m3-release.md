@@ -165,16 +165,51 @@ Published at: (owner fills in)
   - IndexedDB is per origin, so saves survive re-uploads to the same project and stay separate per browser profile.
   - The local checks above passed: reload, tab close, browser restart, and a second directory on the same origin.
 - **Test plan (OWNER STEP, deferred to M4 with the upload; after the first two uploads):**
-  1. Upload A as above. Play two turns (press End Turn twice) and note the date and turn in the top bar.
-  2. Reload the page. Expected: the game continues on that date. The console line `GAME OK <date> turn <n> hash ...` matches the last `TURN` line.
-  3. Upload build B to the same project, replacing A. Rebuild first if anything changed.
-  4. Open the page again with a hard reload. Expected: the game continues on the same date and turn.
-     - If the content changed between A and B, a message reads "This save was made with different game content; the replayed game may differ."
-     - **Pass** if the date and turn match.
-  5. If the game starts again on 15 May 1948, the fixed folder did not persist across uploads. Record the browser and the page URL here, and use the deferred fallback (a localStorage bridge, or save export and import).
-  6. Record the result here: date, browser, pass or fail.
+  1. Use one browser profile throughout, without clearing site data or using private mode. Record browser/version, OS,
+     project page URL and the actual game-frame URL/origin (not only the outer itch.io page). Upload A as above. Play two
+     turns and copy the last `TURN` line, including date, turn and full state hash. Record the upload/build ID, the git
+     commit the build was made from and the zip's SHA-256. The game does not print its content hash; an identical zip
+     guarantees identical content.
+  2. Reload A. Expected: `GAME OK` gives the same date, turn and state hash as that last `TURN` line. Wait for the game to
+     finish loading before reading it. Do not press New Game or End Turn after taking the baseline.
+  3. Upload B to the same project, replacing A, with unchanged game content and save schema for this persistence control.
+     Re-uploading the same build is enough to isolate the changed upload URL. Record both upload/build IDs. Confirm B has
+     a different upload URL but the same actual game-frame origin. If its origin differs, record that separately: this
+     fixed-folder test cannot prove persistence between origins, because IndexedDB is origin-scoped.
+  4. Open B with a hard reload. **Pass** only if date, turn and full state hash match the baseline. Copy the complete
+     `GAME OK` line, the old `TURN` line and any load warning/error. A date/turn match alone is not a pass. Reload B once
+     more and check the same tuple, so a one-time replay is not mistaken for a durable save.
+  5. If B starts again on 15 May 1948, or the state hash differs with unchanged content, record fail with both build IDs,
+     browser/OS and frame origins. Do not reset or overwrite the save before capturing the evidence. Follow #43's fallback:
+     if the save does not survive re-upload, save export/import becomes the next issue. No unrelated account uploads.
+  6. Record the result below. This plan is not a completed itch.io test or a Firefox/Safari/Windows runtime check.
 
-Result: (owner fills in)
+**Separate changed-content replay check:** after the unchanged-content control, a build with intentional content changes
+may show "This save was made with different game content; the replayed game may differ." Record that warning and both
+builds' git commits. Matching date/turn in this case is not evidence of exact state preservation, and it does not
+replace the unchanged-content persistence control above. A changed state hash may be a replay effect rather than a storage failure.
+
+Result: not run on itch.io (owner step).
+
+| Evidence | Owner-run result |
+| --- | --- |
+| Browser/version | pending |
+| OS | pending |
+| Project page URL | pending |
+| Upload A/build ID and game-frame URL | pending |
+| Upload B/build ID and game-frame URL | pending |
+| Game-frame origin A / B | pending |
+| Git commit and zip SHA-256 A / B | pending |
+| Date / turn before and after | pending |
+| State hash before | pending |
+| State hash after | pending |
+| Full TURN / GAME OK lines and warnings | pending |
+| Reload B result | pending |
+| Pass / fail and fallback issue if needed | pending |
+
+Review basis: `unity/Assets/Scripts/SaveStore.cs` fixes the WebGL directory; `sim/Statecraft.Sim/SaveGame.cs` records the
+content hash and command log; `unity/Assets/Scripts/UI/GameRoot.cs` logs the current state hash; `SaveUiTests.cs` covers
+changed page-directory paths and changed-content warnings. Those code/tests support the plan, not an itch.io runtime pass.
 
 ## Known limits of this build
 - Placeholder settlement markers; per-era art is M4.
