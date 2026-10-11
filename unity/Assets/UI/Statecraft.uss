@@ -93,7 +93,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     border-right-width: 1px; border-color: rgba(196, 160, 92, 0.25);
 }
 /* The icon gives way first in a narrow window (down to 26px), so the caption keeps its line. */
-.meter-icon { width: 32px; height: 32px; flex-shrink: 1; min-width: 24px; margin-right: 6px; }
+.meter-icon { width: 30px; height: 30px; flex-shrink: 1; min-width: 24px; margin-right: 5px; }
 .meter-body { flex-shrink: 1; flex-grow: 1; min-width: 0; }
 .meter-name { font-size: 16px; color: var(--ink); white-space: normal; max-width: 120px; }   /* a long caption wraps rather than widen its meter */
 #security-level { font-size: 14px; color: var(--ink-dim); }
@@ -103,12 +103,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* The screen buttons: a round, gold-rimmed icon with its name under it (the name keeps them legible without tooltips). */
 .nav { flex-direction: row; flex-shrink: 0; align-items: center; }
 .nav-button {
-    width: 64px; height: 86px; margin: 0 1px; padding: 56px 0 0 0;
+    width: 60px; height: 86px; margin: 0 1px; padding: 56px 0 0 0;
     background-color: rgba(0, 0, 0, 0); border-width: 0;
     font-size: 14px; color: var(--ink-dim); -unity-text-align: upper-center; white-space: nowrap;
 }
 .nav-disc {
-    position: absolute; top: 2px; left: 7px; width: 50px; height: 50px; padding: 11px;
+    position: absolute; top: 2px; left: 5px; width: 50px; height: 50px; padding: 11px;
     border-radius: 25px; border-width: 1.5px; border-color: var(--gold-dim); background-color: var(--navy-deep);
 }
 .nav-button:hover { background-color: rgba(0, 0, 0, 0); color: var(--ink); }
