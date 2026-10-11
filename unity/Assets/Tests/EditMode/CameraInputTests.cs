@@ -278,6 +278,33 @@ public class CameraInputTests
         finally { Object.DestroyImmediate(rig.gameObject); }
     }
 
+    /// <summary>Review B-I1: with the ground's top given, the near side of the view is bounded by the corner rays' hits on
+    /// that plane, not by the point below the camera: at 60 km, pushed to the south edge, the camera may stand behind the
+    /// edge, and the strip kept off screen is a few km (it was 19-20 km). With the camera below the top plane (the hero
+    /// zoom over high ground) the point below the camera is the bound.</summary>
+    [Test]
+    public void TheNearSideIsBoundedByTheGroundsTopNotTheCamera()
+    {
+        var rig = NewRig();
+        try
+        {
+            var cam = rig.GetComponent<Camera>(); cam.aspect = 16f / 9f; cam.fieldOfView = CameraRig.Fov;
+            const float top = 8400f;   // about the real terrain's highest point (2367 m + 427 m, at 3x)
+            float back = Mathf.Cos(CameraRig.Pitch * Mathf.Deg2Rad);   // the camera is this many distances behind the look-at point
+            rig.LookAt = new Vector3(RealMap.center.x, 0, RealMap.center.y); rig.Distance = 60000f; rig.Yaw = 0; rig.TopInset = 0;
+            for (int i = 0; i < 60; i++) CameraController.Step(rig, new CameraInput { Pan = Vector2.down }, 0.5f, RealMap, _ => 0f, top);
+            var f = CameraController.ViewFootprint(rig, top);
+            Assert.AreEqual(RealMap.yMin, rig.LookAt.z + f.yMin, 1f, "the view's near side at the south edge");
+            Assert.Less(rig.LookAt.z, back * rig.Distance - 10000f, "the camera stands behind the edge: the edge rows stay reachable");
+            var flat = CameraController.ViewFootprint(rig);
+            Assert.Less(flat.yMin - f.yMin, 5000f, "the high-ground margin at 60 km is a few km");
+            Assert.Greater(flat.yMin - f.yMin, 1000f, "and it is there");
+            rig.Distance = CameraController.MinDistance; rig.ApplyProjection();   // camera 4.6 km up, below the 8.4 km plane
+            Assert.AreEqual(-back * rig.Distance, CameraController.ViewFootprint(rig, top).yMin, 1f, "the point below the camera bounds it");
+        }
+        finally { Object.DestroyImmediate(rig.gameObject); }
+    }
+
     /// <summary>A rig without a camera keeps the old rule: the look-at point itself stays on the map.</summary>
     [Test]
     public void ARigWithoutACameraClampsTheLookAtPoint()

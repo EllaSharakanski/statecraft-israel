@@ -47,6 +47,9 @@ namespace Statecraft.Game.Map
         public Rect Bounds = new Rect(0, 0, float.MaxValue, float.MaxValue);
         /// <summary>The ground's world height at a point (x, z), or null for none (the camera then keeps to y = 0).</summary>
         public Func<Vector2, float>? Ground;
+        /// <summary>The highest the ground (and the border skirt, which holds the edge's height) reaches in world y: with it,
+        /// ViewFootprint bounds the near side of the view tightly. ShadowFit.GroundY (the default) means flat ground.</summary>
+        public float GroundTop = ShadowFit.GroundY;
 
         CameraRig rig = null!;
         InputAction? pan, dragPan, zoom, orbit;
@@ -72,8 +75,12 @@ namespace Statecraft.Game.Map
             Vector2? pointer = Pointer.current != null ? Pointer.current.position.ReadValue() : (Vector2?)null;
             var down = Mouse.current != null && Mouse.current.rightButton.isPressed;
             Step(rig, Gather(pan.ReadValue<Vector2>(), dragPan.ReadValue<Vector2>(), zoom.ReadValue<float>(),
-                orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds, Ground);
+                orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds, Ground, GroundTop);
         }
+
+        /// <summary>Fits the rig's current pose with no input (review B-m3: a minimap jump goes through the same view fit and
+        /// ground clearance as panning, so no frame shows the skirt or the inside of a hill).</summary>
+        public void Settle() => Step(GetComponent<CameraRig>(), default, 0f, Bounds, Ground, GroundTop);
 
         public static float ClampDt(float dt) => Mathf.Min(dt, MaxFrameSeconds);
 
@@ -96,8 +103,9 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>Applies one frame of input to the rig and calls rig.Apply(). Pure apart from the rig (and the ground's
-        /// height, when given), so it is testable.</summary>
-        public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds, Func<Vector2, float>? ground = null)
+        /// height, when given), so it is testable. <paramref name="groundTop"/>: see GroundTop.</summary>
+        public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds, Func<Vector2, float>? ground = null,
+            float groundTop = ShadowFit.GroundY)
         {
             var zoom = input.OverUi ? 0f : input.Zoom;
             var drag = input.DragFromUi ? Vector2.zero : input.DragPan;
@@ -113,12 +121,14 @@ namespace Statecraft.Game.Map
             // look-at point depends on the distance, yaw, aspect and top inset, not on where the point is, so it is measured
             // once at this frame's pose and the point is held where the whole footprint stays on the map.
             // With the ground given, the look-at point's height is the lift (Lift) over y = 0, measured afresh each frame; the
-            // footprint is measured at the lifted pose (a higher camera sees farther on y = 0), so the fit runs twice.
+            // footprint is measured at the lifted pose (a higher camera sees farther on y = 0), so the fit runs twice. Both
+            // passes are pose maths on the projection alone; the transform, tilt-shift and shadow fit are applied once.
             float y = ground == null ? p.y : 0f;
+            rig.ApplyProjection();
             for (int pass = 0; pass < (ground == null ? 1 : 2); pass++)
             {
-                rig.LookAt = new Vector3(p.x, y, p.z); rig.Apply();
-                var view = ViewFootprint(rig);
+                rig.LookAt = new Vector3(p.x, y, p.z);
+                var view = ViewFootprint(rig, groundTop);
                 var fitted = new Vector3(Fit(p.x, bounds.xMin, bounds.xMax, view.xMin, view.xMax), 0f,
                     Fit(p.z, bounds.yMin, bounds.yMax, view.yMin, view.yMax));
                 if (ground != null) y = Lift(rig, fitted, ground);
@@ -149,35 +159,45 @@ namespace Statecraft.Game.Map
         /// <summary>Corners of the visible map area in viewport units: the top inset's band is covered by the UI.</summary>
         static readonly Vector2[] FootprintCorners = { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
 
-        /// <summary>The ground the rig's camera shows, as offsets (x, z) from the look-at point: the bounding box of the point
-        /// below the camera and the four corner rays of the visible area (below the top inset) cut with the plane
-        /// y = ShadowFit.GroundY, the terrain's lowest point. Every ray meets the real ground between the camera and its
-        /// plane hit, so seen from above every visible point lies between the point below the camera and the quad of plane
-        /// hits (the frustum meets a plane in a convex quad, so its corners bound it): the box holds everything the view can
-        /// show. The camera's own point matters on the near side: over high ground just behind the south edge the near
-        /// rays meet the skirt long before the plane, and the whole view was skirt. A rig without a camera shows a point (Rect.zero); a
-        /// corner that does not look down gives an infinite box. Worked from the rig's pose relative to the look-at point and
-        /// the camera's projection (aspect, FOV, the inset's shift), not Camera.ViewportPointToRay: that unprojects through
-        /// the 1000 km far plane in world coordinates, and its rays strayed by up to kilometres (measured: 0.25-4 km).</summary>
-        public static Rect ViewFootprint(CameraRig rig)
+        /// <summary>The terrain's highest world y (TerrainData.bounds holds the heightmap's actual range); the border skirt
+        /// never rises above its edge, so this bounds it too.</summary>
+        public static float GroundTopOf(Terrain terrain) => terrain.transform.position.y + terrain.terrainData.bounds.max.y;
+
+        /// <summary>The ground the rig's camera shows, as offsets (x, z) from the look-at point. Every ground point the view
+        /// shows lies between y = ShadowFit.GroundY (the terrain's lowest point) and y = <paramref name="groundTop"/> (its
+        /// highest), so each corner ray of the visible area (below the top inset) meets it on the segment between its hits on
+        /// those two planes (from the camera itself where the camera is below the top plane); seen from above, everything
+        /// visible lies in the bounding box of those eight points (the frustum meets each plane in a convex quad). Bounding
+        /// only by the y = 0 hits missed high ground on the near side (just behind the south edge the whole 6 km view was
+        /// skirt); bounding by the point below the camera instead hid the map's southern 19-20 km at 60 km (review B-I1).
+        /// A rig without a camera shows a point (Rect.zero); a corner that does not look down gives an infinite box. Worked
+        /// from the rig's pose relative to the look-at point and the camera's projection matrix (aspect, FOV, the inset's
+        /// shift; set by ApplyProjection), not Camera.ViewportPointToRay: that unprojects through the 1000 km far plane in
+        /// world coordinates, and its rays strayed by up to kilometres (measured: 0.25-4 km).</summary>
+        public static Rect ViewFootprint(CameraRig rig, float groundTop = ShadowFit.GroundY)
         {
             var cam = rig.GetComponent<Camera>();
             if (cam == null) return Rect.zero;
             var rot = Quaternion.Euler(CameraRig.Pitch, rig.Yaw, 0);
             var eye = -(rot * Vector3.forward) * rig.Distance;          // the camera, relative to the look-at point
-            float height = rig.LookAt.y + eye.y - ShadowFit.GroundY;
+            float camY = rig.LookAt.y + eye.y;
             // NDC x = m00 x / -z - m02, NDC y = m11 y / -z - m12 (CameraRig.ApplyProjection): one unit ahead, the ray through (x, y).
             var m = cam.projectionMatrix;
             float top = 1f - Mathf.Clamp(rig.TopInset, 0f, CameraRig.MaxTopInset);
-            float x0 = eye.x, x1 = eye.x, z0 = eye.z, z1 = eye.z;
+            float x0 = float.PositiveInfinity, x1 = float.NegativeInfinity, z0 = float.PositiveInfinity, z1 = float.NegativeInfinity;
             foreach (var c in FootprintCorners)
             {
                 float nx = 2f * c.x - 1f, ny = 2f * c.y * top - 1f;
                 var dir = rot * new Vector3((nx + m[0, 2]) / m[0, 0], (ny + m[1, 2]) / m[1, 1], 1f);
                 if (dir.y > -1e-4f)
                     return Rect.MinMaxRect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
-                var hit = eye + dir * (-height / dir.y);
-                x0 = Mathf.Min(x0, hit.x); x1 = Mathf.Max(x1, hit.x); z0 = Mathf.Min(z0, hit.z); z1 = Mathf.Max(z1, hit.z);
+                Add(ShadowFit.GroundY); Add(Mathf.Max(groundTop, ShadowFit.GroundY));
+
+                void Add(float planeY)
+                {
+                    var hit = eye + dir * Mathf.Max(0f, (planeY - camY) / dir.y);
+                    x0 = Mathf.Min(x0, hit.x); x1 = Mathf.Max(x1, hit.x); z0 = Mathf.Min(z0, hit.z); z1 = Mathf.Max(z1, hit.z);
+                }
             }
             return Rect.MinMaxRect(x0, z0, x1, z1);
         }

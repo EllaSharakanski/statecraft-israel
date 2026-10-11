@@ -18,7 +18,8 @@ public class MapEdgeTests
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
     [TearDown] public void DiscardScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-    /// <summary>The camera bounds as GameRoot sets them: the terrain's footprint (and CameraController.GroundOf its ground).</summary>
+    /// <summary>The camera bounds as GameRoot sets them: the terrain's footprint (and CameraController.GroundOf and
+    /// GroundTopOf its ground).</summary>
     static Rect Bounds(MapScene map)
     {
         var t = map.Terrain; var size = t.terrainData.size;
@@ -37,7 +38,7 @@ public class MapEdgeTests
         map.Build();
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var skirt = map.Terrain.transform.Find(MapScene.BorderSkirtName).GetComponent<MeshRenderer>();
-        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain);
+        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain); var top = CameraController.GroundTopOf(map.Terrain);
         var rt = new RenderTexture(W, H, 24);
         Directory.CreateDirectory(ShotDir);
         RenderSample.TiltShift(false);   // a colour test: the blur spreads pixels across the frame
@@ -53,7 +54,7 @@ public class MapEdgeTests
             })
             {
                 rig.LookAt = new Vector3(corner.x, 0, corner.y); rig.Distance = CameraController.MinDistance; rig.Yaw = 0; rig.TopInset = 0;
-                for (int i = 0; i < 20; i++) CameraController.Step(rig, new CameraInput { Pan = push }, CameraController.MaxFrameSeconds, bounds, ground);
+                for (int i = 0; i < 20; i++) CameraController.Step(rig, new CameraInput { Pan = push }, CameraController.MaxFrameSeconds, bounds, ground, top);
                 var with = RenderSample.Render(cam, W, H);
                 skirt.enabled = false;
                 var without = RenderSample.Render(cam, W, H);
@@ -104,7 +105,7 @@ public class MapEdgeTests
 
     /// <summary>The promo and close-check poses already frame only the map where the view fits it, so the clamp leaves
     /// them where they are (the shots in the WebGL player run through Step every frame); diorama02, wider than the map,
-    /// is centred on it east to west, a few hundred metres from its pose.</summary>
+    /// is centred on it east to west, at most a few hundred metres from its pose (accepted: controller ruling, owner-delegated).</summary>
     [Test]
     public void ThePromoPosesStayPut()
     {
@@ -119,7 +120,7 @@ public class MapEdgeTests
             {
                 pose.Apply(rig, map.Frame); rig.TopInset = 0;
                 var before = rig.LookAt;
-                CameraController.Step(rig, new CameraInput(), 0f, Bounds(map), CameraController.GroundOf(map.Terrain));
+                CameraController.Step(rig, new CameraInput(), 0f, Bounds(map), CameraController.GroundOf(map.Terrain), CameraController.GroundTopOf(map.Terrain));
                 float moved = (rig.LookAt - before).magnitude;
                 TestContext.WriteLine($"{pose.Name}: moved {moved:0} m");
                 Assert.Less(moved, pose.Distance > 100000f ? 1000f : 1f, pose.Name);
@@ -138,7 +139,7 @@ public class MapEdgeTests
         map.Build();
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         cam.aspect = 16f / 9f;
-        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain);
+        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain); var top = CameraController.GroundTopOf(map.Terrain);
         try
         {
             int lifted = 0, n = 0; float least = float.MaxValue;
@@ -148,8 +149,9 @@ public class MapEdgeTests
                     {
                         rig.LookAt = new Vector3(bounds.xMin + bounds.width * i / 40f, 0, bounds.yMin + bounds.height * j / 40f);
                         rig.Distance = CameraController.MinDistance; rig.Yaw = yaw; rig.TopInset = 0;
-                        CameraController.Step(rig, new CameraInput(), 0f, bounds, ground);
+                        CameraController.Step(rig, new CameraInput(), 0f, bounds, ground, top);
                         var c = rig.transform.position;
+                        Assert.LessOrEqual(ground(new Vector2(rig.LookAt.x, rig.LookAt.z)), top + 1f, "GroundTopOf bounds the ground");
                         float height = rig.Distance * Mathf.Sin(CameraRig.Pitch * Mathf.Deg2Rad);
                         float share = (c.y - ground(new Vector2(c.x, c.z))) / height;
                         least = Mathf.Min(least, share); n++;
@@ -158,6 +160,36 @@ public class MapEdgeTests
             TestContext.WriteLine($"{n} poses, {lifted} lifted, least clearance {least:0.000} of the camera's height");
             Assert.GreaterOrEqual(least, CameraController.MinClearanceShare - 1e-3f);
             Assert.Greater(lifted, 0, "the rule took effect somewhere (the Golan, the Galilee, the Jordanian plateau)");
+        }
+        finally { cam.ResetAspect(); }
+    }
+
+    /// <summary>Review B-I1: the clamp must not hide the map's own edge rows at gameplay zoom. Bounding the near side by the
+    /// point below the camera kept the southern 19-20 km (Umm Rashrash/Eilat, the last four hex rows) off screen at 60 km;
+    /// panning to the edge must bring Eilat on screen looking north, and Metula looking south.</summary>
+    [TestCase("Eilat", 34.95, 29.55, 0f)]
+    [TestCase("Metula", 35.578, 33.28, 180f)]
+    public void PanningToAnEdgeBringsItsTownsOnScreen(string town, double lon, double lat, float yaw)
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        cam.aspect = 16f / 9f;
+        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain); var top = CameraController.GroundTopOf(map.Terrain);
+        try
+        {
+            var at = map.Frame.ToWorld(lon, lat, 0); at.y = ground(new Vector2(at.x, at.z));
+            foreach (var inset in new[] { 0f, 0.09f })
+            {
+                rig.LookAt = new Vector3(at.x, 0, bounds.center.y); rig.Distance = PromoPose.Gameplay03.Distance; rig.Yaw = yaw; rig.TopInset = inset;
+                for (int i = 0; i < 100; i++) CameraController.Step(rig, new CameraInput { Pan = Vector2.down }, CameraController.MaxFrameSeconds, bounds, ground, top);
+                var v = cam.WorldToViewportPoint(at);
+                TestContext.WriteLine($"{town}, yaw {yaw}, inset {inset}: look-at {map.Frame.ToLonLat(rig.LookAt)}, viewport {v}");
+                Assert.Greater(v.z, 0f, town);
+                Assert.That(v.x, Is.InRange(0f, 1f), $"{town} across the view (inset {inset})");
+                Assert.That(v.y, Is.InRange(0f, 1f - inset), $"{town} on screen below the bar (inset {inset})");
+            }
         }
         finally { cam.ResetAspect(); }
     }
