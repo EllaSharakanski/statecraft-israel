@@ -13,9 +13,10 @@ and no process (an interactive editor included) holding any worktree's unity/Tem
 user. Exit code: the command's, or 3 when --wait-unity times out.
 
 Unity processes are recognised by their executable (`ps -o comm=`), never by argument text, so queued wrappers that
-name Unity in their command line do not count (review C1). macOS flock does not queue fairly: new shared holders may
-enter while an exclusive request waits, so an exclusive profile can wait behind a stream of shared jobs; the controller
-dispatches one profiling step at a time (review M9)."""
+name Unity in their command line do not count (review C1). macOS flock does not queue fairly, so every request first
+passes a gate (the same path plus ".gate"): it takes the gate exclusively, then the machine lock, then releases the gate.
+A waiting exclusive request holds the gate until it has the lock, so no new shared holder gets in ahead of it and the
+running ones drain (issue #207; before, a stream of shared jobs starved a profile, review M9)."""
 import argparse
 import fcntl
 import os
@@ -25,6 +26,7 @@ import time
 from pathlib import Path
 
 LOCK = Path(os.environ.get("STATECRAFT_MACHINE_LOCK", str(Path.home() / ".cache" / "statecraft" / "machine.lock")))
+GATE = LOCK.with_name(LOCK.name + ".gate")
 UNITY_EXE = "/Unity.app/Contents/MacOS/Unity"
 
 
@@ -102,9 +104,11 @@ def wait_for_unity(timeout: float, pids=unity_pids, sleep=time.sleep, now=time.m
 def main(argv: list[str] | None = None) -> int:
     a = parse(sys.argv[1:] if argv is None else argv)
     LOCK.parent.mkdir(parents=True, exist_ok=True)
-    with open(LOCK, "a+") as f:
+    with open(GATE, "a+") as gate, open(LOCK, "a+") as f:
         print(f"machine_lock: taking the machine lock ({'exclusive' if a.exclusive else 'shared'})", flush=True)
+        fcntl.flock(gate, fcntl.LOCK_EX)
         fcntl.flock(f, fcntl.LOCK_EX if a.exclusive else fcntl.LOCK_SH)
+        fcntl.flock(gate, fcntl.LOCK_UN)
         if a.wait_unity and not wait_for_unity(a.timeout):
             print("machine_lock: timed out waiting for Unity")
             return 3
