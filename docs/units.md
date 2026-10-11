@@ -136,15 +136,17 @@ After the staff review the controller ruled:
   victory". That is wrong: the first victories were on 3 June 1948, by Modi Alon in an S-199. The file records this.
 
 **Placement** (`UnitPlacer.PlaceAll`). Every anchor is placed once, from the data alone, so a token never moves because
-another unit appears. Its spot is the nearest to the sourced place, at most one hex step away (about 8.7 km between hex
-centres on 5 km hexes). The candidates are tried in two rounds:
+another unit appears. Its spot is at most one hex step from the sourced place (about 8.7 km between hex centres on 5 km
+hexes). It is the nearest such spot to the place, or to the anchor's sourced `toward` point when it has one (see below).
+The candidates are tried in three rounds:
 1. The centres of the anchor's own hex and its six neighbours, with the token at full size.
 2. If none is clear, those centres plus six points inside each hex, with the token **compact**: half the ring and half
    the trio's spread, to fit beside a town. Yiftach at Lydda and the squadron at Herzliya stand compact.
-3. If the whole neighbourhood is town, the compact point that reaches least deep into it (then the nearest). The map
-   then keeps a clearing of the compact ring's radius free of the kits' buildings and trees there (`MapScene.UnitClearings`,
-   computed before the kits from the same data). So the token stands at the town's edge and never in a building. Kiryati
-   (Tel Aviv) and Etzioni (Jerusalem) stand this way.
+3. If the whole neighbourhood is town, the compact point that reaches least deep into it (then the nearest; with a
+   `toward` point, the nearest to that). The map then keeps a clearing of the compact ring's radius free of the kits'
+   buildings and trees there (`MapScene.UnitClearings`, computed before the kits from the same data), so the token never
+   stands in a building. The clearing may cut only into the anchor's own town, never a neighbour's. Kiryati (Tel Aviv)
+   and Etzioni (West Jerusalem) stand this way.
 
 A spot is clear when:
 - the ring's disc stays off every settlement footprint (the kits' discs, times 1.1);
@@ -153,8 +155,16 @@ A spot is clear when:
 - a ship has a sea hex;
 - no other anchor whose window overlaps holds the hex.
 
-The map holds no 1948 front line yet, so the one-hex limit is what keeps a token on its own side. Once dated front data
-lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
+**Own side.** The map holds no 1948 front line yet, and the one-hex limit alone does not keep a token on its own side:
+the nearest clear spot can be the other side's ground. So an anchor where that happens has a sourced `toward` point on
+its own side, and the placer takes the spot nearest to it:
+- Etzioni goes toward West Jerusalem, not to the Hizma and Anata side, which Jordan held.
+- The 7th Brigade at Latrun goes toward Hulda, its headquarters for the attacks. It no longer stands on the Yalu and
+  Bayt Nuba ridge, which the Arab Legion held.
+- Harel goes toward Kiryat Anavim, from which its 4th Battalion fought for the road. It no longer stands by Sar'a and
+  Artuf.
+
+The test pins all three spots. Once dated front data lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
 checks every anchor and logs each spot and its distance.
 
 **Look.**
@@ -211,7 +221,10 @@ headless `?vprofile` on the WebGL build of 943184c, 1920x1080 at DPR 1, 2026-10-
 **Left open.**
 - The rows are drafts from Wikipedia (and Eduard and Commons) until a historian checks them against Lorch or the
   archives.
-- No dated front line: tokens keep within one hex of their sourced place instead (I2).
+- No dated front line: tokens keep within one hex of their sourced place, and three anchors carry a sourced `toward`
+  point to stay on their own side (review MF1).
+- **Kit baseline break:** from 943184c the kits keep the unit clearings in Tel Aviv and West Jerusalem, in plain
+  checkpoints too. So kit metrics before and after that commit are not comparable; this is marked in the art log.
 - Merges still to come (review I7). With promo-borderdata, the info panel's region label must be cleared when a unit
   card shows. With promo-screens, the wide-screen click guard must cover `ShowUnit` and `UnitLayer.Select` as well as
   `Show`, and the info panel must keep its `info-defence` button. Both branches add optional `InfoPanelPresenter`

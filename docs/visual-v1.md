@@ -38,6 +38,8 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
   Normal play draws the units in play, but a `?shot` run switches them off unless `&units` is given
   (`UnitLayer.HiddenInCaptures`), and the editor draws them only with `-units`. So plain checkpoints never show units, and
   the `--units` rows are named `<name>-units`, so they are never compared with plain ones.
+  The kits do change for the units, though: from units-in-play's 943184c they keep a clearing where a unit stands in a town
+  (Tel Aviv, West Jerusalem; `MapScene.UnitClearings`). That is a kit baseline break in the art log.
 
 ## Budgets (proposed; ratified in Task 10: see "Tier decisions")
 Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DPR 1, Chrome for Testing:
