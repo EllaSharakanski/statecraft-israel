@@ -32,18 +32,20 @@ namespace Statecraft.Game.Map.Units
     }
 
     /// <summary>Puts every anchor of the unit data on one spot, once, from the data alone (review M9: a token never moves
-    /// because another unit appears). The spot is the nearest to the anchor point (review I2: within one hex step, about
-    /// 8.7 km between hex centres on 5 km hexes) among:
+    /// because another unit appears). The spot lies within one hex step of the anchor point (review I2: about 8.7 km
+    /// between hex centres on 5 km hexes) and is the nearest to it, or, when the anchor has a sourced `toward` point on
+    /// the unit's own side (review MF1), the nearest to that, among:
     /// 1. the centres of the anchor's own hex and its six neighbours, drawn full size;
     /// 2. then, when none is clear, those centres and six points inside each hex (at <see cref="InsideOffset"/> of the hex
     ///    circumradius), drawn compact;
     /// 3. then, when the anchor's whole neighbourhood is town (Tel Aviv), the same compact points with the ring allowed
-    ///    into the town: the one that reaches least deep into it (then the nearest) is taken, and the kits keep a clearing
-    ///    for it (MapScene), so the token never stands in a building.
+    ///    into the town: the one that reaches least deep into it (then the nearest; with a `toward` point, simply the nearest
+    ///    to it) is taken, and the kits keep a clearing for it (MapScene), so the token never stands in a building.
     /// A spot must be land (sea for a ship), on a hex no other anchor with an overlapping window holds, and clear (the
     /// caller's test: the ring off the settlement footprints except in round 3, the figures on land and off the railways
-    /// and roads). An anchor with no such spot is left out and reported. The map holds no 1948 front line yet, so the one-hex limit is
-    /// what keeps a token on its own side (docs/units.md). Anchors are placed in the data's order.</summary>
+    /// and roads). An anchor with no such spot is left out and reported. The map holds no 1948 front line yet: where the
+    /// nearest spot would be the other side's ground, the anchor's sourced `toward` point keeps the token on its own side
+    /// (docs/units.md). Anchors are placed in the data's order.</summary>
     public static class UnitPlacer
     {
         /// <summary>Hexes from the anchor's own hex (axial distance).</summary>
@@ -52,10 +54,11 @@ namespace Statecraft.Game.Map.Units
         public const double InsideOffset = 0.45;
 
         /// <param name="toXZ">lon, lat to the map's ground plane (metres).</param>
-        /// <param name="clear">(service, x, z, compact, inTown): true when a token of that service may stand there.</param>
+        /// <param name="clear">(service, x, z, compact, inTown, anchor x, anchor z): true when a token of that service may
+        /// stand there.</param>
         /// <param name="townOverlap">(x, z): how deep (m) a compact token there reaches into a town (round 3's ranking).</param>
         public static Dictionary<UnitAnchor, AnchorSpot> PlaceAll(IReadOnlyList<UnitEntry> units, IReadOnlyList<MapHex> hexes, double hexSizeM,
-            Func<double, double, (double x, double z)> toXZ, Func<string, double, double, bool, bool, bool> clear,
+            Func<double, double, (double x, double z)> toXZ, Func<string, double, double, bool, bool, double, double, bool> clear,
             Func<double, double, double> townOverlap, Action<string>? skipped = null)
         {
             if (units == null) throw new ArgumentNullException(nameof(units));
@@ -72,6 +75,8 @@ namespace Statecraft.Game.Map.Units
                 foreach (var a in u.Anchors)
                 {
                     var p = toXZ(a.Lon, a.Lat);
+                    // A sourced point on the unit's own side, when the anchor has one: spots are ranked by distance to it.
+                    var target = a.Toward != null ? toXZ(a.Toward.Lon, a.Toward.Lat) : p;
                     DateTime from = UnitData.Day(a.From), to = UnitData.Day(a.To);
                     int home = Nearest(centres, p);
                     var (hq, hr) = (hexes[home].Q, hexes[home].R);
@@ -88,15 +93,17 @@ namespace Statecraft.Game.Map.Units
                             for (int k = compact ? 0 : -1; k < (compact ? 7 : 0); k++)
                             {
                                 var (x, z) = k <= 0 ? centres[i] : Inside(centres[i], k - 1, hexSizeM);
-                                double d = Math.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z));
-                                if (d > maxOffset) continue;
-                                // Round 3 ranks by depth into the town first (rounded to a metre), then by distance.
-                                double depth = inTown ? Math.Round(Math.Max(0.0, townOverlap(x, z))) : 0.0;
+                                if (Math.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) > maxOffset) continue;
+                                double d = Math.Sqrt((x - target.x) * (x - target.x) + (z - target.z) * (z - target.z));
+                                // Round 3 ranks by depth into the town first (rounded to a metre), then by distance; with a
+                                // sourced own-side point it ranks by distance to that alone (the town edge may be the other side's).
+                                double overlap = inTown ? Math.Max(0.0, townOverlap(x, z)) : 0.0;
+                                double depth = a.Toward == null ? Math.Round(overlap) : 0.0;
                                 if (depth > bestDepth || (depth == bestDepth && d > bestD)) continue;
                                 // Ties go to the lower (q, r): the result never depends on the hex list's order.
                                 if (depth == bestDepth && d == bestD && best != null && (h.Q, h.R).CompareTo((best.Value.Q, best.Value.R)) > 0) continue;
-                                if (!clear(u.Service, x, z, compact, inTown)) continue;
-                                best = new AnchorSpot(h.Q, h.R, x, z, compact, inTown && depth > 0); bestD = d; bestDepth = depth;
+                                if (!clear(u.Service, x, z, compact, inTown, p.x, p.z)) continue;
+                                best = new AnchorSpot(h.Q, h.R, x, z, compact, inTown && overlap > 0); bestD = d; bestDepth = depth;
                             }
                         }
                         if (best != null) break;

@@ -64,13 +64,19 @@ namespace Statecraft.Game.Map.Units
         }
 
         /// <summary>True when a token of <paramref name="service"/> may stand at <paramref name="centre"/>: its ring off every
-        /// town (unless <paramref name="inTown"/>: the kits then keep a clearing for it), and its figures (an army token's
-        /// trio, a parked aircraft's centre) on land and off the railways and roads. A ship needs only the sea hex the placer
-        /// already checked.</summary>
-        public bool Clear(string service, Vector2 centre, bool compact, bool inTown)
+        /// town, except, when <paramref name="inTown"/>, the town its anchor <paramref name="anchor"/> stands in (the kits then
+        /// keep a clearing for it there, never in a neighbouring town), and its figures (an army token's trio, a parked
+        /// aircraft's centre) on land and off the railways and roads. A ship needs only the sea hex the placer already
+        /// checked.</summary>
+        public bool Clear(string service, Vector2 centre, bool compact, bool inTown, Vector2 anchor)
         {
             if (service == UnitData.Navy) return true;
-            if (!inTown && TownOverlap(centre, compact) > 0f) return false;
+            float disc = RingRadius(compact);
+            foreach (var (fc, fr) in footprints)
+            {
+                bool own = inTown && (fc - anchor).magnitude < fr * FootprintMargin;
+                if (!own && fr * FootprintMargin + disc - (fc - centre).magnitude > 0f) return false;
+            }
             var points = service == UnitData.Army ? FigurePoints(centre, compact) : new[] { centre };
             foreach (var p in points)
             {
@@ -104,7 +110,7 @@ namespace Statecraft.Game.Map.Units
         /// <summary>Every anchor's spot (UnitPlacer.PlaceAll) on this ground.</summary>
         public Dictionary<UnitAnchor, AnchorSpot> Place(IReadOnlyList<UnitEntry> units, Func<double, double, Vector2> toXZ, Action<string>? skipped) =>
             UnitPlacer.PlaceAll(units, hexes, HexSizeM, (lon, lat) => { var v = toXZ(lon, lat); return (v.x, v.y); },
-                (service, x, z, compact, inTown) => Clear(service, new Vector2((float)x, (float)z), compact, inTown),
+                (service, x, z, compact, inTown, ax, az) => Clear(service, new Vector2((float)x, (float)z), compact, inTown, new Vector2((float)ax, (float)az)),
                 (x, z) => TownOverlap(new Vector2((float)x, (float)z), compact: true), skipped);
     }
 }

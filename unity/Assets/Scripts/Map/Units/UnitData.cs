@@ -33,6 +33,9 @@ namespace Statecraft.Game.Map.Units
         public string EndBasis { get; set; } = "";
         public string? EndNote { get; set; }
         public string? Front { get; set; }
+        /// <summary>Which side of the place the token stands on, where the nearest clear spot would be the other side's
+        /// ground: a sourced point the placer moves towards (within the one-hex limit; review MF1), or null.</summary>
+        public UnitToward? Toward { get; set; }
         /// <summary>"month" when a window edge is known only to the month (the first of the month is used).</summary>
         public string? Precision { get; set; }
         public string? Note { get; set; }
@@ -46,6 +49,16 @@ namespace Statecraft.Game.Map.Units
         public string From { get; set; } = "";
         public string? To { get; set; }
         public string? Note { get; set; }
+        public List<UnitSource> Sources { get; set; } = new List<UnitSource>();
+    }
+
+    /// <summary>A sourced point on the unit's own side of its place (UnitAnchor.Toward).</summary>
+    public sealed class UnitToward
+    {
+        public string Place { get; set; } = "";
+        public double Lon { get; set; }
+        public double Lat { get; set; }
+        public string Note { get; set; } = "";
         public List<UnitSource> Sources { get; set; } = new List<UnitSource>();
     }
 
@@ -84,7 +97,11 @@ namespace Statecraft.Game.Map.Units
         public IEnumerable<UnitSource> AllSources()
         {
             if (Sources != null) foreach (var s in Sources) yield return s;
-            foreach (var a in Anchors) foreach (var s in a.Sources) yield return s;
+            foreach (var a in Anchors)
+            {
+                foreach (var s in a.Sources) yield return s;
+                if (a.Toward != null) foreach (var s in a.Toward.Sources) yield return s;
+            }
             if (Aircraft != null) foreach (var t in Aircraft) foreach (var s in t.Sources) yield return s;
             if (HeadgearSources != null) foreach (var s in HeadgearSources) yield return s;
             if (Disbanded != null) foreach (var s in Disbanded.Sources) yield return s;
@@ -172,9 +189,11 @@ namespace Statecraft.Game.Map.Units
                 {
                     if (a == null || string.IsNullOrWhiteSpace(a.Place)) throw new InvalidDataException($"{at} an anchor has no place");
                     var where = $"{at} anchor '{a.Place}'";
-                    Window(where, a.From, a.To);
+                    Window(where, a.From, a.To, toRequired: true);
                     if (!(a.Lon >= -180 && a.Lon <= 180 && a.Lat >= -90 && a.Lat <= 90)) throw new InvalidDataException($"{where} has bad coordinates");
                     if (a.Precision != null && a.Precision != "month") throw new InvalidDataException($"{where} precision must be 'month' or left out");
+                    if (a.Toward != null && (string.IsNullOrWhiteSpace(a.Toward.Note) || a.Toward.Sources == null || a.Toward.Sources.Count == 0))
+                        throw new InvalidDataException($"{where} toward needs a note and a source");
                     if (a.EndBasis == EndBySource)
                     {
                         if (string.IsNullOrWhiteSpace(a.EndNote)) throw new InvalidDataException($"{where} ends by source but has no end_note saying which");
@@ -196,7 +215,7 @@ namespace Statecraft.Game.Map.Units
                     foreach (var t in u.Aircraft)
                     {
                         if (t == null || !AircraftTypes.Contains(t.Type)) throw new InvalidDataException($"{at} has an unknown aircraft type '{t?.Type}'");
-                        Window($"{at} aircraft '{t.Type}'", t.From, t.To);
+                        Window($"{at} aircraft '{t.Type}'", t.From, t.To, toRequired: false);
                         t.Sources ??= new List<UnitSource>();
                         if (t.Sources.Count == 0) throw new InvalidDataException($"{at} aircraft '{t.Type}' has no source");
                     }
@@ -219,8 +238,9 @@ namespace Statecraft.Game.Map.Units
             return doc.Units;
         }
 
-        static void Window(string where, string? from, string? to)
+        static void Window(string where, string? from, string? to, bool toRequired)
         {
+            if (toRequired && string.IsNullOrEmpty(to)) throw new InvalidDataException($"{where}: to is empty (give the window's end)");
             try
             {
                 var f = Day(from);

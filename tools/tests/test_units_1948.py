@@ -22,6 +22,7 @@ def sources(u):
     out = list(u.get('sources') or [])
     for a in u['anchors']:
         out += a['sources']
+        out += (a.get('toward') or {}).get('sources') or []
     for t in u.get('aircraft') or []:
         out += t['sources']
     out += u.get('headgear_sources') or []
@@ -81,3 +82,11 @@ def test_hidden_brigades_and_headgear():
             assert u['anchors'] == []
         if 'headgear' in u:
             assert u['service'] == 'army' and len(u['headgear']) == 3 and u['headgear_sources'], u['id']
+
+
+def test_a_toward_point_is_sourced_and_says_why():
+    for u in UNITS:
+        for a in u['anchors']:
+            t = a.get('toward')
+            if t:
+                assert t['note'].strip() and t['sources'], f"{u['id']} {a['place']}"

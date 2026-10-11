@@ -157,6 +157,13 @@ units:
     end_basis: front_armistice
     front: jordan
     note: Founded in late 1947 as the Field Corps unit responsible for the defence of Jerusalem.
+    toward:
+      place: West Jerusalem
+      lon: 35.21944
+      lat: 31.78194
+      note: "The section of Jerusalem Israel held at the end of the war; without it the token's nearest clear spot fell north-east of the city, by Hizma and Anata, which Jordan held."
+      sources:
+      - {url: 'https://en.wikipedia.org/wiki/West_Jerusalem', checked: '2026-10-11'}
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Etzioni_Brigade', checked: '2026-10-11'}
     - {url: 'https://en.wikipedia.org/wiki/Jerusalem', checked: '2026-10-11'}
@@ -179,6 +186,14 @@ units:
     end_basis: source
     end_note: "Operation Bin Nun Alef (24-25 May) and Bin Nun Bet (30 May-1 June); he.wiki: in June 1948 the brigade moved north."
     note: Shlomo Shamir led both attacks.
+    toward:
+      place: Hulda
+      lon: 34.88333
+      lat: 31.83222
+      note: "The Israeli headquarters for the attacks on Latrun; the Arab Legion held Latrun and the ridge behind it (Yalu, Bayt Nuba), where the token's nearest clear spot fell without it."
+      sources:
+      - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
+      - {url: 'https://en.wikipedia.org/wiki/Hulda,_Israel', checked: '2026-10-11'}
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
     - {url: 'https://en.wikipedia.org/wiki/Latrun', checked: '2026-10-11'}
@@ -237,6 +252,13 @@ units:
     end_basis: source
     end_note: Operation Horev, from 22 December 1948, in the south; no place is given for the brigade there.
     note: "One place picked from the sector: the source names the Jerusalem corridor as the sector and Sha'ar HaGai as the end of the road the brigade opened (and as a battalion's name)."
+    toward:
+      place: Kiryat Anavim
+      lon: 35.12
+      lat: 31.81083
+      note: "The Harel Brigade's 4th Battalion fought for Sha'ar HaGai and the road from Kiryat Anavim; without it the token's nearest clear spot fell south-west of the road, by Sar'a and Artuf, Arab villages until later in 1948."
+      sources:
+      - {url: 'https://en.wikipedia.org/wiki/Kiryat_Anavim', checked: '2026-10-11'}
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Harel_Brigade', checked: '2026-10-11'}
     - {url: 'https://en.wikipedia.org/wiki/Operation_Horev', checked: '2026-10-11'}
