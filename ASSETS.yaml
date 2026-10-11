@@ -92,6 +92,11 @@ rules:
     source: "Village Statistics, 1945 (Government of Palestine), figures read from https://en.wikipedia.org/wiki/Village_Statistics,_1945 on 2026-10-11; per-row sources in the file"
     status: owner-verify
     note: "Presentation only (settlement kit footprints); the sim never reads it. To be checked against a scan of the 1945 publication."
+  - glob: "content/map/localities_1948.yaml"
+    licence: CC-BY-SA-4.0
+    source: "1948 localities of 1,000+ people and Bedouin camp totals: populations and 1948 names from Village Statistics, 1945 (Government of Palestine) as transcribed on Wikipedia, revision 1359600351 (CC BY-SA 4.0, attribution in each row's sources); coordinates, today's names and Hebrew/Arabic labels from Wikidata (CC0); camp areas' hexes from content/map/subdistrict_hexes_1948.yaml (promo-borderdata, draft). Read 2026-10-11; per-row sources in the file"
+    status: owner-verify
+    note: "Presentation only (map kits and labels); the sim never reads it. Rows with match low or manual need the owner's check; VS figures not yet checked against a scan."
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
