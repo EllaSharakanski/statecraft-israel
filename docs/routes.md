@@ -42,8 +42,17 @@ month) is skipped alone, with a warning.
 - The 1,050 mm narrow-gauge Jezreel Valley line is drawn thin, so it traces as a `track`.
 - A waypoint first snaps to its symbol within 1.5 km. A waypoint off the line (a town circle, its name, a modern
   town's point such as Ashkelon's for al-Majdal) is reached by an out-and-back spur, which the tool cuts.
-- The chain is smoothed over 15 pixels and simplified at 35 m. With 5 pixels, the close views showed a 100–200 m
-  wobble: the trace hops between the two edges of a thick symbol.
+- The chain is smoothed over 15 pixels, resampled every 40 m, smoothed again and simplified at 35 m.
+- The second smoothing is a curvature-adaptive Gaussian (`gaussian_smooth`, review B14 / #212).
+  - The trace hops between the two edges of a thick symbol, which drew kinks every few hundred metres. Hadera–Haifa had
+    20 zigzags in 92 points; the main line south had 54 in 185.
+  - A wobble's turns cancel out over ±320 m; a real bend's add up. So a straight stretch takes sigma 250 m, and a bend
+    of 30–90° net turn eases to 60 m.
+  - That removes the wobble. The Sorek meanders keep their shape: the Jaffa–Jerusalem line traces 79.4 km against
+    80.7 km before.
+  - The accuracy table is unchanged within a few metres (Jaffa–Jerusalem median 64 m, 96% within 300 m).
+  - `test_no_sawtooth_on_straight_lines` bounds the zigzags: at most 3 on the plain railways, and at most 15% of points
+    anywhere. The hill roads and the Jericho descent have real hairpins.
 - A hook at either end is cut. The line goes out to a waypoint just off the route's end and back; for example the Burma
   Road began "just east of Dayr Muhaysin".
 - `--preview DIR` writes every traced segment over the map, which is how each was checked by eye.
@@ -136,8 +145,16 @@ measurement in `docs/units.md`:
 
 **The mesh** (`RouteLayer.Ribbon`).
 - A cross-section every 120 m, square to the line's direction averaged over two steps each way.
-- Five vertices across each section. Each sits 20 m above the highest ground at its own point and half a step or half a
-  spacing around it, and takes the terrain's normal.
+- Five vertices across each section, all at the line's own grade (`GradeHeight`). The grade is 20 m above the highest
+  ground at the line and half a step along it either way, with nothing sampled across (review B15 / #213).
+  - Before this, each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up both
+    walls and its rails and sleepers warped.
+  - Now a section is flat across. It narrows symmetrically (`FlatHalfWidth`) to the last sample where the ground on
+    both sides is neither above it nor more than 40 m below it, down to 35% of the width. The rails stay centred and
+    the band keeps to the gorge floor.
+  - Every vertex takes the terrain's normal at the line. The train rides the same grade.
+  - `TheRailwayKeepsItsGradeInTheSorekGorge` tests it: every section is flat, and in the gorge 95% of sections stay
+    within 25 m of the line's ground clearance and the band narrows.
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.

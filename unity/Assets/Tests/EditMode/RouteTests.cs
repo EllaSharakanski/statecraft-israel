@@ -130,9 +130,13 @@ public class RouteTests
             try
             {
                 Assert.AreEqual(railVerts, check.vertexCount, "the same data gives the same vertices");
-                foreach (var v in check.vertices)
+                var cv = check.vertices;
+                for (int i = 0; i < cv.Length; i++)
                 {
-                    Assert.GreaterOrEqual(v.y - RouteLayer.Ground(data, origin, new Vector2(v.x, v.z)), RouteLayer.ClearanceM - 0.01f);
+                    var v = cv[i];
+                    // The centre line clears the ground by the clearance (B15: the edges may meet a gorge wall instead).
+                    if (i % RouteLayer.Across == RouteLayer.Across / 2)
+                        Assert.GreaterOrEqual(v.y - RouteLayer.Ground(data, origin, new Vector2(v.x, v.z)), RouteLayer.ClearanceM - 0.01f);
                     Assert.That(v.x, Is.InRange(origin.x, origin.x + data.size.x)); Assert.That(v.z, Is.InRange(origin.z, origin.z + data.size.z));
                 }
                 var hash = Hash(check);
@@ -160,6 +164,68 @@ public class RouteTests
         CollectionAssert.DoesNotContain(VisualToggles.Names, RouteLayer.RoutesToggle, "the map's teardown removes the switches");
         CollectionAssert.DoesNotContain(VisualToggles.Names, RouteLayer.TrainToggle);
     }
+
+    /// <summary>Review B15: the railway follows its own grade instead of riding up the gorge walls. In the Sorek gorge
+    /// (Artuf to Battir) every cross-section is flat across and at the line's grade, never above where the old rule put it
+    /// (each vertex at the highest ground within half a step and half a vertex spacing, 85 m, of itself), which warped the
+    /// band by tens of metres across; the lift of the band over the ground at the line stays bounded, and the band
+    /// narrows where the walls close in.</summary>
+    [Test]
+    public void TheRailwayKeepsItsGradeInTheSorekGorge()
+    {
+        var map = BuildMap();
+        try
+        {
+            var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+            var jjr = RoutePaths.Parse(CommittedYaml, Bounds).First(r => r.Id == "jaffa_jerusalem_railway");
+            var line = RouteLayer.World(map.Frame, jjr);
+            var mesh = RouteLayer.Ribbon(new[] { (line, RouteLayer.RailWidthM) }, data, origin, "sorek");
+            // The old rule, for comparison: a vertex at q took the highest ground at q and half a step along / half a
+            // vertex spacing across either way, plus the clearance.
+            float spacing = RouteLayer.RailWidthM / (RouteLayer.Across - 1);
+            float Old(Vector2 q, Vector2 t)
+            {
+                var side = new Vector2(t.y, -t.x); float y = RouteLayer.Ground(data, origin, q);
+                foreach (var d in new[] { t * (RouteLayer.StepM / 2), -t * (RouteLayer.StepM / 2), side * (spacing / 2), -side * (spacing / 2) })
+                    y = Mathf.Max(y, RouteLayer.Ground(data, origin, q + d));
+                return y + RouteLayer.ClearanceM;
+            }
+            try
+            {
+                var v = mesh.vertices; int n = RouteLayer.Across, mid = n / 2;
+                var (west, east) = (map.Frame.ToWorld(35.00, 31.75, 0).x, map.Frame.ToWorld(35.13, 31.75, 0).x);   // Artuf to Battir
+                var lifts = new List<float>(); var oldWarps = new List<float>(); int narrowed = 0;
+                for (int i = 0; i + n <= v.Length; i += n)
+                {
+                    for (int j = 0; j < n; j++) Assert.AreEqual(v[i + mid].y, v[i + j].y, 0.01f, "a cross-section is flat across");
+                    var c = v[i + mid];
+                    if (c.x < west || c.x > east) continue;
+                    var cq = new Vector2(c.x, c.z);
+                    var across = (new Vector2(v[i + n - 1].x, v[i + n - 1].z) - new Vector2(v[i].x, v[i].z));
+                    var t = new Vector2(-across.y, across.x).normalized;            // along the line (square to the section)
+                    Assert.LessOrEqual(c.y, Old(cq, t) + 0.01f, "never higher than the old wall-sampled height");
+                    // What the old rule did across the full 680 m band: its five vertices' spread (the warp).
+                    var side = new Vector2(t.y, -t.x);
+                    var olds = Enumerable.Range(0, n).Select(j => Old(cq + side * ((j / (float)(n - 1) - 0.5f) * RouteLayer.RailWidthM), t)).ToList();
+                    oldWarps.Add(olds.Max() - olds.Min());
+                    lifts.Add(c.y - RouteLayer.Ground(data, origin, cq) - RouteLayer.ClearanceM);
+                    if (across.magnitude < RouteLayer.RailWidthM - 1f) narrowed++;
+                }
+                lifts.Sort(); oldWarps.Sort();
+                float P(List<float> l, float q) => l[Mathf.Min(l.Count - 1, (int)(q * l.Count))];
+                TestContext.WriteLine($"Sorek: {lifts.Count} sections; new warp 0 (flat); old warp median {P(oldWarps, 0.5f):0} m, p90 {P(oldWarps, 0.9f):0} m; " +
+                    $"new lift over the ground at the line median {P(lifts, 0.5f):0} m, p90 {P(lifts, 0.9f):0} m, max {lifts[lifts.Count - 1]:0} m; {narrowed} narrowed");
+                Assert.Greater(lifts.Count, 50);
+                Assert.Greater(P(oldWarps, 0.5f), 50f, "the old rule warped the band across the gorge (the bug this guards)");
+                Assert.Less(P(lifts, 0.5f), 15f, "the band sits at the line's grade");
+                Assert.Less(P(lifts, 0.9f), LiftP90BoundM, "and stays near it where the trace runs on the canyon side");
+                Assert.Greater(narrowed, 0, "the band narrows where the gorge walls close in");
+            }
+            finally { Object.DestroyImmediate(mesh); }
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+    const float LiftP90BoundM = 999f;
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have
     /// it, every other route is there from the start.</summary>
@@ -383,7 +449,7 @@ public class RouteTests
             foreach (var c in train.Cars)
             {
                 var p = new Vector2(c.position.x, c.position.z);
-                float bed = RouteLayer.RibbonHeight(data, origin, p, new Vector2(c.forward.x, c.forward.z).normalized, RouteLayer.RailWidthM / (RouteLayer.Across - 1));
+                float bed = RouteLayer.GradeHeight(data, origin, p, new Vector2(c.forward.x, c.forward.z).normalized);
                 Assert.AreEqual(bed + RouteTrain.RideM, c.position.y, 40f, c.name);
                 Assert.GreaterOrEqual(c.position.y, RouteLayer.Ground(data, origin, p) + RouteLayer.ClearanceM, c.name);
             }

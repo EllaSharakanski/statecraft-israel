@@ -90,6 +90,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
+  bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
+  flat across, and narrows to the gorge floor (#212, #213).
 - The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
   onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
