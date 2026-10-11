@@ -116,6 +116,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
+  now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
+  any town. With the "kits" visual toggle off, names keep clear of the marker boxes instead. Presentation only.
+- The web build's quality fallback no longer lowers the quality while the page is hidden (#216). A background tab or a
+  minimised window (and in Chromium a window covered by others) runs at a few frames a second, which had counted as
+  load. Presentation only.
+- The border determinism test no longer fails now and then on a pixel or two: it shows the proof pattern once, renders a
+  warm-up frame, and compiles shaders synchronously, so both compared frames draw the same font atlas and shaders.
 - The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
   date, and before it the office is not a Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
   1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
