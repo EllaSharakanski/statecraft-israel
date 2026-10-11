@@ -88,6 +88,7 @@ namespace Statecraft.Game.Map
             data.alphamapResolution = 16;
             MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets, paintGround), assets);
             Boot.DiagLog.BootPhase("biome texture baked");
+            MapBorders.Apply(hexFile, assets);   // region borders: none drawn until a layer is given (MapBorders.Use)
             return terrainGo;
         }
 

@@ -13,6 +13,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
+- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
+  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
+  a "borders" visual toggle. Visual only. The game ships no region data yet (no invented boundaries: the sourced 1945-48
+  sub-districts, 1949 armistice lines and fronts are a research item), so nothing is drawn in play.
 - Hebrew names and sourced birth and death dates for all 29 people (issue #1).
 - Successors for offices left by deaths in 1952: Ben-Gurion takes Transportation after Pinkas (14 August 1952) and
   Yitzhak Ben-Zvi becomes President on 16 December 1952 after Weizmann; the presidency is vacant in between, while
@@ -68,6 +72,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
+  reworded attention and full-war labels (#193).
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
   shows as vacant from then until Serlin and Sapir are authored (#26).
 - The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
