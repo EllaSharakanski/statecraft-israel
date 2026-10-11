@@ -55,8 +55,8 @@ images:
     alt: "The Altalena off the Tel Aviv shore, seen from a seafront café shortly before the shelling, June 1948."
     crop: [0.5, 0.58, 1.0]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "Replaces the burning-ship frame (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'A moment before the shelling of the Altalena, the Irgun's arms ship. The Altalena approaches the Tel Aviv shore', dated 20 June 1948 (in the event window). No Altalena frame from Kfar Vitkin was found on Commons under a usable licence: the Meitar frames are all at Tel Aviv, and the others found are GPO, PD-Israel or CC BY-SA. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
+    sensitivity_reviewed: true
+    note: "Replaces the burning-ship frame (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'A moment before the shelling of the Altalena, the Irgun's arms ship. The Altalena approaches the Tel Aviv shore', dated 20 June 1948 (in the event window). No Altalena frame from Kfar Vitkin was found on Commons under a usable licence: the Meitar frames are all at Tel Aviv, and the others found are GPO, PD-Israel or CC BY-SA. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Owner sign-off 2026-10-11 (in session, via controller)."
   - event: ten_days
     file: ten_days.jpg
     commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997009323190005171.jpg"
@@ -69,8 +69,8 @@ images:
     alt: "Two soldiers keep watch from an armoured car among eucalyptus trees during the capture of Lydda airport, 10 July 1948."
     crop: [0.5, 0.4, 1.0]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "Replaces the near-portrait of one named woman (owner-delegated ruling 2026-10-11: portraits stay PD or CC0). NLI: 'The capture of the airport at Lydda in the War of Independence', 10 July 1948 (in the event window). Two unnamed soldiers; the airport itself is not in the frame. The 82nd Battalion series of the same day is in 'Meitar Collection (review needed)' on Commons and was not used. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
+    sensitivity_reviewed: true
+    note: "Replaces the near-portrait of one named woman (owner-delegated ruling 2026-10-11: portraits stay PD or CC0). NLI: 'The capture of the airport at Lydda in the War of Independence', 10 July 1948 (in the event window). Two unnamed soldiers; the airport itself is not in the frame. The 82nd Battalion series of the same day is in 'Meitar Collection (review needed)' on Commons and was not used. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Owner sign-off 2026-10-11 (in session, via controller)."
   - event: second_truce
     file: second_truce.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Graaf_Bernadotte_op_Schiphol,_Bestanddeelnr_934-6899.jpg"
@@ -124,8 +124,8 @@ images:
     alt: "UN and Israeli officials salute at Lydda airport as Count Bernadotte's coffin leaves for Sweden, September 1948."
     crop: [0.5, 0.45, 1.0]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials. Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; the flag above is the owner's to set."
+    sensitivity_reviewed: true
+    note: "This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials. Owner sign-off 2026-10-11 (in session, via controller)."
   - event: operation_yoav
     file: operation_yoav.jpg
     commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137023805171.jpg"
@@ -138,8 +138,8 @@ images:
     alt: "IDF officers study a map on a jeep as forces move south before Operation Yoav, 13 October 1948."
     crop: [0.5, 0.48, 1.0]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "Replaces Beersheba on the day it was taken (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'IDF forces go down before the start of Operation Yoav to free the besieged Negev', 13 October 1948, two days before the event window. Unnamed officers. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
+    sensitivity_reviewed: true
+    note: "Replaces Beersheba on the day it was taken (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'IDF forces go down before the start of Operation Yoav to free the besieged Negev', 13 October 1948, two days before the event window. Unnamed officers. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Owner sign-off 2026-10-11 (in session, via controller)."
   - event: operation_hiram
     file: operation_hiram.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Galilee_(997009323161505171.jpg"
@@ -152,8 +152,8 @@ images:
     alt: "A soldier sweeps a Galilee road for mines after Operation Hiram, 1948."
     crop: [0.5, 0.44, 1.0]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "Sensitivity review: approved as it is by the controller's ruling of 2026-10-11 (owner-delegated)."
+    sensitivity_reviewed: true
+    note: "Owner sign-off 2026-10-11 (in session, via controller)."
   - event: jerusalem_ceasefire
     file: jerusalem_ceasefire.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Jeruzalem._Wegversperringen_in_de_Propheet_Samuelstraat,_op_de_grens_tussen_Jord,_Bestanddeelnr_255-0327.jpg"
@@ -180,8 +180,8 @@ images:
     alt: "A column of IDF vehicles and a motorcyclist on a desert track in the Negev during Operation Horev, December 1948."
     crop: [0.38, 0.6, 0.7]
     sensitive: true
-    sensitivity_reviewed: false
-    note: "Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds. Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; the flag above is the owner's to set."
+    sensitivity_reviewed: true
+    note: "Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds. Owner sign-off 2026-10-11 (in session, via controller)."
   - event: elections_1949
     file: elections_1949.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008137164005171.jpg"

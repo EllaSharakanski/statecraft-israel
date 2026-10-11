@@ -62,6 +62,18 @@ public class BuildGateTests
         return UnityEngine.Object.Instantiate(real);
     }
 
+    /// <summary>The catalog as it was before the owner's sign-off of 2026-10-11: every sensitive picture unreviewed.</summary>
+    static void Unreview(Statecraft.Game.UI.EventImageCatalog photos)
+    {
+        for (int i = 0; i < photos.entries.Count; i++) { var e = photos.entries[i]; e.sensitivityReviewed = false; photos.entries[i] = e; }
+    }
+
+    /// <summary>The mapping as it was before the owner's sign-off.</summary>
+    static System.Collections.Generic.IReadOnlyList<Statecraft.Game.UI.EventImageMapping.Row> UnreviewedMapping
+    {
+        get { var rows = Mapping; foreach (var r in rows) r.SensitivityReviewed = false; return rows; }
+    }
+
     [Test]
     public void ShareableBuildsWaitForTheSensitivityReviewOfTheEventPhotographs()
     {
@@ -71,7 +83,10 @@ public class BuildGateTests
         var photos = ShippedPhotos();
         try
         {
-            CollectionAssert.AreEqual(SensitivePhotos, photos.SensitiveUnreviewed(), "exactly the owner's list, none reviewed yet");
+            CollectionAssert.IsEmpty(photos.SensitiveUnreviewed(), "the owner signed off all six on 2026-10-11");
+            Assert.IsNull(gate.Invoke(null, new object?[] { new[] { "Unity", "-shareable" }, c, photos, true, Mapping }), "the shipped catalog and mapping pass");
+            Unreview(photos);
+            CollectionAssert.AreEqual(SensitivePhotos, photos.SensitiveUnreviewed(), "exactly the owner's list");
             var refusal = (string?)gate.Invoke(null, new object?[] { new[] { "Unity", "-shareable" }, c, photos, false, null });
             Assert.IsNotNull(refusal, "unreviewed sensitive photographs block a shareable build");
             foreach (var id in SensitivePhotos) StringAssert.Contains(id, refusal);
@@ -112,7 +127,7 @@ public class BuildGateTests
         Assert.IsNotNull(refusal, "an existing catalog that did not load is a refusal");
         StringAssert.Contains("did not load", refusal);
         Assert.IsNull(Gate.Invoke(null, new object?[] { Shareable, c, null, false, null }), "no catalog file and no mapping: no photographs ship");
-        var fromMapping = (string?)Gate.Invoke(null, new object?[] { Shareable, c, null, true, Mapping });
+        var fromMapping = (string?)Gate.Invoke(null, new object?[] { Shareable, c, null, true, UnreviewedMapping });
         foreach (var id in SensitivePhotos) StringAssert.Contains(id, fromMapping, "the mapping's own sensitive rows refuse");
     }
 
@@ -125,15 +140,14 @@ public class BuildGateTests
         var photos = ShippedPhotos();
         try
         {
-            var shipped = (string?)Gate.Invoke(null, new object?[] { Shareable, c, photos, true, Mapping });
-            Assert.IsNotNull(shipped, "the seven are not reviewed yet");
-            StringAssert.DoesNotContain("does not match", shipped, "the shipped catalog matches the mapping");
+            Assert.IsNull(Gate.Invoke(null, new object?[] { Shareable, c, photos, true, Mapping }), "the shipped catalog matches the mapping");
+            Unreview(photos);
             for (int i = 0; i < photos.entries.Count; i++)                       // a hand edit, not the owner's sign-off
             {
                 var e = photos.entries[i]; e.sensitivityReviewed = e.sensitive; photos.entries[i] = e;
             }
             Assert.IsNull(Gate.Invoke(null, new object?[] { Shareable, c, photos, true, null }), "the catalog alone would pass");
-            var refusal = (string?)Gate.Invoke(null, new object?[] { Shareable, c, photos, true, Mapping });
+            var refusal = (string?)Gate.Invoke(null, new object?[] { Shareable, c, photos, true, UnreviewedMapping });
             Assert.IsNotNull(refusal, "the mapping still says unreviewed");
             StringAssert.Contains("does not match", refusal);
             foreach (var id in SensitivePhotos) StringAssert.Contains(id, refusal);
@@ -158,7 +172,7 @@ public class BuildGateTests
             var dev = (string)json.Invoke(null, new object?[] { photos, false })!;
             StringAssert.IsMatch("\"shareable\":\\s*false", dev);
             foreach (var id in SensitivePhotos)
-                StringAssert.IsMatch($"\"event_id\":\\s*\"{id}\",\\s*\"sensitive\":\\s*true,\\s*\"sensitivity_reviewed\":\\s*false", dev);
+                StringAssert.IsMatch($"\"event_id\":\\s*\"{id}\",\\s*\"sensitive\":\\s*true,\\s*\"sensitivity_reviewed\":\\s*true", dev);
             Assert.AreEqual(24, System.Text.RegularExpressions.Regex.Matches(dev, "\"event_id\"").Count);
             StringAssert.IsMatch("\"shareable\":\\s*true", (string)json.Invoke(null, new object?[] { photos, true })!);
             StringAssert.IsMatch("\"photos\":\\s*\\[\\s*\\]", (string)json.Invoke(null, new object?[] { null, true })!);

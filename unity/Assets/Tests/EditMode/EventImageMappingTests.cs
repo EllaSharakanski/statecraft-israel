@@ -32,7 +32,7 @@ public class EventImageMappingTests
         CollectionAssert.IsEmpty(EventImageMapping.Problems(rows, C));
         CollectionAssert.AreEquivalent(C.Events.Select(e => e.Id).Except(Fallback), rows.Select(r => r.Event), "every event but the seven fallbacks has a picture");
         CollectionAssert.AreEquivalent(SensitivePhotos, rows.Where(r => r.Sensitive).Select(r => r.Event), "the owner's sensitive list");
-        Assert.IsTrue(rows.All(r => !r.SensitivityReviewed), "only the owner marks a picture reviewed");
+        CollectionAssert.AreEquivalent(SensitivePhotos, rows.Where(r => r.SensitivityReviewed).Select(r => r.Event), "the owner's sign-off of 2026-10-11, and nothing else");
     }
 
     [Test]

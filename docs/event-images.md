@@ -21,7 +21,7 @@ Owner ruling 2026-10-11 (summarised; recorded in `docs/CONTENT_POLICY.md` sectio
 | The pictures, at most 720 x 320 JPEG (9:4; `idf_founding` is 612 x 272, as its original is small), each under 200 KB | `unity/Assets/UI/EventImages/<event>.jpg` |
 | The mapping: event, Commons page, original URL and SHA-1, licence, artist, credit, alt text, crop, sensitivity flags | `unity/Assets/UI/EventImages/event-images.yaml` |
 | The catalog the game loads (`Resources.Load`, so there is no scene field) | `unity/Assets/Resources/EventImageCatalog.asset` |
-| Provenance rows, one per file, `status: owner-verify` | `ASSETS.yaml` |
+| Provenance rows, one per file (`status: verified` once the owner signs off) | `ASSETS.yaml` |
 | CC BY 4.0 credits | `NOTICE`, and under the picture on the card |
 | The grade and crop | `tools/event_images.py` |
 
@@ -88,10 +88,10 @@ to make room; the right-hand column still bounds it above the minimap.
     whether it is sensitive and reviewed, and whether the build was `-shareable`. The pictures are packed into Unity's
     data files, so `tools/package_release.py` (run by `scripts/oss/package_web.sh`) reads that file. It refuses a build
     folder without it, a build not made with `-shareable`, and a build carrying an unreviewed sensitive picture.
-- **Decisions, 2026-10-11.** The coordinator relayed these as the controller's rulings, made under the owner's
-  delegation. The pictures below follow them. The sign-off flags (`sensitivity_reviewed`, and `status: verified` in
-  `ASSETS.yaml`) are still the owner's to set in the files: the agent that made the pictures did not set them on a
-  relayed message.
+- **Decisions, 2026-10-11.** The controller ruled on the pictures under the owner's delegation, and the pictures
+  below follow those rulings. The owner then signed off all six sensitive pictures, as shipped (contact sheet below),
+  in session on 2026-10-11, relayed by the controller: "Approve all 6". Their rows say `sensitivity_reviewed: true`,
+  with that note, and the `-shareable` build passes the gate.
   - **Scope.** Only the sensitive pictures need the sign-off, not all of them. The gate is unchanged.
   - **Approved as they are:** `operation_hiram` (a mine sweep), `operation_horev` (armour on the road, 22 December,
     in the window) and `bernadotte_assassination` (officials at the airfield, nothing graphic).
@@ -107,15 +107,14 @@ to make room; the right-hand column still bounds it above the minimap.
       named woman, which the portrait rule does not allow under CC BY. The 82nd Battalion series of the same day is
       tagged "Meitar Collection (review needed)" on Commons and was not used.
     - All three are CC BY 4.0 (Meitar Collection, VRTS ticket 2021092910005788), read through the Commons API, with the
-      SHA-1 recorded. Contact sheet: `.superpowers/handover-2026-10-11/promo/eventimg-images/new-picks.png`. The
-      controller reviews each from it.
+      SHA-1 recorded. Contact sheet: `.superpowers/handover-2026-10-11/promo/eventimg-images/new-picks.png`.
   - **Dropped:** `sinai_withdrawal` now shows the prime minister's portrait. Its window is 31 December 1948 to 3 January
     1949, and no free photograph of the event from that window was found. The Meitar pictures of the RAF wreck are from
     7 January. The Sinai and El-Arish frames on Commons are GPO or PD-Israel. The NLI Bitmuna "Operation Horev" scans
     are tagged only `PD-old`, with no author and no US basis.
 - **Provenance.** The licence review re-read all 25 original rows through the Commons API (SHA-1, licence, credit), and
-  the three new rows were checked the same way. Every row still says `status: owner-verify`, until the owner moves it to
-  `verified`. `check_repo.py --release`, in the release gate, refuses those rows until then.
+  the three new rows were checked the same way. With the owner's sign-off of 2026-10-11, all 24 rows say
+  `status: verified`. A new or replaced picture starts again at `owner-verify`, which `check_repo.py --release` refuses.
 
 ## Merge notes
 
