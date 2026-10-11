@@ -174,7 +174,7 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>The banner that labels a layer on screen: white text with a dark drop copy, a child of the main camera
-        /// at a fixed place in view (top left, inside the tilt-shift's sharp band), drawn by the camera itself so editor
+        /// at a fixed place in view (left, 35% down: inside the tilt-shift's sharp band, so it stays legible), drawn by the camera itself so editor
         /// renders, tests and players all carry it. Owned by the map (destroyed with it).</summary>
         static class Banner
         {
@@ -184,14 +184,36 @@ namespace Statecraft.Game.Map
                 if (cam == null) return null;
                 var root = assets.Own(new GameObject("BorderBanner"));
                 root.transform.SetParent(cam.transform, false);
-                float d = cam.nearClipPlane * 4f, halfH = d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad), halfW = halfH * 16f / 9f;
-                root.transform.localPosition = new Vector3(-0.94f * halfW, 0.62f * halfH, d);
                 root.transform.localRotation = Quaternion.identity;
+                root.AddComponent<BannerPlacement>().Place(cam);
+                float d = BannerPlacement.Depth(cam), halfH = d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
                 var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                float height = 0.05f * halfH;   // about 2.5% of the screen's height per line
+                float height = 0.065f * halfH;   // about 3.3% of the screen's height per line
                 Line(root.transform, text, font, height, new Color(0.08f, 0.06f, 0.05f), new Vector3(height * 0.06f, -height * 0.06f, height * 0.01f));
                 Line(root.transform, text, font, height, new Color(1f, 0.98f, 0.9f), Vector3.zero);
                 return root;
+            }
+
+            /// <summary>Keeps the banner at the top left of whatever its camera draws into: placed from the camera's aspect
+            /// just before each of its renders (URP's beginCameraRendering), so a 4:3 window or a 1920x1080 capture both show
+            /// it whole.</summary>
+            [ExecuteAlways]
+            sealed class BannerPlacement : MonoBehaviour
+            {
+                public static float Depth(Camera cam) => cam.nearClipPlane * 4f;
+
+                public void Place(Camera cam)
+                {
+                    float d = Depth(cam), halfH = d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad), halfW = halfH * cam.aspect;
+                    transform.localPosition = new Vector3(-0.94f * halfW, 0.30f * halfH, d);   // 35% down: inside the tilt-shift's sharp band
+                }
+
+                void OnEnable() => UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering += Before;
+                void OnDisable() => UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering -= Before;
+                void Before(UnityEngine.Rendering.ScriptableRenderContext _, Camera cam)
+                {
+                    if (this != null && transform.parent == cam.transform) Place(cam);
+                }
             }
 
             static void Line(Transform parent, string text, Font font, float height, Color colour, Vector3 offset)
@@ -201,6 +223,7 @@ namespace Statecraft.Game.Map
                 go.transform.localPosition = offset;
                 var tm = go.AddComponent<TextMesh>();
                 tm.text = text; tm.font = font; tm.fontSize = 64; tm.characterSize = height / 6.4f; tm.anchor = TextAnchor.UpperLeft;
+                tm.fontStyle = FontStyle.Bold;
                 tm.color = colour;
                 var mr = go.GetComponent<MeshRenderer>();
                 mr.sharedMaterial = font.material;

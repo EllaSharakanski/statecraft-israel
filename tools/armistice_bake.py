@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["numpy==2.5.3"]
+# dependencies = ["numpy==2.5.3", "pyyaml==6.0.3"]
 # ///
 """True 1949 armistice lines -> the per-hex layer the map draws over the 1948 sub-districts (MapBorders; docs/visual-v1.md
 "Region borders").

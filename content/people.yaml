@@ -30,9 +30,10 @@ people:
       - { office: defense_minister, from: 1948-05-14, sources: *prov }
       # Held Education after Remez died in office on 19 May 1951.
       - { office: education_minister, from: 1951-05-19, to: 1951-10-08, sources: &second [{ url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }] }
-      # Held Transportation after Pinkas died in office on 14 August 1952. The sources end it on 24 December 1952 (Fourth
-      # Government); it stays open until that government is authored (#26), like the other Third Government terms.
-      - { office: transportation_minister, from: 1952-08-14, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Ministry_of_Transport_and_Road_Safety", checked: 2026-10-11 }] }
+      # Held Transportation after Pinkas died in office on 14 August 1952, until the Fourth Government was sworn in on
+      # 24 December 1952 (Knesset data: Ben-Gurion 14 Aug - 24 Dec 1952; Serlin from 24 Dec). Serlin and Sapir are not
+      # authored yet (#26), so the seat shows as vacant from 24 December rather than keeping a wrong holder.
+      - { office: transportation_minister, from: 1952-08-14, to: 1952-12-24, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Ministry_of_Transport_and_Road_Safety", checked: 2026-10-11 }, { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }] }
     status: fact-checked
   - id: zisling
     name: Aharon Zisling
@@ -101,7 +102,8 @@ people:
     party: mapai
     competence: 8
     loyalty: 8
-    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg", focus_y: 0.22 }
+    # Van de Poll collection Israel 1948-1949; the archive's 1948-01-01 field conflicts with the caption, so no exact day is inferred.
+    portrait: { file: promo/ref/people/Moshe_Sharett_CC0_1948.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg", focus_y: 0.3 }
     offices:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
@@ -340,6 +342,9 @@ people:
     party: mapai
     competence: 7
     loyalty: 8
+    # Yoichi Okamoto, official White House photograph, 2 August 1966; PD-USGov checked 2026-10-11.
+    # Later than the game period; human likeness/era review remains required.
+    portrait: { file: promo/ref/people/Zalman_Shazar_USGov_1966.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg", focus_y: 0.35 }
     offices:
       - { office: education_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
     status: fact-checked
@@ -509,6 +514,8 @@ people:
       # (stated on the cited en.wiki 1951 presidential election page), which is not used as a date.
       # Died in office on 9 November 1952.
       - { office: president, from: 1951-11-19, to: 1952-11-09, sources: [{ url: "https://en.wikipedia.org/wiki/1951_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1951_in_Israel", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1952_Israeli_presidential_election", checked: 2026-10-11 }] }
+    # Bain/LOC dates this earlier likeness ca. 1915-1920, not his presidential term.
+    portrait: { file: promo/ref/people/Chaim_Weizmann_Bain.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg", focus_y: 0.32 }
     status: fact-checked
   - id: ben_zvi
     name: Yitzhak Ben-Zvi
@@ -529,6 +536,8 @@ people:
       # Speaker Yosef Sprinzak was acting President; acting holders are not modelled, so the office is vacant until then.
       # The term runs past the Fourth Government (24 December 1952) and stays open, like the other open terms.
       - { office: president, from: 1952-12-16, sources: [{ url: "https://en.wikipedia.org/wiki/1952_Israeli_presidential_election", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Yitzhak_Ben-Zvi", checked: 2026-10-11 }, { url: "https://he.wikipedia.org/wiki/נשיא_מדינת_ישראל", checked: 2026-10-11 }] }
+    # Anefo photograph from 15 July 1958, after the Founding slice but within his presidency.
+    portrait: { file: promo/ref/people/Yitzhak_Ben_Zvi_CC0_1958.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:President_Isaac_Ben_Zwi_,_president_van_Israel_en_echtgenote_ontvangen_door_het_,_Bestanddeelnr_909-7131.jpg", focus_y: 0.32 }
     status: fact-checked
   - id: dori
     name: Yaakov Dori
@@ -544,6 +553,7 @@ people:
     loyalty: 8
     offices:
       - { office: chief_of_staff, from: 1947-06-01, to: 1949-11-09, sources: &cos [{ url: "https://en.wikipedia.org/wiki/Chief_of_the_General_Staff_(Israel)", checked: 2026-10-09 }] }
+    portrait: { file: promo/ref/people/Yaakov_Dori_CC0.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Stafchef_Dori_houdt_toespraak_tijdens_de_militaire_parade_bij_gelegenheid_van_de,_Bestanddeelnr_255-0981.jpg", focus_y: 0.3 }
     status: fact-checked
   - id: yadin
     name: Yigael Yadin

@@ -41,20 +41,18 @@ rules:
   commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
   artist: Théodore Brauner
   note: no explicit US status template on the Commons page
-- glob: promo/ref/people/Moshe_Sharett.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg
-  status: owner-verify
-  commons: Public domain; PD-IsraelGov, PD-IsraelGov/en, PD-IsraelGov/lang, PD-IsraelGov/layout, PD-Layout
-  artist: GPO Photographer
-  note: no explicit US status template on the Commons page
+- glob: promo/ref/people/Moshe_Sharett_CC0_1948.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
 - glob: unity/Assets/UI/Portraits/sharett.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg
-  status: owner-verify
-  commons: Public domain; PD-IsraelGov, PD-IsraelGov/en, PD-IsraelGov/lang, PD-IsraelGov/layout, PD-Layout
-  artist: GPO Photographer
-  note: no explicit US status template on the Commons page
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
 - glob: promo/ref/people/Haim-Moshe_Shapira.jpg
   licence: Public-Domain
   source: https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg
@@ -181,6 +179,18 @@ rules:
   commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
   artist: Théodore Brauner
   note: no explicit US status template on the Commons page
+- glob: promo/ref/people/Zalman_Shazar_USGov_1966.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
+  status: verified
+  commons: Public domain; PD-Layout, PD-USGov, PD-USGov/en, PD-USGov/layout
+  artist: LBJ Library photo by Yoichi Okamoto
+- glob: unity/Assets/UI/Portraits/shazar.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
+  status: verified
+  commons: Public domain; PD-Layout, PD-USGov, PD-USGov/en, PD-USGov/layout
+  artist: LBJ Library photo by Yoichi Okamoto
 - glob: promo/ref/people/Golda_Meir_CC0_1964.jpg
   licence: CC0-1.0
   source: https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
@@ -190,6 +200,42 @@ rules:
 - glob: unity/Assets/UI/Portraits/golda_meir.jpg
   licence: CC0-1.0
   source: https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
+- glob: promo/ref/people/Chaim_Weizmann_Bain.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+  status: verified
+  commons: Public domain; PD-Bain, PD-Layout, PD-US-expired-text, PD-old-70-1923, PD-old-70-expired, PD-old-X-expired, PD-old-text
+  artist: Bain News Service, publisher
+- glob: unity/Assets/UI/Portraits/weizmann.jpg
+  licence: Public-Domain
+  source: https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+  status: verified
+  commons: Public domain; PD-Bain, PD-Layout, PD-US-expired-text, PD-old-70-1923, PD-old-70-expired, PD-old-X-expired, PD-old-text
+  artist: Bain News Service, publisher
+- glob: promo/ref/people/Yitzhak_Ben_Zvi_CC0_1958.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:President_Isaac_Ben_Zwi_,_president_van_Israel_en_echtgenote_ontvangen_door_het_,_Bestanddeelnr_909-7131.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Harry Pot for Anefo
+- glob: unity/Assets/UI/Portraits/ben_zvi.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:President_Isaac_Ben_Zwi_,_president_van_Israel_en_echtgenote_ontvangen_door_het_,_Bestanddeelnr_909-7131.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Harry Pot for Anefo
+- glob: promo/ref/people/Yaakov_Dori_CC0.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Stafchef_Dori_houdt_toespraak_tijdens_de_militaire_parade_bij_gelegenheid_van_de,_Bestanddeelnr_255-0981.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
+- glob: unity/Assets/UI/Portraits/dori.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Stafchef_Dori_houdt_toespraak_tijdens_de_militaire_parade_bij_gelegenheid_van_de,_Bestanddeelnr_255-0981.jpg
   status: verified
   commons: CC0; CC-zero, Cc-zero
   artist: Willem van de Poll

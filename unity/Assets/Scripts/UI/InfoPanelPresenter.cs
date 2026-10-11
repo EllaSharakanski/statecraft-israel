@@ -67,7 +67,7 @@ namespace Statecraft.Game.UI
         {
             var parts = new List<string>();
             var zone = regions.Armistice?.ZoneAt(q, r, date);
-            var sub = regions.Subdistricts.SubdistrictAt(q, r);
+            var sub = regions.Subdistricts.ShowsOn(date) ? regions.Subdistricts.SubdistrictAt(q, r) : null;   // only while the map shows the layer
             if (zone != null) parts.Add(text.Format("info.armistice_zone", zone.Name, zone.Agreement, MapRegions.DateText(zone.Signed)));
             else if (sub != null) parts.Add(text.Format("info.region", sub.Name, sub.District));
             if (regions.Armistice != null)

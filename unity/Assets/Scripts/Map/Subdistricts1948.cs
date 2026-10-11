@@ -128,12 +128,13 @@ namespace Statecraft.Game.Map
         bool? shown;
         /// <summary>Whether the last <see cref="Apply"/> drew the layer.</summary>
         public bool Shown => shown == true;
-        /// <summary>Draws the layer if <paramref name="date"/> is in its window and takes it off once it is not; a call that
-        /// changes nothing leaves the map alone (so a test pattern drawn over it in a development build stays).</summary>
+        /// <summary>Draws the layer if <paramref name="date"/> is in its window and takes it off once it is not. A call that
+        /// changes nothing leaves the map alone (so a test pattern drawn over it in a development build stays), except that a
+        /// rebuilt map, which draws no layer at all, gets the layer again.</summary>
         public void Apply(DateTime date)
         {
             bool on = ShowsOn(date);
-            if (shown == on) return;
+            if (shown == on && !(on && MapBorders.Current == null)) return;
             shown = on;
             if (on) MapBorders.Use(Layer);
             else if (MapBorders.Current == Layer) MapBorders.Use(null);

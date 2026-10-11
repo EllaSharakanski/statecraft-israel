@@ -88,3 +88,32 @@ def test_only_the_unity_executable_counts_never_a_wrapper_naming_it():
     ])
     assert ml.batch_unity_pids(comm, args) == [101]
     assert ml.batch_unity_pids(comm, args, exclude={101}) == []
+
+
+def test_a_waiting_exclusive_request_runs_before_a_later_shared_one(tmp_path):
+    # Issue #207: while a shared job runs and an exclusive request waits, a newer shared request must not get in first.
+    env = {**os.environ, "STATECRAFT_MACHINE_LOCK": str(tmp_path / "machine.lock")}
+    stamp = [sys.executable, "-c", "import time; print(time.time(), flush=True); time.sleep(0.3)"]
+
+    def start(mode, command):
+        return subprocess.Popen([sys.executable, ml.__file__, mode, "--", *command], env=env, stdout=subprocess.PIPE,
+                                text=True)
+
+    holder = start("--shared", [sys.executable, "-c", "import time; time.sleep(2)"])
+    procs = [holder]
+    try:
+        assert "taking the machine lock (shared)" in holder.stdout.readline()
+        exclusive = start("--exclusive", stamp)
+        procs.append(exclusive)
+        assert "taking the machine lock (exclusive)" in exclusive.stdout.readline()
+        time.sleep(0.5)  # the exclusive request is now waiting behind the holder
+        later = start("--shared", stamp)
+        procs.append(later)
+        assert "taking the machine lock (shared)" in later.stdout.readline()
+        ran_exclusive, ran_later = float(exclusive.stdout.readline()), float(later.stdout.readline())
+        assert ran_exclusive < ran_later, "a later shared request got the lock before a waiting exclusive one"
+    finally:
+        for p in procs:
+            p.terminate()
+            p.wait(10)
+            p.stdout.close()

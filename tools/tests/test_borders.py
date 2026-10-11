@@ -44,15 +44,18 @@ def test_every_sub_district_of_the_1947_schedule_once_with_its_district():
     assert {k: sorted(v) for k, v in got.items()} == {k: sorted(v) for k, v in GAZETTE_1947.items()}
 
 
-def test_each_feature_carries_name_sources_checked_date_and_draft_status():
+def test_each_feature_carries_name_sources_checked_date_and_reviewed_status():
     for f in SOURCE["features"]:
         p = f["properties"]
         assert p["name"] and p["name_he"] and p["name_ar"], p["id"]
         assert p["sources"] and all(s.startswith("https://") for s in p["sources"]), p["id"]
-        assert p["checked"] == "2026-10-11" and p["status"] == "draft", p["id"]
+        assert p["checked"] == "2026-10-11" and p["status"] == "sensitivity-reviewed", p["id"]   # owner-delegated, 2026-10-11
+        assert "Wikipedia" in p["names_source"], p["id"]
         assert p["in_force_from"] == "1947-01-01", p["id"]
     meta = SOURCE["statecraft"]
-    assert meta["status"] == "draft" and meta["sources"] and meta["licence_note"] and meta["uncertain_segments"]
+    assert meta["status"] == "sensitivity-reviewed" and meta["sources"] and meta["licence_note"] and meta["uncertain_segments"]
+    assert any("amendment" in q for q in meta["open_questions"]), "the 1947-48 amendment check stays open (review M8)"
+    assert all("district_ar_note" in f["properties"] for f in SOURCE["features"] if f["properties"]["district"] == "Samaria District")
 
 
 def test_rings_are_closed_counter_clockwise_and_in_the_map():
@@ -125,9 +128,11 @@ def test_every_land_hex_and_only_land_has_a_region():
 
 
 def test_a_land_hex_inside_a_sub_district_takes_it_by_its_centre():
+    """Rule 2, except the hexes of Gazette-listed places (rule 5)."""
     shapes = {f["properties"]["id"]: bb.rings(f["geometry"]) for f in SOURCE["features"]}
+    listed = set(bb.place_hexes(bb.listed_places(list(TOWNS.values())), HEXES))
     for h in HEXES["hexes"]:
-        if not h["land"]:
+        if not h["land"] or (h["q"], h["r"]) in listed:
             continue
         inside = [k for k, s in shapes.items() if bb.contains(s, h["lon"], h["lat"])]
         if inside:
@@ -167,11 +172,32 @@ def test_land_beyond_the_frontier_is_outside(lon, lat):
     assert region_of(q, r) == bb.OUTSIDE
 
 
-@pytest.mark.parametrize("hexqr, key", [((-21, 57), bb.OUTSIDE), ((-20, 56), "beersheba"), ((-15, 30), bb.OUTSIDE), ((-14, 30), "gaza")])
+@pytest.mark.parametrize("hexqr, key", [((-21, 57), bb.OUTSIDE), ((-20, 56), "beersheba"), ((-15, 30), bb.OUTSIDE)])
 def test_shore_hexes_follow_their_own_coast(hexqr, key):
     """Review M7: a shore hex takes the side of its nearest land. Off the Sinai coast at Taba the hex is outside, Umm
-    Rashrash (Eilat) is Beersheba; west of Rafah's frontier outside, Rafah's own hex Gaza (p. 133)."""
+    Rashrash (Eilat) is Beersheba; the shore hex west of Rafah's frontier is outside. (Rafah town's own hex is (-15, 31):
+    see test_a_listed_places_hex_takes_its_sub_district.)"""
     assert region_of(*hexqr) == key
+
+
+def test_a_listed_places_hex_takes_its_sub_district():
+    """Rule 5 (controller ruling, owner-delegated, 2026-10-11): the hex the game puts a Gazette-listed place on takes its
+    sub-district, never outside. Pinned: Rafah town (Gaza, p. 133) on (-15, 31), whose centre is 1.7 km outside Gaza in
+    Sinai, and Metulla (Safad, p. 127) on (15, 1), whose centre is about 2.9 km outside Safad."""
+    places = bb.listed_places(list(TOWNS.values()))
+    for name, sub, lon, lat in places:
+        assert region_of(*hg.settlement_hex(lon, lat, HEXES)) == sub, name
+    assert hg.settlement_hex(34.25861, 31.27250, HEXES) == (-15, 31) and region_of(-15, 31) == "gaza"
+    assert hg.settlement_hex(35.57444, 33.27889, HEXES) == (15, 1) and region_of(15, 1) == "safad"
+
+
+def test_two_sub_districts_listed_on_one_hex_fail_the_bake_even_if_one_matches_the_centre():
+    """Review 3 of rule 5: a hex holding listed places of two sub-districts is a conflict to resolve by hand, even when
+    the centre rule already gives one of them; the bake must not pass it quietly."""
+    places = [("town_a", "gaza", 34.25861, 31.27250), ("town_b", "beersheba", 34.25861, 31.27250)]
+    ids = {"gaza": 1, "beersheba": 2}
+    with pytest.raises(ValueError, match="different sub-districts"):
+        bb.apply_places({(-15, 31): ids["gaza"]}, places, HEXES, ids)
 
 
 def test_the_layer_shows_from_the_start_until_replaced_with_its_label():
@@ -194,33 +220,13 @@ def test_the_sim_never_reads_the_border_files():
         assert not re.search(r"subdistrict", text, re.IGNORECASE), cs
 
 
-# Places -> sub-district as listed in the 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2; pages as printed,
-# 125-133; read 2026-10-11, the page images where the text layer was unclear). None of them is a digitiser seed (review I3):
-# the seeds are the chief towns, so those would pass by construction. Mostly near a line on purpose.
-GAZETTE_MEMBERS = {   # settlements_1948.yaml rows
-    "jaffa": ("jaffa", "p. 132"), "petah_tikva": ("jaffa", "p. 132"), "haifa": ("haifa", "p. 128"),
-    "hadera": ("haifa", "p. 128"), "zikhron_yaakov": ("haifa", "p. 128"), "netanya": ("tulkarm", "p. 130"),
-    "lod": ("ramle", "p. 132"), "rishon_lezion": ("ramle", "p. 133"), "rehovot": ("ramle", "p. 133"),
-    "rosh_pinna": ("safad", "p. 127"), "degania_alef": ("tiberias", "p. 127"), "nahalal": ("nazareth", "p. 126"),
-    "ein_harod": ("beisan", "p. 126"),
-}
-# Further places: sub-district, lon, lat (Wikipedia coordinates via the API, prop=coordinates, 2026-10-11), Gazette page.
-PLACES = {
-    "Kefar Sava": ("jaffa", 34.90833, 32.17139, "p. 132"), "Kafr Saba": ("tulkarm", 34.93722, 32.18111, "p. 130"),
-    "Herzliya": ("jaffa", 34.84583, 32.16528, "p. 132"), "Ra'anana": ("jaffa", 34.86667, 32.18333, "p. 132"),
-    "Holon": ("jaffa", 34.76667, 32.01667, "p. 132"), "Bat Yam": ("jaffa", 34.75000, 32.01667, "p. 132"),
-    "Kafr Qasim": ("tulkarm", 34.97510, 32.11510, "p. 130"), "Jaljuliya": ("tulkarm", 34.95180, 32.15353, "p. 130"),
-    "Qalqiliya": ("tulkarm", 34.96861, 32.19028, "p. 130"), "Yibna": ("ramle", 34.74639, 31.86611, "p. 133"),
-    "Latrun": ("ramle", 34.98139, 31.83194, "p. 132"), "Gedera": ("ramle", 34.77722, 31.81194, "p. 132"),
-    "Faluja": ("gaza", 34.74778, 31.62472, "p. 133"), "Isdud": ("gaza", 34.66167, 31.75361, "p. 133"),
-    "Negba": ("gaza", 34.68306, 31.66083, "p. 133"), "Be'er Tuvya": ("gaza", 34.72389, 31.73611, "p. 133"),
-    "Qastina": ("gaza", 34.76222, 31.73917, "p. 133"), "Ruhama": ("beersheba", 34.70556, 31.49667, "p. 133"),
-    "Beit Jibrin": ("hebron", 34.89833, 31.60528, "p. 130"), "Umm el Fahm": ("jenin", 35.15361, 32.51944, "p. 129"),
-    "Afula": ("nazareth", 35.28806, 32.60639, "p. 126"), "Kafr Kanna": ("nazareth", 35.35000, 32.75000, "p. 126"),
-    "Nahariya": ("acre", 35.09889, 33.00583, "p. 125"), "Kafr Bir'im": ("safad", 35.41417, 33.04361, "p. 127"),
-    "Metulla": ("safad", 35.57444, 33.27889, "p. 127"), "Ein Gev": ("tiberias", 35.63972, 32.78278, "p. 127"),
-    "Bir Zeit": ("ramallah", 35.19556, 31.97222, "p. 131"), "Bethlehem": ("jerusalem", 35.20639, 31.70444, "p. 131"),
-}
+# Places -> sub-district as listed in the 1947 Schedule: borders_bake.GAZETTE_SETTLEMENTS (settlements_1948.yaml rows) and
+# borders_bake.GAZETTE_PLACES (Wikipedia coordinates), each with its Gazette page; they also drive the bake's override
+# (rule 5). None is a digitiser seed (review I3): the seeds are the chief towns, so those would pass by construction.
+# Exception: Metulla passes the true-line test by the digitiser's village patch (PATCHES["villages"]): the 1:750,000
+# map draws it on the frontier's tip, so its row checks the patch, not an independent line.
+GAZETTE_MEMBERS = bb.GAZETTE_SETTLEMENTS
+PLACES = bb.GAZETTE_PLACES
 # A place within this of its own sub-district passes outside it: the stated accuracy is about +-1 km, and these are known
 # near-line cases (also in the GeoJSON's open_questions).
 NEAR_LINE_KM = 0.3

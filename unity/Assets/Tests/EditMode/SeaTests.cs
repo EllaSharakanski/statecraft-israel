@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
 using UnityEditor;
@@ -16,13 +17,16 @@ public class SeaTests
     [TearDown]
     public void Reset() { MapShaderGlobals.PinWaterTime(null); RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
 
-    static MapScene OpenMap()
+    static MapScene OpenMap(bool reopen = true)
     {
-        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        if (reopen) EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>(); map.Build();
         // Every render here measures colour or local detail: Track A's tilt-shift blurs the top and bottom bands (task-3
         // carry m6, applied at the merge point), so it is off; the TearDown turns it back on.
         RenderSample.TiltShift(false);
+        // The water and shore themselves: the settlement kits' shore palms, harbour and town blocks stand on and in front of
+        // the coast samples, so they are off for every sea render (the map's teardown removes the switches).
+        foreach (var n in new[] { "kits", "trees" }) if (VisualToggles.Names.Contains(n)) VisualToggles.Set(n, false);
         return map;
     }
 
@@ -133,13 +137,76 @@ public class SeaTests
         Assert.Less(deepSat, 0.7f, "the open sea is muted");
     }
 
+    /// <summary>Review N3: with the settlement kits on, the beach along Tel Aviv's shore (inside its paved footprint, with its
+    /// shore palms) still reads as pale sand. One beach sample per coast-texture row from 32.06 to 32.12 N (Tel Aviv's own
+    /// beach: Jaffa's old town and harbour meet the sea south of it, and the Yarkon's mouth lies north of it), 200 m inland of
+    /// the shore; a palm crown or a block stands in front of some of them from this pose, so at least
+    /// <see cref="SandShareBesideTelAviv"/> of them must be sand, and those must be lighter than open coastal plain outside
+    /// every town's footprint (5 km inland at 32.22 N, north of Herzliya) by <see cref="BeachOverPlain"/>.</summary>
+    [UnityTest]
+    public IEnumerator TheBeachBesideTelAvivStaysSandWithTheKitsOn()
+    {
+        var map = OpenMap();
+        yield return null;
+        foreach (var n in new[] { "kits", "trees" }) VisualToggles.Set(n, true);
+        var coast = new Texture2D(2, 2);
+        coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));
+        int RowOf(float lat) => Mathf.FloorToInt((lat - 29.45f) / (33.35f - 29.45f) * coast.height);
+        int Shore(int row)
+        {
+            int c = Mathf.FloorToInt((34.95f - 34.2f) / (35.9f - 34.2f) * coast.width);
+            while (c > 0 && coast.GetPixel(c, row).r >= 0.5f) c--;
+            return c;
+        }
+        Vector3 At(int c, int r)
+        {
+            double lon = 34.2 + (c + 0.5) / 2048.0 * (35.9 - 34.2), lat = 29.45 + (r + 0.5) / 2048.0 * (33.35 - 29.45);
+            var w = map.Frame.ToWorld(lon, lat, 0); w.y = map.Terrain.SampleHeight(w); return w;
+        }
+        var beaches = new System.Collections.Generic.List<Vector3>();
+        for (int r = RowOf(32.06f); r <= RowOf(32.12f); r++) beaches.Add(At(Shore(r) + 3, r));
+        int rowN = RowOf(32.22f); var plain = At(Shore(rowN) + 60, rowN);
+        Object.DestroyImmediate(coast);
+        bool Paved(Vector3 p) => map.Settlements.Any(t =>
+        {
+            var c = map.Frame.ToWorld(t.Lon, t.Lat, 0);
+            return new Vector2(p.x - c.x, p.z - c.z).magnitude < 1.1f * Statecraft.Game.Map.Kits.SettlementKits.FootprintRadiusM(t, map.Hexes.hex_size_km * 1000f);
+        });
+        Assert.IsTrue(beaches.All(Paved), "the beach samples lie inside a town's footprint");
+        Assert.IsFalse(Paved(plain), "the plain reference lies outside every footprint");
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        rig.LookAt = beaches[beaches.Count / 2]; rig.Distance = 30000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+        var px = new Vector2[beaches.Count];
+        var shot = RenderSample.Render(cam, 1920, 1080, beaches.ToArray(), px);
+        var sand = new System.Collections.Generic.List<Color>();
+        for (int i = 0; i < beaches.Count; i++)
+        {
+            var c = shot.Mean((int)px[i].x, (int)px[i].y, 1);
+            if (Luma(c) > 0.72f && c.b / c.g > 0.62f) sand.Add(c);
+        }
+        var one = new Vector2[1];
+        rig.LookAt = plain; rig.Apply();
+        Color l = RenderSample.Render(cam, 960, 540, new[] { plain }, one).Mean((int)one[0].x, (int)one[0].y, 2);
+        float share = sand.Count / (float)beaches.Count, sandLuma = sand.Count > 0 ? sand.Average(c => Luma(c)) : 0f;
+        TestContext.WriteLine($"{sand.Count} of {beaches.Count} beach samples along Tel Aviv read as sand ({share:P0}), mean luma {sandLuma:0.000}; " +
+            $"plain north of Herzliya {l} (luma {Luma(l):0.000})");
+        Assert.GreaterOrEqual(share, SandShareBesideTelAviv, "the kits bury Tel Aviv's beach");
+        Assert.Greater(sandLuma, Luma(l) + BeachOverPlain, "the beach is lighter than the open plain");
+    }
+
+    /// <summary>Floors for TheBeachBesideTelAvivStaysSandWithTheKitsOn.</summary>
+    const float SandShareBesideTelAviv = 0.75f, BeachOverPlain = 0.10f;
+
     /// <summary>promo-sea: a sand strip lines the Mediterranean shore (promo 03's beach). Rendered on the same row west of
     /// Tel Aviv: about 200 m inland of the shore the ground is pale sand, lighter than the plain 5 km inland and less
-    /// yellow-green than the bare coastal edge it covers.</summary>
+    /// yellow-green than the bare coastal edge it covers. The map is built without the settlement kits, which pave the ground
+    /// of a town's footprint (Tel Aviv's covers that plain sample).</summary>
     [UnityTest]
     public IEnumerator ASandStripLinesTheMediterraneanShore()
     {
-        var map = OpenMap();
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().ConfigureKits(null, null);   // the scene is not saved
+        var map = OpenMap(reopen: false);
         yield return null;
         var coast = new Texture2D(2, 2);
         coast.LoadImage(File.ReadAllBytes(MapTexturePaths.Coast));   // readable copy; row 0 = south
@@ -248,6 +315,56 @@ public class SeaTests
         Assert.Less(worst, 0.035, "no breaker crest aliases on any water pixel");
         Assert.Greater(lMax - lMin, 0.03f, "the breakers roll through at the gameplay zoom");
         Assert.Less(far, 0.01f, "the overview sees the breakers' mean, not a crawl");
+    }
+
+    /// <summary>Bug B10: the open sea showed a blocky checker up close. The waves came from value noise on map-aligned
+    /// lattices (700 m swell, 170 m chop), differenced along the axes, so the shading jumped at the lattice lines. Rendered
+    /// straight down (orthographic, 4 m a pixel, 25 km offshore, the chop and tilt at full strength), the luma gradient
+    /// across each axis is folded by its position within each lattice's cell (16 bins): a block grid piles its edges into a
+    /// few bins, isotropic waves spread them evenly. The block-edge energy is (largest bin - smallest) / mean.</summary>
+    [UnityTest]
+    public IEnumerator TheOpenSeaHasNoBlockGrid()
+    {
+        var map = OpenMap();
+        yield return null;
+        VisualToggles.Set("grid", false);
+        MapShaderGlobals.PinWaterTime(100f);
+        var centre = map.Frame.ToWorld(34.45, 32.0, 0); centre.y = map.Terrain.SampleHeight(centre);
+        var origin = map.Terrain.transform.position;
+        const int n = 1024; const float metresPerPixel = 4f;
+        var go = new GameObject("TopSea"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            cam.orthographic = true; cam.orthographicSize = n * metresPerPixel / 2f; cam.aspect = 1f;
+            cam.transform.position = centre + Vector3.up * 20000f; cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            var r = RenderSample.Render(cam, n, n);
+            float x0 = centre.x - origin.x - n * metresPerPixel / 2f, z0 = centre.z - origin.z - n * metresPerPixel / 2f;
+            float worst = 0f; string log = "";
+            foreach (var cell in new[] { 700f, 170f })
+                foreach (var alongX in new[] { true, false })
+                {
+                    var sum = new double[16]; var count = new int[16];
+                    for (int j = 1; j < n - 1; j++)
+                        for (int i = 1; i < n - 1; i++)
+                        {
+                            // The edge between pixel (i, j) and its next neighbour lies at map metre x0 + (i + 1) * 4 (x
+                            // east; image row 0 is the south edge, so rows run north like map z).
+                            float edgeM = (alongX ? x0 + (i + 1) * metresPerPixel : z0 + (j + 1) * metresPerPixel) / cell;
+                            int bin = Mathf.Clamp((int)((edgeM - Mathf.Floor(edgeM)) * 16f), 0, 15);
+                            float d = alongX ? Luma(r.At(i + 1, j)) - Luma(r.At(i, j)) : Luma(r.At(i, j + 1)) - Luma(r.At(i, j));
+                            sum[bin] += Mathf.Abs(d); count[bin]++;
+                        }
+                    double lo = double.MaxValue, hi = 0, all = 0;
+                    for (int b = 0; b < 16; b++) { double m = sum[b] / count[b]; lo = System.Math.Min(lo, m); hi = System.Math.Max(hi, m); all += m / 16; }
+                    float energy = (float)((hi - lo) / all);
+                    worst = Mathf.Max(worst, energy);
+                    log += $"{cell:0} m {(alongX ? "x" : "z")} {energy:0.000}; ";
+                }
+            TestContext.WriteLine($"block-edge energy: {log}worst {worst:0.000}");
+            Assert.Less(worst, 0.25f, "no lattice of block edges in the sea's shading");
+        }
+        finally { Object.DestroyImmediate(go); }
     }
 
     /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>

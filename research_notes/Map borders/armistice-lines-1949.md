@@ -1,6 +1,6 @@
 # The 1949 armistice lines: sources and how to digitise them (research note, 2026-10-11)
 
-Status: built for Syria, Lebanon and Egypt (below, status draft); Jordan a gap. The lines are dated and sensitive: before a shared build shows them they
+Status: built for all four fronts (below, status draft); Jordan at low accuracy from a low-resolution scan. The lines are dated and sensitive: before a shared build shows them they
 need #61-style dating (below) and the owner's sensitivity review (chapters design §13; `lines.yaml`, chapters design
 §10). Owner rulings for this work (2026-10-11): the real lines, from the four General Armistice Agreements and their
 annexed maps; never a later or simplified "Green Line" drawing as the source (one may be used as a cross-check, and is
@@ -21,7 +21,8 @@ draws the zones over the sub-districts from each agreement's date and the info p
 | Syria (20 Jul 1949) | The line through Annex I's 24 MR points (typed from UNTS vol. 42 pp. 342-344); "a line" stretches straight, the "along ..." stretches traced on the annexed map's **green** line (the legend: green = ADL, red = defensive area, black = Israeli truce line, brown = Syrian truce line, purple hatch = DMZ) in the **UN ODS colour scan of S/1353/Rev.1** (PDF page 14, 3165 x 8759 px), registered on the Annex points (median 35 m, max 125 m). The DMZ in three parts (4.1, 27.3, 33.8 km2; 65.2 in all) from the hatching of the UNISPAL 1-bit scan, georeferenced on its 1-km grid (rms 11-14 m). | +-0.1 km at the points, +-0.1-0.2 km traced; where the zone edge is the line, the two scans agree to a median of 12-98 m. |
 | Lebanon (23 Mar 1949) | Art. V.1's international boundary as the sub-district data's Mandate frontier, Ras en Naqura to the tripoint (its end is 0.55 km from Annex I.1's tripoint). | about +-1 km (1:750,000 source), +-1.5 km at the uncertain segments. |
 | Egypt (24 Feb 1949) | Art. VI.1 from the Wadi Hasi mouth through Deir Suneid to 3 km east of the Gaza-Al Majdal highway and along the offset to Gaza, on the Survey of Palestine 1:100,000 sheet 9 "Gaza" (10-km grid, rms 6-8 m). The El Auja DMZ from Art. VIII.2's four MR points, closed along the Mandate frontier. | about +-0.3 km; cross-check: the signed 1950 modus vivendi map S/1471 draws its demarcation line on this one (within about 0.1 km, MR 103-107 / 100.2-102.8). El Auja +-0.1 km at the points, +-1 km on the frontier. |
-| Jordan (3 Apr 1949) | Nothing: a gap. | - |
+| Egypt, 1950 (22 Feb 1950) | The demarcation line as drawn on the signed modus vivendi map (S/1471, 1:20,000, sheet 1 "Ascalon" on UNISPAL, sheet 2 "Khan Yunis" in the UN Treaty Collection), traced where it is drawn, and Art. I.1's zone A and C lines from their MR points. Its own feature (controller ruling 2026-10-11). | about +-0.1 km (georeference rms 12-20 m). The map draws the line only in pieces (gaps recorded). |
+| Jordan (3 Apr 1949) | **Low accuracy** (owner ruling 2026-10-11): traced from UNISPAL's original upload of the signed map 1 (3119 x 8630 px, about 51 m a pixel), georeferenced on 30 town symbols (Wikidata coordinates; the printed grid on this copy put the towns 5-8 km off and is not used). Line A (the Iraqi sector) split into Art. VI.3's stages (8 May, 22 May, 17 Jul 1949); sector (a) Kh Deir Arab-Latrun-Jerusalem, Jerusalem-Dead Sea (line B), Dead Sea-Aqaba (d) from 3 Apr. `source_quality: low_res_scan`. | about +-1-1.5 km north (leave-one-out rms 0.77 km, max 1.44), +-1.5-2.5 km south (1.47, max 2.61); the pen line is 250 m wide. |
 
 Gaps and findings:
 - **Jordan:** no full-resolution, public-domain scan of the signed map 1 or map 2 was found. Searched (2026-10-11): UNISPAL
@@ -29,7 +30,7 @@ Gaps and findings:
   Archives catalogue (needs a JavaScript check), Wikimedia Commons (six API searches), NLI and ECF (JavaScript catalogues,
   to request). Commons has a 3119 x 8630 px colour copy of the signed map 1 ("File:Green Line - Cease Fire Agreement 30 Nov
   1948.jpg"), uploaded as "own work" under CC0 with no source: not used. The full list is in the GeoJSON's `fronts`.
-- **Egypt south of Gaza:** not drawn. Art. VI.1 ends "continuing thus to the Egyptian frontier"; Art. VI.3 has Israel
+- **Egypt south of Gaza, 1949:** not drawn (from 22 Feb 1950 the modus vivendi line is). Art. VI.1 ends "continuing thus to the Egyptian frontier"; Art. VI.3 has Israel
   evacuate its Cemetery outpost (MR 0816-0723) and allows a new one at MR 0836-0700, so the line meets the frontier
   south-east of Rafah (about N 70-72), which neither the highway's bearing nor a coast-road offset reaches. The Egyptian-held
   area is not drawn for the same reason. IBS 46 (US State Department, 1965) says the Gaza Strip sector "dates from February
