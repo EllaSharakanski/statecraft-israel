@@ -147,6 +147,11 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .hud-two-row .top-bar { height: 216px; padding-top: 6px; padding-bottom: 4px; flex-wrap: wrap; justify-content: space-between; align-content: space-around; }
 .hud-two-row .meters { width: 78%; flex-grow: 1; }
 .hud-two-row .right-column, .hud-two-row .screen, .hud-two-row .toast { top: 232px; }
+/* Narrower still (a phone upright; HudPresenter adds hud-three-row with hud-two-row): the badge, the meters and the
+   screen buttons with End Turn take a row each, and the panels move down under the taller bar (#210). */
+.hud-three-row .top-bar { height: 312px; }
+.hud-three-row .meters { width: 100%; }
+.hud-three-row .right-column, .hud-three-row .screen, .hud-three-row .toast { top: 328px; }
 .turn-box { width: 150px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
 #attention { font-size: 16px; }
 .end-turn {
@@ -203,11 +208,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Full screens (Cabinet, Budget, Defence, Why) open in the centre, one at a time. */
 /* Hidden until ScreenNav opens one (never visible while loading; playtest 2, P2-1). Right edge clear of the 480px column. */
 .screen { display: none; position: absolute; left: 552px; right: 512px; top: 112px; bottom: 16px; padding: 18px; background-color: rgb(11, 18, 32); }   /* opaque: a reading screen, and the map labels must not show through */
-.screen-header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 10px; padding-bottom: 4px; }
+.screen-header { flex-direction: column; align-items: stretch; border-bottom-width: 1px; border-color: var(--gold-dim); margin-bottom: 10px; padding-bottom: 4px; }
 /* Screen titles and section names in gold, letter-spaced, as the promo's "DEFENSE" and "LEADERSHIP". */
 .screen-header > .title { color: var(--gold-light); letter-spacing: 1px; }
-/* A header subtitle wraps under the title, and within the screen, in a narrow window (#211). */
-.screen-header > Label { white-space: normal; flex-shrink: 1; min-width: 0; }
+/* The subtitle sits under the title, the screen's full width, and wraps in a narrow window (#211). A column, not a
+   wrapping row: a shrinking, wrapping label in a row re-measured itself every frame (PromoScreensTests idle test). */
+.screen-header > .muted { white-space: normal; }
 .screen .meter-name { color: var(--gold); letter-spacing: 2px; font-size: 16px; margin-top: 8px; }
 .row { flex-direction: row; align-items: center; }
 .grow { flex-grow: 1; }
@@ -354,7 +360,6 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .budget-title { margin: 0 18px 0 0; }
 .budget-share { margin-left: 16px; font-size: 18px; }
 /* A wide screen's header wraps its subtitle under the title when the window is narrow. */
-.screen-wide > .screen-header { flex-wrap: wrap; }
 /* Square and narrower windows: a slimmer side column leaves room for two columns of cards. */
 .hud-two-row .cabinet-side { width: 250px; }
 .hud-two-row .pm-card .card-plate { height: 210px; }

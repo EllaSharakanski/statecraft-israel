@@ -98,6 +98,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Every figure is the sim's; the promo's forces, intelligence and procurement panels are left out because the sim does
   not model them yet. A hidden screen does no work when the game changes, and an open one updates in place, keeping
   keyboard focus. Presentation only.
+- The screens fit narrow windows (#210, #211): in the two-row HUD (narrower than about square, such as a phone's 390 px)
+  every screen takes the full width, with the event column and the hex panel hidden under it, and a screen's header
+  wraps. Escape closes the open screen. The Cabinet says a refusal that applies to every candidate (the Prime Minister's
+  or the President's office) once, not under each name (#215).
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
