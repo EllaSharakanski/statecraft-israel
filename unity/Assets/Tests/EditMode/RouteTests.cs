@@ -223,6 +223,60 @@ public class RouteTests
         finally { Object.DestroyImmediate(map.gameObject); }
     }
 
+    /// <summary>Re-review nit 1: a route with an impossible date (year 0000, a 13th month) is skipped with a warning by the
+    /// tolerant read, and the map still builds with every other route; the strict parse still rejects it.</summary>
+    [Test]
+    public void ABadDateSkipsOnlyThatRoute()
+    {
+        const string good = "- {id: a, kind: road, status: draft, from: '1946', length_km: 1, points: [[34.5, 31.5], [34.6, 31.6]]}\n";
+        foreach (var bad in new[] { "0000", "1948-13-40" })
+        {
+            var yaml = "routes:\n" + good + $"- {{id: b, kind: road, status: draft, from: '{bad}', length_km: 1, points: [[34.5, 31.5], [34.6, 31.6]]}}\n";
+            var warnings = new List<string>();
+            var routes = RoutePaths.ReadOrNone(yaml, Bounds, warnings.Add);
+            CollectionAssert.AreEqual(new[] { "a" }, routes.Select(r => r.Id).ToList(), bad);
+            Assert.AreEqual(1, warnings.Count, bad);
+            StringAssert.Contains("'b' from/to", warnings[0]);
+            var e = Assert.Throws<InvalidDataException>(() => RoutePaths.Parse(yaml, Bounds, "r.yaml"));
+            StringAssert.Contains("'b' from/to", e.Message);
+        }
+
+        EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+        var map = new GameObject("MapScene").AddComponent<MapScene>();
+        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap);
+        Assert.IsTrue(inputs.RoutesYaml.Contains("from: '1948-06-14'"));
+        inputs.RoutesYaml = inputs.RoutesYaml.Replace("from: '1948-06-14'", "from: '0000'");
+        UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("'burma_road' from/to"));
+        try
+        {
+            map.Build(inputs);
+            var groups = RoutesRoot(map).Find(RouteLayer.RibbonsName).GetComponentsInChildren<RouteGroup>(true);
+            Assert.Greater(groups.Length, 0, "the other routes are drawn");
+            Assert.IsFalse(groups.Any(g => g.Window.From.Year == 1948), "only the bad route is left out");
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Re-review nit 2: a map rebuilt mid-game draws its routes as at the game's date at once, not as at 15 May
+    /// until the next state change.</summary>
+    [Test]
+    public void ARebuiltMapKeepsTheGameDate()
+    {
+        var map = BuildMap();
+        try
+        {
+            Assert.IsNull(map.RouteDate);
+            RouteLayer.ShowAt(map, new System.DateTime(1948, 7, 1));
+            Assert.AreEqual(new System.DateTime(1948, 7, 1), map.RouteDate);
+            map.Build();
+            var burma = RoutesRoot(map).Find(RouteLayer.RibbonsName).GetComponentsInChildren<RouteGroup>(true)
+                .Single(g => g.Window.From == new System.DateTime(1948, 6, 14));
+            Assert.IsTrue(burma.gameObject.activeSelf, "shown at once after the rebuild");
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+
     /// <summary>I1 and M11: the train is a showcase. Editor renders and `?shot` hold it still (the promo frames); `?train`
     /// or `?units` runs it; normal play has none.</summary>
     [Test]

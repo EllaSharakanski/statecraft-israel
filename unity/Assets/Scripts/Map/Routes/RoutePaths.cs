@@ -58,9 +58,13 @@ namespace Statecraft.Game.Map.Routes
         public static DateTime Bound(string text)
         {
             if (text == null || !DateRule.IsMatch(text)) throw new FormatException($"'{text}' is not 'YYYY' or 'YYYY-MM-DD'");
-            return text.Length == 4
-                ? new DateTime(int.Parse(text, CultureInfo.InvariantCulture), 1, 1)
-                : DateTime.ParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            try
+            {
+                return text.Length == 4
+                    ? new DateTime(int.Parse(text, CultureInfo.InvariantCulture), 1, 1)
+                    : DateTime.ParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            catch (ArgumentOutOfRangeException e) { throw new FormatException($"'{text}' is not a date", e); }   // year 0000
         }
 
         public static RouteWindow WindowOf(RoutePath r) => new RouteWindow(Bound(r.From), r.To == null ? (DateTime?)null : Bound(r.To));
@@ -72,16 +76,17 @@ namespace Statecraft.Game.Map.Routes
             Action<string> warn, string file = DefaultFileName)
         {
             if (string.IsNullOrWhiteSpace(yaml)) { warn($"{file}: missing, so the map draws no railways or roads"); return new List<RoutePath>(); }
-            try { return Parse(yaml!, bounds, file); }
+            try { return Parse(yaml!, bounds, file, warn); }
             catch (InvalidDataException e) { warn($"{e.Message}; the map draws no railways or roads"); return new List<RoutePath>(); }
         }
 
         /// <summary>Parses the file. Every problem throws InvalidDataException naming <paramref name="file"/> and, for
         /// content errors, the route id: YAML syntax, duplicate or unknown keys, no routes, a bad or duplicate id, an unknown
         /// kind, fewer than two points, a point that is not a [lon, lat] pair of finite numbers or lies outside
-        /// <paramref name="bounds"/> when given.</summary>
+        /// <paramref name="bounds"/> when given, or a bad from/to (unless <paramref name="skipBadWindow"/> is given: then that
+        /// route alone is left out and reported through it).</summary>
         public static List<RoutePath> Parse(string yaml, (double lon0, double lon1, double lat0, double lat1)? bounds = null,
-            string file = DefaultFileName)
+            string file = DefaultFileName, Action<string>? skipBadWindow = null)
         {
             RoutePathFile doc;
             try
@@ -92,6 +97,7 @@ namespace Statecraft.Game.Map.Routes
             catch (YamlException e) { throw new InvalidDataException($"{file}: {e.Message}", e); }
             if (doc?.Routes == null || doc.Routes.Count == 0) throw new InvalidDataException($"{file}: no routes");
             var ids = new HashSet<string>();
+            var skipped = new List<RoutePath>();
             foreach (var r in doc.Routes)
             {
                 if (r == null || string.IsNullOrWhiteSpace(r.Id)) throw new InvalidDataException($"{file}: a route has an empty id");
@@ -100,10 +106,20 @@ namespace Statecraft.Game.Map.Routes
                 if (!ids.Add(r.Id)) throw new InvalidDataException($"{at} duplicate id");
                 if (!Kinds.Contains(r.Kind)) throw new InvalidDataException($"{at} has unknown kind '{r.Kind}' (rail, road or track)");
                 if (r.Points == null || r.Points.Count < 2) throw new InvalidDataException($"{at} needs at least two points");
-                RouteWindow window;
-                try { window = WindowOf(r); }
-                catch (FormatException e) { throw new InvalidDataException($"{at} from/to: {e.Message}", e); }
-                if (window.To != null && window.To <= window.From) throw new InvalidDataException($"{at} to must be after from");
+                string? badWindow = null;
+                try
+                {
+                    var window = WindowOf(r);
+                    if (window.To != null && window.To <= window.From) badWindow = $"{at} to must be after from";
+                }
+                catch (FormatException e) { badWindow = $"{at} from/to: {e.Message}"; }
+                if (badWindow != null)
+                {
+                    // The tolerant read (ReadOrNone) skips just this route with a warning (re-review nit 1); a strict read throws.
+                    if (skipBadWindow == null) throw new InvalidDataException(badWindow);
+                    skipBadWindow($"{badWindow}; that route is not drawn");
+                    skipped.Add(r);
+                }
                 for (int i = 0; i < r.Points.Count; i++)
                 {
                     var p = r.Points[i];
@@ -113,6 +129,7 @@ namespace Statecraft.Game.Map.Routes
                         throw new InvalidDataException(FormattableString.Invariant($"{at} point {i} ({p[0]}, {p[1]}) is outside the map"));
                 }
             }
+            doc.Routes.RemoveAll(skipped.Contains);
             return doc.Routes;
         }
 

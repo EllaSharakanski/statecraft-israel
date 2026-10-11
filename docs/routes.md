@@ -18,7 +18,8 @@ Both route files are map-only. `ContentLoader` never reads them, so the content 
 (`RouteTests.TheRoutesDoNotMoveTheContentHash` loads the content with and without them). The game reads only the
 traced file, so the WebGL manifest ships only that one: `ContentManifest.ToolInputs` leaves the hand-written
 `routes_1948.yaml` out. If the traced file is missing or malformed (a stale manifest, an old content copy), the map
-builds without routes and logs a warning (`RoutePaths.ReadOrNone`).
+builds without routes and logs a warning (`RoutePaths.ReadOrNone`). A route with an impossible date (year 0000, a 13th
+month) is skipped alone, with a warning.
 
 ## The data
 
@@ -62,6 +63,8 @@ note states only what its cited source says, and the source is named in the note
 is inside it (review C1):
 - `RouteLayer` builds one ribbon group per window.
 - `RouteLayer.ShowAt` switches the groups. The game calls it with its date on every state change (`GameRoot`).
+- `ShowAt` also remembers the date on the map (`MapScene.RouteDate`), so a map rebuilt mid-game draws its routes as at
+  the game's date at once.
 - It is presentation only: the sim does not read the routes, and no golden moves.
 - `from` is the earliest date the sources support for the whole line as drawn. Where no source gives an earlier one, it
   is 1946, the map's date.

@@ -20,6 +20,9 @@ namespace Statecraft.Game.Map
         public Material MarkerMaterial => markerMaterial;
         /// <summary>The settlements the last Build placed (settlements_1948.yaml), for the UI's map labels.</summary>
         public IReadOnlyList<Settlement> Settlements { get; private set; } = new List<Settlement>();
+        /// <summary>The game date the routes were last shown at (RouteLayer.ShowAt), so a rebuild draws them as at that date;
+        /// null before the game has set one (the routes then show as at the game's start).</summary>
+        public DateTime? RouteDate { get; set; }
 
         /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
         public const string SelectionName = "HexSelection";
@@ -127,7 +130,7 @@ namespace Statecraft.Game.Map
             // The 1948 railways and roads (issue #35), map-only, as at the game's start until the game sets its date; a missing or
             // malformed file means no routes and a warning; the train only in screenshots, editor renders and ?train.
             var routes = Routes.RoutePaths.ReadOrNone(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Debug.LogWarning);
-            Routes.RouteLayer.Build(Terrain, Frame, routes, Routes.RouteLayer.ModeForThisRun(), Routes.RouteLayer.DefaultDate);
+            Routes.RouteLayer.Build(Terrain, Frame, routes, Routes.RouteLayer.ModeForThisRun(), RouteDate ?? Routes.RouteLayer.DefaultDate);
             DiagLog.BootPhase("routes built");
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();

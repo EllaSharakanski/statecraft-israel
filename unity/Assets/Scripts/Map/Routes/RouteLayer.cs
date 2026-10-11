@@ -59,10 +59,13 @@ namespace Statecraft.Game.Map.Routes
             TrainRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
 
         /// <summary>Shows the route groups whose window covers <paramref name="date"/> and hides the rest (the game calls it
-        /// on every state change; cheap: a few SetActive calls). A map without routes is left alone.</summary>
+        /// on every state change; cheap: a few SetActive calls), and remembers the date on the map, so a rebuild of the map
+        /// (MapScene.Build) draws the routes as at the game's date at once. A map without routes is left alone.</summary>
         public static void ShowAt(MapScene map, DateTime date)
         {
-            if (map == null || map.Terrain == null) return;
+            if (map == null) return;
+            map.RouteDate = date;                   // a later rebuild of this map starts at the game's date (re-review nit 2)
+            if (map.Terrain == null) return;
             var ribbons = map.Terrain.transform.Find($"{RootName}/{RibbonsName}");
             if (ribbons == null) return;
             foreach (var g in ribbons.GetComponentsInChildren<RouteGroup>(true)) g.gameObject.SetActive(g.Window.Covers(date));
