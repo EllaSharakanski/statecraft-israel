@@ -45,7 +45,13 @@ namespace Statecraft.Game.Map.Kits
 
         /// <summary>Claims every settlement's footprint on <paramref name="ground"/> (largest first, so a big town's disc is
         /// whole and its small neighbour fits around it) and returns one mesh per settlement, keyed by id.</summary>
-        public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground)
+        public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground) =>
+            Build(list, ground, out _);
+
+        /// <summary>As Build, also returning every claimed lot (centre, radius, owning settlement id): buildings and landmarks
+        /// of all towns, none overlapping another (tests).</summary>
+        public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
+            out List<(Vector2 centre, float radius, string id)> claimed)
         {
             var order = new List<Settlement>(list);
             order.Sort((a, b) => KitPopulation.Of(b.Id).CompareTo(KitPopulation.Of(a.Id)) != 0
@@ -66,6 +72,7 @@ namespace Statecraft.Game.Map.Kits
                 int n = BuildOne(s, centres[s.Id], ground, km, lots);
                 result.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
+            claimed = lots.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
             return result;
         }
 
@@ -100,7 +107,32 @@ namespace Statecraft.Game.Map.Kits
             }
         }
 
-        sealed class Lot { public Vector2 c; public float r; }
+        sealed class Lot { public Vector2 c; public float r; public string id = ""; }
+
+        static bool FreeAt(List<Lot> lots, Vector2 p, float r)
+        {
+            foreach (var l in lots) if ((l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false;
+            return true;
+        }
+
+        /// <summary>A landmark's spot (review N2): the dry spot nearest <paramref name="want"/> (rings out to four radii) that no
+        /// lot of any town already holds; claimed for <paramref name="owner"/>. False, and nothing claimed, when there is none:
+        /// the landmark is then left out rather than overlapping a bigger neighbour.</summary>
+        static bool Claim(List<Lot> lots, Vector2 want, float r, string owner, KitGround ground, out Vector2 at)
+        {
+            for (int ring = 0; ring <= 8; ring++)
+            {
+                int around = ring == 0 ? 1 : 8 * ring;
+                for (int k = 0; k < around; k++)
+                {
+                    float a = 2f * Mathf.PI * k / around, d = ring * r * 0.5f;
+                    var p = want + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
+                    if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !FreeAt(lots, p, r)) continue;
+                    lots.Add(new Lot { c = p, r = r, id = owner }); at = p; return true;
+                }
+            }
+            at = want; return false;
+        }
 
         /// <summary>Places one settlement's buildings into <paramref name="km"/>; returns how many.</summary>
         static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, List<Lot> lots)
@@ -120,19 +152,15 @@ namespace Statecraft.Game.Map.Kits
                     if (f.id != s.Id && (p - f.centre).magnitude / f.radius < mine) return false;
                 return true;
             }
-            bool Free(Vector2 p, float r)
-            {
-                foreach (var l in lots) if ((l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false;
-                return true;
-            }
+            bool Free(Vector2 p, float r) => FreeAt(lots, p, r);
 
             // Landmarks first, at the centre (or the nearest dry spot to it).
             var heart = DryNear(centre, ground, R * 0.3f, ref rnd);
             switch (arch)
             {
                 case Archetype.OldTown: placed += OldTownLandmarks(s, heart, ground, km, lots, ref rnd); break;
-                case Archetype.ArabTown: placed += Mosque(heart, ground, km, lots, ref rnd, 1f); break;
-                case Archetype.Moshava: placed += WaterTower(heart + new Vector2(R * 0.35f, -R * 0.2f), ground, km, lots); break;
+                case Archetype.ArabTown: placed += Mosque(s.Id, heart, ground, km, lots, ref rnd, 1f); break;
+                case Archetype.Moshava: placed += WaterTower(s.Id, heart + new Vector2(R * 0.35f, -R * 0.2f), ground, km, lots); break;
             }
 
             int target = TargetCount(arch, R);
@@ -155,7 +183,7 @@ namespace Statecraft.Game.Map.Kits
                 float yaw = arch == Archetype.WhiteCity || arch == Archetype.Moshava
                     ? GridYaw(s.Id) + (rnd.Chance(0.15f) ? 90f : 0f) + rnd.Range(-4f, 4f)
                     : rnd.Range(0f, 90f);
-                lots.Add(new Lot { c = p, r = b.lotR });
+                lots.Add(new Lot { c = p, r = b.lotR, id = s.Id });
                 Emit(arch, p, yaw, b, ground, km, ref rnd);
                 placed++;
             }
@@ -312,24 +340,23 @@ namespace Statecraft.Game.Map.Kits
         static int OldTownLandmarks(Settlement s, Vector2 heart, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd)
         {
             float m = KitScale.Landmarks;
-            int n = Mosque(heart + new Vector2(-5f * m, 6f * m), ground, km, lots, ref rnd, 1.2f);
+            int n = Mosque(s.Id, heart + new Vector2(-5f * m, 6f * m), ground, km, lots, ref rnd, 1.2f);
             if (s.Id == "jaffa")
             {
                 var stone = C(0.86f, 0.76f, 0.57f);
-                var p = DryNear(heart + new Vector2(14f * m, 4f * m), ground, 30f * m, ref rnd);
+                if (!Claim(lots, heart + new Vector2(14f * m, 4f * m), 4.5f * m, s.Id, ground, out var p)) return n;
                 float y = ground.Y(p.x, p.y);
                 km.Box(p.x, p.y, 15f, 5f * m, 5f * m, y - 2f * m, y, 24f * m, stone, stone, Facade.Stone, m, roofed: true);
                 km.Box(p.x, p.y, 15f, 4f * m, 4f * m, y + 24f * m, y + 24f * m, 4f * m, C(0.90f, 0.82f, 0.64f), stone, Facade.Plain, m, roofed: true);
                 km.Pyramid(p.x, p.y, 15f, 4.4f * m, 4.4f * m, y + 28f * m, 3.5f * m, C(0.55f, 0.47f, 0.40f));
-                lots.Add(new Lot { c = p, r = 4.5f * m });
-                var q = DryNear(heart + new Vector2(-10f * m, -12f * m), ground, 30f * m, ref rnd);
+                n++;
+                if (!Claim(lots, heart + new Vector2(-10f * m, -12f * m), 10f * m, s.Id, ground, out var q)) return n;
                 float yq = ground.Y(q.x, q.y);
                 km.Box(q.x, q.y, 0f, 9f * m, 18f * m, yq - 2f * m, yq, 12f * m, stone, stone, Facade.Stone, m, roofed: true);
                 km.Box(q.x, q.y + 7f * m, 0f, 4.5f * m, 4.5f * m, yq + 12f * m, yq + 12f * m, 14f * m, stone, stone, Facade.Stone, m, roofed: true);
                 km.Pyramid(q.x, q.y + 7f * m, 0f, 4.8f * m, 4.8f * m, yq + 26f * m, 6f * m, C(0.60f, 0.52f, 0.44f));
                 km.Gable(q.x, q.y, 0f, 9f * m, 18f * m, yq + 12f * m, 4f * m, C(0.66f, 0.34f, 0.24f), stone);
-                lots.Add(new Lot { c = q, r = 10f * m });
-                n += 2 + Port(heart, ground, km, ref rnd);
+                n += 1 + Port(heart, ground, km, ref rnd);
             }
             return n;
         }
@@ -381,9 +408,10 @@ namespace Statecraft.Game.Map.Kits
             return 1;
         }
 
-        static int Mosque(Vector2 p, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd, float size)
+        static int Mosque(string owner, Vector2 want, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd, float size)
         {
             float m = KitScale.Landmarks * size;
+            if (!Claim(lots, want, 11f * m, owner, ground, out var p)) return 0;   // the lot covers the minaret too
             float y = ground.Y(p.x, p.y);
             var stone = Jitter(C(0.87f, 0.80f, 0.66f), ref rnd, 0.03f);
             km.Box(p.x, p.y, 0f, 14f * m, 14f * m, y - 2f * m, y, 7f * m, stone, stone, Facade.Stone, KitScale.Landmarks);
@@ -393,14 +421,13 @@ namespace Statecraft.Game.Map.Kits
             km.Shaft(new Vector3(mx, my - 2f * m, mz), new Vector3(mx, my + 26f * m, mz), 1.6f * m, 1.35f * m, stone, 8);
             km.Shaft(new Vector3(mx, my + 20f * m, mz), new Vector3(mx, my + 21f * m, mz), 2.1f * m, 2.1f * m, stone, 8);   // the balcony
             km.Cone(new Vector3(mx, my + 26f * m, mz), 1.5f * m, 4.5f * m, C(0.62f, 0.62f, 0.58f), 8);
-            lots.Add(new Lot { c = p, r = 11f * m });
             return 1;
         }
 
-        static int WaterTower(Vector2 p, KitGround ground, KitMesh km, List<Lot> lots)
+        static int WaterTower(string owner, Vector2 want, KitGround ground, KitMesh km, List<Lot> lots)
         {
             float m = KitScale.Houses;
-            if (ground.Water(p.x, p.y)) return 0;
+            if (!Claim(lots, want, 4f * m, owner, ground, out var p)) return 0;
             float y = ground.Y(p.x, p.y);
             var concrete = C(0.82f, 0.80f, 0.76f);
             for (int i = 0; i < 4; i++)
@@ -411,7 +438,6 @@ namespace Statecraft.Game.Map.Kits
             }
             km.Shaft(new Vector3(p.x, y + 9f * m, p.y), new Vector3(p.x, y + 13.5f * m, p.y), 3f * m, 3f * m, concrete, 10);
             km.Cone(new Vector3(p.x, y + 13.5f * m, p.y), 3.1f * m, 1.2f * m, C(0.66f, 0.64f, 0.60f), 10);
-            lots.Add(new Lot { c = p, r = 4f * m });
             return 1;
         }
     }
