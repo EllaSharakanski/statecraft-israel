@@ -166,3 +166,21 @@ def test_the_sim_never_reads_the_border_files():
     for cs in (ROOT / "sim" / "Statecraft.Sim").rglob("*.cs"):
         text = cs.read_text(encoding="utf-8")
         assert not re.search(r"subdistrict", text, re.IGNORECASE), cs
+
+
+# Settlement -> sub-district as listed in the 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2, pp. 125-133;
+# read from the page images, 2026-10-11): the true polygons must contain each town's coordinates (settlements_1948.yaml).
+GAZETTE_MEMBERS = {
+    "acre": "acre", "safed": "safad", "rosh_pinna": "safad", "tiberias": "tiberias", "degania_alef": "tiberias",
+    "nazareth": "nazareth", "nahalal": "nazareth", "ein_harod": "beisan", "haifa": "haifa", "hadera": "haifa",
+    "zikhron_yaakov": "haifa", "netanya": "tulkarm", "tel_aviv": "jaffa", "jaffa": "jaffa", "petah_tikva": "jaffa",
+    "lod": "ramle", "ramla": "ramle", "rishon_lezion": "ramle", "rehovot": "ramle", "jerusalem": "jerusalem",
+    "gaza": "gaza", "beersheba": "beersheba",
+}
+
+
+@pytest.mark.parametrize("town, sub", sorted(GAZETTE_MEMBERS.items()))
+def test_the_true_lines_put_each_listed_town_in_its_gazette_sub_district(town, sub):
+    t = TOWNS[town]
+    inside = [f["properties"]["id"] for f in SOURCE["features"] if bb.contains(bb.rings(f["geometry"]), t["lon"], t["lat"])]
+    assert inside == [sub], (town, inside)
