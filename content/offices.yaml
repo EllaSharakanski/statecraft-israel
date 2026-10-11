@@ -21,7 +21,10 @@ offices:
   - { id: trade_minister, title: Minister of Trade and Industry }
   - { id: transportation_minister, title: Minister of Transportation }
   - { id: welfare_minister, title: Minister of Welfare }
-  - { id: education_minister, title: Minister of Education and Culture }
+  # The Provisional Government (14 May 1948 - 10 March 1949) had no education portfolio. The ministry dates from the First
+  # Government; Zalman Shazar was its first minister, from 10 March 1949 (en.wiki "Provisional government of Israel" and
+  # "Ministry of Education (Israel)", he.wiki "הממשלה הזמנית", checked 2026-10-11). The budget line stays from 1948.
+  - { id: education_minister, title: Minister of Education and Culture, from: 1949-03-10 }
   # The minister responsible for rationing: the rationing policy's effects and events look this office up. Until
   # 1 November 1950 that was the Minister of Rationing and Supply (Dov Yosef). The ministry was then abolished and its
   # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
