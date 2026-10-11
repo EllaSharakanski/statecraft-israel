@@ -61,3 +61,6 @@ MonoBehaviour:
   - personId: weizmann
     image: {fileID: 2800000, guid: 0c84d13281034087ba62fa4a45d82f6f, type: 3}
     focusY: 0.32
+  - personId: dori
+    image: {fileID: 2800000, guid: 7ec048d34e0e45a7adc5115351c9d4df, type: 3}
+    focusY: 0.3
