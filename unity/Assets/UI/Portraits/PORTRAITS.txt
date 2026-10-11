@@ -14,3 +14,5 @@ remez | Public domain | https://commons.wikimedia.org/wiki/File:David_Remez_(cro
 levin | Public domain | https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg
 shazar | Public domain | https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
 golda_meir | CC0 | https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
+weizmann | Public domain | https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
+dori | CC0 | https://commons.wikimedia.org/wiki/File:Stafchef_Dori_houdt_toespraak_tijdens_de_militaire_parade_bij_gelegenheid_van_de,_Bestanddeelnr_255-0981.jpg
