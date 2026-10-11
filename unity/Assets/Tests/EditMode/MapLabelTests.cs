@@ -108,11 +108,16 @@ public class MapLabelTests
     public void KitColumnsHoldTheKitAndKeepATowerToItsCell()
     {
         var pts = new[] { new Vector3(0, 0, 0), new Vector3(10, 8, 10), new Vector3(90, 0, 90), new Vector3(100, 60, 100) };   // a house, a tower
-        var cols = MapScene.Columns(pts);
+        var cols = Statecraft.Game.Map.Kits.KitMesh.Columns(pts);
         Assert.AreEqual(2, cols.Length, "two occupied cells");
         foreach (var p in pts) Assert.IsTrue(cols.Any(c => c.min.x <= p.x && p.x <= c.max.x && c.min.y <= p.y && p.y <= c.max.y && c.min.z <= p.z && p.z <= c.max.z), p.ToString());
         foreach (var c in cols) Assert.AreEqual(0f, c.min.y, "from the ground");
         Assert.AreEqual(8f, cols.Min(c => c.max.y), "the house's column is as tall as the house");
+        // The built map's columns come from the kit build, not from the uploaded mesh: the player has no CPU copy to read
+        // (a WebGL boot read mesh.vertices and failed).
+        var tlv = GameObject.Find(Statecraft.Game.Map.Kits.KitLayer.RootName).transform.Find("tel_aviv").GetComponent<MeshFilter>().sharedMesh;
+        Assert.IsFalse(tlv.isReadable, "the kit meshes keep no CPU copy");
+        foreach (var s in map.Settlements) Assert.IsTrue(map.TryKitColumns(s.Id, out var c) && c.Length > 0, s.Id + " has kit columns");
     }
 
     /// <summary>Issue #214: the spots a pill may take against its kit's screen rectangle, LiftPx clear of it.</summary>

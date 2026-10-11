@@ -109,36 +109,11 @@ namespace Statecraft.Game.Map
         readonly Dictionary<string, Bounds[]> kitColumns = new Dictionary<string, Bounds[]>();
 
         /// <summary>A settlement's kit (its buildings' merged mesh, as the last Build made it) as a few world boxes that hold
-        /// all of it: the occupied cells of a KitColumnGrid x KitColumnGrid grid over its footprint, each from the ground
+        /// all of it: the occupied cells of a KitMesh.ColumnGrid-square grid over its footprint, each from the ground
         /// under the kit to its tallest vertex in the cell. Much tighter on screen than the kit's one bounding box under a
         /// tilted camera (a water tower at the back no longer lifts the whole box). False without kits or for a kit with no
         /// buildings. The map labels keep clear of it (issue #214).</summary>
         public bool TryKitColumns(string id, out Bounds[] columns) => kitColumns.TryGetValue(id, out columns);
-
-        public const int KitColumnGrid = 4;
-
-        /// <summary>The occupied columns of a world-space point set (see TryKitColumns).</summary>
-        public static Bounds[] Columns(IReadOnlyList<Vector3> points, int grid = KitColumnGrid)
-        {
-            var min = points[0]; var max = points[0];
-            foreach (var p in points) { min = Vector3.Min(min, p); max = Vector3.Max(max, p); }
-            var lo = new Vector3[grid * grid]; var hi = new Vector3[grid * grid]; var used = new bool[grid * grid];
-            float sx = Mathf.Max(max.x - min.x, 1e-3f) / grid, sz = Mathf.Max(max.z - min.z, 1e-3f) / grid;
-            foreach (var p in points)
-            {
-                int i = Mathf.Min(grid - 1, (int)((p.x - min.x) / sx)) + grid * Mathf.Min(grid - 1, (int)((p.z - min.z) / sz));
-                if (!used[i]) { used[i] = true; lo[i] = p; hi[i] = p; }
-                else { lo[i] = Vector3.Min(lo[i], p); hi[i] = Vector3.Max(hi[i], p); }
-            }
-            var result = new List<Bounds>();
-            for (int i = 0; i < used.Length; i++)
-                if (used[i])
-                {
-                    var b = new Bounds(); b.SetMinMax(new Vector3(lo[i].x, min.y, lo[i].z), hi[i]);
-                    result.Add(b);
-                }
-            return result.ToArray();
-        }
 
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
@@ -206,15 +181,8 @@ namespace Statecraft.Game.Map
                 // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
-                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes));
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes), kitColumns);
                 kits.transform.SetParent(transform, true);
-                foreach (Transform kit in kits.transform)
-                    if (kit.TryGetComponent(out MeshFilter mf) && mf.sharedMesh != null && mf.sharedMesh.vertexCount > 0)
-                    {
-                        var world = new List<Vector3>(mf.sharedMesh.vertices);
-                        for (int i = 0; i < world.Count; i++) world[i] = kit.localToWorldMatrix.MultiplyPoint3x4(world[i]);
-                        kitColumns[kit.name] = Columns(world);
-                    }
                 KitStats = stats;
                 DiagLog.BootPhase("kits built");
                 Debug.Log(stats.ToString());
