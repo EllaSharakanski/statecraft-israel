@@ -12,6 +12,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
   a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
   the 1949 armistice lines and fronts are research items.
+- A portrait of Yitzhak Ben-Zvi: a crop of Harry Pot's 1958 Anefo photo (CC0; later than the Founding slice; #6).
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
