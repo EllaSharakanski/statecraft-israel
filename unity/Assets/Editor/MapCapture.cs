@@ -134,13 +134,16 @@ public static class MapCapture
 
     /// <summary>Renders each promo pose (PromoPose.All) at 1920x1080 once per quality tier (0 = Mobile, the WebGL tier;
     /// 1 = PC) into &lt;-captureDir&gt; (default captures/visual/editor) as &lt;tier&gt;-&lt;pose&gt;.png. Editor renders show no UI
-    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do.</summary>
+    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. With -units it adds the unit
+    /// art slice (UnitShowcase), still.</summary>
     public static void Promo()
     {
         var args = System.Environment.GetCommandLineArgs();
         int at = System.Array.IndexOf(args, "-captureDir");
         var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "editor");
         var map = OpenAndBuild();
+        // The unit art slice only when asked (-units, from tools/art_checkpoint.sh --units), as ?shot&units shows it.
+        if (System.Array.IndexOf(args, "-units") >= 0) Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
         var rig = Camera.main.GetComponent<CameraRig>();
         int saved = QualitySettings.GetQualityLevel();
         try
