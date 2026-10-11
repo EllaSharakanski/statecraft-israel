@@ -31,6 +31,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A runtime quality fallback for slow machines in the browser: when frames stay slower than 30 fps, the game lowers its
   render scale (to 0.9, then 0.8) and then turns the tilt-shift off, and steps back up when frames are comfortably fast
   again. Presentation only; `?nofallback` turns it off (#44).
+- Map: procedural settlement kits and instanced trees (placeholder art) replace the marker boxes: a white Tel Aviv,
+  stone Jaffa with its harbour, Arab towns, moshavot and kibbutzim sized by their 1945 population
+  (`content/map/settlement_population_1945.yaml`), with citrus groves, olives, palms and cypresses, at the owner's
+  symbolic scale (about 60x real size for city blocks, 100x for houses and trees). Presentation only (#31, #32, #34).
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.
