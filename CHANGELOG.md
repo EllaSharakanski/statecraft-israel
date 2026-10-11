@@ -8,6 +8,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- A local multi-size favicon for the WebGL page.
+- Hebrew names and sourced birth and death dates for all 29 people (issue #1).
+- Successors for offices left by deaths in 1952: Ben-Gurion takes Transportation after Pinkas (14 August 1952) and
+  Yitzhak Ben-Zvi becomes President on 16 December 1952 after Weizmann; the presidency is vacant in between, while
+  the Speaker was acting President (issue #1).
+- A portrait of Golda Meir: a 1964 Nationaal Archief photo by Willem van de Poll (CC0; #6).
+- Historical-only deputy titles and sourced 1951 terms; Kaplan's June 1952 Deputy Prime Minister title and the linked Finance/Agriculture succession (issue #4).
+- People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
+  `people.yaml`; the loader rejects unknown source keys, sources without a `url` or `checked` date, and impossible birth
+  dates.
 - Browser-playable 1948–1951 (milestone M3): HUD, Cabinet with appointments, Budget, Events, Defence and "Why did this
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.
@@ -30,6 +40,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
+- The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
+  means their Prime Minister placeholder doesn't need a holder after his death in 1973.
+- Ben-Gurion's in-game portrait is now a crop of Abbie Rowe's 8 May 1951 White House photo (NARA 200318,
+  PD-USGov) instead of a Government Press Office photo with no clear US status (#30, decision D-P).
+- Later death dates can be recorded for people with open-ended terms in the latest authored government; explicit term ends still cannot pass the holder's death.
+- Source Dov Yosef's food-supply and rationing responsibility in the Third Government from 8 October 1951,
+  replacing the unsupported vacancy (#2).
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
   - navy panels with gold trim, corner brackets and a soft shadow;
   - an icon for each indicator in the top bar, with its value and its change since the last turn;
