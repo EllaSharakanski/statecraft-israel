@@ -124,9 +124,10 @@ namespace Statecraft.Game.Map
             Settlements = list;
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
             DiagLog.BootPhase("settlements placed");
-            // The 1948 railways and roads (issue #35), map-only; a still train in screenshots and editor renders.
-            var routes = Routes.RoutePaths.Parse(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Routes.RoutePaths.DefaultFileName);
-            Routes.RouteLayer.Build(Terrain, Frame, routes, stillTrain: !Application.isPlaying || VisualShots.Requested());
+            // The 1948 railways and roads (issue #35), map-only, as at the game's start until the game sets its date; a missing or
+            // malformed file means no routes and a warning; the train only in screenshots, editor renders and ?train.
+            var routes = Routes.RoutePaths.ReadOrNone(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Debug.LogWarning);
+            Routes.RouteLayer.Build(Terrain, Frame, routes, Routes.RouteLayer.ModeForThisRun(), Routes.RouteLayer.DefaultDate);
             DiagLog.BootPhase("routes built");
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();

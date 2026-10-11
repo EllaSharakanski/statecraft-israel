@@ -8,8 +8,10 @@ namespace Statecraft.Game.Map.Routes
 {
     /// <summary>The 1948 railways and roads on the map (issue #35): one ribbon mesh per look (rail; roads and the Burma
     /// Road's track), draped on the terrain along the traced lines of route_paths_1948.yaml, drawn with the editor-made
-    /// Statecraft/Route materials in Resources (no runtime Shader.Find, no new serialized field on MapScene), plus a
-    /// steam train shuttling on the Jaffa–Jerusalem line between Jaffa and Lydda. Widths are symbolic, measured on the
+    /// Statecraft/Route materials in Resources (no runtime Shader.Find, no new serialized field on MapScene). Each route
+    /// shows only while the game date is inside its window (RoutePath.From/To; review C1: the Burma Road from 14 June
+    /// 1948): routes are grouped by window, one ribbon pair per group, and <see cref="ShowAt"/> switches the groups. A
+    /// steam train on the Jaffa–Jerusalem line is a showcase, never normal play (review I1, <see cref="ModeFor"/>). Widths are symbolic, measured on the
     /// promo's gameplay frame like the settlements and units (docs/routes.md): a road about 8 px and the railway about
     /// 16 px wide at 1920 px (the soft edges take about a sixth of the railway's width, so its bed is drawn 680 m), so they read at the gameplay zoom as the promo draws them. Registers the "routes" (ribbons)
     /// and "train" visual toggles, so the frame profile prices each. Pure geometry from the data: the same file gives the
@@ -31,11 +33,40 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>Height above the highest ground sampled around each vertex; the shader's depth offset does the rest.</summary>
         public const float ClearanceM = 20f;
 
-        /// <summary>The train's route and the stretch it runs: the Jaffa–Jerusalem railway from its Jaffa end to Lydda
-        /// junction, where Tel Aviv's trains ran in 1948-56 (Tel Aviv South station stood on this stretch from 1920 to
-        /// 1970; trains to Jerusalem resumed in 1950).</summary>
+        /// <summary>The showcase train's route and stretch: the Jaffa–Jerusalem railway from its Jaffa end to Lydda junction,
+        /// the stretch the promo's train runs (promo/final/03). It is ambience for the promo frames, not a timetable: no
+        /// regular trains ran here from the British withdrawal in May 1948 until Lydda was taken in July and service resumed
+        /// later (Palestine Railways), which is why normal play shows no train (<see cref="ModeFor"/>).</summary>
         public const string TrainRoute = "jaffa_jerusalem_railway";
         public static readonly (double lon, double lat) TrainTurnAt = (34.87556, 31.94583);   // Lod railway station
+
+        /// <summary>The date the map shows before the game tells it one (editor renders, screenshots before GAME OK): the
+        /// game's start, 15 May 1948.</summary>
+        public static readonly DateTime DefaultDate = new DateTime(1948, 5, 15);
+
+        public enum TrainMode { None, Still, Moving }
+
+        /// <summary>Whether there is a train and whether it moves (review I1): editor renders and screenshots (`?shot` /
+        /// `-shot`) show the promo's still train; `?train` or `?units` (desktop `-train` / `-units`) asks for the moving
+        /// showcase; normal play has none, as no service is sourced for the line at the game's dates.</summary>
+        public static TrainMode ModeFor(bool playing, bool shot, bool requested) =>
+            !playing || shot ? TrainMode.Still : requested ? TrainMode.Moving : TrainMode.None;
+
+        public static bool TrainRequested(string? url, string[] args, bool webgl) =>
+            webgl ? Boot.UrlFlags.Has(url, "train") || Boot.UrlFlags.Has(url, "units") : Array.IndexOf(args, "-train") >= 0 || Array.IndexOf(args, "-units") >= 0;
+
+        public static TrainMode ModeForThisRun() => ModeFor(Application.isPlaying, VisualShots.Requested(),
+            TrainRequested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
+
+        /// <summary>Shows the route groups whose window covers <paramref name="date"/> and hides the rest (the game calls it
+        /// on every state change; cheap: a few SetActive calls). A map without routes is left alone.</summary>
+        public static void ShowAt(MapScene map, DateTime date)
+        {
+            if (map == null || map.Terrain == null) return;
+            var ribbons = map.Terrain.transform.Find($"{RootName}/{RibbonsName}");
+            if (ribbons == null) return;
+            foreach (var g in ribbons.GetComponentsInChildren<RouteGroup>(true)) g.gameObject.SetActive(g.Window.Covers(date));
+        }
 
         public static float WidthOf(string kind) => kind switch
         {
@@ -45,11 +76,12 @@ namespace Statecraft.Game.Map.Routes
             _ => throw new ArgumentException($"unknown route kind '{kind}'", nameof(kind)),
         };
 
-        /// <summary>Builds the routes under <paramref name="terrain"/> (so a map rebuild destroys them): the ribbons and,
-        /// when the train's route is in <paramref name="routes"/>, the train. Meshes, the train's palette and its material
-        /// copy are owned by the root's own MapRuntimeAssets, which also unregisters the toggles. <paramref name="stillTrain"/>
-        /// holds the train at its still position (screenshots and editor renders repeat exactly). Returns the root.</summary>
-        public static GameObject Build(Terrain terrain, GeoFrame frame, IReadOnlyList<RoutePath> routes, bool stillTrain)
+        /// <summary>Builds the routes under <paramref name="terrain"/> (so a map rebuild destroys them): one group per display
+        /// window (its rail and road ribbons), shown as at <paramref name="date"/>, and, when <paramref name="train"/> is not
+        /// None and the train's route is in <paramref name="routes"/>, the train (still: it stands at its still position, so
+        /// screenshots and editor renders repeat exactly). Meshes, the train's palette and its material copy are owned by
+        /// the root's own MapRuntimeAssets, which also unregisters the toggles. Returns the root.</summary>
+        public static GameObject Build(Terrain terrain, GeoFrame frame, IReadOnlyList<RoutePath> routes, TrainMode train, DateTime date)
         {
             if (terrain == null) throw new ArgumentNullException(nameof(terrain));
             if (routes == null) throw new ArgumentNullException(nameof(routes));
@@ -66,32 +98,41 @@ namespace Statecraft.Game.Map.Routes
             ribbons.transform.SetParent(root.transform, false);
             var data = terrain.terrainData; var origin = terrain.transform.position;
 
-            foreach (var (kinds, material, name) in new[]
-                     {
-                         (new[] { RoutePaths.Rail }, rail, "Rail"),
-                         (new[] { RoutePaths.Road, RoutePaths.Track }, road, "Roads"),
-                     })
+            // One group per display window, in the order the windows open (deterministic names and draw order).
+            foreach (var group in routes.GroupBy(RoutePaths.WindowOf).OrderBy(g => g.Key.From).ThenBy(g => g.Key.To ?? DateTime.MaxValue))
             {
-                var lines = routes.Where(r => kinds.Contains(r.Kind)).Select(r => (World(frame, r), WidthOf(r.Kind))).ToList();
-                if (lines.Count == 0) continue;
-                var mesh = assets.Own(Ribbon(lines, data, origin, $"Route{name}"));
-                mesh.UploadMeshData(true);
-                var go = new GameObject(name);
-                go.transform.SetParent(ribbons.transform, false);
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var r = go.AddComponent<MeshRenderer>();
-                r.sharedMaterial = material;
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                r.receiveShadows = true;
+                var holder = new GameObject($"Window {group.Key}");
+                holder.transform.SetParent(ribbons.transform, false);
+                holder.AddComponent<RouteGroup>().Window = group.Key;
+                foreach (var (kinds, material, name) in new[]
+                         {
+                             (new[] { RoutePaths.Rail }, rail, "Rail"),
+                             (new[] { RoutePaths.Road, RoutePaths.Track }, road, "Roads"),
+                         })
+                {
+                    var lines = group.Where(r => kinds.Contains(r.Kind)).Select(r => (World(frame, r), WidthOf(r.Kind))).ToList();
+                    if (lines.Count == 0) continue;
+                    var mesh = assets.Own(Ribbon(lines, data, origin, $"Route{name} {group.Key}"));
+                    mesh.UploadMeshData(true);
+                    var go = new GameObject(name);
+                    go.transform.SetParent(holder.transform, false);
+                    go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    var r = go.AddComponent<MeshRenderer>();
+                    r.sharedMaterial = material;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    r.receiveShadows = true;
+                }
+                holder.SetActive(group.Key.Covers(date));
             }
             assets.OnTeardown(VisualToggles.Register(RoutesToggle, on => { if (ribbons != null) ribbons.SetActive(on); }));
 
             var trainRoute = routes.FirstOrDefault(r => r.Id == TrainRoute);
-            if (trainRoute != null)
+            if (trainRoute != null && train != TrainMode.None)
             {
-                var train = RouteTrain.Spawn(root.transform, assets, World(frame, trainRoute), data, origin,
-                    frame.ToWorld(TrainTurnAt.lon, TrainTurnAt.lat, 0), frame.ToWorld(RouteTrain.StillAt.lon, RouteTrain.StillAt.lat, 0), stillTrain);
-                assets.OnTeardown(VisualToggles.Register(TrainToggle, on => { if (train != null) train.SetActive(on); }));
+                var go = RouteTrain.Spawn(root.transform, assets, World(frame, trainRoute), data, origin,
+                    frame.ToWorld(TrainTurnAt.lon, TrainTurnAt.lat, 0), frame.ToWorld(RouteTrain.StillAt.lon, RouteTrain.StillAt.lat, 0),
+                    train == TrainMode.Still);
+                assets.OnTeardown(VisualToggles.Register(TrainToggle, on => { if (go != null) go.SetActive(on); }));
             }
             return root;
         }
@@ -131,6 +172,18 @@ namespace Statecraft.Game.Map.Routes
             return (pts, along);
         }
 
+        /// <summary>The height (world y) of a ribbon vertex at <paramref name="q"/>: <see cref="ClearanceM"/> above the highest
+        /// ground at q and half a step along <paramref name="along"/> (unit) and half a vertex spacing across, either way.
+        /// The ribbon and the train's wheels share it (review M4), so the bed never rises over the train on a grade.</summary>
+        public static float RibbonHeight(TerrainData data, Vector3 origin, Vector2 q, Vector2 along, float spacing)
+        {
+            var side = new Vector2(along.y, -along.x);
+            float y = Ground(data, origin, q);
+            foreach (var d in new[] { along * (StepM / 2), -along * (StepM / 2), side * (spacing / 2), -side * (spacing / 2) })
+                y = Mathf.Max(y, Ground(data, origin, q + d));
+            return y + ClearanceM;
+        }
+
         /// <summary>The ground height (world y) under (x, z), clamped to the terrain.</summary>
         public static float Ground(TerrainData data, Vector3 origin, Vector2 p) =>
             origin.y + data.GetInterpolatedHeight(Mathf.Clamp01((p.x - origin.x) / data.size.x), Mathf.Clamp01((p.y - origin.z) / data.size.z));
@@ -157,10 +210,7 @@ namespace Statecraft.Game.Map.Routes
                     {
                         float a = (float)j / (Across - 1);
                         var q = pts[i] + side * ((a - 0.5f) * width);
-                        float y = Ground(data, origin, q);
-                        foreach (var d in new[] { t * (StepM / 2), -t * (StepM / 2), side * (spacing / 2), -side * (spacing / 2) })
-                            y = Mathf.Max(y, Ground(data, origin, q + d));
-                        verts.Add(new Vector3(q.x, y + ClearanceM, q.y));
+                        verts.Add(new Vector3(q.x, RibbonHeight(data, origin, q, t, spacing), q.y));
                         normals.Add(data.GetInterpolatedNormal(Mathf.Clamp01((q.x - origin.x) / data.size.x), Mathf.Clamp01((q.y - origin.z) / data.size.z)));
                         uvs.Add(new Vector2(a, along[i]));
                     }

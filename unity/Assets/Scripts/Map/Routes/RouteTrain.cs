@@ -11,7 +11,9 @@ namespace Statecraft.Game.Map.Routes
     /// symbolic scale (<see cref="Scale"/>), running on the railway ribbon. It shuttles along its route between the line's
     /// start and the turn point (RouteLayer: Jaffa to Lydda), the locomotive leading each way, with a stop at each end.
     /// A still train (screenshots, editor renders) stands at <see cref="StillAt"/>, heading inland, every run alike. Cheap:
-    /// six transforms set per frame from a precomputed table; no physics, no allocation after Spawn.</summary>
+    /// six transforms set per frame from a precomputed table; no physics, no allocation after Spawn. A showcase for the
+    /// promo frames and `?train` / `?units`, never normal play (RouteLayer.ModeFor, review I1): the run is ambience, not a
+    /// sourced timetable.</summary>
     public sealed class RouteTrain : MonoBehaviour
     {
         /// <summary>Times real size along the line, measured on the promo's gameplay frame: its six-car train is about 250 px
@@ -112,7 +114,12 @@ namespace Statecraft.Game.Map.Routes
             train.tableS = along.ToArray();
             train.tableP = new Vector3[pts.Count];
             for (int i = 0; i < pts.Count; i++)
-                train.tableP[i] = new Vector3(pts[i].x, RouteLayer.Ground(data, origin, pts[i]) + RouteLayer.ClearanceM + RideM, pts[i].y);
+            {
+                // The ribbon's own centre height (the same max-of-samples rule, review M4) plus the ride height.
+                var dir = (pts[Math.Min(pts.Count - 1, i + 1)] - pts[Math.Max(0, i - 1)]).normalized;
+                float spacing = RouteLayer.RailWidthM / (RouteLayer.Across - 1);
+                train.tableP[i] = new Vector3(pts[i].x, RouteLayer.RibbonHeight(data, origin, pts[i], dir, spacing) + RideM, pts[i].y);
+            }
             train.startS = 0f;
             train.endS = train.Nearest(new Vector2(turnAt.x, turnAt.z));
 

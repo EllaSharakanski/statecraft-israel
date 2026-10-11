@@ -34,8 +34,11 @@ namespace Statecraft.Game.Boot
             HeightmapR16z = File.ReadAllBytes(Path.Combine(mapDir, HeightmapCodec.FileName)),
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
-            RoutesYaml = File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName)),
+            RoutesYaml = ReadIfExists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName)),
         };
+
+        /// <summary>A map-only, cosmetic input: "" when the file is missing (the map then skips that layer with a warning).</summary>
+        static string ReadIfExists(string path) => File.Exists(path) ? File.ReadAllText(path) : "";
 
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
             new GameInputs { Content = ContentLoader.Load(contentDir), Map = MapFromDisk(contentDir, mapDir) };
@@ -52,7 +55,7 @@ namespace Statecraft.Game.Boot
                 {
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
-                    RoutesYaml = texts["map/" + Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName],
+                    RoutesYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName, out var routes) ? routes : "",
                 },
             };
         }

@@ -227,6 +227,7 @@ namespace Statecraft.Game.UI
         void RenderPlacementsIfChanged()
         {
             if (Bridge == null) return;
+            Statecraft.Game.Map.Routes.RouteLayer.ShowAt(map, Bridge.State.Date);   // dated routes (the Burma Road from June 1948)
             var now = Bridge.State.Placements.Select(p => (p.Action, p.Q, p.R, p.Date)).ToList();
             if (drawn != null && drawn.SequenceEqual(now)) return;
             drawn = now;
