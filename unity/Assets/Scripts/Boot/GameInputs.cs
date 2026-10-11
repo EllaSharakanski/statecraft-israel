@@ -17,6 +17,9 @@ namespace Statecraft.Game.Boot
         /// <summary>content/map/settlement_population_1945.yaml (the settlement kits' footprints; "" when absent). The sim
         /// never reads it.</summary>
         public string PopulationYaml = "";
+        /// <summary>content/map/localities_1948.yaml (the 1948 localities and Bedouin camp areas the kits and labels draw; ""
+        /// when absent). The sim never reads it.</summary>
+        public string LocalitiesYaml = "";
         /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
         public byte[] HeightmapR16z = new byte[0];
     }
@@ -37,6 +40,8 @@ namespace Statecraft.Game.Boot
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
             PopulationYaml = File.Exists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName))
                 ? File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName)) : "",
+            LocalitiesYaml = File.Exists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.Localities.FileName))
+                ? File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.Localities.FileName)) : "",
         };
 
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
@@ -55,6 +60,7 @@ namespace Statecraft.Game.Boot
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
                     PopulationYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Kits.KitPopulation.FileName, out var pop) ? pop : "",
+                    LocalitiesYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Kits.Localities.FileName, out var loc) ? loc : "",
                 },
             };
         }

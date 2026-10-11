@@ -53,7 +53,34 @@ namespace Statecraft.Game.Map.Kits
         public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
             out List<(Vector2 centre, float radius, string id)> claimed)
         {
-            var order = new List<Settlement>(list);
+            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground);
+            claimed = all.Claimed;
+            return all.Towns;
+        }
+
+        /// <summary>What <see cref="Build(IReadOnlyList{Settlement}, IReadOnlyList{Settlement}, IReadOnlyList{Localities.Area}, KitGround)"/>
+        /// made: one mesh per game settlement, and the 1948 localities and Bedouin camps merged into one mesh per
+        /// <see cref="TileM"/> tile (a few dozen draws for some three hundred places).</summary>
+        public sealed class Result
+        {
+            public List<(Settlement s, Mesh mesh, int buildings)> Towns = new List<(Settlement, Mesh, int)>();
+            public List<(string name, Mesh mesh)> Tiles = new List<(string, Mesh)>();
+            public List<(Vector2 centre, float radius, string id)> Claimed = new List<(Vector2, float, string)>();
+            public int LocalityBuildings, Camps, Tents;
+        }
+
+        /// <summary>Side of the square tiles the localities' and camps' buildings are merged into (the trees' tile size).</summary>
+        public const float TileM = VegetationLayer.TileM;
+
+        /// <summary>Builds the game settlements (<paramref name="towns"/>) and the 1948 localities (<paramref name="localities"/>)
+        /// together on one lot list, largest first by population, then scatters the Bedouin camps of <paramref name="camps"/>
+        /// into the ground left free. Seeded: the same inputs draw the same map.</summary>
+        public static Result Build(IReadOnlyList<Settlement> towns, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
+            KitGround ground)
+        {
+            var merged = new HashSet<string>();
+            foreach (var s in localities) merged.Add(s.Id);
+            var order = new List<Settlement>(towns); order.AddRange(localities);
             order.Sort((a, b) => KitPopulation.Of(b.Id).CompareTo(KitPopulation.Of(a.Id)) != 0
                 ? KitPopulation.Of(b.Id).CompareTo(KitPopulation.Of(a.Id)) : string.CompareOrdinal(a.Id, b.Id));
             var centres = new Dictionary<string, Vector2>();
@@ -63,16 +90,43 @@ namespace Statecraft.Game.Map.Kits
                 centres[s.Id] = new Vector2(w.x, w.z);
                 ground.Footprints.Add((centres[s.Id], FootprintRadiusM(s, ground.HexSizeM), s.Id));
             }
-            var result = new List<(Settlement, Mesh, int)>();
+            var result = new Result();
+            var tiles = new SortedDictionary<(int, int), KitMesh>();
+            KitMesh Tile(Vector2 p)
+            {
+                var key = (Mathf.FloorToInt(p.x / TileM), Mathf.FloorToInt(p.y / TileM));
+                if (!tiles.TryGetValue(key, out var km)) tiles[key] = km = new KitMesh();
+                return km;
+            }
             // One lot list for every town: a big town's buildings are placed first, and a neighbour's never overlap them.
-            var lots = new List<Lot>();
+            var lots = new Lots();
+            var streams = new Dictionary<string, KitRandom>(); var landmarks = new Dictionary<string, int>();
             foreach (var s in order)
             {
+                if (!merged.Contains(s.Id)) continue;
+                var rnd = new KitRandom(s.Id, 1);
+                int n = BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Landmark, ref rnd, 0);
+                result.LocalityBuildings += n; landmarks[s.Id] = n; streams[s.Id] = rnd;
+            }
+            foreach (var s in order)
+            {
+                if (merged.Contains(s.Id))
+                {
+                    var rnd = streams[s.Id];
+                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Houses, ref rnd, landmarks[s.Id]);
+                    continue;
+                }
                 var km = new KitMesh();
                 int n = BuildOne(s, centres[s.Id], ground, km, lots);
-                result.Add((s, km.ToMesh(s.Id + "_kit"), n));
+                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
-            claimed = lots.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
+            foreach (var area in camps)
+            {
+                var (c, t) = Encampments(area, ground, lots, Tile);
+                result.Camps += c; result.Tents += t;
+            }
+            foreach (var kv in tiles) result.Tiles.Add(($"Localities {kv.Key.Item1},{kv.Key.Item2}", kv.Value.ToMesh($"localities_{kv.Key.Item1}_{kv.Key.Item2}")));
+            result.Claimed = lots.List.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
             return result;
         }
 
@@ -109,16 +163,26 @@ namespace Statecraft.Game.Map.Kits
 
         sealed class Lot { public Vector2 c; public float r; public string id = ""; }
 
-        static bool FreeAt(List<Lot> lots, Vector2 p, float r)
+        /// <summary>The shared lot list, in claim order, with a grid index for the free-spot test.</summary>
+        sealed class Lots
         {
-            foreach (var l in lots) if ((l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false;
-            return true;
+            public readonly List<Lot> List = new List<Lot>();
+            readonly DiscIndex index = new DiscIndex(1f, KitGround.LotQueryM);
+            public void Add(Lot l) { List.Add(l); index.Add((l.c, l.r, l.id)); }
+            public bool Free(Vector2 p, float r)
+            {
+                if (r > KitGround.LotQueryM) { foreach (var l in List) if ((l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false; return true; }
+                foreach (var i in index.Near(p)) { var (c, lr, _) = index[i]; if ((c - p).sqrMagnitude < (lr + r) * (lr + r)) return false; }
+                return true;
+            }
         }
+
+        static bool FreeAt(Lots lots, Vector2 p, float r) => lots.Free(p, r);
 
         /// <summary>A landmark's spot (review N2): the dry spot nearest <paramref name="want"/> (rings out to four radii) that no
         /// lot of any town already holds; claimed for <paramref name="owner"/>. False, and nothing claimed, when there is none:
         /// the landmark is then left out rather than overlapping a bigger neighbour.</summary>
-        static bool Claim(List<Lot> lots, Vector2 want, float r, string owner, KitGround ground, out Vector2 at)
+        static bool Claim(Lots lots, Vector2 want, float r, string owner, KitGround ground, out Vector2 at)
         {
             for (int ring = 0; ring <= 8; ring++)
             {
@@ -134,11 +198,24 @@ namespace Statecraft.Game.Map.Kits
             at = want; return false;
         }
 
-        /// <summary>Places one settlement's buildings into <paramref name="km"/>; returns how many.</summary>
-        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, List<Lot> lots)
+        /// <summary>Which part of a settlement BuildOne places: everything, only its landmark (the 1948 localities' first pass:
+        /// every village's mosque, church or water tower claims its heart before any town's houses, so a village at a city's
+        /// edge, Jammasin by Tel Aviv, keeps its ground), or only its houses (their second pass, continuing the same random
+        /// stream, so a locality draws as it would in one pass).</summary>
+        enum Phase { All, Landmark, Houses }
+
+        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots)
+        {
+            var rnd = new KitRandom(s.Id, 1);
+            return BuildOne(s, centre, ground, km, lots, Phase.All, ref rnd, 0);
+        }
+
+        /// <summary>Places one settlement's buildings (or the <paramref name="phase"/> of them) into <paramref name="km"/>;
+        /// returns how many. <paramref name="landmarksBefore"/>: the landmarks its first pass built (they count towards the
+        /// houses' target, as in one pass).</summary>
+        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, Phase phase, ref KitRandom rnd, int landmarksBefore)
         {
             var arch = ArchetypeOf(s);
-            var rnd = new KitRandom(s.Id, 1);
             float R = FootprintRadiusM(s, ground.HexSizeM);
             float m = KitScale.For(arch);
             int placed = 0;
@@ -148,22 +225,19 @@ namespace Statecraft.Game.Map.Kits
             bool Mine(Vector2 p)
             {
                 float mine = (p - centre).magnitude / R;
-                foreach (var f in ground.Footprints)
-                    if (f.id != s.Id && (p - f.centre).magnitude / f.radius < mine) return false;
+                var fp = ground.Footprints;
+                foreach (var i in fp.Near(p))
+                    if (fp[i].id != s.Id && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
                 return true;
             }
             bool Free(Vector2 p, float r) => FreeAt(lots, p, r);
 
             // Landmarks first, at the centre (or the nearest dry spot to it).
-            var heart = DryNear(centre, ground, R * 0.3f, ref rnd);
-            switch (arch)
-            {
-                case Archetype.OldTown: placed += OldTownLandmarks(s, heart, ground, km, lots, ref rnd); break;
-                case Archetype.ArabTown: placed += Mosque(s.Id, heart, ground, km, lots, ref rnd, 1f); break;
-                case Archetype.Moshava: placed += WaterTower(s.Id, heart + new Vector2(R * 0.35f, -R * 0.2f), ground, km, lots); break;
-            }
+            if (phase != Phase.Houses) placed += PlaceLandmark(s, arch, centre, R, ground, km, lots, ref rnd);
+            if (phase == Phase.Landmark) return placed;
 
             int target = TargetCount(arch, R);
+            if (phase == Phase.Houses) target -= landmarksBefore;
             int attempts = target * 30;
             bool ring = s.Type == "moshav";   // Nahalal's ring of farmsteads round the public buildings
             for (int i = 0; i < attempts && placed < target; i++)
@@ -188,6 +262,31 @@ namespace Statecraft.Game.Map.Kits
                 placed++;
             }
             return placed;
+        }
+
+        /// <summary>A settlement's landmark at its heart (the dry spot nearest its centre): Jaffa's and the old towns', an Arab
+        /// town's or village's mosque (a 1948 locality's follows its Village Statistics religion columns: a church in
+        /// Christian Bethlehem, none in the Druze villages; a village's is smaller than a town's), a Jewish place's water
+        /// tower. Returns how many were built.</summary>
+        static int PlaceLandmark(Settlement s, Archetype arch, Vector2 centre, float R, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
+        {
+            var heart = DryNear(centre, ground, R * 0.3f, ref rnd);
+            switch (arch)
+            {
+                case Archetype.OldTown: return OldTownLandmarks(s, heart, ground, km, lots, ref rnd);
+                case Archetype.ArabTown:
+                    float size = s.Type == "village" ? 0.8f : 1f;
+                    switch (Localities.LandmarkOf(s.Id) ?? Landmark.Mosque)
+                    {
+                        case Landmark.Mosque: return Mosque(s.Id, heart, ground, km, lots, ref rnd, size);
+                        case Landmark.Church: return Church(s.Id, heart, ground, km, lots, size) ? 1 : 0;
+                        default: return 0;
+                    }
+                case Archetype.Moshava:
+                    return (Localities.LandmarkOf(s.Id) ?? Landmark.WaterTower) == Landmark.WaterTower
+                        ? WaterTower(s.Id, heart + new Vector2(R * 0.35f, -R * 0.2f), ground, km, lots) : 0;
+                default: return 0;
+            }
         }
 
         /// <summary>Buildings per settlement: the footprint area times the archetype's built-up share over its mean lot.</summary>
@@ -337,7 +436,7 @@ namespace Statecraft.Game.Map.Kits
 
         /// <summary>Jaffa: the clock tower (1903-06) by the old town's gate, the Mahmoudiya mosque's minaret and dome, and a
         /// church belfry above the harbour; the other old towns get a mosque.</summary>
-        static int OldTownLandmarks(Settlement s, Vector2 heart, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd)
+        static int OldTownLandmarks(Settlement s, Vector2 heart, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
         {
             float m = KitScale.Landmarks;
             int n = Mosque(s.Id, heart + new Vector2(-5f * m, 6f * m), ground, km, lots, ref rnd, 1.2f);
@@ -350,12 +449,7 @@ namespace Statecraft.Game.Map.Kits
                 km.Box(p.x, p.y, 15f, 4f * m, 4f * m, y + 24f * m, y + 24f * m, 4f * m, C(0.90f, 0.82f, 0.64f), stone, Facade.Plain, m, roofed: true);
                 km.Pyramid(p.x, p.y, 15f, 4.4f * m, 4.4f * m, y + 28f * m, 3.5f * m, C(0.55f, 0.47f, 0.40f));
                 n++;
-                if (!Claim(lots, heart + new Vector2(-10f * m, -12f * m), 10f * m, s.Id, ground, out var q)) return n;
-                float yq = ground.Y(q.x, q.y);
-                km.Box(q.x, q.y, 0f, 9f * m, 18f * m, yq - 2f * m, yq, 12f * m, stone, stone, Facade.Stone, m, roofed: true);
-                km.Box(q.x, q.y + 7f * m, 0f, 4.5f * m, 4.5f * m, yq + 12f * m, yq + 12f * m, 14f * m, stone, stone, Facade.Stone, m, roofed: true);
-                km.Pyramid(q.x, q.y + 7f * m, 0f, 4.8f * m, 4.8f * m, yq + 26f * m, 6f * m, C(0.60f, 0.52f, 0.44f));
-                km.Gable(q.x, q.y, 0f, 9f * m, 18f * m, yq + 12f * m, 4f * m, C(0.66f, 0.34f, 0.24f), stone);
+                if (!Church(s.Id, heart + new Vector2(-10f * m, -12f * m), ground, km, lots, 1f)) return n;
                 n += 1 + Port(heart, ground, km, ref rnd);
             }
             return n;
@@ -408,7 +502,7 @@ namespace Statecraft.Game.Map.Kits
             return 1;
         }
 
-        static int Mosque(string owner, Vector2 want, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd, float size)
+        static int Mosque(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, float size)
         {
             float m = KitScale.Landmarks * size;
             if (!Claim(lots, want, 11f * m, owner, ground, out var p)) return 0;   // the lot covers the minaret too
@@ -424,7 +518,70 @@ namespace Statecraft.Game.Map.Kits
             return 1;
         }
 
-        static int WaterTower(string owner, Vector2 want, KitGround ground, KitMesh km, List<Lot> lots)
+        /// <summary>A stone church with a gabled nave and a belfry topped by a pyramid roof (Jaffa's above its harbour, and the
+        /// Christian-majority 1948 localities' at their heart); false, and nothing built, when no free dry spot is near.</summary>
+        static bool Church(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots, float size)
+        {
+            float m = KitScale.Landmarks * size;
+            var stone = C(0.86f, 0.76f, 0.57f);
+            if (!Claim(lots, want, 10f * m, owner, ground, out var q)) return false;
+            float yq = ground.Y(q.x, q.y);
+            km.Box(q.x, q.y, 0f, 9f * m, 18f * m, yq - 2f * m, yq, 12f * m, stone, stone, Facade.Stone, m, roofed: true);
+            km.Box(q.x, q.y + 7f * m, 0f, 4.5f * m, 4.5f * m, yq + 12f * m, yq + 12f * m, 14f * m, stone, stone, Facade.Stone, m, roofed: true);
+            km.Pyramid(q.x, q.y + 7f * m, 0f, 4.8f * m, 4.8f * m, yq + 26f * m, 6f * m, C(0.60f, 0.52f, 0.44f));
+            km.Gable(q.x, q.y, 0f, 9f * m, 18f * m, yq + 12f * m, 4f * m, C(0.66f, 0.34f, 0.24f), stone);
+            return true;
+        }
+
+        /// <summary>People per Bedouin camp (symbolic: a sub-district's Village Statistics tribal total over this, at least one).</summary>
+        public const float PeoplePerCamp = 1000f;
+
+        /// <summary>A sub-district's Bedouin camps (owner ruling 2026-10-11: a light scatter sized by the sourced total, no named
+        /// points): each camp, seeded by the sub-district and its number, takes a random spot in one of the area's hexes that
+        /// is dry, gentle and outside every town's footprint, and pitches two to four black goat-hair tents in a loose row
+        /// (each tent its own lot, so nothing overlaps). Returns the camps and tents built.</summary>
+        static (int camps, int tents) Encampments(Localities.Area area, KitGround ground, Lots lots, System.Func<Vector2, KitMesh> tile)
+        {
+            if (area.Hexes.Count == 0) return (0, 0);
+            float m = KitScale.Houses, hex = ground.HexSizeM;
+            int want = Mathf.Max(1, Mathf.RoundToInt(area.Population / PeoplePerCamp)), camps = 0, tents = 0;
+            var origin = ground.TerrainOrigin;
+            for (int i = 0; i < want; i++)
+            {
+                var rnd = new KitRandom("camp:" + area.Subdistrict, (ulong)i + 1);
+                for (int attempt = 0; attempt < 12; attempt++)
+                {
+                    var (q, r) = area.Hexes[rnd.Range(0, area.Hexes.Count)];
+                    var w = HexGrid.ToWorld(HexGrid.Centre(q, r, hex), origin, ground.Length);
+                    float a = rnd.Range(0f, 2f * Mathf.PI), d = hex * 0.7f * Mathf.Sqrt(rnd.Value());
+                    var c = new Vector2(w.x + Mathf.Cos(a) * d, w.z + Mathf.Sin(a) * d);
+                    if (!ground.Inside(c.x, c.y) || ground.Water(c.x, c.y) || ground.InTown(c.x, c.y, 1.2f) || ground.Slope(c.x, c.y, 600f) > 0.12f) continue;
+                    float yaw = rnd.Range(-25f, 25f), ca = Mathf.Cos(yaw * Mathf.Deg2Rad), sa = Mathf.Sin(yaw * Mathf.Deg2Rad);
+                    int n = rnd.Range(2, 5), pitched = 0;
+                    var km = tile(c);
+                    for (int k = 0; k < n; k++)
+                    {
+                        float tw = rnd.Range(9f, 15f) * m, td = rnd.Range(4.5f, 6f) * m, along = (k - (n - 1) * 0.5f) * 20f * m;
+                        var p = c + new Vector2(along * ca, along * sa) + new Vector2(-sa, ca) * rnd.Range(-4f, 4f) * m;
+                        float lotR = 0.55f * Mathf.Sqrt(tw * tw + td * td);
+                        if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR)) continue;
+                        lots.Add(new Lot { c = p, r = lotR, id = "camp:" + area.Subdistrict });
+                        var (bottom, top) = GroundSpan(p, yaw, tw, td, ground, m);
+                        var cloth = Jitter(C(0.22f, 0.19f, 0.16f), ref rnd, 0.08f);
+                        km.Box(p.x, p.y, yaw, tw, td, bottom, top, 1.7f * m, Jitter(C(0.30f, 0.26f, 0.21f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
+                        km.Gable(p.x, p.y, yaw, tw, td, top + 1.7f * m, 0.9f * m, cloth, cloth);
+                        pitched++;
+                    }
+                    if (pitched == 0) continue;
+                    ground.Footprints.Add((c, ((n - 1) * 10f + 8f) * m, "camp:" + area.Subdistrict));   // the row's half length: groves stay out
+                    camps++; tents += pitched;
+                    break;
+                }
+            }
+            return (camps, tents);
+        }
+
+        static int WaterTower(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots)
         {
             float m = KitScale.Houses;
             if (!Claim(lots, want, 4f * m, owner, ground, out var p)) return 0;

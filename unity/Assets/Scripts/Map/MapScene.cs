@@ -23,6 +23,9 @@ namespace Statecraft.Game.Map
         public Material MarkerMaterial => markerMaterial;
         /// <summary>The settlements the last Build placed (settlements_1948.yaml), for the UI's map labels.</summary>
         public IReadOnlyList<Settlement> Settlements { get; private set; } = new List<Settlement>();
+        /// <summary>The 1948 localities the last Build drew with the kits (content/map/localities_1948.yaml; empty without the
+        /// kits), for the map labels: 1948 name, today's name. Presentation only, never in the sim.</summary>
+        public IReadOnlyList<Kits.Localities.Place> Localities { get; private set; } = new List<Kits.Localities.Place>();
 
         /// <summary>The selected hex's outline: a child of the terrain (so a rebuild destroys it).</summary>
         public const string SelectionName = "HexSelection";
@@ -125,6 +128,7 @@ namespace Statecraft.Game.Map
             var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             Settlements = list;
             bool kitsOn = kitMaterial != null && treeMaterial != null;
+            var localities = new Kits.Localities.Doc();
             if (kitsOn)
             {
                 if (string.IsNullOrWhiteSpace(inputs.PopulationYaml))
@@ -135,12 +139,32 @@ namespace Statecraft.Game.Map
                     if (Application.isEditor) throw new InvalidDataException(missing);
                     Debug.LogWarning("KITS " + missing + "; every town takes the smallest footprint");
                 }
-                Kits.KitPopulation.Use(string.IsNullOrWhiteSpace(inputs.PopulationYaml)
-                    ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName));
+                var table = string.IsNullOrWhiteSpace(inputs.PopulationYaml)
+                    ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName);
+                if (string.IsNullOrWhiteSpace(inputs.LocalitiesYaml))
+                {
+                    // As the population file: the editor refuses, a player warns and draws the 25 game settlements only.
+                    var missing = $"map/{Kits.Localities.FileName} is missing or empty: the kits draw the 1948 localities from it";
+                    if (Application.isEditor) throw new InvalidDataException(missing);
+                    Debug.LogWarning("KITS " + missing);
+                    localities = new Kits.Localities.Doc();
+                }
+                else
+                {
+                    var reserved = new HashSet<string>(); foreach (var s in list) reserved.Add(s.Id);
+                    localities = Kits.Localities.Parse(inputs.LocalitiesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), reserved,
+                        "map/" + Kits.Localities.FileName);
+                }
+                foreach (var p in localities.Places) table[p.Settlement.Id] = p.Population;
+                Kits.KitPopulation.Use(table);
+                Kits.Localities.Use(localities.Places);
             }
+            Localities = localities.Places;
+            var localitySettlements = localities.Places.ConvertAll(p => p.Settlement);
+            var painted = new List<Settlement>(list); painted.AddRange(localitySettlements);
             float hexSizeM = Hexes.hex_size_km * 1000f;
             var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial,
-                kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, list, hexSizeM) : null);
+                kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, painted, hexSizeM) : null);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
@@ -165,7 +189,7 @@ namespace Statecraft.Game.Map
                 }
                 // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
-                var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
+                var kits = Kits.KitLayer.Build(list, localitySettlements, localities.Encampments, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
                     terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats);
                 kits.transform.SetParent(transform, true);
                 KitStats = stats;

@@ -101,6 +101,10 @@ public class KitTests
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
+        var localities = inputs.LocalitiesYaml;
+        inputs.LocalitiesYaml = "";
+        StringAssert.Contains(Localities.FileName, Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs)).Message);
+        inputs.LocalitiesYaml = localities;
         inputs.PopulationYaml = "";
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs));
         StringAssert.Contains(KitPopulation.FileName, ex.Message);
@@ -151,6 +155,117 @@ public class KitTests
         Assert.AreEqual(0, inside, "trees standing inside a building's or landmark's lot");
         Assert.AreEqual(0, touching, "crowns reaching into a lot");
         Assert.Greater(trees.Count, 3000, "the groves and hills still have their trees");
+    }
+
+    static Localities.Doc LoadLocalities(MapScene map)
+    {
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
+        var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
+        return Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+    }
+
+    /// <summary>Owner rulings 2026-10-11: the 272 places of 1,000+ people beside the 25 game settlements, as Arab village and
+    /// Jewish settlement kits from content/map/localities_1948.yaml, merged into a few tile meshes; landmarks from the
+    /// file (a church in Bethlehem, none in Druze Daliyat al-Karmel); Bedouin camps sized by the sourced totals.</summary>
+    [Test]
+    public void TheLocalitiesAndCampsAreDrawnFromTheirFile()
+    {
+        var map = OpenMap();
+        var doc = LoadLocalities(map);
+        Assert.AreEqual(272, doc.Places.Count); Assert.AreEqual(272, map.Localities.Count);
+        Assert.AreEqual(8, doc.Encampments.Count);
+        var by = doc.Places.ToDictionary(p => p.Settlement.Id);
+        Assert.AreEqual("Beisan", by["beit_shean"].Settlement.Name); Assert.AreEqual("Beit She'an", by["beit_shean"].NameToday);
+        Assert.AreEqual(Landmark.Church, Localities.LandmarkOf("bethlehem")); Assert.AreEqual(Landmark.None, Localities.LandmarkOf("daliyat_al_karmel"));
+        Assert.AreEqual(Landmark.Mosque, Localities.LandmarkOf("nablus")); Assert.AreEqual(Landmark.WaterTower, Localities.LandmarkOf("kfar_saba"));
+        Assert.IsNull(Localities.LandmarkOf("tel_aviv"), "a game settlement keeps its archetype's landmark");
+        Assert.AreEqual(Archetype.ArabTown, SettlementKits.ArchetypeOf(by["isdud"].Settlement));
+        Assert.AreEqual(Archetype.Moshava, SettlementKits.ArchetypeOf(by["yagur"].Settlement));
+        Assert.AreEqual(Archetype.Moshava, SettlementKits.ArchetypeOf(by["ramat_gan"].Settlement));
+        Assert.AreEqual(5180, KitPopulation.Of("beit_shean"), "the localities' populations size their kits");
+        var st = map.KitStats; TestContext.WriteLine(st);
+        Assert.AreEqual(272, st.Localities);
+        Assert.Greater(st.LocalityBuildings, 272 * 4, "the localities have their houses (six wanted each; some lose room to a neighbour)");
+        int expected = doc.Encampments.Sum(a => Mathf.Max(1, Mathf.RoundToInt(a.Population / SettlementKits.PeoplePerCamp)));
+        Assert.AreEqual(67, expected);
+        Assert.GreaterOrEqual(st.Camps, (int)(0.9f * expected), "nearly every camp found dry, free ground"); Assert.LessOrEqual(st.Camps, expected);
+        Assert.Less(st.Draws, map.Settlements.Count + 50, "localities and camps are merged per tile, not one draw per place");
+        var root = map.transform.Find(KitLayer.RootName);
+        Assert.Greater(root.Cast<Transform>().Count(t => t.name.StartsWith("Localities ")), 5);
+    }
+
+    /// <summary>The shared lot list over all 297 places and the camps: no two places' (or camps') lots overlap, every place
+    /// claimed ground, every lot and camp stands on dry land, and no tree grows through any of them.</summary>
+    [Test]
+    public void NoLotsOverlapAndNoTreeGrowsThroughAVillageOrTent()
+    {
+        var map = OpenMap();
+        var g = Ground(map);
+        var doc = LoadLocalities(map);
+        var locs = doc.Places.Select(p => p.Settlement).ToList();
+        var built = SettlementKits.Build(map.Settlements, locs, doc.Encampments, g);
+        foreach (var k in built.Towns) Object.DestroyImmediate(k.mesh);
+        foreach (var t in built.Tiles) Object.DestroyImmediate(t.mesh);
+        var lots = built.Claimed;
+        int overlaps = 0, wet = 0;
+        var grid = new Dictionary<(int, int), List<int>>();
+        for (int i = 0; i < lots.Count; i++)
+        {
+            var key = (Mathf.FloorToInt(lots[i].centre.x / 5000f), Mathf.FloorToInt(lots[i].centre.y / 5000f));
+            if (!grid.TryGetValue(key, out var cell)) grid[key] = cell = new List<int>();
+            cell.Add(i);
+            if (g.Water(lots[i].centre.x, lots[i].centre.y)) wet++;
+        }
+        for (int i = 0; i < lots.Count; i++)
+        {
+            int cx = Mathf.FloorToInt(lots[i].centre.x / 5000f), cz = Mathf.FloorToInt(lots[i].centre.y / 5000f);
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++)
+                if (grid.TryGetValue((cx + dx, cz + dz), out var cell))
+                    foreach (var j in cell)
+                        if (j > i && lots[i].id != lots[j].id && (lots[i].centre - lots[j].centre).magnitude < lots[i].radius + lots[j].radius - 1f) overlaps++;
+        }
+        var owners = new HashSet<string>(lots.Select(l => l.id));
+        var missing = map.Settlements.Concat(locs).Where(s => !owners.Contains(s.Id)).Select(s => s.Id).ToList();
+        TestContext.WriteLine($"{lots.Count} lots over {owners.Count} owners; camps {built.Camps}, tents {built.Tents}; places with no lot: {string.Join(" ", missing)}");
+        Assert.AreEqual(0, overlaps, "lots of different places overlap");
+        Assert.AreEqual(0, wet, "a lot in the water");
+        CollectionAssert.IsEmpty(missing, "every place claimed ground");
+        foreach (var l in lots) g.Lots.Add((l.centre, l.radius));
+        var trees = Vegetation.Plant(map.Settlements.Concat(locs).ToList(), g);
+        int inside = 0;
+        foreach (var (kind, m) in trees)
+        {
+            Vector3 p = m.GetColumn(3); float scale = ((Vector3)m.GetColumn(0)).magnitude;
+            foreach (var l in lots) if ((new Vector2(p.x, p.z) - l.centre).magnitude < l.radius + Vegetation.CrownRadiusM(kind) * scale) { inside++; break; }
+        }
+        TestContext.WriteLine($"{trees.Count} trees, {inside} reaching a lot");
+        Assert.AreEqual(0, inside, "a tree grows through a building, landmark or tent");
+    }
+
+    [Test]
+    public void TheLocalitiesFileRejectsBadRows()
+    {
+        var b = (34.2, 35.9, 29.45, 33.35);
+        var reserved = new[] { "tel_aviv" };
+        const string src = "  checked: '2026-10-11'\n  status: draft\n  sources:\n  - url: https://example.org/x\n    checked: '2026-10-11'\n";
+        string Place(string id, string extra = "") =>
+            $"- id: {id}\n  name: X\n  name_today: Y\n  lon: 35.0\n  lat: 32.0\n  type: village\n  landmark: mosque\n  population: 1200\n{extra}" + src;
+        Assert.AreEqual(1, Localities.Parse("places:\n" + Place("a"), b, reserved, "loc.yaml").Places.Count);
+        void Bad(string yaml, string expect)
+        {
+            var ex = Assert.Throws<System.IO.InvalidDataException>(() => Localities.Parse(yaml, b, reserved, "loc.yaml"));
+            StringAssert.Contains("loc.yaml", ex.Message); StringAssert.Contains(expect, ex.Message);
+        }
+        Bad("places:\n" + Place("tel_aviv"), "game settlement");
+        Bad("places:\n" + Place("a") + Place("a"), "duplicate");
+        Bad("places:\n" + Place("a").Replace("type: village", "type: hamlet"), "type");
+        Bad("places:\n" + Place("a").Replace("landmark: mosque", "landmark: tower"), "landmark");
+        Bad("places:\n" + Place("a").Replace("lon: 35.0", "lon: 36.5"), "outside");
+        Bad("places:\n" + Place("a").Replace("population: 1200", "population: 0"), "population");
+        Bad("places:\n" + Place("a").Replace("status: draft", "status: guess"), "status");
+        Bad("places:\n" + Place("a", "  fate: x\n"), "fate");
+        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  hexes: []\n" + src, "no hexes");
+        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  name: Camp\n  hexes: [[1, 2]]\n" + src, "name");
     }
 
     /// <summary>Review M6: switching the kits off shows the marker boxes again, so a settlement is never left undrawn.</summary>
@@ -275,7 +390,9 @@ public class KitTests
     /// hex edges in view; at each, the line shows when switching the grid off changes the 3x3 neighbourhood's luma by more
     /// than 3/255 (HexGridTests' threshold). With kits and trees on, at least <see cref="GridReadableShare"/> of the
     /// midpoints whose line shows on bare ground must still show it (the rest are covered by a building or a crown).</summary>
-    public const float GridReadableShare = 0.75f;   // measured 84% (76 of 90) at the 2026-10-11 defaults
+    /// <remarks>Measured 84% (76 of 90) with the 25 game settlements; 73% (66 of 90) with the 272 localities of 1948 beside
+    /// them (owner ruling 2026-10-11: the land dense with towns and villages, as in promo 03), so the floor is 70%.</remarks>
+    public const float GridReadableShare = 0.70f;
 
     [UnityTest]
     public IEnumerator TheGridStaysReadableThroughTownsAndGroves()

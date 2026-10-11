@@ -89,7 +89,11 @@ public class MapLabelTests
         var names = map.Settlements.Select(s => s.Name).ToArray();
         CollectionAssert.AreEqual(names, labels.Labels.Select(l => l.text).ToArray());
         var container = ui.Q<VisualElement>(MapLabelsPresenter.ContainerName);
-        Assert.AreEqual(names.Length, container.childCount);
+        // The game settlements' pills, the 1948 localities' pills and the one tooltip.
+        Assert.AreEqual(names.Length + map.Localities.Count + 1, container.childCount);
+        CollectionAssert.AreEqual(map.Localities.Select(p => p.Settlement.Name).ToArray(), labels.LocalityLabels.Select(l => l.text).ToArray());
+        foreach (var l in labels.LocalityLabels) { Assert.IsTrue(l.ClassListContains(MapLabelsPresenter.LocalityClass), l.text); Assert.AreEqual(PickingMode.Ignore, l.pickingMode, l.text); }
+        Assert.AreEqual(PickingMode.Ignore, labels.Tooltip.pickingMode);
         foreach (var slot in labels.Slots) Assert.AreEqual(PickingMode.Ignore, slot.pickingMode);
         foreach (var l in labels.Labels)
         {
@@ -152,7 +156,7 @@ public class MapLabelTests
         map.Build();
         using var second = new MapLabelsPresenter(ui.Root, map, cam);
         using var third = new MapLabelsPresenter(ui.Root, map, cam);
-        Assert.AreEqual(map.Settlements.Count, ui.Q<VisualElement>(MapLabelsPresenter.ContainerName).childCount);
+        Assert.AreEqual(map.Settlements.Count + map.Localities.Count + 1, ui.Q<VisualElement>(MapLabelsPresenter.ContainerName).childCount);
     }
 
     /// <summary>Review M2: an older presenter disposed after a newer one was made removes only its own pills.</summary>
@@ -164,8 +168,8 @@ public class MapLabelTests
         using var newer = new MapLabelsPresenter(ui.Root, map, cam);
         older.Dispose();
         var container = ui.Q<VisualElement>(MapLabelsPresenter.ContainerName);
-        Assert.AreEqual(map.Settlements.Count, container.childCount);
-        foreach (var slot in newer.Slots) Assert.AreSame(container, slot.parent, slot.name);
+        Assert.AreEqual(map.Settlements.Count + map.Localities.Count + 1, container.childCount);
+        foreach (var slot in newer.Slots.Concat(newer.LocalitySlots)) Assert.AreSame(container, slot.parent, slot.name);
     }
 
     /// <summary>Behavioural, not text (review N4/N6): with the real theme, a laid-out pill resolves to EB Garamond SemiBold on
@@ -208,7 +212,7 @@ public class MapLabelTests
 
     static IEnumerator Settle(MapLabelsPresenter labels)
     {
-        for (int i = 0; i < 20 && labels.Labels.Any(l => float.IsNaN(l.resolvedStyle.width) || l.resolvedStyle.width <= 0); i++) yield return null;
+        for (int i = 0; i < 20 && labels.Labels.Concat(labels.LocalityLabels).Any(l => float.IsNaN(l.resolvedStyle.width) || l.resolvedStyle.width <= 0); i++) yield return null;
         labels.Refresh(force: true); yield return null;   // the first refresh with sizes declutters
         labels.Refresh(force: true); yield return null;
     }
@@ -236,6 +240,44 @@ public class MapLabelTests
             Assert.AreEqual(1920f, hd.Root.worldBound.width, 1f, $"the panel is 1920 points wide: a scale of {width / 1920f}");
             Assert.AreEqual(expected.x, wb.center.x, 2f, "centred on the marker");
             Assert.AreEqual(expected.y, wb.yMax, 2f, "LiftPx above the marker's top");
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Owner ruling 2026-10-11: the 1948 localities are named by their 1948 names only at close zoom, with today's
+    /// name in a tooltip. At 30 km over Beisan its pill reads "Beisan" and, hovered, the tooltip "Today: Beit She'an" sits
+    /// under it; no two shown pills overlap; at the gameplay zoom (60 km) no locality pill is shown, and the game
+    /// settlements' pills there are the same as with no localities at all.</summary>
+    [UnityTest]
+    public IEnumerator LocalitiesAreNamedOnlyCloseUpWithTodaysNameOnHover()
+    {
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
+        try
+        {
+            Assert.Greater(map.Localities.Count, 250);
+            Pose(35.50, 32.49, 30000f);
+            yield return Settle(labels);
+            var beisan = labels.LocalitySlots.Single(x => x.name == "slot-beit_shean");
+            Assert.AreEqual("Beisan", beisan.Q<Label>().text);
+            Assert.IsTrue(Shown(beisan), "Beisan is named at 30 km");
+            var shown = labels.Slots.Concat(labels.LocalitySlots).Where(Shown).Select(x => (id: x.name, rect: x.Q<Label>().worldBound)).ToList();
+            TestContext.WriteLine($"30 km over Beisan: {shown.Count} pills shown: {string.Join(" ", shown.Select(x => x.id))}");
+            for (int i = 0; i < shown.Count; i++)
+                for (int j = i + 1; j < shown.Count; j++)
+                    Assert.IsFalse(shown[i].rect.Overlaps(shown[j].rect), $"{shown[i].id} overlaps {shown[j].id}");
+            labels.HoverLocality("beit_shean"); yield return null;
+            Assert.AreEqual(Visibility.Visible, labels.Tooltip.style.visibility.value);
+            Assert.AreEqual("Today: Beit She'an", labels.Tooltip.text);
+            var pill = beisan.Q<Label>().worldBound; var tip = labels.Tooltip.worldBound;
+            Assert.AreEqual(pill.center.x, tip.center.x, 2f, "the tooltip is centred under its pill");
+            Assert.Greater(tip.yMin, pill.yMax - 1f, "and below it");
+            labels.HoverLocality(null);
+            Assert.AreEqual(Visibility.Hidden, labels.Tooltip.style.visibility.value);
+
+            Pose(PromoPose.Gameplay03.Lon, PromoPose.Gameplay03.Lat, PromoPose.Gameplay03.Distance);
+            yield return Settle(labels);
+            Assert.IsFalse(labels.LocalitySlots.Any(Shown), "no locality is named at the gameplay zoom");
         }
         finally { labels.Dispose(); hd.Dispose(); }
     }
