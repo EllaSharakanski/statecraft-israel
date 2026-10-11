@@ -125,7 +125,11 @@ public class RealContentTests
         Assert.Equal("ben_gurion", Who("education_minister", 1951, 5, 19));
         Assert.Equal("dinur", Who("education_minister", 1951, 10, 8));
         Assert.Equal("lavon", Who("rationing_minister", 1950, 11, 1));
-        Assert.Equal("(vacant)", Who("rationing_minister", 1951, 10, 8));
+        Assert.Equal("lavon", Who("rationing_minister", 1951, 10, 7));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1951, 10, 8));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1951, 12, 31));
+        Assert.Equal("dov_yosef", Who("rationing_minister", 1952, 12, 23));
+        Assert.Equal("(vacant)", Who("rationing_minister", 1952, 12, 24));
         Assert.Equal("dov_yosef", Who("transportation_minister", 1951, 1, 1));
         Assert.Equal("pinkas", Who("transportation_minister", 1951, 10, 8));
         Assert.Equal("lavon", Who("agriculture_minister", 1951, 1, 1));

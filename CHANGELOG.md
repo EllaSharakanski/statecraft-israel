@@ -30,6 +30,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
+- Source Dov Yosef's food-supply and rationing responsibility in the Third Government from 8 October 1951,
+  replacing the unsupported vacancy (#2).
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
   - navy panels with gold trim, corner brackets and a soft shadow;
   - an icon for each indicator in the top bar, with its value and its change since the last turn;

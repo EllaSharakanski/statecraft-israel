@@ -25,7 +25,8 @@ offices:
   # The minister responsible for rationing: the rationing policy's effects and events look this office up. Until
   # 1 November 1950 that was the Minister of Rationing and Supply (Dov Yosef). The ministry was then abolished and its
   # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
-  # notes, Addendum 2). From 8 October 1951 no source names the responsible minister, so the office is vacant (people.yaml).
+  # notes, Addendum 2). From 8 October 1951 food-supply/rationing responsibility was with Trade and Industry (Yosef);
+  # see people.yaml and research_notes/M3 content 1950-51/rationing-responsibility.md for evidence and caveats.
   - { id: rationing_minister, title: Minister responsible for rationing }
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
   - { id: minister_without_portfolio, title: Minister without Portfolio }

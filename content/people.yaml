@@ -204,6 +204,10 @@ people:
       # en.wiki lists Trade and Industry and Justice; he.wiki lists only Trade and Industry clearly (research notes 1e).
       - { office: trade_minister, from: 1951-10-08, sources: *third }
       - { office: justice_minister, from: 1951-10-08, sources: *third }
+      # Food supply and rationing within Trade and Industry, not a revival of the abolished ministry.
+      # Schiffman/Goldstein (2026), pp.6 n.9, 33, 62; Knesset 7 January 1952, questions 8-10.
+      # Exact start is explicit in the archival working paper; the research note records the conflicting Rozin date.
+      - { office: rationing_minister, from: 1951-10-08, to: 1952-12-24, sources: [{ url: "https://mpra.ub.uni-muenchen.de/129488/1/MPRA_paper_129488.pdf", checked: 2026-10-11 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250631.pdf", checked: 2026-10-11 }] }
     status: fact-checked
   - id: shazar
     name: Zalman Shazar
@@ -237,7 +241,7 @@ people:
       # Trade and Industry (Geri) took some supply departments (commodities and stock). Research notes, Addendum 2 (A1):
       # he.wiki was read directly; the Weitz PDF and SSRN 6351358 were not read directly, only their search summaries.
       - { office: rationing_minister, from: 1950-11-01, to: 1951-10-08, sources: [{ url: "https://he.wikipedia.org/wiki/משרד_האספקה_והקיצוב", checked: 2026-10-10 }, { url: "https://in.bgu.ac.il/bgi/iyunim/24/Yechiam-Weitz.pdf", checked: 2026-10-10 }, { url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6351358", checked: 2026-10-10 }] }
-      # From 8 October 1951: no source names the responsible minister (Addendum 2: not found), so the office is vacant.
+      # Yosef took food-supply/rationing responsibility in the Third Government (see his sourced term above).
     status: fact-checked
   - id: geri
     name: Ya'akov Geri
