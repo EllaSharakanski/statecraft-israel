@@ -21,6 +21,12 @@ namespace Statecraft.Game.UI
         /// .EveryWindowShapeFitsTheBarAfterATurn), so the two tiers share the threshold.</summary>
         public const float NarrowBelowPx = CompactBelowPx;
         public const string NarrowClass = "hud-narrow";
+        /// <summary>Below this width (windows narrower than about square, e.g. a browser snapped to half a 1080p screen, about
+        /// 1360 logical px) one row cannot hold the badge, six meters, the screen buttons and End Turn: the root also gets
+        /// TwoRowClass, and the bar wraps into two rows, the date and the meters above, the screen buttons and End Turn
+        /// below (Statecraft.uss .hud-two-row).</summary>
+        public const float TwoRowBelowPx = 1500f;
+        public const string TwoRowClass = "hud-two-row";
 
         public HudPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
@@ -42,7 +48,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render; endTurn.clicked -= onEndTurn; endTurn.generateVisualContent -= PaintHourglass;
             bar.UnregisterCallback<GeometryChangedEvent>(OnBarGeometry);
-            bar.RemoveFromClassList(CompactClass); hudRoot.RemoveFromClassList(NarrowClass);
+            bar.RemoveFromClassList(CompactClass); hudRoot.RemoveFromClassList(NarrowClass); hudRoot.RemoveFromClassList(TwoRowClass);
         }
 
         // The bar's width does not depend on the class, so this settles in one pass.
@@ -53,6 +59,7 @@ namespace Statecraft.Game.UI
             if (!(width > 0)) return;   // NaN before layout: wait for it
             bar.EnableInClassList(CompactClass, width < CompactBelowPx);
             hudRoot.EnableInClassList(NarrowClass, width < NarrowBelowPx);
+            hudRoot.EnableInClassList(TwoRowClass, width < TwoRowBelowPx);
         }
 
         /// <summary>End Turn's hourglass, in the button's left padding (Statecraft.uss .end-turn), painted into the button so it

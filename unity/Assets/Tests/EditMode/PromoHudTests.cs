@@ -130,16 +130,18 @@ public class PromoHudTests
     /// <summary>The bar at every window shape, after a turn has played and with the widest realistic changes and date:
     /// 16:9 (1920 logical px) keeps the icons; 16:10 (~1821), 5:4, 4:3 and windows narrower than about square (1280x1024 ~1585,
     /// 1024x768 ~1662, 1024x1024 ~1440, a browser snapped to half a 1080p screen ~1358, 800x1000 ~1288) get the compact,
-    /// narrow HUD: no icons, and a taller bar whose meters stack the change under the value. Everywhere: every meter label stays inside its meter and the bar, no two meters'
+    /// narrow HUD: no icons, and a taller bar whose meters stack the change under the value. Below about 1500 logical px
+    /// (1024x1024, 960x1080, 800x1000) the bar also wraps into two rows. Everywhere: every meter label stays inside its meter and the bar, no two meters'
     /// labels overlap, the meters end before the screen buttons, the date badge holds its widest line inside its trim at a
     /// fixed width, and the panels start below the bar (review N2, N3 and the narrow-window follow-up).</summary>
     [UnityTest]
     public IEnumerator EveryWindowShapeFitsTheBarAfterATurn()
     {
-        foreach (var (w, h, compact, narrow) in new[] { (1920, 1080, false, false), (1280, 720, false, false), (1366, 768, false, false),
-                                                        (1920, 1200, true, true), (1440, 900, true, true),
-                                                        (1280, 1024, true, true), (1024, 768, true, true), (1024, 1024, true, true),
-                                                        (960, 1080, true, true), (800, 1000, true, true) })
+        foreach (var (w, h, compact, narrow, twoRow) in new[] { (1920, 1080, false, false, false), (1280, 720, false, false, false),
+                                                                (1366, 768, false, false, false), (1920, 1200, true, true, false),
+                                                                (1440, 900, true, true, false), (1280, 1024, true, true, false),
+                                                                (1024, 768, true, true, false), (1024, 1024, true, true, true),
+                                                                (960, 1080, true, true, true), (800, 1000, true, true, true) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -171,6 +173,7 @@ public class PromoHudTests
                 var where = $"{w}x{h} (bar {barRect.width:0} px)";
                 Assert.AreEqual(compact, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact");
                 Assert.AreEqual(narrow, root.Q("root").ClassListContains(HudPresenter.NarrowClass), where + ": narrow");
+                Assert.AreEqual(twoRow, root.Q("root").ClassListContains(HudPresenter.TwoRowClass), where + ": two rows");
                 foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
                     Assert.AreEqual(compact ? DisplayStyle.None : DisplayStyle.Flex, icon.resolvedStyle.display, $"{where}: {icon.Glyph}");
                 var badge = root.Q(className: "date-box");
@@ -191,7 +194,22 @@ public class PromoHudTests
                     foreach (var b in labels)
                         if (a.meter != b.meter && a.label.worldBound.Overlaps(b.label.worldBound))
                             Assert.Fail($"{where}: '{a.label.text}' ({a.meter}) overlaps '{b.label.text}' ({b.meter})");
-                Assert.LessOrEqual(root.Q("meters").worldBound.xMax, root.Q("nav").worldBound.xMin + 0.5f, where + ": the meters run into the screen buttons");
+                // The meters never reach the screen buttons or End Turn (beside them on one row, above them on two), with a
+                // margin for the browser's text measuring a little wider than the editor's.
+                foreach (var other in new[] { root.Q("nav").worldBound, root.Q(className: "turn-box").worldBound, badge.worldBound })
+                    foreach (var (meter, l) in labels)
+                    {
+                        var r = l.worldBound; r.xMax += 12f;
+                        Assert.IsFalse(r.Overlaps(other), $"{where}: '{l.text}' ({meter}) {r} is within 12 px of {other}");
+                    }
+                // The meters are not squeezed: they take their natural widths with at least 5% to spare before the screen
+                // buttons (or the bar's end, on two rows), room for the browser's text measuring a little wider than the editor's.
+                var meters = root.Q("meters").Children().ToList();
+                var used = meters[meters.Count - 1].worldBound.xMax - meters[0].worldBound.xMin;
+                var limit = twoRow ? barRect.xMax - 14f : root.Q("nav").worldBound.xMin;
+                Assert.GreaterOrEqual(limit - meters[meters.Count - 1].worldBound.xMax, 0.05f * used, $"{where}: the meters use {used:0} of {limit - meters[0].worldBound.xMin:0} px");
+                foreach (var e in new[] { root.Q("nav"), root.Q(className: "turn-box"), badge })
+                    Assert.LessOrEqual(e.worldBound.yMax, barRect.yMax + 0.5f, $"{where}: {e.name}{string.Join(".", e.GetClasses())} leaves the bar");
                 Assert.GreaterOrEqual(root.Q("right-column").worldBound.yMin, barRect.yMax, where + ": the event column starts under the bar");
                 var screen = root.Q("screen-why");
                 screen.style.display = DisplayStyle.Flex;                // opened, as ScreenNav does
