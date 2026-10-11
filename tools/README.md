@@ -13,6 +13,11 @@ Offline data tools (uv inline-script Python). Run from the repo root.
 - `hexgrid.py` writes `content/map/hexes.json` from the heightmap and those committed precipitation inputs (no network).
 - `settlement_hexes.py` writes `content/map/settlement_hexes.yaml` (committed): the hex that owns each settlement, by the
   `hexgrid.settlement_hex` rule. The sim reads it, so it needs no projection maths.
+- `routes_1948.py [--fetch] [--only ID ...] [--preview DIR]` traces the railways and main roads of May 1948 (issue #35)
+  on the Survey of Palestine 1:250,000 map of 1946 (public domain; Palestine Open Maps' tiles, downloaded with `--fetch`
+  into `tools/.cache/pal250k-1946/`, not committed): it reads the hand-written routes, sources and waypoints in
+  `content/map/routes_1948.yaml` and writes the traced lines to `content/map/route_paths_1948.yaml` (committed; the map
+  draws it, the sim never reads it). `--preview` writes each traced segment over the map for checking by eye.
 - `web_check.py` serves a WebGL build on http://localhost and opens it in headless Chrome for Testing (Playwright's
   cache; macOS only, arm64 or x64); it passes when the console shows the expected lines (`GOLDEN OK ...`, `SMOKE OK ...`).
 - `package_release.py` zips a Brotli WebGL build for sharing (`unity/Builds/statecraft-m3-web.zip`) and refuses

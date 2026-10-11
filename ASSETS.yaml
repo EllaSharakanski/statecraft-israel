@@ -83,6 +83,11 @@ rules:
     licence: CC-BY-SA-4.0
     source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
     status: verified
+  - glob: "content/map/route*_1948.yaml"
+    licence: CC-BY-SA-4.0
+    source: "Railways and main roads of May 1948 (issue #35): traced by tools/routes_1948.py on the Survey of Palestine 1:250,000 map of 1946 (public domain; scans and georeferencing by Palestine Open Maps, https://palopenmaps.org/en/maps?basemap=pal250k1946) between waypoints at Wikipedia API (CC BY-SA) and Wikidata (CC0) coordinates; per-route sources and check dates in routes_1948.yaml"
+    status: verified
+    note: "Public domain checked 2026-10-11: Wikimedia Commons files the 1946 Survey of Palestine sheets as public domain (PD Israel Government, UK Government artistic works; e.g. https://commons.wikimedia.org/wiki/File:Gaza_sh._04,_1946.jpg). No OpenStreetMap (ODbL) geometry is copied: OSM and OpenHistoricalMap lines were used only to measure the trace's accuracy (docs/routes.md)."
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
