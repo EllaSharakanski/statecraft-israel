@@ -136,7 +136,7 @@ public class EventImageMappingTests
             Assert.AreEqual(r.Licence, Get(rule!, "licence"), glob);
             Assert.AreEqual(r.Commons, Get(rule!, "source"), glob);
             Assert.AreEqual(r.Credit, Get(rule!, "credit"), glob);
-            Assert.AreEqual("owner-verify", Get(rule!, "status"), glob);
+            Assert.AreEqual("verified", Get(rule!, "status"), glob);   // the owner's sign-off of 2026-10-11 (docs/event-images.md)
             Assert.AreEqual("graded and cropped", Get(rule!, "adapted"), glob);
             if (r.Sensitive) StringAssert.Contains("sensitivity review", Get(rule!, "note"), glob);
         }
