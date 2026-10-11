@@ -32,6 +32,7 @@ public static class MapCapture
         var controller = Camera.main.gameObject.AddComponent<CameraController>();   // adds the CameraRig it requires
         var map = new GameObject("MapScene").AddComponent<MapScene>();
         map.Configure(Load(MapMaterials.TerrainPath), Load(MapMaterials.MarkerPath), Load(MapMaterials.SelectionPath), Load(MapMaterials.SeaPath), Load(MapMaterials.BorderLandPath));
+        map.ConfigureKits(Load(MapMaterials.KitPath), Load(MapMaterials.TreePath));
         var boot = new GameObject("Boot").AddComponent<GameBoot>();
         boot.Configure(map);
         var placements = new GameObject("Placements").AddComponent<PlacementLayer>();
@@ -190,6 +191,42 @@ public static class MapCapture
         if (lon < 34.2 || lon > 35.9 || lat < 29.45 || lat > 33.35) throw new System.ArgumentException($"'{value}': lon/lat outside the map (34.2-35.9 E, 29.45-33.35 N)");
         if (!(dist > 0f)) throw new System.ArgumentException($"'{value}': distance must be > 0 m");
         return new PromoPose(f[0], lon, lat, dist, yaw);
+    }
+
+    /// <summary>Art-track iteration renders (editor, WebGL tier = quality level 0): the promo poses plus a 30 km look at the
+    /// promo 03 ground (Jaffa to Ramla), at the symbolic scale given by -kitScale (city blocks), -houseScale and -treeScale (default:
+    /// the ruling's KitScale defaults), into -captureDir as kits-&lt;pose&gt;.png. Logs the kit numbers (KITS ...).</summary>
+    public static void Kits()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        string Arg(string name) { int i = System.Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
+        var dir = Arg("-captureDir") ?? Path.Combine(CaptureDir, "visual", "kits");
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        if (Arg("-kitScale") is string ks) Statecraft.Game.Map.Kits.KitScale.CityBlocks = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(ks, ci));
+        if (Arg("-houseScale") is string hs) Statecraft.Game.Map.Kits.KitScale.Houses = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(hs, ci));
+        if (Arg("-treeScale") is string ts) Statecraft.Game.Map.Kits.KitScale.Trees = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(ts, ci));
+        int saved = QualitySettings.GetQualityLevel();
+        try
+        {
+            QualitySettings.SetQualityLevel(0, true);
+            var map = OpenAndBuild();
+            Debug.Log(map.KitStats?.ToString() ?? "KITS none (no kit materials on MapScene)");
+            var rig = Camera.main.GetComponent<CameraRig>();
+            var poses = new System.Collections.Generic.List<PromoPose>(PromoPose.All)
+            {
+                new PromoPose("close30", 34.83, 32.00, 30000f, 10f), new PromoPose("hero12", 34.79, 32.06, 12000f, 10f),
+            };
+            foreach (var pose in poses)
+            {
+                pose.Apply(rig, map.Frame);
+                Save(Camera.main, 1920, 1080, Path.Combine(dir, $"kits-{pose.Name}.png"));
+            }
+        }
+        finally
+        {
+            QualitySettings.SetQualityLevel(saved, true);
+            Statecraft.Game.Map.Kits.KitScale.Reset();
+        }
     }
 
     static void Save(Camera cam, int w, int h, string path)
