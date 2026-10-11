@@ -95,6 +95,8 @@
                 <Statecraft.Game.UI.UiFrame />
             </ui:VisualElement>
             <ui:VisualElement class="right-gap" picking-mode="Ignore" />
+            <!-- What the map's region borders show while they are drawn (owner ruling 2026-10-11: "Mandate sub-districts, 1947"). -->
+            <ui:Label name="map-layer" class="map-layer" picking-mode="Ignore" />
             <ui:VisualElement name="minimap" class="panel minimap">
                 <ui:VisualElement name="minimap-image" class="minimap-image">
                     <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
@@ -108,6 +110,7 @@
             <ui:VisualElement class="info-body">
                 <ui:Label name="info-title" class="title" />
                 <ui:Label name="info-subtitle" class="muted" />
+                <ui:Label name="info-region" class="muted" />
                 <ui:VisualElement class="gold-rule" />
                 <ui:Label name="info-settlements" />
                 <ui:Label name="info-placement" class="muted" />

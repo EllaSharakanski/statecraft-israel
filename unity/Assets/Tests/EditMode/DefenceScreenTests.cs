@@ -30,7 +30,7 @@ public class DefenceScreenTests
             Assert.IsFalse(ui.Q<VisualElement>("rung-2").ClassListContains("rung-current"));
             Assert.AreEqual("turns of a week", ui.Q<Label>("rung-5-turn").text);
             Assert.AreEqual("turns of a quarter", ui.Q<Label>("rung-1-turn").text);
-            Assert.AreEqual("A UN ceasefire will be imposed in 52 weeks", ui.Q<Label>("ceasefire").text);
+            Assert.AreEqual("If full war goes on, the UN imposes a ceasefire in 52 weeks", ui.Q<Label>("ceasefire").text);
             Assert.AreEqual("Minister of Defense David Ben-Gurion · Chief of Staff Yaakov Dori", ui.Q<Label>("defence-command").text);
             Assert.AreEqual("80% of reserves called up (level 5 needs at least 80%)", ui.Q<Label>("mob-level").text);
             Assert.AreEqual("Costs IL 48.0m a year in pay and lost work", ui.Q<Label>("mob-cost").text);
@@ -142,7 +142,7 @@ public class DefenceScreenTests
         using (ui)
         {
             bridge.EndTurn();
-            Assert.AreEqual("A UN ceasefire will be imposed in 51 weeks", ui.Q<Label>("ceasefire").text);
+            Assert.AreEqual("If full war goes on, the UN imposes a ceasefire in 51 weeks", ui.Q<Label>("ceasefire").text);
             Assert.AreEqual(51, bridge.State.CeasefireWeeksLeft);
         }
     }
@@ -157,7 +157,7 @@ public class DefenceScreenTests
             Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("ceasefire").style.display.value);
             Assert.AreEqual("The UN ceasefire clock stops if the level is lowered", ui.Q<Label>("ceasefire").text);
             ui.Press("escalate");
-            Assert.AreEqual("A UN ceasefire will be imposed in 52 weeks", ui.Q<Label>("ceasefire").text);
+            Assert.AreEqual("If full war goes on, the UN imposes a ceasefire in 52 weeks", ui.Q<Label>("ceasefire").text);
         }
     }
 
