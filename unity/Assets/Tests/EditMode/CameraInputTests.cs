@@ -252,6 +252,32 @@ public class CameraInputTests
         finally { Object.DestroyImmediate(rig.gameObject); }
     }
 
+    /// <summary>Issue #174: over low ground the look-at point stays on y = 0 (the approved framing); over ground high enough
+    /// to come within MinClearanceShare of the camera, it is lifted just enough, and dropped again on the way back down.</summary>
+    [Test]
+    public void TheCameraIsLiftedOnlyOverHighGround()
+    {
+        var rig = NewRig();
+        try
+        {
+            rig.Distance = CameraController.MinDistance;
+            float height = rig.Distance * Mathf.Sin(CameraRig.Pitch * Mathf.Deg2Rad);
+            float groundY = 0f;
+            System.Func<Vector2, float> ground = _ => groundY;
+            foreach (var g in new[] { 0f, 0.5f, 0.79f, 0.9f, 1.3f, 0.3f })
+            {
+                groundY = g * height;
+                CameraController.Step(rig, new CameraInput(), 0f, Map, ground);
+                float clearance = rig.transform.position.y - groundY;
+                if (g <= 1f - CameraController.MinClearanceShare)
+                    Assert.AreEqual(0f, rig.LookAt.y, 1e-3, $"ground at {g} of the camera's height: no lift");
+                else
+                    Assert.AreEqual(CameraController.MinClearanceShare * height, clearance, 1f, $"ground at {g}: lifted to the least clearance");
+            }
+        }
+        finally { Object.DestroyImmediate(rig.gameObject); }
+    }
+
     /// <summary>A rig without a camera keeps the old rule: the look-at point itself stays on the map.</summary>
     [Test]
     public void ARigWithoutACameraClampsTheLookAtPoint()

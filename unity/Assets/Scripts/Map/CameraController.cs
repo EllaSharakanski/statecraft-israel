@@ -21,7 +21,8 @@ namespace Statecraft.Game.Map
     /// and orbit still move the camera (plan amendment A4). Pan speed scales with
     /// distance, zoom is clamped to [MinDistance, MaxDistance], and the view stays on the map (issue #174): the look-at
     /// point is held far enough inside the map that the visible ground does not leave it, so the border skirt never fills
-    /// the view at gameplay zoom. Where the view is wider than the map (the overview), it is centred on the map instead.</summary>
+    /// the view at gameplay zoom. Where the view is wider than the map (the overview), it is centred on the map instead.
+    /// Given the ground's height (Ground), the camera also never sinks into the terrain (MinClearanceShare).</summary>
     [RequireComponent(typeof(CameraRig))]
     public sealed class CameraController : MonoBehaviour
     {
@@ -33,11 +34,19 @@ namespace Statecraft.Game.Map
         public const float ZoomPerStep = 0.1f;         // fraction of the distance per wheel notch
         public const float OrbitDegreesPerSecond = 60f;
         public const float MaxFrameSeconds = 0.1f;     // a stalled frame (tab in the background) must not fling the camera
+        /// <summary>The least height above the ground beneath it the camera keeps, as a share of its height above the
+        /// look-at plane (y = 0). Issue #174: the look-at point lies on y = 0, the terrain's lowest point, but high ground is
+        /// several km above it at 3x relief (the Golan edge about 6 km), so at the hero zoom (camera 4.6 km up) the camera
+        /// sat inside the hills and showed only haze. Below this share the look-at point is lifted just enough; above it
+        /// nothing changes. The promo and close-check poses all keep more (hero06judea, the least, 24%).</summary>
+        public const float MinClearanceShare = 0.2f;
 
         /// <summary>Answers "is the pointer over the UI?" for a screen position (y up). Null = never.</summary>
         public Func<Vector2, bool>? IsOverUi;
         /// <summary>The map rectangle on the ground (x, z), in world metres; the view is kept inside it (Step).</summary>
         public Rect Bounds = new Rect(0, 0, float.MaxValue, float.MaxValue);
+        /// <summary>The ground's world height at a point (x, z), or null for none (the camera then keeps to y = 0).</summary>
+        public Func<Vector2, float>? Ground;
 
         CameraRig rig = null!;
         InputAction? pan, dragPan, zoom, orbit;
@@ -63,7 +72,7 @@ namespace Statecraft.Game.Map
             Vector2? pointer = Pointer.current != null ? Pointer.current.position.ReadValue() : (Vector2?)null;
             var down = Mouse.current != null && Mouse.current.rightButton.isPressed;
             Step(rig, Gather(pan.ReadValue<Vector2>(), dragPan.ReadValue<Vector2>(), zoom.ReadValue<float>(),
-                orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds);
+                orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds, Ground);
         }
 
         public static float ClampDt(float dt) => Mathf.Min(dt, MaxFrameSeconds);
@@ -86,8 +95,9 @@ namespace Statecraft.Game.Map
             };
         }
 
-        /// <summary>Applies one frame of input to the rig and calls rig.Apply(). Pure apart from the rig, so it is testable.</summary>
-        public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds)
+        /// <summary>Applies one frame of input to the rig and calls rig.Apply(). Pure apart from the rig (and the ground's
+        /// height, when given), so it is testable.</summary>
+        public static void Step(CameraRig rig, CameraInput input, float dt, Rect bounds, Func<Vector2, float>? ground = null)
         {
             var zoom = input.OverUi ? 0f : input.Zoom;
             var drag = input.DragFromUi ? Vector2.zero : input.DragPan;
@@ -102,11 +112,38 @@ namespace Statecraft.Game.Map
             // skirt, whose land is a flat slab with a hard seam against the terrain. The view's ground footprint around the
             // look-at point depends on the distance, yaw, aspect and top inset, not on where the point is, so it is measured
             // once at this frame's pose and the point is held where the whole footprint stays on the map.
-            rig.LookAt = p; rig.Apply();
-            var view = ViewFootprint(rig);
-            rig.LookAt = new Vector3(Fit(p.x, bounds.xMin, bounds.xMax, view.xMin, view.xMax), p.y,
-                Fit(p.z, bounds.yMin, bounds.yMax, view.yMin, view.yMax));
+            // With the ground given, the look-at point's height is the lift (Lift) over y = 0, measured afresh each frame; the
+            // footprint is measured at the lifted pose (a higher camera sees farther on y = 0), so the fit runs twice.
+            float y = ground == null ? p.y : 0f;
+            for (int pass = 0; pass < (ground == null ? 1 : 2); pass++)
+            {
+                rig.LookAt = new Vector3(p.x, y, p.z); rig.Apply();
+                var view = ViewFootprint(rig);
+                var fitted = new Vector3(Fit(p.x, bounds.xMin, bounds.xMax, view.xMin, view.xMax), 0f,
+                    Fit(p.z, bounds.yMin, bounds.yMax, view.yMin, view.yMax));
+                if (ground != null) y = Lift(rig, fitted, ground);
+                rig.LookAt = new Vector3(fitted.x, y, fitted.z);
+            }
             rig.Apply();
+        }
+
+        /// <summary>The terrain's world height at (x, z), clamped to its edge outside it (the border skirt holds the edge's
+        /// height near the map, so the camera keeps clear of it too).</summary>
+        public static Func<Vector2, float> GroundOf(Terrain terrain)
+        {
+            var origin = terrain.transform.position; var size = terrain.terrainData.size;
+            return p => origin.y + terrain.SampleHeight(new Vector3(Mathf.Clamp(p.x, origin.x, origin.x + size.x), 0f,
+                Mathf.Clamp(p.y, origin.z, origin.z + size.z)));
+        }
+
+        /// <summary>How far to lift a look-at point on y = 0 so the camera keeps MinClearanceShare of its height above the
+        /// ground beneath it (0 where it already does).</summary>
+        public static float Lift(CameraRig rig, Vector3 lookAt, Func<Vector2, float> ground)
+        {
+            var rot = Quaternion.Euler(CameraRig.Pitch, rig.Yaw, 0);
+            var cam = new Vector3(lookAt.x, 0f, lookAt.z) - rot * Vector3.forward * rig.Distance;
+            float height = cam.y, below = ground(new Vector2(cam.x, cam.z));
+            return Mathf.Max(0f, below + MinClearanceShare * height - height);
         }
 
         /// <summary>Corners of the visible map area in viewport units: the top inset's band is covered by the UI.</summary>

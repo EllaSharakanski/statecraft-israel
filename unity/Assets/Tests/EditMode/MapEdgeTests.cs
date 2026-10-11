@@ -6,9 +6,11 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-/// <summary>Issue #174 (integration bug B11): panning past the terrain's edge filled the view with the border skirt, flat
-/// fills with a hard seam against the map. Rendered at the worst pan pose: the hero zoom pushed into each corner of the map,
-/// through the same CameraController.Step the game runs every frame, with the bounds GameRoot gives it.</summary>
+/// <summary>Issue #174 (integration bug B11): panning past the terrain's edge filled the view with flat fills and a hard
+/// seam. Two causes: the look-at clamp let the view run off the map onto the border skirt (a flat slab), and at the high
+/// north-east corner (the ground about 6 km up at 3x relief) the hero-zoom camera, 4.6 km above the look-at plane y = 0,
+/// sat inside the hills and showed only haze. Rendered at the worst pan pose: the hero zoom pushed into each corner of the
+/// map, through the same CameraController.Step the game runs every frame, with the bounds and ground GameRoot gives it.</summary>
 public class MapEdgeTests
 {
     const int W = 1600, H = 900, Tile = 100;
@@ -16,15 +18,16 @@ public class MapEdgeTests
     [SetUp] public void FreshScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
     [TearDown] public void DiscardScene() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-    /// <summary>The camera bounds as GameRoot sets them: the terrain's footprint.</summary>
+    /// <summary>The camera bounds as GameRoot sets them: the terrain's footprint (and CameraController.GroundOf its ground).</summary>
     static Rect Bounds(MapScene map)
     {
         var t = map.Terrain; var size = t.terrainData.size;
         return new Rect(t.transform.position.x, t.transform.position.z, size.x, size.z);
     }
 
-    /// <summary>Where the renders are written (the before/after images for the issue): the project's Temp folder.</summary>
-    static string ShotDir => Path.Combine(Path.GetDirectoryName(Application.dataPath), "Temp", "map-edge");
+    /// <summary>Where the renders are written (the before/after images for the issue): the project's Logs folder (git-ignored;
+    /// Unity empties Temp when it quits).</summary>
+    static string ShotDir => Path.Combine(Path.GetDirectoryName(Application.dataPath), "Logs", "map-edge");
 
     [UnityTest]
     public IEnumerator PanningIntoACornerShowsNoSkirtSeamOrFlatFill()
@@ -34,7 +37,7 @@ public class MapEdgeTests
         map.Build();
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
         var skirt = map.Terrain.transform.Find(MapScene.BorderSkirtName).GetComponent<MeshRenderer>();
-        var bounds = Bounds(map);
+        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain);
         var rt = new RenderTexture(W, H, 24);
         Directory.CreateDirectory(ShotDir);
         RenderSample.TiltShift(false);   // the blur bands would read as flat tiles on the terrain too
@@ -49,7 +52,7 @@ public class MapEdgeTests
             })
             {
                 rig.LookAt = new Vector3(corner.x, 0, corner.y); rig.Distance = CameraController.MinDistance; rig.Yaw = 0; rig.TopInset = 0;
-                for (int i = 0; i < 20; i++) CameraController.Step(rig, new CameraInput { Pan = push }, CameraController.MaxFrameSeconds, bounds);
+                for (int i = 0; i < 20; i++) CameraController.Step(rig, new CameraInput { Pan = push }, CameraController.MaxFrameSeconds, bounds, ground);
                 var with = RenderSample.Render(cam, W, H);
                 skirt.enabled = false;
                 var without = RenderSample.Render(cam, W, H);
@@ -71,7 +74,7 @@ public class MapEdgeTests
                         float sd = LumaStdDev(with, tx * Tile, ty * Tile);
                         if (sd < flattest) { flattest = sd; fx = tx; fy = ty; }
                     }
-                TestContext.WriteLine($"{name}: look-at ({rig.LookAt.x:0}, {rig.LookAt.z:0}) of ({bounds.xMax:0}, {bounds.yMax:0}); skirt pixels " +
+                TestContext.WriteLine($"{name}: look-at ({rig.LookAt.x:0}, {rig.LookAt.y:0}, {rig.LookAt.z:0}) of ({bounds.xMax:0}, {bounds.yMax:0}); camera {rig.transform.position.y:0} over ground {ground(new Vector2(rig.transform.position.x, rig.transform.position.z)):0}; skirt pixels " +
                     $"{skirtPixels} ({100f * skirtPixels / with.Pixels.Length:0.00}%); flattest tile ({fx}, {fy}) luma sd {flattest:0.0000}");
                 Assert.AreEqual(0, skirtPixels, $"{name} corner: the border skirt shows in the view");
                 Assert.Greater(flattest, FlatTileStdDev, $"{name} corner: tile ({fx}, {fy}) is a flat fill");
@@ -123,11 +126,45 @@ public class MapEdgeTests
             {
                 pose.Apply(rig, map.Frame); rig.TopInset = 0;
                 var before = rig.LookAt;
-                CameraController.Step(rig, new CameraInput(), 0f, Bounds(map));
+                CameraController.Step(rig, new CameraInput(), 0f, Bounds(map), CameraController.GroundOf(map.Terrain));
                 float moved = (rig.LookAt - before).magnitude;
                 TestContext.WriteLine($"{pose.Name}: moved {moved:0} m");
                 Assert.Less(moved, pose.Distance > 100000f ? 1000f : 1f, pose.Name);
             }
+        }
+        finally { cam.ResetAspect(); }
+    }
+
+    /// <summary>Issue #174: at the hero zoom, anywhere on the map and at any yaw, the camera keeps MinClearanceShare of its
+    /// height above the ground beneath it, so it never sits inside the hills (before, about 6% of the map put it underground).</summary>
+    [Test]
+    public void TheCameraNeverSinksIntoTheGround()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+        cam.aspect = 16f / 9f;
+        var bounds = Bounds(map); var ground = CameraController.GroundOf(map.Terrain);
+        try
+        {
+            int lifted = 0, n = 0; float least = float.MaxValue;
+            for (int i = 0; i <= 40; i++)
+                for (int j = 0; j <= 40; j++)
+                    foreach (var yaw in new[] { 0f, 120f, 240f })
+                    {
+                        rig.LookAt = new Vector3(bounds.xMin + bounds.width * i / 40f, 0, bounds.yMin + bounds.height * j / 40f);
+                        rig.Distance = CameraController.MinDistance; rig.Yaw = yaw; rig.TopInset = 0;
+                        CameraController.Step(rig, new CameraInput(), 0f, bounds, ground);
+                        var c = rig.transform.position;
+                        float height = rig.Distance * Mathf.Sin(CameraRig.Pitch * Mathf.Deg2Rad);
+                        float share = (c.y - ground(new Vector2(c.x, c.z))) / height;
+                        least = Mathf.Min(least, share); n++;
+                        if (rig.LookAt.y > 0f) lifted++;
+                    }
+            TestContext.WriteLine($"{n} poses, {lifted} lifted, least clearance {least:0.000} of the camera's height");
+            Assert.GreaterOrEqual(least, CameraController.MinClearanceShare - 1e-3f);
+            Assert.Greater(lifted, 0, "the rule took effect somewhere (the Golan, the Galilee, the Jordanian plateau)");
         }
         finally { cam.ResetAspect(); }
     }

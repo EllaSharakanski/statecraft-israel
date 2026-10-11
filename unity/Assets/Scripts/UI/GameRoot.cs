@@ -155,8 +155,10 @@ namespace Statecraft.Game.UI
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
             var oldBounds = cameraController.Bounds;
+            var oldGround = cameraController.Ground;
             cameraController.IsOverUi = overUi;
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
+            cameraController.Ground = CameraController.GroundOf(terrain);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
             Action<int, int> onHex = info.Show;
@@ -183,6 +185,7 @@ namespace Statecraft.Game.UI
                 if (cameraController.IsOverUi == overUi) cameraController.IsOverUi = null;
                 if (pointer.Map == map) pointer.Map = null;
                 cameraController.Bounds = oldBounds;
+                cameraController.Ground = oldGround;
             }));
             drawn = null;
             RenderPlacementsIfChanged();
