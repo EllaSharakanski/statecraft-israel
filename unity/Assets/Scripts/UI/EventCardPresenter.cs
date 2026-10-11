@@ -19,16 +19,19 @@ namespace Statecraft.Game.UI
 
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly EventImageCatalog? photos;
-        readonly VisualElement band; readonly Label credit;
+        readonly VisualElement band, head; readonly Label credit;
 
         public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits, EventImageCatalog? photos = null)
         {
             card = root.Q<VisualElement>("event-card"); this.bridge = bridge; this.text = text; this.portraits = portraits; this.photos = photos;
             band = card.Q<VisualElement>("event-photo"); credit = card.Q<Label>("event-photo-credit");
             // The band and its credit settle the drop (FitPhoto); the column, which only the window sizes, brings a dropped
-            // photograph back when the window grows.
+            // photograph back when the window grows. A hidden element keeps its old layout, so a band shown again at the
+            // size it was dropped at gets no geometry event of its own; the head below it always moves, so it checks too.
+            head = card.Q<VisualElement>(className: "event-head");
             band.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             credit.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            head.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             card.parent?.RegisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             bridge.Changed += Render;
             Render();
@@ -39,6 +42,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render;
             band.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry); credit.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            head.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             card.parent?.UnregisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.Q<VisualElement>("event-options")?.Clear(); card.style.display = DisplayStyle.None;
         }
@@ -111,29 +115,53 @@ namespace Statecraft.Game.UI
         /// portrait does not come back in its place: it is taller still (docs/event-images.md).</summary>
         public const float MinPhotoHeight = 48f;
 
-        /// <summary>The band height the shown photograph needs: its credit strip plus MinPhotoHeight of picture.</summary>
-        public float PhotoNeeds => credit.layout.height + MinPhotoHeight;
+        /// <summary>The band height the photograph needs: its whole credit strip plus MinPhotoHeight of picture. The credit is
+        /// measured from its text at the band's width, not read from its layout: in a squeezed band the label's layout is
+        /// clamped to the room left, which is exactly the clipping this guards against.</summary>
+        public float PhotoNeeds => CreditHeight() + MinPhotoHeight;
+
+        float CreditHeight()
+        {
+            var s = credit.resolvedStyle;
+            var bandWidth = band.layout.width > 0 ? band.layout.width : card.contentRect.width;
+            var width = bandWidth - band.resolvedStyle.borderLeftWidth - band.resolvedStyle.borderRightWidth - s.paddingLeft - s.paddingRight;
+            if (float.IsNaN(width) || width <= 0) return float.NaN;
+            var text = credit.MeasureTextSize(credit.text, width, VisualElement.MeasureMode.Exactly, 0, VisualElement.MeasureMode.Undefined);
+            return text.y + s.paddingTop + s.paddingBottom + s.borderTopWidth + s.borderBottomWidth;
+        }
 
         /// <summary>Drops the shown photograph when its band is shorter than <see cref="PhotoNeeds"/>. Only ever hides, so the
         /// layout pass it causes cannot bring the photo back and loop; OnColumnGeometry is what restores it.</summary>
         void FitPhoto()
         {
             if (PhotoAlt == null) return;
-            var h = band.layout.height;
-            if (float.IsNaN(h) || float.IsNaN(credit.layout.height)) return;
-            if (h < PhotoNeeds) SetPhotoShown(false);
+            var h = band.layout.height; var needs = PhotoNeeds;
+            if (float.IsNaN(h) || float.IsNaN(needs)) return;
+            if (h < needs) SetPhotoShown(false);
         }
 
         void OnPhotoGeometry(GeometryChangedEvent evt) => FitPhoto();
 
         /// <summary>The right-hand column changed size (the window did; the card's content never moves it, as the column is
-        /// pinned to the window by top and bottom). A photograph dropped for a shorter window is shown again, and the next
-        /// layout pass drops it once more if it still does not fit.</summary>
+        /// pinned to the window by top and bottom). A shown photograph is checked again; a dropped one comes back only when
+        /// the room now free in the column holds it (<see cref="RoomForDroppedPhoto"/>), so it is never shown just to be
+        /// measured (a hidden element keeps its old layout, so a re-shown band may get no new geometry event).</summary>
         void OnColumnGeometry(GeometryChangedEvent evt)
         {
-            if (UnityEngine.Mathf.Approximately(evt.oldRect.height, evt.newRect.height) && UnityEngine.Mathf.Approximately(evt.oldRect.width, evt.newRect.width)) return;
-            if (current != null && PhotoAlt == null) SetPhotoShown(true);
+            if (current != null && PhotoAlt == null) { if (RoomForDroppedPhoto() >= PhotoNeeds) SetPhotoShown(true); }
             else FitPhoto();
+        }
+
+        /// <summary>The band height a dropped photograph would get now (at most; the band itself stops at 200 px): the slack
+        /// of the column's flexible gap above its minimum, capped by the card's max-height, less the band's margins.</summary>
+        float RoomForDroppedPhoto()
+        {
+            var gap = card.parent?.Q(className: "right-gap");
+            if (gap == null || float.IsNaN(gap.layout.height) || float.IsNaN(card.layout.height)) return 0;
+            var slack = gap.layout.height - gap.resolvedStyle.minHeight.value;
+            var max = card.resolvedStyle.maxHeight;
+            if (max.keyword == StyleKeyword.Undefined && !float.IsNaN(max.value)) slack = System.Math.Min(slack, max.value - card.layout.height);
+            return slack - band.resolvedStyle.marginTop - band.resolvedStyle.marginBottom;
         }
 
         /// <summary>The event's photograph, whether or not the window has room to show it.</summary>

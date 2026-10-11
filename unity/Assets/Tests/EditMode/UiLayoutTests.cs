@@ -368,7 +368,7 @@ public class UiLayoutTests
         var problems = new List<string>();
         var photos = AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset");
         Assert.IsNotNull(photos);
-        foreach (var (w, h) in new[] { (1280, 600), (1920, 640) })
+        foreach (var (w, h) in new[] { (1280, 600) })   // logically about 985 px tall: the shortest window every card still fits
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -403,7 +403,8 @@ public class UiLayoutTests
                         if (!Inside(b.worldBound, c)) problems.Add($"{w}x{h}: {e.Id}: option '{b.text}' {b.worldBound} is cut off by the card {c}");
                 }
                 Debug.Log($"I6 {w}x{h}: {shown} photographs shown, {dropped} dropped");
-                if (w == 1920) Assert.Greater(dropped, 0, $"{w}x{h} is short enough that a long event drops its photograph");
+                Assert.Greater(dropped, 0, $"{w}x{h} is short enough that a long event drops its photograph");
+                Assert.Greater(shown, 0, $"{w}x{h} still has room for a short event's photograph");
             }
             finally
             {
