@@ -34,7 +34,8 @@ namespace Statecraft.Game.Map.Units
     /// <summary>Puts every anchor of the unit data on one spot, once, from the data alone (review M9: a token never moves
     /// because another unit appears). The spot lies within one hex step of the anchor point (review I2: about 8.7 km
     /// between hex centres on 5 km hexes) and is the nearest to it, or, when the anchor has a sourced `toward` point on
-    /// the unit's own side (review MF1), the nearest to that, among:
+    /// the unit's own side (review MF1), the nearest to that, among the following; an anchor with a sourced `place_hex`
+    /// considers only that hex:
     /// 1. the centres of the anchor's own hex and its six neighbours, drawn full size;
     /// 2. then, when none is clear, those centres and six points inside each hex (at <see cref="InsideOffset"/> of the hex
     ///    circumradius), drawn compact;
@@ -89,6 +90,7 @@ namespace Statecraft.Game.Map.Units
                         {
                             var h = hexes[i];
                             if (h.Land == sea || MapActions.Distance(h.Q, h.R, hq, hr) > MaxShift) continue;
+                            if (a.PlaceHex != null && (h.Q != a.PlaceHex[0] || h.R != a.PlaceHex[1])) continue;
                             if (held.Exists(x => x.q == h.Q && x.r == h.R && x.from < to && from < x.to)) continue;
                             for (int k = compact ? 0 : -1; k < (compact ? 7 : 0); k++)
                             {

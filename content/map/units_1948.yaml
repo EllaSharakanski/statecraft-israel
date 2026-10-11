@@ -21,7 +21,9 @@
 #     "after the armistices, show only what a source says continued"; no source yet gives a later position.
 #   A window also ends no later than the unit's sourced disbandment (`disbanded`).
 # The token stands on its anchor's hex or one next to it, clear of the settlement kits and the railways and roads
-#   (UnitPlacer): a presentation offset of at most one hex step, not a claim about the position.
+#   (UnitPlacer): a presentation offset of at most one hex step, not a claim about the position. Where the nearest such
+#   spot would be the other side's ground, `toward` names a sourced place on the unit's own side and `place_hex` the hex
+#   next to the anchor on that side ([q, r] in content/map/hexes.json); the token stands in that hex, nearest the place.
 # Coordinates: the place's Wikipedia article (Wikipedia API prop=coordinates), or Wikidata (CC0) where it has none.
 # wikipedia_only: true when every source of the row is a Wikipedia article (English or Hebrew) or a Wikidata item (for
 #   coordinates only). Such a row is a draft until checked against a published history (Netanel Lorch, The Edge of the
@@ -157,6 +159,7 @@ units:
     end_basis: front_armistice
     front: jordan
     note: Founded in late 1947 as the Field Corps unit responsible for the defence of Jerusalem.
+    place_hex: [0, 23]
     toward:
       place: West Jerusalem
       lon: 35.21944
@@ -186,14 +189,17 @@ units:
     end_basis: source
     end_note: "Operation Bin Nun Alef (24-25 May) and Bin Nun Bet (30 May-1 June); he.wiki: in June 1948 the brigade moved north."
     note: Shlomo Shamir led both attacks.
+    place_hex: [-3, 23]
     toward:
-      place: Hulda
-      lon: 34.88333
-      lat: 31.83222
-      note: "The Israeli headquarters for the attacks on Latrun; the Arab Legion held Latrun and the ridge behind it (Yalu, Bayt Nuba), where the token's nearest clear spot fell without it."
+      place: Bayt Jiz
+      lon: 34.95417
+      lat: 31.81278
+      note: "The 7th Brigade occupied Bayt Jiz between the first and second assaults on Latrun, and Bayt Susin beside it was taken on 20 April 1948; the Arab Legion held Latrun and the ridge behind it (Yalu, Bayt Nuba), where the token's nearest clear spot fell without this. The hex west of Latrun (al-Qubab) was taken only in July."
       sources:
+      - {url: 'https://en.wikipedia.org/wiki/Bayt_Jiz', checked: '2026-10-11'}
+      - {url: 'https://en.wikipedia.org/wiki/Bayt_Susin', checked: '2026-10-11'}
+      - {url: 'https://en.wikipedia.org/wiki/Al-Qubab', checked: '2026-10-11'}
       - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
-      - {url: 'https://en.wikipedia.org/wiki/Hulda,_Israel', checked: '2026-10-11'}
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
     - {url: 'https://en.wikipedia.org/wiki/Latrun', checked: '2026-10-11'}
@@ -252,12 +258,14 @@ units:
     end_basis: source
     end_note: Operation Horev, from 22 December 1948, in the south; no place is given for the brigade there.
     note: "One place picked from the sector: the source names the Jerusalem corridor as the sector and Sha'ar HaGai as the end of the road the brigade opened (and as a battalion's name)."
+    place_hex: [-2, 23]
     toward:
-      place: Kiryat Anavim
-      lon: 35.12
-      lat: 31.81083
-      note: "The Harel Brigade's 4th Battalion fought for Sha'ar HaGai and the road from Kiryat Anavim; without it the token's nearest clear spot fell south-west of the road, by Sar'a and Artuf, Arab villages until later in 1948."
+      place: Saris
+      lon: 35.07389
+      lat: 31.79806
+      note: "Taken in the Haganah offensive of 16-17 April 1948, on the corridor road east of Sha'ar HaGai, where the Harel Brigade's 4th Battalion fought from Kiryat Anavim; without this the token's nearest clear spot fell by Sar'a and Artuf (later the Yalu ridge), not yet taken on 15 May."
       sources:
+      - {url: 'https://en.wikipedia.org/wiki/Saris,_Jerusalem', checked: '2026-10-11'}
       - {url: 'https://en.wikipedia.org/wiki/Kiryat_Anavim', checked: '2026-10-11'}
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Harel_Brigade', checked: '2026-10-11'}

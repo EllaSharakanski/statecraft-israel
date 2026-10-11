@@ -36,6 +36,9 @@ namespace Statecraft.Game.Map.Units
         /// <summary>Which side of the place the token stands on, where the nearest clear spot would be the other side's
         /// ground: a sourced point the placer moves towards (within the one-hex limit; review MF1), or null.</summary>
         public UnitToward? Toward { get; set; }
+        /// <summary>The hex [q, r] the token stands on, chosen on the unit's own side next to its place (with
+        /// <see cref="Toward"/> giving the side and its source), or null for the placer's own choice.</summary>
+        public List<int>? PlaceHex { get; set; }
         /// <summary>"month" when a window edge is known only to the month (the first of the month is used).</summary>
         public string? Precision { get; set; }
         public string? Note { get; set; }
@@ -194,6 +197,8 @@ namespace Statecraft.Game.Map.Units
                     if (a.Precision != null && a.Precision != "month") throw new InvalidDataException($"{where} precision must be 'month' or left out");
                     if (a.Toward != null && (string.IsNullOrWhiteSpace(a.Toward.Note) || a.Toward.Sources == null || a.Toward.Sources.Count == 0))
                         throw new InvalidDataException($"{where} toward needs a note and a source");
+                    if (a.PlaceHex != null && (a.PlaceHex.Count != 2 || a.Toward == null))
+                        throw new InvalidDataException($"{where} place_hex is [q, r] and needs a toward saying which side and why");
                     if (a.EndBasis == EndBySource)
                     {
                         if (string.IsNullOrWhiteSpace(a.EndNote)) throw new InvalidDataException($"{where} ends by source but has no end_note saying which");

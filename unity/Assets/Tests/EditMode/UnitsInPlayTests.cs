@@ -309,6 +309,17 @@ public class UnitsInPlayTests
                     if (overlap) Assert.AreNotEqual((layer.Spots[a].Q, layer.Spots[a].R), (layer.Spots[b].Q, layer.Spots[b].R), $"{anchors[i].u.Id} and {anchors[j].u.Id} share a hex");
                 }
             Debug.Log("UNITS spots\n" + string.Join("\n", log));
+            // Review MF1: the three anchors whose nearest clear spot was the other side's ground stand in their sourced
+            // own-side hex (West Jerusalem; Bayt Jiz and Bayt Susin by Latrun; Saris on the corridor road).
+            (int, int) Spot(string id, string place) { var a = anchors.Single(x => x.u.Id == id && x.a.Place == place).a; return (layer.Spots[a].Q, layer.Spots[a].R); }
+            Assert.AreEqual((0, 23), Spot("etzioni", "Jerusalem"));
+            Assert.AreEqual((-3, 23), Spot("brigade_7", "Latrun"));
+            Assert.AreEqual((-2, 23), Spot("harel", "Sha'ar HaGai"));
+            foreach (var (u, a) in anchors.Where(x => x.a.PlaceHex != null))
+                Assert.AreEqual((a.PlaceHex[0], a.PlaceHex[1]), (layer.Spots[a].Q, layer.Spots[a].R), $"{u.Id} {a.Place}: in its place_hex");
+            var etzioni = layer.Spots[anchors.Single(x => x.u.Id == "etzioni").a];
+            var wj = map.Frame.ToWorld(35.21944, 31.78194, 0);
+            Assert.Less((new Vector2((float)etzioni.X, (float)etzioni.Z) - new Vector2(wj.x, wj.z)).magnitude, 2500f, "Etzioni stands in West Jerusalem");
         }
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }
@@ -415,6 +426,7 @@ public class UnitsInPlayTests
             layer.Show(bridge.Content, bridge.State);
             var nav = new ScreenNav(ui.Root);
             var subdistricts = Subdistricts1948.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName)));
+            subdistricts.Apply(subdistricts.ShownFrom);   // shown, as at the game's start
             var towns = SettlementPlacer.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName))).ToDictionary(t => t.Id, t => t.Name);
             var info = new InfoPanelPresenter(ui.Root, bridge, Text, towns, nav: nav,
                 selectedUnit: () => layer.Selected is string id ? layer.Tokens.First(p => p.Token.Unit.Id == id) : (PlacedToken?)null,

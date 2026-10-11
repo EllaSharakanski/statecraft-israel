@@ -156,12 +156,15 @@ A spot is clear when:
 - no other anchor whose window overlaps holds the hex.
 
 **Own side.** The map holds no 1948 front line yet, and the one-hex limit alone does not keep a token on its own side:
-the nearest clear spot can be the other side's ground. So an anchor where that happens has a sourced `toward` point on
-its own side, and the placer takes the spot nearest to it:
-- Etzioni goes toward West Jerusalem, not to the Hizma and Anata side, which Jordan held.
-- The 7th Brigade at Latrun goes toward Hulda, its headquarters for the attacks. It no longer stands on the Yalu and
-  Bayt Nuba ridge, which the Arab Legion held.
-- Harel goes toward Kiryat Anavim, from which its 4th Battalion fought for the road. It no longer stands by Sar'a and
+the nearest clear spot can be the other side's ground. So an anchor where that happens has two sourced fields:
+`toward`, a place on its own side, and `place_hex`, the hex next to the anchor on that side. The token stands in that
+hex, at the clear spot nearest the place:
+- Etzioni stands in West Jerusalem, hex (0,23), not on the Hizma and Anata side, which Jordan held. It is in town, with a
+  clearing.
+- The 7th Brigade at Latrun stands by Bayt Jiz and Bayt Susin, hex (-3,23). The brigade occupied Bayt Jiz between the
+  two assaults, and Bayt Susin was taken on 20 April. It no longer stands on the Yalu and Bayt Nuba ridge, which the
+  Arab Legion held. The hex west of Latrun, al-Qubab, was taken only in July.
+- Harel stands by Saris on the corridor road, hex (-2,23), taken on 16–17 April 1948. It no longer stands by Sar'a and
   Artuf.
 
 The test pins all three spots. Once dated front data lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
