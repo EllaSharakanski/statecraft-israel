@@ -105,7 +105,7 @@ namespace Statecraft.Game.Map.Kits
             {
                 if (!merged.Contains(s.Id)) continue;
                 var rnd = new KitRandom(s.Id, 1);
-                int n = BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Landmark, ref rnd, 0);
+                int n = BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Landmark, ref rnd, 0, null);
                 result.LocalityBuildings += n; landmarks[s.Id] = n; streams[s.Id] = rnd;
             }
             foreach (var s in order)
@@ -113,11 +113,15 @@ namespace Statecraft.Game.Map.Kits
                 if (merged.Contains(s.Id))
                 {
                     var rnd = streams[s.Id];
-                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Houses, ref rnd, landmarks[s.Id]);
+                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Houses, ref rnd, landmarks[s.Id], null);
                     continue;
                 }
                 var km = new KitMesh();
-                int n = BuildOne(s, centres[s.Id], ground, km, lots);
+                // A game settlement's houses ignore the localities' cells (their landmarks' lots still stand): the 25 towns keep
+                // the ground they had before the villages came, and a village next to one (Fajja by Petah Tikva) fills in
+                // around its houses.
+                var rndTown = new KitRandom(s.Id, 1);
+                int n = BuildOne(s, centres[s.Id], ground, km, lots, Phase.All, ref rndTown, 0, merged);
                 result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
             foreach (var area in camps)
@@ -207,13 +211,15 @@ namespace Statecraft.Game.Map.Kits
         static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots)
         {
             var rnd = new KitRandom(s.Id, 1);
-            return BuildOne(s, centre, ground, km, lots, Phase.All, ref rnd, 0);
+            return BuildOne(s, centre, ground, km, lots, Phase.All, ref rnd, 0, null);
         }
 
         /// <summary>Places one settlement's buildings (or the <paramref name="phase"/> of them) into <paramref name="km"/>;
         /// returns how many. <paramref name="landmarksBefore"/>: the landmarks its first pass built (they count towards the
-        /// houses' target, as in one pass).</summary>
-        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, Phase phase, ref KitRandom rnd, int landmarksBefore)
+        /// houses' target, as in one pass). <paramref name="ignoreCellsOf"/>: footprints whose cells this settlement may build
+        /// in (the localities, for a game settlement).</summary>
+        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, Phase phase, ref KitRandom rnd, int landmarksBefore,
+            HashSet<string>? ignoreCellsOf)
         {
             var arch = ArchetypeOf(s);
             float R = FootprintRadiusM(s, ground.HexSizeM);
@@ -227,7 +233,8 @@ namespace Statecraft.Game.Map.Kits
                 float mine = (p - centre).magnitude / R;
                 var fp = ground.Footprints;
                 foreach (var i in fp.Near(p))
-                    if (fp[i].id != s.Id && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
+                    if (fp[i].id != s.Id && (ignoreCellsOf == null || !ignoreCellsOf.Contains(fp[i].id))
+                        && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
                 return true;
             }
             bool Free(Vector2 p, float r) => FreeAt(lots, p, r);
