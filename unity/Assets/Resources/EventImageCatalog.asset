@@ -21,7 +21,7 @@ MonoBehaviour:
       The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
   - eventId: armistice_egypt
     image: {fileID: 2800000, guid: 6a3375c172b3341c48ed637bc90bf014, type: 3}
     alt: IDF and UN officers near the Faluja pocket during the siege of the Egyptian
@@ -56,7 +56,7 @@ MonoBehaviour:
       The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
   - eventId: clothing_rationing_1950
     image: {fileID: 2800000, guid: a2430cb25bd4644c3a6040cf18617c73, type: 3}
     alt: Shops on Nahalat Binyamin Street, Tel Aviv, shut in protest after the government
@@ -183,7 +183,7 @@ MonoBehaviour:
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker
       Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
   - eventId: operation_horev
     image: {fileID: 2800000, guid: 53720b264363543d5862414d660c8b40, type: 3}
     alt: A column of IDF vehicles and a motorcyclist on a desert track in the Negev
@@ -192,7 +192,7 @@ MonoBehaviour:
       The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
   - eventId: operation_yoav
     image: {fileID: 2800000, guid: 4dbff23757d784486a804849886fb63e, type: 3}
     alt: IDF officers study a map on a jeep as forces move south before Operation
@@ -201,7 +201,7 @@ MonoBehaviour:
       The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
   - eventId: second_truce
     image: {fileID: 2800000, guid: eeb2c6a1420f649d6b259c164df97e0a, type: 3}
     alt: Count Folke Bernadotte, the UN mediator, interviewed by a radio reporter
@@ -217,4 +217,4 @@ MonoBehaviour:
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker
       Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded and cropped"
     sensitive: 1
-    sensitivityReviewed: 0
+    sensitivityReviewed: 1
