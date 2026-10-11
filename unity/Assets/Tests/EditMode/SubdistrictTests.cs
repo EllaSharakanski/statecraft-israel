@@ -110,6 +110,23 @@ public class SubdistrictTests
         Assert.IsNull(MapBorders.Current, "off on its end date");
     }
 
+    /// <summary>Re-review 2 nit: a rebuilt map (MapBorders resets its layer) gets the sub-districts again on the next Apply.</summary>
+    [Test]
+    public void ARebuiltMapGetsTheLayerAgain()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build(Inputs.Map);
+        var s = Subdistricts1948.Parse(FileText);
+        s.Apply(s.ShownFrom);
+        Assert.AreSame(s.Layer, MapBorders.Current);
+        map.Build(Inputs.Map);
+        Assert.IsNull(MapBorders.Current, "a rebuild draws no layer");
+        s.Apply(s.ShownFrom);
+        Assert.AreSame(s.Layer, MapBorders.Current, "drawn again");
+        Assert.IsTrue(s.Shown);
+    }
+
     [Test]
     public void TheWebGLBuildShipsTheFileAndReadsIt()
     {

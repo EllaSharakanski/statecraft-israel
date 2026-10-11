@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["numpy==2.5.3"]
+# dependencies = ["numpy==2.5.3", "pyyaml==6.0.3"]
 # ///
 """True sub-district lines -> the per-hex region layer the map draws (MapBorders, docs/visual-v1.md "Region borders").
 
@@ -8,8 +8,8 @@ Usage: uv run tools/borders_bake.py   (reads content/map/subdistricts_1948.geojs
 heightmap; writes content/map/subdistrict_hexes_1948.yaml)
 
 The GeoJSON keeps the true, digitised lines (tools/borders_digitise.py). The game shows them snapped to hex edges, as the
-promo does, so each hex takes one region by its centre (deterministic: plain float64 arithmetic, no libm, features in
-file order):
+promo does, so each hex takes one region by its centre (deterministic: float64 arithmetic in a fixed order, features in
+file order; libm only where stated below):
   1 a sea or lake hex (hexes.json land: false) is in no region (0): no band is drawn along the coast;
   2 a land hex whose centre lies inside a sub-district polygon takes that sub-district (the first in file order if a
     centre sat exactly on a shared edge);
@@ -19,7 +19,11 @@ file order):
     So a shore hex follows its own coast: the coast is not a boundary, and a hex off the Sinai coast at Taba stays
     outside even though the Beersheba Sub-District is near;
   4 any other land hex is outside Mandatory Palestine (Lebanon, Syria, Transjordan, Sinai): the "outside" region, style
-    none, so the sub-districts' bands run along the frontier but nothing is drawn beyond it.
+    none, so the sub-districts' bands run along the frontier but nothing is drawn beyond it;
+  5 override (controller ruling, owner-delegated, 2026-10-11): the hex that holds a Gazette-listed place (GAZETTE_PLACES,
+    GAZETTE_SETTLEMENTS; placed as the game places settlements, hexgrid.settlement_hex) always takes that place's
+    sub-district, never outside, so a frontier town the snap would clip (Rafah, Metulla) stays in its sub-district. When
+    two listed places share a hex, the region of rule 2-4 stands if it is one of theirs; otherwise the bake fails.
 The sim never reads the output (display only: the content hash and the goldens do not move). Determinism: float64
 arithmetic in a fixed order; libm (cos for the km-per-degree scale, hypot for distances) only in the shore rule, whose
 result is an integer id and whose ties would need two regions at the same distance to the last bit; the committed output
@@ -33,9 +37,11 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import heightmap_codec  # noqa: E402
+import hexgrid  # noqa: E402
 from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,11 +52,39 @@ MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 DEAD_SEA_1948_M = -392.0
 OUTSIDE = "outside"
 LABEL = "Mandate sub-districts, 1947"
+# Places as listed in the 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2; pages as printed, 125-133; read
+# 2026-10-11, the page images where the text layer was unclear). Coordinates: settlements_1948.yaml for its rows; the
+# Wikipedia API (prop=coordinates, 2026-10-11) for the rest. They drive rule 5 and the tests (tools/tests/test_borders.py).
+GAZETTE_SETTLEMENTS = {   # settlements_1948.yaml id: (sub-district, Gazette page)
+    "jaffa": ("jaffa", "p. 132"), "petah_tikva": ("jaffa", "p. 132"), "haifa": ("haifa", "p. 128"),
+    "hadera": ("haifa", "p. 128"), "zikhron_yaakov": ("haifa", "p. 128"), "netanya": ("tulkarm", "p. 130"),
+    "lod": ("ramle", "p. 132"), "rishon_lezion": ("ramle", "p. 133"), "rehovot": ("ramle", "p. 133"),
+    "rosh_pinna": ("safad", "p. 127"), "degania_alef": ("tiberias", "p. 127"), "nahalal": ("nazareth", "p. 126"),
+    "ein_harod": ("beisan", "p. 126"),
+}
+GAZETTE_PLACES = {   # name: (sub-district, lon, lat, Gazette page)
+    "Kefar Sava": ("jaffa", 34.90833, 32.17139, "p. 132"), "Kafr Saba": ("tulkarm", 34.93722, 32.18111, "p. 130"),
+    "Herzliya": ("jaffa", 34.84583, 32.16528, "p. 132"), "Ra'anana": ("jaffa", 34.86667, 32.18333, "p. 132"),
+    "Holon": ("jaffa", 34.76667, 32.01667, "p. 132"), "Bat Yam": ("jaffa", 34.75000, 32.01667, "p. 132"),
+    "Kafr Qasim": ("tulkarm", 34.97510, 32.11510, "p. 130"), "Jaljuliya": ("tulkarm", 34.95180, 32.15353, "p. 130"),
+    "Qalqiliya": ("tulkarm", 34.96861, 32.19028, "p. 130"), "Yibna": ("ramle", 34.74639, 31.86611, "p. 133"),
+    "Latrun": ("ramle", 34.98139, 31.83194, "p. 132"), "Gedera": ("ramle", 34.77722, 31.81194, "p. 132"),
+    "Faluja": ("gaza", 34.74778, 31.62472, "p. 133"), "Isdud": ("gaza", 34.66167, 31.75361, "p. 133"),
+    "Negba": ("gaza", 34.68306, 31.66083, "p. 133"), "Be'er Tuvya": ("gaza", 34.72389, 31.73611, "p. 133"),
+    "Qastina": ("gaza", 34.76222, 31.73917, "p. 133"), "Rafah": ("gaza", 34.25861, 31.27250, "p. 133"),
+    "Ruhama": ("beersheba", 34.70556, 31.49667, "p. 133"),
+    "Beit Jibrin": ("hebron", 34.89833, 31.60528, "p. 130"), "Umm el Fahm": ("jenin", 35.15361, 32.51944, "p. 129"),
+    "Afula": ("nazareth", 35.28806, 32.60639, "p. 126"), "Kafr Kanna": ("nazareth", 35.35000, 32.75000, "p. 126"),
+    "Nahariya": ("acre", 35.09889, 33.00583, "p. 125"), "Kafr Bir'im": ("safad", 35.41417, 33.04361, "p. 127"),
+    "Metulla": ("safad", 35.57444, 33.27889, "p. 127"), "Ein Gev": ("tiberias", 35.63972, 32.78278, "p. 127"),
+    "Bir Zeit": ("ramallah", 35.19556, 31.97222, "p. 131"), "Bethlehem": ("jerusalem", 35.20639, 31.70444, "p. 131"),
+}
 SHOWN_FROM = "1948-05-15"
 NEAR_LAND_KM = 0.5
 HEADER = ("# Generated by tools/borders_bake.py from subdistricts_1948.geojson (the true lines) and hexes.json. Do not edit by\n"
           "# hand: rerun the tool. Display only (MapBorders): the sim never reads this file. Each land hex takes the\n"
-          "# sub-district containing its centre (a shore hex the side of its nearest land); land outside them all is 'outside'.\n")
+          "# sub-district containing its centre (a shore hex the side of its nearest land), the hex of a Gazette-listed place\n"
+          "# that place's sub-district; land outside them all is 'outside'.\n")
 
 
 def rings(geometry: dict) -> list[list[np.ndarray]]:
@@ -170,7 +204,7 @@ def load_elevation() -> tuple[np.ndarray, dict]:
     return meta["elev_min_m"] + raw.astype("float64") / 65535 * (meta["elev_max_m"] - meta["elev_min_m"]), meta
 
 
-def bake(source: dict, hexes: dict, water: np.ndarray, meta: dict) -> tuple[list[dict], dict]:
+def bake(source: dict, hexes: dict, water: np.ndarray, meta: dict, places: list) -> tuple[list[dict], dict]:
     """(regions, {(q, r): region id}). Region ids: the sub-districts 1..n in file order, then 'outside'."""
     feats = source["features"]
     regions = [{"id": i, "key": f["properties"]["id"], "name": f["properties"]["name"], "district": f["properties"]["district"],
@@ -196,7 +230,34 @@ def bake(source: dict, hexes: dict, water: np.ndarray, meta: dict) -> tuple[list
                     k = int(np.argmin(d))
                     rid = k + 1 if d[k] <= NEAR_LAND_KM else 0
         out[(h["q"], h["r"])] = rid or outside_id
+    apply_places(out, places, hexes, {r["key"]: r["id"] for r in regions})
     return regions, out
+
+
+def listed_places(settlements: list[dict]) -> list[tuple[str, str, float, float]]:
+    """(name, sub-district, lon, lat) of every Gazette-listed place, settlements first, each list in its own order."""
+    rows = {s["id"]: s for s in settlements}
+    return ([(sid, sub, rows[sid]["lon"], rows[sid]["lat"]) for sid, (sub, _page) in GAZETTE_SETTLEMENTS.items()]
+            + [(name, sub, lon, lat) for name, (sub, lon, lat, _page) in GAZETTE_PLACES.items()])
+
+
+def place_hexes(places: list, hexes: dict) -> dict:
+    """{(q, r): {sub-district: [place names]}} with each place on the hex the game puts it (hexgrid.settlement_hex)."""
+    claims: dict = {}
+    for name, sub, lon, lat in places:
+        claims.setdefault(hexgrid.settlement_hex(lon, lat, hexes), {}).setdefault(sub, []).append(name)
+    return claims
+
+
+def apply_places(cells: dict, places: list, hexes: dict, ids: dict) -> None:
+    """Rule 5, in place: a listed place's hex takes its sub-district."""
+    for qr, subs in sorted(place_hexes(places, hexes).items()):
+        current = cells[qr]
+        if any(ids[sub] == current for sub in subs):
+            continue
+        if len(subs) > 1:
+            raise ValueError(f"hex {qr}: listed places of different sub-districts {subs}, none matching the centre rule")
+        cells[qr] = ids[next(iter(subs))]
 
 
 def render(source: dict, regions: list[dict], cells: dict) -> str:
@@ -221,7 +282,8 @@ def build() -> str:
     source = json.loads(SOURCE.read_text(encoding="utf-8"))
     hexes = json.loads((MAP / "hexes.json").read_text())
     elev, meta = load_elevation()
-    regions, cells = bake(source, hexes, water_mask(elev, meta), meta)
+    settlements = yaml.safe_load((MAP / "settlements_1948.yaml").read_text(encoding="utf-8"))["settlements"]
+    regions, cells = bake(source, hexes, water_mask(elev, meta), meta, listed_places(settlements))
     return render(source, regions, cells)
 
 

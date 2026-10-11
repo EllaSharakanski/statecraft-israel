@@ -80,7 +80,7 @@ namespace Statecraft.Game.UI
             title.text = owned.Count > 0 ? owned[0] : hex == null ? text["info.off_map"] : text["info.biome." + hex.Biome];
             subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)
             // The sub-district on 15 May 1948, and that its true line is drawn to the nearest hex edge (the owner's ruling).
-            var sub = subdistricts?.SubdistrictAt(q, r);
+            var sub = subdistricts != null && subdistricts.Shown ? subdistricts.SubdistrictAt(q, r) : null;   // only while the map shows the layer
             region.text = sub == null ? "" : text.Format("info.region", sub.Name, sub.District);
             settlements.text = owned.Count > 0 ? text.Format("info.owned", string.Join(", ", owned)) : "";
             var here = MapActions.At(s, q, r);

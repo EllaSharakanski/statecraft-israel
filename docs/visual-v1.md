@@ -1042,12 +1042,17 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   of the coast, and the Metulla tip, are recorded as uncertain segments; water (sea, the Dead Sea at its 1948 level)
   from the game's DEM, so the coast is the game's coast. Accuracy about +-1 km: areas within -4.1% to +3.7% of Village
   Statistics 1945 (which follows the 1945 Schedule; Beersheba's rounded figure makes its check nominal); the second print
-  agrees to a mean 0.11-0.23 km, at most 1.23 km (per feature in the file); 41 Gazette-listed places, none of them a
-  digitiser seed, fall in their sub-district (Ra'anana 0.1 km over the Jaffa/Tulkarm line, within the accuracy). The
+  agrees to a mean 0.11-0.23 km, at most 1.23 km (per feature in the file); 41 independent Gazette-listed places (none a
+  digitiser seed) plus Metulla (kept by its patch) fall in their sub-district (Ra'anana 0.1 km over the Jaffa/Tulkarm
+  line, within the accuracy). The
   file is written one vertex per line and is byte-identical on a rerun.
 - *Display:* `tools/borders_bake.py` gives each land hex the sub-district containing its centre (a shore hex whose centre
-  is in the water: the side of its nearest land, so the hexes off Taba, west of Rafah and by the Lisan in the Dead Sea are
-  outside, and Rafah's own hex is Gaza), land beyond the Mandate frontier the `outside` region (style none, so the
+  is in the water: the side of its nearest land, so the hexes off Taba, west of Rafah's frontier and by the Lisan in the
+  Dead Sea are outside), the hex that holds a Gazette-listed place that place's sub-district, never outside (controller
+  ruling, owner-delegated, 2026-10-11; `GAZETTE_PLACES` / `GAZETTE_SETTLEMENTS`, placed as the game places settlements:
+  this puts Rafah town's hex (-15, 31), whose centre is in Sinai, in Gaza, Metulla's (15, 1) in Safad and Ein Gev's
+  (12, 8) in Tiberias, which the centre rule had left outside, and moves the Kefar Sava / Ra'anana and Kafr Qasim hexes
+  to their own sub-districts), land beyond the Mandate frontier the `outside` region (style none, so the
   bands run along the frontier and nothing is drawn beyond it), sea and lake hexes none (no coast band) ->
   `content/map/subdistrict_hexes_1948.yaml`. Every sub-district is Primary (blue). `GameRoot.Begin` and
   `MapCapture.Promo` draw it (`Subdistricts1948.Show`); the info panel names a hex's sub-district and district ("Jaffa

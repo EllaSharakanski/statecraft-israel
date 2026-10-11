@@ -426,8 +426,12 @@ def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
         "title": "Sub-districts of Mandatory Palestine in force on 15 May 1948 (true lines, not hex-snapped)",
         "status": STATUS, "checked": CHECKED, "generated_by": "tools/borders_digitise.py",
         "review": ("Sensitivity review by the controller on the owner's behalf (owner-delegated, 2026-10-11): accepted, with the "
-                   "Mandate frontier outlined and the near-frontier shore hexes (Taba, west of Rafah, the Lisan) as baked. "
-                   "The 1947-48 amendment check stays open (open_questions)."),
+                   "Mandate frontier outlined and the near-frontier shore hexes (Taba; the shore hex west of Rafah's frontier; "
+                   "the Lisan) as baked. Display rule (controller ruling, owner-delegated, 2026-10-11): the hex that holds a "
+                   "Gazette-listed place always takes that place's sub-district, never outside (tools/borders_bake.py rule 5; "
+                   "it puts Rafah town's hex (-15, 31) in Gaza and Metulla's hex (15, 1) in Safad, which the centre rule "
+                   "had left outside). These true lines are not changed by it. The 1947-48 amendment check stays open "
+                   "(open_questions)."),
         "licence": "CC-BY-SA-4.0 (content/); coast from the Copernicus DEM (NOTICE)", "licence_note": LICENCE_NOTE,
         "sources": SOURCES,
         "scan": {"label": main["info"]["label"], "url": main["info"]["url"], "sha256": main["sha256"],
