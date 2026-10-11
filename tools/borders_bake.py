@@ -25,8 +25,10 @@ arithmetic in a fixed order; libm (cos for the km-per-degree scale, hypot for di
 result is an integer id and whose ties would need two regions at the same distance to the last bit; the committed output
 is rechecked by the tools tests on macOS and on Linux CI.
 Display window (owner ruling 2026-10-11): the layer shows from the game's start (15 May 1948) until the 1949 armistice
-lines replace it, each front on its agreement's date once that data exists; until then it stays, labelled
-"Mandate sub-districts, 1947" (LABEL).
+lines replace it, each front on its agreement's date once that data exists, labelled "Mandate sub-districts, 1947"
+(LABEL). `fronts` gives each front's end (`until`): the agreement's date where content/map/armistice_lines_1949.geojson
+has its line, null where it has none (Jordan: the layer stays there). The layer as a whole ends (`shown_until`) only
+when every front has a date: the last of them; null while any front has none.
 """
 import json
 import sys
@@ -41,6 +43,7 @@ from geo import KM_PER_DEG_LAT, KM_PER_DEG_LON_EQ  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 MAP = ROOT / "content" / "map"
 SOURCE = MAP / "subdistricts_1948.geojson"
+ARMISTICE = MAP / "armistice_lines_1949.geojson"
 OUT = MAP / "subdistrict_hexes_1948.yaml"
 MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 DEAD_SEA_1948_M = -392.0
@@ -199,16 +202,27 @@ def bake(source: dict, hexes: dict, water: np.ndarray, meta: dict) -> tuple[list
     return regions, out
 
 
-def render(source: dict, regions: list[dict], cells: dict) -> str:
+def front_ends(armistice: dict | None) -> list[tuple[str, str | None]]:
+    """(front, date the front's armistice line replaces this layer there, or None: no line data)."""
+    if armistice is None:
+        return []
+    return [(f["key"], f["shown_from"] if f.get("data") else None) for f in armistice["statecraft"]["fronts"]]
+
+
+def render(source: dict, regions: list[dict], cells: dict, armistice: dict | None = None) -> str:
     meta = source["statecraft"]
+    ends = front_ends(armistice)
+    until = max(d for _, d in ends) if ends and all(d for _, d in ends) else None
     lines = [HEADER,
              "layer: subdistricts_1948\n",
              f"title: {json.dumps(meta['title'])}\n",
              f"line: {json.dumps('The true lines are the Survey of Palestine map of the 1947 Administrative Divisions Schedule (content/map/subdistricts_1948.geojson, status ' + meta['status'] + '); shown here to the nearest hex edge, up to half a hex (about 4 km) from the true line.')}\n",
              f"label: {json.dumps(LABEL)}   # shown on screen while the layer is drawn (owner ruling 2026-10-11)\n",
              f"shown_from: {SHOWN_FROM}   # the game's start\n",
-             "shown_until: null   # until the 1949 armistice lines replace it, each front on its agreement's date, once that data exists\n",
-             "regions:\n"]
+             f"shown_until: {until or 'null'}   # the last front's end; null while a front has no armistice line (it keeps this layer)\n",
+             "fronts:   # until: the date that front's 1949 armistice line replaces this layer there (null: no line data, the layer stays)\n"]
+    lines += [f"  - {{ key: {k}, until: {d or 'null'} }}\n" for k, d in ends]
+    lines += ["regions:\n"]
     for r in regions:
         lines.append(f"  - {{ id: {r['id']}, key: {r['key']}, name: {json.dumps(r['name'])}, district: {json.dumps(r['district'])}, style: {r['style']} }}\n")
     lines.append("hexes:   # [q, r, region id], ordered by r then q\n")
@@ -222,7 +236,8 @@ def build() -> str:
     hexes = json.loads((MAP / "hexes.json").read_text())
     elev, meta = load_elevation()
     regions, cells = bake(source, hexes, water_mask(elev, meta), meta)
-    return render(source, regions, cells)
+    armistice = json.loads(ARMISTICE.read_text(encoding="utf-8")) if ARMISTICE.exists() else None
+    return render(source, regions, cells, armistice)
 
 
 def main() -> None:
