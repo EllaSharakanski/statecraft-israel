@@ -127,21 +127,23 @@ public class PromoHudTests
         }
     }
 
-    /// <summary>The bar at every window shape, after a turn has played and with the widest realistic changes and date:
-    /// 16:9 (1920 logical px) keeps the icons; 16:10 (~1821), 5:4, 4:3 and windows narrower than about square (1280x1024 ~1585,
-    /// 1024x768 ~1662, 1024x1024 ~1440, a browser snapped to half a 1080p screen ~1358, 800x1000 ~1288) get the compact,
-    /// narrow HUD: no icons, and a taller bar whose meters stack the change under the value. Below about 1500 logical px
-    /// (1024x1024, 960x1080, 800x1000) the bar also wraps into two rows. Everywhere: every meter label stays inside its meter and the bar, no two meters'
-    /// labels overlap, the meters end before the screen buttons, the date badge holds its widest line inside its trim at a
-    /// fixed width, and the panels start below the bar (review N2, N3 and the narrow-window follow-up).</summary>
+    /// <summary>The bar at every window shape, after a turn has played and with the widest late-game values, changes and
+    /// date (the tiers: HudPresenter). 16:9 and a 16:10 MacBook browser keep the icons on the one-row bar; 16:10 fullscreen
+    /// keeps them on the stacked bar; 4:3 and 5:4 drop them; square and narrower windows wrap into two rows. Everywhere:
+    /// every meter label stays inside its meter and the bar, no two meters' labels overlap, the meters keep 5% spare room
+    /// and stay 12 px clear of the screen buttons, End Turn and the badge, the badge holds its widest line inside its trim at
+    /// a fixed width, and the panels start below the bar (reviews N2, N3, N5, N7).</summary>
     [UnityTest]
     public IEnumerator EveryWindowShapeFitsTheBarAfterATurn()
     {
-        foreach (var (w, h, compact, narrow, twoRow) in new[] { (1920, 1080, false, false, false), (1280, 720, false, false, false),
-                                                                (1366, 768, false, false, false), (1920, 1200, true, true, false),
-                                                                (1440, 900, true, true, false), (1280, 1024, true, true, false),
-                                                                (1024, 768, true, true, false), (1024, 1024, true, true, true),
-                                                                (960, 1080, true, true, true), (800, 1000, true, true, true) })
+        // (window, icons, stacked changes, two rows): 16:9 fullscreen; a 16:9 window; a 16:10 MacBook browser (~1911
+        // logical); 16:10 fullscreen (~1821) keeps the icons on the stacked bar; 4:3 and 5:4 drop them; square and narrower wrap.
+        foreach (var (w, h, icons, narrow, twoRow) in new[] { (1920, 1080, true, false, false), (1280, 720, true, false, false),
+                                                              (1366, 768, true, false, false), (1760, 1000, true, false, false),
+                                                              (1920, 1200, true, true, false), (1440, 900, true, true, false),
+                                                              (1024, 768, false, true, false), (1280, 1024, false, true, false),
+                                                              (1024, 1024, false, true, true), (960, 1080, false, true, true),
+                                                              (800, 1000, false, true, true) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -166,16 +168,21 @@ public class PromoHudTests
                 foreach (var (name, delta) in new[] { ("treasury", PlayerText.MoneyChange(C, "treasury", -12.4)), ("immigration", Text.Format("hud.delta_people", 12345.0)),
                                                       ("security", "-10%"), ("support", "-10%"), ("standing", "+10%"), ("fx", PlayerText.MoneyChange(C, "fx_reserves", 12.5)) })
                     root.Q<Label>(name + "-delta").text = delta;
+                // ... and the widest late-game values (review N7).
+                foreach (var (name, value) in new[] { ("treasury", PlayerText.Money(C, "treasury", -123.4)), ("immigration", Text.Format("hud.people", 123456.0)),
+                                                      ("fx", PlayerText.Money(C, "fx_reserves", 123.4)), ("security", "100%"), ("support", "100%"), ("standing", "100%") })
+                    root.Q<Label>(name + "-value").text = value;
+                root.Q<Label>("security-level").text = Text.Format("hud.level", 5);
                 root.Q<Label>("turn").text = Text.Format("hud.turn", 120);
                 root.Q<Label>("date").text = Text.Format("hud.date", PlayerText.Date(new System.DateTime(1956, 9, 30)));
                 for (int i = 0; i < 3; i++) yield return null;
                 var bar = root.Q("top-bar"); var barRect = bar.worldBound;
                 var where = $"{w}x{h} (bar {barRect.width:0} px)";
-                Assert.AreEqual(compact, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact");
+                Assert.AreEqual(!icons, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact (no icons)");
                 Assert.AreEqual(narrow, root.Q("root").ClassListContains(HudPresenter.NarrowClass), where + ": narrow");
                 Assert.AreEqual(twoRow, root.Q("root").ClassListContains(HudPresenter.TwoRowClass), where + ": two rows");
                 foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
-                    Assert.AreEqual(compact ? DisplayStyle.None : DisplayStyle.Flex, icon.resolvedStyle.display, $"{where}: {icon.Glyph}");
+                    Assert.AreEqual(icons ? DisplayStyle.Flex : DisplayStyle.None, icon.resolvedStyle.display, $"{where}: {icon.Glyph}");
                 var badge = root.Q(className: "date-box");
                 foreach (var l in badge.Query<Label>().ToList())
                     Assert.LessOrEqual(l.worldBound.xMax, badge.worldBound.xMax - 4f, $"{where}: '{l.text}' {l.worldBound} runs under the badge's trim {badge.worldBound}");
@@ -293,6 +300,19 @@ public class PromoHudTests
                 Assert.AreNotSame(b, b.focusController.focusedElement, name + ": a pointer click leaves no focus behind");
                 Near(navy, look.resolvedStyle.backgroundColor, name + ": no focus fill after the click");
             }
+
+            // Keyboard activation (Enter, Space: NavigationSubmitEvent) runs the button and keeps its focus (review N8): this pins
+            // PointerBlur's assumption that only a pointer click raises ClickEvent.
+            var endTurn = ui.Q<Button>("end-turn");
+            int pressed = 0; System.Action count = () => pressed++;
+            endTurn.clicked += count;
+            endTurn.Focus();
+            for (int i = 0; i < 10 && endTurn.focusController.focusedElement != endTurn; i++) yield return null;
+            using (var e = NavigationSubmitEvent.GetPooled()) { e.target = endTurn; endTurn.SendEvent(e); }
+            yield return null;
+            endTurn.clicked -= count;
+            Assert.AreEqual(1, pressed, "Enter/Space pressed End Turn");
+            Assert.AreSame(endTurn, endTurn.focusController.focusedElement, "keyboard activation keeps the focus");
         }
         finally { nav.Dispose(); blur.Dispose(); card.Dispose(); }
     }

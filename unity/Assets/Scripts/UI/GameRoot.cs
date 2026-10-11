@@ -131,8 +131,8 @@ namespace Statecraft.Game.UI
             // The toast first: the autosave (below) must report a failed write after the toast has shown the turn's refusals.
             var toast = Own(new ToastPresenter(root, bridge, text));
             Own(new HudPresenter(root, bridge, text));
-            Own(new ScreenNav(root));
-            Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)                                      // every screen starts hidden (USS); ScreenNav opens one at a time
+            Own(new ScreenNav(root));                                      // every screen starts hidden (USS); ScreenNav opens one at a time
+            Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             var card = Own(new EventCardPresenter(root, bridge, text, portraits));
             Own(new DefencePresenter(root, bridge, text));
