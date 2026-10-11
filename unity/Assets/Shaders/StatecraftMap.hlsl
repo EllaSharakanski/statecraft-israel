@@ -191,7 +191,7 @@ float3 ScShore(float3 ground, float coast, float elevM, float3 n, float2 mapM)
 
 // The painted ground: biome colour, warmer stone high up, a dusty rift floor, rock on steep slopes, two octaves of
 // breakup, curvature (ridges light, hollows dark) and the baked occlusion (bake: r AO from ao.png, g curvature, b sky-view).
-float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake)
+float3 ScGroundBase(float2 uv, float2 mapM, float3 n, float3 positionWS)
 {
     float elevM = (positionWS.y - _ScMap.z) / _ScMap.w;            // real metres above sea level
     float slope = 1.0 - saturate(n.y);                             // 0 flat, 1 vertical
@@ -200,12 +200,23 @@ float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake
     g = lerp(g, g * float3(1.10, 1.04, 0.92), 1.0 - smoothstep(-350.0, -150.0, elevM));
     float rock = smoothstep(0.22, 0.45, slope + (ScNoise(mapM / 900.0) - 0.5) * 0.12);
     g = lerp(g, SRGBToLinear(float3(0.56, 0.49, 0.41)), rock);
+    return g;
+}
+
+// ScGround's shading, split from its colour so the terrain can paint land use in between (StatecraftLand.hlsl).
+float3 ScGroundShade(float3 g, float2 mapM, float4 bake)
+{
     // The fine octave fades to its mean as a pixel's footprint nears its 520 m period, so it never aliases into shimmer.
     float fine = lerp(0.5, ScNoise(mapM / 520.0), 1.0 - saturate(length(fwidth(mapM)) / 520.0));
     g *= 0.93 + 0.14 * (ScNoise(mapM / 2600.0) * 0.6 + fine * 0.4);
     g *= 1.0 + 0.40 * (bake.g - 0.5) * 2.0;
     g *= lerp(1.0, bake.r * lerp(0.6, 1.0, bake.b), 0.45);
     return g;
+}
+
+float3 ScGround(float2 uv, float2 mapM, float3 n, float3 positionWS, float4 bake)
+{
+    return ScGroundShade(ScGroundBase(uv, mapM, n, positionWS), mapM, bake);
 }
 
 // Distance (m) from p to the nearest edge of its hex: tools/hexgrid.py's pointy-top axial layout, (0, 0) at the north-west

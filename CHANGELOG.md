@@ -32,6 +32,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   stone Jaffa with its harbour, Arab towns, moshavot and kibbutzim sized by their 1945 population
   (`content/map/settlement_population_1945.yaml`), with citrus groves, olives, palms and cypresses, at the owner's
   symbolic scale (about 60x real size for city blocks, 100x for houses and trees). Presentation only (#31, #32, #34).
+- Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
+  belt) with hedges and dirt tracks between the towns, and garrigue, terraces and scrub on the wet hills, placed by real
+  slope, rainfall and towns and baked by `tools/land_bake.py`. Presentation only; no frame-time cost measured.
 
 ### Changed
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
