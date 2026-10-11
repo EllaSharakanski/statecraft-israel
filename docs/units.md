@@ -191,7 +191,22 @@ checks every anchor and logs each spot and its distance.
   p. 53) are not drawn, because the map shows the Spitfire from that day.
 - The squadron's skull badge on the nose is too small to read at map scale and is left out.
 
-**Cost.** COST_PENDING
+**Cost.** The budget is 2.5 ms or less for the `units` toggle at gameplay03 (docs/visual-v1.md). The measurement was
+headless `?vprofile` on the WebGL build of 943184c, 1920x1080 at DPR 1, 2026-10-11. It ran under the main checkout's
+`machine_lock.py --exclusive --wait-unity`, so no Unity job ran beside it.
+
+| Pose | all | -units | units cost | none |
+|---|---|---|---|---|
+| gameplay03 | 14.74 ms (spread 0.48, p95 17) | 14.14 ms (spread 0.71, p95 15) | 0.60 ms | 11.09 ms |
+| diorama02 | 17.66 ms (spread 0.53, p95 20) | 17.39 ms (spread 0.17, p95 20) | 0.27 ms | 13.18 ms |
+
+- The units cost well under the 2.5 ms budget at both poses. The new-game state draws 6 brigades (up to 18 riflemen,
+  with their badges) and 2 ships.
+- The whole scene's p95 is over 16.7 ms at gameplay03 (17 ms), and at diorama02 even without units (20 ms). The base
+  frame here (`none` 11.09 ms) is slower than in earlier runs. That is a scene-wide matter for the perf track, not
+  this layer's.
+- The layer rebuilds only when the roster changes (a new turn, a call-up or security order). Between those, its only
+  per-frame work is a flying aircraft's transform and turning about ten badges to the camera.
 
 **Left open.**
 - The rows are drafts from Wikipedia (and Eduard and Commons) until a historian checks them against Lorch or the
