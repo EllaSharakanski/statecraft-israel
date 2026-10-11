@@ -10,17 +10,21 @@ namespace Statecraft.Game.UI
         readonly Button endTurn; readonly System.Action onEndTurn;
         readonly VisualElement bar, hudRoot;
 
-        /// <summary>Below this top-bar width (logical px) the meters drop their icons (Statecraft.uss .top-bar--compact): six
-        /// meters with icons and their widest changes, the date badge, the screen buttons and End Turn need about this much: 16:9
-        /// (1920 logical) keeps the icons, 16:10 (about 1821) does not (PromoHudTests.EveryWindowShapeFitsTheBarAfterATurn).</summary>
-        public const float CompactBelowPx = 1900f;
-        public const string CompactClass = "top-bar--compact";
-        /// <summary>Below this width the HUD's root also gets NarrowClass: a taller bar whose meters stack the change under the
-        /// value, and the panels below it move down to match (Statecraft.uss .hud-narrow). Without the icons the bar still
-        /// cannot hold six values with their widest changes side by side below about 1900 px (PromoHudTests
-        /// .EveryWindowShapeFitsTheBarAfterATurn), so the two tiers share the threshold.</summary>
-        public const float NarrowBelowPx = CompactBelowPx;
+        // Three tiers by the bar's logical width (1080p reference, match 0.5: logical width = sqrt(aspect x 1920 x 1080)).
+        // Each threshold sits well clear of a common window shape, so a small window change does not flip a tier:
+        //   16:9 fullscreen 1920, a 16:10 MacBook browser ~1910 | NarrowBelowPx 1860 | 16:10 fullscreen ~1821
+        //   | CompactBelowPx 1700 | 4:3 ~1662, 5:4 ~1585 | TwoRowBelowPx 1500 | square ~1440, half a 1080p screen ~1358.
+        // PromoHudTests.EveryWindowShapeFitsTheBarAfterATurn proves each tier holds the widest late-game values and changes.
+
+        /// <summary>Below this width the HUD's root gets NarrowClass: a taller bar (124 px) whose meters stack the change under
+        /// the value, and the panels below it move down to match (Statecraft.uss .hud-narrow). Above it, six values and their
+        /// changes fit side by side with the icons.</summary>
+        public const float NarrowBelowPx = 1860f;
         public const string NarrowClass = "hud-narrow";
+        /// <summary>Below this width the meters also drop their icons (Statecraft.uss .top-bar--compact): 16:10 keeps them on the
+        /// stacked bar; 4:3 and 5:4 do not have the room.</summary>
+        public const float CompactBelowPx = 1700f;
+        public const string CompactClass = "top-bar--compact";
         /// <summary>Below this width (windows narrower than about square, e.g. a browser snapped to half a 1080p screen, about
         /// 1360 logical px) one row cannot hold the badge, six meters, the screen buttons and End Turn: the root also gets
         /// TwoRowClass, and the bar wraps into two rows, the date and the meters above, the screen buttons and End Turn
