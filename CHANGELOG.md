@@ -28,7 +28,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The map (milestone M2): terrain from Copernicus elevation data, biomes from rainfall, 1948 settlements on hexes.
 - The 1948 sub-districts on the map (promo-borderdata): the sixteen Mandate sub-districts in force on 15 May 1948
   (Palestine Gazette No. 1552, 1947), digitised from the Survey of Palestine's "Administrative Divisions" map and stored
-  as true lines (`content/map/subdistricts_1948.geojson`, status draft); the map shows them snapped to hex edges in the
+  as true lines (`content/map/subdistricts_1948.geojson`, sensitivity-reviewed); the map shows them snapped to hex edges in the
   blue border style, labelled "Mandate sub-districts, 1947" from the 1948 start until the 1949 armistice lines replace
   them; the info panel names a hex's sub-district and district. Display only: the sim does not read them.
 - Open-source release (public since 2026-10-10): licences (MIT code, CC BY-SA 4.0 content, CC BY 4.0 original docs

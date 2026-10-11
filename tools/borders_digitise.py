@@ -41,6 +41,14 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "content" / "map" / "subdistricts_1948.geojson"
 MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 CHECKED = "2026-10-11"
+# Sensitivity review done by the controller on the owner's behalf (owner-delegated, 2026-10-11); the 1947-48 amendment
+# check stays open (open_questions).
+STATUS = "sensitivity-reviewed"
+NAMES_SOURCE = ("name_he / name_ar / district_he / district_ar: Wikipedia (secondary), accepted for now (owner-delegated "
+                "ruling, 2026-10-11); the Gazette's Hebrew and Arabic editions were not reachable")
+SAMARIA_AR_NOTE = ("'لواء السامرة' renders the official English 'Samaria District' directly; 'لواء نابلس' is the common "
+                   "usage. No official Arabic Mandate text (al-Waqa'i' al-Filastiniyya) was reachable online (searched "
+                   "2026-10-11): unverified")
 F = 2           # processing at half the scan's resolution (about 66 m a pixel)
 CLOSE_R = 20    # closing radius, processing pixels
 FINE_R = 6      # the second, fine closing that gives back the land the coarse one fills in narrow salients (Metulla)
@@ -169,7 +177,9 @@ LICENCE_NOTE = (
     "transition). Commons tags scan (a) {{PD-UK-Gov}} and scan (b) {{PD-UKGov}}{{PD-IsraelGov}}. Caveat: like the 1948-60 Government Press Office photos (docs/oss/DECISIONS.md "
     "D-P) they were still protected on 1 January 1996, so the URAA may have restored a US copyright in the map's drawing "
     "until about 2041-42 (95 years from 1946-47). What this file takes is factual: where legally defined administrative lines run (the Proclamation is "
-    "a legislative text), redrawn by our own method; no image is copied. The owner rules on it (decision D-B). This "
+    "a legislative text), redrawn by our own method; no image is copied, and US copyright does not protect facts (Feist), so "
+    "a possible URAA copyright in the drawing does not reach this data. Decision D-B (owner-delegated, 2026-10-11): allowed; "
+    "facts redrawn, no image copied. This "
     "file, like content/, is CC BY-SA 4.0; its coast follows the Copernicus DEM (NOTICE).")
 
 
@@ -406,13 +416,18 @@ def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
                  "district": DISTRICTS[district], "district_he": NAMES_HE[dkey], "district_ar": NAMES_AR[dkey],
                  "in_force_from": "1947-01-01", "area_km2": round(area, 1), "vs1945_area_km2": round(vs, 1),
                  "seed": list(seed), "sources": [s["url"] for s in SOURCES[:3]] + [NAMES_HE_URL, NAMES_AR_URL],
-                 "checked": CHECKED, "status": "draft"}
+                 "names_source": NAMES_SOURCE, "checked": CHECKED, "status": STATUS}
+        if district == "samaria":
+            props["district_ar_note"] = SAMARIA_AR_NOTE
         if cross:
             props["cross_check"] = cross[sid]
         feats.append({"type": "Feature", "properties": props, "geometry": mapping(g)})
     meta = {
         "title": "Sub-districts of Mandatory Palestine in force on 15 May 1948 (true lines, not hex-snapped)",
-        "status": "draft", "checked": CHECKED, "generated_by": "tools/borders_digitise.py",
+        "status": STATUS, "checked": CHECKED, "generated_by": "tools/borders_digitise.py",
+        "review": ("Sensitivity review by the controller on the owner's behalf (owner-delegated, 2026-10-11): accepted, with the "
+                   "Mandate frontier outlined and the near-frontier shore hexes (Taba, west of Rafah, the Lisan) as baked. "
+                   "The 1947-48 amendment check stays open (open_questions)."),
         "licence": "CC-BY-SA-4.0 (content/); coast from the Copernicus DEM (NOTICE)", "licence_note": LICENCE_NOTE,
         "sources": SOURCES,
         "scan": {"label": main["info"]["label"], "url": main["info"]["url"], "sha256": main["sha256"],
@@ -432,10 +447,10 @@ def geojson(main: dict, geoms: dict, cross: dict | None) -> dict:
         "open_questions": ["No amendment after the 1947 Schedule was found (web searches 2026-10-11, twice); one between "
                            "mid-1947 and 14 May 1948 cannot be ruled out. To close it: the Palestine Gazette's 1947 and 1948 "
                            "indexes, or 'Laws of Palestine 1947' (subsidiary legislation), at the National Library of Israel. "
-                           "Status stays draft until then.",
-                           "Hebrew and Arabic names come from Wikipedia (secondary); the Gazette's Hebrew and Arabic "
-                           "editions were not reachable. Owner review, in particular 'נפת ביסאן' (Beisan) and the Arabic "
-                           "for Samaria District, 'لواء السامرة' ('لواء نابلس' is also common in Mandate-era Arabic usage).",
+                           "This check stays open (review M8; the status records the sensitivity review only).",
+                           "Hebrew and Arabic names come from Wikipedia (secondary), accepted for now (owner-delegated "
+                           "ruling, 2026-10-11); the Gazette's Hebrew and Arabic editions were not reachable. Samaria "
+                           "District in Arabic stays 'لواء السامرة' (see district_ar_note), unverified.",
                            "Known near-line place: Ra'anana (Jaffa Sub-District in the 1947 Schedule, p. 132) falls 0.1 km "
                            "inside Tulkarm on these lines, within the stated accuracy."],
     }

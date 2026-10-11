@@ -1029,9 +1029,9 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
 30 Jan 1947, pp. 125-133, in force 1 Jan 1947) revoked and replaced the whole Schedule, so it alone defines them; the 1942
 (No. 1163) and 1945 (No. 1415) changes are superseded (cited, not read). No later amendment was found (two web searches,
 2026-10-11); **the check stays open**: the Palestine Gazette's 1947 and 1948 indexes, or "Laws of Palestine 1947"
-(subsidiary legislation) at the National Library of Israel, would close it, and the entries stay `draft` until then.
-- *True lines:* `content/map/subdistricts_1948.geojson` (status `draft`, checked 2026-10-11; names as in the Gazette,
-  Hebrew and Arabic from Wikipedia), written by `tools/borders_digitise.py` from the Survey of Palestine map
+(subsidiary legislation) at the National Library of Israel, would close it.
+- *True lines:* `content/map/subdistricts_1948.geojson` (status `sensitivity-reviewed`, checked 2026-10-11; names as in
+  the Gazette, Hebrew and Arabic from Wikipedia, the source noted per row), written by `tools/borders_digitise.py` from the Survey of Palestine map
   "Administrative Divisions" (1:750,000, drawn April 1946, red boundary overprint May 1947; map 6 of the "Maps of
   Palestine" prepared for UNSCOP, June 1947), two Commons scans of different prints (National Library of Israel), SHA-256
   checked. Method: the graticule (35-36 E x 30-33 N) georeferences each scan (affine, rms 5-6 px, about 0.2 km); the red
@@ -1063,7 +1063,13 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
 - *Kept out of the sim:* the sim reads files by name and its content hash covers only those, so neither file moves the
   hash or the goldens (`SubdistrictTests.TheSimIgnoresTheFileTheContentHashDoesNotMove`; `test_the_sim_never_reads_the_border_files`).
 - *Licence:* Government of Palestine works of 1945-47, public domain in Israel and the UK, with a possible URAA US
-  copyright in the map's drawing: decision D-B (docs/oss/DECISIONS.md), `ASSETS.yaml` row owner-verify.
+  copyright in the map's drawing that does not reach facts (Feist): decision D-B (docs/oss/DECISIONS.md), decided
+  (owner-delegated, 2026-10-11): allowed; facts redrawn, no image copied; `ASSETS.yaml` row verified.
+- *Rulings (owner-delegated to the controller, 2026-10-11):* the near-frontier shore hexes (Taba, west of Rafah, the
+  Lisan) stay as built; the Mandate frontier outline stays; Samaria District in Arabic stays "لواء السامرة" (no official
+  Arabic Mandate text reachable online; "لواء نابلس" is the common usage; unverified, noted in the file); the Hebrew and
+  Arabic names from Wikipedia are accepted for now; the sensitivity review is done (`sensitivity-reviewed`), while the
+  1947-48 amendment check stays open.
 - *1949 armistice lines:* research note only, `research_notes/Map borders/armistice-lines-1949.md` (the four agreements and
   their annex maps, UNTS vol. 42, digitising and dating).
 

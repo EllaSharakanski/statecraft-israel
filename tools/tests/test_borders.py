@@ -44,15 +44,18 @@ def test_every_sub_district_of_the_1947_schedule_once_with_its_district():
     assert {k: sorted(v) for k, v in got.items()} == {k: sorted(v) for k, v in GAZETTE_1947.items()}
 
 
-def test_each_feature_carries_name_sources_checked_date_and_draft_status():
+def test_each_feature_carries_name_sources_checked_date_and_reviewed_status():
     for f in SOURCE["features"]:
         p = f["properties"]
         assert p["name"] and p["name_he"] and p["name_ar"], p["id"]
         assert p["sources"] and all(s.startswith("https://") for s in p["sources"]), p["id"]
-        assert p["checked"] == "2026-10-11" and p["status"] == "draft", p["id"]
+        assert p["checked"] == "2026-10-11" and p["status"] == "sensitivity-reviewed", p["id"]   # owner-delegated, 2026-10-11
+        assert "Wikipedia" in p["names_source"], p["id"]
         assert p["in_force_from"] == "1947-01-01", p["id"]
     meta = SOURCE["statecraft"]
-    assert meta["status"] == "draft" and meta["sources"] and meta["licence_note"] and meta["uncertain_segments"]
+    assert meta["status"] == "sensitivity-reviewed" and meta["sources"] and meta["licence_note"] and meta["uncertain_segments"]
+    assert any("amendment" in q for q in meta["open_questions"]), "the 1947-48 amendment check stays open (review M8)"
+    assert all("district_ar_note" in f["properties"] for f in SOURCE["features"] if f["properties"]["district"] == "Samaria District")
 
 
 def test_rings_are_closed_counter_clockwise_and_in_the_map():
