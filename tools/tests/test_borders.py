@@ -1,0 +1,168 @@
+"""The 1948 sub-districts: the true lines (content/map/subdistricts_1948.geojson, tools/borders_digitise.py) and their
+hex-snapped display layer (content/map/subdistrict_hexes_1948.yaml, tools/borders_bake.py)."""
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+import pytest
+import yaml
+
+import borders_bake as bb
+import borders_digitise as bd
+import hexgrid as hg
+
+ROOT = Path(__file__).resolve().parents[2]
+MAP = ROOT / "content" / "map"
+SOURCE = json.loads((MAP / "subdistricts_1948.geojson").read_text(encoding="utf-8"))
+HEXES = json.loads((MAP / "hexes.json").read_text())
+BAKED = yaml.safe_load((MAP / "subdistrict_hexes_1948.yaml").read_text(encoding="utf-8"))
+TOWNS = {t["id"]: t for t in yaml.safe_load((MAP / "settlements_1948.yaml").read_text())["settlements"]}
+# The 1947 Schedule (Palestine Gazette No. 1552, Supplement No. 2): six districts, sixteen sub-districts.
+GAZETTE_1947 = {
+    "Galilee District": ["Acre Sub-District", "Beisan Sub-District", "Nazareth Sub-District", "Safad Sub-District", "Tiberias Sub-District"],
+    "Haifa District": ["Haifa Sub-District"],
+    "Samaria District": ["Jenin Sub-District", "Nablus Sub-District", "Tulkarm Sub-District"],
+    "Jerusalem District": ["Hebron Sub-District", "Jerusalem Sub-District", "Ramallah Sub-District"],
+    "Lydda District": ["Jaffa Sub-District", "Ramle Sub-District"],
+    "Gaza District": ["Beersheba Sub-District", "Gaza Sub-District"],
+}
+
+
+def region_of(q: int, r: int) -> str:
+    keys = {x["id"]: x["key"] for x in BAKED["regions"]}
+    cells = {(q_, r_): rid for q_, r_, rid in BAKED["hexes"]}
+    return keys.get(cells.get((q, r), 0), "none")
+
+
+# --- the true lines ---
+
+def test_every_sub_district_of_the_1947_schedule_once_with_its_district():
+    got = {}
+    for f in SOURCE["features"]:
+        got.setdefault(f["properties"]["district"], []).append(f["properties"]["name"])
+    assert {k: sorted(v) for k, v in got.items()} == {k: sorted(v) for k, v in GAZETTE_1947.items()}
+
+
+def test_each_feature_carries_name_sources_checked_date_and_draft_status():
+    for f in SOURCE["features"]:
+        p = f["properties"]
+        assert p["name"] and p["name_he"] and p["name_ar"], p["id"]
+        assert p["sources"] and all(s.startswith("https://") for s in p["sources"]), p["id"]
+        assert p["checked"] == "2026-10-11" and p["status"] == "draft", p["id"]
+        assert p["in_force_from"] == "1947-01-01", p["id"]
+    meta = SOURCE["statecraft"]
+    assert meta["status"] == "draft" and meta["sources"] and meta["licence_note"] and meta["uncertain_segments"]
+
+
+def test_rings_are_closed_counter_clockwise_and_in_the_map():
+    b = HEXES["bounds"]
+    for f in SOURCE["features"]:
+        for poly in bb.rings(f["geometry"]):
+            for i, ring in enumerate(poly):
+                assert len(ring) >= 4 and (ring[0] == ring[-1]).all(), f["properties"]["id"]
+                area2 = np.sum(ring[:-1, 0] * ring[1:, 1] - ring[1:, 0] * ring[:-1, 1])
+                assert (area2 > 0) == (i == 0), f"{f['properties']['id']}: RFC 7946 winding"
+                assert (ring[:, 0] >= b["lon0"]).all() and (ring[:, 0] <= b["lon1"]).all()
+                assert (ring[:, 1] >= b["lat0"]).all() and (ring[:, 1] <= b["lat1"]).all()
+
+
+def test_areas_agree_with_village_statistics_1945():
+    """The independent check: each digitised area within 5% of the Government's own land area for it."""
+    for f in SOURCE["features"]:
+        p = f["properties"]
+        assert abs(p["area_km2"] / p["vs1945_area_km2"] - 1) < 0.05, p["id"]
+
+
+def test_two_prints_of_the_map_agree():
+    for f in SOURCE["features"]:
+        c = f["properties"]["cross_check"]
+        assert c["iou"] > 0.94 and c["mean_offset_km"] < 0.3 and c["max_offset_km"] < 1.5, f["properties"]["id"]
+
+
+def test_digitiser_constants_match_the_file():
+    assert [f["properties"]["id"] for f in SOURCE["features"]] == [s[0] for s in bd.SUBDISTRICTS]
+    assert sorted(bd.VS1945_DUNAMS) == sorted(s[0] for s in bd.SUBDISTRICTS)
+    # every seed lies inside its own polygon
+    for f in SOURCE["features"]:
+        lon, lat = f["properties"]["seed"]
+        assert bb.contains(bb.rings(f["geometry"]), lon, lat), f["properties"]["id"]
+
+
+def test_affine_georeference_round_trips():
+    pts = [(lo, la, 100 + 2900 * (lo - 35) + 3 * (la - 30), 12300 - 3490 * (la - 30) + 2 * (lo - 35))
+           for lo in (35, 36) for la in (30, 31, 32, 33)]
+    cx, cy, rms = bd.fit_affine(pts)
+    assert rms < 1e-6
+    x, y = bd.to_px(cx, cy, 35.3, 31.7)
+    lon, lat = bd.to_lonlat(cx, cy, x, y)
+    assert abs(lon - 35.3) < 1e-9 and abs(lat - 31.7) < 1e-9
+
+
+# --- the snap ---
+
+def test_point_in_polygon_respects_holes_and_edges():
+    sq = [np.array([[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]], float), np.array([[1, 1], [1, 3], [3, 3], [3, 1], [1, 1]], float)]
+    assert bb.contains([sq], 0.5, 0.5) and not bb.contains([sq], 2, 2) and not bb.contains([sq], 5, 2)
+    assert bb.ring_contains(sq[0], 0.0, 2.0) != bb.ring_contains(sq[0], 4.0, 2.0)   # half-open: one edge in, its twin out
+
+
+def test_committed_layer_is_up_to_date_and_deterministic():
+    text = bb.build()
+    assert (MAP / "subdistrict_hexes_1948.yaml").read_text(encoding="utf-8") == text, "rerun: uv run tools/borders_bake.py"
+    assert bb.build() == text
+
+
+def test_every_land_hex_and_only_land_has_a_region():
+    land = {(h["q"], h["r"]) for h in HEXES["hexes"] if h["land"]}
+    assert {(q, r) for q, r, _ in BAKED["hexes"]} == land
+
+
+def test_a_land_hex_inside_a_sub_district_takes_it_by_its_centre():
+    shapes = {f["properties"]["id"]: bb.rings(f["geometry"]) for f in SOURCE["features"]}
+    for h in HEXES["hexes"]:
+        if not h["land"]:
+            continue
+        inside = [k for k, s in shapes.items() if bb.contains(s, h["lon"], h["lat"])]
+        if inside:
+            assert region_of(h["q"], h["r"]) == inside[0], (h["q"], h["r"])
+
+
+def test_every_sub_district_shows_and_its_hex_count_matches_its_area():
+    hex_km2 = 1.5 * 3 ** 0.5 * HEXES["hex_size_km"] ** 2
+    counts = {}
+    for q, r, rid in BAKED["hexes"]:
+        counts[rid] = counts.get(rid, 0) + 1
+    for i, f in enumerate(SOURCE["features"], start=1):
+        n, expected = counts.get(i, 0), f["properties"]["area_km2"] / hex_km2
+        assert n >= 1 and abs(n - expected) <= max(3, 0.25 * expected), (f["properties"]["id"], n, expected)
+
+
+@pytest.mark.parametrize("town, sub", [("acre", "acre"), ("haifa", "haifa"), ("safed", "safad"), ("tiberias", "tiberias"),
+                                       ("nazareth", "nazareth"), ("jerusalem", "jerusalem"), ("tel_aviv", "jaffa"),
+                                       ("jaffa", "jaffa"), ("ramla", "ramle"), ("gaza", "gaza"), ("beersheba", "beersheba")])
+def test_towns_fall_in_their_sub_district(town, sub):
+    t = TOWNS[town]
+    q, r = hg.settlement_hex(t["lon"], t["lat"], HEXES)
+    assert region_of(q, r) == sub
+
+
+@pytest.mark.parametrize("lon, lat", [(35.25, 33.30), (35.85, 32.55), (34.35, 30.40), (35.75, 30.50)])
+def test_land_beyond_the_frontier_is_outside(lon, lat):
+    (q,), (r,) = hg.point_to_hex(np.array([(lon - HEXES["bounds"]["lon0"]) * hg.km_per_deg_lon(HEXES["bounds"])]),
+                                 np.array([(HEXES["bounds"]["lat1"] - lat) * hg.KM_PER_DEG_LAT]), HEXES["hex_size_km"])
+    assert region_of(q, r) == bb.OUTSIDE
+
+
+def test_regions_are_the_sub_districts_then_outside_and_drawn_primary():
+    rows = BAKED["regions"]
+    assert [r["key"] for r in rows] == [f["properties"]["id"] for f in SOURCE["features"]] + [bb.OUTSIDE]
+    assert [r["id"] for r in rows] == list(range(1, len(rows) + 1))
+    assert all(r["style"] == "primary" for r in rows[:-1]) and rows[-1]["style"] == "none"
+
+
+def test_the_sim_never_reads_the_border_files():
+    """Display only: the content hash covers only files the sim reads (ContentLoader), so these must stay out of it."""
+    for cs in (ROOT / "sim" / "Statecraft.Sim").rglob("*.cs"):
+        text = cs.read_text(encoding="utf-8")
+        assert not re.search(r"subdistrict", text, re.IGNORECASE), cs

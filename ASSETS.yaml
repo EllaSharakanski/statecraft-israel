@@ -79,6 +79,11 @@ rules:
     source: "Israel Meteorological Service, data.gov.il dataset 481, via tools/ims_normals.py; licence 'Other (Open)' with no licence URL"
     status: owner-verify
     note: "Decision D6 (the M3 plan's deferred 'Legal review of map-data licences' row). Published 2026-10-10 before the check."
+  - glob: "content/map/subdistrict*"
+    licence: CC-BY-SA-4.0
+    source: "tools/borders_digitise.py from the Survey of Palestine map 'Administrative Divisions' (1:750,000, 1946, overprinted May 1947; two Commons scans, SHA-256 in the file) per the 1947 Schedule (Palestine Gazette No. 1552); coast from the Copernicus DEM (NOTICE); the hex layer by tools/borders_bake.py; content/ is CC BY-SA 4.0"
+    status: owner-verify
+    note: "Decision D-B: Government of Palestine works of 1945-47, public domain in Israel and the UK since 1997, but a URAA-restored US copyright in the map's drawing is possible (as for D-P); the file holds facts (where legally defined lines run) redrawn by our own method. Hebrew and Arabic names from Wikipedia. Status draft until the owner's review."
   - glob: "content/map/settlement*.yaml"
     licence: CC-BY-SA-4.0
     source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
