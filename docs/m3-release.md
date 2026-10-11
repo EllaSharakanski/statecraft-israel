@@ -109,9 +109,11 @@ Firefox is not installed on the development Mac, so the Firefox check is open.
 
 ## OWNER STEP: sensitivity review before any shared build
 Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,
-war-casualties). The seven events below are only `fact-checked`. The owner reviews each and records the sign-off **only**
-by moving the event's `status:` in its YAML file to `sensitivity-reviewed` and committing it (the loader accepts that
-value). Nothing else counts as a sign-off.
+war-casualties). The owner's sign-off for all seven events below is recorded in commit
+[25d2ef6](https://github.com/eyalgolan/statecraft-israel/commit/25d2ef6004436668b42e289aff3dce06af128e09)
+(2026-10-10; decision D11 in [docs/oss/DECISIONS.md](oss/DECISIONS.md)): each event's YAML `status:` is now
+`sensitivity-reviewed`. For any new sensitive event, the owner records the sign-off **only** by moving its YAML
+`status:` to `sensitivity-reviewed` and committing it (the loader accepts that value). Nothing else counts as a sign-off.
 
 - **Gate:** `Build.Web ... -shareable` and `Build.Mac ... -shareable` refuse to build while any sensitive event is not
   `sensitivity-reviewed`, and name them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). `tools/package_release.py`
@@ -180,4 +182,6 @@ Result: (owner fills in)
 - The wheel-zoom step (one notch = 10%) was measured in Chrome on macOS only. Firefox reports wheel deltas in lines and
   Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's M4 itch.io check.
 - Not uploaded to itch.io: the upload and the cross-upload save test are deferred to the start of M4 (owner ruling,
-  2026-10-10). The seven sensitive events await the owner's sensitivity review (see above).
+  2026-10-10). The seven sensitive events are `sensitivity-reviewed`, with the owner's sign-off recorded in commit
+  [25d2ef6](https://github.com/eyalgolan/statecraft-israel/commit/25d2ef6004436668b42e289aff3dce06af128e09) (see above);
+  sensitivity review is no longer pending for this set.
