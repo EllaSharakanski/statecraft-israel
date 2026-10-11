@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Statecraft.Sim;
 
 namespace Statecraft.Game.Map.Units
@@ -16,27 +17,30 @@ namespace Statecraft.Game.Map.Units
         public string ArtType { get; }
         /// <summary>An air unit flies over its base (security level 4 or 5) or stands parked on it.</summary>
         public bool Flying { get; }
+        /// <summary>An army token's riflemen's headgear, one per figure in the trio's order (<see cref="UnitData.Headgears"/>);
+        /// empty for aircraft and ships.</summary>
+        public IReadOnlyList<string> Headgear { get; }
 
-        public UnitToken(UnitEntry unit, UnitAnchor anchor, int figures, string artType, bool flying)
+        public UnitToken(UnitEntry unit, UnitAnchor anchor, int figures, string artType, bool flying, IReadOnlyList<string>? headgear = null)
         {
             Unit = unit; Anchor = anchor; Figures = figures; ArtType = artType; Flying = flying;
+            Headgear = headgear ?? Array.Empty<string>();
         }
 
         public bool Equals(UnitToken? o) => o != null && ReferenceEquals(Unit, o.Unit) && ReferenceEquals(Anchor, o.Anchor)
-            && Figures == o.Figures && ArtType == o.ArtType && Flying == o.Flying;
+            && Figures == o.Figures && ArtType == o.ArtType && Flying == o.Flying && Headgear.SequenceEqual(o.Headgear);
         public override bool Equals(object? o) => Equals(o as UnitToken);
         public override int GetHashCode() => HashCode.Combine(Unit.Id, Anchor.Place, Figures, ArtType, Flying);
-        public override string ToString() => $"{Unit.Id}@{Anchor.Place}:{ArtType}x{Figures}{(Flying ? " flying" : "")}";
+        public override string ToString() => $"{Unit.Id}@{Anchor.Place}:{ArtType}x{Figures}{(Headgear.Count > 0 ? "[" + string.Join("/", Headgear) + "]" : "")}{(Flying ? " flying" : "")}";
     }
 
     /// <summary>Which units the map draws, from the sim's state and the map-only unit data (docs/units.md, "Units in play").
     /// Pure and read-only: it reads the date, the security level and the reserve call-up, and never writes the state, so
-    /// the sim and its goldens cannot move (UnitRosterTests). Rules (owner, 2026-10-11):
+    /// the sim and its goldens cannot move (UnitsInPlayTests). Rules (owner, 2026-10-11):
     /// a unit shows while the date is inside one of its sourced anchor windows, and never when its row is hidden;
     /// an army token has 3 figures at a call-up of at least the security-level-4 floor (rules.yaml rung_min_mobilization,
     /// 0.4), 2 at the level-3 floor (0.15), else 1; an air unit flies at security level 4 or 5 and stands parked below it,
-    /// as the aircraft type of its dated window (the Avia S-199, then the Spitfire), with the squadron markings from their
-    /// sourced day.</summary>
+    /// as the aircraft type of its dated window (the Avia S-199, then the Spitfire).</summary>
     public static class UnitRoster
     {
         public const int FlyingFromRung = 4;
@@ -60,7 +64,9 @@ namespace Statecraft.Game.Map.Units
                 switch (u.Service)
                 {
                     case UnitData.Army:
-                        list.Add(new UnitToken(u, anchor, FiguresFor(rules, mobilization), UnitShowcase.RiflemanSlouchHatType, false));
+                        int figures = FiguresFor(rules, mobilization);
+                        var hats = (u.Headgear ?? (IReadOnlyList<string>)UnitData.DefaultHeadgear).Take(figures).ToList();
+                        list.Add(new UnitToken(u, anchor, figures, RiflemanType(hats[0]), false, hats));
                         break;
                     case UnitData.Air:
                         var type = AircraftAt(u, date);
@@ -73,6 +79,15 @@ namespace Statecraft.Game.Map.Units
             }
             return list;
         }
+
+        /// <summary>The art type of a rifleman with <paramref name="headgear"/> (the authored-prefab hook's key).</summary>
+        public static string RiflemanType(string headgear) => headgear switch
+        {
+            UnitData.SlouchHat => UnitShowcase.RiflemanSlouchHatType,
+            UnitData.SteelHelmet => UnitShowcase.RiflemanHelmetType,
+            UnitData.WoolCap => UnitShowcase.RiflemanWoolCapType,
+            _ => throw new ArgumentException($"unknown headgear '{headgear}'", nameof(headgear)),
+        };
 
         /// <summary>The anchor whose window holds <paramref name="date"/>, or null.</summary>
         public static UnitAnchor? AnchorAt(UnitEntry u, DateTime date)
@@ -89,8 +104,7 @@ namespace Statecraft.Game.Map.Units
             foreach (var t in u.Aircraft)
             {
                 if (date < UnitData.Day(t.From) || (t.To != null && date >= UnitData.Day(t.To))) continue;
-                bool marked = t.MarkingsFrom != null && date >= UnitData.Day(t.MarkingsFrom);
-                return t.Type == UnitData.AviaS199 ? (marked ? UnitShowcase.S199YoavType : UnitShowcase.S199Type) : UnitShowcase.SpitfireType;
+                return t.Type == UnitData.AviaS199 ? UnitShowcase.S199Type : UnitShowcase.SpitfireType;
             }
             return null;
         }

@@ -161,12 +161,12 @@ namespace Statecraft.Game.Map.Units
         /// <summary>An Avia S-199 of 101 Squadron, IAF, 1948 (sources in docs/units.md): the Bf 109G airframe with the Jumo 211F
         /// and its wide paddle-bladed propeller (Avia S-199 article), 8.94 m long with a 9.92 m span, one green on all
         /// surfaces (Eduard Info 11/2025, pp. 53-54), two white bands round the rear fuselage and Star of David roundels under
-        /// the wings (101 Squadron photographs of 1948 on Wikimedia Commons), and the MG 151 cannon pods under the wings.
-        /// With <paramref name="yoavMarkings"/> (from 15 October 1948, Operation Ten Plagues, later Yoav: Eduard p. 53) it
-        /// adds the red spinner, the red and white rudder stripes and roundels on top of the wings. The 101 Squadron
-        /// skull badge on the nose is too small to read at map scale and is left out. The propeller is a separate mesh
-        /// (<see cref="S199Propeller"/>). Faces +Z, centre of gravity at the origin.</summary>
-        public static Mesh AviaS199(bool yoavMarkings, string name)
+        /// the wings (101 Squadron photographs of 1948 on Wikimedia Commons), and the MG 151 cannon pods under the wings: its
+        /// scheme until mid-October 1948. The red spinner, rudder stripes and upper-wing roundels the squadron's fighters got
+        /// for Operation Ten Plagues (from 15 October, Eduard p. 53) are not drawn: the map shows the Spitfire from that day
+        /// (docs/units.md). The 101 Squadron skull badge on the nose is too small to read at map scale and is left out. The
+        /// propeller is a separate mesh (<see cref="S199Propeller"/>). Faces +Z, centre of gravity at the origin.</summary>
+        public static Mesh AviaS199(string name)
         {
             var m = new MiniatureMesh();
             var shape = TRS(Vector3.zero, V(90f, 0, 0), V(0.70f, 1f, 1.05f));
@@ -179,9 +179,9 @@ namespace Statecraft.Game.Map.Units
                 float r = Mathf.Lerp(0.26f, 0.46f, (z + 4.6f) / 2.0f) + 0.015f;
                 m.Lathe(shape, new List<Vector2> { new Vector2(z - 0.1f, r), new Vector2(z + 0.1f, r) }, P.RoundelWhite, 12);
             }
-            // Spinner: the big Jumo spinner; red from October 1948, else the airframe's green.
+            // Spinner: the big Jumo spinner, in the airframe's green.
             m.Lathe(TRS(V(0, 0.02f, 2.95f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.40f), new Vector2(0.30f, 0.30f), new Vector2(0.55f, 0f) },
-                yoavMarkings ? P.MarkingRed : P.AviaGreen, 10);
+                P.AviaGreen, 10);
             m.Ellipsoid(TRS(V(0, 0.58f, -0.6f), Vector3.zero, V(0.30f, 0.28f, 0.85f)), P.Glass);
             // Straight tapered wing with rounded tips: semi-span 4.6 m beyond the fuselage, low on it, 6.5 degree dihedral.
             float semi = 4.6f;
@@ -193,7 +193,6 @@ namespace Statecraft.Game.Map.Units
                     spanSteps: 10, chordSteps: 3);
                 var rp = w.MultiplyPoint3x4(V(semi * 0.62f, 0f, -0.25f));
                 Roundel(m, TRS(rp - V(0, 0.11f, 0), V(0, 0, side * 6.5f), V(1f, -1f, 1f)), 0.48f);   // underneath
-                if (yoavMarkings) Roundel(m, TRS(rp + V(0, 0.11f, 0), V(0, 0, side * 6.5f), Vector3.one), 0.48f);
                 // The MG 151 pod and the radiator under each wing.
                 var pod = w.MultiplyPoint3x4(V(1.65f, -0.12f, 0f));
                 m.Rod(pod + V(0, 0, -0.3f), pod + V(0, 0, 1.0f), 0.10f, 0.07f, P.AviaGreen, segments: 6);
@@ -203,8 +202,8 @@ namespace Statecraft.Game.Map.Units
                 m.Wing(tp, s => (0.45f - 0.15f * s) * tip(s), s => (0.45f - 0.10f * s) * tip(s), 1.45f, 0.05f, (i, j) => P.AviaGreen, (i, j) => P.AviaGreen,
                     spanSteps: 5, chordSteps: 2);
             }
-            // Fin and rudder: the rear half striped red and white from October 1948 (stripes across, as on the Spitfire).
-            System.Func<int, int, int> fin = (i, j) => j == 0 || !yoavMarkings ? P.AviaGreen : (i % 2 == 0 ? P.MarkingRed : P.RoundelWhite);
+            // Fin and rudder, in the airframe's green.
+            System.Func<int, int, int> fin = (i, j) => P.AviaGreen;
             m.Wing(TRS(V(0, 0.35f, -5.05f), V(0, 0, 90f), Vector3.one), s => (0.55f - 0.15f * s) * tip(s), s => (0.55f - 0.10f * s) * tip(s),
                 1.35f, 0.05f, fin, fin, spanSteps: 5, chordSteps: 2);
             return m.Build(name, AircraftShade);

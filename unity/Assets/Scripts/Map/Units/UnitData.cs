@@ -24,22 +24,36 @@ namespace Statecraft.Game.Map.Units
         public double Lon { get; set; }
         public double Lat { get; set; }
         public string From { get; set; } = "";
+        /// <summary>The sourced start, as the card shows it ("February 1948"), or null when no source dates the arrival
+        /// (the card then gives no start; the game's first day is never shown as one).</summary>
+        public string? Since { get; set; }
         public string To { get; set; } = "";
+        /// <summary>Why the window ends: <see cref="UnitData.EndBySource"/> (with <see cref="EndNote"/>) or
+        /// <see cref="UnitData.EndByFrontArmistice"/> (with <see cref="Front"/>).</summary>
+        public string EndBasis { get; set; } = "";
+        public string? EndNote { get; set; }
+        public string? Front { get; set; }
         /// <summary>"month" when a window edge is known only to the month (the first of the month is used).</summary>
         public string? Precision { get; set; }
         public string? Note { get; set; }
         public List<UnitSource> Sources { get; set; } = new List<UnitSource>();
     }
 
-    /// <summary>An aircraft type a squadron flew for a dated window; <see cref="MarkingsFrom"/> is the day its squadron
-    /// markings (red spinner, striped rudder, upper-wing roundels) start.</summary>
+    /// <summary>An aircraft type a squadron flew for a dated window.</summary>
     public sealed class UnitAircraft
     {
         public string Type { get; set; } = "";
         public string From { get; set; } = "";
         public string? To { get; set; }
-        public string? MarkingsFrom { get; set; }
         public string? Note { get; set; }
+        public List<UnitSource> Sources { get; set; } = new List<UnitSource>();
+    }
+
+    /// <summary>A unit's sourced disbandment: no window may run past it.</summary>
+    public sealed class UnitDisbanded
+    {
+        public string Date { get; set; } = "";
+        public string? Precision { get; set; }
         public List<UnitSource> Sources { get; set; } = new List<UnitSource>();
     }
 
@@ -58,6 +72,10 @@ namespace Statecraft.Game.Map.Units
         /// <summary>Why the map does not draw the unit (the sources name it but do not place it), or null.</summary>
         public string? Hidden { get; set; }
         public List<string>? ToVerify { get; set; }
+        /// <summary>The riflemen's headgear (<see cref="UnitData.Headgears"/>), only where a source ties it to the unit.</summary>
+        public List<string>? Headgear { get; set; }
+        public List<UnitSource>? HeadgearSources { get; set; }
+        public UnitDisbanded? Disbanded { get; set; }
         public List<UnitAnchor> Anchors { get; set; } = new List<UnitAnchor>();
         public List<UnitAircraft>? Aircraft { get; set; }
         public List<UnitSource>? Sources { get; set; }
@@ -68,6 +86,8 @@ namespace Statecraft.Game.Map.Units
             if (Sources != null) foreach (var s in Sources) yield return s;
             foreach (var a in Anchors) foreach (var s in a.Sources) yield return s;
             if (Aircraft != null) foreach (var t in Aircraft) foreach (var s in t.Sources) yield return s;
+            if (HeadgearSources != null) foreach (var s in HeadgearSources) yield return s;
+            if (Disbanded != null) foreach (var s in Disbanded.Sources) yield return s;
         }
     }
 
@@ -80,6 +100,20 @@ namespace Statecraft.Game.Map.Units
         public const string DefaultFileName = "units_1948.yaml";
         public const string Army = "army", Air = "air", Navy = "navy";
         public const string AviaS199 = "avia-s199", Spitfire = "spitfire";
+        public const string EndBySource = "source", EndByFrontArmistice = "front_armistice";
+        public const string SlouchHat = "slouch_hat", SteelHelmet = "steel_helmet", WoolCap = "wool_cap";
+        public static readonly IReadOnlyList<string> Headgears = new[] { SlouchHat, SteelHelmet, WoolCap };
+        /// <summary>The uniform default where no source ties headgear to a unit: the 1948 photographs' bush hat and Mk II
+        /// steel helmet (docs/units.md, "Sources").</summary>
+        public static readonly IReadOnlyList<string> DefaultHeadgear = new[] { SlouchHat, SteelHelmet, SlouchHat };
+
+        /// <summary>The day each front's armistice was signed (https://en.wikipedia.org/wiki/1949_Armistice_Agreements,
+        /// checked 2026-10-11). A window with no sourced end ends on its front's day (end_basis: front_armistice).</summary>
+        public static readonly IReadOnlyDictionary<string, DateTime> FrontArmistice = new Dictionary<string, DateTime>
+        {
+            ["egypt"] = new DateTime(1949, 2, 24), ["lebanon"] = new DateTime(1949, 3, 23),
+            ["jordan"] = new DateTime(1949, 4, 3), ["syria"] = new DateTime(1949, 7, 20),
+        };
         static readonly HashSet<string> Services = new HashSet<string> { Army, Air, Navy };
         static readonly HashSet<string> AircraftTypes = new HashSet<string> { AviaS199, Spitfire };
         static readonly Regex IdRule = new Regex(@"^[a-z][a-z0-9_]*\z");
@@ -126,6 +160,12 @@ namespace Statecraft.Game.Map.Units
                 if (!ids.Add(u.Id)) throw new InvalidDataException($"{at} duplicate id");
                 if (!Services.Contains(u.Service)) throw new InvalidDataException($"{at} has unknown service '{u.Service}' (army, air or navy)");
                 if (string.IsNullOrWhiteSpace(u.Name) || string.IsNullOrWhiteSpace(u.Sector)) throw new InvalidDataException($"{at} needs a name and a sector");
+                if (u.Disbanded != null)
+                {
+                    try { Day(u.Disbanded.Date); }
+                    catch (FormatException e) { throw new InvalidDataException($"{at} disbanded: {e.Message}", e); }
+                    if (u.Disbanded.Sources == null || u.Disbanded.Sources.Count == 0) throw new InvalidDataException($"{at} disbanded has no source");
+                }
                 u.Anchors ??= new List<UnitAnchor>();
                 if (u.Hidden == null && u.Anchors.Count == 0) throw new InvalidDataException($"{at} has no anchors (give one, or say why it is hidden)");
                 foreach (var a in u.Anchors)
@@ -135,6 +175,18 @@ namespace Statecraft.Game.Map.Units
                     Window(where, a.From, a.To);
                     if (!(a.Lon >= -180 && a.Lon <= 180 && a.Lat >= -90 && a.Lat <= 90)) throw new InvalidDataException($"{where} has bad coordinates");
                     if (a.Precision != null && a.Precision != "month") throw new InvalidDataException($"{where} precision must be 'month' or left out");
+                    if (a.EndBasis == EndBySource)
+                    {
+                        if (string.IsNullOrWhiteSpace(a.EndNote)) throw new InvalidDataException($"{where} ends by source but has no end_note saying which");
+                        if (a.Front != null) throw new InvalidDataException($"{where} ends by source, so it takes no front");
+                    }
+                    else if (a.EndBasis == EndByFrontArmistice)
+                    {
+                        if (a.Front == null || !FrontArmistice.TryGetValue(a.Front, out var day)) throw new InvalidDataException($"{where} needs a front (egypt, lebanon, jordan or syria)");
+                        if (Day(a.To) != day) throw new InvalidDataException($"{where} must end on the {a.Front} armistice, {day:yyyy-MM-dd}");
+                    }
+                    else throw new InvalidDataException($"{where} needs end_basis: source or front_armistice");
+                    if (u.Disbanded != null && Day(a.To) > Day(u.Disbanded.Date)) throw new InvalidDataException($"{where} runs past the unit's disbandment");
                     a.Sources ??= new List<UnitSource>();
                     if (a.Sources.Count == 0) throw new InvalidDataException($"{where} has no source");
                 }
@@ -145,12 +197,17 @@ namespace Statecraft.Game.Map.Units
                     {
                         if (t == null || !AircraftTypes.Contains(t.Type)) throw new InvalidDataException($"{at} has an unknown aircraft type '{t?.Type}'");
                         Window($"{at} aircraft '{t.Type}'", t.From, t.To);
-                        if (t.MarkingsFrom != null) Day(t.MarkingsFrom);
                         t.Sources ??= new List<UnitSource>();
                         if (t.Sources.Count == 0) throw new InvalidDataException($"{at} aircraft '{t.Type}' has no source");
                     }
                 }
                 else if (u.Aircraft != null) throw new InvalidDataException($"{at} lists aircraft but is not an air unit");
+                if (u.Headgear != null)
+                {
+                    if (u.Service != Army || u.Headgear.Count != 3 || u.Headgear.Exists(h => !((IList<string>)Headgears).Contains(h)))
+                        throw new InvalidDataException($"{at} headgear must be three of {string.Join(", ", Headgears)}, on an army unit");
+                    if (u.HeadgearSources == null || u.HeadgearSources.Count == 0) throw new InvalidDataException($"{at} headgear has no source");
+                }
                 foreach (var s in u.AllSources())
                 {
                     if (s == null || string.IsNullOrWhiteSpace(s.Url) || !s.Url.StartsWith("https://", StringComparison.Ordinal))
@@ -173,10 +230,14 @@ namespace Statecraft.Game.Map.Units
         }
 
         /// <summary>True when every source of the row is a Wikipedia article or a Wikidata item (the file's wikipedia_only).</summary>
-        public static bool IsWikipediaOnly(UnitEntry u)
+        public static bool IsWikipediaOnly(UnitEntry u) => IsWikipediaOnly(u.AllSources());
+
+        /// <summary>True when every one of <paramref name="sources"/> is a Wikipedia article or a Wikidata item (the card's
+        /// draft note, per anchor).</summary>
+        public static bool IsWikipediaOnly(IEnumerable<UnitSource> sources)
         {
             bool any = false;
-            foreach (var s in u.AllSources())
+            foreach (var s in sources)
             {
                 any = true;
                 var host = new Uri(s.Url).Host;

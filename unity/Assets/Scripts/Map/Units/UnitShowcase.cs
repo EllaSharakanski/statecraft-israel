@@ -63,7 +63,7 @@ namespace Statecraft.Game.Map.Units
         public const string AuthoredFolder = "Units/Authored/";
         public const string RiflemanSlouchHatType = "rifleman-1948-slouch-hat", RiflemanHelmetType = "rifleman-1948-steel-helmet",
             RiflemanWoolCapType = "rifleman-1948-wool-cap", SpitfireType = "spitfire-mk9e-101sqn-1948", CorvetteType = "corvette-k20-1948",
-            S199Type = "avia-s199-101sqn-1948", S199YoavType = "avia-s199-101sqn-1948-10";
+            S199Type = "avia-s199-101sqn-1948";
 
         /// <summary>The rifle trio's three looks, in the order a token adds them (1, 2 or 3 figures): offset (in hex
         /// circumradii times <see cref="TrioSpread"/>) and heading.</summary>
@@ -74,13 +74,14 @@ namespace Statecraft.Game.Map.Units
             (RiflemanWoolCapType, UnitModels.Headgear.WoolCap, UnitModels.RiflePose.Slung, false, new Vector2(0.66f, -0.40f), 170f),
         };
 
-        /// <summary>Where a token's figures stand (offsets as in <see cref="Trio"/>): one in the middle, two side by side,
-        /// or the trio.</summary>
+        /// <summary>Where an in-play token's figures stand (in hex circumradii times <see cref="TrioSpread"/>): one in the
+        /// middle, two side by side, or three spread across the ring as in promo 03, side by side across the view (the
+        /// middle one a step back), about 2 km apart so each figure reads on its own (review I6).</summary>
         internal static Vector2[] FigureOffsets(int figures) => figures switch
         {
             1 => new[] { Vector2.zero },
-            2 => new[] { new Vector2(-0.45f, -0.12f), new Vector2(0.45f, 0.12f) },
-            3 => new[] { Trio[0].offset, Trio[1].offset, Trio[2].offset },
+            2 => new[] { new Vector2(-0.6f, 0f), new Vector2(0.6f, 0f) },
+            3 => new[] { new Vector2(-1.0f, -0.1f), new Vector2(0f, 0.2f), new Vector2(1.0f, -0.1f) },
             _ => throw new ArgumentOutOfRangeException(nameof(figures), "a token has 1, 2 or 3 figures"),
         };
 
@@ -89,7 +90,7 @@ namespace Statecraft.Game.Map.Units
 
         /// <summary>Builds the showcase under the map's terrain (so a map rebuild destroys it). Its meshes, palette and
         /// material are owned by the showcase root's own MapRuntimeAssets, so destroying the root (a re-spawn or a map
-        /// rebuild) frees them, and the "units" toggle is registered through that teardown. The trio stands on the centre of
+        /// rebuild) frees them, and the "unitshowcase" toggle is registered through that teardown. The trio stands on the centre of
         /// the hex nearest <see cref="TrioAt"/>. <paramref name="still"/> freezes the flight at <see cref="StillPhase"/>.
         /// Returns the root.</summary>
         public static GameObject Spawn(MapScene map, bool still)

@@ -150,6 +150,11 @@ namespace Statecraft.Game.UI
                 Statecraft.Game.Map.Units.UnitData.ReadOrNone(inputs.Map.UnitsYaml, Debug.LogWarning), inputs.Content.Hexes,
                 Statecraft.Game.Map.Units.UnitShowcase.StillRequested(Application.absoluteURL, Environment.GetCommandLineArgs(),
                     Application.platform == RuntimePlatform.WebGLPlayer));
+            // A screenshot run (?shot) leaves the units out unless it also asks for them (&units), so the art log's plain
+            // checkpoints stay comparable across tracks (review I5; tools/art_checkpoint.sh --units).
+            if (Statecraft.Game.Map.Units.UnitLayer.HiddenInCaptures(Application.absoluteURL, Environment.GetCommandLineArgs(),
+                    Application.platform == RuntimePlatform.WebGLPlayer))
+                VisualToggles.Set(Statecraft.Game.Map.Units.UnitLayer.ToggleName, false);
             Action showUnits = () => unitLayer.Show(bridge.Content, bridge.State);
             bridge.Changed += showUnits;
             owned.Add(new Undo(() => bridge.Changed -= showUnits));
@@ -173,14 +178,7 @@ namespace Statecraft.Game.UI
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
-            // A click on a unit's hex selects the unit (its ring and card); a second click on it, or a click anywhere
-            // else, shows the hex (so a token never hides the hex's map actions).
-            Action<int, int> onHex = (q, r) =>
-            {
-                var id = unitLayer.UnitToSelectAt(q, r);
-                unitLayer.Select(id);
-                if (id != null) info.ShowUnit(); else info.Show(q, r);
-            };
+            Action<int, int> onHex = (q, r) => OnHexClicked(map, unitLayer, info, q, r);
             pointer.HexClicked += onHex;
             var camRig = rig = cameraController.GetComponent<CameraRig>();
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
@@ -220,7 +218,7 @@ namespace Statecraft.Game.UI
             }
             if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
             // The unit art slice at gameplay03 (a showcase, never in normal play; war mode's units are issue #104). Before the
-            // instruments, so the frame profile lists its "units" toggle (the profile reads the toggles when it starts).
+            // instruments, so the frame profile lists its "unitshowcase" toggle (the profile reads the toggles when it starts).
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
@@ -231,6 +229,17 @@ namespace Statecraft.Game.UI
         }
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }
+
+        /// <summary>A map click: on a unit's hex it selects the unit (the ring and its card; the hex outline is cleared, so
+        /// the unit has the promo's one highlight); a second click on it, or a click anywhere else, shows the hex (so a token
+        /// never hides the hex's map actions).</summary>
+        internal static void OnHexClicked(MapScene map, Statecraft.Game.Map.Units.UnitLayer units, InfoPanelPresenter info, int q, int r)
+        {
+            var id = units.UnitToSelectAt(q, r);
+            units.Select(id);
+            if (id != null) { map.ClearSelection(); info.ShowUnit(); }
+            else info.Show(q, r);
+        }
 
         /// <summary>Disposes every presenter, the autosave and the camera/pointer hooks (newest first). Safe to call twice.</summary>
         void Shutdown()
