@@ -28,7 +28,9 @@ namespace Statecraft.Game.Map.Kits
             var root = new GameObject(RootName);
             var ground = new KitGround(terrain, frame, hexes, elevMinM);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            foreach (var (s, mesh, n) in SettlementKits.Build(settlements, ground))
+            var built = SettlementKits.Build(settlements, ground, out var lots);
+            foreach (var l in lots) ground.Lots.Add((l.centre, l.radius));
+            foreach (var (s, mesh, n) in built)
             {
                 assets.Own(mesh);
                 var go = new GameObject(s.Id);

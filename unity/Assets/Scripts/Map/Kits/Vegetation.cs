@@ -65,6 +65,13 @@ namespace Statecraft.Game.Map.Kits
             return km;
         }
 
+        /// <summary>A tree's crown radius in real metres before the symbolic scale (a citrus patch: its four trees' extent).</summary>
+        public static float CrownRadiusM(TreeKind k) => k switch
+        {
+            TreeKind.Citrus => 2.4f, TreeKind.CitrusPatch => 0.5f * GroveStepM * 1.42f + 2.4f, TreeKind.Olive => 2.8f,
+            TreeKind.Palm => 4.6f, _ => 1.2f,
+        };
+
         /// <summary>Real metres between the trees of a grove's rows.</summary>
         public const float GroveStepM = 4.9f;
 
@@ -89,6 +96,9 @@ namespace Statecraft.Game.Map.Kits
             float ks = s / KitScale.CountReference;
             void Add(TreeKind k, float x, float z, ref KitRandom rnd, float size = 1f, float yawDeg = float.NaN)
             {
+                // No crown reaches into a building's or landmark's lot (integration bug B9: palms through Tel Aviv's roofs,
+                // grove rows through blocks).
+                if (ground.OnLot(x, z, CrownRadiusM(k) * s * size * 1.15f)) return;
                 float y = ground.Y(x, z);
                 var scale = s * size * rnd.Range(0.85f, 1.15f);
                 float yaw = float.IsNaN(yawDeg) ? rnd.Range(0f, 360f) : yawDeg;

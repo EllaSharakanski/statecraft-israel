@@ -63,6 +63,19 @@ namespace Statecraft.Game.Map.Kits
         }
 
         /// <summary>True when (x, z) lies within <paramref name="share"/> of any claimed footprint's radius.</summary>
+        /// <summary>Every building's and landmark's lot (centre x, z; radius), filled by SettlementKits.Build before the trees
+        /// are planted, so no tree grows through a roof (integration bug B9).</summary>
+        public readonly List<(Vector2 centre, float radius)> Lots = new List<(Vector2, float)>();
+
+        /// <summary>True when a crown of radius <paramref name="crown"/> at (x, z) would reach into any building's or landmark's
+        /// lot. A linear scan: a few hundred lots and about ten thousand trees at load.</summary>
+        public bool OnLot(float x, float z, float crown)
+        {
+            var p = new Vector2(x, z);
+            foreach (var (c, r) in Lots) { float d = r + crown; if ((p - c).sqrMagnitude < d * d) return true; }
+            return false;
+        }
+
         public bool InTown(float x, float z, float share = 1f)
         {
             foreach (var f in Footprints)

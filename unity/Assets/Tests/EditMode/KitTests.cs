@@ -125,6 +125,34 @@ public class KitTests
         Assert.AreEqual(map.Settlements.Count, lots.Select(l => l.id).Distinct().Count(), "every town claimed ground");
     }
 
+    /// <summary>Integration bug B9: palms grew out of Tel Aviv's and Jaffa's roofs and grove rows ran through blocks. No tree
+    /// instance stands inside, or reaches with its crown into, any building's or landmark's lot.</summary>
+    [Test]
+    public void NoTreeGrowsThroughABuildingOrLandmark()
+    {
+        var map = OpenMap();
+        var g = Ground(map);
+        var built = SettlementKits.Build(map.Settlements, g, out var lots);
+        foreach (var k in built) Object.DestroyImmediate(k.mesh);
+        foreach (var l in lots) g.Lots.Add((l.centre, l.radius));
+        var trees = Vegetation.Plant(map.Settlements, g);
+        int inside = 0, touching = 0;
+        foreach (var (kind, m) in trees)
+        {
+            Vector3 p = m.GetColumn(3); float scale = ((Vector3)m.GetColumn(0)).magnitude;
+            foreach (var l in lots)
+            {
+                float d = (new Vector2(p.x, p.z) - l.centre).magnitude;
+                if (d < l.radius) inside++;
+                else if (d < l.radius + Vegetation.CrownRadiusM(kind) * scale) touching++;
+            }
+        }
+        TestContext.WriteLine($"{trees.Count} trees against {lots.Count} lots: {inside} inside a lot, {touching} crowns reaching one");
+        Assert.AreEqual(0, inside, "trees standing inside a building's or landmark's lot");
+        Assert.AreEqual(0, touching, "crowns reaching into a lot");
+        Assert.Greater(trees.Count, 3000, "the groves and hills still have their trees");
+    }
+
     /// <summary>Review M6: switching the kits off shows the marker boxes again, so a settlement is never left undrawn.</summary>
     [Test]
     public void TheKitsToggleSwapsKitsAndMarkers()
