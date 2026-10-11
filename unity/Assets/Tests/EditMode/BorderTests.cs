@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 /// <summary>promo-borders: the region border renderer (MapBorders, StatecraftBorders.hlsl). The rendered tests draw the
-/// synthetic BorderProof rings: the repository holds no real region data yet, and the game draws none.</summary>
+/// synthetic BorderProof pattern; the real 1948 sub-districts, which play draws (GameRoot), are SubdistrictTests'.</summary>
 public class BorderTests
 {
     [TearDown]
@@ -151,7 +151,7 @@ public class BorderTests
         Assert.Throws<System.InvalidOperationException>(() => MapBorders.Use(null));
     }
 
-    /// <summary>Without data the "borders" toggle is a no-op: the frame is identical with it on and off (that both run the
+    /// <summary>Without data (MapScene.Build alone; play draws the 1948 sub-districts, SubdistrictTests) the "borders" toggle is a no-op: the frame is identical with it on and off (that both run the
     /// same shader is the point: the branch's frame against main's is checked by the art checkpoints, docs/visual-v1.md,
     /// "Region borders"). Once a layer is in use the toggle removes it (with its label), and an empty layer draws
     /// nothing.</summary>

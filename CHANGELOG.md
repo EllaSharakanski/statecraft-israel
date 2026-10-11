@@ -8,16 +8,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
+  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
+  a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
+  the 1949 armistice lines and fronts are research items.
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
-- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
-  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
-  a "borders" visual toggle. Visual only. The game ships no region data yet (no invented boundaries: the sourced 1945-48
-  sub-districts, 1949 armistice lines and fronts are a research item), so nothing is drawn in play.
 - Hebrew names and sourced birth and death dates for all 29 people (issue #1).
 - Successors for offices left by deaths in 1952: Ben-Gurion takes Transportation after Pinkas (14 August 1952) and
   Yitzhak Ben-Zvi becomes President on 16 December 1952 after Weizmann; the presidency is vacant in between, while
@@ -31,6 +31,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.
 - The map (milestone M2): terrain from Copernicus elevation data, biomes from rainfall, 1948 settlements on hexes.
+- The 1948 sub-districts on the map (promo-borderdata): the sixteen Mandate sub-districts in force on 15 May 1948
+  (Palestine Gazette No. 1552, 1947), digitised from the Survey of Palestine's "Administrative Divisions" map and stored
+  as true lines (`content/map/subdistricts_1948.geojson`, sensitivity-reviewed); the map shows them snapped to hex edges in the
+  blue border style, labelled "Mandate sub-districts, 1947" from the 1948 start until the 1949 armistice lines replace
+  them; the info panel names a hex's sub-district and district. Display only: the sim does not read them.
 - Open-source release (public since 2026-10-10): licences (MIT code, CC BY-SA 4.0 content, CC BY 4.0 original docs
   and art, CC0 for AI-only images), asset provenance (`ASSETS.yaml`), contributor
   and content policies, CI for the sim, tools and repository policy.
