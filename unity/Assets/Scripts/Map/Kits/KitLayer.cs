@@ -8,26 +8,34 @@ namespace Statecraft.Game.Map.Kits
     /// <summary>Builds the art spike's procedural layer under a returned "Kits" root: one static mesh per settlement (its
     /// buildings, merged: one draw each, culled by its bounds) drawn with the editor-made Kit.mat, and the instanced trees
     /// (<see cref="VegetationLayer"/>) drawn with Tree.mat. Meshes are owned by the map's MapRuntimeAssets, so a rebuild
-    /// frees them. Registers the "kits" and "trees" visual toggles, so the frame-time profile prices each.</summary>
+    /// frees them. Hides the marker boxes under <paramref name="markers"/> while the kits show. Registers the "kits" and
+        /// "trees" visual toggles, so the frame-time profile prices each ("kits" off shows the markers again).</summary>
     public static class KitLayer
     {
         public const string RootName = "Kits", VegetationName = "Vegetation";
 
         public sealed class Stats
         {
-            public int Buildings, Vertices, Triangles, Trees; public float BuildMs, PlantMs;
+            public int Buildings, Vertices, Triangles, Trees, CorridorSegments; public float BuildMs, PlantMs;
             public override string ToString() =>
-                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} build_ms={BuildMs:0} plant_ms={PlantMs:0}";
+                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} route_segments={CorridorSegments} build_ms={BuildMs:0} plant_ms={PlantMs:0}";
         }
 
         public static GameObject Build(IReadOnlyList<Settlement> settlements, Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
-            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, out Stats stats)
+            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null)
         {
             stats = new Stats();
             var root = new GameObject(RootName);
             var ground = new KitGround(terrain, frame, hexes, elevMinM);
+            // Buildings and trees stay off the railways and roads (RouteLayer.Corridors): every route, whatever its date,
+            // since the kits are not rebuilt when a dated route (the Burma Road) appears.
+            if (corridors != null) foreach (var (line, half) in corridors) ground.AddCorridor(line, half);
+            stats.CorridorSegments = ground.CorridorSegments;
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            foreach (var (s, mesh, n) in SettlementKits.Build(settlements, ground))
+            var built = SettlementKits.Build(settlements, ground, out var lots);
+            foreach (var l in lots) ground.Lots.Add((l.centre, l.radius));
+            foreach (var (s, mesh, n) in built)
             {
                 assets.Own(mesh);
                 var go = new GameObject(s.Id);
@@ -47,11 +55,14 @@ namespace Statecraft.Game.Map.Kits
             layer.Init(trees, treeMaterial, assets);
             stats.Trees = trees.Count;
             stats.PlantMs = (float)clock.Elapsed.TotalMilliseconds;
-            assets.OnTeardown(VisualToggles.Register("kits", on =>
+            // "kits" off shows the placeholder marker boxes again, so a settlement is always drawn by one or the other.
+            void ShowKits(bool on)
             {
-                if (root == null) return;
-                foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = on;
-            }));
+                if (root != null) foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = on;
+                if (markers != null) foreach (var mr in markers.GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = !on;
+            }
+            ShowKits(true);
+            assets.OnTeardown(VisualToggles.Register("kits", ShowKits));
             assets.OnTeardown(VisualToggles.Register("trees", on => { if (layer != null) layer.Draw = on; }));
             return root;
         }

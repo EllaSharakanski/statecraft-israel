@@ -3,8 +3,10 @@
 namespace Statecraft.Game.Map.Kits
 {
     /// <summary>The kits' own deterministic random stream: SplitMix64 seeded by FNV-1a of a string key (a settlement id, a
-    /// grove name) and a salt, so the same map draws the same buildings and trees on every load and platform. Presentation
-    /// only: it shares no state with the sim's <c>Statecraft.Sim.Rng</c> (GameState.RngState), so no hash can change.</summary>
+    /// grove name) and a salt, so the same map draws the same buildings and trees on every load of the same build. Float
+    /// maths (Perlin noise, trigonometry) may differ between the WebGL and native players and move a tree or a house past a
+    /// threshold: cosmetic only. Presentation only: it shares no state with the sim's <c>Statecraft.Sim.Rng</c>
+    /// (GameState.RngState), so no hash can change.</summary>
     public struct KitRandom
     {
         ulong state;

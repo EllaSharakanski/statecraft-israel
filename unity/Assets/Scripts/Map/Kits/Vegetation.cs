@@ -12,7 +12,7 @@ namespace Statecraft.Game.Map.Kits
     /// fruit specks) on the coastal plain round the towns, olives scattered over the hills, palms by the shore of the coastal
     /// towns, cypress windbreaks by villages. There is no land-use layer yet (Deferred row "Land-use texture"), so where
     /// each grows is a seeded rule over the biome, elevation, slope and the settlements; every draw is seeded (no
-    /// System.Random), so a map always grows the same trees.</summary>
+    /// System.Random), so every load of a build grows the same trees.</summary>
     public static class Vegetation
     {
         /// <summary>One tree's mesh in real metres (the instance matrix applies KitScale.Trees).</summary>
@@ -34,7 +34,7 @@ namespace Statecraft.Game.Map.Kits
                     for (int i = 0; i < 4; i++)
                     {
                         var at = new Vector3(((i & 1) - 0.5f) * GroveStepM + rnd.Range(-0.3f, 0.3f), 0f, ((i >> 1) - 0.5f) * GroveStepM + rnd.Range(-0.3f, 0.3f));
-                        CitrusTree(km, at, rnd.Range(0.88f, 1.06f), ref rnd);
+                        CitrusTree(km, at, rnd.Range(0.88f, 1.06f), ref rnd, rnd.Range(0.88f, 1.1f));   // each its own size and shade
                     }
                     break;
                 case TreeKind.Olive:
@@ -65,14 +65,21 @@ namespace Statecraft.Game.Map.Kits
             return km;
         }
 
+        /// <summary>A tree's crown radius in real metres before the symbolic scale (a citrus patch: its four trees' extent).</summary>
+        public static float CrownRadiusM(TreeKind k) => k switch
+        {
+            TreeKind.Citrus => 2.4f, TreeKind.CitrusPatch => 0.5f * GroveStepM * 1.42f + 2.4f, TreeKind.Olive => 2.8f,
+            TreeKind.Palm => 4.6f, _ => 1.2f,
+        };
+
         /// <summary>Real metres between the trees of a grove's rows.</summary>
         public const float GroveStepM = 4.9f;
 
         /// <summary>Promo 03's orange tree: a dark, lumpy crown of three clusters, heavy with fruit.</summary>
-        static void CitrusTree(KitMesh km, Vector3 at, float size, ref KitRandom rnd)
+        static void CitrusTree(KitMesh km, Vector3 at, float size, ref KitRandom rnd, float shade = 1f)
         {
             Color32 C(float r, float g, float b) => new Color32((byte)(r * 255), (byte)(g * 255), (byte)(b * 255), 0);
-            var leaf = C(0.17f, 0.30f, 0.12f); var fruit = C(0.92f, 0.50f, 0.09f);
+            var leaf = C(0.17f * shade, 0.30f * shade, 0.12f * shade); var fruit = C(0.92f, 0.50f, 0.09f);
             km.Shaft(at + new Vector3(0, -0.6f, 0), at + new Vector3(0, 1.0f, 0) * size, 0.18f * size, 0.14f * size, C(0.33f, 0.25f, 0.17f), 4);
             km.Crown(at + new Vector3(0, 2.3f, 0) * size, new Vector3(2.1f, 1.8f, 2.1f) * size, leaf, ref rnd, 0.10f, 7, 5, 0.13f, fruit, 0.55f);
             km.Crown(at + new Vector3(0.9f, 2.9f, 0.5f) * size, new Vector3(1.3f, 1.1f, 1.3f) * size, leaf, ref rnd, 0.12f, 6, 4, 0.16f, fruit, 0.5f);
@@ -86,9 +93,14 @@ namespace Statecraft.Game.Map.Kits
             float s = KitScale.Trees;
             // Counts fall with the square of the tree scale (k = 1 at the default), so a larger tree covers the same ground
             // with fewer instances instead of burying the towns.
-            float ks = s / KitScale.DefaultTrees;
+            float ks = s / KitScale.CountReference;
             void Add(TreeKind k, float x, float z, ref KitRandom rnd, float size = 1f, float yawDeg = float.NaN)
             {
+                // No crown reaches into a building's or landmark's lot (integration bug B9: palms through Tel Aviv's roofs,
+                // grove rows through blocks).
+                // Nor into a railway's or road's corridor (the routes run through the groves otherwise).
+                float crown = CrownRadiusM(k) * s * size * 1.15f;
+                if (ground.OnLot(x, z, crown) || ground.OnRoute(new Vector2(x, z), crown)) return;
                 float y = ground.Y(x, z);
                 var scale = s * size * rnd.Range(0.85f, 1.15f);
                 float yaw = float.IsNaN(yawDeg) ? rnd.Range(0f, 360f) : yawDeg;
@@ -115,7 +127,7 @@ namespace Statecraft.Game.Map.Kits
                     g++;
                     float yaw = rnd.Range(0f, 90f) * Mathf.Deg2Rad, ca = Mathf.Cos(yaw), sa = Mathf.Sin(yaw);
                     // Grove sizes grow with the square root of the tree scale, so a bigger tree means fewer, not only larger, rows.
-                    float grow = Mathf.Sqrt(s / KitScale.DefaultTrees);
+                    float grow = Mathf.Sqrt(s / KitScale.CountReference);
                     float w = rnd.Range(1300f, 3000f) * grow, d = rnd.Range(900f, 2000f) * grow, step = 2f * GroveStepM * s;   // one 2 x 2 patch per step
                     // A ragged block: each row stops at its own length, and some groves lose a corner (an L shape).
                     bool notch = rnd.Chance(0.3f); float nu = rnd.Range(0.1f, 0.3f) * w, nv = rnd.Range(0.1f, 0.3f) * d;
@@ -130,7 +142,16 @@ namespace Statecraft.Game.Map.Kits
                             if (ground.Water(x, z) || ground.InTown(x, z, 0.85f)) continue;
                             // The patch's rows follow the grove's own angle (yaw is measured clockwise from north in Unity).
                             float patchYaw = -yaw * Mathf.Rad2Deg + (rnd.Chance(0.5f) ? 0f : 90f);
-                            if (u + step > rowEnd && rnd.Chance(0.5f)) Add(TreeKind.Citrus, x, z, ref rnd, rnd.Range(0.9f, 1.05f));   // a row thins out at its end
+                            // All four of a patch's trees must stand on dry land outside the towns, or the spot gets one tree.
+                            float hd = 0.5f * GroveStepM * s * 1.15f;   // half the patch's tree spacing, with its scale jitter
+                            bool whole = true;
+                            for (int k = 0; k < 4 && whole; k++)
+                            {
+                                float du = (k & 1) == 0 ? -hd : hd, dv = (k & 2) == 0 ? -hd : hd;
+                                float tx = x + du * ca - dv * sa, tz = z + du * sa + dv * ca;
+                                whole = !ground.Water(tx, tz) && !ground.InTown(tx, tz, 0.85f);
+                            }
+                            if (!whole || (u + step > rowEnd && rnd.Chance(0.5f))) Add(TreeKind.Citrus, x, z, ref rnd, rnd.Range(0.9f, 1.05f));   // an edge, or a row thinning out
                             else Add(TreeKind.CitrusPatch, x, z, ref rnd, 1f, patchYaw);
                         }
                     }
@@ -174,6 +195,7 @@ namespace Statecraft.Game.Map.Kits
                 float R = SettlementKits.FootprintRadiusM(st, ground.HexSizeM);
                 var arch = SettlementKits.ArchetypeOf(st);
                 bool coastal = ground.SeaDistance(c.x, c.y, 6000f) < 6000f;
+                float beachKeep = 6.5f * s;   // about a palm crown's radius plus the sand strip, in metres
                 if (coastal)
                 {
                     int n = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(Mathf.Max(KitPopulation.Of(st.Id), 400)) * 0.9f / (ks * ks)), 4, 260);
@@ -189,7 +211,8 @@ namespace Statecraft.Game.Map.Kits
                         for (int k = 0; k < clump; k++)
                         {
                             float px = x + rnd.Range(-1f, 1f) * 6f * s, pz = z + rnd.Range(-1f, 1f) * 6f * s;
-                            if (!ground.Water(px, pz)) Add(TreeKind.Palm, px, pz, ref rnd);
+                            // Back from the beach: a crown never overhangs promo-sea's sand strip (review N3).
+                            if (!ground.Water(px, pz) && ground.SeaDistance(px, pz, beachKeep) >= beachKeep) Add(TreeKind.Palm, px, pz, ref rnd);
                         }
                     }
                 }

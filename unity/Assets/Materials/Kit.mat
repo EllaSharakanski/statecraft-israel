@@ -26,9 +26,6 @@ Material:
     m_Ints: []
     m_Floats:
     - _Jitter: 0
-    - _KitDepthBias: 0.25
-    - _KitNormalBias: 0
-    - _KitReceiveOffset: 60
     - _WindowDark: 0.55
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
