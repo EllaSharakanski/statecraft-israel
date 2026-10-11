@@ -27,13 +27,15 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
 - Headed frame time: `uv run tools/headed.py profile --dpr 1` (`--dpr 2` is the fill-rate stress proxy). `--wait-unity`
   also waits for an interactive Unity editor that has any worktree open (it holds `unity/Temp/UnityLockfile`): close it,
   or the profile waits.
-- Screenshots: `tools/art_checkpoint.sh [--no-build] <name>` (WebGL `?shot` + editor renders of both tiers + side-by-side
+- Screenshots: `tools/art_checkpoint.sh [--no-build] [--units] <name>` (WebGL `?shot` + editor renders of both tiers + side-by-side
   images and their deuteranopia/protanopia copies under `captures/visual/<name>/`, git-ignored; rows in the main
   checkout's `captures/visual/art-log.tsv` with the branch, short commit and the image's absolute path). It refuses to run
   while `QualitySettings.asset` (and, when it builds, `unity/Assets/Settings` or `ProjectSettings.asset`) has unstaged
   changes, restores them on every exit, and takes the pose list from `PromoPose.cs`. Each checkpoint switches the
   worktree's build target WebGL -> OSXUniversal (editor renders) and back at the next build, a reimport each way: budget
-  a few minutes per checkpoint.
+  a few minutes per checkpoint. `--units` adds the unit art slice (`docs/units.md`): `&units` on the WebGL shots and
+  `-units` on the editor renders. Its art-log rows are named `<name>-units`, so they are never compared with plain
+  checkpoints, which never show units.
 
 ## Budgets (proposed; ratified in Task 10: see "Tier decisions")
 Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DPR 1, Chrome for Testing:
@@ -964,6 +966,161 @@ Final macOS player (SSAO, copies and bloom off):
 macOS `-golden`, both builds: `GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07`,
 `GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767`.
 
+## promo-sea: water, surf and beach (art track, open item 3, issue #38)
+`ScWaterShade` (`StatecraftMap.hlsl`) is reworked on both sides of the edge, and a new `ScShore` paints the land's shore.
+Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are the shipped ones.
+- **Depth.** The map has no bathymetry (GLO-30 is a land model; its sea texels are 0 m), so depth is still the distance to
+  the shore from `coast.png`. The ramp:
+  - turquoise shallows `ScShallowM` 2.6 km wide, on a linear weight so the band reads at its width; the edge wanders
+    +-35% on a 3 km noise;
+  - then teal (mid), then a steel blue (deep) by 12 km (`ScCoastRangeM`), on `pow(smoothstep(0, 12 km), 0.6)`.
+- **Colours** (sRGB, before the grade; Task 7's in brackets):
+
+  | Constant | Value | Task 7 |
+  |---|---|---|
+  | `ScShallowSrgb` | (0.40, 0.72, 0.70) | (0.38, 0.74, 0.72) |
+  | `ScMidSrgb` | (0.29, 0.50, 0.59) | (0.13, 0.47, 0.58) |
+  | `ScDeepSrgb` | (0.27, 0.40, 0.54) | (0.06, 0.24, 0.40) |
+  | `ScFlatSeaSrgb` (the `water` toggle's flat sea, x 0.8) | (0.20, 0.36, 0.47) | (0.16, 0.42, 0.55) |
+  | `ScGalileeSrgb` (fresh water, -300 to -100 m) | (0.20, 0.45, 0.55) | (0.15, 0.48, 0.60) |
+  | `ScSandSrgb` / `ScSaltSrgb` | (0.88, 0.76, 0.56) / (0.92, 0.90, 0.85) | none |
+
+- **Waves.** Two layers drive the wave normal:
+  - the 700 m swell (unchanged);
+  - a 170 m chop moving the other way, `ScChopGain` 1.4 times the swell, full under a 40 m pixel and gone by 170 m.
+
+  The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to Task 7's
+  0.15 by 120 m: the far sea reads calm, and the seam test's patch means stay within bound (at a flat 0.6, one 7x7 patch
+  at 120 km carried 0.032 against 0.012). Glint unchanged (0.06).
+- **Surf** (review I2).
+  - A swash line, full to `ScSwashM` 180 m and gone by 324 m.
+  - Breakers through a `ScSurfM` 900 m zone. They are a squared triangle wave in the distance from the shore, spacing
+    `ScBreakerSpacingM` 300 m, rolling shoreward at `ScBreakerRate` 0.05 cycles/s (15 m/s, a quarter pixel a frame at
+    gameplay03 and 60 fps).
+  - The breakers are box-filtered in closed form (`ScTriSqBox`), so they never alias and tend to their mean (1/3) as the
+    pixel grows. The previous `pow(tri, 5)` crest was about 21 m wide on 45 m pixels: hairline, dashed crests.
+  - The box is `fwidth(phase)` x `ScBreakerFilterPx` 1.25, with the phase taken by `ScBreakers` outside the water branch
+    in both callers (re-review N2). The phase's true gradient is not 1 / 300 m: its noise term adds up to 0.0025
+    cycles/m and the 8-bit coast's slope varies up to 2x, so a width from the nominal spacing was up to 2x too narrow in
+    places.
+  - The 300 m break-up noise fades to its mean between 75 and 150 m pixels.
+- **Beach** (`ScShore`).
+  - A sand strip along every sea-level coast (above -100 m): the Mediterranean and the Gulf of Eilat, both sand beaches,
+    but not the rift lakes. `ScBeachM` is 650 m on average, +-40% on a 4 km noise. The width is symbolic, after the
+    promo's beach: wider than the real 30-100 m strip, inside the coastal dune belt.
+  - Wet sand (x 0.78) to 60-160 m; steep faces keep their rock.
+  - White salt flats along the Dead Sea (below -300 m).
+  - Both elevation thresholds are 20 m ramps (review M7: no hard contour where a shore slope crosses them).
+  - The shore is off with the `water` toggle (review M1), so `all - (-water)` measures water and shore together.
+- **Coast precision (review M6).**
+  - `coast.png` is L8 over +-12 km: 94 m a level (texels 79 m E-W by about 211 m N-S), linearly interpolated between
+    texels. A crest or band edge can sit up to 47 m off its true place, about one pixel at gameplay03 (about 45 m), and
+    under the breakers' 2-cycle phase noise.
+  - The wet-sand band (60-160 m) is about one level wide: a soft darkening, not a measured feature.
+  - A 16-bit coast, or a fine near-shore channel, is the fix if surf detail is pushed below about 100 m.
+- **Test and capture hooks.**
+  - `MapShaderGlobals.PinWaterTime(seconds)` pins the water's clock (`_ScWaterTime`), so tests and captures can render
+    chosen moments.
+  - `MapCapture.SurfFrames` renders 60 gameplay03 frames on the web tier, consecutive at 60 fps or `-surfDt` seconds
+    apart.
+- **Not done here.**
+  - Boats: the owner wants no civilian boats; navy ships are units, on another track.
+  - Harbour water and piers at Jaffa need geometry, which belongs to the settlement track.
+  - Issue #16 (the 1948 Dead Sea level, Lake Hula) is untouched.
+
+### Measured
+WebGL `?shot`, from `tools/art_checkpoint.sh`. The checkpoints:
+- before: `promo-sea-before`, at `0f13336`;
+- round 0: `promo-sea-after`, at `45a357e`;
+- round 1: `promo-sea-r1`, at `af6e3cc`.
+
+Sea pixels are those with blue above red by 0.06, outside the top bar, the bottom-left panel, the minimap and promo 03's
+icon column. Spread is the p90 minus p10 of sea-pixel luma; "sea sat p10/p90" is the same for HSV saturation.
+
+| | before | round 0 | round 1 | promo |
+|---|---|---|---|---|
+| gameplay03 frame saturation | 0.57 | 0.49 | 0.48 | 0.38 |
+| gameplay03 contrast | 0.196 | 0.182 | 0.174 | 0.203 |
+| gameplay03 warmth | 0.077 | 0.103 | 0.102 | 0.064 |
+| gameplay03 palette distance | 0.69 | 0.61 | 0.60 | - |
+| gameplay03 sea mean sRGB | (21, 77, 105) | (49, 85, 107) | (62, 101, 121) | (57, 81, 103) |
+| gameplay03 sea saturation | 0.82 | 0.55 | 0.49 | 0.47 |
+| gameplay03 sea sat p10/p90 | 0.57/0.93 | 0.44/0.63 | 0.43/0.55 | 0.29/0.58 |
+| gameplay03 sea luma p10/p90 (spread) | 0.16/0.45 (0.29) | 0.26/0.39 (0.13) | 0.31/0.44 (0.12) | 0.09/0.48 (0.39) |
+| diorama02 frame saturation | 0.47 | 0.43 | 0.42 | 0.43 |
+| diorama02 contrast | 0.203 | 0.192 | 0.187 | 0.200 |
+| diorama02 warmth | 0.104 | 0.117 | 0.117 | 0.145 |
+| diorama02 palette distance | 0.67 | 0.67 | 0.59 | - |
+| diorama02 sea mean sRGB | (40, 82, 111) | (63, 97, 118) | (74, 109, 129) | (80, 120, 151) |
+| diorama02 sea saturation | 0.66 | 0.48 | 0.43 | 0.47 |
+| diorama02 sea sat p10/p90 | 0.59/0.73 | 0.42/0.52 | 0.41/0.46 | 0.30/0.56 |
+| diorama02 sea luma p10/p90 (spread) | 0.24/0.42 (0.19) | 0.32/0.40 (0.08) | 0.36/0.44 (0.08) | 0.38/0.53 (0.15) |
+
+Against the bars:
+- diorama02 warmth stays in [0.087, 0.145], and saturation stays at or under 0.48.
+- The sea means now sit between the two promos.
+
+What still differs:
+- The sea's spread is a third of promo 03's and half of promo 02's. Promo 03's dark tail is boat hulls and building
+  shadows on the water, and its bright tail is glints and foam lace.
+- gameplay03 contrast falls as the sea brightens (0.196 -> 0.174).
+- gameplay03 warmth rises as the sea loses blue and gains a beach (0.077 -> 0.102 against the promo's 0.064).
+
+`SeaTests` (round 1, against Task 7, each with its bound):
+
+| Check | Task 7 | Round 1 | Bound |
+|---|---|---|---|
+| Foam over shallows (luma) | 0.154 | 0.180 | 0.02 |
+| Shallows over the open sea | 0.344 | 0.211 | 0.05 |
+| Dead Sea over the Mediterranean | 0.46 | 0.27 | 0.1 |
+| Diorama open sea b - r | 0.299 | 0.230 | 0.15 |
+| Haze luma shift | 0.069 | 0.034 | 0.01 |
+| Open sea pre-grade HSV saturation | 0.91 | 0.49 | < 0.7 |
+
+`TheSeaBeyondTheEdgeMatchesTheTerrainSea`: 32 lines pre-grade max 0.007 (bound 0.012; Task 7 0.004), graded max 0.014
+(0.024).
+
+New tests:
+- `ASandStripLinesTheMediterraneanShore`.
+  - Strip off: RGBA(0.716, 0.656, 0.378), luma 0.65, b/g 0.58, 0.25 over the plain.
+  - Strip on: RGBA(0.906, 0.771, 0.516), luma 0.78, b/g 0.67, 0.39 over the plain.
+  - Bounds 0.72, 0.62 and +0.32: all three fail with the strip off.
+- `TheBreakersAreFilteredToThePixel` (re-review N1).
+  - It renders at 30 km and 960x540, about 45 m a pixel: the same footprint as gameplay03's 60 km at 1920x1080. There an
+    unfiltered crest is sub-pixel but not yet faded.
+  - Each water pixel of a 49x49 patch around the surf zone (6067 pixels over four moments of a cycle) must match its 4x4
+    block in the same view rendered at 4x. Pixels touching land or markers are left out: the shoreline's step and the
+    markers' edges are not filtered by design.
+  - With the filter: p99 0.0082, worst 0.0176 (bounds 0.014 and 0.035).
+  - Red with Round 0's crest swapped back in temporarily: p99 0.0200, worst 0.0620, and the test fails.
+  - The same squared crest without its box measured p99 0.0087, worst 0.0247. At 300 m spacing it is about two pixels
+    wide by itself, so the box is what keeps it exact as the zoom changes.
+  - The surf pixel spans luma 0.642-0.788 over one breaker cycle (bound 0.03).
+  - The overview is still: 0.0036 over 0.5 s (bound 0.01).
+
+In motion (`MapCapture.SurfFrames`, a 200x400 px coast crop at gameplay03):
+- Over one second of consecutive 60 fps frames, no pixel changes more than 2/255 from one frame to the next, either
+  before or after the change.
+- Over the whole second, the old crests moved single pixels by up to 46/255 (2.8% of the crop over 2/255). The filtered
+  breakers move them by at most 9/255 (2.5%), the same with the `fwidth(phase)` box. The open sea's waves move them by
+  at most 14/255 (1.7%).
+- A 15 s clip at `-surfDt 0.25` shows soft crests rolling in, broken along the shore.
+
+Frame time: headless, the machine loaded by other sessions (load average 4-12), so the absolutes are inflated; read the
+differences.
+- `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=8.19 spread_ms=0.05 median_p95_ms=9.00`
+- `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=7.30 spread_ms=0.05 median_p95_ms=9.00`
+- `PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=7.01 spread_ms=0.05 median_p95_ms=8.00`
+- `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=13.63 spread_ms=0.18 median_p95_ms=15.00`
+- `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=13.50 spread_ms=0.14 median_p95_ms=15.00`
+- `PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=10.31 spread_ms=0.03 median_p95_ms=13.00`
+
+Water and shore together (the toggle now covers both):
+- gameplay03: 0.89 ms, against a 2.5 ms budget. Round 0 measured 0.50 ms for the water alone; the shore was then
+  unmeasured.
+- diorama02: 0.13 ms, below the noise (spread 0.18 ms).
+- p95 is at or under 16.7 ms at both poses.
+
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
 
@@ -977,7 +1134,8 @@ Each item below was ruled to the art track (controller, rank 10). None blocks la
    scale, 300-700 m) show long detached shadows, so they look as if they hover. Set the sun's shadow bias (depth and normal
    bias) at kit scale: offsets of about 100-150 m at that texel. Do not just turn marker shadows off.
 3. **Saturation of gameplay03 and warmth of diorama02.** gameplay03 saturation is +0.18 over promo 03, mostly the sea (0.83
-   against 0.51) and the gold `hills` biome. Measure the `SeaTests` margins before any sea change. diorama02 warmth
+   against 0.51) and the gold `hills` biome. Sea part done in promo-sea (frame 0.57 -> 0.48, sea 0.82 -> 0.49); the
+   `hills` biome remains. Measure the `SeaTests` margins before any sea change. diorama02 warmth
    (0.1038) sits near its 0.087 floor, so any sea desaturation must re-check it.
 4. **Tilt-shift bottom band.** The bottom blurred band measures 17-22% of the frame against about 15% in the promo. It
    awaits the owner's verdict on the offer `BottomHalfWidth` 0.16 / `BottomFeather` 0.19.
@@ -985,6 +1143,14 @@ Each item below was ruled to the art track (controller, rank 10). None blocks la
    biome is for the owner to judge.
 6. **Overview shadow overrun.** The shadow pass overruns the budget by 0.1-0.4 ms at the overview pose; the levers are in
    "Tier decisions".
+7. **Sea brightness spread (promo-sea re-review N3).** The sea's luma p90 - p10 is 0.12 at gameplay03 against promo 03's
+   0.39, and 0.08 at diorama02 against promo 02's 0.15. Its saturation p10/p90 is narrower too (0.43/0.55 against
+   0.29/0.58). The means match ("promo-sea", Measured). The causes:
+   - promo 03's dark tail is boat hulls and building shadows on the water. Boats are out of scope: navy ships are units,
+     and there are no civilian boats (owner).
+   - Its bright tail is foam lace and glints. The glint is held at 0.06 by the seam test (Task 7), and the surf is a
+     smooth band, not lace.
+   - diorama02's sea has a near-to-far gradient that ours keeps flat.
 
 ### Rulings digest
 One line each: ruling - reason.

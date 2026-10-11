@@ -196,6 +196,11 @@ namespace Statecraft.Game.UI
                 else Debug.LogWarning("SMOKE FAIL the smoke run needs play mode or a player");
             }
             if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
+            // The unit art slice at gameplay03 (a showcase, never in normal play; war mode's units are issue #104). Before the
+            // instruments, so the frame profile lists its "units" toggle (the profile reads the toggles when it starts).
+            if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
+                Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
+                    Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
             // The visual track's instruments (docs/visual-v1.md): both move the camera, so one per run.
             if (Application.isPlaying && FrameProfile.Requested())
                 StartCoroutine(FrameProfile.Run(camRig, map.Frame, Debug.Log, Application.platform != RuntimePlatform.WebGLPlayer));
