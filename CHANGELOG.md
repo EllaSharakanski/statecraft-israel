@@ -21,6 +21,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A runtime quality fallback for slow machines in the browser: when frames stay slower than 30 fps, the game lowers its
   render scale (to 0.9, then 0.8) and then turns the tilt-shift off, and steps back up when frames are comfortably fast
   again. Presentation only; `?nofallback` turns it off (#44).
+- The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
+  so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
+  Dead Sea). Presentation only.
+- The unit art slice (a showcase for the art track, not gameplay): a 1948 IDF rifle trio with a selection ring, an IAF
+  Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
+  promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
+  authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
