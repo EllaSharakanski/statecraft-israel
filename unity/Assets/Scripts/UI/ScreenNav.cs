@@ -15,9 +15,6 @@ namespace Statecraft.Game.UI
         public const string OpenClass = "nav-open";
         readonly VisualElement root;
         readonly List<(Button, System.Action)> hooks = new List<(Button, System.Action)>();
-        // A pointer click leaves the button focused (UI Toolkit focuses on pointer-down and has no :focus-visible); blurring it
-        // keeps the focus ring for the keyboard only, so a screen just closed with the mouse does not still look selected.
-        static readonly EventCallback<ClickEvent> BlurOnClick = e => (e.currentTarget as VisualElement)?.Blur();
 
         public ScreenNav(VisualElement root)
         {
@@ -28,13 +25,12 @@ namespace Statecraft.Game.UI
                 var b = root.Q<Button>("nav-" + screen);
                 System.Action h = () => Toggle(screen);
                 b.clicked += h;
-                b.RegisterCallback(BlurOnClick);
                 hooks.Add((b, h));
             }
             Open(null);
         }
 
-        public void Dispose() { foreach (var (b, h) in hooks) { b.clicked -= h; b.UnregisterCallback(BlurOnClick); } hooks.Clear(); }
+        public void Dispose() { foreach (var (b, h) in hooks) b.clicked -= h; hooks.Clear(); }
 
         /// <summary>The open screen's name, or null.</summary>
         public string? Current { get; private set; }

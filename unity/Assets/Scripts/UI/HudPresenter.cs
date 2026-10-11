@@ -8,12 +8,19 @@ namespace Statecraft.Game.UI
     {
         readonly VisualElement root; readonly SimBridge bridge; readonly UiText text;
         readonly Button endTurn; readonly System.Action onEndTurn;
-        readonly VisualElement bar;
+        readonly VisualElement bar, hudRoot;
 
         /// <summary>Below this top-bar width (logical px) the meters drop their icons (Statecraft.uss .top-bar--compact): six
-        /// meters with icons, the date badge, the screen buttons and End Turn need about this much.</summary>
-        public const float CompactBelowPx = 1800f;
+        /// meters with icons and their widest changes, the date badge, the screen buttons and End Turn need about this much: 16:9
+        /// (1920 logical) keeps the icons, 16:10 (about 1821) does not (PromoHudTests.EveryWindowShapeFitsTheBarAfterATurn).</summary>
+        public const float CompactBelowPx = 1900f;
         public const string CompactClass = "top-bar--compact";
+        /// <summary>Below this width the HUD's root also gets NarrowClass: a taller bar whose meters stack the change under the
+        /// value, and the panels below it move down to match (Statecraft.uss .hud-narrow). Without the icons the bar still
+        /// cannot hold six values with their widest changes side by side below about 1900 px (PromoHudTests
+        /// .EveryWindowShapeFitsTheBarAfterATurn), so the two tiers share the threshold.</summary>
+        public const float NarrowBelowPx = CompactBelowPx;
+        public const string NarrowClass = "hud-narrow";
 
         public HudPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
@@ -23,6 +30,7 @@ namespace Statecraft.Game.UI
             endTurn.clicked += onEndTurn;
             endTurn.generateVisualContent += PaintHourglass;
             bar = root.Q<VisualElement>("top-bar");
+            hudRoot = root.Q<VisualElement>("root");
             bar.RegisterCallback<GeometryChangedEvent>(OnBarGeometry);
             SetCompact(bar.layout.width);   // the bar may already be laid out (the loading screen shows it) and never resize
             bridge.Changed += Render;
@@ -34,19 +42,25 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render; endTurn.clicked -= onEndTurn; endTurn.generateVisualContent -= PaintHourglass;
             bar.UnregisterCallback<GeometryChangedEvent>(OnBarGeometry);
+            bar.RemoveFromClassList(CompactClass); hudRoot.RemoveFromClassList(NarrowClass);
         }
 
         // The bar's width does not depend on the class, so this settles in one pass.
         void OnBarGeometry(GeometryChangedEvent e) => SetCompact(e.newRect.width);
 
-        void SetCompact(float width) { if (width > 0) bar.EnableInClassList(CompactClass, width < CompactBelowPx); }   // NaN before layout: wait for it
+        void SetCompact(float width)
+        {
+            if (!(width > 0)) return;   // NaN before layout: wait for it
+            bar.EnableInClassList(CompactClass, width < CompactBelowPx);
+            hudRoot.EnableInClassList(NarrowClass, width < NarrowBelowPx);
+        }
 
         /// <summary>End Turn's hourglass, in the button's left padding (Statecraft.uss .end-turn), painted into the button so it
         /// stays a leaf sized by its text (UiIcon.Paint).</summary>
         static void PaintHourglass(MeshGenerationContext m)
         {
             if (!m.visualElement.enabledInHierarchy) return;   // no bright sign on a disabled End Turn (game over)
-            UiIcon.Paint(m, "hourglass", new UnityEngine.Rect(10f, (m.visualElement.layout.height - 22f) / 2f, 22f, 22f));
+            UiIcon.Paint(m, "hourglass", new UnityEngine.Rect(10f, (m.visualElement.layout.height - 22f) / 2f, 22f, 22f), UiIcon.IsFocused(m.visualElement));
         }
 
         void Set(string name, string value) => root.Q<Label>(name).text = value;

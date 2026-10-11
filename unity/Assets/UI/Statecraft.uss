@@ -79,7 +79,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .top-bar Label { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
 /* The date badge: a raised, trimmed box at the left, as the promo's "1936 / Turn 1 / January 1936" plate. */
 .date-box {
-    flex-shrink: 0; min-width: 150px; height: 82px;   /* sized to its widest line ("Turn 120  30 September 1956") */ justify-content: center;
+    flex-shrink: 0; width: 230px; height: 82px;   /* fixed, and wide enough for the widest line ("Turn 120  30 September 1956"),
+                                                     so the meters never shift when the month changes */ justify-content: center;
     padding: 0 12px 0 18px; margin-right: 10px;
     background-color: var(--navy-raised); border-width: 1px; border-color: var(--gold-dim); border-radius: 2px;
 }
@@ -121,11 +122,19 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* A window too narrow for the icons (HudPresenter sets top-bar--compact below HudPresenter.CompactBelowPx): the meters
    drop their icons and tighten, as the bar was before the icons. */
 .top-bar--compact .meter-icon { display: none; }
-.top-bar--compact .date-box { padding: 0 10px 0 12px; margin-right: 6px; }
+.top-bar--compact .date-box { width: 226px; padding: 0 10px 0 12px; margin-right: 6px; }
 .top-bar--compact .date-row Label { font-size: 16px; margin-right: 6px; }
 .top-bar--compact .meter { padding: 0 8px; }
 .top-bar--compact .nav-button { width: 62px; }
 .top-bar--compact .nav-disc { left: 6px; }
+/* The narrow HUD (HudPresenter sets hud-narrow on the root, with the compact bar): a taller bar whose meters put the
+   change under the value, so no change runs into its neighbour; the panels below the bar move down with it. */
+.hud-narrow .top-bar { height: 124px; }
+.hud-narrow .right-column, .hud-narrow .screen, .hud-narrow .toast { top: 140px; }
+.hud-narrow .meter { min-width: 96px; padding: 0 6px; }
+.hud-narrow .meter-row { flex-direction: column; align-items: flex-start; }
+.hud-narrow .meter-value { font-size: 22px; }
+.hud-narrow .meter-delta { margin-left: 0; font-size: 15px; }
 .turn-box { width: 190px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
 #attention { font-size: 16px; }
 .end-turn {

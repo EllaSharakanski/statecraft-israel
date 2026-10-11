@@ -30,7 +30,7 @@ namespace Statecraft.Game.UI
         }
 
         // The palette: the promo's gold, beige figures, blue shield and globe, and a sage banknote.
-        static readonly Color Gold = new Color32(214, 176, 98, 255), GoldDark = new Color32(132, 96, 44, 255),
+        static readonly Color GoldBase = new Color32(214, 176, 98, 255), GoldDark = new Color32(132, 96, 44, 255),
             GoldLight = new Color32(244, 214, 146, 255), Beige = new Color32(226, 206, 166, 255), BeigeDark = new Color32(176, 154, 116, 255),
             Blue = new Color32(92, 138, 200, 255), BlueLight = new Color32(206, 224, 246, 255), Sage = new Color32(126, 168, 120, 255),
             SageLight = new Color32(214, 236, 204, 255), Navy = new Color32(14, 22, 38, 200);
@@ -46,12 +46,29 @@ namespace Statecraft.Game.UI
             ["biome-mountains"] = Mountains, ["biome-valley"] = Valley, ["biome-desert"] = Dunes,
         };
 
-        void Draw(MeshGenerationContext mgc) => Paint(mgc, glyph, contentRect);
+        // The line colour of the gold glyphs: gold, or gold-light while lit (on the focus fill, review N4).
+        static Color Gold = GoldBase;
+
+        /// <summary>The gold glyphs' line colour, plain or lit (PromoHudTests checks lit stays >= 3:1 on the focus fill).</summary>
+        public static Color LineColour(bool lit) => lit ? GoldLight : GoldBase;
+
+        /// <summary>True when <paramref name="e"/>, or the Button it sits in, has the keyboard focus. Focus changes the element's
+        /// style (Statecraft.uss), which repaints it, so a glyph that reads this is redrawn when focus comes or goes.</summary>
+        public static bool IsFocused(VisualElement e)
+        {
+            var b = e as Button ?? e.GetFirstAncestorOfType<Button>();
+            return b != null && b.focusController?.focusedElement == b;
+        }
+
+        /// <summary>Lit while its Button has the keyboard focus.</summary>
+        public bool Lit => IsFocused(this);
+
+        void Draw(MeshGenerationContext mgc) => Paint(mgc, glyph, contentRect, Lit);
 
         /// <summary>Draws <paramref name="glyph"/> centred in <paramref name="box"/> (the element's local coordinates). For a
         /// text element (a Button) the sign is painted into the element itself rather than added as a child: a child would
         /// make it a non-leaf node, and Yoga measures only leaf nodes' text, so the button would stop growing to fit its text.</summary>
-        public static void Paint(MeshGenerationContext mgc, string glyph, Rect box)
+        public static void Paint(MeshGenerationContext mgc, string glyph, Rect box, bool lit = false)
         {
             if (!Painters.TryGetValue(glyph, out var paint)) return;
             if (!(box.width > 0) || !(box.height > 0)) return;
@@ -59,7 +76,9 @@ namespace Statecraft.Game.UI
             var origin = new Vector2(box.x + (box.width - 24f * s) / 2f, box.y + (box.height - 24f * s) / 2f);
             var p = mgc.painter2D;
             p.lineJoin = LineJoin.Round; p.lineCap = LineCap.Round;
-            paint(p, (x, y) => origin + new Vector2(x, y) * s, s);
+            Gold = LineColour(lit);   // UI painting runs on the main thread, one element at a time
+            try { paint(p, (x, y) => origin + new Vector2(x, y) * s, s); }
+            finally { Gold = GoldBase; }
         }
 
         /// <summary>A round navy disc with a gold rim and <paramref name="glyph"/> inside it, centred on <paramref name="centre"/>

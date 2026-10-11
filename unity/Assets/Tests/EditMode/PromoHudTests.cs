@@ -127,14 +127,19 @@ public class PromoHudTests
         }
     }
 
-    /// <summary>The icons need a wide bar: a 5:4 window (1280x1024, about 1585 logical px) gets the compact bar without them,
-    /// 16:9 keeps them; either way every meter's labels stay inside the meter.</summary>
+    /// <summary>The bar at every window shape, after a turn has played and with the widest realistic changes and date:
+    /// 16:9 (1920 logical px) keeps the icons; 16:10 (~1821), 5:4, 4:3 and windows narrower than about square (1280x1024 ~1585,
+    /// 1024x768 ~1662, 1024x1024 ~1440, a browser snapped to half a 1080p screen ~1358, 800x1000 ~1288) get the compact,
+    /// narrow HUD: no icons, and a taller bar whose meters stack the change under the value. Everywhere: every meter label stays inside its meter and the bar, no two meters'
+    /// labels overlap, the meters end before the screen buttons, the date badge holds its widest line inside its trim at a
+    /// fixed width, and the panels start below the bar (review N2, N3 and the narrow-window follow-up).</summary>
     [UnityTest]
-    public IEnumerator ANarrowWindowDropsTheMeterIcons()
+    public IEnumerator EveryWindowShapeFitsTheBarAfterATurn()
     {
-        // Logical widths (1080p reference, match 0.5): 1280x1024 ~1585, 1024x768 ~1662, 1024x1024 ~1440 (the compact bar's
-        // floor), 1366x768 and 1280x720 1920, 1920x1080 1920.
-        foreach (var (w, h, compact) in new[] { (1280, 1024, true), (1024, 768, true), (1024, 1024, true), (1920, 1080, false), (1280, 720, false), (1366, 768, false) })
+        foreach (var (w, h, compact, narrow) in new[] { (1920, 1080, false, false), (1280, 720, false, false), (1366, 768, false, false),
+                                                        (1920, 1200, true, true), (1440, 900, true, true),
+                                                        (1280, 1024, true, true), (1024, 768, true, true), (1024, 1024, true, true),
+                                                        (960, 1080, true, true), (800, 1000, true, true) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -151,21 +156,54 @@ public class PromoHudTests
             {
                 // As in the game: the bar is laid out (the loading screen) before the HUD is made, and the window never resizes.
                 for (int i = 0; i < 20 && !(root.Q("top-bar").worldBound.width > 0); i++) yield return null;
-                hud = new HudPresenter(root, new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text), Text);
-                // The widest real date line: a three-digit turn and the longest month.
+                root.Q("root").RemoveFromClassList("loading");
+                var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+                hud = new HudPresenter(root, bridge, Text);
+                bridge.EndTurn();                                       // real changes on every meter that moved
+                // The widest realistic changes, formatted as HudModel formats them, and the widest date line.
+                foreach (var (name, delta) in new[] { ("treasury", PlayerText.MoneyChange(C, "treasury", -12.4)), ("immigration", Text.Format("hud.delta_people", 12345.0)),
+                                                      ("security", "-10%"), ("support", "-10%"), ("standing", "+10%"), ("fx", PlayerText.MoneyChange(C, "fx_reserves", 12.5)) })
+                    root.Q<Label>(name + "-delta").text = delta;
                 root.Q<Label>("turn").text = Text.Format("hud.turn", 120);
                 root.Q<Label>("date").text = Text.Format("hud.date", PlayerText.Date(new System.DateTime(1956, 9, 30)));
-                yield return null; yield return null; yield return null;
-                var badge = root.Q(className: "date-box").worldBound;
-                foreach (var l in root.Q(className: "date-box").Query<Label>().ToList())
-                    Assert.LessOrEqual(l.worldBound.xMax, badge.xMax - 4f, $"{w}x{h}: '{l.text}' {l.worldBound} runs under the badge's trim {badge}");
-                var bar = root.Q("top-bar");
-                Assert.AreEqual(compact, bar.ClassListContains(HudPresenter.CompactClass), $"{w}x{h}: bar {bar.worldBound.width:0} px");
+                for (int i = 0; i < 3; i++) yield return null;
+                var bar = root.Q("top-bar"); var barRect = bar.worldBound;
+                var where = $"{w}x{h} (bar {barRect.width:0} px)";
+                Assert.AreEqual(compact, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact");
+                Assert.AreEqual(narrow, root.Q("root").ClassListContains(HudPresenter.NarrowClass), where + ": narrow");
                 foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
-                    Assert.AreEqual(compact ? DisplayStyle.None : DisplayStyle.Flex, icon.resolvedStyle.display, $"{w}x{h}: {icon.Glyph}");
+                    Assert.AreEqual(compact ? DisplayStyle.None : DisplayStyle.Flex, icon.resolvedStyle.display, $"{where}: {icon.Glyph}");
+                var badge = root.Q(className: "date-box");
+                foreach (var l in badge.Query<Label>().ToList())
+                    Assert.LessOrEqual(l.worldBound.xMax, badge.worldBound.xMax - 4f, $"{where}: '{l.text}' {l.worldBound} runs under the badge's trim {badge.worldBound}");
+                var labels = new System.Collections.Generic.List<(string meter, Label label)>();
                 foreach (var m in root.Q("meters").Children())
-                    foreach (var l in m.Query<Label>().ToList())
-                        Assert.LessOrEqual(l.worldBound.xMax, m.worldBound.xMax + 0.5f, $"{w}x{h}: '{l.text}' leaves {m.name}");
+                    foreach (var l in m.Query<Label>().ToList().Where(l => !string.IsNullOrEmpty(l.text)))
+                    {
+                        labels.Add((m.name, l));
+                        var r = l.worldBound;
+                        Assert.LessOrEqual(r.xMax, m.worldBound.xMax + 0.5f, $"{where}: '{l.text}' {r} leaves {m.name} {m.worldBound} on the right");
+                        Assert.GreaterOrEqual(r.xMin + 0.5f, m.worldBound.xMin, $"{where}: '{l.text}' leaves {m.name} on the left");
+                        Assert.GreaterOrEqual(r.yMin, barRect.yMin + 1f, $"{where}: '{l.text}' leaves the bar at the top");
+                        Assert.LessOrEqual(r.yMax, barRect.yMax - 1f, $"{where}: '{l.text}' leaves the bar at the bottom");
+                    }
+                foreach (var a in labels)
+                    foreach (var b in labels)
+                        if (a.meter != b.meter && a.label.worldBound.Overlaps(b.label.worldBound))
+                            Assert.Fail($"{where}: '{a.label.text}' ({a.meter}) overlaps '{b.label.text}' ({b.meter})");
+                Assert.LessOrEqual(root.Q("meters").worldBound.xMax, root.Q("nav").worldBound.xMin + 0.5f, where + ": the meters run into the screen buttons");
+                Assert.GreaterOrEqual(root.Q("right-column").worldBound.yMin, barRect.yMax, where + ": the event column starts under the bar");
+                var screen = root.Q("screen-why");
+                screen.style.display = DisplayStyle.Flex;                // opened, as ScreenNav does
+                for (int i = 0; i < 2; i++) yield return null;
+                Assert.GreaterOrEqual(screen.worldBound.yMin, barRect.yMax, where + ": the screens start under the bar");
+                screen.style.display = DisplayStyle.None;
+                // The badge keeps its width for a short date line, so nothing shifts when the month changes.
+                var wide = badge.worldBound.width;
+                root.Q<Label>("turn").text = Text.Format("hud.turn", 1);
+                root.Q<Label>("date").text = Text.Format("hud.date", PlayerText.Date(new System.DateTime(1948, 5, 1)));
+                for (int i = 0; i < 2; i++) yield return null;
+                Assert.AreEqual(wide, badge.worldBound.width, 0.5f, where + ": the badge's width follows its text");
             }
             finally { hud?.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
         }
@@ -191,6 +229,10 @@ public class PromoHudTests
     {
         using var ui = new UiTestKit();
         var nav = new ScreenNav(ui.Root);
+        var blur = new PointerBlur(ui.Root);
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (!g.State.PendingEvents.Contains("armistice_egypt")) g.Step(new Command[0]);
+        var card = new EventCardPresenter(ui.Root, new SimBridge(g, Text), Text, null);
         ui.Q<VisualElement>("root").RemoveFromClassList("loading");   // ready: a hidden (loading) button takes no focus
         try
         {
@@ -210,14 +252,31 @@ public class PromoHudTests
             var budget = ui.Q<Button>("nav-budget");
             budget.Focus();
             nav.Toggle("budget");
-            using (var e = ClickEvent.GetPooled()) { e.target = budget; budget.SendEvent(e); }
+            using (var e = ClickEvent.GetPooled()) { e.target = budget; budget.SendEvent(e); }   // bubbles to PointerBlur
             yield return null; yield return null;
             Assert.AreNotSame(budget, budget.focusController.focusedElement, "a pointer click leaves no focus behind");
             Assert.IsFalse(budget.ClassListContains(ScreenNav.OpenClass));
             Near(new Color(196 / 255f, 160 / 255f, 92 / 255f), Disc("budget").resolvedStyle.borderTopColor, "the closed button's rim is unlit");
             Assert.AreEqual(Disc("defence").resolvedStyle.borderTopWidth, Disc("budget").resolvedStyle.borderTopWidth, "the closed button looks like the others");
+
+            // Every other Button too (review N1), the runtime-made event option included: a pointer click leaves no focus
+            // fill. The click lands on the button's own text or on a child (the disc), and bubbles to the root's handler.
+            var navy = new Color(9 / 255f, 14 / 255f, 26 / 255f);
+            foreach (var (name, part) in new[] { ("end-turn", ""), ("new-game", "nav-disc"), ("option-sign", "") })
+            {
+                var b = ui.Q<Button>(name);
+                VisualElement look = part == "" ? b : b.Q(className: part);
+                b.Focus();
+                for (int i = 0; i < 10 && b.focusController.focusedElement != b; i++) yield return null;
+                Assert.AreSame(b, b.focusController.focusedElement, name + ": precondition, focused");
+                VisualElement target = part == "" ? b : b.Q(className: part);
+                using (var e = ClickEvent.GetPooled()) { e.target = target; target.SendEvent(e); }
+                yield return null; yield return null;
+                Assert.AreNotSame(b, b.focusController.focusedElement, name + ": a pointer click leaves no focus behind");
+                Near(navy, look.resolvedStyle.backgroundColor, name + ": no focus fill after the click");
+            }
         }
-        finally { nav.Dispose(); }
+        finally { nav.Dispose(); blur.Dispose(); card.Dispose(); }
     }
 
     /// <summary>Review I3: keyboard focus changes End Turn, an event option and a screen button by at least 3:1 (WCAG 2.4.13).</summary>
@@ -245,6 +304,14 @@ public class PromoHudTests
                 var after = target.resolvedStyle;
                 var change = Mathf.Max(Contrast(bgBefore, after.backgroundColor), Contrast(rimBefore, after.borderTopColor));
                 Assert.GreaterOrEqual(change, 3f, $"{name}: focus changes it by {change:0.00}:1");
+                // The gold glyph on it (End Turn's hourglass, the disc's icon) turns gold-light: >= 3:1 on the focus fill (review N4).
+                if (name != "option-sign")
+                {
+                    var glyphOn = part == "" ? (VisualElement)b : target;
+                    Assert.IsTrue(UiIcon.IsFocused(glyphOn), name + ": its glyph is drawn lit");
+                    var glyph = Contrast(UiIcon.LineColour(true), after.backgroundColor);
+                    Assert.GreaterOrEqual(glyph, 3f, $"{name}: the lit glyph on the focus fill is {glyph:0.00}:1");
+                }
                 b.Blur();
             }
         }
