@@ -1119,46 +1119,76 @@ Water and shore together (the toggle now covers both):
 - diorama02: 0.13 ms, below the noise (spread 0.18 ms).
 - p95 is at or under 16.7 ms at both poses.
 ## Promo track: land use (issue #33, branch promo-land)
-The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 15 s, deterministic:
-two runs give identical PNGs) decides where from real data and paints what procedurally, baked:
+The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 20 s, deterministic:
+`test_the_committed_textures_are_the_bake` checks the committed PNGs against a fresh bake) decides where from real data
+and paints what procedurally, baked:
 - where (158 x 211 m grid): fields on gentle slopes (< ~7%) with enough rain for dry farming (CHELSA bio12,
   station-corrected as `hexgrid.py`: smoothstep 180-380 mm; the irrigated Jordan valley floor at least 0.7); the citrus
-  belt on the flat coastal plain and valley floor below 150 m near the 1948 towns; garrigue, terraces and scrub where the
-  rain is 250-600 mm and the ground unfarmed; dirt tracks joining each town to its three nearest within 40 km;
-- what (`landuse.png`, 2048 x 4096 RGBA, about 79 x 105 m, linear colour + weight, BC3, 4096 kept on every platform):
-  strip-field parcels in rotated 5 km blocks (green, ochre stubble, ploughed, fallow, grass, groves), soft grassy rims,
-  hedges, some block edges as tracks; on the wet hills patches of stony soil and grass, terraces along the real contours
-  every 40 m of rise, scrub; 2 x 2 samples per texel;
-- `tracks.png` (512 x 1024, RG16): the offset to the nearest track, affine across a track so the filter keeps the line
-  whole (a distance field drew dashes); `StatecraftLand.hlsl` draws it as a 110 m line at any zoom.
-The shader lays the land between `ScGroundBase` and `ScGroundShade` (relief, AO and breakup shade the fields), leaves the
-beach band (coast < 0.52) to promo-sea, and has a `land` visual toggle (`_ScLandOn`).
+  belt on the flat coastal plain and valley floor below 150 m near the 1948 towns (the hex-wise biome inputs softened over
+  1.5 km, so nothing steps at hex edges); garrigue, terraces and scrub where the rain is 250-600 mm, the ground unfarmed
+  and not the shader's rock; dirt tracks joining each town to its three nearest within 40 km;
+- what (`landuse.png`, 2048 x 4096 RGBA, about 79 x 105 m): strip-field parcels in rotated 5 km blocks (green, ochre
+  stubble, ploughed, fallow, grass, groves), soft grassy rims, hedges, some block edges as tracks; on the wet hills patches
+  of stony soil and grass, terraces along the real contours every 40 m of rise, scrub; 2 x 2 samples per texel; sRGB
+  colour (the sampler decodes it) spread into the empty texels so mips and BC3 blocks never blend with black; weight in
+  alpha;
+- `tracks.png` (512 x 1024, RGB24, no mips, bilinear): R, G the offset to the nearest track, affine across a track so the
+  filter keeps the line whole (a distance field drew dashes); B where that offset may draw a track. Filtering an offset
+  with a "no track" texel or across a medial axis passes through zero and faked a ring of tracks about 1 km south-east of
+  every track (review I1); the shader fades the line by B. GPU-style bilinear over the whole map at 4x: drawn samples more
+  than 300 m from a track 524 -> 42, none past 380 m (they sit on bends; `test_no_phantom_track_appears_next_to_texels_without_a_track`
+  reproduces the phantom on the old encoding). The line thins out once a pixel is wider than it (no faint web at the
+  overview).
+The shader lays the land between `ScGroundBase` and `ScGroundShade` (relief, AO and breakup shade the fields), up to the
+waterline: promo-sea's beach band (`ScShore`, drawn after) covers it where there is a beach, and fields reach the water
+where there is none (the Sea of Galilee, cliffs). The `land` visual toggle lerps it away: a visual switch, not a price
+(the two samples still run).
 
-**Why baked, not procedural in the shader.** The first cut drew the same pattern in the shader. WebGL headless profile,
-same night, base build 2.72 / 9.76 ms (gameplay03 / diorama02 `all`): procedural 13.94 / 15.44; with a per-pixel
-`[branch]`, one patch noise and folded colours 10.37 / 13.60; branch-free selects 9.58 / 13.58; flattened (no branch)
-10.91 / 15.01. The cost stayed when no pixel took the branch (`-land` 8.11, `none` 7.57 at gameplay03), and bisecting found
-no single culprit (fields alone +4.3 ms; removing every trig call made it worse, 7.70): the size of the code, not its work,
-on this GPU through ANGLE. Sampling the two textures alone cost nothing (2.69 ms). So the pattern moved to the bake.
+**Why baked, not procedural in the shader.** The first cut drew the same pattern in the shader (about 150 instructions).
+WebGL headless, same night: base 2.72 / 9.76 ms (gameplay03 / diorama02 `all`), procedural 13.94 / 15.44; with a
+per-pixel `[branch]` and one shared noise 10.37 / 13.60; branch-free 9.58 / 13.58; flattened 10.91 / 15.01. The cost stayed
+when no pixel took the branch (`-land` 8.11 at gameplay03), and sampling the two textures alone cost nothing (2.69 ms):
+most likely register pressure / occupancy from the shader's size (the GPU reserves registers for the worst path, and
+ANGLE may flatten the branch), not its arithmetic. Single builds differ by a few tenths of a millisecond, so the
+bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake holds either way.
 
-| Run (headless WebGL, 1920x1080, scale 1.00) | Lines |
-|---|---|
-| base (main, same night) | `visual=all pose=gameplay03 median_avg_ms=2.72 spread_ms=0.09`, `none 2.33`; `all pose=diorama02 9.76 spread 0.05`, `none 6.88` |
-| promo-land `4b3c307` | `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.68 spread_ms=0.09 median_p95_ms=5.00`<br>`PROFILE summary visual=-land pose=gameplay03 runs=3 median_avg_ms=2.74 spread_ms=0.03 median_p95_ms=5.00`<br>`PROFILE summary visual=none pose=gameplay03 runs=3 median_avg_ms=2.37 spread_ms=0.02 median_p95_ms=4.00`<br>`PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=9.93 spread_ms=0.02 median_p95_ms=11.00`<br>`PROFILE summary visual=-land pose=diorama02 runs=3 median_avg_ms=9.93 spread_ms=0.01 median_p95_ms=11.00`<br>`PROFILE summary visual=none pose=diorama02 runs=3 median_avg_ms=7.05 spread_ms=0.05 median_p95_ms=9.00` |
+**Cost, measured base vs branch (separate builds; the toggle cannot price it).**
+- Night of 2026-10-11, idle machine: main base 2.72 / 9.76 ms -> promo-land (`4b3c307`, before the review fixes) 2.68 / 9.93
+  ms (`PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.68 spread_ms=0.09 median_p95_ms=5.00`,
+  `... pose=diorama02 ... median_avg_ms=9.93 spread_ms=0.02 median_p95_ms=11.00`): within the noise between builds.
+- Review round 1 (`24b540f` on promo-sea), A/B against the same branch with the land call cut from the shader
+  (`Builds/Web-noland`), profiled back to back while the machine was busy (another browser on the GPU: every number about
+  5 ms above the night's): gameplay03 `all` 8.20 -> 9.09 ms (+0.89, spreads 0.09 / 0.07), `none` 7.10 -> 7.73; diorama02
+  `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms. Within the 2.5 ms feature budget; re-measure
+  on an idle machine before the tier numbers are re-ratified.
 
-Land costs 0.00 ms (`all` - `-land`) at both poses; `all` - `none` 0.31 / 2.88 ms (budget 8). Build data +0.5 MB on
-`Web-disabled` (`Web-disabled.data` 21.85 MB). Golden and smoke unchanged (`GOLDEN OK 1950 71e9...`, `GOLDEN OK 1952
-7359...`, `SMOKE OK 5 turns 1948-06-19 d3fd...`). EditMode 461 passed (with `LandUseTests`, `TheTerrainShaderCompilesForWebGL2`).
+**Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory);
+`tracks.png` 1.5 MiB (RGB24, no mips). The WebGL `.data` is LZ4-compressed, so the download grows less: `Web-disabled.data`
+21.53 MB (promo-sea) -> 24.40 MB (+2.86 MB). Halving the texture (the platforms' 2048 cap gives 1024 x 2048) blurred the
+hedges, rims and rows (gameplay03 local gradient on the plain 0.0220 -> 0.0174, -21%), so it stays 4096 rows; BC1 cannot
+hold the weight, so BC3 stays.
 
-Colour (WebGL `?shot`, checkpoint `promo-land-final` against `promo-sea-before`, both on main's other features):
-gameplay03 saturation 0.5655 -> 0.5556 (promo 0.38), warmth 0.0771 -> 0.0680 (promo 0.064), contrast 0.1960 -> 0.1939,
-palette distance 0.685 -> 0.603; diorama02 saturation 0.4686 -> 0.4668 (bar <= 0.48), warmth 0.1038 -> 0.1022 (bar
-0.087-0.145), palette distance 0.6695 -> 0.6694. Open item 3: the land use lowers gameplay03 saturation by 0.01, the rest
-of the gap is the sea and the grade. Open item 5: the olive plain / gold hills seam is now fields against garrigue, a
-softer step (owner to judge).
-Still different from the promo: the texture is soft at close zoom (79 x 105 m texels: crop rows, hedges and bushes read
-at the gameplay zoom, blur at 15-20 km and closer); terraces read faintly; phantom track stubs remain right by the town
-centres (under the settlement kits); the promo's ground is warmer and browner under its grade.
+**Platforms.** The default web build targets desktop browsers (S3TC/BC, as the map's other textures already need). The land
+texture's WebGL override pins only the size (4096) and leaves the format automatic, so the build's texture subtarget picks
+it: DXT5 by default; `Build.Web -textureSubtarget astc` (or `etc2`) makes a build for browsers without S3TC (iOS Safari,
+most Android Chrome), where the land is ASTC 6x6, 4.8 MB (`unity-build-astc.log`), and golden + smoke=5 pass. A desktop
+build opened on such a browser would decompress the land to RGBA32 on the CPU: 42.7 MiB. WebGL2 guarantees only 2048-texel
+textures; virtually every GPU offers 4096.
+
+Tests, review round 1: EditMode 465 passed (`LandUseTests`: import settings for every platform, the subtarget argument,
+`-extraPose` validation, the land follows slope/rain/towns, gameplay detail; `TheTerrainShaderCompilesForWebGL2`); tools
+pytest 194 passed; `dotnet test` 628; golden and smoke unchanged on `Web-disabled` and `Web-astc`.
+
+Colour (WebGL `?shot`, checkpoint `promo-land-r5` against `promo-sea-r2`): gameplay03 saturation 0.4792 -> 0.4681
+(promo 0.38), warmth 0.1018 -> 0.0921 (promo 0.064), contrast 0.1738 -> 0.1730, palette distance 0.5971 -> 0.5148;
+diorama02 saturation 0.4183 -> 0.4164 (bar <= 0.48), warmth 0.1171 -> 0.1154 (bar 0.087-0.145), palette distance
+0.5869 -> 0.5868. Open item 3: the land lowers gameplay03 saturation by 0.011. Open item 5: the olive plain / gold hills
+seam is now fields against garrigue, a softer step (owner to judge).
+Licence: both textures are `owner-verify` in `ASSETS.yaml` pending decision D13 (`docs/oss/DECISIONS.md`).
+Still different from the promo: soft at close zoom (rows, hedges and bushes read at the gameplay zoom, blur at 15-20 km
+and closer); terraces read faintly; short track ends where several tracks meet at a town centre (under the settlement
+kits); the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
+its grade.
 
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
