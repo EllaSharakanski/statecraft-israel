@@ -29,6 +29,12 @@ Sub-district boundaries (content/map/subdistricts_1948.geojson): digitised from 
 decision D-B in docs/oss/DECISIONS.md; see the file's licence note); scans from
 the National Library of Israel via Wikimedia Commons. Hebrew and Arabic names from Wikipedia (CC BY-SA 4.0).
 
+1949 armistice lines (content/map/armistice_lines_1949.geojson): digitised from the General Armistice Agreements of
+1949 and their annexed maps (United Nations Treaty Series vol. 42; UN documents S/1264/Corr.1, S/1296, S/1353/Rev.1;
+UN documents are not copyrighted, ST/AI/189/Add.9/Rev.2), from the UN Official Document System and UNISPAL; the Egypt
+line uses the Survey of Palestine 1:100,000 sheet "Gaza" (Government of Palestine, decision D-B; National Library of
+Israel scan via Wikimedia Commons) and the Lebanon line the sub-district data's Mandate frontier. Decision D-A.
+
 Portraits: public-domain and CC0 photographs from Wikimedia Commons; per-file records in ASSETS.portraits.yaml.
 
 Fonts: EB Garamond, SIL Open Font License 1.1 (unity/Assets/UI/Fonts/OFL.txt).

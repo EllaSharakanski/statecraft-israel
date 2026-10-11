@@ -1,6 +1,6 @@
 # The 1949 armistice lines: sources and how to digitise them (research note, 2026-10-11)
 
-Status: research only. No geometry is in the game. The lines are dated and sensitive: before any of them is drawn they
+Status: built for Syria, Lebanon and Egypt (below, status draft); Jordan a gap. The lines are dated and sensitive: before a shared build shows them they
 need #61-style dating (below) and the owner's sensitivity review (chapters design §13; `lines.yaml`, chapters design
 §10). Owner rulings for this work (2026-10-11): the real lines, from the four General Armistice Agreements and their
 annexed maps; never a later or simplified "Green Line" drawing as the source (one may be used as a cross-check, and is
@@ -8,6 +8,38 @@ then named as such); true lines stored, hex-snapped only for display; no invente
 
 Companion: the 1948 sub-districts (`content/map/subdistricts_1948.geojson`, `tools/borders_digitise.py`), done this
 round from Mandate sources. Mandate maps are *not* a source for any armistice line.
+
+## Built (2026-10-11, branch armistice-lines, issue #196)
+
+`tools/armistice_digitise.py` -> `content/map/armistice_lines_1949.geojson` (true lines, status draft; per-feature
+sources, check dates, accuracy, method, diagnostics); `tools/armistice_bake.py` -> `content/map/armistice_hexes_1949.yaml`
+(hex-snapped); `tools/borders_bake.py` writes each front's end into the sub-district layer. In the game, `MapRegions`
+draws the zones over the sub-districts from each agreement's date and the info panel names the line and agreement.
+
+| Front (from) | What is stored | Accuracy |
+|---|---|---|
+| Syria (20 Jul 1949) | The line through Annex I's 24 MR points (typed from UNTS vol. 42 pp. 342-344); "a line" stretches straight, the "along ..." stretches traced on the annexed map's **green** line (the legend: green = ADL, red = defensive area, black = Israeli truce line, brown = Syrian truce line, purple hatch = DMZ) in the **UN ODS colour scan of S/1353/Rev.1** (PDF page 14, 3165 x 8759 px), registered on the Annex points (median 35 m, max 125 m). The DMZ in three parts (4.1, 27.3, 33.8 km2; 65.2 in all) from the hatching of the UNISPAL 1-bit scan, georeferenced on its 1-km grid (rms 11-14 m). | +-0.1 km at the points, +-0.1-0.2 km traced; where the zone edge is the line, the two scans agree to a median of 12-98 m. |
+| Lebanon (23 Mar 1949) | Art. V.1's international boundary as the sub-district data's Mandate frontier, Ras en Naqura to the tripoint (its end is 0.55 km from Annex I.1's tripoint). | about +-1 km (1:750,000 source), +-1.5 km at the uncertain segments. |
+| Egypt (24 Feb 1949) | Art. VI.1 from the Wadi Hasi mouth through Deir Suneid to 3 km east of the Gaza-Al Majdal highway and along the offset to Gaza, on the Survey of Palestine 1:100,000 sheet 9 "Gaza" (10-km grid, rms 6-8 m). The El Auja DMZ from Art. VIII.2's four MR points, closed along the Mandate frontier. | about +-0.3 km; cross-check: the signed 1950 modus vivendi map S/1471 draws its demarcation line on this one (within about 0.1 km, MR 103-107 / 100.2-102.8). El Auja +-0.1 km at the points, +-1 km on the frontier. |
+| Jordan (3 Apr 1949) | Nothing: a gap. | - |
+
+Gaps and findings:
+- **Jordan:** no full-resolution, public-domain scan of the signed map 1 or map 2 was found. Searched (2026-10-11): UNISPAL
+  (map 1 at 925 x 2560 px only), UN ODS (S/1302, S/1302/Rev.1: text only), UNTS vol. 42 (blank insert page), the UN
+  Archives catalogue (needs a JavaScript check), Wikimedia Commons (six API searches), NLI and ECF (JavaScript catalogues,
+  to request). Commons has a 3119 x 8630 px colour copy of the signed map 1 ("File:Green Line - Cease Fire Agreement 30 Nov
+  1948.jpg"), uploaded as "own work" under CC0 with no source: not used. The full list is in the GeoJSON's `fronts`.
+- **Egypt south of Gaza:** not drawn. Art. VI.1 ends "continuing thus to the Egyptian frontier"; Art. VI.3 has Israel
+  evacuate its Cemetery outpost (MR 0816-0723) and allows a new one at MR 0836-0700, so the line meets the frontier
+  south-east of Rafah (about N 70-72), which neither the highway's bearing nor a coast-road offset reaches. The Egyptian-held
+  area is not drawn for the same reason. IBS 46 (US State Department, 1965) says the Gaza Strip sector "dates from February
+  22, 1950" (the modus vivendi); the 1949 line there needs the Memorandum's map.
+- **The Memorandum of 13 November 1948** is not online: S/1086 refers to it, and the UN Archives hold it (fonds AG-022,
+  "Memorandum of 13 November and Note of Transmittal (Part III) (re Negev)"). Its para. 2.B(i) is quoted in Art. VI.1.
+- **The Syrian DMZ** is not only "between the line and the boundary": Art. V.5 adds the (Israeli-held) Ein Gev and Dardara
+  sectors, so the zone lies on both sides of the line there; the map's hatching, not a construction, is the source.
+- **Snapped at 5-km hexes**, the northern and southern Syrian DMZ parts contain no hex centre (listed as `no_hex`); they
+  are in the true lines only. El Auja takes 5 hexes, the central Syrian part 1.
 
 ## The documents
 

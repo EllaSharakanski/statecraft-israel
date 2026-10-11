@@ -1064,8 +1064,14 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   hash or the goldens (`SubdistrictTests.TheSimIgnoresTheFileTheContentHashDoesNotMove`; `test_the_sim_never_reads_the_border_files`).
 - *Licence:* Government of Palestine works of 1945-47, public domain in Israel and the UK, with a possible URAA US
   copyright in the map's drawing: decision D-B (docs/oss/DECISIONS.md), `ASSETS.yaml` row owner-verify.
-- *1949 armistice lines:* research note only, `research_notes/Map borders/armistice-lines-1949.md` (the four agreements and
-  their annex maps, UNTS vol. 42, digitising and dating).
+- *1949 armistice lines (armistice-lines, #196):* `content/map/armistice_lines_1949.geojson` (true lines, draft) and
+  `armistice_hexes_1949.yaml` (snapped), from the agreements and their annexed maps
+  (`research_notes/Map borders/armistice-lines-1949.md`, "Built"): Syria (line and three-part DMZ), Lebanon (the
+  frontier), Egypt (El Auja DMZ; the Gaza-Rafah line from the Wadi Hasi to Gaza). Each front replaces the sub-district
+  layer there on its agreement's date (`MapRegions`): its zones drawn over the sub-districts in the secondary style, its
+  line named in the info panel; the map label adds "1949 armistice lines: <fronts>" and that Jordan, with no line data,
+  keeps the Mandate layer (`ArmisticeTests`). A front's line is visible as a band only where it bounds a zone or is the
+  Mandate frontier; at 5-km hexes two of the three Syrian DMZ parts take no hex.
 
 **Research item: region data (to source, then the owner's sensitivity review).**
 - *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:

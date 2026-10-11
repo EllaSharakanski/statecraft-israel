@@ -135,6 +135,20 @@ war-casualties). The owner's sign-off for all seven events below is recorded in 
 | `bernadotte_assassination` | security, terror | the `terror` tag follows the Israeli government's own Prevention of Terrorism Ordinance |
 | `reparations_claim` | holocaust | the claim's framing (the cost of absorbing survivors: 500,000 at $3,000 each); the "refuse" option |
 
+**Map lines (display only; not gated by the release gate).** The 1949 armistice lines and zones
+(`content/map/armistice_lines_1949.geojson`, decision D-A) need the same review before a shared build shows them. The owner
+records the sign-off by moving each feature's `status` to `sensitivity-reviewed` (after `fact-checked`). The 1948
+sub-districts (D-B) are reviewed with them.
+
+| Line or zone | Front, from | What to review |
+|---|---|---|
+| `egypt_adl_gaza` | Egypt, 24 Feb 1949 | the Gaza-Rafah line, Wadi Hasi to Gaza only (the stretch to the frontier is a gap, shown as nothing); its name |
+| `egypt_el_auja_dmz` | Egypt, 24 Feb 1949 | the El Auja Demilitarized Zone and its name |
+| `lebanon_adl` | Lebanon, 23 Mar 1949 | the line shown as the Mandate frontier it follows; "the international boundary" in its name |
+| `syria_adl` | Syria, 20 Jul 1949 | the line and its name |
+| `syria_dmz_north`, `syria_dmz_central`, `syria_dmz_south` | Syria, 20 Jul 1949 | the three parts of the Demilitarized Zone, their names (place names chosen by us: Banias, Tell el Qadi, Dardara, Mishmar HaYarden, Ein Gev, El Hamma) |
+| Jordan front | none (gap) | the label saying the Mandate layer stays there for want of line data; the Iraqi-sector staging to apply when a map is found |
+
 ## Deferred to M4: upload to itch.io (OWNER STEP)
 Deferred to the start of M4, as a private Draft (owner ruling, 2026-10-10). The steps stay correct for then. This needs the
 owner's itch.io account and is never automated, and the build must pass the sensitivity gate above (`-shareable`).

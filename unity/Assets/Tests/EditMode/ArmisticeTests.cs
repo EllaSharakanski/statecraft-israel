@@ -1,0 +1,202 @@
+#nullable enable
+using System;
+using System.IO;
+using System.Linq;
+using NUnit.Framework;
+using Statecraft.Game;
+using Statecraft.Game.Boot;
+using Statecraft.Game.Map;
+using Statecraft.Game.UI;
+using Statecraft.Sim;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
+
+/// <summary>armistice-lines: the 1949 armistice lines (content/map/armistice_hexes_1949.yaml, baked by
+/// tools/armistice_bake.py from the true lines in armistice_lines_1949.geojson) replace the Mandate sub-district layer per
+/// front on each agreement's date, only for fronts whose line exists (owner rulings 2026-10-11); the info panel names the
+/// line and the agreement; the sim never reads them.</summary>
+public class ArmisticeTests
+{
+    static GameInputs? inputs;
+    static GameInputs Inputs => inputs ??= GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+    static string ArmText => File.ReadAllText(Path.Combine(Paths.Content, "map", Armistice1949.FileName));
+    static string SubText => File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName));
+    static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
+    static MapRegions Regions() => new MapRegions(Subdistricts1948.Parse(SubText), Armistice1949.Parse(ArmText));
+    static readonly DateTime Start = new DateTime(1948, 5, 15), Egypt = new DateTime(1949, 2, 24), Lebanon = new DateTime(1949, 3, 23),
+        Jordan = new DateTime(1949, 4, 3), Syria = new DateTime(1949, 7, 20);
+    string saveDir = "";
+
+    [SetUp] public void TempSaves() => saveDir = Path.Combine(Path.GetTempPath(), "statecraft-arm-" + Guid.NewGuid().ToString("N"));
+
+    [TearDown]
+    public void DiscardScene()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear();
+        if (Directory.Exists(saveDir)) Directory.Delete(saveDir, true);
+    }
+
+    [Test]
+    public void TheBakedFileListsTheFourFrontsWithJordanAsAGap()
+    {
+        var a = Armistice1949.Parse(ArmText);
+        CollectionAssert.AreEqual(new[] { "egypt", "lebanon", "jordan", "syria" }, a.Fronts.Select(f => f.Key).ToArray());
+        Assert.AreEqual(Egypt, a.FrontOf("egypt")!.ShownFrom);
+        Assert.AreEqual(Lebanon, a.FrontOf("lebanon")!.ShownFrom);
+        Assert.AreEqual(Syria, a.FrontOf("syria")!.ShownFrom);
+        var jordan = a.FrontOf("jordan")!;
+        Assert.IsNull(jordan.ShownFrom, "no line data for Jordan");
+        Assert.AreEqual(Jordan, jordan.Signed);
+        StringAssert.Contains("Mandate sub-district layer stays", jordan.Note);
+        Assert.IsFalse(a.Zones.Concat(a.Lines).Any(x => x.Front.Key == "jordan"));
+        StringAssert.Contains("nearest hex edge", a.Line);
+        Assert.AreEqual(4, a.Zones.Count);
+        Assert.AreEqual(3, a.Lines.Count);
+    }
+
+    const string Head = "layer: x\nlabel: L\n";
+    const string Fronts = "fronts:\n  - { key: e, name: E, agreement: A, signed: 1949-02-24, shown_from: 1949-02-24, note: '' }\n";
+    [TestCase("", "empty")]
+    [TestCase("layer: x\n" + Fronts, "no label")]
+    [TestCase(Head + "fronts: []\n", "no fronts")]
+    [TestCase(Head + "fronts:\n  - { key: j, name: J, agreement: A, signed: 1949-04-03, shown_from: null, note: '' }\n", "no note saying so")]
+    [TestCase(Head + "fronts:\n  - { key: e, name: E, agreement: A, signed: 1949-02-24, shown_from: 1949-02-01, note: '' }\n", "before the agreement")]
+    [TestCase(Head + Fronts + "zones:\n  - { id: 1, key: z, front: s, name: Z, shown_from: 1949-02-24, style: secondary }\n", "unknown front")]
+    [TestCase(Head + Fronts + "zones:\n  - { id: 1, key: z, front: e, name: Z, shown_from: 1949-02-24, style: purple }\n", "unknown style")]
+    [TestCase(Head + Fronts + "zones:\n  - { id: 1, key: z, front: e, name: Z, shown_from: 24/02/1949, style: secondary }\n", "not a yyyy-MM-dd")]
+    [TestCase(Head + Fronts + "zone_hexes:\n  - [0, 0, 2]\n", "not listed")]
+    [TestCase(Head + Fronts + "zones:\n  - { id: 1, key: z, front: e, name: Z, shown_from: 1949-02-24, style: secondary }\nzone_hexes:\n  - [0, 0, 1]\n  - [0, 0, 1]\n", "two zones")]
+    public void MalformedFilesAreRefusedNamingTheFile(string yaml, string why)
+    {
+        var e = Assert.Throws<InvalidDataException>(() => Armistice1949.Parse(yaml));
+        StringAssert.Contains(Armistice1949.FileName, e.Message); StringAssert.Contains(why, e.Message);
+    }
+
+    /// <summary>The Mandate layer's per-front ends follow the agreements whose line exists; Jordan's never comes, so the
+    /// layer as a whole stays.</summary>
+    [Test]
+    public void TheMandateLayerEndsPerFrontOnlyWhereALineExists()
+    {
+        var s = Subdistricts1948.Parse(SubText);
+        Assert.AreEqual(Egypt, s.Fronts["egypt"]);
+        Assert.AreEqual(Lebanon, s.Fronts["lebanon"]);
+        Assert.AreEqual(Syria, s.Fronts["syria"]);
+        Assert.IsNull(s.Fronts["jordan"]);
+        Assert.IsFalse(s.FrontReplaced("egypt", Egypt.AddDays(-1)));
+        Assert.IsTrue(s.FrontReplaced("egypt", Egypt));
+        Assert.IsFalse(s.FrontReplaced("syria", Syria.AddDays(-1)));
+        Assert.IsTrue(s.FrontReplaced("syria", Syria));
+        Assert.IsFalse(s.FrontReplaced("jordan", new DateTime(1952, 12, 31)), "no line data: the Mandate layer stays");
+        Assert.IsNull(s.ShownUntil);
+        Assert.IsTrue(s.ShowsOn(new DateTime(1952, 12, 31)));
+    }
+
+    [Test]
+    public void EachFrontSwitchesOnItsAgreementsDate()
+    {
+        var m = Regions();
+        var a = m.Armistice!;
+        Assert.AreSame(m.Subdistricts.Layer, m.LayerOn(Start), "the game's start: the Mandate layer alone");
+        Assert.AreSame(m.Subdistricts.Layer, m.LayerOn(Egypt.AddDays(-1)));
+        Assert.IsNull(m.LayerOn(Start.AddDays(-1)), "before the layer's window");
+        var auja = a.Zones.Single(z => z.Key == "egypt_el_auja_dmz");
+        var hex = a.HexesOf(auja).First();
+        Assert.AreEqual(m.Subdistricts.Layer.RegionOf(hex.q, hex.r), m.LayerOn(Egypt.AddDays(-1))!.RegionOf(hex.q, hex.r));
+        var egypt = m.LayerOn(Egypt)!;
+        Assert.AreEqual(MapRegions.ZoneIdBase + auja.Id, egypt.RegionOf(hex.q, hex.r), "El Auja drawn from 24 Feb 1949");
+        Assert.AreEqual(BorderStyle.Secondary, egypt.StyleOf(MapRegions.ZoneIdBase + auja.Id));
+        Assert.AreEqual(m.Subdistricts.Layer.Count, egypt.Count, "the same hexes, regions overlaid");
+        Assert.AreSame(egypt, m.LayerOn(Lebanon), "Lebanon adds no zone: its line is the frontier already drawn");
+        var central = a.Zones.Single(z => z.Key == "syria_dmz_central");
+        var c = a.HexesOf(central).First();
+        Assert.AreNotEqual(MapRegions.ZoneIdBase + central.Id, m.LayerOn(Syria.AddDays(-1))!.RegionOf(c.q, c.r));
+        Assert.AreEqual(MapRegions.ZoneIdBase + central.Id, m.LayerOn(Syria)!.RegionOf(c.q, c.r), "the Syrian DMZ from 20 Jul 1949");
+        Assert.AreSame(m.LayerOn(Syria), m.LayerOn(new DateTime(1952, 12, 31)), "composed once per set of zones");
+        var (on, none) = m.FrontsOn(new DateTime(1952, 1, 1));
+        CollectionAssert.AreEqual(new[] { "egypt", "lebanon", "syria" }, on.Select(f => f.Key).ToArray());
+        CollectionAssert.AreEqual(new[] { "jordan" }, none.Select(f => f.Key).ToArray());
+    }
+
+    [Test]
+    public void TheLabelNamesTheFrontsShownAndSaysJordanHasNoLine()
+    {
+        var m = Regions(); var t = Text;
+        Assert.AreEqual("Mandate sub-districts, 1947", m.Label(Start, t["map.layer_with_armistice"], t["map.layer_front_no_data"]));
+        var feb = m.Label(new DateTime(1949, 3, 1), t["map.layer_with_armistice"], t["map.layer_front_no_data"]);
+        StringAssert.StartsWith("Mandate sub-districts, 1947 · 1949 armistice lines: Egypt", feb);
+        StringAssert.DoesNotContain("Lebanon", feb.Split('·')[1]);
+        StringAssert.Contains("Jordan: Mandate sub-districts, no armistice line data", feb);
+        StringAssert.Contains("Egypt, Lebanon, Syria", m.Label(new DateTime(1949, 8, 1), t["map.layer_with_armistice"], t["map.layer_front_no_data"]));
+    }
+
+    [Test]
+    public void TheInfoPanelNamesTheZoneOrLineAndTheAgreement()
+    {
+        var m = Regions(); var t = Text; var a = m.Armistice!;
+        var auja = a.Zones.Single(z => z.Key == "egypt_el_auja_dmz");
+        var (q, r) = a.HexesOf(auja).First();
+        StringAssert.Contains("Beersheba Sub-District", InfoPanelPresenter.RegionText(m, t, q, r, Start));
+        Assert.AreEqual(t.Format("info.armistice_zone", auja.Name, "Egypt-Israel General Armistice Agreement", "24 February 1949"),
+            InfoPanelPresenter.RegionText(m, t, q, r, Egypt).Split('\n')[0]);
+        var leb = a.Lines.Single(l => l.Key == "lebanon_adl");
+        var lh = Enumerable.Range(-40, 120).SelectMany(qq => Enumerable.Range(-5, 120).Select(rr => (qq, rr))).First(h => a.LinesAt(h.qq, h.rr, Lebanon).Contains(leb));
+        StringAssert.DoesNotContain("Lebanon-Israel", InfoPanelPresenter.RegionText(m, t, lh.qq, lh.rr, Lebanon.AddDays(-1)));
+        StringAssert.Contains(t.Format("info.armistice_line", leb.Name, "Lebanon-Israel General Armistice Agreement", "23 March 1949"),
+            InfoPanelPresenter.RegionText(m, t, lh.qq, lh.rr, Lebanon));
+    }
+
+    [Test]
+    public void ApplyDrawsTheComposedLayerOnItsDateAndBack()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var m = Regions();
+        m.Apply(Start);
+        Assert.AreSame(m.Subdistricts.Layer, MapBorders.Current);
+        m.Apply(Egypt);
+        Assert.AreSame(m.LayerOn(Egypt), MapBorders.Current, "the armistice zones drawn on 24 Feb 1949");
+        Assert.IsTrue(m.Shown);
+        m.Apply(Start);   // a new game
+        Assert.AreSame(m.Subdistricts.Layer, MapBorders.Current);
+    }
+
+    [Test]
+    public void ANormalGameStartsWithTheMandateLayerAndItsLabel()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var root = Object.FindFirstObjectByType<GameRoot>();
+        root.Store = new SaveStore(saveDir);
+        root.Begin(Inputs, 0);
+        Assert.AreEqual("subdistricts_1948", MapBorders.Current!.Name);
+        Assert.AreEqual("Mandate sub-districts, 1947", Object.FindFirstObjectByType<UIDocument>().rootVisualElement.Q<Label>("map-layer").text);
+    }
+
+    [Test]
+    public void TheWebGLBuildShipsTheFileAndReadsIt()
+    {
+        CollectionAssert.Contains(ContentManifest.Collect(Paths.Content), "map/" + Armistice1949.FileName);
+        Assert.AreEqual(ArmText, Inputs.Map.ArmisticeYaml);
+    }
+
+    /// <summary>Map-only data: the content hash (saves, goldens) does not move whatever the armistice files say.</summary>
+    [Test]
+    public void TheSimIgnoresTheFilesTheContentHashDoesNotMove()
+    {
+        var copy = Path.Combine(saveDir, "content");
+        foreach (var f in Directory.GetFiles(Paths.Content, "*", SearchOption.AllDirectories).Where(f => !f.EndsWith(".meta")))
+        {
+            var to = Path.Combine(copy, Path.GetRelativePath(Paths.Content, f));
+            Directory.CreateDirectory(Path.GetDirectoryName(to)!); File.Copy(f, to);
+        }
+        var before = ContentLoader.Load(copy).Hash;
+        Assert.AreEqual(ContentLoader.Load(Paths.Content).Hash, before);
+        File.WriteAllText(Path.Combine(copy, "map", Armistice1949.FileName), "layer: changed\n");
+        File.WriteAllText(Path.Combine(copy, "map", "armistice_lines_1949.geojson"), "{}");
+        File.WriteAllText(Path.Combine(copy, "map", Subdistricts1948.FileName), SubText.Replace("until: 1949-02-24", "until: 1950-01-01"));
+        Assert.AreEqual(before, ContentLoader.Load(copy).Hash);
+    }
+}

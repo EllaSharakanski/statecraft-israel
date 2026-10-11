@@ -16,6 +16,8 @@ namespace Statecraft.Game.Boot
         public string HeightmapJson = "", HexesJson = "", SettlementsYaml = "";
         /// <summary>content/map/subdistrict_hexes_1948.yaml: the 1948 sub-districts the map outlines (display only).</summary>
         public string RegionsYaml = "";
+        /// <summary>content/map/armistice_hexes_1949.yaml: the 1949 armistice lines drawn over it from their dates (display only).</summary>
+        public string ArmisticeYaml = "";
         /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
         public byte[] HeightmapR16z = new byte[0];
     }
@@ -35,6 +37,7 @@ namespace Statecraft.Game.Boot
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
             RegionsYaml = File.ReadAllText(Path.Combine(contentDir, "map", Subdistricts1948.FileName)),
+            ArmisticeYaml = File.ReadAllText(Path.Combine(contentDir, "map", Armistice1949.FileName)),
         };
 
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
@@ -53,6 +56,7 @@ namespace Statecraft.Game.Boot
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
                     RegionsYaml = texts["map/" + Subdistricts1948.FileName],
+                    ArmisticeYaml = texts["map/" + Armistice1949.FileName],
                 },
             };
         }
