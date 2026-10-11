@@ -6,11 +6,13 @@
 # line the licensor asks for on Commons, plus the licence and the adaptation), the alt text, the crop (centre x, centre y
 # and width, as shares of the original; the height follows from the 9:4 header) and the sensitivity flags.
 # sensitive: true rows may not ship in a -shareable build until sensitivity_reviewed: true (an OWNER step; Build.cs).
-# Owner rulings 2026-10-11: CC BY 4.0 event photos allowed with a credit line; shown in black and white with a subtle
-# warm sepia/navy grade and the gold frame; no colourising, no change beyond grade, crop and resize.
+# Owner ruling 2026-10-11 (summarised in docs/CONTENT_POLICY.md section 4): CC BY 4.0 event photos allowed with a
+# credit line; shown in black and white with a subtle warm grade and the gold frame; no colourising, no change beyond
+# grade, crop and resize.
 # tools/event_images.py makes the JPGs from the originals; EventImageImport rebuilds EventImageCatalog.asset from this file.
-# Events with no row (rhodes_talks, armistice_lebanon, armistice_syria, education_registration_1951, reparations_claim,
-# forex_crisis_1951) fall back to the minister's portrait plate.
+# Events with no row (rhodes_talks, armistice_lebanon, armistice_syria, sinai_withdrawal, education_registration_1951,
+# reparations_claim, forex_crisis_1951) fall back to the minister's portrait plate. sinai_withdrawal: no free photograph
+# from its window (31 December 1948 - 3 January 1949) exists (docs/event-images.md).
 checked: 2026-10-11
 images:
   - event: idf_founding
@@ -43,32 +45,32 @@ images:
     note: "Colour slide shown in monochrome (the grade). NLI: taken 'during a pause in the fighting'; which truce is not recorded."
   - event: altalena
     file: altalena.jpg
-    commons: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997009322951405171.jpg"
-    original: "https://upload.wikimedia.org/wikipedia/commons/5/56/Meitar_Collection_%28997009322951405171.jpg"
-    sha1: d590fa8b2e9fe796403c0c0b98c62722026131e8
-    original_size: [1305, 1265]
+    commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_(997008136847805171).jpg"
+    original: "https://upload.wikimedia.org/wikipedia/commons/f/f7/1948_Arab-Israeli_War_%28997008136847805171%29.jpg"
+    sha1: 80f3a7175284948b1232f54ae521d66d11580866
+    original_size: [1362, 924]
     licence: CC-BY-4.0
-    artist: "Boris Carmi"
-    credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
-    alt: "The Altalena burning off the Tel Aviv shore after it was shelled, 22 June 1948, seen between houses."
-    crop: [0.5, 0.53, 1.0]
+    artist: "Benno Rothenberg"
+    credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
+    alt: "The Altalena off the Tel Aviv shore, seen from a seafront café shortly before the shelling, June 1948."
+    crop: [0.5, 0.58, 1.0]
     sensitive: true
     sensitivity_reviewed: false
-    note: "Research alternate 3, not pick 1: pick 1 (997008136787005171) shows the burnt hulk later, with a partisan slogan painted on its hull, and its NLI caption ('before unloading') is wrong. NLI dates this frame 20 June; the shelling was 22 June (the event file). It shows the outcome of the historical choice."
+    note: "Replaces the burning-ship frame (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'A moment before the shelling of the Altalena, the Irgun's arms ship. The Altalena approaches the Tel Aviv shore', dated 20 June 1948 (in the event window). No Altalena frame from Kfar Vitkin was found on Commons under a usable licence: the Meitar frames are all at Tel Aviv, and the others found are GPO, PD-Israel or CC BY-SA. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
   - event: ten_days
     file: ten_days.jpg
-    commons: "https://commons.wikimedia.org/wiki/File:Ben_Shemen_(997009323267705171).jpg"
-    original: "https://upload.wikimedia.org/wikipedia/commons/4/4c/Ben_Shemen_%28997009323267705171%29.jpg"
-    sha1: 1ac4718581748b45b3d23cf3368d895e65bc7b3a
-    original_size: [3269, 3283]
+    commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997009323190005171.jpg"
+    original: "https://upload.wikimedia.org/wikipedia/commons/b/b0/1948_Arab-Israeli_War_997009323190005171.jpg"
+    sha1: b0e87fdf628f8df263c9ad0034fc47016110a343
+    original_size: [1322, 1297]
     licence: CC-BY-4.0
     artist: "Boris Carmi"
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
-    alt: "A Yiftach Brigade signals officer drinks from a clay jug in the Ben Shemen forest after Operation Dani, July 1948."
-    crop: [0.5, 0.48, 1.0]
+    alt: "Two soldiers keep watch from an armoured car among eucalyptus trees during the capture of Lydda airport, 10 July 1948."
+    crop: [0.5, 0.4, 1.0]
     sensitive: true
     sensitivity_reviewed: false
-    note: "NLI names her: Ziva Arbel, signals officer of the Yiftach Brigade's 3rd Battalion, after the capture of Barfiliya. A named real person in a CC BY event photograph (owner ruling 2026-10-11)."
+    note: "Replaces the near-portrait of one named woman (owner-delegated ruling 2026-10-11: portraits stay PD or CC0). NLI: 'The capture of the airport at Lydda in the War of Independence', 10 July 1948 (in the event window). Two unnamed soldiers; the airport itself is not in the frame. The 82nd Battalion series of the same day is in 'Meitar Collection (review needed)' on Commons and was not used. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
   - event: second_truce
     file: second_truce.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Graaf_Bernadotte_op_Schiphol,_Bestanddeelnr_934-6899.jpg"
@@ -123,20 +125,21 @@ images:
     crop: [0.5, 0.45, 1.0]
     sensitive: true
     sensitivity_reviewed: false
-    note: "This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials."
+    note: "This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials. Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; the flag above is the owner's to set."
   - event: operation_yoav
     file: operation_yoav.jpg
-    commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137087205171.jpg"
-    original: "https://upload.wikimedia.org/wikipedia/commons/a/ab/1948_Arab-Israeli_War_997008137087205171.jpg"
-    sha1: a71a628fced2e661ba09175dda7eaf91b543c8cd
-    original_size: [1451, 908]
+    commons: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137023805171.jpg"
+    original: "https://upload.wikimedia.org/wikipedia/commons/8/8f/1948_Arab-Israeli_War_997008137023805171.jpg"
+    sha1: 0069029bf7941c344f27d9600ed68c04c9df7d3b
+    original_size: [1459, 916]
     licence: CC-BY-4.0
     artist: "Benno Rothenberg"
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
-    alt: "IDF soldiers march down a street in Beersheba on the day the town was taken in Operation Yoav, 21 October 1948."
-    crop: [0.5, 0.55, 1.0]
+    alt: "IDF officers study a map on a jeep as forces move south before Operation Yoav, 13 October 1948."
+    crop: [0.5, 0.48, 1.0]
     sensitive: true
     sensitivity_reviewed: false
+    note: "Replaces Beersheba on the day it was taken (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'IDF forces go down before the start of Operation Yoav to free the besieged Negev', 13 October 1948, two days before the event window. Unnamed officers. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and the flag above is the owner's to set."
   - event: operation_hiram
     file: operation_hiram.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Galilee_(997009323161505171.jpg"
@@ -150,6 +153,7 @@ images:
     crop: [0.5, 0.44, 1.0]
     sensitive: true
     sensitivity_reviewed: false
+    note: "Sensitivity review: approved as it is by the controller's ruling of 2026-10-11 (owner-delegated)."
   - event: jerusalem_ceasefire
     file: jerusalem_ceasefire.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Jeruzalem._Wegversperringen_in_de_Propheet_Samuelstraat,_op_de_grens_tussen_Jord,_Bestanddeelnr_255-0327.jpg"
@@ -177,21 +181,7 @@ images:
     crop: [0.38, 0.6, 0.7]
     sensitive: true
     sensitivity_reviewed: false
-    note: "Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds."
-  - event: sinai_withdrawal
-    file: sinai_withdrawal.jpg
-    commons: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008136941405171.jpg"
-    original: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Meitar_Collection_%28997008136941405171.jpg"
-    sha1: 1da7afb3e53cd779e19faa240bc8ac723995578e
-    original_size: [1922, 1330]
-    licence: CC-BY-4.0
-    artist: "Benno Rothenberg"
-    credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection / Israel State Archives · CC BY 4.0 · graded and cropped"
-    alt: "Wreckage of a Royal Air Force aircraft shot down near Kibbutz Nirim, January 1949."
-    crop: [0.5, 0.5, 1.0]
-    sensitive: true
-    sensitivity_reviewed: false
-    note: "Context, four days after the event window. Checked at full resolution 2026-10-11: wreckage, a machine gun and cartridges; no human remains visible."
+    note: "Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds. Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; the flag above is the owner's to set."
   - event: elections_1949
     file: elections_1949.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008137164005171.jpg"

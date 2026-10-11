@@ -119,7 +119,7 @@ rules:
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event idf_founding. Original 686x1200, SHA-1 2f0905da8614028f03d981bbd07cb77c7e19059b (https://upload.wikimedia.org/wikipedia/commons/0/0b/Jerusalem_%28997008872766605171.jpg); made by tools/event_images.py (crop [0.5, 0.52, 0.94]). Commons VRTS permission ticket 2021092910005788. The NLI calls it the IDF founding ceremony at the Rehavia Gymnasium (the first IDF parade in Jerusalem), June 1948, just after the event window. Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away."
+    note: "Event idf_founding. Original 686x1200, SHA-1 2f0905da8614028f03d981bbd07cb77c7e19059b (https://upload.wikimedia.org/wikipedia/commons/0/0b/Jerusalem_%28997008872766605171.jpg); made by tools/event_images.py (crop [0.5, 0.52, 0.94]). Commons VRTS permission ticket 2021092910005788. The NLI calls it the IDF founding ceremony at the Rehavia Gymnasium (the first IDF parade in Jerusalem), June 1948, just after the event window. Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/first_truce.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Jerusalem_(997008872623805171).jpg"
@@ -128,25 +128,25 @@ rules:
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event first_truce. Original 2000x1334, SHA-1 c61bbf24a941d9568eb2b6dcb429a35b8692fe38 (https://upload.wikimedia.org/wikipedia/commons/9/94/Jerusalem_%28997008872623805171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. Colour slide shown in monochrome (the grade). NLI: taken 'during a pause in the fighting'; which truce is not recorded."
+    note: "Event first_truce. Original 2000x1334, SHA-1 c61bbf24a941d9568eb2b6dcb429a35b8692fe38 (https://upload.wikimedia.org/wikipedia/commons/9/94/Jerusalem_%28997008872623805171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. Colour slide shown in monochrome (the grade). NLI: taken 'during a pause in the fighting'; which truce is not recorded. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/altalena.jpg"
     licence: CC-BY-4.0
-    source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997009322951405171.jpg"
+    source: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_(997008136847805171).jpg"
     status: owner-verify
-    artist: "Boris Carmi"
-    credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
+    artist: "Benno Rothenberg"
+    credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event altalena. Original 1305x1265, SHA-1 d590fa8b2e9fe796403c0c0b98c62722026131e8 (https://upload.wikimedia.org/wikipedia/commons/5/56/Meitar_Collection_%28997009322951405171.jpg); made by tools/event_images.py (crop [0.5, 0.53, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Research alternate 3, not pick 1: pick 1 (997008136787005171) shows the burnt hulk later, with a partisan slogan painted on its hull, and its NLI caption ('before unloading') is wrong. NLI dates this frame 20 June; the shelling was 22 June (the event file). It shows the outcome of the historical choice."
+    note: "Event altalena. Original 1362x924, SHA-1 80f3a7175284948b1232f54ae521d66d11580866 (https://upload.wikimedia.org/wikipedia/commons/f/f7/1948_Arab-Israeli_War_%28997008136847805171%29.jpg); made by tools/event_images.py (crop [0.5, 0.58, 1.0]). Commons VRTS permission ticket 2021092910005788. Replaces the burning-ship frame (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'A moment before the shelling of the Altalena, the Irgun's arms ship. The Altalena approaches the Tel Aviv shore', dated 20 June 1948 (in the event window). No Altalena frame from Kfar Vitkin was found on Commons under a usable licence: the Meitar frames are all at Tel Aviv, and the others found are GPO, PD-Israel or CC BY-SA. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and sensitivity_reviewed is the owner's to set. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/ten_days.jpg"
     licence: CC-BY-4.0
-    source: "https://commons.wikimedia.org/wiki/File:Ben_Shemen_(997009323267705171).jpg"
+    source: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997009323190005171.jpg"
     status: owner-verify
     artist: "Boris Carmi"
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event ten_days. Original 3269x3283, SHA-1 1ac4718581748b45b3d23cf3368d895e65bc7b3a (https://upload.wikimedia.org/wikipedia/commons/4/4c/Ben_Shemen_%28997009323267705171%29.jpg); made by tools/event_images.py (crop [0.5, 0.48, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). NLI names her: Ziva Arbel, signals officer of the Yiftach Brigade's 3rd Battalion, after the capture of Barfiliya. A named real person in a CC BY event photograph (owner ruling 2026-10-11)."
+    note: "Event ten_days. Original 1322x1297, SHA-1 b0e87fdf628f8df263c9ad0034fc47016110a343 (https://upload.wikimedia.org/wikipedia/commons/b/b0/1948_Arab-Israeli_War_997009323190005171.jpg); made by tools/event_images.py (crop [0.5, 0.4, 1.0]). Commons VRTS permission ticket 2021092910005788. Replaces the near-portrait of one named woman (owner-delegated ruling 2026-10-11: portraits stay PD or CC0). NLI: 'The capture of the airport at Lydda in the War of Independence', 10 July 1948 (in the event window). Two unnamed soldiers; the airport itself is not in the frame. The 82nd Battalion series of the same day is in 'Meitar Collection (review needed)' on Commons and was not used. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and sensitivity_reviewed is the owner's to set. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/second_truce.jpg"
     licence: CC0-1.0
     source: "https://commons.wikimedia.org/wiki/File:Graaf_Bernadotte_op_Schiphol,_Bestanddeelnr_934-6899.jpg"
@@ -155,7 +155,7 @@ rules:
     credit: "Ben Merk / Anefo, Nationaal Archief (Anefo 934-6899) · CC0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC0; CC-zero, Nationaal Archief"
-    note: "Event second_truce. Original 3205x2504, SHA-1 fb5bef2114d8d19013884a39b2b3534440e87e47 (https://upload.wikimedia.org/wikipedia/commons/6/63/Graaf_Bernadotte_op_Schiphol%2C_Bestanddeelnr_934-6899.jpg); made by tools/event_images.py (crop [0.5, 0.35, 1.0]). Nationaal Archief record: 'Auteursrechthebbende: Nationaal Archief, CC0'. Taken in Amsterdam."
+    note: "Event second_truce. Original 3205x2504, SHA-1 fb5bef2114d8d19013884a39b2b3534440e87e47 (https://upload.wikimedia.org/wikipedia/commons/6/63/Graaf_Bernadotte_op_Schiphol%2C_Bestanddeelnr_934-6899.jpg); made by tools/event_images.py (crop [0.5, 0.35, 1.0]). Nationaal Archief record: 'Auteursrechthebbende: Nationaal Archief, CC0'. Taken in Amsterdam. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/jerusalem_military_government.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Jerusalem_(997008872608005171.jpg"
@@ -164,7 +164,7 @@ rules:
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event jerusalem_military_government. Original 2000x1322, SHA-1 241a9575d316acca61a4218caabffbc9987217d5 (https://upload.wikimedia.org/wikipedia/commons/6/6e/Jerusalem_%28997008872608005171.jpg); made by tools/event_images.py (crop [0.5, 0.64, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, a month before the event window (the NLI dates it June 1948). Colour slide shown in monochrome (the grade)."
+    note: "Event jerusalem_military_government. Original 2000x1322, SHA-1 241a9575d316acca61a4218caabffbc9987217d5 (https://upload.wikimedia.org/wikipedia/commons/6/6e/Jerusalem_%28997008872608005171.jpg); made by tools/event_images.py (crop [0.5, 0.64, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, a month before the event window (the NLI dates it June 1948). Colour slide shown in monochrome (the grade). Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/latrun_proposal.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Latrun_(997009322899505171.jpg"
@@ -173,7 +173,7 @@ rules:
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event latrun_proposal. Original 1314x1314, SHA-1 b7c373c3b9d8ef7cd18c60b5bad42a682106784d (https://upload.wikimedia.org/wikipedia/commons/9/97/Latrun_%28997009322899505171.jpg); made by tools/event_images.py (crop [0.5, 0.56, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event latrun_proposal. Original 1314x1314, SHA-1 b7c373c3b9d8ef7cd18c60b5bad42a682106784d (https://upload.wikimedia.org/wikipedia/commons/9/97/Latrun_%28997009322899505171.jpg); made by tools/event_images.py (crop [0.5, 0.56, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/bernadotte_assassination.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Ben_Gurion_International_Airport_(997008136963805171).jpg"
@@ -182,16 +182,16 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event bernadotte_assassination. Original 1476x900, SHA-1 f2d01b034fdac97de865b2a0903bf72c43919c81 (https://upload.wikimedia.org/wikipedia/commons/e/ef/Ben_Gurion_International_Airport_%28997008136963805171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials."
+    note: "Event bernadotte_assassination. Original 1476x900, SHA-1 f2d01b034fdac97de865b2a0903bf72c43919c81 (https://upload.wikimedia.org/wikipedia/commons/e/ef/Ben_Gurion_International_Airport_%28997008136963805171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; sensitivity_reviewed is the owner's to set. This frame shows the officials saluting by the UN aircraft (Ralph Bunche at left); the coffin is not in it. Identifiable officials. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/operation_yoav.jpg"
     licence: CC-BY-4.0
-    source: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137087205171.jpg"
+    source: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137023805171.jpg"
     status: owner-verify
     artist: "Benno Rothenberg"
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event operation_yoav. Original 1451x908, SHA-1 a71a628fced2e661ba09175dda7eaf91b543c8cd (https://upload.wikimedia.org/wikipedia/commons/a/ab/1948_Arab-Israeli_War_997008137087205171.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then)."
+    note: "Event operation_yoav. Original 1459x916, SHA-1 0069029bf7941c344f27d9600ed68c04c9df7d3b (https://upload.wikimedia.org/wikipedia/commons/8/8f/1948_Arab-Israeli_War_997008137023805171.jpg); made by tools/event_images.py (crop [0.5, 0.48, 1.0]). Commons VRTS permission ticket 2021092910005788. Replaces Beersheba on the day it was taken (owner-delegated ruling 2026-10-11: no outcome before the choice). NLI: 'IDF forces go down before the start of Operation Yoav to free the besieged Negev', 13 October 1948, two days before the event window. Unnamed officers. Replacement picked 2026-10-11 under the controller's ruling (owner-delegated): a pre-decision or in-window photograph, nothing graphic; licence, SHA-1 and credit read through the Commons API. Not marked reviewed: the controller checks it from the contact sheet, and sensitivity_reviewed is the owner's to set. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/operation_hiram.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Galilee_(997009323161505171.jpg"
@@ -200,7 +200,7 @@ rules:
     credit: "Boris Carmi / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event operation_hiram. Original 1273x1314, SHA-1 0c130ac6cd06aa8c74e5fd4e102f817c57c34ddd (https://upload.wikimedia.org/wikipedia/commons/8/88/Galilee_%28997009323161505171.jpg); made by tools/event_images.py (crop [0.5, 0.44, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then)."
+    note: "Event operation_hiram. Original 1273x1314, SHA-1 0c130ac6cd06aa8c74e5fd4e102f817c57c34ddd (https://upload.wikimedia.org/wikipedia/commons/8/88/Galilee_%28997009323161505171.jpg); made by tools/event_images.py (crop [0.5, 0.44, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; sensitivity_reviewed is the owner's to set. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/jerusalem_ceasefire.jpg"
     licence: CC0-1.0
     source: "https://commons.wikimedia.org/wiki/File:Jeruzalem._Wegversperringen_in_de_Propheet_Samuelstraat,_op_de_grens_tussen_Jord,_Bestanddeelnr_255-0327.jpg"
@@ -209,7 +209,7 @@ rules:
     credit: "Willem van de Poll, Nationaal Archief (Van de Poll 255-0327) · CC0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC0; CC-zero, Nationaal Archief"
-    note: "Event jerusalem_ceasefire. Original 2629x2613, SHA-1 c6638d02c2c60c7a88c0206623509f3801136a54 (https://upload.wikimedia.org/wikipedia/commons/b/b8/Jeruzalem._Wegversperringen_in_de_Propheet_Samuelstraat%2C_op_de_grens_tussen_Jord%2C_Bestanddeelnr_255-0327.jpg); made by tools/event_images.py (crop [0.5, 0.6, 1.0]). Nationaal Archief record: 'Auteursrechthebbende: Nationaal Archief, CC0'. Exact date not recorded (Van de Poll's 1948-1949 series)."
+    note: "Event jerusalem_ceasefire. Original 2629x2613, SHA-1 c6638d02c2c60c7a88c0206623509f3801136a54 (https://upload.wikimedia.org/wikipedia/commons/b/b8/Jeruzalem._Wegversperringen_in_de_Propheet_Samuelstraat%2C_op_de_grens_tussen_Jord%2C_Bestanddeelnr_255-0327.jpg); made by tools/event_images.py (crop [0.5, 0.6, 1.0]). Nationaal Archief record: 'Auteursrechthebbende: Nationaal Archief, CC0'. Exact date not recorded (Van de Poll's 1948-1949 series). Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/operation_horev.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:1948_Arab-Israeli_War_997008137257005171.jpg"
@@ -218,16 +218,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event operation_horev. Original 1476x932, SHA-1 bce4cc3336c0a4ca544b7a1645e0e9289216d89b (https://upload.wikimedia.org/wikipedia/commons/9/97/1948_Arab-Israeli_War_997008137257005171.jpg); made by tools/event_images.py (crop [0.38, 0.6, 0.7]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds."
-  - glob: "unity/Assets/UI/EventImages/sinai_withdrawal.jpg"
-    licence: CC-BY-4.0
-    source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008136941405171.jpg"
-    status: owner-verify
-    artist: "Benno Rothenberg"
-    credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection / Israel State Archives · CC BY 4.0 · graded and cropped"
-    adapted: "graded and cropped"
-    commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line2, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event sinai_withdrawal. Original 1922x1330, SHA-1 1da7afb3e53cd779e19faa240bc8ac723995578e (https://upload.wikimedia.org/wikipedia/commons/b/ba/Meitar_Collection_%28997008136941405171.jpg); made by tools/event_images.py (crop [0.5, 0.5, 1.0]). Commons VRTS permission ticket 2021092910005788. SENSITIVE: the picture needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Context, four days after the event window. Checked at full resolution 2026-10-11: wreckage, a machine gun and cartridges; no human remains visible."
+    note: "Event operation_horev. Original 1476x932, SHA-1 bce4cc3336c0a4ca544b7a1645e0e9289216d89b (https://upload.wikimedia.org/wikipedia/commons/9/97/1948_Arab-Israeli_War_997008137257005171.jpg); made by tools/event_images.py (crop [0.38, 0.6, 0.7]). Commons VRTS permission ticket 2021092910005788. SENSITIVE (sensitivity_reviewed in event-images.yaml; Build.cs -shareable refuses until then). Controller ruling 2026-10-11 (relayed, owner-delegated): approve as it is; sensitivity_reviewed is the owner's to set. Research alternate 1, not pick 2: pick 2 (997008137258905171) has two covered bundles on the track that could not be identified at full resolution. The right side of this negative is fogged; the crop keeps the left two-thirds. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/elections_1949.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008137164005171.jpg"
@@ -236,7 +227,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event elections_1949. Original 945x665, SHA-1 b651d1645cc6b346e849cb4197ab2e9b99a2c950 (https://upload.wikimedia.org/wikipedia/commons/5/5f/Meitar_Collection_%28997008137164005171.jpg); made by tools/event_images.py (crop [0.5, 0.48, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event elections_1949. Original 945x665, SHA-1 b651d1645cc6b346e849cb4197ab2e9b99a2c950 (https://upload.wikimedia.org/wikipedia/commons/5/5f/Meitar_Collection_%28997008137164005171.jpg); made by tools/event_images.py (crop [0.5, 0.48, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/armistice_egypt.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008137405105171.jpg"
@@ -245,7 +236,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event armistice_egypt. Original 1873x1330, SHA-1 c76e85fe84c63805aed6eb04c04c140511b16d21 (https://upload.wikimedia.org/wikipedia/commons/d/d6/Meitar_Collection_%28997008137405105171.jpg); made by tools/event_images.py (crop [0.5, 0.5, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, three months before the armistice."
+    note: "Event armistice_egypt. Original 1873x1330, SHA-1 c76e85fe84c63805aed6eb04c04c140511b16d21 (https://upload.wikimedia.org/wikipedia/commons/d/d6/Meitar_Collection_%28997008137405105171.jpg); made by tools/event_images.py (crop [0.5, 0.5, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, three months before the armistice. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/armistice_jordan.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Ben_Gurion_International_Airport_(997008137543905171).jpg"
@@ -254,7 +245,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event armistice_jordan. Original 920x657, SHA-1 b43662888bdc03a1c09952b094c52e996e138cae (https://upload.wikimedia.org/wikipedia/commons/d/dc/Ben_Gurion_International_Airport_%28997008137543905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. Identifiable officials (probably among them Moshe Dayan and Walter Eytan; the NLI caption does not name them)."
+    note: "Event armistice_jordan. Original 920x657, SHA-1 b43662888bdc03a1c09952b094c52e996e138cae (https://upload.wikimedia.org/wikipedia/commons/d/dc/Ben_Gurion_International_Airport_%28997008137543905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. Identifiable officials (probably among them Moshe Dayan and Walter Eytan; the NLI caption does not name them). Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/austerity_1949.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008136819405171).jpg"
@@ -263,7 +254,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event austerity_1949. Original 941x661, SHA-1 3304e182575fd203ab3d5c1f400eba2e5227df64 (https://upload.wikimedia.org/wikipedia/commons/c/c5/Meitar_Collection_%28997008136819405171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event austerity_1949. Original 941x661, SHA-1 3304e182575fd203ab3d5c1f400eba2e5227df64 (https://upload.wikimedia.org/wikipedia/commons/c/c5/Meitar_Collection_%28997008136819405171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/frumkin_commission.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Rosh_Ha%27Ayin_(997008136256005171).jpg"
@@ -272,7 +263,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection / Israel State Archives · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line2, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event frumkin_commission. Original 1249x1338, SHA-1 eb469d7bf52b6c15a005cfb2a9e0c22f8ce80c21 (https://upload.wikimedia.org/wikipedia/commons/b/b5/Rosh_Ha%27Ayin_%28997008136256005171%29.jpg); made by tools/event_images.py (crop [0.5, 0.52, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event frumkin_commission. Original 1249x1338, SHA-1 eb469d7bf52b6c15a005cfb2a9e0c22f8ce80c21 (https://upload.wikimedia.org/wikipedia/commons/b/b5/Rosh_Ha%27Ayin_%28997008136256005171%29.jpg); made by tools/event_images.py (crop [0.5, 0.52, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/maabarot_policy.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Ma%27abara_(997008136927805171.jpg"
@@ -281,7 +272,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event maabarot_policy. Original 1914x1322, SHA-1 ee0b388c7cb1eed63a920d4b3831119c9ab28ff6 (https://upload.wikimedia.org/wikipedia/commons/9/9e/Ma%27abara_%28997008136927805171.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event maabarot_policy. Original 1914x1322, SHA-1 ee0b388c7cb1eed63a920d4b3831119c9ab28ff6 (https://upload.wikimedia.org/wikipedia/commons/9/9e/Ma%27abara_%28997008136927805171.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/law_of_return.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Jerusalem_(997008136347905171).jpg"
@@ -290,7 +281,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event law_of_return. Original 1330x1346, SHA-1 8414ef53805ec5628dc8a7d20ec1593c3a83982d (https://upload.wikimedia.org/wikipedia/commons/b/b8/Jerusalem_%28997008136347905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event law_of_return. Original 1330x1346, SHA-1 8414ef53805ec5628dc8a7d20ec1593c3a83982d (https://upload.wikimedia.org/wikipedia/commons/b/b8/Jerusalem_%28997008136347905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/clothing_rationing_1950.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Tel_Aviv-Yafo_997008137472205171.jpg"
@@ -299,7 +290,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event clothing_rationing_1950. Original 1330x1314, SHA-1 65d46a266250b3e28b0adf3f44f43d03c91b836e (https://upload.wikimedia.org/wikipedia/commons/0/06/Tel_Aviv-Yafo_997008137472205171.jpg); made by tools/event_images.py (crop [0.5, 0.62, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event clothing_rationing_1950. Original 1330x1314, SHA-1 65d46a266250b3e28b0adf3f44f43d03c91b836e (https://upload.wikimedia.org/wikipedia/commons/0/06/Tel_Aviv-Yafo_997008137472205171.jpg); made by tools/event_images.py (crop [0.5, 0.62, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/ministry_supply_crisis.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Tel_Aviv-Yafo_997008137468405171.jpg"
@@ -308,7 +299,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event ministry_supply_crisis. Original 1889x1314, SHA-1 847ad5f90f86a9754d5cfb7b1af77731d636333c (https://upload.wikimedia.org/wikipedia/commons/6/6a/Tel_Aviv-Yafo_997008137468405171.jpg); made by tools/event_images.py (crop [0.5, 0.5, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, six months before the event."
+    note: "Event ministry_supply_crisis. Original 1889x1314, SHA-1 847ad5f90f86a9754d5cfb7b1af77731d636333c (https://upload.wikimedia.org/wikipedia/commons/6/6a/Tel_Aviv-Yafo_997008137468405171.jpg); made by tools/event_images.py (crop [0.5, 0.5, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, six months before the event. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/hula_drainage.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Hula_Valley_(997008137583605171.jpg"
@@ -317,7 +308,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event hula_drainage. Original 1322x1322, SHA-1 81b3d2ddbf29f916c54a988338aaa44348cf0afe (https://upload.wikimedia.org/wikipedia/commons/0/0a/Hula_Valley_%28997008137583605171.jpg); made by tools/event_images.py (crop [0.5, 0.42, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event hula_drainage. Original 1322x1322, SHA-1 81b3d2ddbf29f916c54a988338aaa44348cf0afe (https://upload.wikimedia.org/wikipedia/commons/0/0a/Hula_Valley_%28997008137583605171.jpg); made by tools/event_images.py (crop [0.5, 0.42, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/iraqi_exodus.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Aliyah_(997008136551705171).jpg"
@@ -326,7 +317,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event iraqi_exodus. Original 1914x1322, SHA-1 70c4dfa48f2794853b6eb6229663f2840c68c613 (https://upload.wikimedia.org/wikipedia/commons/1/1d/Aliyah_%28997008136551705171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788."
+    note: "Event iraqi_exodus. Original 1914x1322, SHA-1 70c4dfa48f2794853b6eb6229663f2840c68c613 (https://upload.wikimedia.org/wikipedia/commons/1/1d/Aliyah_%28997008136551705171%29.jpg); made by tools/event_images.py (crop [0.5, 0.55, 1.0]). Commons VRTS permission ticket 2021092910005788. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
   - glob: "unity/Assets/UI/EventImages/israel_bonds.jpg"
     licence: Public-Domain
     source: "https://commons.wikimedia.org/wiki/File:Photograph_of_President_Truman_in_the_Oval_Office,_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg"
@@ -335,5 +326,5 @@ rules:
     credit: "Abbie Rowe, National Park Service / U.S. National Archives (NARA 200318) · public domain · graded and cropped"
     adapted: "graded and cropped"
     commons: "Public domain; PD-USGov, NARA-cooperation"
-    note: "Event israel_bonds. Original 3000x2393, SHA-1 990a79527ad34e1296129d1956bad1e602127db8 (https://upload.wikimedia.org/wikipedia/commons/5/53/Photograph_of_President_Truman_in_the_Oval_Office%2C_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg); made by tools/event_images.py (crop [0.5, 0.58, 1.0]). US federal work (Abbie Rowe, National Park Service photographer at the White House), public domain in the US."
+    note: "Event israel_bonds. Original 3000x2393, SHA-1 990a79527ad34e1296129d1956bad1e602127db8 (https://upload.wikimedia.org/wikipedia/commons/5/53/Photograph_of_President_Truman_in_the_Oval_Office%2C_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg); made by tools/event_images.py (crop [0.5, 0.58, 1.0]). US federal work (Abbie Rowe, National Park Service photographer at the White House), public domain in the US. Licence, SHA-1 and credit re-read through the Commons API 2026-10-11 (licence review); the controller's relayed ruling moves this row to verified, which is the owner's to set."
 removed: []

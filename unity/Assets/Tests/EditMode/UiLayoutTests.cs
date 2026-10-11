@@ -326,7 +326,7 @@ public class UiLayoutTests
                     // without scrolling; shorter windows may scroll the body as the fallback.
                     var scroll = root.Q<ScrollView>("event-scroll");
                     var logicalHeight = root.panel.visualTree.layout.height;
-                    if (logicalHeight >= 990f && scroll.contentContainer.layout.height > scroll.contentViewport.layout.height + 1f)
+                    if (logicalHeight >= EventCardPresenter.ScrollFallbackHeight && scroll.contentContainer.layout.height > scroll.contentViewport.layout.height + 1f)
                         problems.Add($"{w}x{h} (logical height {logicalHeight:0}): {e.Id}: the body scrolls ({scroll.contentContainer.layout.height:0} px of text in {scroll.contentViewport.layout.height:0} px)");
                 }
                 Debug.Log($"I2 {w}x{h}: tallest card {tallestId} {tallest:0} px");
@@ -359,16 +359,17 @@ public class UiLayoutTests
         if (!TextFits(credit)) problems.Add($"{where}: the credit '{credit.text}' does not fit its strip {credit.contentRect}");
     }
 
-    /// <summary>Review I6: on a window too short for the long events, their photograph is dropped rather than squeezed
-    /// (the card then has no picture, PhotoAlt is null), the credit is never cut, and the card still clears the minimap
-    /// with its options inside it.</summary>
+    /// <summary>Review I6 and the re-review's ultrawide finding: on a short window (logically under
+    /// EventCardPresenter.ScrollFallbackHeight) a photograph is either shown whole with its credit, the body scrolling for
+    /// it as it may there, or dropped rather than squeezed (PhotoAlt is null); the credit is never cut and the card clears
+    /// the minimap with its options inside it. An ultrawide 2560x1080 window shows photographs.</summary>
     [UnityTest]
-    public IEnumerator AShortWindowDropsThePhotographAndNeverCutsTheCredit()
+    public IEnumerator AShortWindowShowsThePhotographWholeOrDropsIt()
     {
         var problems = new List<string>();
         var photos = AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset");
         Assert.IsNotNull(photos);
-        foreach (var (w, h) in new[] { (1280, 600) })   // logically about 985 px tall: the shortest window every card still fits
+        foreach (var (w, h) in new[] { (1280, 600), (2560, 1080) })   // logically about 985 and 935 px tall
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -403,8 +404,8 @@ public class UiLayoutTests
                         if (!Inside(b.worldBound, c)) problems.Add($"{w}x{h}: {e.Id}: option '{b.text}' {b.worldBound} is cut off by the card {c}");
                 }
                 Debug.Log($"I6 {w}x{h}: {shown} photographs shown, {dropped} dropped");
-                Assert.Greater(dropped, 0, $"{w}x{h} is short enough that a long event drops its photograph");
-                Assert.Greater(shown, 0, $"{w}x{h} still has room for a short event's photograph");
+                Assert.Greater(shown, 0, $"{w}x{h}: photographs show on this window");
+                Assert.Less(root.panel.visualTree.layout.height, EventCardPresenter.ScrollFallbackHeight, $"{w}x{h} is a short window");
             }
             finally
             {

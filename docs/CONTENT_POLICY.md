@@ -64,8 +64,10 @@ Facts are open to correction. The framing (section 1) is not.
     Meitar Collection, National Library of Israel, The Pritzker Family National Photography Collection), with the
     licence, both on screen with the picture and in `NOTICE`.
   - The only changes are a subtle warm tone grade (the pictures stay black and white, in the gold frame), a crop and a
-    resize. No AI colourising and no change to what the picture shows. The adaptation is recorded with the credit as "graded and cropped".
-  - Files whose only US basis is a GPO, PD-Israel or PD-India tag, and share-alike files (CC BY-SA), are refused.
+    resize. No AI colourising and no change to what the picture shows. The adaptation is recorded with the credit as
+    "graded and cropped".
+  - Government Press Office (GPO) photographs are refused. So are files whose only licence is a PD-Israel or PD-India
+    tag, and share-alike files (CC BY-SA).
   - Each photograph gets a sensitivity review before a shareable build may carry it: every one is screened, and any
     marked sensitive waits for the owner's sign-off (the `-shareable` build and the packager refuse until then).
 

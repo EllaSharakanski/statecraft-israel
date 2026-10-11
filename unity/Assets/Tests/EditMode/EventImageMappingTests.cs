@@ -20,17 +20,17 @@ public class EventImageMappingTests
     static IReadOnlyList<EventImageMapping.Row> Rows => EventImageMapping.Parse(File.ReadAllText(EventImageMapping.Path));
 
     /// <summary>No free photograph was found for these (docs/event-images.md): they keep the minister's portrait plate.</summary>
-    static readonly string[] Fallback = { "armistice_lebanon", "armistice_syria", "education_registration_1951", "forex_crisis_1951", "reparations_claim", "rhodes_talks" };
+    static readonly string[] Fallback = { "armistice_lebanon", "armistice_syria", "education_registration_1951", "forex_crisis_1951", "reparations_claim", "sinai_withdrawal", "rhodes_talks" };
     static readonly string[] SensitivePhotos =
-        { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "sinai_withdrawal", "ten_days" };
+        { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "ten_days" };
 
     [Test]
     public void TheMappingIsSoundAgainstTheContent()
     {
         var rows = Rows;
-        Assert.AreEqual(25, rows.Count);
+        Assert.AreEqual(24, rows.Count);
         CollectionAssert.IsEmpty(EventImageMapping.Problems(rows, C));
-        CollectionAssert.AreEquivalent(C.Events.Select(e => e.Id).Except(Fallback), rows.Select(r => r.Event), "every event but the six fallbacks has a picture");
+        CollectionAssert.AreEquivalent(C.Events.Select(e => e.Id).Except(Fallback), rows.Select(r => r.Event), "every event but the seven fallbacks has a picture");
         CollectionAssert.AreEquivalent(SensitivePhotos, rows.Where(r => r.Sensitive).Select(r => r.Event), "the owner's sensitive list");
         Assert.IsTrue(rows.All(r => !r.SensitivityReviewed), "only the owner marks a picture reviewed");
     }

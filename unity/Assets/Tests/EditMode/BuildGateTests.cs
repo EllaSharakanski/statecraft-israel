@@ -50,10 +50,10 @@ public class BuildGateTests
         }
     }
 
-    // Owner ruling 2026-10-11: the event photographs of sensitive events (and sinai_withdrawal's aircraft wreck) need the
+    // Owner ruling 2026-10-11: the event photographs of sensitive events need the
     // owner's sensitivity review before a shareable build may carry them. The gate reads the catalog the build ships.
     static readonly string[] SensitivePhotos =
-        { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "sinai_withdrawal", "ten_days" };
+        { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "ten_days" };
 
     static Statecraft.Game.UI.EventImageCatalog ShippedPhotos()
     {
@@ -159,7 +159,7 @@ public class BuildGateTests
             StringAssert.IsMatch("\"shareable\":\\s*false", dev);
             foreach (var id in SensitivePhotos)
                 StringAssert.IsMatch($"\"event_id\":\\s*\"{id}\",\\s*\"sensitive\":\\s*true,\\s*\"sensitivity_reviewed\":\\s*false", dev);
-            Assert.AreEqual(25, System.Text.RegularExpressions.Regex.Matches(dev, "\"event_id\"").Count);
+            Assert.AreEqual(24, System.Text.RegularExpressions.Regex.Matches(dev, "\"event_id\"").Count);
             StringAssert.IsMatch("\"shareable\":\\s*true", (string)json.Invoke(null, new object?[] { photos, true })!);
             StringAssert.IsMatch("\"photos\":\\s*\\[\\s*\\]", (string)json.Invoke(null, new object?[] { null, true })!);
         }
