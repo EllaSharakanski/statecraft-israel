@@ -8,7 +8,8 @@
 
 TEXTURE2D(_ScRegionTex);  // one texel per hex, linear RGBA8: r + 256 g the region id (0 = none), b the style (0 = none, 1, 2)
 float4 _ScRegionInfo;     // x q of texel column 0, y r of texel row 0, z width, w height (texels)
-float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as a share of the hex's inradius, w 1 = on
+float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as a share of the hex's inradius,
+                          // z 1 = no early-out (tests prove the early-out exact), w 1 = on
 // Per style (1 primary, 2 secondary): Colour rgb the edge stripe (linear); Light rgb the inner stripe; Shape x the band's
 // width (m; colour + light stripes), y the colour stripe's share of it, z the wash's width (times the band's), w its strength.
 float4 _ScBorderColour1, _ScBorderLight1, _ScBorderShape1;
@@ -45,8 +46,10 @@ float2 ScHexAxial(float2 p, float size, out float2 v)
 
 // Adds the borders to the terrain's outputs (unlit: the stripes and wash replace BaseColor and go out as Emission, so they
 // read the same in sun and shadow, as the promo's glowing lines do). mapM: metres east and north of the map's south-west
-// corner. Call it in uniform control flow (outside any [branch]): it takes derivatives.
-void ScBorderApply(float2 mapM, inout float3 baseColor, inout float3 emission)
+// corner; water: ScWater's 0 (land) .. 1 (water): bands stay on land, so a boundary that reaches the coast stops at the
+// shore instead of running up to 4 km out to its hex's edge (review M7). Call it in uniform control flow (outside any
+// [branch]): it takes derivatives.
+void ScBorderApply(float2 mapM, float water, inout float3 baseColor, inout float3 emission)
 {
     float2 p = float2(mapM.x, _ScMap.y - mapM.y);
     float2 px = ddx(p), py = ddy(p);
@@ -63,8 +66,9 @@ void ScBorderApply(float2 mapM, inout float3 baseColor, inout float3 emission)
         float footprint = max(length(px), length(py));
         float washMul = 1.0 + max(_ScBorderShape1.z, _ScBorderShape2.z);
         float reach = max(max(_ScBorderShape1.x, _ScBorderShape2.x), 1.5 * _ScBorders.x * footprint) * washMul + 1.5 * footprint;
+        reach = _ScBorders.z > 0.5 ? 1e9 : reach;
         float edge = inradius - max(abs(v.x), max(abs(0.5 * v.x + 0.8660254 * v.y), abs(0.5 * v.x - 0.8660254 * v.y)));
-        float2 own = edge < reach ? ScRegionAt(qr) : float2(0.0, 0.0);
+        float2 own = edge < reach && water < 1.0 ? ScRegionAt(qr) : float2(0.0, 0.0);
         [branch] if (own.x > 0.5 && own.y > 0.5)
         {
             float bestPx = 1e9, bestAa = 1.0;
@@ -99,10 +103,12 @@ void ScBorderApply(float2 mapM, inout float3 baseColor, inout float3 emission)
             // Box-filtered stripes: the colour from the edge to shape.y of the band, the light stripe to its end.
             float cColour = saturate(shape.y * bandPx - bestPx + 0.5);
             float cBand = saturate(bandPx - bestPx + 0.5);
-            float wash = shape.w * (1.0 - smoothstep(bandPx, bandPx + washPx, bestPx)) * (1.0 - cBand);
+            // max(): a style with no wash (shape.z 0) must not make smoothstep divide by zero (review M3).
+            float wash = shape.w * (1.0 - smoothstep(bandPx, bandPx + max(washPx, 1e-3), bestPx)) * (1.0 - cBand);
             float3 stripe = lerp(light.rgb, colour.rgb, cBand > 0.0 ? cColour / cBand : 0.0);
-            float a = saturate(cBand + wash);
-            float3 c = cBand > 0.0 || wash > 0.0 ? (stripe * cBand + colour.rgb * wash) / max(a, 1e-4) : colour.rgb;
+            float cover = saturate(cBand + wash);
+            float3 c = cBand > 0.0 || wash > 0.0 ? (stripe * cBand + colour.rgb * wash) / max(cover, 1e-4) : colour.rgb;
+            float a = cover * (1.0 - water);
             baseColor *= 1.0 - a;
             emission = lerp(emission, c, a);
         }

@@ -6,8 +6,8 @@
 # worktree appends to one history. --units adds the unit art slice (docs/units.md) to both the WebGL shots (&units) and the
 # editor renders (-units), and its art-log rows are named <checkpoint-name>-units, so they cannot be mistaken for plain
 # checkpoints; without it the captures stay comparable across tracks. --borderproof does the same for the region borders'
-# synthetic proof pattern (&borderproof / -borderproof, rows named <checkpoint-name>-borderproof; docs/visual-v1.md,
-# "Region borders"). Usage:
+# synthetic, labelled proof pattern (rows named <checkpoint-name>-borderproof; docs/visual-v1.md, "Region borders"): only
+# the editor renders (-borderproof) show it, since a release WebGL build ignores &borderproof. Usage:
 # tools/art_checkpoint.sh [--no-build] [--units] [--borderproof] <checkpoint-name>
 set -euo pipefail
 build=1; units_query=""; units_arg=(); proof_query=""; proof_arg=()
