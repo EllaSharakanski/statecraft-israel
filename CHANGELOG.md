@@ -30,6 +30,18 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
+- The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
+  - navy panels with gold trim, corner brackets and a soft shadow;
+  - an icon for each indicator in the top bar, with its value and its change since the last turn;
+  - a framed date badge;
+  - round icon buttons for the screens, with their names under them;
+  - signs on the event options;
+  - a terrain sign in the hex panel (still no tile yields);
+  - the Cabinet as a grid of portrait cards.
+
+  Narrower windows get a compact top bar, and windows narrower than about square get a taller one that puts each change
+  under its value. Keyboard focus has a fill at least 3:1 against the unfocused button, and a mouse click leaves no
+  focus behind. Presentation only.
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
