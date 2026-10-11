@@ -1087,10 +1087,13 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   (`research_notes/Map borders/armistice-lines-1949.md`, "Built"): Syria (line and three-part DMZ), Lebanon (the
   frontier), Egypt (El Auja DMZ; the Gaza-Rafah line from the Wadi Hasi to Gaza; from 22 Feb 1950 the line on the
   signed modus vivendi map, S/1471), Jordan (low accuracy, from the low-resolution UNISPAL copy of map 1; line A by
-  its Art. VI.3 stages; Jerusalem a gap). Each front replaces the sub-district layer there on its agreement's date
-  (`MapRegions`): its zones drawn over the sub-districts in the secondary style, its lines named in the info panel
-  with their own agreement and date; the map label adds "1949 armistice lines: <fronts>", with "Jordan (low
-  accuracy)" and "Egypt (and the 1950 modus vivendi)" (`ArmisticeTests`). The sub-district layer stays as the base
+  its Art. VI.3 stages; Jerusalem a gap). Each front switches on its agreement's date, which the sub-district layer records per
+  front (`Subdistricts1948.FrontReplaced`, used by `MapRegions`): from then its zones are drawn over the sub-districts in the
+  secondary style and its lines named in the info panel with their own agreement and date, while the sub-district bands
+  stay as the base; the map label adds "1949 armistice lines: <fronts>", with "Jordan (low
+  accuracy)" and "Egypt (and the 1950 modus vivendi)" (`ArmisticeTests`); its box takes up to the right column's
+  480 px (`.map-layer`, was 160 px), so the longest label is three lines, checked beside a real event card at seven window
+  shapes (`ArmisticeTests.TheLongestMapLabelFitsBesideTheEventCard`). The sub-district layer stays as the base
   while the lines leave gaps. A line is visible as a band only where it bounds a zone or is the Mandate frontier; at
   5-km hexes two of the three Syrian DMZ parts take no hex (true-polyline overlay: #237).
 

@@ -7,11 +7,12 @@ using System.Linq;
 namespace Statecraft.Game.Map
 {
     /// <summary>What the region renderer draws on a date (owner rulings 2026-10-11): the Mandate sub-districts
-    /// (<see cref="Subdistricts1948"/>) from 15 May 1948, and each front's 1949 armistice line from its agreement's date
-    /// (<see cref="Armistice1949"/>), only for fronts whose line exists. A front's line replaces the Mandate layer there: its
-    /// zones (the Demilitarized Zones) are drawn over the sub-districts in the secondary style, and its line is named in the
-    /// info panel on the hexes it passes through (where it is the Mandate frontier, as for Lebanon, the band already drawn
-    /// is that line). A front without line data keeps the Mandate layer, and the map label says so; a low-accuracy front
+    /// (<see cref="Subdistricts1948"/>) from 15 May 1948 as the base, and each front's 1949 armistice features from the date
+    /// that front switches: the sub-district layer's per-front end (<see cref="Subdistricts1948.FrontReplaced"/>, its
+    /// agreement's date), only for fronts whose line exists (<see cref="Switched"/>). From then the front's zones (the
+    /// Demilitarized Zones) are drawn over the sub-districts in the secondary style, its lines are named in the info panel on
+    /// the hexes they pass through (where a line is the Mandate frontier, as for Lebanon, the band already drawn is that
+    /// line) and the map label names the front; the sub-district bands themselves stay as the base. A front without line data keeps the Mandate layer, and the map label says so; a low-accuracy front
     /// (Jordan) is labelled so. The layer as a whole leaves the map only on the sub-district layer's own end
     /// (<see cref="Subdistricts1948.ShownUntil"/>), null until the armistice lines enclose each side's area. Display only: reads no sim state but the date it is given.</summary>
     public sealed class MapRegions
@@ -29,9 +30,29 @@ namespace Statecraft.Game.Map
             Armistice = armistice;
         }
 
+        /// <summary>Whether <paramref name="front"/>'s armistice line has replaced the Mandate layer there on
+        /// <paramref name="date"/>: the sub-district layer's own per-front end (<see cref="Subdistricts1948.FrontReplaced"/>)
+        /// when it lists the front, else the front's own date. A front without line data never switches.</summary>
+        public bool Switched(Armistice1949.Front front, DateTime date) =>
+            front.ShownFrom != null && (Subdistricts.Fronts.ContainsKey(front.Key) ? Subdistricts.FrontReplaced(front.Key, date) : front.InForce(date));
+
+        /// <summary>An item (zone or line) is shown from its own date, once its front has switched.</summary>
+        public bool InForce(Armistice1949.Item item, DateTime date) => item.InForce(date) && Switched(item.Front, date);
+
         /// <summary>The armistice zones drawn on <paramref name="date"/>, in file order.</summary>
         public IReadOnlyList<Armistice1949.Item> ZonesOn(DateTime date) =>
-            Armistice == null ? Array.Empty<Armistice1949.Item>() : Armistice.Zones.Where(z => z.InForce(date)).ToList();
+            Armistice == null ? Array.Empty<Armistice1949.Item>() : Armistice.Zones.Where(z => InForce(z, date)).ToList();
+
+        /// <summary>The zone drawn on the hex on <paramref name="date"/>, or null.</summary>
+        public Armistice1949.Item? ZoneAt(int q, int r, DateTime date)
+        {
+            var z = Armistice?.ZoneAt(q, r, DateTime.MaxValue);
+            return z != null && InForce(z, date) ? z : null;
+        }
+
+        /// <summary>The armistice lines shown through the hex on <paramref name="date"/>.</summary>
+        public IEnumerable<Armistice1949.Item> LinesAt(int q, int r, DateTime date) =>
+            Armistice == null ? Enumerable.Empty<Armistice1949.Item>() : Armistice.LinesAt(q, r, DateTime.MaxValue).Where(l => InForce(l, date));
 
         /// <summary>The layer drawn on <paramref name="date"/>: null outside the sub-district layer's window; the
         /// sub-district layer itself while no armistice zone is in force; otherwise that layer with the zones in force drawn
@@ -74,7 +95,7 @@ namespace Statecraft.Game.Map
         public (IReadOnlyList<Armistice1949.Front> inForce, IReadOnlyList<Armistice1949.Front> noData) FrontsOn(DateTime date)
         {
             if (Armistice == null) return (Array.Empty<Armistice1949.Front>(), Array.Empty<Armistice1949.Front>());
-            var on = Armistice.Fronts.Where(f => f.InForce(date)).ToList();
+            var on = Armistice.Fronts.Where(f => Switched(f, date)).ToList();
             var none = on.Count == 0 ? new List<Armistice1949.Front>() : Armistice.Fronts.Where(f => f.ShownFrom == null).ToList();
             return (on, none);
         }
@@ -91,7 +112,7 @@ namespace Statecraft.Game.Map
             string Name(Armistice1949.Front f)
             {
                 var n = f.LowAccuracy ? string.Format(CultureInfo.InvariantCulture, low, f.Name) : f.Name;
-                var notes = Armistice.Zones.Concat(Armistice.Lines).Where(x => x.Front == f && x.InForce(date) && x.LabelNote != "")
+                var notes = Armistice.Zones.Concat(Armistice.Lines).Where(x => x.Front == f && InForce(x, date) && x.LabelNote != "")
                     .Select(x => x.LabelNote).Distinct().ToList();
                 return notes.Count == 0 ? n : string.Format(CultureInfo.InvariantCulture, note, n, string.Join(", ", notes));
             }

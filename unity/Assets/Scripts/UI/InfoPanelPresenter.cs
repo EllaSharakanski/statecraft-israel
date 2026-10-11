@@ -74,12 +74,11 @@ namespace Statecraft.Game.UI
         public static string RegionText(MapRegions regions, UiText text, int q, int r, System.DateTime date)
         {
             var parts = new List<string>();
-            var zone = regions.Armistice?.ZoneAt(q, r, date);
+            var zone = regions.ZoneAt(q, r, date);
             var sub = regions.Subdistricts.ShowsOn(date) ? regions.Subdistricts.SubdistrictAt(q, r) : null;   // only while the map shows the layer
             if (zone != null) parts.Add(text.Format("info.armistice_zone", zone.Name, zone.Agreement, MapRegions.DateText(zone.Signed)));
             else if (sub != null) parts.Add(text.Format("info.region", sub.Name, sub.District));
-            if (regions.Armistice != null)
-                foreach (var l in regions.Armistice.LinesAt(q, r, date))
+            foreach (var l in regions.LinesAt(q, r, date))
                     parts.Add(text.Format(l.LowAccuracy ? "info.armistice_line_low" : "info.armistice_line", l.Name, l.Agreement, MapRegions.DateText(l.Signed)));
             return string.Join("\n", parts);
         }

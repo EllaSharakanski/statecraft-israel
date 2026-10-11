@@ -14,11 +14,11 @@ namespace Statecraft.Game.Map
     /// (content/map/subdistricts_1948.geojson; tools/borders_digitise.py). Each land hex is in one sub-district, or in the
     /// "outside" region (style none: the sub-districts' bands run along the Mandate frontier, nothing beyond it); sea and
     /// lake hexes are in none, so the coast is not outlined. Display only: the sim never reads the file. Owner ruling
-    /// (2026-10-11): it shows from the game's start (<see cref="ShownFrom"/>) until the 1949 armistice lines replace it, each
-    /// front on its agreement's date once that data exists, labelled on screen with <see cref="Label"/> (GameRoot's
-    /// "map-layer" label above the minimap, while the layer is drawn). <see cref="Fronts"/>: each front's end, the date its
-    /// 1949 armistice line replaces this layer there (null: no line data, the layer stays; Jordan); <see cref="ShownUntil"/>
-    /// is the layer's end as a whole, null while any front has none. <see cref="MapRegions"/> composes the two.</summary>
+    /// (2026-10-11): it shows from the game's start (<see cref="ShownFrom"/>), labelled on screen with <see cref="Label"/>
+    /// (GameRoot's "map-layer" label above the minimap, while the layer is drawn). <see cref="Fronts"/>: each front's switch
+    /// date, its agreement's, from which <see cref="MapRegions"/> draws that front's armistice features over this layer
+    /// (null: no line data, the front never switches); <see cref="ShownUntil"/> is the layer's end as a whole, null while
+    /// the armistice lines leave gaps (the layer stays as the base under them).</summary>
     public sealed class Subdistricts1948
     {
         public const string FileName = "subdistrict_hexes_1948.yaml";

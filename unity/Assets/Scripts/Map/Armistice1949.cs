@@ -12,7 +12,8 @@ namespace Statecraft.Game.Map
     /// <summary>The 1949 armistice lines as the map shows them: content/map/armistice_hexes_1949.yaml, which
     /// tools/armistice_bake.py snaps from the true lines (content/map/armistice_lines_1949.geojson;
     /// tools/armistice_digitise.py). Per front (Egypt, Lebanon, Jordan, Syria), the agreement and the date its line is shown
-    /// from, or none (Jordan: no line data, so the Mandate sub-district layer stays there); zones (the Demilitarized Zones),
+    /// from (null for a front without line data, which keeps the Mandate layer and is labelled so), and whether it is
+    /// low-accuracy (Jordan, traced from a low-resolution scan); zones (the Demilitarized Zones),
     /// drawn over the sub-districts from their date (<see cref="MapRegions"/>); lines, named in the info panel on the hexes
     /// they pass through. Display only: the sim never reads the file.</summary>
     public sealed class Armistice1949

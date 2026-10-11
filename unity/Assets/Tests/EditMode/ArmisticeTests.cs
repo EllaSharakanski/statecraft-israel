@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -11,6 +12,7 @@ using Statecraft.Sim;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -236,5 +238,78 @@ public class ArmisticeTests
         File.WriteAllText(Path.Combine(copy, "map", "armistice_lines_1949.geojson"), "{}");
         File.WriteAllText(Path.Combine(copy, "map", Subdistricts1948.FileName), SubText.Replace("until: 1949-02-24", "until: 1950-01-01"));
         Assert.AreEqual(before, ContentLoader.Load(copy).Hash);
+    }
+
+    /// <summary>Review I-4: the longest label (from 22 Feb 1950: all four fronts, Jordan low-accuracy, the 1950 note) fits
+    /// on screen beside a real event card at every window shape the card is checked at: inside the right column, clear of
+    /// the card and the minimap, at most four lines.</summary>
+    [UnityTest]
+    public IEnumerator TheLongestMapLabelFitsBesideTheEventCard()
+    {
+        var c = Inputs.Content; var t = Text;
+        var text = L(Regions(), new DateTime(1950, 3, 1));
+        StringAssert.Contains("Jordan (low accuracy)", text);
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (1366, 657), (2560, 1080), (1920, 900), (1280, 1024) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("LabelLayout"); go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>(); doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var bridge = new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), t);
+            var card = new EventCardPresenter(root, bridge, t, null, null);
+            try
+            {
+                var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+                var e = c.Events.OrderByDescending(x => x.Text.Length).First();   // the longest text: the tallest card without a picture
+                g.State.Date = e.From; g.State.PendingEvents.Clear(); g.State.PendingEvents.Add(e.Id);
+                bridge.Replace(g);
+                var label = root.Q<Label>("map-layer");
+                label.text = text; label.style.display = DisplayStyle.Flex;
+                for (int i = 0; i < 6; i++) yield return null;
+                Rect R(string n) => root.Q(n).worldBound;
+                var lb = label.worldBound;
+                Assert.LessOrEqual(lb.yMax, R("minimap").yMin + 0.5f, $"{w}x{h}: the label runs into the minimap");
+                Assert.GreaterOrEqual(lb.xMin + 0.5f, R("right-column").xMin, $"{w}x{h}: the label leaves the right column");
+                Assert.LessOrEqual(lb.xMax, R("right-column").xMax + 0.5f, $"{w}x{h}: the label leaves the right column");
+                Assert.LessOrEqual(R("event-card").yMax, lb.yMin + 0.5f, $"{w}x{h}: the event card overlaps the label");
+                var size = label.MeasureTextSize(text, lb.width - label.resolvedStyle.paddingLeft - label.resolvedStyle.paddingRight,
+                    VisualElement.MeasureMode.Exactly, 0, VisualElement.MeasureMode.Undefined);
+                Assert.LessOrEqual(size.y, lb.height + 1f, $"{w}x{h}: the label's text is cut off");
+                Assert.LessOrEqual(size.y, 4 * label.resolvedStyle.fontSize * 1.4f, $"{w}x{h}: the label takes more than four lines ({size.y} px)");
+            }
+            finally { card.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+        }
+    }
+
+    /// <summary>Review I-2: the switch per front comes from the Mandate layer's own per-front end
+    /// (Subdistricts1948.FrontReplaced): moving Egypt's end moves when its zones are drawn, its lines named and the label
+    /// lists it.</summary>
+    [Test]
+    public void TheMandateLayersFrontEndDrivesTheSwitch()
+    {
+        var later = new MapRegions(Subdistricts1948.Parse(SubText.Replace("{ key: egypt, until: 1949-02-24 }", "{ key: egypt, until: 1949-06-01 }")),
+            Armistice1949.Parse(ArmText));
+        var a = later.Armistice!;
+        var auja = a.Zones.Single(z => z.Key == "egypt_el_auja_dmz");
+        var (q, r) = a.HexesOf(auja).First();
+        var march = new DateTime(1949, 3, 1);
+        Assert.IsFalse(later.Subdistricts.FrontReplaced("egypt", march));
+        Assert.IsNull(later.ZoneAt(q, r, march), "Egypt has not switched on the Mandate layer yet");
+        Assert.AreSame(later.Subdistricts.Layer, later.LayerOn(march));
+        StringAssert.DoesNotContain("Egypt", L(later, march));
+        var gaza = a.Lines.Single(l => l.Key == "egypt_adl_gaza");
+        var gh = Hexes().First(h => a.LinesAt(h.q, h.r, march).Contains(gaza));
+        Assert.IsFalse(later.LinesAt(gh.q, gh.r, march).Contains(gaza));
+        var june = new DateTime(1949, 6, 1);
+        Assert.AreSame(auja, later.ZoneAt(q, r, june));
+        Assert.AreEqual(MapRegions.ZoneIdBase + auja.Id, later.LayerOn(june)!.RegionOf(q, r));
+        StringAssert.Contains("Egypt", L(later, june));
+        Assert.IsTrue(later.LinesAt(gh.q, gh.r, june).Contains(gaza));
+        // as shipped, the Mandate layer's ends are the agreements' dates
+        Assert.AreSame(auja, Regions().ZoneAt(q, r, Egypt));
     }
 }

@@ -314,3 +314,61 @@ def test_the_sim_never_reads_the_armistice_files():
     """Display only: the content hash covers only files the sim reads (ContentLoader)."""
     for cs in (ROOT / "sim" / "Statecraft.Sim").rglob("*.cs"):
         assert not re.search(r"armistice_(lines|hexes)", cs.read_text(encoding="utf-8"), re.IGNORECASE), cs
+
+
+def test_the_1950_line_follows_the_drawn_dash_dot_not_the_sheet_frame_or_grid():
+    """Review C-1: piece 1 overlies the 1949 line (the dash-dot lies on it); no run of the trace sits on an integer-km grid
+    line or the N 100 neatline."""
+    pytest.importorskip("pyproj")
+    def km_pts(coords):
+        e, n = ad.lonlat_to_mr([c[0] for c in coords], [c[1] for c in coords])
+        return np.c_[e, n]
+    def dist_to_polyline(p, poly):
+        a, b = poly[:-1], poly[1:]; d = b - a
+        tt = np.clip(np.einsum("ij,ij->i", p - a, d) / np.maximum(np.einsum("ij,ij->i", d, d), 1e-12), 0, 1)
+        return float(np.min(np.hypot(*(a + tt[:, None] * d - p).T)))
+    l49 = km_pts(FEATS["egypt_adl_gaza"]["geometry"]["coordinates"])
+    pieces = FEATS["egypt_mv1950_demarcation"]["geometry"]["coordinates"]
+    p1 = km_pts(pieces[0])
+    samples = np.concatenate([np.linspace(a, b, 20, endpoint=False) for a, b in zip(p1[:-1], p1[1:])] + [p1[-1:]])
+    ds = [dist_to_polyline(s, l49) for s in samples]
+    assert max(ds) < 0.2 and float(np.median(ds)) < 0.06, (max(ds), np.median(ds))
+    for piece in pieces:
+        cs = [tuple(v) for v in km_pts(piece)]
+        for (e0, n0), (e1, n1) in zip(cs, cs[1:]):
+            on_grid = lambda v: abs(v - round(v)) < 0.015
+            assert not ((on_grid(e0) and on_grid(e1) and round(e0) == round(e1)) or (on_grid(n0) and on_grid(n1) and round(n0) == round(n1))), \
+                f"a stretch along a grid line: {(e0, n0)} -> {(e1, n1)}"
+    assert min(FEATS["egypt_mv1950_demarcation"]["properties"]["pieces_on_ink"]) > 0.45
+
+
+def test_jordan_sectors_are_cut_at_the_texts_own_points():
+    """Review I-1: line A ends at Kh Deir Arab (MR 1510-1574, Art. V.1(a)); sector (d) starts at MR 1925-0958."""
+    pytest.importorskip("pyproj")
+    def ends(fid):
+        c = FEATS[fid]["geometry"]["coordinates"]
+        return [tuple(float(v) for v in ad.lonlat_to_mr(*c[0])), tuple(float(v) for v in ad.lonlat_to_mr(*c[-1]))]
+    cuts = FEATS["jordan_adl_iraqi_c_south"]["properties"]["sector_cuts_km"]
+    kda, ds = ad.JORDAN_KH_DEIR_ARAB, ad.JORDAN_DEAD_SEA_POINT
+    near = lambda p, q, tol: math.hypot(p[0] - q[0], p[1] - q[1]) <= tol
+    assert near(ends("jordan_adl_iraqi_c_south")[1], kda, cuts["kh_deir_arab_km"] + 0.05)
+    assert near(ends("jordan_adl_a_latrun")[0], kda, cuts["kh_deir_arab_km"] + 0.05)
+    assert near(ends("jordan_adl_bc_south")[1], ds, cuts["dead_sea_point_km"] + 0.05)
+    assert near(ends("jordan_adl_d_arava")[0], ds, cuts["dead_sea_point_km"] + 0.05)
+    assert cuts["kh_deir_arab_km"] < 1.5 and cuts["dead_sea_point_km"] < 2.5
+
+
+def test_stage_dates_are_worded_as_deadlines_and_quote_the_article():
+    for k in ("a_triangle", "b_wadi_ara", "c_east", "c_south"):
+        p = FEATS[f"jordan_adl_iraqi_{k}"]["properties"]
+        assert ", by " in p["name"] and "Zububa" not in p["name"], p["name"]
+    assert "thence to the east of Kafr Qasim" in ad.JORDAN_STAGES and "deadlines" in ad.JORDAN_STAGES
+
+
+def test_no_stale_statements_about_the_1950_line():
+    """Review I-3."""
+    egypt = next(f for f in SOURCE["statecraft"]["fronts"] if f["key"] == "egypt")
+    assert "is later and not drawn" not in egypt["gap"]
+    assert "Art. V (the signed map decides)" not in ad.MV_TEXT["cite"] and "used only as a named cross-check" not in ad.S1471["cite"]
+    urls = [s["url"] for s in SOURCE["statecraft"]["sources"]]
+    assert len(urls) == len(set(urls)), "each source listed once"
