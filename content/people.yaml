@@ -102,7 +102,8 @@ people:
     party: mapai
     competence: 8
     loyalty: 8
-    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg", focus_y: 0.22 }
+    # Van de Poll collection Israel 1948-1949; the archive's 1948-01-01 field conflicts with the caption, so no exact day is inferred.
+    portrait: { file: promo/ref/people/Moshe_Sharett_CC0_1948.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg", focus_y: 0.3 }
     offices:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
@@ -535,6 +536,8 @@ people:
       # Speaker Yosef Sprinzak was acting President; acting holders are not modelled, so the office is vacant until then.
       # The term runs past the Fourth Government (24 December 1952) and stays open, like the other open terms.
       - { office: president, from: 1952-12-16, sources: [{ url: "https://en.wikipedia.org/wiki/1952_Israeli_presidential_election", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Yitzhak_Ben-Zvi", checked: 2026-10-11 }, { url: "https://he.wikipedia.org/wiki/נשיא_מדינת_ישראל", checked: 2026-10-11 }] }
+    # Anefo photograph from 15 July 1958, after the Founding slice but within his presidency.
+    portrait: { file: promo/ref/people/Yitzhak_Ben_Zvi_CC0_1958.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:President_Isaac_Ben_Zwi_,_president_van_Israel_en_echtgenote_ontvangen_door_het_,_Bestanddeelnr_909-7131.jpg", focus_y: 0.32 }
     status: fact-checked
   - id: dori
     name: Yaakov Dori
@@ -550,6 +553,7 @@ people:
     loyalty: 8
     offices:
       - { office: chief_of_staff, from: 1947-06-01, to: 1949-11-09, sources: &cos [{ url: "https://en.wikipedia.org/wiki/Chief_of_the_General_Staff_(Israel)", checked: 2026-10-09 }] }
+    portrait: { file: promo/ref/people/Yaakov_Dori_CC0.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Stafchef_Dori_houdt_toespraak_tijdens_de_militaire_parade_bij_gelegenheid_van_de,_Bestanddeelnr_255-0981.jpg", focus_y: 0.3 }
     status: fact-checked
   - id: yadin
     name: Yigael Yadin

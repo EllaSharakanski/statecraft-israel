@@ -8,15 +8,17 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
+  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
+  a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
+  the 1949 armistice lines and fronts are research items.
+- A portrait of Yitzhak Ben-Zvi: a crop of Harry Pot's 1958 Anefo photo (CC0; later than the Founding slice; #6).
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
+- A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
-- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
-  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
-  a "borders" visual toggle. Visual only. The game ships no region data yet (no invented boundaries: the sourced 1945-48
-  sub-districts, 1949 armistice lines and fronts are a research item), so nothing is drawn in play.
 - Hebrew names and sourced birth and death dates for all 29 people (issue #1).
 - Successors for offices left by deaths in 1952: Ben-Gurion takes Transportation after Pinkas (14 August 1952) and
   Yitzhak Ben-Zvi becomes President on 16 December 1952 after Weizmann; the presidency is vacant in between, while
@@ -30,6 +32,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.
 - The map (milestone M2): terrain from Copernicus elevation data, biomes from rainfall, 1948 settlements on hexes.
+- The 1948 sub-districts on the map (promo-borderdata): the sixteen Mandate sub-districts in force on 15 May 1948
+  (Palestine Gazette No. 1552, 1947), digitised from the Survey of Palestine's "Administrative Divisions" map and stored
+  as true lines (`content/map/subdistricts_1948.geojson`, sensitivity-reviewed); the map shows them snapped to hex edges in the
+  blue border style, labelled "Mandate sub-districts, 1947" from the 1948 start until the 1949 armistice lines replace
+  them; the info panel names a hex's sub-district and district. Display only: the sim does not read them.
 - Open-source release (public since 2026-10-10): licences (MIT code, CC BY-SA 4.0 content, CC BY 4.0 original docs
   and art, CC0 for AI-only images), asset provenance (`ASSETS.yaml`), contributor
   and content policies, CI for the sim, tools and repository policy.
@@ -62,6 +69,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
+- Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
+  reworded attention and full-war labels (#193).
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
   shows as vacant from then until Serlin and Sapir are authored (#26).
 - The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
@@ -83,6 +93,22 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Narrower windows get a compact top bar, and windows narrower than about square get a taller one that puts each change
   under its value. Keyboard focus has a fill at least 3:1 against the unfocused button, and a mouse click leaves no
   focus behind. Presentation only.
+- The Cabinet and Defence screens are laid out as the promo (`promo/final/04`, `08`), wider, over the hex panel (which
+  is hidden while they are open, so its buttons take no focus):
+  - Cabinet: the Prime Minister's card at the side (with every office the PM holds), the legislature as a half circle of
+    seats, coalition and opposition, with the majority line and each party's seats, and a card per office with portrait
+    (or initials), party, and competence and loyalty as bars;
+  - Defence: the Prime Minister, Minister of Defense and Chief of Staff as cards (one per person), the escalation
+    ladder with the ordered level marked, the reserve call-up as a bar with its minimum, and the defence share of the
+    budget.
+
+  Every figure is the sim's; the promo's forces, intelligence and procurement panels are left out because the sim does
+  not model them yet. A hidden screen does no work when the game changes, and an open one updates in place, keeping
+  keyboard focus. Presentation only.
+- The screens fit narrow windows (#210, #211): in the two-row HUD (narrower than about square, such as a phone's 390 px)
+  every screen takes the full width, with the event column and the hex panel hidden under it, and a screen's header
+  wraps. Escape closes the open screen. The Cabinet says a refusal that applies to every candidate (the Prime Minister's
+  or the President's office) once, not under each name (#215).
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
@@ -92,7 +118,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Fixed
 - Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
   bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
-  flat across, and narrows to the gorge floor (#212, #213).
+  flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).
+- The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
+  date, and before it the office is not a Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
+  1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
+  Budget row for Education reads "no ministry until 10 March 1949" (#217).
+- The Defence screen's UN ceasefire clock now reads "If full war goes on, the UN imposes a ceasefire in N weeks". The
+  old "A UN ceasefire will be imposed in N weeks" contradicted the First Truce, which keeps the game at full war (#218).
 - The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
   onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.

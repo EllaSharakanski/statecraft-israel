@@ -14,8 +14,12 @@ namespace Statecraft.Sim
         public string Title { get; set; } = "";
         /// <summary>Historical record only: no Cabinet seat, player appointment or gameplay responsibility. Defaults false for existing offices.</summary>
         public bool HistoricalOnly { get; set; }
+        /// <summary>Day the office was established (inclusive, like a term's `from`); null when it exists from the start.</summary>
+        public DateTime? From { get; set; }
         /// <summary>Day the office was abolished (exclusive end, like a term's `to`); null while it still exists.</summary>
         public DateTime? Until { get; set; }
+        /// <summary>True when the office exists on <paramref name="date"/>: on or after From and before Until.</summary>
+        public bool ExistsOn(DateTime date) => (!From.HasValue || date >= From.Value) && (!Until.HasValue || date < Until.Value);
     }
 
     public sealed class Party { public string Id { get; set; } = ""; public string Name { get; set; } = ""; }
