@@ -101,7 +101,7 @@ public class RouteTests
         using var sha = System.Security.Cryptography.SHA256.Create();
         return string.Concat(sha.ComputeHash(bytes.ToArray()).Select(b => b.ToString("x2")));
     }
-    const string RailMeshHash = "10b9365cce450aa2e425bbbe5869c850f6014e68d056f1e1b44b3a2d36bc8fea";
+    const string RailMeshHash = "ba6f58c6cf5b78b321fdba9765d110982403e6445dbc56f72baedf1b5e5bb045";
 
     [Test]
     public void TheMapBuildsRibbonsOnTheGroundAndTheTogglesHideThem()
@@ -225,7 +225,8 @@ public class RouteTests
         }
         finally { Object.DestroyImmediate(map.gameObject); }
     }
-    const float LiftP90BoundM = 999f;
+    // Measured 2026-10-11: old warp median 315 m (p90 454 m); new lift median 11 m, p90 38 m, max 57 m.
+    const float LiftP90BoundM = 50f;
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have
     /// it, every other route is there from the start.</summary>

@@ -153,8 +153,11 @@ measurement in `docs/units.md`:
     both sides is neither above it nor more than 40 m below it, down to 35% of the width. The rails stay centred and
     the band keeps to the gorge floor.
   - Every vertex takes the terrain's normal at the line. The train rides the same grade.
-  - `TheRailwayKeepsItsGradeInTheSorekGorge` tests it: every section is flat, and in the gorge 95% of sections stay
-    within 25 m of the line's ground clearance and the band narrows.
+  - `TheRailwayKeepsItsGradeInTheSorekGorge` tests it in the gorge (Artuf to Battir, 154 sections). The old rule
+    warped the band by a median 315 m across (p90 454 m); now every section is flat.
+  - The band's lift over the ground at the line is a median 11 m (p90 38 m, bound 50 m). The rest of the lift is the
+    1:250,000 line running on the canyon side.
+  - The band is never above where the old rule put it, and it narrows to the floor.
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
@@ -239,8 +242,8 @@ All of these are on `promo-roads`.
 - The idle-machine re-measure is centralised (controller ruling) and is not repeated here.
 
 **Size.** The meshes, after the review round:
-- rail 18,100 vertices and roads 37,515;
-- 88,832 triangles in all, in 10 draw calls (one per display window and look);
+- rail 17,830 vertices and roads 37,005 (after #212 and #213);
+- 87,584 triangles in all, in 10 draw calls (one per display window and look);
 - uploaded without a CPU copy.
 
 The train is about 1,100 triangles; that figure is counted from the builders, not measured, and `TrainModelsAreRepeatable` bounds it under 5,000. The data file is 55 KB.
