@@ -216,6 +216,17 @@ public class RealContentTests
     }
 
     [Fact]
+    public void BenGurionTransportationTermEndsAtFourthGovernmentHandover()
+    {
+        Assert.Equal("ben_gurion", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 23))!.Id);
+        Assert.Null(Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 24)));
+        Assert.Null(Offices.Holder(C, "transportation_minister", new DateTime(1953, 1, 1)));
+        var term = C.People.Single(p => p.Id == "ben_gurion").Offices.Single(t => t.Office == "transportation_minister");
+        Assert.Equal(new DateTime(1952, 12, 24), term.To);
+        Assert.NotEmpty(term.Sources);
+    }
+
+    [Fact]
     public void OfficesLeftByDeathsIn1952HaveTheirSuccessors()
     {
         string Who(string office, int y, int m, int d) => Offices.Holder(C, office, new DateTime(y, m, d))?.Id ?? "(vacant)";

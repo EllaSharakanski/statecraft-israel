@@ -45,6 +45,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
+- Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
+  shows as vacant from then until Serlin and Sapir are authored (#26).
 - The four armistice events end with 1949 (`to: 1950-01-01`). They still fire on their 1949 dates; a finite window
   means their Prime Minister placeholder doesn't need a holder after his death in 1973.
 - Ben-Gurion's in-game portrait is now a crop of Abbie Rowe's 8 May 1951 White House photo (NARA 200318,
