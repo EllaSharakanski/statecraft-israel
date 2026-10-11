@@ -316,6 +316,11 @@ public class CabinetTests
         Assert.Equal("The office of Minister of Education and Culture is not established until 10 March 1949",
             Cabinet.Check(c, provisional, "education_minister", "shazar"));
         Assert.Contains(Cabinet.Lineup(c, new GameState { Date = new DateTime(1949, 3, 10) }), seat => seat.Office.Id == "education_minister" && seat.Holder?.Id == "shazar");
+        // #217: no office in the 1948 lineup is vacant; rationing, the presidency and the minister without portfolio begin later.
+        Assert.All(Cabinet.Lineup(c, provisional), seat => Assert.NotNull(seat.Holder));
+        Assert.Equal(new DateTime(1949, 4, 26), c.Offices.Single(o => o.Id == "rationing_minister").From);
+        Assert.Equal(new DateTime(1949, 2, 16), c.Offices.Single(o => o.Id == "president").From);
+        Assert.Equal(new DateTime(1951, 10, 8), c.Offices.Single(o => o.Id == "minister_without_portfolio").From);
         Assert.Equal("The President is elected by the Knesset, not appointed", Cabinet.Check(c, s, "president", "sharett"));
         Assert.Null(Cabinet.Check(c, s, "agriculture_minister", "eshkol"));
         Assert.Equal("Chaim Weizmann is the President", Cabinet.Check(c, s, "finance_minister", "weizmann"));

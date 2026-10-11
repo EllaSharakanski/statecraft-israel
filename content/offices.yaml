@@ -30,10 +30,18 @@ offices:
   # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
   # notes, Addendum 2). From 8 October 1951 food-supply/rationing responsibility was with Trade and Industry (Yosef);
   # see people.yaml and research_notes/M3 content 1950-51/rationing-responsibility.md for evidence and caveats.
-  - { id: rationing_minister, title: Minister responsible for rationing }
+  # No rationing ministry or minister in the Provisional Government: the Ministry of Rationing and Supply was created on
+  # 26 April 1949 under Dov Yosef (en.wiki "Rationing and Supply Minister of Israel" and "Provisional government of
+  # Israel", he.wiki "משרד האספקה והקיצוב" (April 1949), checked 2026-10-11).
+  - { id: rationing_minister, title: Minister responsible for rationing, from: 1949-04-26 }
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
-  - { id: minister_without_portfolio, title: Minister without Portfolio }
-  - { id: president, title: President of Israel }
+  # The role first appeared in the Third Government (Peretz Naphtali, 8 October 1951): he.wiki "שר בלי תיק"; the
+  # Provisional, First and Second Governments' tables on en.wiki list none (checked 2026-10-11).
+  - { id: minister_without_portfolio, title: Minister without Portfolio, from: 1951-10-08 }
+  # Established by the Transition Law of 16 February 1949 (he.wiki "נשיא מדינת ישראל", en.wiki "President of Israel",
+  # checked 2026-10-11; he.wiki "חוק המעבר" gives 16 or 17 February). Weizmann's 1948 office, President of the
+  # Provisional State Council, is a different office the game does not model.
+  - { id: president, title: President of Israel, from: 1949-02-16 }
   # Historical deputy titles: dated lookup/text only, never playable Cabinet seats or gameplay owners.
   # Sources and the start-date conflict are in research_notes/M3 content 1950-51/deputy-titles.md.
   - { id: deputy_agriculture_minister, title: Deputy Minister of Agriculture, historical_only: true }

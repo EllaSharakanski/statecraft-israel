@@ -90,9 +90,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
-- The Provisional Government (1948 to 10 March 1949) no longer shows a vacant Minister of Education and Culture: that
-  ministry dates from 10 March 1949. Offices can now carry a `from` date. Before it, the office is no Cabinet seat and
-  cannot be filled, and the Budget row reads "no ministry until 10 March 1949" (#217).
+- The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
+  date, and before it the office is no Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
+  1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
+  Budget row for Education reads "no ministry until 10 March 1949" (#217).
 - The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
   onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
