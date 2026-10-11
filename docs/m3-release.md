@@ -5,7 +5,7 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
-- **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses while any sensitive event is not sensitivity-reviewed). Never zip by hand.
+- **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -shareable -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses while any sensitive event is not sensitivity-reviewed, and when the build's `event-photos.json` is missing, says the build was not `-shareable`, or lists an unreviewed sensitive event photograph). Never zip by hand.
 - **After building:** drop the build's rewrites of the settings with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
   build-cache change gets committed.
@@ -118,7 +118,9 @@ war-casualties). The owner's sign-off for all seven events below is recorded in 
 - **Gate:** `Build.Web ... -shareable` and `Build.Mac ... -shareable` refuse to build while any sensitive event is not
   `sensitivity-reviewed`, and name them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). `tools/package_release.py`
   makes the shareable zip and runs the same check (`Statecraft.Cli --release-gate`) on the content inside the build, so
-  it prints `PACKAGE REFUSED ...` and exits 1 while any sensitive event is not sensitivity-reviewed. Use `-shareable` and the script for every build
+  it prints `PACKAGE REFUSED ...` and exits 1 while any sensitive event is not sensitivity-reviewed. It also refuses a
+  build folder whose `event-photos.json` (written by every build) is missing, not `-shareable`, or lists an unreviewed
+  sensitive event photograph (`docs/event-images.md`). Use `-shareable` and the script for every build
   that leaves this machine, including the M4 private Draft once it is shared with anyone. Local dev builds (no flag)
   are not gated, because web_check and the golden checks need them.
 - **Pinned set:** `FinalWaveTests.TheSensitiveEventsArePinned` lists the seven ids, and

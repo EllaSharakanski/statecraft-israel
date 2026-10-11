@@ -42,7 +42,15 @@ namespace Statecraft.Game.UI
 
         public (int q, int r)? Selected { get; private set; }
 
-        public void Show(int q, int r) { Selected = (q, r); Render(); }
+        /// <summary>Shows the hex; ignored while a screen covers the panel (a wide screen, or any screen in the two-row HUD),
+        /// so a map click cannot change a panel the player cannot see.</summary>
+        public void Show(int q, int r)
+        {
+            var hud = panel.parent;
+            if (hud != null && (hud.ClassListContains(ScreenNav.WideOpenClass)
+                                || (hud.ClassListContains(ScreenNav.ScreenOpenClass) && hud.ClassListContains(HudPresenter.TwoRowClass)))) return;   // covered (#210)
+            Selected = (q, r); Render();
+        }
 
         void Build(string action)
         {
