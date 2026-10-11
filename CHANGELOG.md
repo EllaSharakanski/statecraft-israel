@@ -32,6 +32,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
   promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
   authored model can replace a code-built one per unit type (docs/units.md).
+- Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
+  belt) with hedges and dirt tracks between the towns, and garrigue, terraces and scrub on the wet hills, placed by real
+  slope, rainfall and towns and baked by `tools/land_bake.py`. Presentation only, within the frame budget.
 
 ### Changed
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
