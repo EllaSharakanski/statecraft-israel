@@ -13,6 +13,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from 21 October 1948),
   and selecting a token shows the promo's ring and a read-only card with a link to the Defence screen. The goldens do
   not move.
+- A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
+  (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
@@ -55,6 +57,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   roads and ballasted track with sleepers at the promo's scale. Each route shows only from its sourced date: the Burma
   Road appears on 14 June 1948, when it was completed. Settlement buildings and trees keep clear of every route. A steam train is a showcase only (`?train`, `?units` and the
   promo screenshots), not normal play. Map-only: the sim does not read them (#35).
+- Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
+  belt) with hedges and farm tracks, and garrigue, terraces and scrub on the wet hills, placed by real slope, rainfall and
+  towns and baked by `tools/land_bake.py`. Presentation only. Frame time: measured only on a busy machine so far (about
+  +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
@@ -90,3 +96,5 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
 - The "Not done" toast is opaque and sits clear of the open screen.
 - "International Standing" keeps to one line on a full-width bar.
+- The open sea no longer shows a blocky checker up close (about 6-20 km): its waves now come from smooth gradient noise
+  on rotated lattices instead of value noise differenced along the map's axes. Presentation only.

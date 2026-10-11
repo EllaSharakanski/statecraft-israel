@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Statecraft.Game;
 using Statecraft.Game.EditorTools;
 using Statecraft.Game.Boot;
@@ -131,20 +133,48 @@ public static class MapCapture
         finally { MapShaderGlobals.PinWaterTime(null); QualitySettings.SetQualityLevel(saved, true); }
     }
 
+    /// <summary>The open sea up close (bug B10, the checker): the web tier (quality level 0) at 6, 12 and 18 km over the sea
+    /// west of Tel Aviv (34.70 E, 32.08 N), the water's clock pinned, at 1920x1080 into &lt;-captureDir&gt; (default
+    /// captures/visual/sea-close) as sea-&lt;km&gt;km.png.</summary>
+    public static void SeaClose()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        int at = System.Array.IndexOf(args, "-captureDir");
+        var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "sea-close");
+        var map = OpenAndBuild();
+        var rig = Camera.main.GetComponent<CameraRig>();
+        int saved = QualitySettings.GetQualityLevel();
+        try
+        {
+            QualitySettings.SetQualityLevel(0, true);
+            MapShaderGlobals.PinWaterTime(100f);
+            var look = map.Frame.ToWorld(34.70, 32.08, 0); look.y = map.Terrain.SampleHeight(look);
+            foreach (var km in new[] { 6, 12, 18 })
+            {
+                rig.LookAt = look; rig.Distance = km * 1000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+                Save(Camera.main, 1920, 1080, Path.Combine(dir, $"sea-{km}km.png"));
+            }
+        }
+        finally { MapShaderGlobals.PinWaterTime(null); QualitySettings.SetQualityLevel(saved, true); }
+    }
+
     /// <summary>Renders each promo pose (PromoPose.All) at 1920x1080 once per quality tier (0 = Mobile, the WebGL tier;
     /// 1 = PC) into &lt;-captureDir&gt; (default captures/visual/editor) as &lt;tier&gt;-&lt;pose&gt;.png. Editor renders show no UI
-    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. The units in play are drawn as
-    /// a new game starts (UnitLayer, as the player shows them on its first turn), still; with -units it adds the unit art
-    /// slice (UnitShowcase), still.</summary>
+    /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. Units only with -units (from
+    /// tools/art_checkpoint.sh --units), as ?shot&amp;units shows them, so plain renders stay comparable across tracks: then
+    /// the unit art slice (UnitShowcase) and the units in play as a new game starts (UnitLayer, as the player shows them
+    /// on its first turn), both still.</summary>
     public static void Promo()
     {
         var args = System.Environment.GetCommandLineArgs();
         int at = System.Array.IndexOf(args, "-captureDir");
         var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "editor");
         var map = OpenAndBuild();
-        // The unit art slice only when asked (-units, from tools/art_checkpoint.sh --units), as ?shot&units shows it.
-        if (System.Array.IndexOf(args, "-units") >= 0) Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
-        ShowStartUnits(map);
+        if (System.Array.IndexOf(args, "-units") >= 0)
+        {
+            Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
+            ShowStartUnits(map);
+        }
         var rig = Camera.main.GetComponent<CameraRig>();
         int saved = QualitySettings.GetQualityLevel();
         try
@@ -152,7 +182,7 @@ public static class MapCapture
             for (int level = 0; level < QualitySettings.names.Length; level++)
             {
                 QualitySettings.SetQualityLevel(level, true);
-                foreach (var pose in PromoPose.All)
+                foreach (var pose in Poses(args))
                 {
                     pose.Apply(rig, map.Frame);
                     Save(Camera.main, 1920, 1080, Path.Combine(dir, $"{QualitySettings.names[level]}-{pose.Name}.png"));
@@ -169,6 +199,37 @@ public static class MapCapture
         var units = Statecraft.Game.Map.Units.UnitData.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Statecraft.Game.Map.Units.UnitData.DefaultFileName)));
         var layer = Statecraft.Game.Map.Units.UnitLayer.Create(map, units, content.Hexes, still: true);
         layer.Show(content, Statecraft.Sim.Simulation.NewGame(content, Statecraft.Sim.GoldenRun.Seed, Statecraft.Sim.Mode.Historical));
+    }
+
+    /// <summary>PromoPose.All, plus any "-extraPose name:lon:lat:distanceM:yaw" given (close looks while tuning the art, for
+    /// example the terraces at 20 km; not promo matches). All are parsed before any capture, so a bad one fails first.</summary>
+    static List<PromoPose> Poses(string[] args)
+    {
+        var poses = new List<PromoPose>(PromoPose.All);
+        for (int i = 0; i < args.Length; i++)
+            if (args[i] == "-extraPose")
+                poses.Add(ParseExtraPose(i + 1 < args.Length ? args[i + 1] : ""));
+        return poses;
+    }
+
+    /// <summary>One -extraPose value: name (letters, digits, '-' and '_', not a promo pose's name, so it never overwrites
+    /// that capture), longitude and latitude inside the map, distance (m) and yaw (degrees). Throws ArgumentException
+    /// naming the expected form.</summary>
+    public static PromoPose ParseExtraPose(string value)
+    {
+        const string form = "-extraPose name:lon:lat:distanceM:yaw, e.g. judea20:35.15:31.80:20000:0";
+        var f = (value ?? "").Split(':');
+        if (f.Length != 5) throw new System.ArgumentException($"'{value}': expected 5 fields ({form})");
+        if (!System.Text.RegularExpressions.Regex.IsMatch(f[0], "^[A-Za-z0-9_-]{1,40}$"))
+            throw new System.ArgumentException($"'{f[0]}': a pose name is letters, digits, '-' and '_' ({form})");
+        if (PromoPose.All.Any(p => p.Name == f[0])) throw new System.ArgumentException($"'{f[0]}' is a promo pose's name: its capture would be overwritten");
+        var inv = System.Globalization.CultureInfo.InvariantCulture; const System.Globalization.NumberStyles num = System.Globalization.NumberStyles.Float;
+        if (!double.TryParse(f[1], num, inv, out var lon) || !double.TryParse(f[2], num, inv, out var lat)
+            || !float.TryParse(f[3], num, inv, out var dist) || !float.TryParse(f[4], num, inv, out var yaw))
+            throw new System.ArgumentException($"'{value}': lon, lat, distance and yaw must be numbers ({form})");
+        if (lon < 34.2 || lon > 35.9 || lat < 29.45 || lat > 33.35) throw new System.ArgumentException($"'{value}': lon/lat outside the map (34.2-35.9 E, 29.45-33.35 N)");
+        if (!(dist > 0f)) throw new System.ArgumentException($"'{value}': distance must be > 0 m");
+        return new PromoPose(f[0], lon, lat, dist, yaw);
     }
 
     /// <summary>Art-track iteration renders (editor, WebGL tier = quality level 0): the promo poses plus a 30 km look at the
