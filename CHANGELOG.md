@@ -103,6 +103,22 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Narrower windows get a compact top bar, and windows narrower than about square get a taller one that puts each change
   under its value. Keyboard focus has a fill at least 3:1 against the unfocused button, and a mouse click leaves no
   focus behind. Presentation only.
+- The Cabinet and Defence screens are laid out as the promo (`promo/final/04`, `08`), wider, over the hex panel (which
+  is hidden while they are open, so its buttons take no focus):
+  - Cabinet: the Prime Minister's card at the side (with every office the PM holds), the legislature as a half circle of
+    seats, coalition and opposition, with the majority line and each party's seats, and a card per office with portrait
+    (or initials), party, and competence and loyalty as bars;
+  - Defence: the Prime Minister, Minister of Defense and Chief of Staff as cards (one per person), the escalation
+    ladder with the ordered level marked, the reserve call-up as a bar with its minimum, and the defence share of the
+    budget.
+
+  Every figure is the sim's; the promo's forces, intelligence and procurement panels are left out because the sim does
+  not model them yet. A hidden screen does no work when the game changes, and an open one updates in place, keeping
+  keyboard focus. Presentation only.
+- The screens fit narrow windows (#210, #211): in the two-row HUD (narrower than about square, such as a phone's 390 px)
+  every screen takes the full width, with the event column and the hex panel hidden under it, and a screen's header
+  wraps. Escape closes the open screen. The Cabinet says a refusal that applies to every candidate (the Prime Minister's
+  or the President's office) once, not under each name (#215).
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
   so the sim never has to refuse one; the golden playthroughs are unchanged.
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
@@ -110,6 +126,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
+  now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
+  any town. With the "kits" visual toggle off, names keep clear of the marker boxes instead. Presentation only.
+- The web build's quality fallback no longer lowers the quality while the page is hidden (#216). A background tab or a
+  minimised window (and in Chromium a window covered by others) runs at a few frames a second, which had counted as
+  load. Presentation only.
+- The border determinism test no longer fails now and then on a pixel or two: it shows the proof pattern once, renders a
+  warm-up frame, and compiles shaders synchronously, so both compared frames draw the same font atlas and shaders.
 - The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
   date, and before it the office is not a Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
   1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
