@@ -41,20 +41,18 @@ rules:
   commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
   artist: Théodore Brauner
   note: no explicit US status template on the Commons page
-- glob: promo/ref/people/Moshe_Sharett.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg
-  status: owner-verify
-  commons: Public domain; PD-IsraelGov, PD-IsraelGov/en, PD-IsraelGov/lang, PD-IsraelGov/layout, PD-Layout
-  artist: GPO Photographer
-  note: no explicit US status template on the Commons page
+- glob: promo/ref/people/Moshe_Sharett_CC0_1948.jpg
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
 - glob: unity/Assets/UI/Portraits/sharett.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg
-  status: owner-verify
-  commons: Public domain; PD-IsraelGov, PD-IsraelGov/en, PD-IsraelGov/lang, PD-IsraelGov/layout, PD-Layout
-  artist: GPO Photographer
-  note: no explicit US status template on the Commons page
+  licence: CC0-1.0
+  source: https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg
+  status: verified
+  commons: CC0; CC-zero, Cc-zero
+  artist: Willem van de Poll
 - glob: promo/ref/people/Haim-Moshe_Shapira.jpg
   licence: Public-Domain
   source: https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg

@@ -102,7 +102,8 @@ people:
     party: mapai
     competence: 8
     loyalty: 8
-    portrait: { file: promo/ref/people/Moshe_Sharett.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg", focus_y: 0.22 }
+    # Van de Poll collection Israel 1948-1949; the archive's 1948-01-01 field conflicts with the caption, so no exact day is inferred.
+    portrait: { file: promo/ref/people/Moshe_Sharett_CC0_1948.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg", focus_y: 0.3 }
     offices:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }

@@ -2,7 +2,7 @@
 ben_gurion | Public domain | https://commons.wikimedia.org/wiki/File:Photograph_of_President_Truman_in_the_Oval_Office%2C_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg
 zisling | Public domain | https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg
 kaplan | Public domain | https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg
-sharett | Public domain | https://commons.wikimedia.org/wiki/File:Moshe_Sharett_Portrait.jpg
+sharett | CC0 | https://commons.wikimedia.org/wiki/File:Moshe_Sharett,_de_eerste_minister_van_buitenlandse_zaken_van_de_staat_Israel,_tu,_Bestanddeelnr_255-1438.jpg
 shapira | Public domain | https://commons.wikimedia.org/wiki/File:Moshe_Shapira.jpg
 gruenbaum | Public domain | https://commons.wikimedia.org/wiki/File:Yitzhak_Gruenbaum_1948.jpg
 rosen | Public domain | https://commons.wikimedia.org/wiki/File:Pinchas_Rosen.jpg

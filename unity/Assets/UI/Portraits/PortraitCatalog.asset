@@ -24,7 +24,7 @@ MonoBehaviour:
     focusY: 0.3
   - personId: sharett
     image: {fileID: 2800000, guid: f0ed7522ce11d4c0db50dafd321df604, type: 3}
-    focusY: 0.22
+    focusY: 0.3
   - personId: shapira
     image: {fileID: 2800000, guid: 01b0755a76e4d4a23843d26ac45b200f, type: 3}
     focusY: 0.42
