@@ -24,6 +24,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.
+- Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
+  belt) with hedges and dirt tracks between the towns, and garrigue, terraces and scrub on the wet hills, placed by real
+  slope, rainfall and towns and baked by `tools/land_bake.py`. Presentation only; no frame-time cost measured.
 
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),

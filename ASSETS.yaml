@@ -86,14 +86,14 @@ rules:
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/Map/landuse.png"
     licence: Copernicus-DEM
-    source: "tools/land_bake.py (issue #33): the land-use colour and weight (procedural field parcels, garrigue, terraces and scrub, placed by fields, citrus belt and wet hills) from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
+    source: "tools/land_bake.py (issue #33): the land-use colour and weight (procedural field parcels, garrigue, terraces and scrub) placed by: slope and water from the Copernicus DEM-derived heightmap (Copernicus-DEM); rainfall from CHELSA V2.1 bio12 (CC0-1.0) bias-corrected by the IMS station normals of content/map/precip_stations.json (data.gov.il dataset 481, IMS-data.gov.il, decision D6); content/map/hexes.json biomes (this project's own content, CC-BY-SA-4.0); and the town coordinates of content/map/settlements_1948.yaml (Wikipedia API, CC-BY-SA-4.0) for the citrus belt. Procedural, not AI-generated; attribution in NOTICE"
     status: owner-verify
-    note: "Derived data combining Copernicus-DEM, CC0 rainfall and settlement coordinates taken from Wikipedia: the owner confirms the combined licence (the coordinates are facts; the yaml row is CC-BY-SA-4.0)."
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
   - glob: "unity/Assets/Textures/Map/tracks.png"
     licence: Copernicus-DEM
-    source: "tools/land_bake.py (issue #33): dirt-track offsets between the towns from the Copernicus DEM-derived heightmap (slope, water), CHELSA V2.1 bio12 rainfall (CC0-1.0, station-corrected), content/map/hexes.json biomes and the settlement coordinates of content/map/settlements_1948.yaml (Wikipedia, CC-BY-SA-4.0); procedural, not AI-generated; attribution in NOTICE"
+    source: "tools/land_bake.py (issue #33): the offset to the nearest dirt track, from the town coordinates of content/map/settlements_1948.yaml alone (Wikipedia API, CC-BY-SA-4.0) and the map frame (extent) in heightmap.json; seeded meanders; procedural, not AI-generated"
     status: owner-verify
-    note: "Derived data combining Copernicus-DEM, CC0 rainfall and settlement coordinates taken from Wikipedia: the owner confirms the combined licence (the coordinates are facts; the yaml row is CC-BY-SA-4.0)."
+    note: "Decision D13 (docs/oss/DECISIONS.md): if share-alike applies to the coordinates, this row becomes CC-BY-SA-4.0."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"

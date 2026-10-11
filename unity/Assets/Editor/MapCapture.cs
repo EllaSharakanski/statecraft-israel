@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Statecraft.Game;
 using Statecraft.Game.EditorTools;
 using Statecraft.Game.Boot;
@@ -158,17 +159,34 @@ public static class MapCapture
     }
 
     /// <summary>PromoPose.All, plus any "-extraPose name:lon:lat:distanceM:yaw" given (close looks while tuning the art, for
-    /// example the terraces at 20 km; not promo matches).</summary>
-    static IEnumerable<PromoPose> Poses(string[] args)
+    /// example the terraces at 20 km; not promo matches). All are parsed before any capture, so a bad one fails first.</summary>
+    static List<PromoPose> Poses(string[] args)
     {
-        foreach (var p in PromoPose.All) yield return p;
-        var inv = System.Globalization.CultureInfo.InvariantCulture;
-        for (int i = 0; i + 1 < args.Length; i++)
-        {
-            if (args[i] != "-extraPose") continue;
-            var f = args[i + 1].Split(':');
-            yield return new PromoPose(f[0], double.Parse(f[1], inv), double.Parse(f[2], inv), float.Parse(f[3], inv), float.Parse(f[4], inv));
-        }
+        var poses = new List<PromoPose>(PromoPose.All);
+        for (int i = 0; i < args.Length; i++)
+            if (args[i] == "-extraPose")
+                poses.Add(ParseExtraPose(i + 1 < args.Length ? args[i + 1] : ""));
+        return poses;
+    }
+
+    /// <summary>One -extraPose value: name (letters, digits, '-' and '_', not a promo pose's name, so it never overwrites
+    /// that capture), longitude and latitude inside the map, distance (m) and yaw (degrees). Throws ArgumentException
+    /// naming the expected form.</summary>
+    public static PromoPose ParseExtraPose(string value)
+    {
+        const string form = "-extraPose name:lon:lat:distanceM:yaw, e.g. judea20:35.15:31.80:20000:0";
+        var f = (value ?? "").Split(':');
+        if (f.Length != 5) throw new System.ArgumentException($"'{value}': expected 5 fields ({form})");
+        if (!System.Text.RegularExpressions.Regex.IsMatch(f[0], "^[A-Za-z0-9_-]{1,40}$"))
+            throw new System.ArgumentException($"'{f[0]}': a pose name is letters, digits, '-' and '_' ({form})");
+        if (PromoPose.All.Any(p => p.Name == f[0])) throw new System.ArgumentException($"'{f[0]}' is a promo pose's name: its capture would be overwritten");
+        var inv = System.Globalization.CultureInfo.InvariantCulture; const System.Globalization.NumberStyles num = System.Globalization.NumberStyles.Float;
+        if (!double.TryParse(f[1], num, inv, out var lon) || !double.TryParse(f[2], num, inv, out var lat)
+            || !float.TryParse(f[3], num, inv, out var dist) || !float.TryParse(f[4], num, inv, out var yaw))
+            throw new System.ArgumentException($"'{value}': lon, lat, distance and yaw must be numbers ({form})");
+        if (lon < 34.2 || lon > 35.9 || lat < 29.45 || lat > 33.35) throw new System.ArgumentException($"'{value}': lon/lat outside the map (34.2-35.9 E, 29.45-33.35 N)");
+        if (!(dist > 0f)) throw new System.ArgumentException($"'{value}': distance must be > 0 m");
+        return new PromoPose(f[0], lon, lat, dist, yaw);
     }
 
     static void Save(Camera cam, int w, int h, string path)

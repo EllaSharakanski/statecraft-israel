@@ -17,10 +17,10 @@ tools/hexgrid.py does) and content/map/settlements_1948.yaml. Where, on a WIDTH 
 What (paint_land, seeded by map position only): field parcels in rotated blocks (green, ochre, ploughed, fallow, grass,
 groves in the citrus belt) with soft rims and hedges, some block edges as tracks; on the wet unfarmed hills patches of
 stony soil and grass, terraces along the real contours, scrub. Writes, row 0 = north:
-  unity/Assets/Textures/Map/landuse.png  RGBA8, COLOUR_W x COLOUR_H (about 79 x 105 m): rgb the land's linear colour, a
-      its weight over the biome ground (2 x 2 samples per texel)
+  unity/Assets/Textures/Map/landuse.png  RGBA8, COLOUR_W x COLOUR_H (about 79 x 105 m): rgb the land's colour (sRGB,
+      spread into the empty texels), a its weight over the biome ground (2 x 2 samples per texel)
   unity/Assets/Textures/Map/tracks.png   RGB8, TRACKS_W x TRACKS_H: R, G the offset (east, south) from the texel to the
-      nearest dirt track (encode_offsets); each settlement is joined to its nearest neighbours within TRACK_MAX_KM by a
+      nearest dirt track, B where it may draw one (encode_offsets); each settlement is joined to its nearest neighbours within TRACK_MAX_KM by a
       gently meandering track
 The geography is real (slope, rain, towns); the parcels are procedural. Deterministic: the same PNGs on every run."""
 import json
@@ -53,6 +53,7 @@ TRACK_NEIGHBOURS = 3
 TRACK_MAX_KM = 40.0
 TRACK_RANGE_M = 1000.0           # StatecraftLand.hlsl ScTrackRangeM (more than a texel diagonal)
 TRACK_SEED = 1936
+LAND_INTO_WATER = 3              # texels the land's masks reach past the shoreline (the shader's waterline cuts them)
 MEDIAL_JUMP_M = 900.0            # neighbouring texels whose nearest track points are farther apart sit on a medial axis
 MEDIAL_KEEP_M = 250.0            # ... and keep their offset only this close to a track
 # The painted land (paint_land): field parcels, rims, hedges, block-edge tracks, garrigue, terraces and scrub, baked here
@@ -60,6 +61,7 @@ MEDIAL_KEEP_M = 250.0            # ... and keep their offset only this close to 
 # WebGL even where no pixel ran it (docs/visual-v1.md, "Promo track: land use").
 COLOUR_W, COLOUR_H = 2048, 4096  # about 79 m east-west x 105 m north-south per texel
 TEXEL_M = 92.0                   # mean texel size (m), for the terrace fade
+DILATE_PASSES = 32               # texels the colour spreads into empty ground: past the 16-texel footprint of mip 4
 SUPERSAMPLE = 2                  # samples per texel per axis, box-filtered (the parcels' edges stay soft, not jagged)
 BLOCK_M = 5200.0                 # a farm block, one angle per block
 STRIP_M = 1000.0                 # strip width across the block (symbolic scale, like the kits)
@@ -161,9 +163,9 @@ def track_points(towns: list[tuple[str, float, float]], links: list[tuple[int, i
     return pts
 
 
-def track_offsets(points: list[tuple[float, float]], meta: dict) -> np.ndarray:
-    """(east, south) metres from every TRACKS_W x TRACKS_H texel centre to its nearest track point, NaN beyond
-    TRACK_RANGE_M. An offset, not a distance: across a straight track it is affine in position, so the GPU's bilinear
+def track_offsets(points: list[tuple[float, float]], meta: dict) -> tuple[np.ndarray, np.ndarray]:
+    """(east, south) metres from every TRACKS_W x TRACKS_H texel centre to its nearest track point (NaN beyond
+    TRACK_RANGE_M), and where that offset may draw a track (valid: in range and not on a medial axis). An offset, not a distance: across a straight track it is affine in position, so the GPU's bilinear
     filter reproduces it exactly between texels and the shader's line keeps its width (a distance field, V-shaped across the
     line, under-reads it between texels: the first try drew the tracks as dashes)."""
     sx, sy = TRACKS_W / meta["width_km"], TRACKS_H / meta["length_km"]   # texels per km
@@ -193,16 +195,19 @@ def track_offsets(points: list[tuple[float, float]], meta: dict) -> np.ndarray:
     for a, b in ((np.s_[:, :-1], np.s_[:, 1:]), (np.s_[:-1, :], np.s_[1:, :])):
         jump = np.hypot(qx[a] - qx[b], qy[a] - qy[b]) > MEDIAL_JUMP_M   # NaN (no track) compares False
         split[a] |= jump; split[b] |= jump
-    off[split & (np.hypot(off[..., 0], off[..., 1]) > MEDIAL_KEEP_M)] = np.nan
-    return off
+    valid = ~np.isnan(off[..., 0]) & ~(split & (np.hypot(off[..., 0], off[..., 1]) > MEDIAL_KEEP_M))
+    return off, valid
 
 
-def encode_offsets(off: np.ndarray) -> np.ndarray:
-    """RGB8: R, G = round(127 + 127 offset / TRACK_RANGE_M) (east, south), B 0; no track in range = (255, 255), which
-    decodes to about 1.4 TRACK_RANGE_M away, so filtering towards it never fakes a track."""
+def encode_offsets(off: np.ndarray, valid: np.ndarray) -> np.ndarray:
+    """RGB8: R, G = round(127 + 127 offset / TRACK_RANGE_M) (east, south), (255, 255) out of range; B = 255 where the
+    offset may draw a track, 0 where it may not (out of range, or a medial axis). Filtering mixes a texel's offset with its
+    neighbours': next to an out-of-range texel (255, 255 decodes to (+1008, +1008) m) or across a medial axis the mix can
+    pass through zero and fake a track, so the shader fades the line by B (review I1: a phantom ring about 1 km south-east
+    of every track); the filter blends B down there first."""
     enc = np.clip(np.round(127 + 127 * off / TRACK_RANGE_M), 0, 254)
     enc = np.where(np.isnan(off), 255, enc).astype(np.uint8)
-    return np.concatenate([enc, np.zeros(enc.shape[:2] + (1,), dtype=np.uint8)], axis=-1)
+    return np.concatenate([enc, np.where(valid, 255, 0).astype(np.uint8)[..., None]], axis=-1)
 
 
 def linear(srgb: tuple[float, float, float]) -> np.ndarray:
@@ -290,7 +295,8 @@ def paint_samples(x: np.ndarray, y: np.ndarray, fields: np.ndarray, orchards: np
     scrub = (0.14 + 0.2 * smoothstep(0.55, 0.85, patch)) * (1 - smoothstep(0.5, 0.8, slope))
     speck = (hash01(np.floor(x / 160.0), np.floor(y / 160.0), 8) < 0.30) * (1 - smoothstep(0.5, 0.8, slope)) * 0.7   # bushes
     hill = hill * (1 - np.maximum(scrub, speck))[..., None] + col["scrub"] * np.maximum(scrub, speck)[..., None]
-    wild_w = wild * smoothstep(80.0, 250.0, elev) * 0.7
+    # Not on the steep faces, where the shader draws rock (ScGroundBase: smoothstep(0.22, 0.45, slope), review M5).
+    wild_w = wild * smoothstep(80.0, 250.0, elev) * 0.7 * (1 - smoothstep(0.22, 0.45, slope))
 
     w = farm_w + wild_w
     colour = (farmed * farm_w[..., None] + hill * wild_w[..., None]) / np.maximum(w, 1e-6)[..., None]
@@ -323,7 +329,39 @@ def paint_land(fields: np.ndarray, orchards: np.ndarray, wet: np.ndarray, elev: 
         n = len(rows)
         rgbw = rgbw.reshape(n, ss, COLOUR_W, ss, 4).mean(axis=(1, 3))
         out[rows] = np.concatenate([rgbw[..., :3] / np.maximum(rgbw[..., 3:], 1e-6), rgbw[..., 3:]], axis=-1)
+    out[..., :3] = dilate_colour(out[..., :3], out[..., 3] > 0.5 / 255)
+    out[..., :3] = encode_srgb(out[..., :3])
     return tb.to_u8(out)
+
+
+def encode_srgb(c: np.ndarray) -> np.ndarray:
+    """Linear -> sRGB: the texture imports as sRGB, so the GPU decodes it and 8 bits (and BC3's endpoints) spend their
+    precision where the eye does (review M3: linear storage stepped the dark hedge and scrub tones by 5-15%)."""
+    c = np.clip(c, 0.0, 1.0)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * np.power(c, 1 / 2.4) - 0.055)
+
+
+def shift(a: np.ndarray, oy: int, ox: int) -> np.ndarray:
+    """out[y, x] = a[y + oy, x + ox] over the first two axes, the border repeated beyond it."""
+    p = np.pad(a, ((1, 1), (1, 1)) + ((0, 0),) * (a.ndim - 2), mode="edge")
+    return p[1 + oy:1 + oy + a.shape[0], 1 + ox:1 + ox + a.shape[1]]
+
+
+def dilate_colour(rgb: np.ndarray, filled: np.ndarray, passes: int = DILATE_PASSES) -> np.ndarray:
+    """Spreads the land's colour into the empty texels (weight 0): each pass gives every empty texel the mean colour of its
+    filled 4-neighbours, the rest end as the mean land colour. Mips and BC3 blocks then blend land colour with land
+    colour, not with black (review M4: the colour darkened by 8% at partial weights by mip 4)."""
+    rgb, filled = rgb.copy(), filled.copy()
+    for _ in range(passes):
+        acc = np.zeros_like(rgb); n = np.zeros(filled.shape)
+        for oy, ox in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            f = shift(filled.astype(np.float64), oy, ox)
+            acc += shift(rgb, oy, ox) * f[..., None]; n += f
+        grow = ~filled & (n > 0)
+        rgb[grow] = acc[grow] / n[grow][..., None]
+        filled |= grow
+    rgb[~filled] = rgb[filled].mean(axis=0) if filled.any() else 0.0
+    return rgb
 
 
 def bake() -> tuple[np.ndarray, np.ndarray]:
@@ -339,24 +377,33 @@ def bake() -> tuple[np.ndarray, np.ndarray]:
     water = bilinear(water_hm, hy, hx) > 0.5
     rain = rain_at(xk, yk, meta)
     biome = biome_at(xk, yk, hexes)
-    valley = biome == "valley"
+    # Hex-wise inputs, softened over about 1.5 km so the land does not step at hex edges (review M6).
+    sx_t, sy_t = WIDTH / meta["width_km"], HEIGHT / meta["length_km"]
+    soften = lambda a: tb.box_mean(tb.box_mean(a.astype(np.float64), round(0.75 * sy_t), round(0.75 * sx_t)),
+                                   round(0.75 * sy_t), round(0.75 * sx_t))
+    valley = soften(biome == "valley")
 
     flat = 1.0 - smoothstep(*FLAT_SLOPE, slope)
-    farm_rain = np.maximum(smoothstep(*RAIN_FIELDS_MM, rain), np.where(valley, VALLEY_IRRIGATED, 0.0))
+    farm_rain = np.maximum(smoothstep(*RAIN_FIELDS_MM, rain), valley * VALLEY_IRRIGATED)
     fields = flat * farm_rain
 
     towns = settlements_km(meta)
     d_town = np.full(xk.shape, np.inf)
     for _, x, y in towns:
         d_town = np.minimum(d_town, np.hypot(xk - x, yk - y))
-    lowland = (e < ORCHARD_BELOW_M) & np.isin(biome, ("coastal_plain", "valley"))
-    orchards = np.where(lowland, flat * farm_rain * np.clip(1.4 * np.exp(-d_town / ORCHARD_DECAY_KM) - 0.15, 0, 1), 0.0)
+    lowland = soften((e < ORCHARD_BELOW_M) & np.isin(biome, ("coastal_plain", "valley")))
+    orchards = lowland * flat * farm_rain * np.clip(1.4 * np.exp(-d_town / ORCHARD_DECAY_KM) - 0.15, 0, 1)
 
     wet = smoothstep(*RAIN_WET_MM, rain)
 
-    land = ~water
+    # The land reaches LAND_INTO_WATER texels (about 0.5 km) into the water, so it meets the shore wherever the shader's
+    # waterline puts it, with no bare strip (review M7); the shader draws water over it.
+    land = water.copy()
+    for _ in range(LAND_INTO_WATER):
+        land = tb.shrink(land)
+    land = ~land
     rgba = paint_land(fields * land, orchards * land, wet * land, elev, meta)
-    return rgba, encode_offsets(track_offsets(track_points(towns, track_links(towns)), meta))
+    return rgba, encode_offsets(*track_offsets(track_points(towns, track_links(towns)), meta))
 
 
 def main() -> None:

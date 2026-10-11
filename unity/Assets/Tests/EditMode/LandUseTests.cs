@@ -15,7 +15,12 @@ public class LandUseTests
     const string TerrainMatPath = "Assets/Materials/Terrain.mat";
 
     [TearDown]
-    public void Reset() { RenderSample.TiltShift(true); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
+    public void Reset()
+    {
+        RenderSample.TiltShift(true);
+        VisualToggles.SetAll(true);   // review M10: Clear alone left the global _ScLandOn at 0 for the next test
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear();
+    }
 
     static Texture2D Read(string path)
     {
@@ -44,24 +49,64 @@ public class LandUseTests
     }
 
     [Test]
-    public void TheMasksImportAsLinearClampedDataOnTheTerrain()
+    public void TheTexturesImportForTheShaderAndEveryWebBuild()
     {
         var land = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Land);
         var tracks = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Tracks);
         Assert.AreEqual((2048, 4096), (land.width, land.height), "about 79 x 105 m per texel");
         Assert.AreEqual((512, 1024), (tracks.width, tracks.height), "about 316 x 421 m per texel");
-        foreach (var t in new[] { land, tracks })
-        {
-            Assert.IsFalse(t.isDataSRGB, t.name + ": linear colour and offsets, read as they are");
-            Assert.AreEqual(TextureWrapMode.Clamp, t.wrapMode, t.name);
-            Assert.AreEqual(FilterMode.Trilinear, t.filterMode, t.name);
-            Assert.Greater(t.mipmapCount, 1, t.name);
-        }
-        Assert.AreEqual(TextureFormat.RG16, tracks.format, "uncompressed: block compression would bend the offsets");
-        Assert.AreEqual(2, land.anisoLevel, "seen at a grazing angle");
-        Assert.AreEqual(TextureFormat.DXT5, land.format, "colour and weight block-compressed (BC3)");
+        foreach (var t in new[] { land, tracks }) Assert.AreEqual(TextureWrapMode.Clamp, t.wrapMode, t.name);
+        Assert.IsTrue(land.isDataSRGB, "sRGB colour: 8 bits and BC3 endpoints where the eye needs them (review M3)");
+        Assert.AreEqual(FilterMode.Trilinear, land.filterMode); Assert.Greater(land.mipmapCount, 1); Assert.AreEqual(2, land.anisoLevel);
+        Assert.AreEqual(TextureFormat.DXT5, land.format, "colour and weight block-compressed (BC3) on the desktop platforms");
+        Assert.IsFalse(tracks.isDataSRGB, "offsets, read as they are");
+        Assert.AreEqual(TextureFormat.RGB24, tracks.format, "uncompressed: block compression would bend the offsets");
+        Assert.AreEqual(1, tracks.mipmapCount, "no mips: averaged offsets fake tracks at distance (review M2)");
+        Assert.AreEqual(FilterMode.Bilinear, tracks.filterMode);
+        // Review I4: the WebGL override keeps the 4096 rows and lets the build's texture subtarget choose the format (DXT5 in
+        // the desktop build, ASTC 6x6 / ETC2 in a mobile one), instead of pinning DXT5, which phones decompress on the CPU.
+        var web = ((TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Land)).GetPlatformTextureSettings("WebGL");
+        Assert.IsTrue(web.overridden); Assert.AreEqual(4096, web.maxTextureSize);
+        Assert.Less((int)web.format, 0, $"WebGL format {web.format}: an automatic format (the negative enum values), not a pinned one");
+        Assert.AreEqual(TextureImporterCompression.Compressed, web.textureCompression);
+        var webTracks = ((TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Tracks)).GetPlatformTextureSettings("WebGL");
+        Assert.IsTrue(webTracks.overridden); Assert.AreEqual(TextureImporterFormat.RGB24, webTracks.format);
         var mat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath);
         Assert.AreEqual(land, mat.GetTexture("_ScLandTex")); Assert.AreEqual(tracks, mat.GetTexture("_ScTrackTex"));
+    }
+
+    /// <summary>Build.Web -textureSubtarget names the WebGL texture subtarget (desktop DXT, mobile ASTC or ETC2), and
+    /// refuses anything else. Build lives in the predefined editor assembly: reached by reflection.</summary>
+    [Test]
+    public void TheWebBuildTakesATextureSubtarget()
+    {
+        var build = System.Type.GetType("Statecraft.Game.EditorTools.Build, Assembly-CSharp-Editor");
+        Assert.IsNotNull(build);
+        var parse = build!.GetMethod("TextureSubtarget"); Assert.IsNotNull(parse);
+        Assert.AreEqual(WebGLTextureSubtarget.ASTC, parse!.Invoke(null, new object?[] { "astc" }));
+        Assert.AreEqual(WebGLTextureSubtarget.DXT, parse.Invoke(null, new object?[] { "dxt" }));
+        Assert.AreEqual(WebGLTextureSubtarget.ETC2, parse.Invoke(null, new object?[] { "etc2" }));
+        Assert.IsNull(parse.Invoke(null, new object?[] { null }));
+        var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() => parse.Invoke(null, new object?[] { "pvrtc" }));
+        Assert.IsInstanceOf<System.ArgumentException>(ex!.InnerException);
+    }
+
+    /// <summary>Review M9: MapCapture -extraPose checks its value: five fields, a safe name that is not a promo pose's,
+    /// numbers, a point on the map and a positive distance.</summary>
+    [Test]
+    public void AnExtraCapturePoseIsValidated()
+    {
+        var capture = System.Type.GetType("MapCapture, Assembly-CSharp-Editor");
+        Assert.IsNotNull(capture);
+        var parse = capture!.GetMethod("ParseExtraPose"); Assert.IsNotNull(parse);
+        var pose = (PromoPose)parse!.Invoke(null, new object[] { "judea20:35.15:31.80:20000:0" })!;
+        Assert.AreEqual(("judea20", 35.15, 31.80, 20000f, 0f), (pose.Name, pose.Lon, pose.Lat, pose.Distance, pose.Yaw));
+        foreach (var bad in new[] { "judea20:35.15:31.80:20000", "../x:35.15:31.80:20000:0", "a/b:35.15:31.80:20000:0",
+                                    "gameplay03:35.15:31.80:20000:0", "x:east:31.80:20000:0", "x:30.0:31.80:20000:0", "x:35.15:31.80:0:0" })
+        {
+            var ex = Assert.Throws<System.Reflection.TargetInvocationException>(() => parse.Invoke(null, new object[] { bad }), bad);
+            Assert.IsInstanceOf<System.ArgumentException>(ex!.InnerException, bad);
+        }
     }
 
     /// <summary>The land follows the real ground: it covers the coastal plain by Rehovot, the Jezreel valley and (as
@@ -80,8 +125,12 @@ public class LandUseTests
             Assert.Less(negev, 0.02f, "the central Negev stays desert"); Assert.Less(deadSea, 0.02f, "water");
             Assert.Greater(judea, 0.4f, "garrigue and terraces on the Judean hills");
             foreach (var (name, lon, lat) in new[] { ("Jerusalem", 35.2256, 31.7789), ("Nazareth", 35.3035, 32.7019), ("Petah Tikva", 34.8878, 32.0889) })
+            {
                 Assert.Less(TrackDistanceM(MaskAt(tracks, m, lon, lat)), 250f, name + " is on a track");
+                Assert.Greater(MaskAt(tracks, m, lon, lat).b, 0.99f, name + ": its track may draw there (B)");
+            }
             Assert.Greater(TrackDistanceM(MaskAt(tracks, m, 34.90, 30.60)), 1000f, "no track across the empty Negev");
+            Assert.Less(MaskAt(tracks, m, 34.90, 30.60).b, 0.01f, "and none may draw there");
         }
         finally { Object.DestroyImmediate(png); Object.DestroyImmediate(tracks); }
     }
