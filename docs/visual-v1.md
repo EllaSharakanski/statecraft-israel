@@ -1478,8 +1478,8 @@ Village Statistics tribal totals, inventing no names or points.
 - **Labels:** smaller pills (`.map-label-locality`), only nearer than 40 km (`MapLabelsPresenter.LocalityDistanceM`), placed
   after every game settlement with the same declutter rules; hovering one shows "Today: <name>" under it (desktop only:
   touch has no hover).
-- **Grid readability** with the villages: 73% (66 of 90 edge midpoints) at gameplay03, against 84% before; the test floor
-  is now 70%.
+- **Grid readability** with the villages: 78% (69 of 89 edge midpoints) at gameplay03, against 84% before; the 75% floor
+  holds. (Before the game settlements kept their own cells it was 73%.)
 - **Start of game only.** The file records no later fate, depopulation date or post-May-1948 status, and the test
   `test_start_of_game_only_no_later_fate` keeps it so. A dated map (#61) needs the owner's framing decision first: whether
   the settlement layer is ever dated after the start, and if so how places that ceased to exist are shown (the research

@@ -395,9 +395,9 @@ public class KitTests
     /// hex edges in view; at each, the line shows when switching the grid off changes the 3x3 neighbourhood's luma by more
     /// than 3/255 (HexGridTests' threshold). With kits and trees on, at least <see cref="GridReadableShare"/> of the
     /// midpoints whose line shows on bare ground must still show it (the rest are covered by a building or a crown).</summary>
-    /// <remarks>Measured 84% (76 of 90) with the 25 game settlements; 73% (66 of 90) with the 272 localities of 1948 beside
-    /// them (owner ruling 2026-10-11: the land dense with towns and villages, as in promo 03), so the floor is 70%.</remarks>
-    public const float GridReadableShare = 0.70f;
+    /// <remarks>Measured 84% (76 of 90) with the 25 game settlements alone; 78% (69 of 89) with the 272 localities of 1948
+    /// and main's routes (2026-10-11).</remarks>
+    public const float GridReadableShare = 0.75f;
 
     [UnityTest]
     public IEnumerator TheGridStaysReadableThroughTownsAndGroves()
