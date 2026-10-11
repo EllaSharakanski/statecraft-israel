@@ -975,8 +975,18 @@ def build(syria_pdf: Path, syria_tif: Path, gaza: Path, mv1: Path, mv2: Path, jo
         ("d_arava", "Armistice Demarcation Line (Jordan-Israel), the Dead Sea to the Gulf of Aqaba", "+-1.5-2.5 km",
          "Art. V.1(d): from the Dead Sea (MR 1925-0958) to the southernmost tip of Palestine, the positions surveyed by UN "
          "observers in March 1949, as drawn on map 1 (through the Dead Sea and down the Wadi Araba).")]:
+        extra = dict(jq)
+        if key == "d_arava":
+            # independent check: south of the Dead Sea the 1949 line followed the Mandate frontier, which the sub-district
+            # data has (about +-1 km); the trace's distance to it every 8 km of northing
+            ring = LineString(max(mandate_land().geoms, key=lambda q: q.area).exterior.coords)
+            arava = LineString(jo["traces"][key]["en"])
+            ds = [round(ring.distance(arava.interpolate(arava.project(Point(e, n)))), 2)
+                  for e, n in jo["traces"][key]["en"][::max(1, len(jo["traces"][key]["en"]) // 40)] if n < 66]
+            extra["check_against_mandate_frontier_km"] = {"median": float(np.median(ds)), "max": float(max(ds)),
+                                                          "note": "trace points south of N 66 (the Arava) to the Mandate frontier"}
         feats.append(feature(f"jordan_adl_{key}", "jordan", "line", name, LineString(jo["traces"][key]["en"]),
-                             jo_acc(sheet_note, jo["traces"][key]["on_ink"]), method, [UNTS, JORDAN_MAP, JORDAN_TOWNS], dict(jq)))
+                             jo_acc(sheet_note, jo["traces"][key]["on_ink"]), method, [UNTS, JORDAN_MAP, JORDAN_TOWNS], extra))
     fronts = []
     for key, (agr, date, place, docsym) in AGREEMENTS.items():
         f = {"key": key, "agreement": agr, "signed": date, "document": docsym}
