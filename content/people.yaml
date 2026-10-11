@@ -340,6 +340,9 @@ people:
     party: mapai
     competence: 7
     loyalty: 8
+    # Yoichi Okamoto, official White House photograph, 2 August 1966; PD-USGov checked 2026-10-11.
+    # Later than the game period; human likeness/era review remains required.
+    portrait: { file: promo/ref/people/Zalman_Shazar_USGov_1966.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg", focus_y: 0.35 }
     offices:
       - { office: education_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
     status: fact-checked
