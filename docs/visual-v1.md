@@ -33,9 +33,11 @@ Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets
   while `QualitySettings.asset` (and, when it builds, `unity/Assets/Settings` or `ProjectSettings.asset`) has unstaged
   changes, restores them on every exit, and takes the pose list from `PromoPose.cs`. Each checkpoint switches the
   worktree's build target WebGL -> OSXUniversal (editor renders) and back at the next build, a reimport each way: budget
-  a few minutes per checkpoint. `--units` adds the unit art slice (`docs/units.md`): `&units` on the WebGL shots and
-  `-units` on the editor renders. Its art-log rows are named `<name>-units`, so they are never compared with plain
-  checkpoints, which never show units.
+  a few minutes per checkpoint. `--units` adds the units (`docs/units.md`): `&units` on the WebGL shots and
+  `-units` on the editor renders. That shows both the unit art slice and the units in play as a new game starts.
+  Normal play draws the units in play, but a `?shot` run switches them off unless `&units` is given
+  (`UnitLayer.HiddenInCaptures`), and the editor draws them only with `-units`. So plain checkpoints never show units, and
+  the `--units` rows are named `<name>-units`, so they are never compared with plain ones.
 
 ## Budgets (proposed; ratified in Task 10: see "Tier decisions")
 Measured on the development Mac (Apple silicon, integrated GPU), 1920x1080 at DPR 1, Chrome for Testing:

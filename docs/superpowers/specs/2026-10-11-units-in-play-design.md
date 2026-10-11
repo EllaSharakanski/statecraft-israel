@@ -14,6 +14,18 @@ The owner ruled on questions 1–4 and the controller adopted the defaults for 5
 6. After the armistices, only what a source says continued is shown.
 7. No orders; the unit's card links to the Defence screen.
 
+After the staff review, the controller ruled (2026-10-11):
+- **C1:** no invented end dates. Each window ends at its sourced end, the unit's sourced disbandment or its front's
+  armistice, marked `end_basis: source` or `front_armistice`; the blanket 20 July 1949 is gone.
+- **I1:** "since" only from a sourced start, never the game's first day.
+- **I2:** at most one hex from the sourced anchor, compact beside a town. Never in ground the other side held; until
+  front data exists, the one-hex limit is the guard.
+- **I3:** 101 Squadron's bases where two sources agree (Hatzor from 21 November 1948).
+- **I4:** the Spitfire from its earliest sourced service. That is the first sourced sortie on 15 October 1948; the
+  aircraft arrived on 27 September, unarmed.
+- **I5:** units appear in screenshots and editor renders only when asked for.
+- **I6:** the promo's badge, a wider trio, headgear only where sourced, and the ring for selection only.
+
 Corrections found while implementing:
 - Wedgwood's pennant number: the earlier draft said K-18 without a source. Its two articles conflict (the Beauharnois
   article gives Hashomer, K 20), so the map shows "INS Wedgwood" and no number.

@@ -65,66 +65,117 @@ Normal play draws one token per unit from two inputs: the sim's state and `conte
 - **The data file** is map-only. `ContentLoader` never reads it, so the content hash and the goldens do not move
   (`UnitsInPlayTests.TheUnitFileDoesNotMoveTheContentHash`). The WebGL manifest ships it.
 
-Code: `UnitData` (the file), `UnitRoster` (which units now), `UnitPlacer` (which hex), `UnitLayer` (the tokens and the
-ring), `UnitCard` and `InfoPanelPresenter` (the card). Tests: `UnitsInPlayTests`.
+Code:
+- `UnitData`: the file.
+- `UnitRoster`: which units show now.
+- `UnitPlacer`: each anchor's spot.
+- `UnitLayer`: the tokens and the ring.
+- `UnitBadge`: the badge.
+- `UnitCard` and `InfoPanelPresenter`: the card.
 
-### Owner rulings (2026-10-11)
+Tests: `UnitsInPlayTests` (EditMode) and `tools/tests/test_units_1948.py` (the data rules, in CI's Python job).
 
+### Rulings (2026-10-11)
+
+The owner ruled:
 1. One token per brigade.
-2. The number of figures follows the call-up: 3 at or above the security-level-4 floor (`rung_min_mobilization`,
-   0.4), 2 at or above the level-3 floor (0.15), else 1.
-3. 101 Squadron shows an Avia S-199 until the Spitfire's sourced date (21 October 1948), then the Spitfire.
+2. The number of figures follows the call-up: 3 at or above the security-level-4 floor (`rung_min_mobilization`, 0.4),
+   2 at or above the level-3 floor (0.15), else 1.
+3. 101 Squadron shows an Avia S-199 until the Spitfire's sourced date, then the Spitfire.
 4. The four brigades with no sourced position (Carmeli, Alexandroni, the 8th, Oded) are listed in the file and hidden.
 
-The controller adopted the design's defaults for the rest:
+The controller adopted the design's defaults:
 - tokens stand only at dated, sourced positions and do not move with operation events;
-- after the armistices only what a source says continued is shown (no source gives a later position yet, so no token
-  shows after 20 July 1949);
-- there are no orders: the unit's card links to the Defence screen.
+- after the armistices, only what a source says continued is shown;
+- there are no orders: the card links to the Defence screen.
+
+After the staff review the controller ruled:
+- **No invented end dates (C1).** A window ends at the earliest of its sourced end, the unit's sourced disbandment, and
+  the armistice of the front it stood on. Each anchor says which: `end_basis: source` with an `end_note`, or
+  `end_basis: front_armistice` with its `front`. The armistices were signed with Egypt on 24 February 1949, Lebanon on
+  23 March, Jordan on 3 April and Syria on 20 July (1949 Armistice Agreements). No source yet gives a position after
+  the armistices, so no unit shows after them.
+- **"Since" only from a sourced start (I1).** A window that opens before the game shows from 15 May 1948. The card says
+  "since February 1948" from the anchor's sourced `since`, and gives no start where no source dates the arrival
+  (Givati at Gedera, the ships).
+- **Within one hex (I2).** See "Placement".
+- **The squadron's bases where two sources agree (I3), and the Spitfire from its first sourced service (I4).** See the
+  table.
+- **Plain checkpoints stay comparable (I5).** A screenshot run (`?shot`, `-shot`) switches the units off unless it also
+  asks for them (`&units`, `-units`). The editor's promo renders draw them only with `-units`.
+- **The promo's badge, a wider trio, sourced headgear; the ring stays selection-only (I6).** See "Look".
 
 ### What the player sees
 
-| Unit | Positions (from the sources, dated) |
-|---|---|
-| Golani (1st) | Yavne'el, May–November 1948; the Julis camp from December 1948 |
-| Kiryati (4th) | Tel Aviv |
-| Givati (5th) | Gedera (the first of the three places its source names) |
-| Etzioni (6th) | Jerusalem |
-| 7th Brigade | Latrun, 24 May–31 May 1948; Ein Shemer, June 1948 |
-| Harel (10th) | Sha'ar HaGai, to 21 December 1948 (Operation Horev, in the south, gives no place for it) |
-| Yiftach (11th) | Lydda, 9–19 July 1948 (Operation Dani) |
-| Negev (12th) | the Mekorot camp near Nir Am |
-| 101 Squadron | Ekron, 20–29 May 1948; the Herzliya strip, 30 May–September 1948; Hatzor from October 1948 |
-| INS Haganah, INS Wedgwood | Haifa harbour |
+| Unit | Positions (dated, from the sources) | Ends |
+|---|---|---|
+| Golani (1st) | Yavne'el (since February 1948); the Julis camp from December 1948 | December 1948 (source); 24 Feb 1949 (Egypt) |
+| Kiryati (4th) | Tel Aviv (since February 1948) | 3 Apr 1949 (Jordan) |
+| Givati (5th) | Gedera, one of the three places its sector names (no start given) | 24 Feb 1949 (Egypt) |
+| Etzioni (6th) | Jerusalem (since late 1947) | 3 Apr 1949 (Jordan) |
+| 7th Brigade | Latrun, 24–31 May 1948; Ein Shemer, June 1948 | sources |
+| Harel (10th) | Sha'ar HaGai, one place picked from the Jerusalem corridor (since the first half of May 1948) | 22 Dec 1948, Operation Horev (source) |
+| Yiftach (11th) | Lydda, 11–19 July 1948 (Operation Dani; the IDF entered Lydda on 11 July) | 20 Jul 1948 (source); disbanded May 1949 |
+| Negev (12th) | the Mekorot camp near Nir Am (since March 1948) | 24 Feb 1949 (Egypt) |
+| 101 Squadron | Ekron, 20–29 May 1948; the Herzliya strip from mid-June; Hatzor from 21 November 1948 | June 1949, the move to Ramat David (source) |
+| INS Haganah, INS Wedgwood | Haifa harbour (commissioned 1948; no start given) | 24 Feb 1949 (Egypt: their sourced actions were against the Egyptian forces) |
 
-A position with no stated end runs to 20 July 1949, the last armistice. Every row, date and coordinate has its source
-and check date in the file. Rows marked `wikipedia_only` (all but 101 Squadron, whose markings come from Eduard) are
-drafts until checked against a published history (Netanel Lorch, *The Edge of the Sword*, 1961) or the IDF and Defense
-Establishment Archives.
+**101 Squadron's bases.** The map follows the dates two sources agree on:
+- en.wiki and he.wiki agree it was at Ekron from 20 to 30 May, and at Herzliya from mid-June.
+- Between 30 May and mid-June they disagree. en.wiki says Herzliya after the strafing of 30 May; he.wiki says Ekron,
+  with Modi Alon taking off from there on 3 June. So the map shows no base in that gap.
+- Hatzor from 21 November 1948: Eduard p. 54 and he.wiki ("November"). en.wiki and Eduard p. 53's profile caption say
+  October. he.wiki has Alon killed landing at Herzliya on 16 October, which fits November.
 
-**Placement.** A token stands on the nearest hex to its anchor that is clear (`UnitPlacer`, at most 3 hexes away):
+**The aircraft.** The S-199 until 15 October 1948, then the Spitfire.
+- The first Spitfires flew in, unarmed, on 27 September 1948 (Operation Velvetta, he.wiki).
+- The first sourced Spitfire sortie is 15 October: three Spitfires escorting Beaufighters to El Arish (he.wiki
+  Supermarine Spitfire). The squadron flew both types (he.wiki 101 Squadron), and the S-199 flew on sporadically until
+  mid-December (Avia S-199; Eduard p. 54). The ruling allows showing the S-199 until the switch and the Spitfire after.
+- en.wiki's Spitfire operational history calls a 101 Squadron claim of 21 October the IAF's "first ever aerial
+  victory". That is wrong: the first victories were on 3 June 1948, by Modi Alon in an S-199. The file records this.
+
+**Placement** (`UnitPlacer.PlaceAll`). Every anchor is placed once, from the data alone, so a token never moves because
+another unit appears. Its spot is the nearest to the sourced place, at most one hex step away (about 8.7 km between hex
+centres on 5 km hexes). The candidates are tried in two rounds:
+1. The centres of the anchor's own hex and its six neighbours, with the token at full size.
+2. If none is clear, those centres plus six points inside each hex, with the token **compact**: half the ring and half
+   the trio's spread, to fit beside a town. Kiryati beside Tel Aviv is an example.
+
+A spot is clear when:
 - the ring's disc stays off every settlement footprint (the kits' discs, times 1.1);
-- an army token's three figure spots (always three, so the hex does not change with the call-up) and a parked
-  aircraft's centre are on land and at least 700 m beyond every railway and road corridor;
-- a ship needs a sea hex, and no two tokens share a hex.
+- an army token's three figure spots (always three, so the spot does not change with the call-up), or a parked
+  aircraft's centre, are on land and at least 700 m beyond every railway and road corridor;
+- a ship has a sea hex;
+- no other anchor whose window overlaps holds the hex.
 
-So Kiryati stands east of Tel Aviv, not inside it: the offset is presentation, not a claim about the position.
-`UnitsInPlayTests.EveryTokenOfTheWarStandsClearOfTheTownsAndTheRoutes` checks every week of the war.
+The map holds no 1948 front line yet, so the one-hex limit is what keeps a token on its own side. Once dated front data
+lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
+checks every anchor and logs each spot and its distance.
 
-**Look.** The models and the authored-prefab hook are the slice's.
-- An army token is 1 to 3 riflemen.
-- The squadron flies the slice's loop over its base at security level 4 or 5 and stands parked below that.
-- A ship is the K-20 corvette model; Wedgwood was the same modified Flower class.
+**Look.**
+- **Models:** the slice's models and the authored-prefab hook.
+- **Army:** a token is 1 to 3 riflemen, spread across the ring as in promo 03, about 2 km apart, so each figure reads on
+  its own.
+- **Headgear:** only the Negev Brigade's is tied to it by a source: knitted stocking caps and Mk II steel helmets, from
+  its two 1948 photographs. Every other brigade has the uniform default (bush hat, steel helmet, bush hat), from the 1948
+  photographs listed under "Sources".
+- **Air:** the squadron flies the slice's loop over its base at security level 4 or 5 and stands parked below that.
+- **Navy:** a ship is the K-20 corvette model; Wedgwood was the same modified Flower class.
+- **Badge:** each token has the promo's badge (`UnitBadge`): a dark rounded plate with an ivory glyph (two figures, an
+  aircraft or a ship). It is turned to face each camera as it renders.
+- **Ring:** the white ring appears only on selection.
 
-Clicking a token's hex selects it: the white ring goes round the hex and the info panel shows a read-only card.
-- The card gives the name, the number and the service, where the unit stands and since when, its formation and first
-  commander where sourced, and the sector in the source's words.
-- It also shows the national values the token reflects ("Reserve call-up 80% · security level 5 of 5") and the source
-  hosts, with a draft note.
+**Selection and the card.**
+- Clicking a token's hex selects it. The ring goes round it and the hex outline is cleared, so it has one highlight.
+- A second click shows the hex and its map actions. A hidden layer (the `units` toggle off) selects nothing.
+- The card gives the name, the number and the service, where the unit stands (with "since" only from a sourced start),
+  its formation and first commander where sourced, and the sector in the source's words.
+- It also gives the national values the token reflects ("Reserve call-up 80% · security level 5 of 5") and the source
+  hosts, with a draft note that says "Wikipedia only" when the position's own sources are.
 - It has no orders; a button opens the Defence screen.
 
-**The Avia S-199** (`UnitModels.AviaS199`; types `avia-s199-101sqn-1948` and, from 15 October 1948,
-`avia-s199-101sqn-1948-10`):
+**The Avia S-199** (`UnitModels.AviaS199`; type `avia-s199-101sqn-1948`):
 - The Bf 109G airframe, 8.94 m long with a 9.92 m span, with the Jumo 211F's wide three-blade paddle propeller and the
   MG 151 pods under the wings (Avia S-199 article).
 - One green on all surfaces: Avia's standard finish, and "the same shade of green" on D-123 in Israel (Eduard Info
@@ -132,38 +183,19 @@ Clicking a token's hex selects it: the white ring goes round the hex and the inf
 - Two white bands round the rear fuselage, and Star of David roundels under the wings. These come from the 101 Squadron
   photographs of 1948 on Wikimedia Commons: the roundels show from a low camera in front of a nose-up aircraft, so they
   are on the lower surface.
-- From Operation Ten Plagues (later Yoav, 15–22 October 1948) it adds the red spinner, the red and white rudder stripes
-  and roundels atop the wings, "for the first time" (Eduard p. 53).
+- The red spinner, the rudder stripes and the upper-wing roundels of Operation Ten Plagues (from 15 October 1948, Eduard
+  p. 53) are not drawn, because the map shows the Spitfire from that day.
 - The squadron's skull badge on the nose is too small to read at map scale and is left out.
 
-**Cost.** The budget is 2.5 ms or less for the `units` toggle at gameplay03 (docs/visual-v1.md). The measurement was
-headless `?vprofile` on the WebGL build of 4640ca6, 1920x1080 at DPR 1, 2026-10-11.
-
-The machine was busy: the load average was 7–10 and other sessions were running Unity. The exclusive lock waited more
-than 20 minutes without getting the machine, so this run took a **shared** lock. The numbers are an upper bound, not a
-clean measurement.
-
-| Pose | all | -units | units cost | none |
-|---|---|---|---|---|
-| gameplay03 | 10.42 ms (spread 4.44, p95 12) | 9.33 ms (spread 0.11, p95 11) | 1.09 ms | 7.47 ms |
-| diorama02 | 21.46 ms (spread 8.20, p95 29) | 17.69 ms (spread 8.26, p95 20) | 3.77 ms, inside the noise | 13.81 ms |
-
-- **gameplay03** is within the budget even at this upper bound. The new-game state draws 6 brigades (up to 18
-  riflemen) and 2 ships.
-- **diorama02** cannot be read here. Its spreads (8 ms) are larger than the difference, and on this run other toggles
-  also come out above "all" (for example -routes at gameplay03).
-- A clean idle-machine re-measure is left open.
-- The layer rebuilds only when the roster changes (a new turn, a call-up or security order). Between those it does no
-  per-frame work beyond a flying aircraft's transform.
+**Cost.** COST_PENDING
 
 **Left open.**
-- The rows are drafts from Wikipedia (and Eduard for the markings) until a historian checks them against Lorch or the
+- The rows are drafts from Wikipedia (and Eduard and Commons) until a historian checks them against Lorch or the
   archives.
-- 101 Squadron's move from Herzliya to Hatzor is October 1948 in en.wiki, and November 1948 in he.wiki and Eduard
-  p. 54. The map follows en.wiki.
+- No dated front line: tokens keep within one hex of their sourced place instead (I2).
 - Wedgwood's Israeli name and pennant number conflict between its two articles. The card shows "INS Wedgwood" and no
   number.
-- No source yet places any unit after 20 July 1949, so the map shows no units after the armistices.
+- No source yet places any unit after the armistices.
 - The Spitfire's red spinner and striped rudder are attested on the Spitfires for January 1949. Eduard dates the
   squadron's markings to October 1948, so the October–December 1948 Spitfire markings rest on that.
 - In the historical playthrough the call-up stays at or above 0.4 until the armistices, so the tokens keep three
@@ -275,8 +307,13 @@ Avia S-199 (units in play):
   wing surfaces, the paddle propeller.
   https://commons.wikimedia.org/wiki/File:Avia-S-199-IAF-101Sqn-Tel-Nof-Israel-1948-01.jpg and
   https://commons.wikimedia.org/wiki/File:Avia_S-199_in_June_1948_(Israeli_Air_Force).png
-- The Spitfire from 21 October 1948: IAF Spitfires fought Egyptian Spitfires that day, and a 101 Squadron pilot claimed
-  a victory. https://en.wikipedia.org/wiki/Supermarine_Spitfire_operational_history
+- The Spitfire from 15 October 1948, the first sourced sortie (three Spitfires escorting Beaufighters to El Arish).
+  https://he.wikipedia.org/wiki/%D7%A1%D7%95%D7%A4%D7%A8%D7%9E%D7%A8%D7%99%D7%9F_%D7%A1%D7%A4%D7%99%D7%98%D7%A4%D7%99%D7%99%D7%A8
+  The first Spitfires flew in on 27 September 1948 (Operation Velvetta).
+  https://he.wikipedia.org/wiki/%D7%9E%D7%91%D7%A6%D7%A2_%D7%95%D7%9C%D7%95%D7%95%D7%98%D7%94
+  en.wiki's operational history has IAF Spitfires in combat on 21 October, but wrongly calls a claim that day the
+  IAF's first victory: the first were on 3 June 1948.
+  https://en.wikipedia.org/wiki/Supermarine_Spitfire_operational_history
 
 Brigades, the squadron's bases and the ships: every position, date and coordinate has its own sources and check date
 in `content/map/units_1948.yaml`.

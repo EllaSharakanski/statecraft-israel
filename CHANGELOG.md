@@ -10,9 +10,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Added
 - Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
   dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
-  reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from 21 October 1948),
-  and selecting a token shows the promo's ring and a read-only card with a link to the Defence screen. The goldens do
-  not move.
+  reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
+  sortie, 15 October 1948), a badge marks each token, and selecting one shows the promo's ring and a read-only card with
+  a link to the Defence screen. Every position ends on a sourced date or on its front's armistice. Screenshot runs show
+  units only with `&units`. The goldens do not move.
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).

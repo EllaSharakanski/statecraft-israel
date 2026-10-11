@@ -351,8 +351,8 @@ public class UnitsInPlayTests
                 layer.Show(C, session.State);
                 Assert.AreEqual(after, session.State.Hash(), $"turn {i}: drawing changed the state");
                 Assert.AreNotEqual(b, after);
+                if (i == 0) Assert.IsNotNull(layer.Tokens.FirstOrDefault(p => p.Token.Unit.Id == "squadron_101").Token, "101 Squadron from 20 May 1948");
             }
-            Assert.IsNotNull(layer.Tokens.FirstOrDefault(p => p.Token.Unit.Id == "squadron_101").Token, "101 Squadron from 20 May 1948");
             CollectionAssert.Contains(VisualToggles.Names, UnitLayer.ToggleName);
             var any = layer.Tokens[0];
             VisualToggles.Set(UnitLayer.ToggleName, false);
