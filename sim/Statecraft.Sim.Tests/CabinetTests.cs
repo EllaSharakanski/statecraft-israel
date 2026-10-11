@@ -172,6 +172,10 @@ public class CabinetTests
         var before = new GameState { Date = new DateTime(1948, 12, 31) };
         Assert.DoesNotContain(Cabinet.Lineup(c, before), seat => seat.Office.Id == "new_office");
         Assert.Equal("The office of New Office is not established until 1 January 1949", Cabinet.Check(c, before, "new_office", "loyalist"));
+        // An appointment from an older save does not make anyone hold an office that does not exist yet.
+        before.Appointments["new_office"] = new Appointment("loyalist", before.Date);
+        before.AppointedUnder = Offices.Government(c, before.Date)!.Id;
+        Assert.Null(Cabinet.Holder(c, before, "new_office"));
         var on = new GameState { Date = new DateTime(1949, 1, 1) };
         Assert.Contains(Cabinet.Lineup(c, on), seat => seat.Office.Id == "new_office" && seat.Holder == null);
         Assert.NotEqual("The office of New Office is not established until 1 January 1949", Cabinet.Check(c, on, "new_office", "loyalist"));

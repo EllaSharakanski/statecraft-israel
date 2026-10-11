@@ -33,7 +33,7 @@ namespace Statecraft.Sim
         /// appointee who dies leaves office on the date of death, and the historical holder applies again).</summary>
         static Appointment? Active(Content c, GameState s, string office, DateTime date)
         {
-            if (c.Offices.Any(o => o.Id == office && o.HistoricalOnly)) return null;
+            if (c.Offices.Any(o => o.Id == office && (o.HistoricalOnly || !o.ExistsOn(date)))) return null;
             if (!s.Appointments.TryGetValue(office, out var a) || date < a.From) return null;
             var died = c.People.First(p => p.Id == a.Person).Died;
             if (died.HasValue && date >= died.Value) return null;
