@@ -65,3 +65,27 @@ def test_pd_1996_text_helper_alone_is_not_us_status():
     # {{PD-India-URAA}} (and PD-Poland, PD-HU-unknown and others) transclude {{PD-1996-text}} without {{PD-1996}}.
     r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:PD-India-URAA", "Template:PD-1996-text"], "")
     assert r["status"] == "owner-verify"
+
+
+def test_us_text_helpers_are_not_status_tags():
+    for helper in ("PD-US-expired-text", "PD-US-expired-text/en", "PD-US-no-notice-text"):
+        r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:PD-Israel", "Template:" + helper], "")
+        assert r["status"] == "owner-verify", helper
+
+
+def test_weizmann_expired_composite_tag_is_independent_us_status():
+    for tag in ("PD-old-70-expired", "PD-old-70-1923"):
+        r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:" + tag, "Template:PD-US-expired-text"], "")
+        assert r["status"] == "verified", tag
+        assert cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:" + tag], "")["status"] == "verified"
+
+
+def test_plain_old_tag_and_composite_helpers_are_not_us_status():
+    for tag in ("PD-old-70", "PD-old-text", "PD-old-70-expired/en", "PD-old-X-expired"):
+        r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:" + tag], "")
+        assert r["status"] == "owner-verify", tag
+
+
+def test_primary_us_tags_still_verify():
+    for tag in ("PD-US-expired", "PD-USGov", "PD-USGov-NARA", "PD-US-no notice"):
+        assert cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:" + tag], "")["status"] == "verified"

@@ -136,7 +136,7 @@ namespace Statecraft.Game.UI
             Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)
             Own(new NavigationGuard(root));                                // the camera keys (WASD, arrows) never move UI focus (B6)
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
-            var card = Own(new EventCardPresenter(root, bridge, text, portraits));
+            var card = Own(new EventCardPresenter(root, bridge, text, portraits, EventImageCatalog.Load()));   // event photos: Resources, no scene field
             Own(new DefencePresenter(root, bridge, text, portraits));
             Own(new BudgetPresenter(root, bridge, text));
             Own(new WhyPresenter(root, bridge, text));

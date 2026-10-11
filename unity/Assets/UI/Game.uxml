@@ -79,6 +79,10 @@
              card shrinks its text, which scrolls, and keeps its option buttons. -->
         <ui:VisualElement name="right-column" class="right-column" picking-mode="Ignore">
             <ui:VisualElement name="event-card" class="panel event-card">
+                <!-- The promo's header picture: an archival photograph of the event (EventImageCatalog), framed in gold, with its
+                     credit line as a caption strip along its bottom edge. Events without one show the minister's portrait in
+                     the head instead. -->
+                <ui:VisualElement name="event-photo" class="event-photo"><ui:Label name="event-photo-credit" class="event-photo-credit" /></ui:VisualElement>
                 <!-- A portrait-shaped thumbnail beside the heading, framed on the face (playtest 2, P2-3 and P2-5). -->
                 <ui:VisualElement class="event-head">
                     <ui:VisualElement name="event-image" class="event-image" />

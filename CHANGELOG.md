@@ -53,6 +53,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.
+- Event cards have a promo-style header photograph: real archival photographs for 24 of the 31 events (Meitar
+  Collection / National Library of Israel under CC BY 4.0, Nationaal Archief under CC0, and the US National Archives),
+  shown in black and white with a subtle sepia/navy grade and a gold frame, with a credit line and alt text. The seven
+  events without a free photograph keep the minister's portrait. No card shows the outcome of the choice it asks
+  for. On a short window the body scrolls to keep the photograph whole, which also shows photographs at 21:9; if the
+  options would be cut, the photograph is dropped whole rather than cut through its credit, and it returns when the
+  window grows. Sensitive pictures need the owner's review
+  before a `-shareable` build, and `tools/package_release.py` now refuses a build folder that was not built
+  `-shareable` or carries an unreviewed sensitive picture (docs/event-images.md). Presentation only: the content hash
+  and saves are unchanged.
 - The unit art slice (a showcase for the art track, not gameplay): a 1948 IDF rifle trio with a selection ring, an IAF
   Spitfire flying a loop with its shadow, and the corvette INS Haganah, built from code as painted miniatures at the
   promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
@@ -119,6 +129,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
   bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
   flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).
+- Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
+  now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
+  any town. With the "kits" visual toggle off, names keep clear of the marker boxes instead. Presentation only.
+- The web build's quality fallback no longer lowers the quality while the page is hidden (#216). A background tab or a
+  minimised window (and in Chromium a window covered by others) runs at a few frames a second, which had counted as
+  load. Presentation only.
+- The border determinism test no longer fails now and then on a pixel or two: it shows the proof pattern once, renders a
+  warm-up frame, and compiles shaders synchronously, so both compared frames draw the same font atlas and shaders.
 - The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
   date, and before it the office is not a Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
   1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
