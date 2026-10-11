@@ -118,11 +118,4 @@ rules:
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"
     status: verified
-  # --- AI image-to-3D spike (branch promo-ai3d): TRELLIS.2 run locally, civilian buildings only (controller ruling on DINOv3 1.b.v) ---
-  - glob: "unity/Assets/AI3D/*"
-    licence: CC0-1.0
-    ai_generated: true
-    source: "microsoft/TRELLIS.2-4B (MIT; its pipeline also loads microsoft/TRELLIS-image-large ss_dec_conv3d_16l8_fp16, MIT), image-conditioned by facebook/dinov3-vitl16-pretrain-lvd1689m (Meta DINOv3 Licence, 2025-08-19; weights stay in the local HF cache, not redistributed), run locally on Apple MPS via github.com/shivampkumar/trellis-mac (MIT) by tools/ai3d/run_local.py on 2026-10-11 (pipeline 1024_cascade, seed 1). Inputs: RGBA cut-outs of promo/final/03-gameplay-1936.png (tools/ai3d/cutout.py; same provenance as promo/final). No background remover ran (briaai/RMBG-2.0, CC BY-NC, is never loaded). LOD0 2,000 and LOD1 250 triangles by tools/ai3d/post.py (quadric decimation, xatlas UVs, texture rebaked from trellis-mac's KDTree bake)"
-    status: owner-verify
-    note: "Spike outputs for comparison, not used by the game. CC0 follows the project's AI-output rule (LICENSING.md); the DINOv3 licence places no terms on outputs (summary in .superpowers/handover-2026-10-11/promo/ai3d-local-report.md), and the input inherits decision D5. No soldiers, weapons, aircraft or ships are generated with this pipeline."
 removed: []
