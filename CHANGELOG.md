@@ -12,8 +12,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
   a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
   the 1949 armistice lines and fronts are research items.
+- A portrait of Yitzhak Ben-Zvi: a crop of Harry Pot's 1958 Anefo photo (CC0; later than the Founding slice; #6).
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
+- A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
@@ -67,6 +69,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
 - Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
   reworded attention and full-war labels (#193).
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
@@ -97,6 +100,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The 1948 Cabinet no longer shows four vacant seats for offices that did not exist yet. Offices can now carry a `from`
+  date, and before it the office is not a Cabinet seat and cannot be filled. The dates are Education and Culture 10 March
+  1949, rationing 26 April 1949, President of Israel 16 February 1949 and Minister without Portfolio 8 October 1951. The
+  Budget row for Education reads "no ministry until 10 March 1949" (#217).
+- The Defence screen's UN ceasefire clock now reads "If full war goes on, the UN imposes a ceasefire in N weeks". The
+  old "A UN ceasefire will be imposed in N weeks" contradicted the First Truce, which keeps the game at full war (#218).
 - The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
   onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.

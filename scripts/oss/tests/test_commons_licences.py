@@ -22,3 +22,46 @@ def test_share_alike_is_recorded_as_unknown_licence():
     r = cl.rule_for("p/a.jpg", "s", "CC BY-SA 4.0", ["Template:Cc-by-sa-4.0"], "")
     assert r["licence"] == "unknown" and r["status"] == "owner-verify"
     assert "not public domain or CC0" in r["note"]
+
+
+def test_explicit_us_restoration_warning_cannot_be_verified_by_nested_pd_text():
+    r = cl.rule_for("p/a.jpg", "s", "Public domain",
+                    ["Template:PD-Israel", "Template:PD-US-expired", "Template:Not-PD-US-URAA",
+                     "Template:PD-1996-text/country", "Template:PD-1996-text/date"], "")
+    assert r["status"] == "owner-verify"
+    assert "Not-PD-US-URAA" in r["note"]
+
+
+def test_commons_keeps_the_us_restoration_warning_from_the_api():
+    class Response:
+        def json(self):
+            return {"query": {"pages": {"1": {
+                "imageinfo": [{"extmetadata": {"LicenseShortName": {"value": "Public domain"}}}],
+                "templates": [{"title": name} for name in
+                              ["Template:PD-Israel", "Template:Not-PD-US-URAA",
+                               "Template:PD-1996-text/date"]]}}}}
+
+    class Session:
+        def get(self, *args, **kwargs):
+            return Response()
+
+    short, templates, artist = cl._commons("File:A.jpg", Session())
+    assert "Template:Not-PD-US-URAA" in templates
+    assert cl.rule_for("p/a.jpg", "s", short, templates, artist)["status"] == "owner-verify"
+
+
+def test_pd_1996_parameter_subtemplates_are_not_us_status_on_their_own():
+    r = cl.rule_for("p/a.jpg", "s", "Public domain",
+                    ["Template:PD-Israel", "Template:PD-1996-text/country", "Template:PD-1996-text/date"], "")
+    assert r["status"] == "owner-verify"
+
+
+def test_actual_pd_1996_template_remains_verified():
+    r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:PD-1996", "Template:PD-1996-text"], "")
+    assert r["status"] == "verified"
+
+
+def test_pd_1996_text_helper_alone_is_not_us_status():
+    # {{PD-India-URAA}} (and PD-Poland, PD-HU-unknown and others) transclude {{PD-1996-text}} without {{PD-1996}}.
+    r = cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:PD-India-URAA", "Template:PD-1996-text"], "")
+    assert r["status"] == "owner-verify"
