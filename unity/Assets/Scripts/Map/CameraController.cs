@@ -149,10 +149,13 @@ namespace Statecraft.Game.Map
         /// <summary>Corners of the visible map area in viewport units: the top inset's band is covered by the UI.</summary>
         static readonly Vector2[] FootprintCorners = { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
 
-        /// <summary>The ground the rig's camera shows, as offsets (x, z) from the look-at point: the bounding box of the four
-        /// corner rays of the visible area (below the top inset) cut with the plane y = ShadowFit.GroundY, the terrain's lowest
-        /// point. Every real ground hit is nearer than the plane's, so the box holds everything the view can show (the frustum
-        /// meets a plane in a convex quad, so its corners bound it). A rig without a camera shows a point (Rect.zero); a
+        /// <summary>The ground the rig's camera shows, as offsets (x, z) from the look-at point: the bounding box of the point
+        /// below the camera and the four corner rays of the visible area (below the top inset) cut with the plane
+        /// y = ShadowFit.GroundY, the terrain's lowest point. Every ray meets the real ground between the camera and its
+        /// plane hit, so seen from above every visible point lies between the point below the camera and the quad of plane
+        /// hits (the frustum meets a plane in a convex quad, so its corners bound it): the box holds everything the view can
+        /// show. The camera's own point matters on the near side: over high ground just behind the south edge the near
+        /// rays meet the skirt long before the plane, and the whole view was skirt. A rig without a camera shows a point (Rect.zero); a
         /// corner that does not look down gives an infinite box. Worked from the rig's pose relative to the look-at point and
         /// the camera's projection (aspect, FOV, the inset's shift), not Camera.ViewportPointToRay: that unprojects through
         /// the 1000 km far plane in world coordinates, and its rays strayed by up to kilometres (measured: 0.25-4 km).</summary>
@@ -166,7 +169,7 @@ namespace Statecraft.Game.Map
             // NDC x = m00 x / -z - m02, NDC y = m11 y / -z - m12 (CameraRig.ApplyProjection): one unit ahead, the ray through (x, y).
             var m = cam.projectionMatrix;
             float top = 1f - Mathf.Clamp(rig.TopInset, 0f, CameraRig.MaxTopInset);
-            float x0 = float.PositiveInfinity, x1 = float.NegativeInfinity, z0 = float.PositiveInfinity, z1 = float.NegativeInfinity;
+            float x0 = eye.x, x1 = eye.x, z0 = eye.z, z1 = eye.z;
             foreach (var c in FootprintCorners)
             {
                 float nx = 2f * c.x - 1f, ny = 2f * c.y * top - 1f;

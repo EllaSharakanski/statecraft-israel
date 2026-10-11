@@ -203,7 +203,7 @@ public class CameraInputTests
         var rig = NewRig();
         try
         {
-            rig.GetComponent<Camera>().aspect = 16f / 9f;
+            var cam = rig.GetComponent<Camera>(); cam.aspect = 16f / 9f; cam.fieldOfView = CameraRig.Fov;   // the game's view (Init is not run here)
             foreach (var d in new[] { CameraController.MinDistance, 30000f, 60000f })
                 foreach (var yaw in new[] { 0f, 45f, 90f, 200f })
                     foreach (var inset in new[] { 0f, 0.1f })
@@ -211,7 +211,7 @@ public class CameraInputTests
                         {
                             rig.LookAt = new Vector3(RealMap.center.x, 0, RealMap.center.y); rig.Distance = d; rig.Yaw = yaw; rig.TopInset = inset;
                             var what = $"{d / 1000f} km, yaw {yaw}, inset {inset}, pan {dir}";
-                            for (int i = 0; i < 60; i++) CameraController.Step(rig, new CameraInput { Pan = dir }, 0.5f, RealMap);
+                            for (int i = 0; i < 120; i++) CameraController.Step(rig, new CameraInput { Pan = dir }, 0.5f, RealMap);
                             AssertViewOnMap(rig, RealMap, what);
                             // and it got there: the view touches the map's edge on at least one side
                             var f = CameraController.ViewFootprint(rig);
@@ -231,7 +231,7 @@ public class CameraInputTests
         var rig = NewRig();
         try
         {
-            rig.GetComponent<Camera>().aspect = 16f / 9f;
+            var cam = rig.GetComponent<Camera>(); cam.aspect = 16f / 9f; cam.fieldOfView = CameraRig.Fov;   // the game's view (Init is not run here)
             rig.LookAt = new Vector3(RealMap.xMax, 0, RealMap.center.y); rig.Distance = CameraController.MinDistance; rig.Yaw = 0;
             CameraController.Step(rig, new CameraInput { Pan = Vector2.right }, 10f, RealMap);
             float worst = 0f;
