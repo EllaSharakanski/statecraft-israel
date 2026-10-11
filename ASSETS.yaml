@@ -60,7 +60,7 @@ rules:
     status: verified
   - glob: "docs/images/social-preview.jpg"
     licence: CC-BY-4.0
-    source: "Crop of docs/images/build-m3-map.jpg, 1280x640, for the GitHub social preview (a real build image, not concept art)"
+    source: "Padded copy of docs/images/build-m3-map.jpg, 1280x640, for the GitHub social preview (a real build image, not concept art)"
     status: verified
   - glob: "spikes/m0/evidence/*.jpg"
     licence: CC-BY-4.0
