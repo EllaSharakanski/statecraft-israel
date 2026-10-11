@@ -201,8 +201,9 @@ namespace Statecraft.Game.Map.Units
                             var hat = Hat(t.Headgear[i]);
                             var type = UnitRoster.RiflemanType(t.Headgear[i]);
                             var at = UnitShowcase.Stand(map, centre + new Vector3(offsets[i].x, 0, offsets[i].y) * k);
-                            UnitShowcase.Piece(go.transform, $"Rifleman{i}", type, () => MeshFor($"{type}/{pose}", () => UnitModels.Rifleman(hat, pose, faded, type)),
+                            var figure = UnitShowcase.Piece(go.transform, $"Rifleman{i}", type, () => MeshFor($"{type}/{pose}", () => UnitModels.Rifleman(hat, pose, faded, type)),
                                 paint, at, Quaternion.Euler(0, heading, 0), UnitShowcase.FigureScale, out _);
+                            UnitShowcase.AddBase(map, figure.transform, at, MeshFor("figure-base", () => UnitShowcase.BaseMesh("UnitFigureBase")), paint);
                         }
                         top = UnitBadge.FigureHeightM * UnitShowcase.FigureScale;
                         break;

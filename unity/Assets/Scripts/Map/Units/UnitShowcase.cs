@@ -223,16 +223,40 @@ namespace Statecraft.Game.Map.Units
         /// <summary>The highest of <paramref name="heightAt"/> at (x, z), on two rings inside the circle of radius r (at a
         /// half and three quarters of it) and at the corners of a 16-gon drawn round it (at r / cos 11.25 degrees), sixteen
         /// points each: on a planar slope no point of the circle is higher, and a ridge under the boots is caught too.</summary>
-        public static float StandHeight(Func<float, float, float> heightAt, float x, float z, float r)
+        public static float StandHeight(Func<float, float, float> heightAt, float x, float z, float r) => StandRange(heightAt, x, z, r).top;
+
+        /// <summary>The highest and lowest of the same samples as <see cref="StandHeight"/>: where a figure stands, and
+        /// how far down the slope under its boots goes (its base reaches there: <see cref="Stand"/>).</summary>
+        public static (float top, float low) StandRange(Func<float, float, float> heightAt, float x, float z, float r)
         {
-            float top = heightAt(x, z);
+            float top = heightAt(x, z), low = top;
             foreach (var ring in new[] { 0.5f * r, 0.75f * r, r / Mathf.Cos(Mathf.PI / 16f) })
                 for (int k = 0; k < 16; k++)
                 {
-                    float a = Mathf.PI / 8f * k;
-                    top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * ring, z + Mathf.Sin(a) * ring));
+                    float a = Mathf.PI / 8f * k, h = heightAt(x + Mathf.Cos(a) * ring, z + Mathf.Sin(a) * ring);
+                    top = Mathf.Max(top, h); low = Mathf.Min(low, h);
                 }
-            return top;
+            return (top, low);
+        }
+
+        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short earth-coloured disc of the
+        /// boots' radius from its feet down to the lowest ground under them, so the downhill boot never floats. Not drawn
+        /// on ground flatter than this rise (m).</summary>
+        public const float BaseFromRiseM = 20f;
+
+        /// <summary>The unit disc a base is drawn with (radius 1, from y = -1 to 0), scaled per figure.</summary>
+        public static Mesh BaseMesh(string name) =>
+            new MiniatureMesh().Lathe(Matrix4x4.identity, new List<Vector2> { new Vector2(-1f, 1f), new Vector2(0f, 1f) }, UnitPalette.Deck, 16, shade: 0.55f).Build(name);
+
+        /// <summary>Adds the base under a figure standing at <paramref name="feet"/> when the ground under its boots falls
+        /// more than <see cref="BaseFromRiseM"/> below them (see <see cref="StandRange"/>).</summary>
+        internal static void AddBase(MapScene map, Transform figure, Vector3 feet, Mesh mesh, Material paint)
+        {
+            var (_, low) = StandRange((x, z) => map.Terrain.SampleHeight(new Vector3(x, 0, z)) + map.Terrain.transform.position.y, feet.x, feet.z, FootRadiusM);
+            float drop = feet.y - low;
+            if (drop <= BaseFromRiseM) return;
+            var go = Piece(figure.parent, "Base" + figure.name, mesh, paint, feet, Quaternion.identity, 1f);
+            go.transform.localScale = new Vector3(FootRadiusM, drop + 5f, FootRadiusM);
         }
 
         /// <summary>The highest ground under the loop (sampled every 5 degrees and at its centre), so the aircraft never

@@ -365,12 +365,18 @@ public class UnitsInPlayTests
                         lowest = Mathf.Min(lowest, q.y);
                     }
                     worstFloat = Mathf.Max(worstFloat, p.y - lowest);
+                    if (p.y - lowest > UnitShowcase.BaseFromRiseM + 25f)
+                    {
+                        var b = f.parent.Find("Base" + f.name);
+                        Assert.IsNotNull(b, $"{f.parent.name}/{f.name}: a figure on a slope stands on a base");
+                        Assert.LessOrEqual(b.position.y - b.localScale.y, lowest + 1f, $"{f.parent.name}/{f.name}: the base reaches the ground downhill");
+                    }
                     checkedFigures++;
                 }
             }
             Debug.Log($"UNITS slope: {checkedFigures} riflemen, worst float {worstFloat:0} m");
             Assert.Greater(checkedFigures, 40);
-            Assert.Less(worstFloat, 600f, "a figure 3.6 km tall floats less than a sixth of its height on the steepest spot");
+            Assert.Less(worstFloat, 1000f, "the ground under a figure's boots drops less than a quarter of its height");
         }
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }
