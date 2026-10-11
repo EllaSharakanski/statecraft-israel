@@ -8,7 +8,7 @@
 #   ~/ai3d/venv/bin/python -I tools/ai3d/run_local.py --check <name>:<rgba.png> ...   # preflight only, no model load
 #   --smoke: replace DINOv3 with an all-zero condition (= the pipeline's own negative condition, i.e. unconditional) to
 #            time/validate the whole local MPS path before the gated DINOv3 weights exist. Output is NOT an asset.
-# Writes <rundir>/<name>/{raw.glb, raw_full.obj, preprocessed.png, run.json}; then post.py / render.py / compare.py as before.
+# Writes <rundir>/<name>/{raw.npz, preprocessed.png, run.json} (+ raw.glb with --bake trellis); then post.py <raw.npz> ..., render.py, compare.py.
 #
 # RMBG-2.0 (briaai, CC BY-NC 4.0) must never run: (1) inputs are rejected unless they are RGBA with real alpha, which is
 # the only case where Trellis2ImageTo3DPipeline.preprocess_image skips self.rembg_model; (2) the pipeline's rembg class is
@@ -85,6 +85,8 @@ def main():
     ap.add_argument('--pipeline-type', default='1024_cascade', choices=['512', '1024', '1024_cascade'])
     ap.add_argument('--seed', type=int, default=1)
     ap.add_argument('--texture-size', type=int, default=1024)
+    ap.add_argument('--bake', default='none', choices=['none', 'trellis'],
+                    help="none: save raw.npz only and let post.py bake onto the final LOD (default); trellis: also trellis-mac's KDTree 200k bake to raw.glb")
     ap.add_argument('rest', nargs='+')
     a = ap.parse_intermixed_args()
     rundir = None if a.check else os.path.abspath(a.rest[0])
@@ -138,25 +140,31 @@ def main():
         t['generate'] = time.time() - t1
         V = mesh.vertices.cpu().numpy(); F = mesh.faces.cpu().numpy()
         if len(V) == 0 or len(F) == 0: say(name, 'EMPTY MESH (macOS GPU watchdog? see trellis-mac generate.py)'); log['error'] = 'empty mesh'; json.dump(log, open(os.path.join(out, 'run.json'), 'w'), indent=1); continue
-        with open(os.path.join(out, 'raw_full.obj'), 'w') as f:
-            for v in V: f.write(f'v {v[0]:.5f} {v[1]:.5f} {v[2]:.5f}\n')
-            for x in F + 1: f.write(f'f {x[0]} {x[1]} {x[2]}\n')
-        log['raw_full'] = {'verts': int(len(V)), 'tris': int(len(F)), 'obj_bytes': os.path.getsize(os.path.join(out, 'raw_full.obj')),
-                           'output_kind': 'voxel attribute volume (base_color/metallic/roughness/alpha) -> baked to UV texture; the raw mesh has no vertex colours'}
-        # Texture bake: trellis-mac's KDTree baker (Metal baker needs the Xcode Metal Toolchain). 200k-face pre-simplify as upstream.
+        # raw.npz: the full decoder mesh (TRELLIS native Z-up frame) and its sparse PBR voxel volume (attrs: base_color 0:3
+        # sRGB, metallic 3, roughness 4, alpha 5, as layout). post.py bakes from it onto the decimated mesh: the 200k-face
+        # KDTree bake of trellis-mac drops any texel more than 2 voxels from a voxel (black, then blurred: dark speckle on
+        # every model), gamma-encodes sRGB values a second time, and takes 60-1,400 s per model.
+        np.savez_compressed(os.path.join(out, 'raw.npz'), vertices=V.astype(np.float32), faces=F.astype(np.int32),
+                            coords=mesh.coords.cpu().numpy().astype(np.int32), attrs=mesh.attrs.cpu().float().numpy().astype(np.float16),
+                            origin=mesh.origin.cpu().numpy().astype(np.float32), voxel_size=np.float32(mesh.voxel_size),
+                            layout=json.dumps({k: [v.start, v.stop] for k, v in mesh.layout.items()}))
+        log['raw_full'] = {'verts': int(len(V)), 'tris': int(len(F)), 'voxels': int(len(mesh.coords)), 'voxel_size': float(mesh.voxel_size),
+                           'npz_bytes': os.path.getsize(os.path.join(out, 'raw.npz')),
+                           'output_kind': 'mesh + sparse PBR voxel volume (no vertex colours); post.py bakes it into a UV texture'}
         t1 = time.time()
-        from backends.texture_baker import uv_unwrap, bake_texture, export_glb_with_texture
-        import fast_simplification
-        bv, bf = V, F
-        if len(F) > 200000: bv, bf = fast_simplification.simplify(V, F, 1.0 - 200000 / len(F))
-        nv, nf, uvs, _ = uv_unwrap(bv, bf)
-        base, mr, _ = bake_texture(nv, nf, uvs, mesh.coords.cpu().float().numpy(), mesh.attrs.cpu().float().numpy(),
-                                   mesh.origin.cpu().float().numpy(), mesh.voxel_size, texture_size=a.texture_size)
-        export_glb_with_texture(nv, nf, uvs, base, mr, os.path.join(out, 'raw.glb'))
-        t['bake'] = time.time() - t1
+        if a.bake == 'trellis':  # trellis-mac's KDTree baker (the Metal baker needs the Xcode Metal Toolchain), 200k pre-simplify
+            from backends.texture_baker import uv_unwrap, bake_texture, export_glb_with_texture
+            import fast_simplification
+            bv, bf = V, F
+            if len(F) > 200000: bv, bf = fast_simplification.simplify(V, F, 1.0 - 200000 / len(F))
+            nv, nf, uvs, _ = uv_unwrap(bv, bf)
+            base, mr, _ = bake_texture(nv, nf, uvs, mesh.coords.cpu().float().numpy(), mesh.attrs.cpu().float().numpy(),
+                                       mesh.origin.cpu().float().numpy(), mesh.voxel_size, texture_size=a.texture_size)
+            export_glb_with_texture(nv, nf, uvs, base, mr, os.path.join(out, 'raw.glb'))
+            log['raw_glb'] = {'tris': int(len(nf)), 'verts': int(len(nv)), 'bytes': os.path.getsize(os.path.join(out, 'raw.glb'))}
+        t['save+bake'] = time.time() - t1
         log.update({'finished': now(), 'secs': {k: round(v, 1) for k, v in t.items()}, 'wall_s': round(sum(t.values()), 1),
-                    'peak_rss_gb': round(peak.rss / 2**30, 2), 'peak_mps_driver_gb': round(peak.mps / 2**30, 2),
-                    'raw_glb': {'tris': int(len(nf)), 'verts': int(len(nv)), 'bytes': os.path.getsize(os.path.join(out, 'raw.glb'))}})
+                    'peak_rss_gb': round(peak.rss / 2**30, 2), 'peak_mps_driver_gb': round(peak.mps / 2**30, 2)})
         json.dump(log, open(os.path.join(out, 'run.json'), 'w'), indent=1); say(name, 'DONE', json.dumps(log['secs']), log['peak_rss_gb'], 'GB rss')
         if torch.backends.mps.is_available(): torch.mps.empty_cache()
     peak.stop = True

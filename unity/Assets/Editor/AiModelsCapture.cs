@@ -49,6 +49,8 @@ public static class AiModelsCapture
                 var mesh = Load(name, out var tex); if (mesh == null) { Debug.LogWarning($"AI3D missing {name}"); continue; }
                 var mat = new Material(shader) { enableInstancing = true };
                 mat.SetTexture("_BaseMap", tex); mat.SetFloat("_Smoothness", 0.1f); mat.SetFloat("_Metallic", 0f);
+                // TRELLIS meshes are open shells with some flipped faces left after post.py's winding fix: draw both sides
+                mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off); mat.doubleSidedGI = true;
                 var p = centre + right * ((i - (Models.Length - 1) / 2f) * 2600f);
                 // a few copies: the hero model plus two smaller ones behind it, to read as a cluster
                 for (int k = 0; k < 3; k++)
