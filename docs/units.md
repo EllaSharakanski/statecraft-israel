@@ -136,7 +136,25 @@ Clicking a token's hex selects it: the white ring goes round the hex and the inf
   and roundels atop the wings, "for the first time" (Eduard p. 53).
 - The squadron's skull badge on the nose is too small to read at map scale and is left out.
 
-**Cost.** MEASURE_PLACEHOLDER
+**Cost.** The budget is 2.5 ms or less for the `units` toggle at gameplay03 (docs/visual-v1.md). The measurement was
+headless `?vprofile` on the WebGL build of 4640ca6, 1920x1080 at DPR 1, 2026-10-11.
+
+The machine was busy: the load average was 7–10 and other sessions were running Unity. The exclusive lock waited more
+than 20 minutes without getting the machine, so this run took a **shared** lock. The numbers are an upper bound, not a
+clean measurement.
+
+| Pose | all | -units | units cost | none |
+|---|---|---|---|---|
+| gameplay03 | 10.42 ms (spread 4.44, p95 12) | 9.33 ms (spread 0.11, p95 11) | 1.09 ms | 7.47 ms |
+| diorama02 | 21.46 ms (spread 8.20, p95 29) | 17.69 ms (spread 8.26, p95 20) | 3.77 ms, inside the noise | 13.81 ms |
+
+- **gameplay03** is within the budget even at this upper bound. The new-game state draws 6 brigades (up to 18
+  riflemen) and 2 ships.
+- **diorama02** cannot be read here. Its spreads (8 ms) are larger than the difference, and on this run other toggles
+  also come out above "all" (for example -routes at gameplay03).
+- A clean idle-machine re-measure is left open.
+- The layer rebuilds only when the roster changes (a new turn, a call-up or security order). Between those it does no
+  per-frame work beyond a flying aircraft's transform.
 
 **Left open.**
 - The rows are drafts from Wikipedia (and Eduard for the markings) until a historian checks them against Lorch or the
