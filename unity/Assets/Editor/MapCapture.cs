@@ -133,6 +133,31 @@ public static class MapCapture
         finally { MapShaderGlobals.PinWaterTime(null); QualitySettings.SetQualityLevel(saved, true); }
     }
 
+    /// <summary>The open sea up close (bug B10, the checker): the web tier (quality level 0) at 6, 12 and 18 km over the sea
+    /// west of Tel Aviv (34.70 E, 32.08 N), the water's clock pinned, at 1920x1080 into &lt;-captureDir&gt; (default
+    /// captures/visual/sea-close) as sea-&lt;km&gt;km.png.</summary>
+    public static void SeaClose()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        int at = System.Array.IndexOf(args, "-captureDir");
+        var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "sea-close");
+        var map = OpenAndBuild();
+        var rig = Camera.main.GetComponent<CameraRig>();
+        int saved = QualitySettings.GetQualityLevel();
+        try
+        {
+            QualitySettings.SetQualityLevel(0, true);
+            MapShaderGlobals.PinWaterTime(100f);
+            var look = map.Frame.ToWorld(34.70, 32.08, 0); look.y = map.Terrain.SampleHeight(look);
+            foreach (var km in new[] { 6, 12, 18 })
+            {
+                rig.LookAt = look; rig.Distance = km * 1000f; rig.Yaw = 0; rig.TopInset = 0; rig.Apply();
+                Save(Camera.main, 1920, 1080, Path.Combine(dir, $"sea-{km}km.png"));
+            }
+        }
+        finally { MapShaderGlobals.PinWaterTime(null); QualitySettings.SetQualityLevel(saved, true); }
+    }
+
     /// <summary>Renders each promo pose (PromoPose.All) at 1920x1080 once per quality tier (0 = Mobile, the WebGL tier;
     /// 1 = PC) into &lt;-captureDir&gt; (default captures/visual/editor) as &lt;tier&gt;-&lt;pose&gt;.png. Editor renders show no UI
     /// Toolkit labels; tools/art_checkpoint.sh pairs them with the WebGL screenshots, which do. With -units it adds the unit

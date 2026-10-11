@@ -89,3 +89,5 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
 - The "Not done" toast is opaque and sits clear of the open screen.
 - "International Standing" keeps to one line on a full-width bar.
+- The open sea no longer shows a blocky checker up close (about 6-20 km): its waves now come from smooth gradient noise
+  on rotated lattices instead of value noise differenced along the map's axes. Presentation only.
