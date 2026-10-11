@@ -8,6 +8,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
+  `people.yaml`; the loader rejects unknown source keys, sources without a `url` or `checked` date, and impossible birth
+  dates.
 - Browser-playable 1948–1951 (milestone M3): HUD, Cabinet with appointments, Budget, Events, Defence and "Why did this
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.

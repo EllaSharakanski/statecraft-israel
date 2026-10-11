@@ -41,6 +41,10 @@ namespace Statecraft.Sim
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
         public string NameHe { get; set; } = "";
+        /// <summary>Biographical birth date; optional until the sourced person data is complete.</summary>
+        public DateTime? Born { get; set; }
+        /// <summary>Sources for each biography value (name_he, born, died), separate from dated office-term sources.</summary>
+        public Dictionary<string, List<Source>> BiographySources { get; set; } = new Dictionary<string, List<Source>>();
         /// <summary>Required (null only when missing, which is a load error): a living person is excluded from release builds.</summary>
         public bool? Living { get; set; }
         /// <summary>Date of death, when it falls inside the content range: every term must end by then.</summary>

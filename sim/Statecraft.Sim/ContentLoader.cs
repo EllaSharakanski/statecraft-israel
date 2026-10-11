@@ -341,6 +341,22 @@ namespace Statecraft.Sim
                 if (p.Competence < 0 || p.Competence > 10) throw new ContentException("people.yaml", $"people[{p.Id}].competence", "must be 0-10");
                 if (p.Loyalty < 0 || p.Loyalty > 10) throw new ContentException("people.yaml", $"people[{p.Id}].loyalty", "must be 0-10");
                 if (p.Party != "" && !parties.Contains(p.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].party", $"unknown party '{p.Party}'");
+                if (p.Born.HasValue && p.Died.HasValue && p.Born.Value >= p.Died.Value)
+                    throw new ContentException("people.yaml", $"people[{p.Id}].born", FormattableString.Invariant($"must be before {p.Died:yyyy-MM-dd}, the date of death"));
+                var firstTerm = p.Offices.Count > 0 ? p.Offices.Min(t => t.From) : (DateTime?)null;
+                if (p.Born.HasValue && firstTerm.HasValue && p.Born.Value > firstTerm.Value)
+                    throw new ContentException("people.yaml", $"people[{p.Id}].born", FormattableString.Invariant($"must be on or before {firstTerm:yyyy-MM-dd}, when the first office term starts"));
+                // A map skips CheckNulls' list and entry checks, so a misspelt key or an empty source would load silently.
+                foreach (var kv in p.BiographySources)
+                {
+                    var field = $"people[{p.Id}].biography_sources.{kv.Key}";
+                    if (kv.Key != "name_he" && kv.Key != "born" && kv.Key != "died")
+                        throw new ContentException("people.yaml", field, "unknown field (must be name_he, born or died)");
+                    if (kv.Value == null) throw new ContentException("people.yaml", field, "must be a list");
+                    for (int i = 0; i < kv.Value.Count; i++)
+                        if (kv.Value[i] == null || string.IsNullOrWhiteSpace(kv.Value[i].Url) || kv.Value[i].Checked == default)
+                            throw new ContentException("people.yaml", FormattableString.Invariant($"{field}[{i}]"), "needs a url and a checked date");
+                }
                 foreach (var t in p.Offices)
                 {
                     if (string.IsNullOrEmpty(t.Office)) throw new ContentException("people.yaml", $"people[{p.Id}].offices", "office term without an office");
