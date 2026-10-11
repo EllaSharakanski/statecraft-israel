@@ -509,6 +509,13 @@ public class UnitsInPlayTests
             Assert.IsNull(root.Find("SelectionRing"));
             Assert.IsFalse(info.ShowsUnit);
             Assert.AreEqual(DisplayStyle.None, defence.style.display.value);
+            // A screen covering the panel (#210): a click behind it moves neither the ring nor the card.
+            var hud = ui.Q<VisualElement>("info-panel").parent;
+            hud.AddToClassList(ScreenNav.WideOpenClass);
+            GameRoot.OnHexClicked(map, layer, info, golani.Q, golani.R);
+            Assert.IsNull(layer.Selected, "covered: no selection");
+            Assert.IsFalse(info.ShowsUnit);
+            hud.RemoveFromClassList(ScreenNav.WideOpenClass);
             info.Dispose(); nav.Dispose();
         }
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
