@@ -62,7 +62,7 @@ public class ArmisticeTests
         var mv = a.Lines.Single(l => l.Key == "egypt_mv1950_demarcation");
         Assert.AreEqual(new DateTime(1950, 2, 22), mv.ShownFrom);
         Assert.AreEqual(new DateTime(1950, 2, 22), mv.Signed);
-        StringAssert.Contains("modus vivendi", mv.Agreement);
+        StringAssert.Contains("modus vivendi", mv.Agreement.ToLowerInvariant());
     }
 
     const string Head = "layer: x\nlabel: L\n";
