@@ -29,6 +29,10 @@ Sub-district boundaries (content/map/subdistricts_1948.geojson): digitised from 
 docs/oss/DECISIONS.md; see the file's licence note); scans from
 the National Library of Israel via Wikimedia Commons. Hebrew and Arabic names from Wikipedia (CC BY-SA 4.0).
 
+Railways and roads of 1948 (content/map/route*_1948.yaml): traced on the Survey of Palestine 1:250,000 map of 1946
+(public domain in Israel and the UK; facts only are used, as for decision D-B in docs/oss/DECISIONS.md), using the scans
+and georeferencing published by Palestine Open Maps (https://palopenmaps.org).
+
 Portraits: public-domain and CC0 photographs from Wikimedia Commons; per-file records in ASSETS.portraits.yaml.
 
 Fonts: EB Garamond, SIL Open Font License 1.1 (unity/Assets/UI/Fonts/OFL.txt).

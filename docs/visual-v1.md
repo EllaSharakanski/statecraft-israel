@@ -1169,9 +1169,30 @@ Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are th
   - the 700 m swell (unchanged);
   - a 170 m chop moving the other way, `ScChopGain` 1.4 times the swell, full under a 40 m pixel and gone by 170 m.
 
-  The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to Task 7's
-  0.15 by 120 m: the far sea reads calm, and the seam test's patch means stay within bound (at a flat 0.6, one 7x7 patch
-  at 120 km carried 0.032 against 0.012). Glint unchanged (0.06).
+  The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to
+  `ScWaveTiltFar` 0.10 by 120 m (Task 7's 0.15 until sea-fix): the far sea reads calm, and the seam test's patch means
+  stay within bound (at a flat 0.6, one 7x7 patch at 120 km carried 0.032 against 0.012). The glint (0.06) fades out
+  between 60 and 120 m pixels (sea-fix, below).
+
+  Bug B10 (sea-fix): both layers were value noise differenced along the map's axes, on axis-aligned lattices. Their
+  slope jumped at every cell edge, so the open sea showed a blocky checker at 6-20 km. Both layers are now gradient noise
+  with its analytic slope (`ScGradientNoiseD`, quintic fade: smooth across cell edges), the swell's lattice turned
+  0.6 rad and the chop's -0.9 rad (`ScWaveSlope`), scaled by `ScWaveSlopeGain` 0.22 to the old layers' strength (open
+  sea luma std at 6 / 12 / 18 km: 5.5 / 6.6 / 6.8 before, 6.0 / 6.8 / 7.1 after, in 8-bit levels). Fewer hashes than
+  before: 4 gradients per layer against 16 value-noise lookups. `TheOpenSeaHasNoBlockGrid` renders the open sea straight
+  down at 4 m a pixel and folds the luma gradient by its position in each old lattice's cell; the block-edge energy
+  ((largest bin - smallest) / mean, bound 0.25) was 0.660 before (170 m along z) and 0.122 after. `MapCapture.SeaClose`
+  renders the sea at 6, 12 and 18 km. With the new swell the seam test's single +-2.5 km patches (one 7x7 patch is about
+  one swell cell at 120 km) read up to 0.016 apart (bound 0.012) at the far tilt of 0.15, so the far tilt is now 0.10,
+  and the glint, the near zoom's sparkle, fades out between 60 and 120 m pixels.
+  Frame time (headless; another session loaded the machine, load average 4-18, so the spreads are wide):
+  - `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=8.35 spread_ms=0.11 median_p95_ms=10.00`
+  - `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=8.03 spread_ms=2.69 median_p95_ms=9.00`
+  - `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=13.54 spread_ms=0.22 median_p95_ms=14.00`
+  - `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=13.24 spread_ms=0.21 median_p95_ms=14.00`
+
+  Water and shore cost 0.32 ms at gameplay03 (inside a 2.69 ms spread) and 0.30 ms at diorama02, against the 2.5 ms
+  budget (0.89 / 0.13 ms in promo-sea round 1); p95 with everything on is 10 / 14 ms, under 16.7 ms.
 - **Surf** (review I2).
   - A swash line, full to `ScSwashM` 180 m and gone by 324 m.
   - Breakers through a `ScSurfM` 900 m zone. They are a squared triangle wave in the distance from the shore, spacing
@@ -1300,6 +1321,77 @@ Water and shore together (the toggle now covers both):
   unmeasured.
 - diorama02: 0.13 ms, below the noise (spread 0.18 ms).
 - p95 is at or under 16.7 ms at both poses.
+## Promo track: land use (issue #33, branch promo-land)
+The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 20 s, deterministic:
+`test_the_committed_textures_are_the_bake` checks the committed PNGs against a fresh bake) decides where from real data
+and paints what procedurally, baked:
+- where (158 x 211 m grid): fields on gentle slopes (< ~7%) with enough rain for dry farming (CHELSA bio12,
+  station-corrected as `hexgrid.py`: smoothstep 180-380 mm; the irrigated Jordan valley floor at least 0.7); the citrus
+  belt on the flat coastal plain and valley floor below 150 m near the 1948 towns (the hex-wise biome inputs softened over
+  1.5 km, so nothing steps at hex edges); garrigue, terraces and scrub where the rain is 250-600 mm, the ground unfarmed
+  and not the shader's rock;
+- what (`landuse.png`, 2048 x 4096 RGBA, about 79 x 105 m): strip-field parcels in rotated 5 km blocks (green, ochre
+  stubble, ploughed, fallow, grass, groves), soft grassy rims, hedges, some block edges as farm tracks; on the wet hills patches
+  of stony soil and grass, terraces along the real contours every 40 m of rise, scrub; 2 x 2 samples per texel; sRGB
+  colour (the sampler decodes it) spread into the empty texels so mips and BC3 blocks never blend with black; weight in
+  alpha;
+- no roads between the towns: the first rounds joined each town to its three nearest with seeded meandering tracks
+  (`tracks.png`); a controller ruling removed them, as invented routes would draw a second road beside the real 1948 roads
+  and railways the roads track traces from the 1946 Survey of Palestine map (`tools/routes_1948.py`). A finer track
+  network, if wanted, is traced there, not generated.
+The shader lays the land between `ScGroundBase` and `ScGroundShade` (relief, AO and breakup shade the fields), up to the
+waterline: promo-sea's beach band (`ScShore`, drawn after) covers it where there is a beach, and fields reach the water
+where there is none (the Sea of Galilee, cliffs). The `land` visual toggle lerps it away: a visual switch, not a price
+(the sample still runs).
+
+**Why baked, not procedural in the shader.** The first cut drew the same pattern in the shader (about 150 instructions).
+WebGL headless, same night: base 2.72 / 9.76 ms (gameplay03 / diorama02 `all`), procedural 13.94 / 15.44; with a
+per-pixel `[branch]` and one shared noise 10.37 / 13.60; branch-free 9.58 / 13.58; flattened 10.91 / 15.01. The cost stayed
+when no pixel took the branch (`-land` 8.11 at gameplay03), and sampling the textures alone cost nothing (2.69 ms):
+most likely register pressure / occupancy from the shader's size (the GPU reserves registers for the worst path, and
+ANGLE may flatten the branch), not its arithmetic. Single builds differ by a few tenths of a millisecond, so the
+bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake holds either way.
+
+**Cost, measured base vs branch (separate builds; the toggle cannot price it).**
+- Night of 2026-10-11, idle machine: main base 2.72 / 9.76 ms -> promo-land (`4b3c307`, before the review fixes) 2.68 / 9.93
+  ms (`PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.68 spread_ms=0.09 median_p95_ms=5.00`,
+  `... pose=diorama02 ... median_avg_ms=9.93 spread_ms=0.02 median_p95_ms=11.00`): within the noise between builds.
+- Review round 1 (`24b540f` on promo-sea), A/B against the same branch with the land call cut from the shader
+  (`Builds/Web-noland`), profiled back to back while the machine was busy (another browser on the GPU: every number about
+  5 ms above the night's): gameplay03 `all` 8.20 -> 9.09 ms (+0.89, spreads 0.09 / 0.07), `none` 7.10 -> 7.73; diorama02
+  `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms.
+- Idle re-measure (re-review R1): **not measured.** Waiting for a 1-minute load average under 3, checked every 5 minutes,
+  2026-10-11 09:02-10:47 and 14:32-15:32: it went under 3 once (2.64 at 09:22), but the A/B taken then was still inflated
+  (`none` 7.36 ms at gameplay03 against the night's 2.33) and the branch half was disturbed (spreads up to 10 ms), so it
+  is not used; otherwise the load stayed between 3.9 and 51. The busy-machine A/B above is the only cost figure; re-measure
+  on an idle machine before the tier numbers are re-ratified.
+
+**Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory).
+The WebGL `.data` is LZ4-compressed, so the download grows less: `Web-disabled.data` 21.53 MB (promo-sea) -> 24.40 MB
+(+2.86 MB, then with the since-removed tracks texture's 0.02 MB). Halving the texture (the platforms' 2048 cap gives 1024 x 2048) blurred the
+hedges, rims and rows (gameplay03 local gradient on the plain 0.0220 -> 0.0174, -21%), so it stays 4096 rows; BC1 cannot
+hold the weight, so BC3 stays.
+
+**Platforms.** The default web build targets desktop browsers (S3TC/BC, as the map's other textures already need). The land
+texture's WebGL override pins only the size (4096) and leaves the format automatic, so the build's texture subtarget picks
+it: DXT5 by default; `Build.Web -textureSubtarget astc` (or `etc2`) makes a build for browsers without S3TC (iOS Safari,
+most Android Chrome), where the land is ASTC 6x6, 4.8 MB (`unity-build-astc.log`), and golden + smoke=5 pass. A desktop
+build opened on such a browser would decompress the land to RGBA32 on the CPU: 42.7 MiB. WebGL2 guarantees only 2048-texel
+textures; virtually every GPU offers 4096.
+
+Tests, review round 1: EditMode 465 passed (`LandUseTests`: import settings for every platform, the subtarget argument,
+`-extraPose` validation, the land follows slope/rain/towns, gameplay detail; `TheTerrainShaderCompilesForWebGL2`); tools
+pytest 194 passed; `dotnet test` 628; golden and smoke unchanged on `Web-disabled` and `Web-astc`.
+
+Colour (WebGL `?shot`, checkpoint `promo-land-r5` against `promo-sea-r2`): gameplay03 saturation 0.4792 -> 0.4681
+(promo 0.38), warmth 0.1018 -> 0.0921 (promo 0.064), contrast 0.1738 -> 0.1730, palette distance 0.5971 -> 0.5148;
+diorama02 saturation 0.4183 -> 0.4164 (bar <= 0.48), warmth 0.1171 -> 0.1154 (bar 0.087-0.145), palette distance
+0.5869 -> 0.5868. Open item 3: the land lowers gameplay03 saturation by 0.011. Open item 5: the olive plain / gold hills
+seam is now fields against garrigue, a softer step (owner to judge).
+Licence: the texture is `owner-verify` in `ASSETS.yaml` pending decision D13 (`docs/oss/DECISIONS.md`).
+Still different from the promo: soft at close zoom (rows, hedges and bushes read at the gameplay zoom, blur at 15-20 km
+and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
+its grade.
 
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
@@ -1348,3 +1440,57 @@ One line each: ruling - reason.
 - Bloom, SSAO and the depth/opaque copies off - bloom changed at most 2/255 of any pixel; see "Tier decisions" for the costs.
 - NOT taken: dropping the bake's R channel - zero memory gain (BC1 either way) and it churns the assets; R stays as the AO reference.
 - NOT taken: deduplicating the `OpenMap` helper across `SeaTests` and `TerrainShaderTests` - test-only duplication; refactor risk with no behaviour gain.
+
+## Art spike: procedural settlement kits and trees (branch `promo-art`)
+Question: can code-generated settlement and vegetation art at Civ-style symbolic scale bring gameplay03 close to promo 03?
+Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id by `KitRandom`, no sim state touched),
+`Assets/Shaders/Kit.shader` (`Kit.mat` buildings, `Tree.mat` instanced trees), `KitTests`.
+- **Archetypes** (`SettlementKits`): white city (Tel Aviv, Haifa: 2-9 storey flat-roof blocks, ribbon windows and
+  balcony lines in the shader, L-shaped wings, roof rooms), old town (Jaffa, Acre, Gaza, Jerusalem: packed stone houses,
+  domes; Jaffa's clock tower, belfry, mosque, breakwater, lighthouse and boats), Arab town (tan cubes on slopes, a mosque),
+  moshava/kibbutz/moshav (red gable roofs, yards, a water tower; Nahalal as a ring). One merged mesh per settlement; all
+  towns share one lot list, so a smaller neighbour never overlaps a bigger town's buildings. The `kits` toggle off shows
+  the marker boxes again.
+- **Footprint** = (1945 population / 60,000) hexes, floored at 0.08 hex. The populations live in
+  `content/map/settlement_population_1945.yaml` (Village Statistics, 1945, read from the Wikipedia table on 2026-10-11:
+  owner-verify until checked against a scan; Beersheba's row there is garbled, 5,570 is its likely reading), read through
+  `MapInputs.PopulationYaml`. The sim never reads the file: `SaveGameTests.TheKitPopulationFileIsOutsideTheContentHash`, and
+  the player's `BOOT OK content 96035735...` is unchanged. Towns share seams (distance over radius), stay on land, and tint
+  their ground in the baked biome texture.
+- **Trees** (`Vegetation`, `VegetationLayer`): citrus groves in 2x2 patches (every tree of a patch checked for water and
+  towns, else one tree) round the coastal-plain towns, olives over the hills (and lone ones on the plain), palms by the
+  coastal towns, cypress windbreaks; `Graphics.RenderMeshInstanced` per 30 km tile from `beginCameraRendering`, thinned as
+  (110 km / distance)^2 past 110 km. The WebGL cost is per instance, not per triangle (at 25x a 30% triangle cut changed
+  nothing; the 2x2 patches took the instances from 51,000 to 21,165 and the gameplay03 cost from 2.9 to 1.3 ms).
+- **Scale (owner ruling 2026-10-11, superseding 10-25x):** buildings and trees match promo 03's measured scale per class:
+  city blocks about 60x real size, houses and trees about 100x (`KitScale`; landmarks take the city-block scale). Counts
+  were tuned at 25x and fall with the square of the scale. `?kitscale=`, `?housescale=`, `?treescale=` (clamped to 5-200)
+  override them in the player; `MapCapture.Kits` takes `-kitScale`, `-houseScale`, `-treeScale`.
+- **#37:** the kits use the sun's own URP shadow bias, unchanged (review I3: a kit-only bias and receiver offset were
+  removed, as the probe could not show a need for them). `KitTests.AKitShadowStartsAtItsWalls` walks out from a lone box's
+  shadow-side wall from 1 m in 1 m steps, on both tiers: the first shadowed sample is 3 m out at 12 km (pixel 7 m), 10 m at
+  60 km (pixel 35 m) and 1 m at 250 km, the same as with the old marker material, and the sunlit roof darkens at most 1.9%
+  with shadows on (no acne). No bias gap reproduces, so the floating look of the old markers was not a bias gap.
+- **Grid readability:** `KitTests.TheGridStaysReadableThroughTownsAndGroves`: at gameplay03, 76 of the 90 land edge
+  midpoints whose line shows on bare ground still show it with kits and trees on (84%; the floor is 75%).
+- **Measured at the 60x/100x defaults** (`d4e7275`, headless WebGL, `machine_lock.py --exclusive --wait-unity`, load 4-9,
+  other sessions running; "none" means every visual feature off, not only the kits and trees):
+  gameplay03 all 2.34 ms (p95 3), -trees 2.57, -kits 2.34, none 2.34; diorama02 all 11.22 (p95 12), -trees 10.41, -kits
+  11.35, none 7.29. Trees -0.23 / 0.81 ms and kits 0.00 / -0.13 ms (gameplay03 sits in the ~1 ms clock's bimodal
+  2.0 / 2.4 ms noise, so its negative costs are noise): every feature is within budget, all - none 0.00 / 3.93 ms, p95
+  3 / 12 ms. The `main` build in the same session: gameplay03 all 2.78, diorama02 all 10.12 (so +1.10 ms at diorama02).
+  The diorama02 shadow overrun is unchanged (2.95 ms against `main`'s 2.91). Headed DPR 1: all 2.46 / 10.95, trees
+  -0.24 / 0.75. Headed DPR 2: all p95 6 / 20 ms (floor 33), trees 0.35 / 0.89. Boot (`headed.py boot --runs 3`, `main`
+  then this build): cpu 1 map_build 491 -> 508, first_frame 3631 -> 3610; cpu 4 1874 -> 2035, 6795 -> 6991 (within
+  max(300 ms, 50%)). The player logs `KITS buildings=306 vertices=12374 triangles=8556 trees=8147 build_ms=20 plant_ms=19`.
+- **After merging `main` with promo-sea and promo-units** (`689880d`, headless, load 18.7 at the start and 4.4 at the end,
+  so absolute times are noisy): gameplay03 all 9.57 (p95 11), -trees 8.75, -kits 9.45, none 7.47; diorama02 all 14.99
+  (p95 16), -trees 14.28, -kits 15.40, none 10.92. Trees 0.82 / 0.71 ms and kits 0.12 / -0.41 ms stay within budget, as
+  do all - none (2.10 / 4.07 ms) and p95 (11 / 16 ms). The rise in "none" (2.34 -> 7.47 ms at gameplay03) is not the kits
+  (both "none" runs draw no kits or trees); it should be re-measured on a quiet machine against `main`.
+- **Build size** (WebGL, `main` -> this branch): uncompressed +318,885 bytes (+0.44%: wasm +286,873, data +28,978,
+  framework.js +3,034); Brotli (quality 11, as shipped) +33,407 bytes (+0.17%: wasm +13,092, data +20,091). No texture or
+  model files: everything is generated at load.
+- **Authored meshes later:** trees swap as is (`Vegetation.Build(kind)` returns a mesh in real metres). Buildings will need
+  `Emit` to return placements (archetype, variant, position, yaw, scale) drawn through the same tile instancing and a
+  textured, instanced variant of `Kit.shader`; that refactor waits for the first authored mesh.

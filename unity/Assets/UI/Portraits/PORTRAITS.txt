@@ -12,4 +12,6 @@ maimon | Public domain | https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Mai
 bernstein | Public domain | https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg
 remez | Public domain | https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg
 levin | Public domain | https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg
+shazar | Public domain | https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
 golda_meir | CC0 | https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
+weizmann | Public domain | https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
