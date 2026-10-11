@@ -50,6 +50,7 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     Smoothness = 0.0;
     Metallic = water;
     Emission = lerp(_ScHaze.rgb * h, waterColour, water);
+    ScBorderApply(mapM, water, BaseColor, Emission);   // region borders (StatecraftBorders.hlsl), last: unlit, on land only
 }
 
 #endif
