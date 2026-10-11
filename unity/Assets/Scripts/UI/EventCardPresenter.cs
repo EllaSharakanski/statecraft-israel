@@ -121,14 +121,14 @@ namespace Statecraft.Game.UI
             }
         }
 
-        /// <summary>On a short window (an ultrawide 2560x1080 is one) the shown band keeps the height its credit and
-        /// MinPhotoHeight need, and the body scrolls for the rest, as it may there; without this floor the band, which gives
-        /// way first, always fell below that height and no photograph ever showed at 21:9. On taller windows the band
-        /// still gives way first, so the body never scrolls for it.</summary>
+        /// <summary>On a short window (an ultrawide 2560x1080 is one) the body gives way before the band: it scrolls, as it
+        /// may there, down to its minimum, and only then does the band shrink (and drop below PhotoNeeds). Before this the
+        /// band always gave way first, fell below that height and no photograph ever showed at 21:9. On taller windows the
+        /// band still gives way first (Statecraft.uss flex-shrink 1000), so the body never scrolls for it. The options keep
+        /// flex-shrink 0 either way, so they are never cut.</summary>
         void ApplyPhotoFloor()
         {
-            var needs = PhotoAlt != null && ShortWindow ? PhotoNeeds : float.NaN;
-            band.style.minHeight = float.IsNaN(needs) ? new StyleLength(StyleKeyword.Null) : new StyleLength(needs);
+            band.style.flexShrink = PhotoAlt != null && ShortWindow ? new StyleFloat(0.001f) : new StyleFloat(StyleKeyword.Null);
         }
 
         /// <summary>The smallest height of the picture left visible above its credit strip (Statecraft.uss .event-photo
@@ -160,17 +160,7 @@ namespace Statecraft.Game.UI
             if (PhotoAlt == null) return;
             var h = band.layout.height; var needs = PhotoNeeds;
             if (float.IsNaN(h) || float.IsNaN(needs)) return;
-            if (h < needs - 0.5f || CardOverflows()) SetPhotoShown(false);
-        }
-
-        /// <summary>True when the card's last shown child ends below its content box: the options would be cut. With the
-        /// short-window floor the band no longer gives way, so this is what drops it when even a scrolled body is not enough.</summary>
-        bool CardOverflows()
-        {
-            VisualElement? last = null;
-            foreach (var c in card.Children()) if (c.resolvedStyle.display == DisplayStyle.Flex) last = c;
-            if (last == null || float.IsNaN(last.layout.yMax) || float.IsNaN(card.contentRect.yMax)) return false;
-            return last.layout.yMax + last.resolvedStyle.marginBottom > card.contentRect.yMax + 0.5f;
+            if (h < needs - 0.5f) SetPhotoShown(false);
         }
 
         void OnPhotoGeometry(GeometryChangedEvent evt) => FitPhoto();
