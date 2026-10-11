@@ -1,4 +1,5 @@
 #nullable enable
+using System.Linq;
 using UnityEngine.UIElements;
 
 namespace Statecraft.Game.UI
@@ -8,7 +9,8 @@ namespace Statecraft.Game.UI
     {
         readonly VisualElement root; readonly SimBridge bridge; readonly UiText text;
         readonly Button endTurn; readonly System.Action onEndTurn;
-        readonly VisualElement bar, hudRoot;
+        readonly VisualElement bar, hudRoot, nav;
+        readonly System.Collections.Generic.List<VisualElement> meters;
 
         // Three tiers by the bar's logical width (1080p reference, match 0.5: logical width = sqrt(aspect x 1920 x 1080)).
         // Each threshold sits well clear of a common window shape, so a small window change does not flip a tier:
@@ -31,6 +33,17 @@ namespace Statecraft.Game.UI
         /// below (Statecraft.uss .hud-two-row).</summary>
         public const float TwoRowBelowPx = 1500f;
         public const string TwoRowClass = "hud-two-row";
+        /// <summary>On the one-row bar, when the meters leave enough room, the bar gets RoomyClass: promo-sized icons (38 px)
+        /// and values (25 px) (Statecraft.uss .top-bar--roomy). It turns on only when the measured spare room covers the
+        /// predicted growth (RoomyGrowth) plus SpareShare, and off when the spare room falls below SpareShare, so it never
+        /// flips back and forth.</summary>
+        public const string RoomyClass = "top-bar--roomy";
+        /// <summary>The share of the meters' width kept free after them (room for the browser's text measuring wider than the
+        /// editor's; PromoHudTests.EveryWindowShapeFitsTheBarAfterATurn asserts it).</summary>
+        public const float SpareShare = 0.05f;
+
+        /// <summary>The meters' predicted growth when roomy: six icons 30 -> 38 px, values 22 -> 25 px (about 14% wider).</summary>
+        public static float RoomyGrowth(float valueWidths) => 6 * 8f + 0.14f * valueWidths;
 
         public HudPresenter(VisualElement root, SimBridge bridge, UiText text)
         {
@@ -42,6 +55,9 @@ namespace Statecraft.Game.UI
             bar = root.Q<VisualElement>("top-bar");
             hudRoot = root.Q<VisualElement>("root");
             bar.RegisterCallback<GeometryChangedEvent>(OnBarGeometry);
+            meters = root.Q<VisualElement>("meters").Children().ToList();
+            nav = root.Q<VisualElement>("nav");
+            foreach (var m in meters) m.RegisterCallback<GeometryChangedEvent>(OnMeterGeometry);
             SetCompact(bar.layout.width);   // the bar may already be laid out (the loading screen shows it) and never resize
             bridge.Changed += Render;
             Render();
@@ -52,11 +68,35 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render; endTurn.clicked -= onEndTurn; endTurn.generateVisualContent -= PaintHourglass;
             bar.UnregisterCallback<GeometryChangedEvent>(OnBarGeometry);
+            foreach (var m in meters) m.UnregisterCallback<GeometryChangedEvent>(OnMeterGeometry);
+            bar.RemoveFromClassList(RoomyClass);
             bar.RemoveFromClassList(CompactClass); hudRoot.RemoveFromClassList(NarrowClass); hudRoot.RemoveFromClassList(TwoRowClass);
         }
 
         // The bar's width does not depend on the class, so this settles in one pass.
         void OnBarGeometry(GeometryChangedEvent e) => SetCompact(e.newRect.width);
+
+        void OnMeterGeometry(GeometryChangedEvent e) => UpdateRoomy();
+
+        /// <summary>Roomy only on the one-row bar with icons; see RoomyClass.</summary>
+        void UpdateRoomy()
+        {
+            if (meters.Count == 0) return;
+            var oneRow = !hudRoot.ClassListContains(NarrowClass) && !bar.ClassListContains(CompactClass);
+            // Panel coordinates (logical px), so the meters and the screen buttons compare directly.
+            float first = meters[0].worldBound.xMin, last = meters[meters.Count - 1].worldBound.xMax, limit = nav.worldBound.xMin;
+            if (!oneRow || float.IsNaN(first) || float.IsNaN(limit)) { bar.RemoveFromClassList(RoomyClass); return; }
+            var used = last - first; var spare = limit - last;
+            if (bar.ClassListContains(RoomyClass))
+            {
+                if (spare < SpareShare * used) bar.RemoveFromClassList(RoomyClass);
+            }
+            else
+            {
+                var values = meters.Sum(m => m.Q<Label>(className: "meter-value")?.worldBound.width ?? 0f);
+                if (spare - RoomyGrowth(values) >= SpareShare * used + 8f) bar.AddToClassList(RoomyClass);
+            }
+        }
 
         void SetCompact(float width)
         {

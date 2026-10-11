@@ -164,6 +164,16 @@ public class PromoHudTests
                 var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
                 hud = new HudPresenter(root, bridge, Text);
                 bridge.EndTurn();                                       // real changes on every meter that moved
+                for (int i = 0; i < 6; i++) yield return null;
+                if (w == 1920 && h == 1080)
+                {
+                    // Review P1: with typical (turn-1) values at 16:9 the bar has room for the promo's sizes.
+                    Assert.IsTrue(root.Q("top-bar").ClassListContains(HudPresenter.RoomyClass), "1920x1080: roomy with typical values");
+                    foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
+                        Assert.GreaterOrEqual(icon.worldBound.width, 36f, $"1920x1080: the {icon.Glyph} icon is promo-sized");
+                    foreach (var v in root.Q("meters").Query<Label>(className: "meter-value").ToList())
+                        Assert.GreaterOrEqual(v.resolvedStyle.fontSize, 24f, $"1920x1080: '{v.text}' is promo-sized");
+                }
                 // The widest realistic changes, formatted as HudModel formats them, and the widest date line.
                 foreach (var (name, delta) in new[] { ("treasury", PlayerText.MoneyChange(C, "treasury", -12.4)), ("immigration", Text.Format("hud.delta_people", 12345.0)),
                                                       ("security", "-10%"), ("support", "-10%"), ("standing", "+10%"), ("fx", PlayerText.MoneyChange(C, "fx_reserves", 12.5)) })
@@ -175,7 +185,7 @@ public class PromoHudTests
                 root.Q<Label>("security-level").text = Text.Format("hud.level", 5);
                 root.Q<Label>("turn").text = Text.Format("hud.turn", 120);
                 root.Q<Label>("date").text = Text.Format("hud.date", PlayerText.Date(new System.DateTime(1956, 9, 30)));
-                for (int i = 0; i < 3; i++) yield return null;
+                for (int i = 0; i < 6; i++) yield return null;          // the roomy bar steps back down if it must
                 var bar = root.Q("top-bar"); var barRect = bar.worldBound;
                 var where = $"{w}x{h} (bar {barRect.width:0} px)";
                 Assert.AreEqual(!icons, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact (no icons)");
@@ -215,6 +225,12 @@ public class PromoHudTests
                 var used = meters[meters.Count - 1].worldBound.xMax - meters[0].worldBound.xMin;
                 var limit = twoRow ? barRect.xMax - 14f : root.Q("nav").worldBound.xMin;
                 Assert.GreaterOrEqual(limit - meters[meters.Count - 1].worldBound.xMax, 0.05f * used, $"{where}: the meters use {used:0} of {limit - meters[0].worldBound.xMin:0} px");
+                // Review P2: every screen button's caption fits its button.
+                foreach (var nb in root.Q("nav").Query<Button>().ToList())
+                {
+                    var natural = nb.MeasureTextSize(nb.text, 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined);
+                    Assert.LessOrEqual(natural.x, nb.contentRect.width + 0.5f, $"{where}: the caption '{nb.text}' ({natural.x:0} px) overflows its button ({nb.contentRect.width:0} px)");
+                }
                 foreach (var e in new[] { root.Q("nav"), root.Q(className: "turn-box"), badge })
                     Assert.LessOrEqual(e.worldBound.yMax, barRect.yMax + 0.5f, $"{where}: {e.name}{string.Join(".", e.GetClasses())} leaves the bar");
                 Assert.GreaterOrEqual(root.Q("right-column").worldBound.yMin, barRect.yMax, where + ": the event column starts under the bar");
