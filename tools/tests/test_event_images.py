@@ -43,7 +43,50 @@ def test_encode_stays_under_the_size_cap():
     assert Image.open(io.BytesIO(data)).info.get("exif") is None
 
 
-def test_a_download_with_the_wrong_sha1_is_refused(tmp_path, capsys):
+@pytest.fixture
+def as_isolated(monkeypatch):
+    monkeypatch.setattr(ei, "isolated", lambda: True)
+
+
+def test_it_refuses_to_run_without_python_dash_i(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(ei, "isolated", lambda: False)
+    assert ei.main(["--originals", str(tmp_path), "--out", str(tmp_path)]) == 2
+    assert "python -I" in capsys.readouterr().out
+
+
+def original_for(row, folder):
+    """A stand-in original with the row's size; the row's SHA-1 is set to match it (rows are dicts, edited in memory)."""
+    path = folder / f"{row['event']}.jpg"
+    Image.new("RGB", tuple(row["original_size"]), (90, 90, 90)).save(path)
+    row["sha1"] = hashlib.sha1(path.read_bytes()).hexdigest()
+    return path
+
+
+def test_a_size_mismatch_is_refused_and_nothing_is_written(tmp_path, capsys, monkeypatch, as_isolated):
+    rows = [dict(r) for r in ei.load_rows()[:3]]
+    originals, out = tmp_path / "originals", tmp_path / "out"
+    originals.mkdir(); out.mkdir()
+    for r in rows:
+        original_for(r, originals)
+    rows[2]["original_size"] = [rows[2]["original_size"][0] + 1, rows[2]["original_size"][1]]   # the last row is wrong
+    monkeypatch.setattr(ei, "load_rows", lambda mapping=ei.MAPPING: rows)
+    assert ei.main(["--originals", str(originals), "--out", str(out)]) == 1
+    assert "SIZE MISMATCH" in capsys.readouterr().out
+    assert list(out.iterdir()) == []                                   # rows 1 and 2 were good, but nothing was written
+
+
+def test_good_originals_are_all_written(tmp_path, capsys, monkeypatch, as_isolated):
+    rows = [dict(r) for r in ei.load_rows()[:2]]
+    originals, out = tmp_path / "originals", tmp_path / "out"
+    originals.mkdir(); out.mkdir()
+    for r in rows:
+        original_for(r, originals)
+    monkeypatch.setattr(ei, "load_rows", lambda mapping=ei.MAPPING: rows)
+    assert ei.main(["--originals", str(originals), "--out", str(out)]) == 0
+    assert sorted(p.name for p in out.iterdir()) == sorted(r["file"] for r in rows)
+
+
+def test_a_download_with_the_wrong_sha1_is_refused(tmp_path, capsys, as_isolated):
     row = ei.load_rows()[0]
     bad = tmp_path / f"{row['event']}.jpg"
     Image.new("RGB", (10, 10)).save(bad)

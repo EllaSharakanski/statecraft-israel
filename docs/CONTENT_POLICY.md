@@ -58,14 +58,16 @@ Facts are open to correction. The framing (section 1) is not.
 - Content without sources, or with a source that does not support the claim.
 - Quotes, speeches or letters that are not sourced verbatim.
 - Mechanics or text that reward or celebrate violence against civilians, from any side.
-- Portraits of real people that are not public domain or CC0. This rule stays strict for portraits. Event photographs
-  follow the owner's ruling of 2026-10-11, quoted exactly:
-  1. "CC BY 4.0 archival EVENT photos are allowed with a credit line (photographer, Meitar Collection, National Library
-     of Israel, CC BY 4.0). The content-policy rule for real people (docs/CONTENT_POLICY.md §4) stays strict for
-     portraits."
-  2. "Show photos as authentic black and white with a subtle warm sepia/navy grade and the gold frame. No AI
-     colourising, no content alteration beyond grade, crop and resize. Record the adaptation per CC BY ("graded and
-     cropped")."
+- Images of real people that are not public domain or CC0. One narrow exception, by owner ruling 2026-10-11
+  (summarised): archival photographs of events (not portraits) under CC BY 4.0 are allowed, on these terms:
+  - Each carries a credit line naming the photographer and collection (for the Meitar Collection: photographer,
+    Meitar Collection, National Library of Israel, The Pritzker Family National Photography Collection), with the
+    licence, both on screen with the picture and in `NOTICE`.
+  - The only changes are a subtle warm tone grade (the pictures stay black and white, in the gold frame), a crop and a
+    resize. No AI colourising and no change to what the picture shows. The adaptation is recorded with the credit as "graded and cropped".
+  - Files whose only US basis is a GPO, PD-Israel or PD-India tag, and share-alike files (CC BY-SA), are refused.
+  - Each photograph gets a sensitivity review before a shareable build may carry it: every one is screened, and any
+    marked sensitive waits for the owner's sign-off (the `-shareable` build and the packager refuse until then).
 
   Each event photograph's credit, alt text and sensitivity review are recorded in
   `unity/Assets/UI/EventImages/event-images.yaml` and `ASSETS.yaml` (see `docs/event-images.md`).

@@ -99,23 +99,31 @@ def load_rows(mapping: Path = MAPPING) -> list[dict]:
     return yaml.safe_load(mapping.read_text(encoding="utf-8"))["images"]
 
 
+def isolated() -> bool:
+    """True when Python runs with -I (the tests stand in for it: pytest itself is not isolated)."""
+    return bool(sys.flags.isolated)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--originals", type=Path, required=True, help="folder holding <event>.jpg downloads")
     ap.add_argument("--out", type=Path, default=FOLDER)
     ap.add_argument("--only", action="append", default=[], help="event id (repeatable); default all rows")
     a = ap.parse_args(argv)
+    if not isolated():
+        print("run with python -I: the originals are untrusted downloads (see the module docstring)"); return 2
     rows = [r for r in load_rows() if not a.only or r["event"] in a.only]
-    for r in rows:   # check every download before reading any of them
+    for r in rows:   # check every download before reading or writing anything, so a bad row writes nothing
         src = a.originals / f"{r['event']}.jpg"
         if not src.is_file():
             print(f"MISSING {src}"); return 1
         if hashlib.sha1(src.read_bytes()).hexdigest() != r["sha1"]:
             print(f"SHA-1 MISMATCH {src} (expected {r['sha1']})"); return 1
-    for r in rows:
-        with Image.open(a.originals / f"{r['event']}.jpg") as im:
+        with Image.open(src) as im:   # reads the header only
             if list(im.size) != r["original_size"]:
                 print(f"SIZE MISMATCH {r['event']}: {im.size} vs {r['original_size']}"); return 1
+    for r in rows:
+        with Image.open(a.originals / f"{r['event']}.jpg") as im:
             data = encode(grade(im, r["crop"]))
         (a.out / r["file"]).write_bytes(data)
         print(f"{r['file']} {len(data)} bytes")

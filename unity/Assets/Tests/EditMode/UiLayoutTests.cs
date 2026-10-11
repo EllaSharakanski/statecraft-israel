@@ -307,7 +307,8 @@ public class UiLayoutTests
                     g.State.Date = e.From;                       // the text names the office holders of the event's own time
                     g.State.PendingEvents.Clear(); g.State.PendingEvents.Add(e.Id);
                     bridge.Replace(g);
-                    for (int i = 0; i < 3; i++) yield return null;
+                    for (int i = 0; i < 4; i++) yield return null;   // the fourth: a photograph dropped for height settles
+                    CheckPhoto($"{w}x{h}: {e.Id}", root, card, problems);
                     var c = root.Q("event-card").worldBound;
                     var mini = root.Q("minimap").worldBound;
                     if (c.height > tallest) { tallest = c.height; tallestId = e.Id; }
@@ -338,5 +339,124 @@ public class UiLayoutTests
             }
         }
         Assert.IsEmpty(problems, string.Join("\n", problems));
+    }
+
+    /// <summary>Review I2 and I6: a shown photograph keeps at least MinPhotoHeight of picture above its whole credit line
+    /// (CC BY 4.0 needs the credit), the credit's text fits the strip, and PhotoAlt says whether it is shown.</summary>
+    static void CheckPhoto(string where, VisualElement root, EventCardPresenter card, List<string> problems)
+    {
+        var band = root.Q("event-photo");
+        var credit = root.Q<Label>("event-photo-credit");
+        if (band.resolvedStyle.display == DisplayStyle.None)
+        {
+            if (card.PhotoAlt != null) problems.Add($"{where}: PhotoAlt is set but the photograph is hidden");
+            return;
+        }
+        if (card.PhotoAlt == null) problems.Add($"{where}: the photograph band shows with no PhotoAlt");
+        if (band.layout.height + 0.5f < credit.layout.height + EventCardPresenter.MinPhotoHeight)
+            problems.Add($"{where}: the photograph band is {band.layout.height:0} px, under its credit ({credit.layout.height:0} px) + {EventCardPresenter.MinPhotoHeight} px");
+        if (!Inside(credit.worldBound, band.worldBound)) problems.Add($"{where}: the credit {credit.worldBound} is cut by the band {band.worldBound}");
+        if (!TextFits(credit)) problems.Add($"{where}: the credit '{credit.text}' does not fit its strip {credit.contentRect}");
+    }
+
+    /// <summary>Review I6: on a window too short for the long events, their photograph is dropped rather than squeezed
+    /// (the card then has no picture, PhotoAlt is null), the credit is never cut, and the card still clears the minimap
+    /// with its options inside it.</summary>
+    [UnityTest]
+    public IEnumerator AShortWindowDropsThePhotographAndNeverCutsTheCredit()
+    {
+        var problems = new List<string>();
+        var photos = AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset");
+        Assert.IsNotNull(photos);
+        foreach (var (w, h) in new[] { (1280, 600), (1920, 640) })
+        {
+            var rt = new RenderTexture(w, h, 0);
+            var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+            ps.targetTexture = rt;
+            var go = new GameObject("LayoutTest");
+            go.SetActive(false);
+            var doc = go.AddComponent<UIDocument>();
+            doc.panelSettings = ps;
+            doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+            go.SetActive(true);
+            var root = doc.rootVisualElement;
+            var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+            var card = new EventCardPresenter(root, bridge, Text, null, photos);
+            int dropped = 0, shown = 0;
+            try
+            {
+                for (int i = 0; i < 20 && float.IsNaN(root.Q("minimap").worldBound.width); i++) yield return null;
+                foreach (var e in C.Events.Where(e => photos.Find(e.Id) != null))
+                {
+                    var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+                    g.State.Date = e.From;
+                    g.State.PendingEvents.Clear(); g.State.PendingEvents.Add(e.Id);
+                    bridge.Replace(g);
+                    for (int i = 0; i < 4; i++) yield return null;
+                    CheckPhoto($"{w}x{h}: {e.Id}", root, card, problems);
+                    if (card.PhotoAlt == null) dropped++; else shown++;
+                    var c = root.Q("event-card").worldBound;
+                    var mini = root.Q("minimap").worldBound;
+                    if (c.yMax > mini.yMin + 0.5f && c.xMax > mini.xMin && c.xMin < mini.xMax)
+                        problems.Add($"{w}x{h}: {e.Id}: card {c} overlaps the minimap {mini}");
+                    foreach (var b in root.Q("event-options").Query<Button>().ToList())
+                        if (!Inside(b.worldBound, c)) problems.Add($"{w}x{h}: {e.Id}: option '{b.text}' {b.worldBound} is cut off by the card {c}");
+                }
+                Debug.Log($"I6 {w}x{h}: {shown} photographs shown, {dropped} dropped");
+                if (w == 1920) Assert.Greater(dropped, 0, $"{w}x{h} is short enough that a long event drops its photograph");
+            }
+            finally
+            {
+                card.Dispose();
+                Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+            }
+        }
+        Assert.IsEmpty(problems, string.Join("\n", problems));
+    }
+
+    /// <summary>Review I2: a photograph dropped because the window got shorter comes back when it grows again, without a
+    /// new event (the card listens to the right-hand column's size, which only the window changes).</summary>
+    [UnityTest]
+    public IEnumerator ADroppedPhotographReturnsWhenTheWindowGrows()
+    {
+        var rt = new RenderTexture(1920, 1080, 0);
+        var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+        ps.targetTexture = rt;
+        var go = new GameObject("LayoutTest");
+        go.SetActive(false);
+        var doc = go.AddComponent<UIDocument>();
+        doc.panelSettings = ps;
+        doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+        go.SetActive(true);
+        var root = doc.rootVisualElement;
+        var photos = AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset");
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        g.State.Date = C.Events.First(e => e.Id == "armistice_egypt").From;
+        g.State.PendingEvents.Clear(); g.State.PendingEvents.Add("armistice_egypt");
+        var card = new EventCardPresenter(root, new SimBridge(g, Text), Text, null, photos);
+        var column = root.Q("right-column");
+        try
+        {
+            for (int i = 0; i < 20 && float.IsNaN(root.Q("minimap").worldBound.width); i++) yield return null;
+            for (int i = 0; i < 3; i++) yield return null;
+            Assert.IsNotNull(card.PhotoAlt, "1080p has room for the photograph");
+            column.style.bottom = 560;                    // as a much shorter window would leave the column
+            for (int i = 0; i < 4; i++) yield return null;
+            Assert.IsNull(card.PhotoAlt, "a short column drops the photograph");
+            Assert.AreEqual(DisplayStyle.None, root.Q("event-photo").resolvedStyle.display);
+            Assert.AreEqual("", root.Q("event-photo").tooltip, "the alt text goes with it");
+            column.style.bottom = StyleKeyword.Null;      // the window grows back
+            for (int i = 0; i < 4; i++) yield return null;
+            Assert.IsNotNull(card.PhotoAlt, "the photograph is back without a new event");
+            Assert.AreEqual(DisplayStyle.Flex, root.Q("event-photo").resolvedStyle.display);
+            var problems = new List<string>();
+            CheckPhoto("1920x1080 regrown", root, card, problems);
+            Assert.IsEmpty(problems, string.Join("\n", problems));
+        }
+        finally
+        {
+            card.Dispose();
+            Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+        }
     }
 }

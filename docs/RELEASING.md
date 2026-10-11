@@ -27,7 +27,8 @@ GitHub Releases page (and, from M4, on itch.io). Steps 1–3 are a normal pull r
 
    `package_web.sh` copies the licence and attribution files into the build folder, then runs
    `tools/package_release.py`, M3's sensitivity gate, which zips the folder and prints `PACKAGED …` or
-   `PACKAGE REFUSED …`. It then lists the zip, and prints the SHA-256 and `OK: notices inside …`. If it prints anything
+   `PACKAGE REFUSED …`. It refuses a build that was not made with `-shareable` (the build's `event-photos.json` says
+   so) or that carries an unreviewed sensitive event photograph. It then lists the zip, and prints the SHA-256 and `OK: notices inside …`. If it prints anything
    else, stop. This one zip is the file for GitHub Releases and for the M4 itch.io upload (`docs/m3-release.md`); never
    zip a build by hand.
 6. **Tag and publish (owner):**

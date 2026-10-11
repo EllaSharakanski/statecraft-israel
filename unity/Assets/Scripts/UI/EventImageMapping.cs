@@ -74,7 +74,7 @@ namespace Statecraft.Game.UI
                 if (r.File != r.Event + ".jpg") problems.Add($"{r.Event}: file must be {r.Event}.jpg (got '{r.File}')");
                 if (!Licences.TryGetValue(r.Licence, out var label)) problems.Add($"{r.Event}: licence '{r.Licence}' is not public domain, CC0 or CC BY 4.0");
                 else if (!r.Credit.Contains(label)) problems.Add($"{r.Event}: credit does not name the licence '{label}'");
-                if (r.Artist == "" || !r.Credit.Contains(r.Artist.Split(' ')[0])) problems.Add($"{r.Event}: credit does not name the artist '{r.Artist}'");
+                if (r.Artist == "" || !r.Credit.Contains(r.Artist)) problems.Add($"{r.Event}: credit does not name the artist '{r.Artist}'");
                 if (!r.Credit.Contains(Adaptation)) problems.Add($"{r.Event}: credit does not say '{Adaptation}'");
                 if (r.Alt.Trim().Length < 20) problems.Add($"{r.Event}: alt text missing or too short");
                 if (!r.Commons.StartsWith("https://commons.wikimedia.org/wiki/File:", StringComparison.Ordinal)) problems.Add($"{r.Event}: commons page missing");

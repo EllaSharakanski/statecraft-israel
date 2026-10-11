@@ -99,7 +99,7 @@ rules:
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event idf_founding. Original 686x1200, SHA-1 2f0905da8614028f03d981bbd07cb77c7e19059b (https://upload.wikimedia.org/wikipedia/commons/0/0b/Jerusalem_%28997008872766605171.jpg); made by tools/event_images.py (crop [0.5, 0.52, 0.94]). Commons VRTS permission ticket 2021092910005788. Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away."
+    note: "Event idf_founding. Original 686x1200, SHA-1 2f0905da8614028f03d981bbd07cb77c7e19059b (https://upload.wikimedia.org/wikipedia/commons/0/0b/Jerusalem_%28997008872766605171.jpg); made by tools/event_images.py (crop [0.5, 0.52, 0.94]). Commons VRTS permission ticket 2021092910005788. The NLI calls it the IDF founding ceremony at the Rehavia Gymnasium (the first IDF parade in Jerusalem), June 1948, just after the event window. Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away."
   - glob: "unity/Assets/UI/EventImages/first_truce.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Jerusalem_(997008872623805171).jpg"
@@ -144,7 +144,7 @@ rules:
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event jerusalem_military_government. Original 2000x1322, SHA-1 241a9575d316acca61a4218caabffbc9987217d5 (https://upload.wikimedia.org/wikipedia/commons/6/6e/Jerusalem_%28997008872608005171.jpg); made by tools/event_images.py (crop [0.5, 0.64, 1.0]). Commons VRTS permission ticket 2021092910005788. Colour slide shown in monochrome (the grade)."
+    note: "Event jerusalem_military_government. Original 2000x1322, SHA-1 241a9575d316acca61a4218caabffbc9987217d5 (https://upload.wikimedia.org/wikipedia/commons/6/6e/Jerusalem_%28997008872608005171.jpg); made by tools/event_images.py (crop [0.5, 0.64, 1.0]). Commons VRTS permission ticket 2021092910005788. Context, a month before the event window (the NLI dates it June 1948). Colour slide shown in monochrome (the grade)."
   - glob: "unity/Assets/UI/EventImages/latrun_proposal.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Latrun_(997009322899505171.jpg"
@@ -234,7 +234,7 @@ rules:
     credit: "Benno Rothenberg / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
     adapted: "graded and cropped"
     commons: "CC BY 4.0; Cc-by-4.0, Meitar Collection/license credit line, National Library of Israel/Meitar Collection; Items with VRTS permission confirmed"
-    note: "Event armistice_jordan. Original 920x657, SHA-1 b43662888bdc03a1c09952b094c52e996e138cae (https://upload.wikimedia.org/wikipedia/commons/d/dc/Ben_Gurion_International_Airport_%28997008137543905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. Identifiable officials (among them Moshe Dayan and Walter Eytan)."
+    note: "Event armistice_jordan. Original 920x657, SHA-1 b43662888bdc03a1c09952b094c52e996e138cae (https://upload.wikimedia.org/wikipedia/commons/d/dc/Ben_Gurion_International_Airport_%28997008137543905171%29.jpg); made by tools/event_images.py (crop [0.5, 0.45, 1.0]). Commons VRTS permission ticket 2021092910005788. Identifiable officials (probably among them Moshe Dayan and Walter Eytan; the NLI caption does not name them)."
   - glob: "unity/Assets/UI/EventImages/austerity_1949.jpg"
     licence: CC-BY-4.0
     source: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008136819405171).jpg"

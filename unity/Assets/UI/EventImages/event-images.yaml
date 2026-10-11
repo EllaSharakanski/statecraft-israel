@@ -22,11 +22,11 @@ images:
     licence: CC-BY-4.0
     artist: "Moshe Marlin Levin"
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
-    alt: "Officers and a rabbi with the flag at the ceremony founding the Israel Defense Forces in Jerusalem, 1948."
+    alt: "Officers and a rabbi with a banner at the Jerusalem ceremony founding the Israel Defense Forces, June 1948."
     crop: [0.5, 0.52, 0.94]
     sensitive: false
     sensitivity_reviewed: false
-    note: "Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away."
+    note: "The NLI calls it the IDF founding ceremony at the Rehavia Gymnasium (the first IDF parade in Jerusalem), June 1948, just after the event window. Colour slide shown in monochrome (the grade); the slide mount and its handwriting are cropped away."
   - event: first_truce
     file: first_truce.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Jerusalem_(997008872623805171).jpg"
@@ -92,11 +92,11 @@ images:
     licence: CC-BY-4.0
     artist: "Moshe Marlin Levin"
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel / The Pritzker Family National Photography Collection · CC BY 4.0 · graded and cropped"
-    alt: "One of Israel's first policemen directs traffic on Ussishkin Street, Jerusalem, 1948."
+    alt: "One of Israel's first policemen directs traffic on Ussishkin Street, Jerusalem, June 1948."
     crop: [0.5, 0.64, 1.0]
     sensitive: false
     sensitivity_reviewed: false
-    note: "Colour slide shown in monochrome (the grade)."
+    note: "Context, a month before the event window (the NLI dates it June 1948). Colour slide shown in monochrome (the grade)."
   - event: latrun_proposal
     file: latrun_proposal.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Latrun_(997009322899505171.jpg"
@@ -232,7 +232,7 @@ images:
     crop: [0.5, 0.45, 1.0]
     sensitive: false
     sensitivity_reviewed: false
-    note: "Identifiable officials (among them Moshe Dayan and Walter Eytan)."
+    note: "Identifiable officials (probably among them Moshe Dayan and Walter Eytan; the NLI caption does not name them)."
   - event: austerity_1949
     file: austerity_1949.jpg
     commons: "https://commons.wikimedia.org/wiki/File:Meitar_Collection_(997008136819405171).jpg"

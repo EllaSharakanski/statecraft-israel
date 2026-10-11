@@ -176,14 +176,14 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 }
 /* The header photograph (promo 03 and 05): full width, 9:4, a gold frame, its credit as a caption strip along the bottom
    (so the credit costs the card no height). It gives way first on a short window (the large flex-shrink takes the
-   shortfall before the text); below EventCardPresenter.MinPhotoHeight it is dropped for that render, so the body and the
-   options never scroll for it. */
+   shortfall before the text); below its credit's height plus EventCardPresenter.MinPhotoHeight it is dropped until the
+   window grows again, so the body and the options never scroll for it and the credit (CC BY 4.0) is never cut. */
 .event-card > .event-photo {
     display: none; height: 200px; min-height: 0; flex-shrink: 1000; margin-bottom: 4px; overflow: hidden;
     justify-content: flex-end; background-size: cover; background-color: var(--navy-deep); border-width: 1px; border-color: var(--gold);
 }
 .event-photo-credit {
-    font-size: 12px; white-space: normal; -unity-text-align: middle-center; margin: 0; padding: 2px 8px 3px 8px;
+    flex-shrink: 0; font-size: 13px; white-space: normal; -unity-text-align: middle-center; margin: 0; padding: 2px 8px 3px 8px;
     color: var(--ink); background-color: rgba(5, 9, 18, 0.92); -unity-font-style: italic;   /* 0.92: blending is linear, so less reads grey */
 }
 .event-office { white-space: normal; -unity-text-align: middle-center; font-size: 18px; }

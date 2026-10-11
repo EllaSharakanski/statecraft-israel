@@ -101,8 +101,7 @@ MonoBehaviour:
     sensitivityReviewed: 0
   - eventId: idf_founding
     image: {fileID: 2800000, guid: bd09df6e255af486aa2b097209f0a079, type: 3}
-    alt: Officers and a rabbi with the flag at the ceremony founding the Israel Defense
-      Forces in Jerusalem, 1948.
+    alt: "Officers and a rabbi with a banner at the Jerusalem ceremony founding the Israel Defense Forces, June 1948."
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel
       / The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
@@ -135,8 +134,7 @@ MonoBehaviour:
     sensitivityReviewed: 0
   - eventId: jerusalem_military_government
     image: {fileID: 2800000, guid: 58b9f14a3ed1e4a9aba4e8a649be050a, type: 3}
-    alt: One of Israel's first policemen directs traffic on Ussishkin Street, Jerusalem,
-      1948.
+    alt: "One of Israel's first policemen directs traffic on Ussishkin Street, Jerusalem, June 1948."
     credit: "Moshe Marlin Levin / Meitar Collection / National Library of Israel
       / The Pritzker Family National Photography Collection \xB7 CC BY 4.0 \xB7 graded
       and cropped"
