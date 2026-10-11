@@ -81,3 +81,18 @@ Copernicus notice.
 `ASSETS.yaml` and `ASSETS.portraits.yaml`. It groups only explicit `ai_generated: true` rows by media kind,
 keeps source/status and manifest names, and includes the README's no-live-generation statement. It does not
 change flags, clear licences, expand asset patterns into filenames, or answer the store content survey.
+
+## Steam screenshot dimensions (#45)
+
+Before the owner reviews a proposed set of store screenshots, run:
+
+```bash
+uv run tools/store_screenshots.py path/to/shot1.png path/to/shot2.png path/to/shot3.png path/to/shot4.png path/to/shot5.png
+```
+
+This refuses unreadable images, fewer than five distinct paths, dimensions below 1920 x 1080, or a non-16:9 ratio.
+Repeated paths do not satisfy the count. It does not compare image contents: copies at different paths can still pass.
+`DIMENSIONS OK` is not proof of real gameplay, rights, age suitability or store acceptance. The owner still reviews
+what each screenshot shows and records the build commit/zip SHA-256 and capture date. This does not capture anything,
+change a release gate or submit a store page. Steam's [official screenshot requirements](https://partner.steamgames.com/doc/store/assets/standard)
+were checked 11 October 2026; re-check before submission. These are not itch.io requirements.
