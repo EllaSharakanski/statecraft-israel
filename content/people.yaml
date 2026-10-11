@@ -17,7 +17,7 @@ people:
     party: mapai
     competence: 9
     loyalty: 10
-    portrait: { file: promo/ref/people/David_Ben-Gurion.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg", focus_y: 0.3 }
+    portrait: { file: promo/ref/people/David_Ben-Gurion_NARA_1951.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Photograph_of_President_Truman_in_the_Oval_Office%2C_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg", focus_y: 0.4 }
     offices:
       - { office: prime_minister, from: 1948-05-14, sources: &prov [{ url: "https://en.wikipedia.org/wiki/Provisional_government_of_Israel", checked: 2026-10-09 }] }
       - { office: defense_minister, from: 1948-05-14, sources: *prov }
@@ -243,6 +243,7 @@ people:
     party: mapai
     competence: 8
     loyalty: 9
+    portrait: { file: promo/ref/people/Golda_Meir_CC0_1964.jpg, license: CC0, source: "https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg", focus_y: 0.3 }
     offices:
       - { office: labour_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
       - { office: labour_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
