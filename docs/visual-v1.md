@@ -557,7 +557,7 @@ The images live in the owner's local `captures/visual/` folder (git-ignored); ow
 | 8 | t08-grid | captures/visual/t08-grid/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 8 (fix 1) | t08-grid-r1 | captures/visual/t08-grid-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
-| borders | promo-borders-before, promo-borders-noproof, promo-borders-r2 | captures/visual/promo-borders-before/*-compare*.png (main 807e300), captures/visual/promo-borders-noproof/*-compare*.png (the branch as played: no data, no border), captures/visual/promo-borders-r2/editor/*-compare*.png (the synthetic `--borderproof` checker, labelled on screen; editor renders only) | (owner) Note: no real region data yet, so play shows no border (see "Region borders"). The earlier promo-borders-proof / -after rows ran on uncommitted work over 807e300 (old ring pattern). |
+| borders | promo-borders-before, promo-borders-noproof, promo-borders-r2 | captures/visual/promo-borders-before/*-compare*.png (main 807e300), captures/visual/promo-borders-noproof/*-compare*.png (the branch as played: no data, no border), captures/visual/promo-borders-r2/editor/*-compare*.png (the synthetic `--borderproof` checker, labelled on screen; editor renders only), all at d1973db | (owner) Note: no real region data yet, so play shows no border (see "Region borders"). The earlier promo-borders-proof / -after rows ran on uncommitted work over 807e300 (old ring pattern). |
 | merge | t-merge | captures/visual/t-merge/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png (before the grade re-tune: t-merge-pre, t-merge-r1) | (owner) Note: the land is one dry-grass gold with no fields, orchards or cities yet; that gap is content (art track), not the grade. |
 | merge (fix 1) | t-merge-r3 | captures/visual/t-merge-r3/*-compare*.png (t-merge-r2 = with the rejected border colour) | (owner) Note: olive coastal plain and valleys; the selected hex is now the promo's ivory ring colour, gold stays the UI chrome's. |
 | 10 | t10-tiers | captures/visual/t10-tiers/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png; weak GPU: captures/visual/t10-swiftshader | (owner) Note: render scale 1.0 on the web (sharper lines and pills); bloom, SSAO and the depth/opaque copies off; the colour is unchanged within 0.001. |
@@ -1007,6 +1007,8 @@ has none of these: `hexes.json` holds elevation, land and biome; `settlements_19
 `MapBorders.Apply` runs on every build with no layer. Against main (review I1, branch merged with main 632edbd, both editor
 renders from the same Library):
 - `MapCapture.SurfFrames` (gameplay03, web tier, the water's clock pinned, 60 frames): **0 of 124,416,000 pixels differ**.
+  The renders are kept in `captures/visual/promo-borders-i1/` (`borders-maincheck/` main, `promo-borders/` the branch,
+  `main2/` main's second `Promo` run).
 - `MapCapture.Promo` (both poses, both tiers; the water's clock is not pinned there): main against the branch differs in
   1,334 / 15,089 / 116,761 / 19,904 pixels (Mobile-diorama02, Mobile-gameplay03, PC-diorama02, PC-gameplay03; largest step
   26/255 in PC-diorama02, 2/255 elsewhere), and main against a second main run in 513 / 1,737 / 116,542 / 10,498 pixels
@@ -1018,8 +1020,13 @@ renders from the same Library):
 
 `BorderProof` is a synthetic pattern for tests and captures only (review I3): a checker of 4 x 4 axial hex blocks
 (parallelograms in a regular lattice over the whole map, unrelated to any town or line), alternately Primary and
-Secondary, land only. While it is drawn the camera carries the label "SYNTHETIC TEST PATTERN — not real boundaries"
-(`TheProofIsLabelledOnScreenWhileDrawn`), so every capture labels itself. Only the editor and development builds honour
+Secondary, land only. While it is drawn the camera carries the label "SYNTHETIC TEST PATTERN — not real boundaries", so
+every capture labels itself: a legacy `TextMesh` (bold, white with a dark drop copy, 3.3% of the frame high) that renders
+under URP, placed before each render from the camera's aspect, 35% down the frame inside the tilt-shift's sharp band
+(legible in `captures/visual/promo-borders-r2/editor/*-gameplay03.png` and `*-diorama02.png`).
+`TheProofLabelRendersAtTheTopLeft` renders it shown and hidden at 1920x1080 and 1440x1080: about 12,800 pixels change in
+the upper left, none elsewhere, and its left end is on screen; `TheProofIsLabelledOnScreenWhileDrawn` checks it goes with
+the toggle and the layer. Only the editor and development builds honour
 its flag (`Application.isEditor || Debug.isDebugBuild`; `AReleaseBuildIgnoresTheProofFlag`): `-borderproof` in the editor's
 promo renders and tests, `tools/art_checkpoint.sh --borderproof` (editor renders; the release WebGL shots ignore it, so the
 WebGL frame profile can no longer draw it), and `?borderproof` / `-borderproof` in a development player.
@@ -1140,11 +1147,19 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   - Without data: see I1 above (not measurable against main on this machine).
 - WebGL build: no `Shader error`, no "not supported" line (GLES3: `LOAD_TEXTURE2D` is `texelFetch`, static const arrays,
   no new derivative use beyond Task 8's `ddx`/`ddy` in uniform control flow); both goldens OK (Hash1952 62f8ec61 since
-  #137). Texture units with promo-land merged: see the promo-borders report (test-merge build).
+  #137), and `golden&smoke=5` passes on the build of d1973db.
+- Texture units with promo-land merged (review M10): the terrain fragment's own textures are 6 (Bake, Coast,
+  Ao and Land through the graph, `_ScBiomeTex`, `_ScRegionTex`; promo-land dropped Tracks), plus URP's (main-light shadow
+  map, reflection probe and the like): about 10-11 by the source, under WebGL2's guaranteed 16. Built, not only counted:
+  a local test merge of d1973db with origin/promo-land 7db1a3a (not pushed) built for WebGL with 0 errors and no
+  `Shader error` (76.0 MB), and booted in Chrome for Testing with `GOLDEN OK 1950` and `GOLDEN OK 1952` and no "not
+  supported" or `Shader` line (web_check's fail pattern).
 - Checkpoints (art-log rows): `promo-borders-before` (main 807e300); `promo-borders-proof` and `promo-borders-after` were run
   on 807e300's tree plus the then-uncommitted branch, so the art log records 807e300 for them (now marked `807e300+wip`
-  there); the rings in them are the old pattern. The review round's checkpoints record their commits:
-  `promo-borders-noproof` (no proof: the branch as played) and `promo-borders-r2` (`--borderproof`, editor renders).
+  there); the rings in them are the old pattern. The review rounds' checkpoints are on d1973db (art-log rows
+  `promo-borders-noproof` and `promo-borders-r2-borderproof`): `promo-borders-noproof` (no proof: the branch as played,
+  goldens OK) and `promo-borders-r2` (`--borderproof`: the editor renders show the labelled checker; its WebGL shots, a
+  release build, ignore the flag and match `-noproof`'s numbers exactly).
 
 ## promo-sea: water, surf and beach (art track, open item 3, issue #38)
 `ScWaterShade` (`StatecraftMap.hlsl`) is reworked on both sides of the edge, and a new `ScShore` paints the land's shore.
