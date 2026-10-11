@@ -23,6 +23,8 @@ namespace Statecraft.Sim
                 ContentLoader.Status(e.File, F("status"), e.Status);
                 ContentLoader.Period(e.File, $"events[{e.Id}]", e.From, e.To);
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException(e.File, F("office"), $"unknown office '{e.Office}'");
+                if (c.Offices.Any(o => o.Id == e.Office && o.HistoricalOnly))
+                    throw new ContentException(e.File, F("office"), "historical-only titles cannot be delegated events");
                 CheckPlaceholders(c, e, F("title"), e.Title, offices);
                 CheckPlaceholders(c, e, F("text"), e.Text, offices);
                 foreach (var cond in e.Conditions)

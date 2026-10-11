@@ -246,3 +246,12 @@ a row to its "Rebaseline history". Contributors do not.
 - [ ] no invented quotes; sensitive tags only where they apply, `status: fact-checked`
 - [ ] `dotnet test sim/Statecraft.sln` passes
 - [ ] a line in `CHANGELOG.md`
+
+### Historical-only titles
+
+An office with `historical_only: true` records a dated title without adding a playable Cabinet seat.
+Its terms in `people.yaml` can be used in text placeholders such as `{deputy_title}` when the
+event window has a holder throughout. It cannot own a policy, effect, budget line or an event's
+`office:` delegation. Use the responsible senior minister for those gameplay fields. Existing
+offices default to `historical_only: false`. A historical-only title ignores player appointments,
+including entries carried in an older save.

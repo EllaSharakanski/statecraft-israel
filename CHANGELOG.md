@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Historical-only deputy titles and sourced 1951 terms; Kaplan's June 1952 Deputy Prime Minister title and the linked Finance/Agriculture succession (issue #4).
+- People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
+  `people.yaml`; the loader rejects unknown source keys, sources without a `url` or `checked` date, and impossible birth
+  dates.
 - Browser-playable 1948–1951 (milestone M3): HUD, Cabinet with appointments, Budget, Events, Defence and "Why did this
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.
@@ -35,6 +39,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   authored model can replace a code-built one per unit type (docs/units.md).
 
 ### Changed
+- Source Dov Yosef's food-supply and rationing responsibility in the Third Government from 8 October 1951,
+  replacing the unsupported vacancy (#2).
 - The interface is restyled to the promo art (`promo/final/03`, `04`, `05`, `08`):
   - navy panels with gold trim, corner brackets and a soft shadow;
   - an icon for each indicator in the top bar, with its value and its change since the last turn;
