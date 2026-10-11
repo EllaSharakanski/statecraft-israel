@@ -125,6 +125,9 @@ namespace Statecraft.Game.Map
             var list = SettlementPlacer.Parse(inputs.SettlementsYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), SettlementsPath);
             Settlements = list;
             bool kitsOn = kitMaterial != null && treeMaterial != null;
+            if (kitsOn)
+                Kits.KitPopulation.Use(string.IsNullOrWhiteSpace(inputs.PopulationYaml)
+                    ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName));
             float hexSizeM = Hexes.hex_size_km * 1000f;
             var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial,
                 kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, list, hexSizeM) : null);
@@ -140,19 +143,22 @@ namespace Statecraft.Game.Map
             KitStats = null;
             if (kitsOn)
             {
-                // ?kitscale=60&treescale=100 in the WebGL player: the same layout at another symbolic scale, for the owner.
+                // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city
+                // blocks, houses, trees), clamped to KitScale.Min..Max; docs/dev-setup.md lists the flags.
                 if (Application.platform == RuntimePlatform.WebGLPlayer)
                 {
-                    int ks = UrlFlags.Int(Application.absoluteURL, "kitscale"), ts = UrlFlags.Int(Application.absoluteURL, "treescale");
-                    if (ks > 0) Kits.KitScale.Buildings = ks;
-                    if (ts > 0) Kits.KitScale.Trees = ts;
+                    var url = Application.absoluteURL;
+                    int ks = UrlFlags.Int(url, "kitscale"), hs = UrlFlags.Int(url, "housescale"), ts = UrlFlags.Int(url, "treescale");
+                    if (ks > 0) Kits.KitScale.CityBlocks = Kits.KitScale.Clamp(ks);
+                    if (hs > 0) Kits.KitScale.Houses = Kits.KitScale.Clamp(hs);
+                    if (ts > 0) Kits.KitScale.Trees = Kits.KitScale.Clamp(ts);
                 }
+                // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
+                // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
-                    terrainGo.GetComponent<MapRuntimeAssets>(), out var stats);
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats);
                 kits.transform.SetParent(transform, true);
                 KitStats = stats;
-                // The kits replace the marker boxes; the boxes stay (unrendered) as the labels' and tests' anchors.
-                foreach (var r in markers.GetComponentsInChildren<MeshRenderer>()) r.enabled = false;
                 DiagLog.BootPhase("kits built");
                 Debug.Log(stats.ToString());
             }

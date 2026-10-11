@@ -49,7 +49,7 @@ namespace Statecraft.Game.Map.Kits
                 for (int i = list.Count - 1; i > 0; i--) { int j = rnd.Range(0, i + 1); (list[i], list[j]) = (list[j], list[i]); }
                 var b = new Bounds((Vector3)list[0].GetColumn(3), Vector3.zero);
                 foreach (var m in list) b.Encapsulate((Vector3)m.GetColumn(3));
-                b.Expand(new Vector3(400f, 800f, 400f) * (KitScale.Trees / 25f));   // the crowns round the trunk points
+                b.Expand(new Vector3(400f, 800f, 400f) * (KitScale.Trees / KitScale.CountReference));   // the crowns round the trunk points
                 tiles.Add(new Tile { kind = key.Item1, bounds = b, m = list.ToArray() });
             }
             Count = trees.Count;

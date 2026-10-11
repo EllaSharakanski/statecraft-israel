@@ -4,10 +4,8 @@
 // when a storey is a pixel or two. Lit like the terrain (the sun with its shadows, the trilight ambient through SH) and
 // hazed with the terrain's own ScHazeAmount, so kits sit in the same air as the ground. GPU instancing for the trees, with a
 // per-instance tint hashed from the instance's origin (no per-instance buffer: WebGL 2 has instanced arrays only).
-// Shadow bias at kit scale (#37): the caster's depth and normal offsets are the sun's (_ShadowBias: about one shadow texel,
-// ~100 m at the gameplay zoom) times _KitDepthBias and _KitNormalBias, so a 300 m house's shadow starts at its walls
-// instead of a texel away; the receiver samples its shadow _KitReceiveOffset metres out along its normal, which keeps the
-// lit walls free of acne without pushing the cast shadow away.
+// Shadows use the sun's own URP bias, unchanged (ApplyShadowBias): KitTests.AKitShadowStartsAtItsWalls finds no gap at
+// the walls with it and the hero renders show no acne (#37, review I3), so the kits carry no bias of their own.
 Shader "Statecraft/Kit"
 {
     Properties
@@ -15,9 +13,6 @@ Shader "Statecraft/Kit"
         _BaseColor ("Tint", Color) = (1, 1, 1, 1)
         _Jitter ("Per-instance tint jitter", Range(0, 0.5)) = 0
         _WindowDark ("Window darkness", Range(0, 1)) = 0.55
-        _KitDepthBias ("Caster depth bias (x the sun's)", Range(0, 1)) = 0.25
-        _KitNormalBias ("Caster normal bias (x the sun's)", Range(0, 1)) = 0.0
-        _KitReceiveOffset ("Receiver normal offset (m)", Float) = 60
     }
     SubShader
     {
@@ -26,8 +21,7 @@ Shader "Statecraft/Kit"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         CBUFFER_START(UnityPerMaterial)
             half4 _BaseColor;
-            half _Jitter, _WindowDark, _KitDepthBias, _KitNormalBias;
-            float _KitReceiveOffset;
+            half _Jitter, _WindowDark;
         CBUFFER_END
         ENDHLSL
 
@@ -116,7 +110,7 @@ Shader "Statecraft/Kit"
                     // Contact darkening in the bottom real 3 m of a wall.
                     albedo *= lerp(0.72, 1.0, saturate(i.uv.y / 3.0));
                 }
-                Light sun = GetMainLight(TransformWorldToShadowCoord(i.positionWS + n * _KitReceiveOffset));
+                Light sun = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 float ndl = saturate(dot(n, sun.direction));
                 half3 lit = albedo * (SampleSH(n) + sun.color * ndl * sun.shadowAttenuation);
                 float h = _ScHaze.a * ScHazeAmount(i.positionWS);
@@ -142,10 +136,7 @@ Shader "Statecraft/Kit"
                 UNITY_SETUP_INSTANCE_ID(v);
                 float3 positionWS = TransformObjectToWorld(v.positionOS.xyz);
                 float3 normalWS = TransformObjectToWorldNormal(v.normalOS);
-                float invNdotL = 1.0 - saturate(dot(_LightDirection, normalWS));
-                positionWS += _LightDirection * _ShadowBias.x * _KitDepthBias;
-                positionWS += normalWS * (invNdotL * _ShadowBias.y * _KitNormalBias);
-                return ApplyShadowClamping(TransformWorldToHClip(positionWS));
+                return ApplyShadowClamping(TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, _LightDirection)));
             }
             half4 Frag() : SV_Target { return 0; }
             ENDHLSL

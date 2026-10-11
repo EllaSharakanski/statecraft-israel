@@ -131,16 +131,17 @@ public static class MapCapture
     }
 
     /// <summary>Art-track iteration renders (editor, WebGL tier = quality level 0): the promo poses plus a 30 km look at the
-    /// promo 03 ground (Jaffa to Ramla), at the symbolic scale given by -kitScale (buildings) and -treeScale (default: the
-    /// ruling's KitScale defaults), into -captureDir as kits-&lt;pose&gt;.png. Logs the kit numbers (KITS ...).</summary>
+    /// promo 03 ground (Jaffa to Ramla), at the symbolic scale given by -kitScale (city blocks), -houseScale and -treeScale (default:
+    /// the ruling's KitScale defaults), into -captureDir as kits-&lt;pose&gt;.png. Logs the kit numbers (KITS ...).</summary>
     public static void Kits()
     {
         var args = System.Environment.GetCommandLineArgs();
         string Arg(string name) { int i = System.Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         var dir = Arg("-captureDir") ?? Path.Combine(CaptureDir, "visual", "kits");
         var ci = System.Globalization.CultureInfo.InvariantCulture;
-        if (Arg("-kitScale") is string ks) Statecraft.Game.Map.Kits.KitScale.Buildings = float.Parse(ks, ci);
-        if (Arg("-treeScale") is string ts) Statecraft.Game.Map.Kits.KitScale.Trees = float.Parse(ts, ci);
+        if (Arg("-kitScale") is string ks) Statecraft.Game.Map.Kits.KitScale.CityBlocks = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(ks, ci));
+        if (Arg("-houseScale") is string hs) Statecraft.Game.Map.Kits.KitScale.Houses = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(hs, ci));
+        if (Arg("-treeScale") is string ts) Statecraft.Game.Map.Kits.KitScale.Trees = Statecraft.Game.Map.Kits.KitScale.Clamp(float.Parse(ts, ci));
         int saved = QualitySettings.GetQualityLevel();
         try
         {
@@ -161,8 +162,7 @@ public static class MapCapture
         finally
         {
             QualitySettings.SetQualityLevel(saved, true);
-            Statecraft.Game.Map.Kits.KitScale.Buildings = Statecraft.Game.Map.Kits.KitScale.DefaultBuildings;
-            Statecraft.Game.Map.Kits.KitScale.Trees = Statecraft.Game.Map.Kits.KitScale.DefaultTrees;
+            Statecraft.Game.Map.Kits.KitScale.Reset();
         }
     }
 

@@ -8,9 +8,9 @@ namespace Statecraft.Game.Map.Kits
     public enum Archetype { WhiteCity, OldTown, ArabTown, Moshava }
 
     /// <summary>Procedural settlement kits at the owner's symbolic scale (ruling 2026-10-11): buildings about
-    /// <see cref="KitScale.Buildings"/> times their real size, a town's footprint spread over neighbouring hexes in
+    /// <see cref="KitScale"/> times their real size (per class), a town's footprint spread over neighbouring hexes in
     /// proportion to its population, geography real (towns stay on land, at their sourced coordinates). Built at load time
-    /// from the settlement id's seed (<see cref="KitRandom"/>), so a map always draws the same towns; nothing here reads or
+    /// from the settlement id's seed (<see cref="KitRandom"/>), so every load of a build draws the same towns; nothing here reads or
     /// writes the sim.</summary>
     public static class SettlementKits
     {
@@ -58,10 +58,12 @@ namespace Statecraft.Game.Map.Kits
                 ground.Footprints.Add((centres[s.Id], FootprintRadiusM(s, ground.HexSizeM), s.Id));
             }
             var result = new List<(Settlement, Mesh, int)>();
+            // One lot list for every town: a big town's buildings are placed first, and a neighbour's never overlap them.
+            var lots = new List<Lot>();
             foreach (var s in order)
             {
                 var km = new KitMesh();
-                int n = BuildOne(s, centres[s.Id], ground, km);
+                int n = BuildOne(s, centres[s.Id], ground, km, lots);
                 result.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
             return result;
@@ -101,13 +103,12 @@ namespace Statecraft.Game.Map.Kits
         sealed class Lot { public Vector2 c; public float r; }
 
         /// <summary>Places one settlement's buildings into <paramref name="km"/>; returns how many.</summary>
-        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km)
+        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, List<Lot> lots)
         {
             var arch = ArchetypeOf(s);
             var rnd = new KitRandom(s.Id, 1);
             float R = FootprintRadiusM(s, ground.HexSizeM);
-            float m = KitScale.Buildings;
-            var lots = new List<Lot>();
+            float m = KitScale.For(arch);
             int placed = 0;
 
             // This settlement's cell: a point belongs to the settlement whose footprint it is deepest inside (distance over
@@ -164,7 +165,7 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>Buildings per settlement: the footprint area times the archetype's built-up share over its mean lot.</summary>
         static int TargetCount(Archetype arch, float R)
         {
-            float area = Mathf.PI * R * R, m = KitScale.Buildings;
+            float area = Mathf.PI * R * R, m = KitScale.For(arch);
             float lot = arch switch
             {
                 Archetype.WhiteCity => 21f * 15f, Archetype.OldTown => 11f * 10f, Archetype.ArabTown => 10f * 9f, _ => 10f * 8f,
@@ -224,8 +225,8 @@ namespace Statecraft.Game.Map.Kits
 
         static void Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
         {
-            float m = KitScale.Buildings;
-            var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground);
+            float m = KitScale.For(arch);
+            var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground, m);
             switch (arch)
             {
                 case Archetype.WhiteCity:
@@ -281,7 +282,7 @@ namespace Statecraft.Game.Map.Kits
 
         /// <summary>Wall bottom (sunk 2 m below the lowest corner, so a house on a slope stands on a plinth, not on air) and the
         /// ground level the walls rise from (the highest corner, so the slope never buries a storey).</summary>
-        static (float bottom, float ground) GroundSpan(Vector2 p, float yawDeg, float w, float d, KitGround ground)
+        static (float bottom, float ground) GroundSpan(Vector2 p, float yawDeg, float w, float d, KitGround ground, float m)
         {
             float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
             float lo = float.MaxValue, hi = float.MinValue;
@@ -291,7 +292,7 @@ namespace Statecraft.Game.Map.Kits
                 float y = ground.Y(p.x + u * ca - v * sa, p.y + u * sa + v * ca);
                 lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y);
             }
-            return (lo - 2f * KitScale.Buildings, hi);
+            return (lo - 2f * m, hi);
         }
 
         static Vector2 DryNear(Vector2 c, KitGround ground, float within, ref KitRandom rnd)
@@ -310,7 +311,7 @@ namespace Statecraft.Game.Map.Kits
         /// church belfry above the harbour; the other old towns get a mosque.</summary>
         static int OldTownLandmarks(Settlement s, Vector2 heart, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd)
         {
-            float m = KitScale.Buildings;
+            float m = KitScale.Landmarks;
             int n = Mosque(heart + new Vector2(-5f * m, 6f * m), ground, km, lots, ref rnd, 1.2f);
             if (s.Id == "jaffa")
             {
@@ -337,7 +338,7 @@ namespace Statecraft.Game.Map.Kits
         /// old town, a lighthouse at its head, and a few sailing boats inside it.</summary>
         static int Port(Vector2 heart, KitGround ground, KitMesh km, ref KitRandom rnd)
         {
-            float m = KitScale.Buildings;
+            float m = KitScale.Landmarks;
             var shore = heart;
             for (int i = 0; i < 120 && !ground.Water(shore.x, shore.y); i++) shore.x -= 50f;
             if (!ground.Water(shore.x, shore.y)) return 0;
@@ -382,10 +383,10 @@ namespace Statecraft.Game.Map.Kits
 
         static int Mosque(Vector2 p, KitGround ground, KitMesh km, List<Lot> lots, ref KitRandom rnd, float size)
         {
-            float m = KitScale.Buildings * size;
+            float m = KitScale.Landmarks * size;
             float y = ground.Y(p.x, p.y);
             var stone = Jitter(C(0.87f, 0.80f, 0.66f), ref rnd, 0.03f);
-            km.Box(p.x, p.y, 0f, 14f * m, 14f * m, y - 2f * m, y, 7f * m, stone, stone, Facade.Stone, KitScale.Buildings);
+            km.Box(p.x, p.y, 0f, 14f * m, 14f * m, y - 2f * m, y, 7f * m, stone, stone, Facade.Stone, KitScale.Landmarks);
             km.Dome(p.x, p.y, y + 7f * m - 0.5f * m, 5.5f * m, C(0.80f, 0.80f, 0.76f));
             float mx = p.x + 8.5f * m, mz = p.y - 6f * m;
             float my = ground.Y(mx, mz);
@@ -398,7 +399,7 @@ namespace Statecraft.Game.Map.Kits
 
         static int WaterTower(Vector2 p, KitGround ground, KitMesh km, List<Lot> lots)
         {
-            float m = KitScale.Buildings;
+            float m = KitScale.Houses;
             if (ground.Water(p.x, p.y)) return 0;
             float y = ground.Y(p.x, p.y);
             var concrete = C(0.82f, 0.80f, 0.76f);
@@ -415,12 +416,26 @@ namespace Statecraft.Game.Map.Kits
         }
     }
 
-    /// <summary>The symbolic scale (owner ruling 2026-10-11: buildings and trees about 10-25x real size, geography real).
-    /// Fields, not constants, so the capture tool can render the same layout at another scale for the owner to compare.</summary>
+    /// <summary>The symbolic scale per class (owner ruling 2026-10-11, superseding the 10-25x ruling: match promo 03's
+    /// measured scale per class): city blocks about 60x their real size, houses and trees about 100x; geography stays real.
+    /// Landmarks (a clock tower, a mosque, a harbour) take the city-block scale. Fields, not constants, so the capture tool
+    /// and the player's ?kitscale / ?housescale / ?treescale flags (clamped to <see cref="Min"/>..<see cref="Max"/>) can show
+    /// another scale. Counts are tuned at <see cref="CountReference"/> and fall with the square of the scale.</summary>
     public static class KitScale
     {
-        public const float DefaultBuildings = 25f, DefaultTrees = 25f;
-        public static float Buildings = DefaultBuildings;
+        public const float DefaultCityBlocks = 60f, DefaultHouses = 100f, DefaultTrees = 100f;
+        public const float Min = 5f, Max = 200f;
+        /// <summary>The scale the building and tree counts were tuned at: a class drawn at k times this has 1/k^2 as many.</summary>
+        public const float CountReference = 25f;
+        public static float CityBlocks = DefaultCityBlocks;
+        public static float Houses = DefaultHouses;
         public static float Trees = DefaultTrees;
+
+        public static float Landmarks => CityBlocks;
+        public static float For(Archetype a) => a == Archetype.WhiteCity ? CityBlocks : Houses;
+
+        public static float Clamp(float v) => Mathf.Clamp(v, Min, Max);
+
+        public static void Reset() { CityBlocks = DefaultCityBlocks; Houses = DefaultHouses; Trees = DefaultTrees; }
     }
 }
