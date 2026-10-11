@@ -193,6 +193,10 @@ checks every anchor and logs each spot and its distance.
 - The rows are drafts from Wikipedia (and Eduard and Commons) until a historian checks them against Lorch or the
   archives.
 - No dated front line: tokens keep within one hex of their sourced place instead (I2).
+- Merges still to come (review I7). With promo-borderdata, the info panel's region label must be cleared when a unit
+  card shows. With promo-screens, the wide-screen click guard must cover `ShowUnit` and `UnitLayer.Select` as well as
+  `Show`, and the info panel must keep its `info-defence` button. Both branches add optional `InfoPanelPresenter`
+  parameters, so the call in `GameRoot` should name its arguments.
 - Wedgwood's Israeli name and pennant number conflict between its two articles. The card shows "INS Wedgwood" and no
   number.
 - No source yet places any unit after the armistices.
