@@ -304,7 +304,9 @@ def resample(points: list[tuple[float, float]], step: float) -> list[tuple[float
 def gaussian_smooth(points: list[tuple[float, float]], spacing: float) -> list[tuple[float, float]]:
     """Curvature-adaptive Gaussian smoothing of evenly spaced points (`spacing` apart, own units = metres). The trace hops
     between the two edges of a thick symbol, a 100-300 m wobble that drew kinks every few hundred metres (review B14).
-    A wobble's turns alternate, so over +-BEND_WINDOW_M its net heading change is small, while a real bend's adds up:
+    A wobble's turns alternate, so over +-BEND_WINDOW_M its net heading change is small, while a real bend's adds up
+    (at an S-bend's inflection the net turn is also small, so it is smoothed as a straight there: measured against the
+    unsmoothed trace that moves no line more than 86 m, under a third of a road's width; review A-m4):
     each point takes a Gaussian of SMOOTH_SIGMA_M on a straight stretch, easing to BEND_SIGMA_M where the net turn grows
     from BEND_FROM_DEG to BEND_TO_DEG, so the wobble goes and the meanders stay. The window shrinks symmetrically at the
     ends, so both end points stay put. Deterministic: plain arithmetic on the input."""

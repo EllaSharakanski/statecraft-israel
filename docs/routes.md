@@ -145,19 +145,31 @@ measurement in `docs/units.md`:
 
 **The mesh** (`RouteLayer.Ribbon`).
 - A cross-section every 120 m, square to the line's direction averaged over two steps each way.
-- Five vertices across each section, all at the line's own grade (`GradeHeight`). The grade is 20 m above the highest
-  ground at the line and half a step along it either way, with nothing sampled across (review B15 / #213).
-  - Before this, each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up both
-    walls and its rails and sleepers warped.
-  - Now a section is flat across. It narrows symmetrically (`FlatHalfWidth`) to the last sample where the ground on
-    both sides is neither above it nor more than 40 m below it, down to 35% of the width. The rails stay centred and
-    the band keeps to the gorge floor.
-  - Every vertex takes the terrain's normal at the line. The train rides the same grade.
-  - `TheRailwayKeepsItsGradeInTheSorekGorge` tests it in the gorge (Artuf to Battir, 154 sections). The old rule
-    warped the band by a median 315 m across (p90 454 m); now every section is flat.
-  - The band's lift over the ground at the line is a median 11 m (p90 38 m, bound 50 m). The rest of the lift is the
-    1:250,000 line running on the canyon side.
-  - The band is never above where the old rule put it, and it narrows to the floor.
+- Five vertices across each section.
+- **Roads drape as on main.** Each vertex sits 20 m above the highest ground at its own point and half a step or half
+  a spacing around it, and takes the terrain's normal there (`DrapeHeight`).
+  - Their pale band has no rails or sleepers to warp.
+  - Narrowing them made every hill road about 40% thinner and beaded its width (review A-I1).
+- **Railways keep their own grade** (review B15 / #213). Each section is flat across at `GradeHeight`: 20 m above the
+  highest ground at the line and half a step along it, with nothing sampled across.
+  - **The old rule.** Each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up
+    both walls and its rails and sleepers warped.
+  - **Width.** It narrows to the gorge floor and ramps: `RailHalfWidths`.
+    - Per section, `FlatHalfWidth` cuts the band back symmetrically to where the ground on both sides is neither above
+      it nor more than 40 m below it, down to 35% of the width.
+    - Then it takes the minimum over two sections each way.
+    - Then it limits the change to 5% of the width per 120 m step, in forward and backward passes that only narrow.
+    - So the width never jumps by more than a tenth between sections (review A-I1).
+  - **Lift.** A section is raised where needed, so the ground never rises within its sleeper span (±60% of the
+    half-width) and the sleepers clear it by 5 m (review A-I2). The narrowed gorge band had buried the rails by up to
+    32 m.
+  - **Shading.** Every vertex takes the terrain's normal at the line.
+  - **The train** rides `GradeHeight`.
+  - **Tests.**
+    - `TheRailwayKeepsItsGradeInTheSorekGorge`: every section is flat. Main's rule warped the band by a median 315 m
+      across.
+    - `TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth`: on every railway, no ground over the sleepers, no width
+      jump over 10%, and the edges' float bounded. It fails on 005e60e.
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
