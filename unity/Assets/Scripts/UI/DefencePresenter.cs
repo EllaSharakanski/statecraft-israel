@@ -6,18 +6,26 @@ using UnityEngine.UIElements;
 
 namespace Statecraft.Game.UI
 {
-    /// <summary>The Defence screen: the always-on escalation ladder (spec section 3) with the current level and its turn
-    /// length, the UN ceasefire clock in full war, security orders to raise or lower the level, and the reserve call-up
-    /// with its yearly cost. Orders are queued for End Turn.</summary>
+    /// <summary>The Defence screen, laid out as promo/final/08: the leadership (the Prime Minister, the Minister of Defense
+    /// and the Chief of Staff, each with portrait, party, competence and loyalty), the always-on escalation ladder (spec
+    /// section 3) with the current level, the ordered one and each level's turn length, the UN ceasefire clock in full war,
+    /// security orders to raise or lower the level, the reserve call-up as a bar with the level's minimum marked and its
+    /// yearly cost, and the defence share of the national budget. Orders are queued for End Turn. The promo's forces
+    /// readiness and strength, intelligence and procurement panels are left out: the sim does not model them yet.</summary>
     public sealed class DefencePresenter : IDisposable
     {
         public const double MobilizationStep = 0.05;
-        readonly VisualElement screen; readonly SimBridge bridge; readonly UiText text;
+        /// <summary>The leadership cards, in order, and the budget line that is the defence share.</summary>
+        public static readonly string[] Leaders = { "prime_minister", "defense_minister", "chief_of_staff" };
+        public const string BudgetLine = "defense_minister";
+        /// <summary>The leadership portrait box in logical pixels (Statecraft.uss .leader .card-portrait).</summary>
+        public static readonly UnityEngine.Vector2 LeaderPortrait = new UnityEngine.Vector2(190f, 200f);
+        readonly VisualElement screen; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly Button escalate, deEscalate, mobUp, mobDown; readonly Action onEscalate, onDeEscalate, onMobUp, onMobDown;
 
-        public DefencePresenter(VisualElement root, SimBridge bridge, UiText text)
+        public DefencePresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits = null)
         {
-            screen = root.Q<VisualElement>("screen-defence"); this.bridge = bridge; this.text = text;
+            screen = root.Q<VisualElement>("screen-defence"); this.bridge = bridge; this.text = text; this.portraits = portraits;
             escalate = screen.Q<Button>("escalate"); deEscalate = screen.Q<Button>("de-escalate");
             mobUp = screen.Q<Button>("mob-up"); mobDown = screen.Q<Button>("mob-down");
             onEscalate = () => Order(+1); onDeEscalate = () => Order(-1);
@@ -90,16 +98,26 @@ namespace Statecraft.Game.UI
         public void Render()
         {
             var c = bridge.Content; var s = bridge.State;
+            var delta = QueuedDelta;
+            var target = TargetRung;
             for (int rung = 1; rung <= 5; rung++)
             {
                 screen.Q<Label>($"rung-{rung}-name").text = text[$"defence.rung{rung}"];
                 screen.Q<Label>($"rung-{rung}-turn").text = text[TurnKey(SecuritySystem.TurnLengthFor(rung))];
-                screen.Q<VisualElement>($"rung-{rung}").EnableInClassList("rung-current", rung == s.Rung);
+                var row = screen.Q<VisualElement>($"rung-{rung}");
+                row.EnableInClassList("rung-current", rung == s.Rung);
+                row.EnableInClassList("rung-target", rung == target && target != s.Rung);   // the level an order will move to
             }
             screen.Q<Label>("defence-command").text = text.Format("defence.command",
                 Cabinet.Holder(c, s, "defense_minister")?.Name ?? text["cabinet.vacant"], Cabinet.Holder(c, s, "chief_of_staff")?.Name ?? text["cabinet.vacant"]);
-            var delta = QueuedDelta;
-            var target = TargetRung;
+            var lineup = Cabinet.Lineup(c, s);
+            foreach (var office in Leaders)
+            {
+                var card = screen.Q<VisualElement>("lead-" + office);
+                var seat = lineup.FirstOrDefault(x => x.Office.Id == office);
+                card.style.display = seat == null ? DisplayStyle.None : DisplayStyle.Flex;
+                if (seat != null) PersonCard.Fill(card, "lead-" + office, c, s, seat.Holder, seat.Office.Title, seat.Appointed, text, portraits, LeaderPortrait);
+            }
             var ceasefire = screen.Q<Label>("ceasefire");
             if (s.Rung == 5 && target == 5) ceasefire.text = text.Format("defence.ceasefire", s.CeasefireWeeksLeft);
             else if (s.Rung == 5) ceasefire.text = text["defence.ceasefire_stops"];                       // a lowering is queued
@@ -110,6 +128,12 @@ namespace Statecraft.Game.UI
             var floor = SecuritySystem.MinMobilization(c, target);
             var proposed = EffectiveAt(ProposedMobilization);   // what the call-up will be: the sim raises a lower order to the minimum
             screen.Q<Label>("mob-level").text = text.Format("defence.mob", PlayerText.Percent(proposed), target, PlayerText.Percent(floor));
+            screen.Q<Label>("mob-percent").text = PlayerText.Percent(proposed);
+            var bar = screen.Q<UiBar>("mob-bar");
+            bar.Value = (float)proposed; bar.Mark = (float)floor;
+            var hasLine = s.Budget.TryGetValue(BudgetLine, out var share);
+            screen.Q<UiBar>("defence-budget-bar").Value = hasLine ? (float)share : 0f;
+            screen.Q<Label>("defence-budget-share").text = hasLine ? text.Format("defence.budget_share", PlayerText.Percent(share)) : text["defence.budget_none"];
             screen.Q<Label>("mob-cost").text = text.Format("defence.mob_cost", PlayerText.Money(c, "treasury", EconomySystem.MobilizationCost(c, proposed)));
             screen.Q<Button>("escalate").SetEnabled(target < 5);
             screen.Q<Button>("de-escalate").SetEnabled(target > 1);

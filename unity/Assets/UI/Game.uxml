@@ -119,16 +119,41 @@
             </ui:VisualElement>
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
-        <ui:VisualElement name="screen-cabinet" class="panel screen">
-            <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-coalition" class="muted" /></ui:VisualElement>
-            <ui:VisualElement class="row grow">
-                <ui:ScrollView name="cabinet-seats" class="grow" />
-                <ui:VisualElement name="cabinet-pick" class="grow">
-                    <ui:Label name="cabinet-pick-title" class="meter-name" />
-                    <ui:ScrollView name="cabinet-candidates" class="grow" />
+        <!-- The Cabinet as promo/final/04 (CabinetPresenter): a wide screen; the Prime Minister's card and the appointment
+             list at the side; the legislature's seats (Hemicycle) with its legend above a grid of person cards. -->
+        <ui:VisualElement name="screen-cabinet" class="panel screen screen-wide">
+            <ui:VisualElement class="screen-header"><ui:Label name="cabinet-government" class="title" /><ui:Label name="cabinet-legislature" class="muted" /></ui:VisualElement>
+            <ui:VisualElement name="cabinet-body" class="row grow">
+                <ui:VisualElement name="cabinet-side" class="cabinet-side">
+                    <ui:Button name="seat-prime_minister" class="seat pm-card" />
+                    <ui:VisualElement name="cabinet-pick" class="grow">
+                        <ui:Label name="cabinet-pick-title" class="meter-name" />
+                        <ui:ScrollView name="cabinet-candidates" class="grow" />
+                    </ui:VisualElement>
+                    <ui:Label name="cabinet-status" class="muted" />
+                </ui:VisualElement>
+                <ui:VisualElement name="cabinet-main" class="cabinet-main grow">
+                    <ui:VisualElement name="cabinet-house" class="cabinet-house">
+                        <ui:VisualElement class="hemicycle-box">
+                            <Statecraft.Game.UI.Hemicycle name="cabinet-hemicycle" class="hemicycle" />
+                            <ui:VisualElement class="hemicycle-count" picking-mode="Ignore">
+                                <ui:Label name="cabinet-house-size" class="house-size" />
+                                <ui:Label text="members" class="house-unit" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="house-legend">
+                            <ui:Label name="cabinet-coalition" class="house-coalition" />
+                            <Statecraft.Game.UI.UiBar name="cabinet-stability" class="ui-bar--stability house-stability" />
+                            <ui:Label name="cabinet-opposition" class="muted" />
+                            <ui:Label name="cabinet-majority" class="muted" />
+                            <ui:Label name="cabinet-largest" class="muted" />
+                            <ui:VisualElement name="cabinet-parties" class="party-chips" />
+                        </ui:VisualElement>
+                        <Statecraft.Game.UI.UiFrame shadow="false" corners="false" />
+                    </ui:VisualElement>
+                    <ui:ScrollView name="cabinet-seats" class="grow" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:Label name="cabinet-status" class="muted" />
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
         <ui:VisualElement name="screen-budget" class="panel screen">
@@ -143,29 +168,58 @@
             </ui:VisualElement>
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
-        <ui:VisualElement name="screen-defence" class="panel screen">
+        <!-- Defence as promo/final/08 (DefencePresenter): leadership, the escalation ladder and the reserve call-up side by
+             side (wrapping in a narrow window), then the defence share of the budget. Only what the sim models. -->
+        <ui:VisualElement name="screen-defence" class="panel screen screen-wide">
             <ui:VisualElement class="screen-header"><ui:Label text="Defence" class="title" /><ui:Label name="defence-command" class="muted" /></ui:VisualElement>
-            <ui:Label text="Security level" class="meter-name" />
-            <ui:VisualElement name="ladder">
-                <ui:VisualElement name="rung-5" class="rung"><ui:Label name="rung-5-name" class="grow" /><ui:Label name="rung-5-turn" class="muted" /></ui:VisualElement>
-                <ui:VisualElement name="rung-4" class="rung"><ui:Label name="rung-4-name" class="grow" /><ui:Label name="rung-4-turn" class="muted" /></ui:VisualElement>
-                <ui:VisualElement name="rung-3" class="rung"><ui:Label name="rung-3-name" class="grow" /><ui:Label name="rung-3-turn" class="muted" /></ui:VisualElement>
-                <ui:VisualElement name="rung-2" class="rung"><ui:Label name="rung-2-name" class="grow" /><ui:Label name="rung-2-turn" class="muted" /></ui:VisualElement>
-                <ui:VisualElement name="rung-1" class="rung"><ui:Label name="rung-1-name" class="grow" /><ui:Label name="rung-1-turn" class="muted" /></ui:VisualElement>
-            </ui:VisualElement>
-            <ui:Label name="ceasefire" class="muted" />
-            <ui:VisualElement class="row">
-                <ui:Button name="de-escalate" text="Lower the level" />
-                <ui:Button name="escalate" text="Raise the level" />
-                <ui:Label name="order-pending" class="muted grow" />
-            </ui:VisualElement>
-            <ui:Label text="Reserve call-up" class="meter-name" />
-            <ui:VisualElement class="row">
-                <ui:Button name="mob-down" text="-5%" />
-                <ui:Label name="mob-level" class="grow" />
-                <ui:Button name="mob-up" text="+5%" />
-            </ui:VisualElement>
-            <ui:Label name="mob-cost" class="muted" />
+            <ui:ScrollView name="defence-body" class="grow">
+                <ui:VisualElement class="defence-row">
+                    <ui:VisualElement name="defence-leadership" class="defence-panel defence-leadership">
+                        <ui:Label text="LEADERSHIP" class="section-title" />
+                        <ui:VisualElement class="leaders">
+                            <ui:VisualElement name="lead-prime_minister" class="leader" />
+                            <ui:VisualElement name="lead-defense_minister" class="leader" />
+                            <ui:VisualElement name="lead-chief_of_staff" class="leader" />
+                        </ui:VisualElement>
+                        <Statecraft.Game.UI.UiFrame shadow="false" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="defence-ladder" class="defence-panel defence-ladder">
+                        <ui:Label text="SECURITY LEVEL" class="section-title" />
+                        <ui:VisualElement name="ladder">
+                            <ui:VisualElement name="rung-5" class="rung"><ui:Label name="rung-5-name" class="grow rung-name" /><ui:Label name="rung-5-turn" class="muted rung-turn" /></ui:VisualElement>
+                            <ui:VisualElement name="rung-4" class="rung"><ui:Label name="rung-4-name" class="grow rung-name" /><ui:Label name="rung-4-turn" class="muted rung-turn" /></ui:VisualElement>
+                            <ui:VisualElement name="rung-3" class="rung"><ui:Label name="rung-3-name" class="grow rung-name" /><ui:Label name="rung-3-turn" class="muted rung-turn" /></ui:VisualElement>
+                            <ui:VisualElement name="rung-2" class="rung"><ui:Label name="rung-2-name" class="grow rung-name" /><ui:Label name="rung-2-turn" class="muted rung-turn" /></ui:VisualElement>
+                            <ui:VisualElement name="rung-1" class="rung"><ui:Label name="rung-1-name" class="grow rung-name" /><ui:Label name="rung-1-turn" class="muted rung-turn" /></ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label name="ceasefire" class="muted wrap" />
+                        <ui:VisualElement class="row">
+                            <ui:Button name="de-escalate" text="Lower the level" />
+                            <ui:Button name="escalate" text="Raise the level" />
+                        </ui:VisualElement>
+                        <ui:Label name="order-pending" class="muted" />
+                        <Statecraft.Game.UI.UiFrame shadow="false" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="defence-callup" class="defence-panel defence-callup">
+                        <ui:Label text="RESERVE CALL-UP" class="section-title" />
+                        <ui:Label name="mob-percent" class="big-figure" />
+                        <Statecraft.Game.UI.UiBar name="mob-bar" class="ui-bar--mobilization big-bar" />
+                        <ui:Label name="mob-level" class="wrap" />
+                        <ui:VisualElement class="row">
+                            <ui:Button name="mob-down" text="-5%" />
+                            <ui:Button name="mob-up" text="+5%" />
+                        </ui:VisualElement>
+                        <ui:Label name="mob-cost" class="muted wrap" />
+                        <Statecraft.Game.UI.UiFrame shadow="false" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="defence-budget" class="defence-panel defence-budget">
+                    <ui:Label text="DEFENCE SHARE OF THE BUDGET" class="section-title budget-title" />
+                    <Statecraft.Game.UI.UiBar name="defence-budget-bar" class="ui-bar--budget big-bar grow" />
+                    <ui:Label name="defence-budget-share" class="budget-share" />
+                    <Statecraft.Game.UI.UiFrame shadow="false" />
+                </ui:VisualElement>
+            </ui:ScrollView>
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
         <ui:VisualElement name="screen-why" class="panel screen">

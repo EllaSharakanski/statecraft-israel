@@ -41,9 +41,18 @@ public class UiLayoutTests
                 foreach (var a in Fixed)
                     foreach (var b in Fixed)
                         if (string.CompareOrdinal(a, b) < 0) Assert.IsFalse(R(a).Overlaps(R(b)), $"{w}x{h}: {a} {R(a)} overlaps {b} {R(b)}");
+                // A wide screen (Cabinet, Defence: promo 04 and 08) opens over the info panel, drawn above it; no screen
+                // covers the top bar, the event card or the minimap.
                 foreach (var s in Screens)
                     foreach (var f in Fixed)
+                    {
+                        if (f == "info-panel" && root.Q(s).ClassListContains("screen-wide"))
+                        {
+                            Assert.Greater(root.Q("root").IndexOf(root.Q(s)), root.Q("root").IndexOf(root.Q(f)), $"{s} is drawn above the info panel");
+                            continue;
+                        }
                         Assert.IsFalse(R(s).Overlaps(R(f)), $"{w}x{h}: {s} {R(s)} overlaps {f} {R(f)}");
+                    }
                 Assert.LessOrEqual(R("meters").xMax, R("nav").xMin + 0.5f, $"{w}x{h}: the meters run into the screen buttons");
                 Assert.LessOrEqual(R("top-bar").xMin, root.Q(className: "date-box").worldBound.xMin, $"{w}x{h}: date box starts outside the top bar");
                 Assert.LessOrEqual(root.Q(className: "date-box").worldBound.xMax, R("meters").xMin + 0.5f, $"{w}x{h}: date box runs into the meters");
