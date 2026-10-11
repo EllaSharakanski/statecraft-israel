@@ -999,7 +999,8 @@ white (sRGB 1.08 / 1.05 red) so the graded result reaches the promo's. Toggle `b
 `MapBorders.NoEarlyOut`) turns the early-out off; `TheEarlyOutIsExact` renders both promo poses both ways and finds 0
 pixels apart (review M6). Visual only: no sim state read or written, goldens unchanged.
 
-**Data: none yet, so the game draws no border.** Owner ruling (2026-10-11): no invented political boundaries; borders come
+**The no-data path** (a map built with no layer: `MapScene.Build` alone; play now draws the 1948 sub-districts, below).
+Owner ruling (2026-10-11): no invented political boundaries; borders come
 from real data only (the 1945-48 districts and sub-districts, the 1949 armistice lines when dated, fronts). The repository
 has none of these: `hexes.json` holds elevation, land and biome; `settlements_1948.yaml` points; the armistice events
 (`content/events/armistice_*.yaml`) dates and text but no geometry; the sim has no fronts (war mode, #21 / M4 N4). So
@@ -1022,6 +1023,34 @@ Secondary, land only. While it is drawn the camera carries the label "SYNTHETIC 
 its flag (`Application.isEditor || Debug.isDebugBuild`; `AReleaseBuildIgnoresTheProofFlag`): `-borderproof` in the editor's
 promo renders and tests, `tools/art_checkpoint.sh --borderproof` (editor renders; the release WebGL shots ignore it, so the
 WebGL frame profile can no longer draw it), and `?borderproof` / `-borderproof` in a development player.
+
+**Data: the 1948 sub-districts (promo-borderdata).** The sixteen sub-districts of six districts in force on 15 May 1948,
+the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (Palestine Gazette No. 1552, Supplement No. 2,
+30 Jan 1947, pp. 125-133, in force 1 Jan 1947) revoked and replaced the whole Schedule, so it alone defines them; the 1942
+(No. 1163) and 1945 (No. 1415) changes are superseded (cited, not read). No later amendment was found.
+- *True lines:* `content/map/subdistricts_1948.geojson` (status `draft`, checked 2026-10-11; names as in the Gazette,
+  Hebrew and Arabic from Wikipedia), written by `tools/borders_digitise.py` from the Survey of Palestine map
+  "Administrative Divisions" (1:750,000, drawn April 1946, red boundary overprint May 1947; map 6 of the "Maps of
+  Palestine" prepared for UNSCOP, June 1947), two Commons scans of different prints (National Library of Israel), SHA-256
+  checked. Method: the graticule (35-36 E x 30-33 N) georeferences each scan (affine, rms 5-6 px, about 0.2 km); the red
+  overprint plus the black dots between its dashes, with the district lettering and the name underlines erased, is closed
+  and flood-labelled from each sub-district's chief town (a leak fails the run); six connectors where a line runs under a
+  black label or stops short of the coast are recorded as uncertain segments; water (sea, the Dead Sea at its 1948 level)
+  from the game's DEM, so the coast is the game's coast. Accuracy about +-1 km: areas within -4.1% to +3.7% of Village
+  Statistics 1945; the second print agrees to a mean 0.11-0.23 km, at most 1.23 km (per feature in the file).
+- *Display:* `tools/borders_bake.py` gives each land hex the sub-district containing its centre (a shore hex whose centre
+  is in the water: the nearest within a hex), land beyond the Mandate frontier the `outside` region (style none, so the
+  bands run along the frontier and nothing is drawn beyond it), sea and lake hexes none (no coast band) ->
+  `content/map/subdistrict_hexes_1948.yaml`. Every sub-district is Primary (blue). `GameRoot.Begin` and
+  `MapCapture.Promo` draw it (`Subdistricts1948.Show`); the info panel names a hex's sub-district and district and that
+  its true line is drawn to the nearest hex edge. The "Why" screen lists sim causes only, so it does not name map lines
+  (the sim must not read this file).
+- *Kept out of the sim:* the sim reads files by name and its content hash covers only those, so neither file moves the
+  hash or the goldens (`SubdistrictTests.TheSimIgnoresTheFileTheContentHashDoesNotMove`; `test_the_sim_never_reads_the_border_files`).
+- *Licence:* Government of Palestine works of 1945-47, public domain in Israel and the UK, with a possible URAA US
+  copyright in the map's drawing: decision D-B (docs/oss/DECISIONS.md), `ASSETS.yaml` row owner-verify.
+- *1949 armistice lines:* research note only, `research_notes/Map borders/armistice-lines-1949.md` (the four agreements and
+  their annex maps, UNTS vol. 42, digitising and dating).
 
 **Research item: region data (to source, then the owner's sensitivity review).**
 - *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:
@@ -1052,7 +1081,7 @@ WebGL frame profile can no longer draw it), and `?borderproof` / `-borderproof` 
   3. Styles are per region, not per edge: an edge's look comes from the regions on its two sides.
   4. Hex snapping moves a line by up to half a hex (see the owner decision below).
   Follow-up: more styles or per-edge styles when the data and the owner's ruling on snapping need them.
-- *Owner decision needed:* the promo snaps borders to hex edges, but spec §3 (map state) says hex boundaries carry no
+- *Owner decision (ruled 2026-10-11: store the true lines, snap to hex edges only for display, as the promo does):* the promo snaps borders to hex edges, but spec §3 (map state) says hex boundaries carry no
   political meaning and the chapters design draws lines as true polylines. Snapping a line to hex edges moves it by up to
   half a hex (about 4 km). Options: (1) hex-snapped regions (this renderer, the promo look); (2) true polylines (a separate
   overlay, not the promo look); (3) both, hex-snapped at the gameplay zoom and true lines in a map mode.

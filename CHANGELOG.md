@@ -10,8 +10,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Added
 - Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
   stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
-  a "borders" visual toggle. Visual only. The game ships no region data yet (no invented boundaries: the sourced 1945-48
-  sub-districts, 1949 armistice lines and fronts are a research item), so nothing is drawn in play.
+  a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
+  the 1949 armistice lines and fronts are research items.
 - Historical-only deputy titles and sourced 1951 terms; Kaplan's June 1952 Deputy Prime Minister title and the linked Finance/Agriculture succession (issue #4).
 - People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
   `people.yaml`; the loader rejects unknown source keys, sources without a `url` or `checked` date, and impossible birth
