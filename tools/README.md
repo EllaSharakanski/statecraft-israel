@@ -62,3 +62,10 @@ Rain-gauge data: Israel Meteorological Service (השירות המטאורולו�
 
 CHELSA is CC0 (no attribution required); both are credited here and should be credited in the game credits alongside the
 Copernicus notice.
+
+## Manifest AI-disclosure review text (#45)
+
+`uv run scripts/oss/ai_disclosure.py --output docs/ai-disclosure.md` regenerates the checked-in review text from
+`ASSETS.yaml` and `ASSETS.portraits.yaml`. It groups only explicit `ai_generated: true` rows by media kind,
+keeps source/status and manifest names, and includes the README's no-live-generation statement. It does not
+change flags, clear licences, expand asset patterns into filenames, or answer the store content survey.
