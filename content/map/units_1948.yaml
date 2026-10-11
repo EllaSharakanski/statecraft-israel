@@ -159,7 +159,6 @@ units:
     end_basis: front_armistice
     front: jordan
     note: Founded in late 1947 as the Field Corps unit responsible for the defence of Jerusalem.
-    place_hex: [0, 23]
     toward:
       place: West Jerusalem
       lon: 35.21944

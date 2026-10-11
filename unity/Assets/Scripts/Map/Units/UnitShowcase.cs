@@ -220,14 +220,15 @@ namespace Statecraft.Game.Map.Units
             return p;
         }
 
-        /// <summary>The highest of <paramref name="heightAt"/> at (x, z) and at eight points round it at radius r.</summary>
+        /// <summary>The highest of <paramref name="heightAt"/> at (x, z) and at the eight corners of an octagon drawn round
+        /// the circle of radius r (at r / cos 22.5 degrees), so on a planar slope no point of the circle is higher.</summary>
         public static float StandHeight(Func<float, float, float> heightAt, float x, float z, float r)
         {
-            float top = heightAt(x, z);
+            float top = heightAt(x, z), corner = r / Mathf.Cos(Mathf.PI / 8f);
             for (int k = 0; k < 8; k++)
             {
                 float a = Mathf.PI / 4f * k;
-                top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * r, z + Mathf.Sin(a) * r));
+                top = Mathf.Max(top, heightAt(x + Mathf.Cos(a) * corner, z + Mathf.Sin(a) * corner));
             }
             return top;
         }

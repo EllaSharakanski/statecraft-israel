@@ -156,11 +156,11 @@ A spot is clear when:
 - no other anchor whose window overlaps holds the hex.
 
 **Own side.** The map holds no 1948 front line yet, and the one-hex limit alone does not keep a token on its own side:
-the nearest clear spot can be the other side's ground. So an anchor where that happens has two sourced fields:
-`toward`, a place on its own side, and `place_hex`, the hex next to the anchor on that side. The token stands in that
-hex, at the clear spot nearest the place:
-- Etzioni stands in West Jerusalem, hex (0,23), not on the Hizma and Anata side, which Jordan held. It is in town, with a
-  clearing.
+the nearest clear spot can be the other side's ground. So an anchor where that happens has a sourced `toward`, a place on its own side, and where needed a `place_hex`, the hex
+next to the anchor on that side. The token stands at the clear spot nearest that place, in that hex when one is given:
+- Etzioni stands in West Jerusalem, about 2 km west of the place the West Jerusalem article gives, not on the Hizma and
+  Anata side, which Jordan held. It is in town, with a clearing. In the compact rounds the placer also tries rings round a
+  `toward` point, every 500 m out to 2.5 km, so a spot can sit between a town's roads near the sourced place.
 - The 7th Brigade at Latrun stands by Bayt Jiz and Bayt Susin, hex (-3,23). The brigade occupied Bayt Jiz between the
   two assaults, and Bayt Susin was taken on 20 April. It no longer stands on the Yalu and Bayt Nuba ridge, which the
   Arab Legion held. The hex west of Latrun, al-Qubab, was taken only in July.

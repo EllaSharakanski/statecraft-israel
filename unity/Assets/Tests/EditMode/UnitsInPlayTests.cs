@@ -313,14 +313,14 @@ public class UnitsInPlayTests
             // Review MF1: the three anchors whose nearest clear spot was the other side's ground stand in their sourced
             // own-side hex (West Jerusalem; Bayt Jiz and Bayt Susin by Latrun; Saris on the corridor road).
             (int, int) Spot(string id, string place) { var a = anchors.Single(x => x.u.Id == id && x.a.Place == place).a; return (layer.Spots[a].Q, layer.Spots[a].R); }
-            Assert.AreEqual((0, 23), Spot("etzioni", "Jerusalem"));
             Assert.AreEqual((-3, 23), Spot("brigade_7", "Latrun"));
             Assert.AreEqual((-2, 23), Spot("harel", "Sha'ar HaGai"));
             foreach (var (u, a) in anchors.Where(x => x.a.PlaceHex != null))
                 Assert.AreEqual((a.PlaceHex[0], a.PlaceHex[1]), (layer.Spots[a].Q, layer.Spots[a].R), $"{u.Id} {a.Place}: in its place_hex");
             var etzioni = layer.Spots[anchors.Single(x => x.u.Id == "etzioni").a];
             var wj = map.Frame.ToWorld(35.21944, 31.78194, 0);
-            Assert.Less((new Vector2((float)etzioni.X, (float)etzioni.Z) - new Vector2(wj.x, wj.z)).magnitude, 2500f, "Etzioni stands in West Jerusalem");
+            Assert.Less((new Vector2((float)etzioni.X, (float)etzioni.Z) - new Vector2(wj.x, wj.z)).magnitude, 2100f, "Etzioni stands in West Jerusalem");
+            Assert.Less(etzioni.X, wj.x, "on the west side of the West Jerusalem point, away from the line");
         }
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }
@@ -338,7 +338,7 @@ public class UnitsInPlayTests
             float a = Mathf.PI / 8f * k;
             Assert.GreaterOrEqual(y + 0.01f, H(1000f + Mathf.Cos(a) * r * 0.99f, 2000f + Mathf.Sin(a) * r * 0.99f), "no boot sinks into the slope");
         }
-        Assert.LessOrEqual(y - H(1000f, 2000f), Mathf.Sqrt(slope * slope + 0.04f) * r + 0.01f, "the float is bounded by the slope over the foot");
+        Assert.LessOrEqual(y - H(1000f, 2000f), Mathf.Sqrt(slope * slope + 0.04f) * r / Mathf.Cos(Mathf.PI / 8f) + 0.01f, "the float is bounded by the slope over the foot");
     }
 
     /// <summary>The same on the map's real hills: every rifleman of every army anchor of the war stands no lower than the

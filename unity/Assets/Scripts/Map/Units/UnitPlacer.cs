@@ -38,7 +38,7 @@ namespace Statecraft.Game.Map.Units
     /// considers only that hex:
     /// 1. the centres of the anchor's own hex and its six neighbours, drawn full size;
     /// 2. then, when none is clear, those centres and eighteen points inside each hex (six on each of
-    ///    <see cref="InsideOffsets"/> of the hex circumradius), drawn compact;
+    ///    <see cref="InsideOffsets"/> of the hex circumradius), and rings round a `toward` point, drawn compact;
     /// 3. then, when the anchor's whole neighbourhood is town (Tel Aviv), the same compact points with the ring allowed
     ///    into the town: the one that reaches least deep into it (then the nearest; with a `toward` point, simply the nearest
     ///    to it) is taken, and the kits keep a clearing for it (MapScene), so the token never stands in a building.
@@ -87,28 +87,23 @@ namespace Statecraft.Game.Map.Units
                     {
                         bool compact = round > 1, inTown = round == 3;
                         double bestD = double.MaxValue, bestDepth = double.MaxValue;
-                        for (int i = 0; i < hexes.Count; i++)
+                        foreach (var (i, x, z) in Candidates(hexes, centres, hexSizeM, compact, a.Toward != null ? target : ((double, double)?)null))
                         {
                             var h = hexes[i];
                             if (h.Land == sea || MapActions.Distance(h.Q, h.R, hq, hr) > MaxShift) continue;
                             if (a.PlaceHex != null && (h.Q != a.PlaceHex[0] || h.R != a.PlaceHex[1])) continue;
-                            if (held.Exists(x => x.q == h.Q && x.r == h.R && x.from < to && from < x.to)) continue;
-                            int points = compact ? 1 + 6 * InsideOffsets.Length : 1;
-                            for (int k = 0; k < points; k++)
-                            {
-                                var (x, z) = k == 0 ? centres[i] : Inside(centres[i], k - 1, hexSizeM);
-                                if (Math.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) > maxOffset) continue;
-                                double d = Math.Sqrt((x - target.x) * (x - target.x) + (z - target.z) * (z - target.z));
-                                // Round 3 ranks by depth into the town first (rounded to a metre), then by distance; with a
-                                // sourced own-side point it ranks by distance to that alone (the town edge may be the other side's).
-                                double overlap = inTown ? Math.Max(0.0, townOverlap(x, z)) : 0.0;
-                                double depth = a.Toward == null ? Math.Round(overlap) : 0.0;
-                                if (depth > bestDepth || (depth == bestDepth && d > bestD)) continue;
-                                // Ties go to the lower (q, r): the result never depends on the hex list's order.
-                                if (depth == bestDepth && d == bestD && best != null && (h.Q, h.R).CompareTo((best.Value.Q, best.Value.R)) > 0) continue;
-                                if (!clear(u.Service, x, z, compact, inTown, p.x, p.z)) continue;
-                                best = new AnchorSpot(h.Q, h.R, x, z, compact, inTown && overlap > 0); bestD = d; bestDepth = depth;
-                            }
+                            if (held.Exists(c => c.q == h.Q && c.r == h.R && c.from < to && from < c.to)) continue;
+                            if (Math.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) > maxOffset) continue;
+                            double d = Math.Sqrt((x - target.x) * (x - target.x) + (z - target.z) * (z - target.z));
+                            // Round 3 ranks by depth into the town first (rounded to a metre), then by distance; with a
+                            // sourced own-side point it ranks by distance to that alone (the town edge may be the other side's).
+                            double overlap = inTown ? Math.Max(0.0, townOverlap(x, z)) : 0.0;
+                            double depth = a.Toward == null ? Math.Round(overlap) : 0.0;
+                            if (depth > bestDepth || (depth == bestDepth && d > bestD)) continue;
+                            // Ties go to the lower (q, r): the result never depends on the hex list's order.
+                            if (depth == bestDepth && d == bestD && best != null && (h.Q, h.R).CompareTo((best.Value.Q, best.Value.R)) > 0) continue;
+                            if (!clear(u.Service, x, z, compact, inTown, p.x, p.z)) continue;
+                            best = new AnchorSpot(h.Q, h.R, x, z, compact, inTown && overlap > 0); bestD = d; bestDepth = depth;
                         }
                         if (best != null) break;
                         if (sea) break;   // a ship's sea hex is all its test; rounds 2 and 3 add nothing
@@ -119,6 +114,32 @@ namespace Statecraft.Game.Map.Units
                 }
             }
             return result;
+        }
+
+        /// <summary>Within the one-hex limit around a `toward` point (compact rounds): rings every
+        /// <see cref="TowardStepM"/> out to <see cref="TowardReachM"/>, twelve points each, so a spot can sit between a
+        /// town's roads near the sourced place, not only on the hex grid's points.</summary>
+        public const double TowardStepM = 500.0, TowardReachM = 2500.0;
+
+        /// <summary>The round's candidate spots, each with the index of the hex it lies in: every hex centre, and for a
+        /// compact round the points inside each hex and the rings round the `toward` point.</summary>
+        static IEnumerable<(int i, double x, double z)> Candidates(IReadOnlyList<MapHex> hexes, (double x, double z)[] centres, double hexSizeM,
+            bool compact, (double x, double z)? toward)
+        {
+            for (int i = 0; i < hexes.Count; i++)
+            {
+                yield return (i, centres[i].x, centres[i].z);
+                if (!compact) continue;
+                for (int k = 0; k < 6 * InsideOffsets.Length; k++) { var (x, z) = Inside(centres[i], k, hexSizeM); yield return (i, x, z); }
+            }
+            if (!compact || toward == null) yield break;
+            var t = toward.Value;
+            for (double rad = 0; rad <= TowardReachM; rad += TowardStepM)
+                for (int k = 0; k < (rad == 0 ? 1 : 12); k++)
+                {
+                    double x = t.x + Math.Cos(Math.PI / 6.0 * k) * rad, z = t.z + Math.Sin(Math.PI / 6.0 * k) * rad;
+                    yield return (Nearest(centres, (x, z)), x, z);
+                }
         }
 
         /// <summary>The tokens on their anchors' spots; a token whose anchor has no spot is left out.</summary>
