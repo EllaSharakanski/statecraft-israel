@@ -567,8 +567,9 @@ namespace Statecraft.Game.Map.Kits
                         if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR)) continue;
                         lots.Add(new Lot { c = p, r = lotR, id = "camp:" + area.Subdistrict });
                         var (bottom, top) = GroundSpan(p, yaw, tw, td, ground, m);
-                        var cloth = Jitter(C(0.22f, 0.19f, 0.16f), ref rnd, 0.08f);
-                        km.Box(p.x, p.y, yaw, tw, td, bottom, top, 1.7f * m, Jitter(C(0.30f, 0.26f, 0.21f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
+                        // Goat-hair cloth, a warm dark brown rather than black: at the overview a black row read as a scratch.
+                        var cloth = Jitter(C(0.33f, 0.27f, 0.21f), ref rnd, 0.08f);
+                        km.Box(p.x, p.y, yaw, tw, td, bottom, top, 1.7f * m, Jitter(C(0.42f, 0.35f, 0.27f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
                         km.Gable(p.x, p.y, yaw, tw, td, top + 1.7f * m, 0.9f * m, cloth, cloth);
                         pitched++;
                     }
