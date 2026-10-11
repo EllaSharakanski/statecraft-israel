@@ -61,6 +61,12 @@ rules:
     licence: CC-BY-4.0
     source: "Screenshots of the M0 spike builds"
     status: verified
+  - glob: "unity/Assets/WebGLTemplates/Statecraft/favicon.ico"
+    licence: CC-BY-4.0
+    source: "Original geometric drawing for the WebGL page's tab icon (issue #47): a gold hexagon with a cream serif I on navy, in the loading page's colours; 16, 32 and 48 px; made 2026-10-11 for PR #169"
+    status: verified
+    ai_generated: true
+    note: "The contributor reports the drawing was AI-assisted (PR #169); flagged for the AI-content disclosure by controller ruling."
   # --- Fonts ---
   - glob: "unity/Assets/UI/Fonts/*.ttf"
     licence: OFL-1.1
