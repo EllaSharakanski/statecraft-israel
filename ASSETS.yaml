@@ -6,6 +6,11 @@
 # Globs use fnmatch: '*' also matches '/'. Portrait rows live in ASSETS.portraits.yaml (scripts/oss/commons_licences.py).
 # ai_generated: true marks AI output (the future Steam/itch.io disclosure is generated from it).
 rules:
+  - glob: "promo/ref/people/David_Ben-Gurion.jpg"
+    licence: Public-Domain
+    source: "https://commons.wikimedia.org/wiki/File:David_Ben-Gurion_(D597-087).jpg"
+    status: owner-verify
+    note: "Retained prior GPO reference; PD-Israel only, no explicit US status. Not the active Ben-Gurion portrait."
   # --- AI-generated concept art: CC0 / no rights claimed (LICENSING.md); published 2026-10-10 before D5 was checked ---
   - glob: "promo/final/0[1-8]-*.png"
     licence: CC0-1.0
@@ -56,6 +61,12 @@ rules:
     licence: CC-BY-4.0
     source: "Screenshots of the M0 spike builds"
     status: verified
+  - glob: "unity/Assets/WebGLTemplates/Statecraft/favicon.ico"
+    licence: CC-BY-4.0
+    source: "Original geometric drawing for the WebGL page's tab icon (issue #47): a gold hexagon with a cream serif I on navy, in the loading page's colours; 16, 32 and 48 px; made 2026-10-11 for PR #169"
+    status: verified
+    ai_generated: true
+    note: "The contributor reports the drawing was AI-assisted (PR #169); flagged for the AI-content disclosure by controller ruling."
   # --- Fonts ---
   - glob: "unity/Assets/UI/Fonts/*.ttf"
     licence: OFL-1.1

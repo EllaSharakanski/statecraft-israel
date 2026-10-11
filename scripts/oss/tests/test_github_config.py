@@ -127,7 +127,9 @@ def test_merge_workflow_never_touches_pull_request_code():
     # Owner ruling 2026-10-11: approved pull requests merge without giving contributors write access. The job holds a
     # write token, so it must never check out, build or run pull-request code, and never read PR text into the shell.
     wf = yaml.safe_load(MERGE.read_text(encoding="utf-8"))
-    assert set(triggers(wf)) == {"schedule", "workflow_dispatch"}
+    assert set(triggers(wf)) == {"workflow_run", "pull_request_review", "schedule", "workflow_dispatch"}
+    assert triggers(wf)["workflow_run"]["workflows"] == ["CI"]
+    assert "pull_request_target" not in triggers(wf)
     assert wf["permissions"] == {"contents": "write", "pull-requests": "write"}
     script = "\n".join(s.get("run", "") for s in steps(wf))
     assert not any("uses" in s for s in steps(wf)) and "checkout" not in script
