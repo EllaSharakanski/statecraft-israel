@@ -50,6 +50,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   roads and ballasted track with sleepers at the promo's scale. Each route shows only from its sourced date: the Burma
   Road appears on 14 June 1948, when it was completed. Settlement buildings and trees keep clear of every route. A steam train is a showcase only (`?train`, `?units` and the
   promo screenshots), not normal play. Map-only: the sim does not read them (#35).
+- Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
+  belt) with hedges and farm tracks, and garrigue, terraces and scrub on the wet hills, placed by real slope, rainfall and
+  towns and baked by `tools/land_bake.py`. Presentation only. Frame time: measured only on a busy machine so far (about
+  +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
 - Ben-Gurion's Transportation term ends on 24 December 1952, when the Fourth Government took office; the seat
@@ -85,3 +89,5 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
 - The "Not done" toast is opaque and sits clear of the open screen.
 - "International Standing" keeps to one line on a full-width bar.
+- The open sea no longer shows a blocky checker up close (about 6-20 km): its waves now come from smooth gradient noise
+  on rotated lattices instead of value noise differenced along the map's axes. Presentation only.

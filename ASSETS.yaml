@@ -109,6 +109,11 @@ rules:
     status: verified
     note: "Public domain checked 2026-10-11: PD-UKGov (expired Crown copyright: 50 years from publication for published works, which HMSO treats as worldwide) and PD-scan, as Wikimedia Commons files the 1946 Survey of Palestine sheets (e.g. https://commons.wikimedia.org/wiki/File:Gaza_sh._04,_1946.jpg). Palestine Open Maps' About page calls its maps public domain under the UK Copyright, Designs and Patents Act and publishes no terms of its own for its tiles or georeferencing; the traced lines are our own derivative and copy none of its layers. No OpenStreetMap (ODbL) geometry is copied: OSM and OpenHistoricalMap lines are only measured against (tools/routes_accuracy.py, docs/routes.md)."
   # --- Baked map textures (derived from the heightmap) ---
+  - glob: "unity/Assets/Textures/Map/landuse.png"
+    licence: Copernicus-DEM
+    source: "tools/land_bake.py (issue #33): the land-use colour and weight (procedural field parcels with farm tracks, garrigue, terraces and scrub) placed by: slope and water from the Copernicus DEM-derived heightmap (Copernicus-DEM); rainfall from CHELSA V2.1 bio12 (CC0-1.0) bias-corrected by the IMS station normals of content/map/precip_stations.json (data.gov.il dataset 481, IMS-data.gov.il, decision D6); content/map/hexes.json biomes (this project's own content, CC-BY-SA-4.0); and the town coordinates of content/map/settlements_1948.yaml (Wikipedia API, CC-BY-SA-4.0) for the citrus belt. Procedural, not AI-generated; attribution in NOTICE"
+    status: owner-verify
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"
