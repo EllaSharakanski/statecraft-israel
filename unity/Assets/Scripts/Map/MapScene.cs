@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Statecraft.Game.Map
 {
-    /// <summary>Builds the whole map: terrain, hexes, 1948 settlements, camera. Materials are editor-made assets
+    /// <summary>Builds the whole map: terrain, hexes, 1948 settlements, railways and roads, camera. Materials are editor-made assets
     /// (M0 correction 1). Build is idempotent: it destroys what the previous Build made first. In play mode the Boot
     /// component calls Build(inputs) once the inputs are loaded (fetched on WebGL); editor tools call Build().</summary>
     public sealed class MapScene : MonoBehaviour
@@ -124,6 +124,10 @@ namespace Statecraft.Game.Map
             Settlements = list;
             SettlementPlacer.Place(list, Frame, Terrain, markerMaterial).transform.SetParent(transform, true);
             DiagLog.BootPhase("settlements placed");
+            // The 1948 railways and roads (issue #35), map-only; a still train in screenshots and editor renders.
+            var routes = Routes.RoutePaths.Parse(inputs.RoutesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), Routes.RoutePaths.DefaultFileName);
+            Routes.RouteLayer.Build(Terrain, Frame, routes, stillTrain: !Application.isPlaying || VisualShots.Requested());
+            DiagLog.BootPhase("routes built");
 
             if (!cam.TryGetComponent(out CameraRig rig)) rig = cam.gameObject.AddComponent<CameraRig>();
             rig.LookAt = Frame.ToWorld(34.95, 31.95, 0); rig.Init(); // central Israel: Tel Aviv–Jerusalem corridor

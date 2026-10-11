@@ -14,6 +14,8 @@ namespace Statecraft.Game.Boot
     public sealed class MapInputs
     {
         public string HeightmapJson = "", HexesJson = "", SettlementsYaml = "";
+        /// <summary>content/map/route_paths_1948.yaml: the traced railways and roads the map draws (issue #35; map-only).</summary>
+        public string RoutesYaml = "";
         /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
         public byte[] HeightmapR16z = new byte[0];
     }
@@ -32,6 +34,7 @@ namespace Statecraft.Game.Boot
             HeightmapR16z = File.ReadAllBytes(Path.Combine(mapDir, HeightmapCodec.FileName)),
             HexesJson = File.ReadAllText(Path.Combine(contentDir, "map", "hexes.json")),
             SettlementsYaml = File.ReadAllText(Path.Combine(contentDir, "map", SettlementPlacer.DefaultFileName)),
+            RoutesYaml = File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName)),
         };
 
         public static GameInputs FromDisk(string contentDir, string mapDir) =>
@@ -49,6 +52,7 @@ namespace Statecraft.Game.Boot
                 {
                     HeightmapJson = heightmapJson, HeightmapR16z = r16z,
                     HexesJson = texts["map/hexes.json"], SettlementsYaml = texts["map/" + SettlementPlacer.DefaultFileName],
+                    RoutesYaml = texts["map/" + Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName],
                 },
             };
         }
