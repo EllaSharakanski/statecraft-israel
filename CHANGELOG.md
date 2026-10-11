@@ -54,3 +54,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The browser build downloads a smaller heightmap: `heightmap.r16z` (4.1 MB, packed losslessly: row deltas in byte
   planes, one zlib stream) replaces the raw 8.4 MB `heightmap.r16`, which was served outside Unity's build compression.
   It decodes to the same bytes, so the terrain is unchanged (#44).
+
+### Fixed
+- The camera keys (WASD and the arrows) no longer move keyboard focus through the HUD. Before, panning could walk focus
+  onto New Game or End Turn, so a stray Enter or Space could press it. Tab still moves focus.
+- The Cabinet's "Appoint to …" heading has its own column again and stays clear of the portrait grid's scroll bar.
+- The "Not done" toast is opaque and sits clear of the open screen.
+- "International Standing" keeps to one line on a full-width bar.
