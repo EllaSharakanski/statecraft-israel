@@ -29,8 +29,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   promo's symbolic scale. Shown only with `?units` (desktop `-units`) and in `tools/art_checkpoint.sh --units`; an
   authored model can replace a code-built one per unit type (docs/units.md).
 - Land use on the map (#33): a patchwork of strip fields (green, ochre stubble, ploughed, fallow, groves in the citrus
-  belt) with hedges and dirt tracks between the towns, and garrigue, terraces and scrub on the wet hills, placed by real
-  slope, rainfall and towns and baked by `tools/land_bake.py`. Presentation only, within the frame budget.
+  belt) with hedges and farm tracks, and garrigue, terraces and scrub on the wet hills, placed by real slope, rainfall and
+  towns and baked by `tools/land_bake.py`. Presentation only. Frame time: measured only on a busy machine so far (about
+  +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),

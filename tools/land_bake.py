@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["numpy==2.5.3", "pillow==12.3.0", "pyyaml==6.0.3"]
 # ///
-"""Land use for the terrain shader (issue #33): where the ground is farmed, planted, terraced or tracked, from real data,
+"""Land use for the terrain shader (issue #33): where the ground is farmed, planted or terraced, from real data,
 and what it looks like there, painted procedurally and baked (the shader only lays it over the biome ground:
 StatecraftLand.hlsl).
 
@@ -15,14 +15,11 @@ tools/hexgrid.py does) and content/map/settlements_1948.yaml. Where, on a WIDTH 
   orchards: the citrus belt: flat coastal plain or valley floor below 150 m within about 10 km of a town (exp(-d/7 km))
   wet:      rainfall smoothstep 250..600 mm: garrigue, terraces and scrub grow where it is high
 What (paint_land, seeded by map position only): field parcels in rotated blocks (green, ochre, ploughed, fallow, grass,
-groves in the citrus belt) with soft rims and hedges, some block edges as tracks; on the wet unfarmed hills patches of
+groves in the citrus belt) with soft rims and hedges, some block edges as farm tracks; on the wet unfarmed hills patches of
 stony soil and grass, terraces along the real contours, scrub. Writes, row 0 = north:
   unity/Assets/Textures/Map/landuse.png  RGBA8, COLOUR_W x COLOUR_H (about 79 x 105 m): rgb the land's colour (sRGB,
       spread into the empty texels), a its weight over the biome ground (2 x 2 samples per texel)
-  unity/Assets/Textures/Map/tracks.png   RGB8, TRACKS_W x TRACKS_H: R, G the offset (east, south) from the texel to the
-      nearest dirt track, B where it may draw one (encode_offsets); each settlement is joined to its nearest neighbours within TRACK_MAX_KM by a
-      gently meandering track
-The geography is real (slope, rain, towns); the parcels are procedural. Deterministic: the same PNGs on every run."""
+The geography is real (slope, rain, towns); the parcels are procedural. Deterministic: the same PNG on every run."""
 import json
 import math
 import warnings
@@ -39,9 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MAP_DIR = ROOT / "unity" / "Assets" / "StreamingAssets" / "map"
 CONTENT = ROOT / "content" / "map"
 OUT = ROOT / "unity" / "Assets" / "Textures" / "Map" / "landuse.png"
-OUT_TRACKS = ROOT / "unity" / "Assets" / "Textures" / "Map" / "tracks.png"
 WIDTH, HEIGHT = 1024, 2048
-TRACKS_W, TRACKS_H = 512, 1024   # about 316 x 421 m per texel: the offsets are affine across a track, so this is enough
 SLOPE_SMOOTH_M = 300.0           # the slope that decides "flat" is averaged over about this radius
 FLAT_SLOPE = (0.035, 0.075)      # rise/run: fully arable below the first, none above the second
 RAIN_FIELDS_MM = (180.0, 380.0)  # dry farming (barley in the northern Negev at about 200-250 mm)
@@ -49,16 +44,7 @@ RAIN_WET_MM = (250.0, 600.0)
 VALLEY_IRRIGATED = 0.7
 ORCHARD_BELOW_M = 150.0
 ORCHARD_DECAY_KM = 7.0
-TRACK_NEIGHBOURS = 3
-TRACK_MAX_KM = 40.0
-TRACK_RANGE_M = 1000.0           # StatecraftLand.hlsl ScTrackRangeM (more than a texel diagonal)
-TRACK_SEED = 1936
 LAND_INTO_WATER = 3              # texels the land's masks reach past the shoreline (the shader's waterline cuts them)
-MEDIAL_JUMP_M = 900.0            # neighbouring texels whose nearest track points are farther apart sit on a medial axis
-MEDIAL_KEEP_M = 250.0            # ... and keep their offset only this close to a track
-B_FADE = (0.4, 0.7)              # StatecraftLand.hlsl: the line fades by smoothstep(B_FADE[0], B_FADE[1], filtered B)
-PHANTOM_M = 300.0                # a filtered sample that draws a track this far from every track is a phantom (prune_phantoms)
-PRUNE_KEEP_M = 150.0             # pruning never masks a texel this close to a track
 # The painted land (paint_land): field parcels, rims, hedges, block-edge tracks, garrigue, terraces and scrub, baked here
 # rather than drawn in the shader: the same pattern as procedural shader code cost about 5 ms a frame at gameplay03 on
 # WebGL even where no pixel ran it (docs/visual-v1.md, "Promo track: land use").
@@ -135,134 +121,6 @@ def biome_at(xk: np.ndarray, yk: np.ndarray, hexes: dict) -> np.ndarray:
 def settlements_km(meta: dict) -> list[tuple[str, float, float]]:
     doc = yaml.safe_load((CONTENT / "settlements_1948.yaml").read_text())
     return [(s["id"], *hexgrid.lonlat_to_km(s["lon"], s["lat"], meta)) for s in doc["settlements"]]
-
-
-def track_links(towns: list[tuple[str, float, float]]) -> list[tuple[int, int]]:
-    links = set()
-    for i, (_, x, y) in enumerate(towns):
-        near = sorted((math.dist((x, y), (u, v)), j) for j, (_, u, v) in enumerate(towns) if j != i)
-        for d, j in near[:TRACK_NEIGHBOURS]:
-            if d <= TRACK_MAX_KM:
-                links.add((min(i, j), max(i, j)))
-    return sorted(links)
-
-
-def track_points(towns: list[tuple[str, float, float]], links: list[tuple[int, int]]) -> list[tuple[float, float]]:
-    """Points (km) every 40 m along each track: the straight line bent by two seeded sine meanders, tapered to 0 at the
-    towns (amplitude up to 4% of the link's length, at most 900 m)."""
-    rng = np.random.default_rng(TRACK_SEED)
-    pts = []
-    for i, j in links:
-        (_, x0, y0), (_, x1, y1) = towns[i], towns[j]
-        length = math.dist((x0, y0), (x1, y1))
-        n = max(2, int(length / 0.04))
-        t = np.linspace(0.0, 1.0, n)
-        a1, a2 = rng.uniform(-1, 1, 2) * min(0.04 * length, 0.9)
-        k1, k2 = rng.uniform(1.0, 2.0), rng.uniform(2.5, 4.5)
-        ph = rng.uniform(0, math.pi)
-        off = (a1 * np.sin(math.pi * k1 * t) + 0.35 * a2 * np.sin(math.pi * k2 * t + ph)) * np.sin(math.pi * t)
-        nx, ny = -(y1 - y0) / length, (x1 - x0) / length
-        pts += list(zip(x0 + (x1 - x0) * t + nx * off, y0 + (y1 - y0) * t + ny * off))
-    return pts
-
-
-def track_offsets(points: list[tuple[float, float]], meta: dict) -> tuple[np.ndarray, np.ndarray]:
-    """(east, south) metres from every TRACKS_W x TRACKS_H texel centre to its nearest track point (NaN beyond
-    TRACK_RANGE_M), and where that offset may draw a track (valid: in range and not on a medial axis). An offset, not a distance: across a straight track it is affine in position, so the GPU's bilinear
-    filter reproduces it exactly between texels and the shader's line keeps its width (a distance field, V-shaped across the
-    line, under-reads it between texels: the first try drew the tracks as dashes)."""
-    sx, sy = TRACKS_W / meta["width_km"], TRACKS_H / meta["length_km"]   # texels per km
-    d2 = np.full((TRACKS_H, TRACKS_W), np.inf)
-    off = np.full((TRACKS_H, TRACKS_W, 2), np.nan)
-    rx, ry = math.ceil(TRACK_RANGE_M / 1000 * sx) + 1, math.ceil(TRACK_RANGE_M / 1000 * sy) + 1
-    for px, py in points:
-        c, r = int(px * sx), int(py * sy)
-        r0, r1, c0, c1 = max(r - ry, 0), min(r + ry + 1, TRACKS_H), max(c - rx, 0), min(c + rx + 1, TRACKS_W)
-        if r0 >= r1 or c0 >= c1:
-            continue
-        ey = np.broadcast_to((py - (np.arange(r0, r1) + 0.5) / sy)[:, None] * 1000, (r1 - r0, c1 - c0))
-        ex = np.broadcast_to((px - (np.arange(c0, c1) + 0.5) / sx)[None, :] * 1000, (r1 - r0, c1 - c0))
-        dd = ex * ex + ey * ey
-        win = dd < d2[r0:r1, c0:c1]
-        d2[r0:r1, c0:c1][win] = dd[win]
-        off[r0:r1, c0:c1, 0][win] = ex[win]
-        off[r0:r1, c0:c1, 1][win] = ey[win]
-    off[d2 > TRACK_RANGE_M ** 2] = np.nan
-    # Medial axes: where two neighbouring texels' nearest points lie on different tracks, filtering between their offsets
-    # (pointing opposite ways) passes near zero and would draw a phantom track. Away from the tracks themselves such texels
-    # become "no track in range".
-    ys, xs = np.mgrid[0:TRACKS_H, 0:TRACKS_W]
-    qx = (xs + 0.5) / sx * 1000 + off[..., 0]                    # nearest track point (m east, m south)
-    qy = (ys + 0.5) / sy * 1000 + off[..., 1]
-    split = np.zeros((TRACKS_H, TRACKS_W), dtype=bool)
-    for a, b in ((np.s_[:, :-1], np.s_[:, 1:]), (np.s_[:-1, :], np.s_[1:, :])):
-        jump = np.hypot(qx[a] - qx[b], qy[a] - qy[b]) > MEDIAL_JUMP_M   # NaN (no track) compares False
-        split[a] |= jump; split[b] |= jump
-    valid = ~np.isnan(off[..., 0]) & ~(split & (np.hypot(off[..., 0], off[..., 1]) > MEDIAL_KEEP_M))
-    return off, valid
-
-
-def filtered_draw(off: np.ndarray, valid: np.ndarray, scale: int = 4, footprint_m: float = 30.0) -> np.ndarray:
-    """Where the shader draws a track (coverage > 0.5 at a gameplay-zoom footprint), sampling the encoded texture
-    bilinearly, as the GPU does, at `scale` x its resolution (sample (i, j) sits at texel ((i + 0.5) / scale - 0.5, ...))."""
-    e = encode_offsets(off, valid).astype(np.float64) / 255.0
-    h, w = e.shape[:2]
-    Y, X = np.meshgrid((np.arange(h * scale) + 0.5) / scale - 0.5, (np.arange(w * scale) + 0.5) / scale - 0.5, indexing="ij")
-    ch = [bilinear(e[..., k], Y, X) for k in range(3)]
-    d = np.hypot(ch[0] * 255 / 127 - 1, ch[1] * 255 / 127 - 1) * TRACK_RANGE_M
-    t = np.clip((ch[2] - B_FADE[0]) / (B_FADE[1] - B_FADE[0]), 0, 1)
-    return np.clip((55.0 - d) / footprint_m + 0.5, 0, 1) * t * t * (3 - 2 * t) > 0.5
-
-
-def sample_distance(points: list[tuple[float, float]], meta: dict, scale: int = 4) -> np.ndarray:
-    """True distance (m, capped at TRACK_RANGE_M) from every filtered_draw sample to the nearest track point."""
-    sx, sy = TRACKS_W * scale / meta["width_km"], TRACKS_H * scale / meta["length_km"]
-    h, w = TRACKS_H * scale, TRACKS_W * scale
-    d2 = np.full((h, w), TRACK_RANGE_M ** 2)
-    rx, ry = math.ceil(TRACK_RANGE_M / 1000 * sx) + 1, math.ceil(TRACK_RANGE_M / 1000 * sy) + 1
-    for px, py in points:
-        c, r = int(px * sx), int(py * sy)
-        r0, r1, c0, c1 = max(r - ry, 0), min(r + ry + 1, h), max(c - rx, 0), min(c + rx + 1, w)
-        if r0 >= r1 or c0 >= c1:
-            continue
-        ey = ((np.arange(r0, r1) + 0.5) / sy - py) * 1000
-        ex = ((np.arange(c0, c1) + 0.5) / sx - px) * 1000
-        np.minimum(d2[r0:r1, c0:c1], ey[:, None] ** 2 + ex[None, :] ** 2, out=d2[r0:r1, c0:c1])
-    return np.sqrt(d2)
-
-
-def prune_phantoms(off: np.ndarray, valid: np.ndarray, points: list[tuple[float, float]], meta: dict,
-                   scale: int = 4, rounds: int = 6) -> np.ndarray:
-    """Masks the texels behind the phantoms the medial-axis rule misses, at tight bends of a meander (re-review R3): where a
-    filtered sample would draw a track more than PHANTOM_M from every track, its four filter texels lose B unless they lie
-    within PRUNE_KEEP_M of a track. Only those texels: the real lines elsewhere keep their coverage."""
-    valid = valid.copy()
-    dist = sample_distance(points, meta, scale)
-    own = np.hypot(off[..., 0], off[..., 1])
-    for _ in range(rounds):
-        bad = filtered_draw(off, valid, scale) & (dist > PHANTOM_M)
-        if not bad.any():
-            break
-        ys, xs = np.nonzero(bad)
-        fy, fx = (ys + 0.5) / scale - 0.5, (xs + 0.5) / scale - 0.5
-        y0, x0 = np.floor(fy).astype(int), np.floor(fx).astype(int)
-        for dy in (0, 1):
-            for dx in (0, 1):
-                r, c = np.clip(y0 + dy, 0, TRACKS_H - 1), np.clip(x0 + dx, 0, TRACKS_W - 1)
-                far = ~(own[r, c] <= PRUNE_KEEP_M)
-                valid[r[far], c[far]] = False
-    return valid
-
-
-def encode_offsets(off: np.ndarray, valid: np.ndarray) -> np.ndarray:
-    """RGB8: R, G = round(127 + 127 offset / TRACK_RANGE_M) (east, south), (255, 255) out of range; B = 255 where the
-    offset may draw a track, 0 where it may not (out of range, or a medial axis). Filtering mixes a texel's offset with its
-    neighbours': next to an out-of-range texel (255, 255 decodes to (+1008, +1008) m) or across a medial axis the mix can
-    pass through zero and fake a track, so the shader fades the line by B (review I1: a phantom ring about 1 km south-east
-    of every track); the filter blends B down there first."""
-    enc = np.clip(np.round(127 + 127 * off / TRACK_RANGE_M), 0, 254)
-    enc = np.where(np.isnan(off), 255, enc).astype(np.uint8)
-    return np.concatenate([enc, np.where(valid, 255, 0).astype(np.uint8)[..., None]], axis=-1)
 
 
 def linear(srgb: tuple[float, float, float]) -> np.ndarray:
@@ -419,7 +277,7 @@ def dilate_colour(rgb: np.ndarray, filled: np.ndarray, passes: int = DILATE_PASS
     return rgb
 
 
-def bake() -> tuple[np.ndarray, np.ndarray]:
+def bake() -> np.ndarray:
     elev, meta = tb.load_heightmap(MAP_DIR)
     hexes = json.loads((CONTENT / "hexes.json").read_text())
     xk, yk = texel_km(meta)
@@ -458,18 +316,14 @@ def bake() -> tuple[np.ndarray, np.ndarray]:
         land = tb.shrink(land)
     land = ~land
     rgba = paint_land(fields * land, orchards * land, wet * land, elev, meta)
-    points = track_points(towns, track_links(towns))
-    off, valid = track_offsets(points, meta)
-    return rgba, encode_offsets(off, prune_phantoms(off, valid, points, meta))
+    return rgba
 
 
 def main() -> None:
-    rgba, tracks = bake()
+    rgba = bake()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgba, "RGBA").save(OUT)
-    Image.fromarray(tracks, "RGB").save(OUT_TRACKS)
-    print(f"wrote {OUT} ({COLOUR_W} x {COLOUR_H}): land weight mean {rgba[..., 3].mean() / 255:.3f}; "
-          f"{OUT_TRACKS} ({TRACKS_W} x {TRACKS_H}): {np.mean(tracks[..., 0] < 255):.2%} of texels near a track")
+    print(f"wrote {OUT} ({COLOUR_W} x {COLOUR_H}): land weight mean {rgba[..., 3].mean() / 255:.3f}")
 
 
 if __name__ == "__main__":

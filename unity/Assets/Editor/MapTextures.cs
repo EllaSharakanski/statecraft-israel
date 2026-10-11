@@ -8,9 +8,7 @@ namespace Statecraft.Game.EditorTools
     /// <summary>Import settings of the baked map textures: linear data (not sRGB), clamped, mipmapped, trilinear, 2048. The
     /// shading bake (curvature, sky-view) is block-compressed; the coast distance and the AO are each one uncompressed 8-bit
     /// channel (R8): compression blocks would show in the 350 m foam band, and BC1 stepped the AO on broad slopes (Task 6
-    /// fix round 1). The land (2048 x 4096, sRGB colour + weight, tools/land_bake.py) is block-compressed too; the track
-    /// offsets (512 x 1024, RGB24, no mips) are not.
-    /// Idempotent; MapMaterials.Create calls it.</summary>
+    /// fix round 1). The land (2048 x 4096, sRGB colour + weight, tools/land_bake.py) is block-compressed too. Idempotent; MapMaterials.Create calls it.</summary>
     public static class MapTextures
     {
         public static void Configure()
@@ -30,16 +28,6 @@ namespace Statecraft.Game.EditorTools
                     { name = platform, overridden = true, maxTextureSize = 4096, format = TextureImporterFormat.Automatic,
                       textureCompression = TextureImporterCompression.Compressed });
             land.SaveAndReimport();
-            Set(MapTexturePaths.Tracks, singleChannel: false);
-            // The track offsets and their validity: three uncompressed channels (RGB24) on every platform, so the filter keeps
-            // the offsets affine; no mips and bilinear, as averaging offsets across mips fakes tracks at distance (review M2).
-            var imp = (TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Tracks);
-            imp.textureCompression = TextureImporterCompression.Uncompressed;
-            imp.mipmapEnabled = false; imp.filterMode = FilterMode.Bilinear;
-            foreach (var platform in new[] { "Standalone", "WebGL" })
-                imp.SetPlatformTextureSettings(new TextureImporterPlatformSettings
-                    { name = platform, overridden = true, maxTextureSize = 2048, format = TextureImporterFormat.RGB24 });
-            imp.SaveAndReimport();
         }
 
         static void Set(string path, bool singleChannel)

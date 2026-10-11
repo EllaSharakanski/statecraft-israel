@@ -8,7 +8,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-/// <summary>Issue #33 (promo-land): the land-use mask (tools/land_bake.py) and the fields, terraces and tracks the terrain
+/// <summary>Issue #33 (promo-land): the land-use texture (tools/land_bake.py) and the fields, terraces and farm tracks the terrain
 /// shader paints from it (StatecraftLand.hlsl).</summary>
 public class LandUseTests
 {
@@ -29,8 +29,6 @@ public class LandUseTests
         return png;
     }
 
-    /// <summary>Metres to the nearest dirt track at a tracks.png texel (tools/land_bake.py encode_offsets).</summary>
-    static float TrackDistanceM(Color c) => new Vector2((c.r * 255f - 127f) / 127f, (c.g * 255f - 127f) / 127f).magnitude * 1000f;
 
     static HeightmapMeta Meta() =>
         JsonUtility.FromJson<HeightmapMeta>(System.IO.File.ReadAllText(System.IO.Path.Combine(Paths.StreamingMap, "heightmap.json")));
@@ -52,27 +50,19 @@ public class LandUseTests
     public void TheTexturesImportForTheShaderAndEveryWebBuild()
     {
         var land = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Land);
-        var tracks = AssetDatabase.LoadAssetAtPath<Texture2D>(MapTexturePaths.Tracks);
         Assert.AreEqual((2048, 4096), (land.width, land.height), "about 79 x 105 m per texel");
-        Assert.AreEqual((512, 1024), (tracks.width, tracks.height), "about 316 x 421 m per texel");
-        foreach (var t in new[] { land, tracks }) Assert.AreEqual(TextureWrapMode.Clamp, t.wrapMode, t.name);
+        Assert.AreEqual(TextureWrapMode.Clamp, land.wrapMode);
         Assert.IsTrue(land.isDataSRGB, "sRGB colour: 8 bits and BC3 endpoints where the eye needs them (review M3)");
         Assert.AreEqual(FilterMode.Trilinear, land.filterMode); Assert.Greater(land.mipmapCount, 1); Assert.AreEqual(2, land.anisoLevel);
         Assert.AreEqual(TextureFormat.DXT5, land.format, "colour and weight block-compressed (BC3) on the desktop platforms");
-        Assert.IsFalse(tracks.isDataSRGB, "offsets, read as they are");
-        Assert.AreEqual(TextureFormat.RGB24, tracks.format, "uncompressed: block compression would bend the offsets");
-        Assert.AreEqual(1, tracks.mipmapCount, "no mips: averaged offsets fake tracks at distance (review M2)");
-        Assert.AreEqual(FilterMode.Bilinear, tracks.filterMode);
         // Review I4: the WebGL override keeps the 4096 rows and lets the build's texture subtarget choose the format (DXT5 in
         // the desktop build, ASTC 6x6 / ETC2 in a mobile one), instead of pinning DXT5, which phones decompress on the CPU.
         var web = ((TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Land)).GetPlatformTextureSettings("WebGL");
         Assert.IsTrue(web.overridden); Assert.AreEqual(4096, web.maxTextureSize);
         Assert.Less((int)web.format, 0, $"WebGL format {web.format}: an automatic format (the negative enum values), not a pinned one");
         Assert.AreEqual(TextureImporterCompression.Compressed, web.textureCompression);
-        var webTracks = ((TextureImporter)AssetImporter.GetAtPath(MapTexturePaths.Tracks)).GetPlatformTextureSettings("WebGL");
-        Assert.IsTrue(webTracks.overridden); Assert.AreEqual(TextureImporterFormat.RGB24, webTracks.format);
         var mat = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath);
-        Assert.AreEqual(land, mat.GetTexture("_ScLandTex")); Assert.AreEqual(tracks, mat.GetTexture("_ScTrackTex"));
+        Assert.AreEqual(land, mat.GetTexture("_ScLandTex"));
     }
 
     /// <summary>Build.Web -textureSubtarget names the WebGL texture subtarget (desktop DXT, mobile ASTC or ETC2), and
@@ -110,12 +100,11 @@ public class LandUseTests
     }
 
     /// <summary>The land follows the real ground: it covers the coastal plain by Rehovot, the Jezreel valley and (as
-    /// garrigue and terraces) the Judean hills, and leaves the central Negev and the Dead Sea to the biome and the water;
-    /// the tracks reach the towns they join.</summary>
+    /// garrigue and terraces) the Judean hills, and leaves the central Negev and the Dead Sea to the biome and the water.</summary>
     [Test]
     public void TheLandFollowsSlopeRainAndTowns()
     {
-        var png = Read(MapTexturePaths.Land); var tracks = Read(MapTexturePaths.Tracks); var m = Meta();
+        var png = Read(MapTexturePaths.Land); var m = Meta();
         try
         {
             float plain = WeightAround(png, m, 34.84, 31.92), jezreel = WeightAround(png, m, 35.30, 32.62);
@@ -124,18 +113,11 @@ public class LandUseTests
             Assert.Greater(plain, 0.8f, "fields on the coastal plain"); Assert.Greater(jezreel, 0.8f, "fields in the Jezreel valley");
             Assert.Less(negev, 0.02f, "the central Negev stays desert"); Assert.Less(deadSea, 0.02f, "water");
             Assert.Greater(judea, 0.4f, "garrigue and terraces on the Judean hills");
-            foreach (var (name, lon, lat) in new[] { ("Jerusalem", 35.2256, 31.7789), ("Nazareth", 35.3035, 32.7019), ("Petah Tikva", 34.8878, 32.0889) })
-            {
-                Assert.Less(TrackDistanceM(MaskAt(tracks, m, lon, lat)), 250f, name + " is on a track");
-                Assert.Greater(MaskAt(tracks, m, lon, lat).b, 0.99f, name + ": its track may draw there (B)");
-            }
-            Assert.Greater(TrackDistanceM(MaskAt(tracks, m, 34.90, 30.60)), 1000f, "no track across the empty Negev");
-            Assert.Less(MaskAt(tracks, m, 34.90, 30.60).b, 0.01f, "and none may draw there");
         }
-        finally { Object.DestroyImmediate(png); Object.DestroyImmediate(tracks); }
+        finally { Object.DestroyImmediate(png); }
     }
 
-    /// <summary>Rendered at the gameplay pose: the fields, hedges and tracks add local detail to the plain (the flat
+    /// <summary>Rendered at the gameplay pose: the fields, hedges and farm tracks add local detail to the plain (the flat
     /// mustard ground had little): the gradient energy of the frame's lower half rises by at least 15% against the bare
     /// biome ground (the "land" toggle off), and the mean colour stays the same ground (saturation within 0.06).</summary>
     [UnityTest]

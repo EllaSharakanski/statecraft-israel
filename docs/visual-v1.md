@@ -1128,28 +1128,25 @@ and paints what procedurally, baked:
   station-corrected as `hexgrid.py`: smoothstep 180-380 mm; the irrigated Jordan valley floor at least 0.7); the citrus
   belt on the flat coastal plain and valley floor below 150 m near the 1948 towns (the hex-wise biome inputs softened over
   1.5 km, so nothing steps at hex edges); garrigue, terraces and scrub where the rain is 250-600 mm, the ground unfarmed
-  and not the shader's rock; dirt tracks joining each town to its three nearest within 40 km;
+  and not the shader's rock;
 - what (`landuse.png`, 2048 x 4096 RGBA, about 79 x 105 m): strip-field parcels in rotated 5 km blocks (green, ochre
-  stubble, ploughed, fallow, grass, groves), soft grassy rims, hedges, some block edges as tracks; on the wet hills patches
+  stubble, ploughed, fallow, grass, groves), soft grassy rims, hedges, some block edges as farm tracks; on the wet hills patches
   of stony soil and grass, terraces along the real contours every 40 m of rise, scrub; 2 x 2 samples per texel; sRGB
   colour (the sampler decodes it) spread into the empty texels so mips and BC3 blocks never blend with black; weight in
   alpha;
-- `tracks.png` (512 x 1024, RGB24, no mips, bilinear): R, G the offset to the nearest track, affine across a track so the
-  filter keeps the line whole (a distance field drew dashes); B where that offset may draw a track. Filtering an offset
-  with a "no track" texel or across a medial axis passes through zero and faked a ring of tracks about 1 km south-east of
-  every track (review I1); the shader fades the line by B. GPU-style bilinear over the whole map at 4x: drawn samples more
-  than 300 m from a track 524 -> 42, none past 380 m (they sit on bends; `test_no_phantom_track_appears_next_to_texels_without_a_track`
-  reproduces the phantom on the old encoding). The line thins out once a pixel is wider than it (no faint web at the
-  overview).
+- no roads between the towns: the first rounds joined each town to its three nearest with seeded meandering tracks
+  (`tracks.png`); a controller ruling removed them, as invented routes would draw a second road beside the real 1948 roads
+  and railways the roads track traces from the 1946 Survey of Palestine map (`tools/routes_1948.py`). A finer track
+  network, if wanted, is traced there, not generated.
 The shader lays the land between `ScGroundBase` and `ScGroundShade` (relief, AO and breakup shade the fields), up to the
 waterline: promo-sea's beach band (`ScShore`, drawn after) covers it where there is a beach, and fields reach the water
 where there is none (the Sea of Galilee, cliffs). The `land` visual toggle lerps it away: a visual switch, not a price
-(the two samples still run).
+(the sample still runs).
 
 **Why baked, not procedural in the shader.** The first cut drew the same pattern in the shader (about 150 instructions).
 WebGL headless, same night: base 2.72 / 9.76 ms (gameplay03 / diorama02 `all`), procedural 13.94 / 15.44; with a
 per-pixel `[branch]` and one shared noise 10.37 / 13.60; branch-free 9.58 / 13.58; flattened 10.91 / 15.01. The cost stayed
-when no pixel took the branch (`-land` 8.11 at gameplay03), and sampling the two textures alone cost nothing (2.69 ms):
+when no pixel took the branch (`-land` 8.11 at gameplay03), and sampling the textures alone cost nothing (2.69 ms):
 most likely register pressure / occupancy from the shader's size (the GPU reserves registers for the worst path, and
 ANGLE may flatten the branch), not its arithmetic. Single builds differ by a few tenths of a millisecond, so the
 bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake holds either way.
@@ -1164,9 +1161,9 @@ bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake
   `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms. Within the 2.5 ms feature budget; re-measure
   on an idle machine before the tier numbers are re-ratified.
 
-**Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory);
-`tracks.png` 1.5 MiB (RGB24, no mips). The WebGL `.data` is LZ4-compressed, so the download grows less: `Web-disabled.data`
-21.53 MB (promo-sea) -> 24.40 MB (+2.86 MB). Halving the texture (the platforms' 2048 cap gives 1024 x 2048) blurred the
+**Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory).
+The WebGL `.data` is LZ4-compressed, so the download grows less: `Web-disabled.data` 21.53 MB (promo-sea) -> 24.40 MB
+(+2.86 MB, then with the since-removed tracks texture's 0.02 MB). Halving the texture (the platforms' 2048 cap gives 1024 x 2048) blurred the
 hedges, rims and rows (gameplay03 local gradient on the plain 0.0220 -> 0.0174, -21%), so it stays 4096 rows; BC1 cannot
 hold the weight, so BC3 stays.
 
@@ -1186,10 +1183,9 @@ Colour (WebGL `?shot`, checkpoint `promo-land-r5` against `promo-sea-r2`): gamep
 diorama02 saturation 0.4183 -> 0.4164 (bar <= 0.48), warmth 0.1171 -> 0.1154 (bar 0.087-0.145), palette distance
 0.5869 -> 0.5868. Open item 3: the land lowers gameplay03 saturation by 0.011. Open item 5: the olive plain / gold hills
 seam is now fields against garrigue, a softer step (owner to judge).
-Licence: both textures are `owner-verify` in `ASSETS.yaml` pending decision D13 (`docs/oss/DECISIONS.md`).
+Licence: the texture is `owner-verify` in `ASSETS.yaml` pending decision D13 (`docs/oss/DECISIONS.md`).
 Still different from the promo: soft at close zoom (rows, hedges and bushes read at the gameplay zoom, blur at 15-20 km
-and closer); terraces read faintly; short track ends where several tracks meet at a town centre (under the settlement
-kits); the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
+and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
 its grade.
 
 ## Open items for the art track

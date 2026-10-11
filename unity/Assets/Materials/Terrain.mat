@@ -91,10 +91,6 @@ Material:
         m_Texture: {fileID: 2800000, guid: f4c67647f4d1e46dc9fa627580da19dd, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _ScTrackTex:
-        m_Texture: {fileID: 2800000, guid: 6821b453396d3425eb15627ebcd22f88, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _Splat0:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}

@@ -14,9 +14,6 @@
         },
         {
             "m_Id": "381f2961f9eb5167ac569d12f1851588"
-        },
-        {
-            "m_Id": "419df968652453d9bc65fae0c3ca7972"
         }
     ],
     "m_Keywords": [],
@@ -68,9 +65,6 @@
         },
         {
             "m_Id": "8777bb7ce1aa52ebbc6efbe44551bc3e"
-        },
-        {
-            "m_Id": "7dac59f07d995aee95c1f954860696b5"
         },
         {
             "m_Id": "0c721d24051f5765970882f281b1f92f"
@@ -175,20 +169,6 @@
                     "m_Id": "0c721d24051f5765970882f281b1f92f"
                 },
                 "m_SlotId": 12
-            }
-        },
-        {
-            "m_OutputSlot": {
-                "m_Node": {
-                    "m_Id": "7dac59f07d995aee95c1f954860696b5"
-                },
-                "m_SlotId": 0
-            },
-            "m_InputSlot": {
-                "m_Node": {
-                    "m_Id": "0c721d24051f5765970882f281b1f92f"
-                },
-                "m_SlotId": 13
             }
         },
         {
@@ -388,9 +368,6 @@
         },
         {
             "m_Id": "381f2961f9eb5167ac569d12f1851588"
-        },
-        {
-            "m_Id": "419df968652453d9bc65fae0c3ca7972"
         }
     ]
 }
@@ -1292,88 +1269,6 @@
 }
 
 {
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Internal.Texture2DShaderProperty",
-    "m_ObjectId": "419df968652453d9bc65fae0c3ca7972",
-    "m_Guid": {
-        "m_GuidSerialized": "b439e070-c40e-59d5-bec0-1872333a5c5d"
-    },
-    "m_Name": "ScTrackTex",
-    "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "ScTrackTex",
-    "m_DefaultReferenceName": "_ScTrackTex",
-    "m_OverrideReferenceName": "",
-    "m_GeneratePropertyBlock": true,
-    "m_UseCustomSlotLabel": false,
-    "m_CustomSlotLabel": "",
-    "m_DismissedVersion": 0,
-    "m_Precision": 0,
-    "overrideHLSLDeclaration": false,
-    "hlslDeclarationOverride": 0,
-    "m_Hidden": false,
-    "m_PerRendererData": false,
-    "m_customAttributes": [],
-    "m_Value": {
-        "m_SerializedTexture": "{\"texture\":{\"instanceID\":0}}",
-        "m_Guid": ""
-    },
-    "isMainTexture": false,
-    "useTilingAndOffset": false,
-    "useTexelSize": false,
-    "m_Modifiable": true,
-    "m_DefaultType": 0
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
-    "m_ObjectId": "7dac59f07d995aee95c1f954860696b5",
-    "m_Group": {
-        "m_Id": ""
-    },
-    "m_Name": "ScTrackTex",
-    "m_DrawState": {
-        "m_Expanded": true,
-        "m_Position": {
-            "serializedVersion": "2",
-            "x": -900,
-            "y": 930,
-            "width": 220.0,
-            "height": 130.0
-        }
-    },
-    "m_Slots": [
-        {
-            "m_Id": "e500e8b325035d3c81567aec54341cdb"
-        }
-    ],
-    "synonyms": [],
-    "m_Precision": 1,
-    "m_PreviewExpanded": false,
-    "m_DismissedVersion": 0,
-    "m_PreviewMode": 0,
-    "m_CustomColors": {
-        "m_SerializableColors": []
-    },
-    "m_Property": {
-        "m_Id": "419df968652453d9bc65fae0c3ca7972"
-    }
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Texture2DMaterialSlot",
-    "m_ObjectId": "e500e8b325035d3c81567aec54341cdb",
-    "m_Id": 0,
-    "m_DisplayName": "Out",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Out",
-    "m_StageCapability": 3,
-    "m_BareResource": false
-}
-
-{
     "m_SGVersion": 1,
     "m_Type": "UnityEditor.ShaderGraph.CustomFunctionNode",
     "m_ObjectId": "0c721d24051f5765970882f281b1f92f",
@@ -1412,9 +1307,6 @@
         },
         {
             "m_Id": "c91f4d03290652b78049177e85d694ee"
-        },
-        {
-            "m_Id": "b6233fa3bb515f289440a05e3ff43baa"
         },
         {
             "m_Id": "87a7dd817fad59ecb1f11eb968ed2567"
@@ -1580,24 +1472,6 @@
     "m_SlotType": 0,
     "m_Hidden": false,
     "m_ShaderOutputName": "Land",
-    "m_StageCapability": 3,
-    "m_BareResource": false,
-    "m_Texture": {
-        "m_SerializedTexture": "",
-        "m_Guid": ""
-    },
-    "m_DefaultType": 0
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Texture2DInputMaterialSlot",
-    "m_ObjectId": "b6233fa3bb515f289440a05e3ff43baa",
-    "m_Id": 13,
-    "m_DisplayName": "Tracks",
-    "m_SlotType": 0,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Tracks",
     "m_StageCapability": 3,
     "m_BareResource": false,
     "m_Texture": {

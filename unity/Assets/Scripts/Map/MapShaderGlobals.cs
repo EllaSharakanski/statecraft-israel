@@ -57,7 +57,7 @@ namespace Statecraft.Game.Map
             Shader.SetGlobalVector(HazeRange, new Vector4(Y(RiftHazeTopM), Y(RiftHazeFullM), HazeDistanceM, HazeStartM));
             Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, 1f));
             assets.OnTeardown(VisualToggles.Register("grid", on => Shader.SetGlobalVector(Grid, new Vector4(GridLandOpacity, GridWaterOpacity, GridWidthPx, on ? 1f : 0f))));
-            // Land use (issue #33, StatecraftLand.hlsl): fields, tracks, terraces and scrub; off = the bare biome ground.
+            // Land use (issue #33, StatecraftLand.hlsl): fields, farm tracks, terraces and scrub; off = the bare biome ground.
             Shader.SetGlobalFloat(LandOn, 1f);
             assets.OnTeardown(VisualToggles.Register("land", on => Shader.SetGlobalFloat(LandOn, on ? 1f : 0f)));
             Shader.SetGlobalFloat(WaterOn, 1f);
@@ -79,8 +79,5 @@ namespace Statecraft.Game.Map
         public const string Ao = "Assets/Textures/Map/ao.png";
         /// <summary>The land (tools/land_bake.py, issue #33): rgb its linear colour, a its weight over the biome ground.</summary>
         public const string Land = "Assets/Textures/Map/landuse.png";
-        /// <summary>The offset to the nearest dirt track (tools/land_bake.py): two uncompressed channels (RG16), so the GPU's
-        /// filter keeps each track's line straight and its width even.</summary>
-        public const string Tracks = "Assets/Textures/Map/tracks.png";
     }
 }
