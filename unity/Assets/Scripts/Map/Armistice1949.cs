@@ -22,6 +22,8 @@ namespace Statecraft.Game.Map
         public sealed class Front
         {
             public string Key = "", Name = "", Agreement = "", Note = ""; public DateTime Signed; public DateTime? ShownFrom;
+            /// <summary>Traced from a low-resolution scan (Jordan, owner ruling 2026-10-11): said on the map label.</summary>
+            public bool LowAccuracy;
             /// <summary>Whether the front's line is shown on <paramref name="date"/> (never, without line data).</summary>
             public bool InForce(DateTime date) => ShownFrom != null && date >= ShownFrom.Value;
         }
@@ -29,6 +31,9 @@ namespace Statecraft.Game.Map
         public sealed class Item
         {
             public int Id; public string Key = "", Name = ""; public Front Front = null!; public DateTime ShownFrom; public BorderStyle Style;
+            /// <summary>The item's own agreement and date (the 1950 modus vivendi is not its front's 1949 agreement), a note
+            /// for the map label ("" for none), and whether it is low-accuracy.</summary>
+            public string Agreement = "", LabelNote = ""; public DateTime Signed; public bool LowAccuracy;
             public bool InForce(DateTime date) => date >= ShownFrom;
         }
 
@@ -56,8 +61,8 @@ namespace Statecraft.Game.Map
         /// <summary>The hexes of a zone (for composing the drawn layer).</summary>
         public IEnumerable<(int q, int r)> HexesOf(Item zone) => zoneAt.Where(kv => kv.Value == zone).Select(kv => kv.Key);
 
-        sealed class FrontRow { public string Key { get; set; } = ""; public string Name { get; set; } = ""; public string Agreement { get; set; } = ""; public string Signed { get; set; } = ""; public string? ShownFrom { get; set; } public string Note { get; set; } = ""; }
-        sealed class ItemRow { public int Id { get; set; } public string Key { get; set; } = ""; public string Front { get; set; } = ""; public string Name { get; set; } = ""; public string ShownFrom { get; set; } = ""; public string Style { get; set; } = "secondary"; }
+        sealed class FrontRow { public string Key { get; set; } = ""; public string Name { get; set; } = ""; public string Agreement { get; set; } = ""; public string Signed { get; set; } = ""; public string? ShownFrom { get; set; } public bool LowAccuracy { get; set; } public string Note { get; set; } = ""; }
+        sealed class ItemRow { public int Id { get; set; } public string Key { get; set; } = ""; public string Front { get; set; } = ""; public string Name { get; set; } = ""; public string ShownFrom { get; set; } = ""; public string Style { get; set; } = "secondary"; public string? Agreement { get; set; } public string? Signed { get; set; } public string LabelNote { get; set; } = ""; public bool LowAccuracy { get; set; } }
         sealed class FileDoc
         {
             public string Layer { get; set; } = ""; public string Title { get; set; } = ""; public string Line { get; set; } = ""; public string Label { get; set; } = "";
@@ -86,7 +91,7 @@ namespace Statecraft.Game.Map
                 var from = Date(f.ShownFrom, $"front {f.Key} shown_from");
                 if (from == null && string.IsNullOrWhiteSpace(f.Note)) throw new InvalidDataException($"{FileName}: front {f.Key} has no line data and no note saying so");
                 if (from != null && from < signed) throw new InvalidDataException($"{FileName}: front {f.Key}: shown_from is before the agreement was signed");
-                fronts.Add(new Front { Key = f.Key, Name = f.Name, Agreement = f.Agreement, Signed = signed, ShownFrom = from, Note = f.Note });
+                fronts.Add(new Front { Key = f.Key, Name = f.Name, Agreement = f.Agreement, Signed = signed, ShownFrom = from, Note = f.Note, LowAccuracy = f.LowAccuracy });
             }
             List<Item> Items(List<ItemRow> rows, string kind)
             {
@@ -104,7 +109,11 @@ namespace Statecraft.Game.Map
                         "primary" => BorderStyle.Primary, "secondary" => BorderStyle.Secondary,
                         _ => throw new InvalidDataException($"{FileName}: {kind} {z.Id} ({z.Key}): unknown style '{z.Style}'"),
                     };
-                    items.Add(new Item { Id = z.Id, Key = z.Key, Name = z.Name, Front = front, ShownFrom = from, Style = style });
+                    var signed = Date(z.Signed, $"{kind} {z.Key} signed") ?? front.Signed;
+                    if (from < signed) throw new InvalidDataException($"{FileName}: {kind} {z.Key}: shown_from is before its agreement was signed");
+                    items.Add(new Item { Id = z.Id, Key = z.Key, Name = z.Name, Front = front, ShownFrom = from, Style = style,
+                        Agreement = string.IsNullOrWhiteSpace(z.Agreement) ? front.Agreement : z.Agreement!, Signed = signed,
+                        LabelNote = z.LabelNote, LowAccuracy = z.LowAccuracy || front.LowAccuracy });
                 }
                 return items;
             }

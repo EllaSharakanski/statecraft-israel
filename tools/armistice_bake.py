@@ -17,8 +17,9 @@ The GeoJSON keeps the true lines (tools/armistice_digitise.py); the game shows t
     the info panel names the line and its agreement there, from the line's date. A line is drawn only where it bounds
     a zone, or where it is the Mandate frontier the sub-district layer already draws (Lebanon; the Syrian line along
     the border).
-  fronts: each agreement, its date, and whether a line exists; a front without one (Jordan) keeps the Mandate
-    sub-district layer, says so, and has no date. tools/borders_bake.py writes the same dates into the sub-district
+  fronts: each agreement, its date, whether a line exists (a front without one keeps the Mandate sub-district layer,
+    says so, and has no date) and whether it is low-accuracy (Jordan: traced from a low-resolution scan). Each zone and
+    line also names its own agreement and date (the 1950 modus vivendi is not the 1949 agreement) and a label note. tools/borders_bake.py writes the same dates into the sub-district
     layer as each front's end there.
 The sim never reads the output (display only: the content hash and the goldens do not move).
 """
@@ -70,13 +71,18 @@ def line_hexes(coords: list, grid: dict) -> list:
     return out
 
 
+def item(i: int, p: dict) -> dict:
+    return {"id": i, "key": p["id"], "front": p["front"], "name": p["name"], "shown_from": p["shown_from"], "agreement": p["agreement"],
+            "signed": p["signed"], "label_note": p.get("label_note", ""), "low_accuracy": p.get("source_quality") == "low_res_scan"}
+
+
 def bake(source: dict, grid: dict, land: set) -> dict:
     zones, lines, zone_cells, line_cells, no_hex = [], [], {}, [], []
     for f in source["features"]:
         p = f["properties"]
         if p["kind"] == "zone":
             zid = len(zones) + 1
-            zones.append({"id": zid, "key": p["id"], "front": p["front"], "name": p["name"], "shown_from": p["shown_from"]})
+            zones.append(item(zid, p))
             shape = bb.rings(f["geometry"])
             n = 0
             for h in grid["hexes"]:
@@ -87,14 +93,24 @@ def bake(source: dict, grid: dict, land: set) -> dict:
                 no_hex.append(p["id"])
         else:
             lid = len(lines) + 1
-            lines.append({"id": lid, "key": p["id"], "front": p["front"], "name": p["name"], "shown_from": p["shown_from"]})
-            line_cells += [(q, r, lid) for q, r in line_hexes(f["geometry"]["coordinates"], grid)]
+            lines.append(item(lid, p))
+            g = f["geometry"]
+            parts = [g["coordinates"]] if g["type"] == "LineString" else g["coordinates"]
+            seen = set()
+            for part in parts:
+                for c in line_hexes(part, grid):
+                    if c not in seen:
+                        seen.add(c); line_cells.append((c[0], c[1], lid))
     return {"zones": zones, "lines": lines, "zone_cells": zone_cells, "line_cells": line_cells, "no_hex": no_hex}
 
 
 def render(source: dict, baked: dict) -> str:
     meta = source["statecraft"]
     q = json.dumps
+
+    def extra(x: dict) -> str:
+        return (f"agreement: {q(x['agreement'])}, signed: {x['signed']}, label_note: {q(x['label_note'])}, "
+                f"low_accuracy: {str(x['low_accuracy']).lower()}")
     out = [HEADER, "layer: armistice_1949\n", f"title: {q(meta['title'])}\n",
            f"line: {q('The true lines are content/map/armistice_lines_1949.geojson (status ' + meta['status'] + '): the agreements and their annexed maps; shown here to the nearest hex edge, up to half a hex (about 4 km) from the true line.')}\n",
            f"label: {q(LABEL)}   # added to the map label while any front's line is shown\n",
@@ -102,13 +118,13 @@ def render(source: dict, baked: dict) -> str:
     for f in meta["fronts"]:
         note = f.get("gap", "")
         out.append(f"  - {{ key: {f['key']}, name: {q(FRONT_NAMES[f['key']])}, agreement: {q(f['agreement'])}, signed: {f['signed']}, "
-                   f"shown_from: {f['shown_from'] or 'null'}, note: {q(note)} }}\n")
+                   f"shown_from: {f['shown_from'] or 'null'}, low_accuracy: {str(f.get('source_quality') == 'low_res_scan').lower()}, note: {q(note)} }}\n")
     out.append("zones:   # drawn over the sub-districts from shown_from (style secondary)\n")
     for z in baked["zones"]:
-        out.append(f"  - {{ id: {z['id']}, key: {z['key']}, front: {z['front']}, name: {q(z['name'])}, shown_from: {z['shown_from']}, style: secondary }}\n")
+        out.append(f"  - {{ id: {z['id']}, key: {z['key']}, front: {z['front']}, name: {q(z['name'])}, shown_from: {z['shown_from']}, style: secondary, {extra(z)} }}\n")
     out.append("lines:   # named in the info panel on the hexes they pass through, from shown_from\n")
     for ln in baked["lines"]:
-        out.append(f"  - {{ id: {ln['id']}, key: {ln['key']}, front: {ln['front']}, name: {q(ln['name'])}, shown_from: {ln['shown_from']} }}\n")
+        out.append(f"  - {{ id: {ln['id']}, key: {ln['key']}, front: {ln['front']}, name: {q(ln['name'])}, shown_from: {ln['shown_from']}, {extra(ln)} }}\n")
     out.append(f"no_hex: {q(baked['no_hex'])}   # zones narrower than any hex centre: kept in the true lines only\n")
     out.append("zone_hexes:   # [q, r, zone id], ordered by r then q\n")
     for (qq, rr), zid in sorted(baked["zone_cells"].items(), key=lambda kv: (kv[0][1], kv[0][0])):

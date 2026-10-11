@@ -27,8 +27,9 @@ is rechecked by the tools tests on macOS and on Linux CI.
 Display window (owner ruling 2026-10-11): the layer shows from the game's start (15 May 1948) until the 1949 armistice
 lines replace it, each front on its agreement's date once that data exists, labelled "Mandate sub-districts, 1947"
 (LABEL). `fronts` gives each front's end (`until`): the agreement's date where content/map/armistice_lines_1949.geojson
-has its line, null where it has none (Jordan: the layer stays there). The layer as a whole ends (`shown_until`) only
-when every front has a date: the last of them; null while any front has none.
+has its line, null where it has none. The layer as a whole ends (`shown_until`) only when every front has a date and
+the armistice lines enclose each side's area (the GeoJSON's `partition.closed`): the last date; until then (the Egypt line
+stops at Gaza, the Jordan line leaves out Jerusalem) it stays as the base under the armistice lines.
 """
 import json
 import sys
@@ -212,14 +213,15 @@ def front_ends(armistice: dict | None) -> list[tuple[str, str | None]]:
 def render(source: dict, regions: list[dict], cells: dict, armistice: dict | None = None) -> str:
     meta = source["statecraft"]
     ends = front_ends(armistice)
-    until = max(d for _, d in ends) if ends and all(d for _, d in ends) else None
+    closed = bool(armistice and armistice["statecraft"].get("partition", {}).get("closed"))
+    until = max(d for _, d in ends) if ends and all(d for _, d in ends) and closed else None
     lines = [HEADER,
              "layer: subdistricts_1948\n",
              f"title: {json.dumps(meta['title'])}\n",
              f"line: {json.dumps('The true lines are the Survey of Palestine map of the 1947 Administrative Divisions Schedule (content/map/subdistricts_1948.geojson, status ' + meta['status'] + '); shown here to the nearest hex edge, up to half a hex (about 4 km) from the true line.')}\n",
              f"label: {json.dumps(LABEL)}   # shown on screen while the layer is drawn (owner ruling 2026-10-11)\n",
              f"shown_from: {SHOWN_FROM}   # the game's start\n",
-             f"shown_until: {until or 'null'}   # the last front's end; null while a front has no armistice line (it keeps this layer)\n",
+             f"shown_until: {until or 'null'}   # the last front's end, once the armistice lines enclose each side's area; null until then (the base under them)\n",
              "fronts:   # until: the date that front's 1949 armistice line replaces this layer there (null: no line data, the layer stays)\n"]
     lines += [f"  - {{ key: {k}, until: {d or 'null'} }}\n" for k, d in ends]
     lines += ["regions:\n"]

@@ -40,7 +40,7 @@ public class ArmisticeTests
     }
 
     [Test]
-    public void TheBakedFileListsTheFourFrontsWithJordanAsAGap()
+    public void TheBakedFileListsTheFourFrontsWithJordanLowAccuracy()
     {
         var a = Armistice1949.Parse(ArmText);
         CollectionAssert.AreEqual(new[] { "egypt", "lebanon", "jordan", "syria" }, a.Fronts.Select(f => f.Key).ToArray());
@@ -48,13 +48,21 @@ public class ArmisticeTests
         Assert.AreEqual(Lebanon, a.FrontOf("lebanon")!.ShownFrom);
         Assert.AreEqual(Syria, a.FrontOf("syria")!.ShownFrom);
         var jordan = a.FrontOf("jordan")!;
-        Assert.IsNull(jordan.ShownFrom, "no line data for Jordan");
-        Assert.AreEqual(Jordan, jordan.Signed);
-        StringAssert.Contains("Mandate sub-district layer stays", jordan.Note);
-        Assert.IsFalse(a.Zones.Concat(a.Lines).Any(x => x.Front.Key == "jordan"));
+        Assert.AreEqual(Jordan, jordan.ShownFrom);
+        Assert.IsTrue(jordan.LowAccuracy, "traced from a low-resolution scan (owner ruling)");
+        Assert.IsFalse(a.FrontOf("egypt")!.LowAccuracy);
+        StringAssert.Contains("Jerusalem", jordan.Note);
+        Assert.IsTrue(a.Lines.Where(l => l.Front == jordan).All(l => l.LowAccuracy));
+        // line A in the Iraqi sector comes in by Art. VI.3's stages
+        CollectionAssert.AreEquivalent(new[] { new DateTime(1949, 4, 3), new DateTime(1949, 5, 8), new DateTime(1949, 5, 22), new DateTime(1949, 7, 17) },
+            a.Lines.Where(l => l.Front == jordan).Select(l => l.ShownFrom).Distinct().ToArray());
         StringAssert.Contains("nearest hex edge", a.Line);
         Assert.AreEqual(4, a.Zones.Count);
-        Assert.AreEqual(3, a.Lines.Count);
+        Assert.AreEqual(12, a.Lines.Count);
+        var mv = a.Lines.Single(l => l.Key == "egypt_mv1950_demarcation");
+        Assert.AreEqual(new DateTime(1950, 2, 22), mv.ShownFrom);
+        Assert.AreEqual(new DateTime(1950, 2, 22), mv.Signed);
+        StringAssert.Contains("modus vivendi", mv.Agreement);
     }
 
     const string Head = "layer: x\nlabel: L\n";
@@ -75,22 +83,23 @@ public class ArmisticeTests
         StringAssert.Contains(Armistice1949.FileName, e.Message); StringAssert.Contains(why, e.Message);
     }
 
-    /// <summary>The Mandate layer's per-front ends follow the agreements whose line exists; Jordan's never comes, so the
-    /// layer as a whole stays.</summary>
+    /// <summary>The Mandate layer's per-front ends follow each agreement; the layer as a whole stays as the base, since the
+    /// lines do not yet enclose each side's area (the Egypt line stops at Gaza, the Jordan line leaves out Jerusalem).</summary>
     [Test]
-    public void TheMandateLayerEndsPerFrontOnlyWhereALineExists()
+    public void TheMandateLayerEndsPerFrontOnEachAgreementsDate()
     {
         var s = Subdistricts1948.Parse(SubText);
         Assert.AreEqual(Egypt, s.Fronts["egypt"]);
         Assert.AreEqual(Lebanon, s.Fronts["lebanon"]);
+        Assert.AreEqual(Jordan, s.Fronts["jordan"]);
         Assert.AreEqual(Syria, s.Fronts["syria"]);
-        Assert.IsNull(s.Fronts["jordan"]);
         Assert.IsFalse(s.FrontReplaced("egypt", Egypt.AddDays(-1)));
         Assert.IsTrue(s.FrontReplaced("egypt", Egypt));
-        Assert.IsFalse(s.FrontReplaced("syria", Syria.AddDays(-1)));
+        Assert.IsFalse(s.FrontReplaced("jordan", Jordan.AddDays(-1)));
+        Assert.IsTrue(s.FrontReplaced("jordan", Jordan));
         Assert.IsTrue(s.FrontReplaced("syria", Syria));
-        Assert.IsFalse(s.FrontReplaced("jordan", new DateTime(1952, 12, 31)), "no line data: the Mandate layer stays");
-        Assert.IsNull(s.ShownUntil);
+        Assert.IsFalse(s.FrontReplaced("nowhere", Syria), "an unknown front never replaces the layer");
+        Assert.IsNull(s.ShownUntil, "the base stays while the lines leave gaps");
         Assert.IsTrue(s.ShowsOn(new DateTime(1952, 12, 31)));
     }
 
@@ -116,20 +125,34 @@ public class ArmisticeTests
         Assert.AreEqual(MapRegions.ZoneIdBase + central.Id, m.LayerOn(Syria)!.RegionOf(c.q, c.r), "the Syrian DMZ from 20 Jul 1949");
         Assert.AreSame(m.LayerOn(Syria), m.LayerOn(new DateTime(1952, 12, 31)), "composed once per set of zones");
         var (on, none) = m.FrontsOn(new DateTime(1952, 1, 1));
-        CollectionAssert.AreEqual(new[] { "egypt", "lebanon", "syria" }, on.Select(f => f.Key).ToArray());
-        CollectionAssert.AreEqual(new[] { "jordan" }, none.Select(f => f.Key).ToArray());
+        CollectionAssert.AreEqual(new[] { "egypt", "lebanon", "jordan", "syria" }, on.Select(f => f.Key).ToArray());
+        Assert.AreEqual(0, none.Count);
+        var (march, _) = m.FrontsOn(new DateTime(1949, 3, 1));
+        CollectionAssert.AreEqual(new[] { "egypt" }, march.Select(f => f.Key).ToArray());
+    }
+
+    static string L(MapRegions m, DateTime d)
+    {
+        var t = Text;
+        return m.Label(d, t["map.layer_with_armistice"], t["map.layer_front_no_data"], t["map.layer_front_low"], t["map.layer_front_note"]);
     }
 
     [Test]
-    public void TheLabelNamesTheFrontsShownAndSaysJordanHasNoLine()
+    public void TheLabelNamesTheFrontsShownJordanAsLowAccuracyAndThe1950Line()
     {
-        var m = Regions(); var t = Text;
-        Assert.AreEqual("Mandate sub-districts, 1947", m.Label(Start, t["map.layer_with_armistice"], t["map.layer_front_no_data"]));
-        var feb = m.Label(new DateTime(1949, 3, 1), t["map.layer_with_armistice"], t["map.layer_front_no_data"]);
-        StringAssert.StartsWith("Mandate sub-districts, 1947 · 1949 armistice lines: Egypt", feb);
-        StringAssert.DoesNotContain("Lebanon", feb.Split('·')[1]);
-        StringAssert.Contains("Jordan: Mandate sub-districts, no armistice line data", feb);
-        StringAssert.Contains("Egypt, Lebanon, Syria", m.Label(new DateTime(1949, 8, 1), t["map.layer_with_armistice"], t["map.layer_front_no_data"]));
+        var m = Regions();
+        Assert.AreEqual("Mandate sub-districts, 1947", L(m, Start));
+        Assert.AreEqual("Mandate sub-districts, 1947 · 1949 armistice lines: Egypt", L(m, new DateTime(1949, 3, 1)));
+        Assert.AreEqual("Mandate sub-districts, 1947 · 1949 armistice lines: Egypt, Lebanon, Jordan (low accuracy)", L(m, new DateTime(1949, 4, 10)));
+        StringAssert.EndsWith("Jordan (low accuracy), Syria", L(m, new DateTime(1949, 8, 1)));
+        StringAssert.Contains("Egypt (and the 1950 modus vivendi)", L(m, new DateTime(1950, 3, 1)));
+        StringAssert.DoesNotContain("modus vivendi", L(m, new DateTime(1950, 2, 21)));
+        // a front without line data says so (the rule for any front the data leaves out)
+        var noJordan = new MapRegions(Subdistricts1948.Parse(SubText), Armistice1949.Parse(
+            "layer: x\nlabel: 1949 armistice lines\nfronts:\n" +
+            "  - { key: egypt, name: Egypt, agreement: A, signed: 1949-02-24, shown_from: 1949-02-24, note: '' }\n" +
+            "  - { key: jordan, name: Jordan, agreement: B, signed: 1949-04-03, shown_from: null, note: 'no line data' }\n"));
+        StringAssert.Contains("Jordan: Mandate sub-districts, no armistice line data", L(noJordan, new DateTime(1949, 8, 1)));
     }
 
     [Test]
@@ -146,7 +169,22 @@ public class ArmisticeTests
         StringAssert.DoesNotContain("Lebanon-Israel", InfoPanelPresenter.RegionText(m, t, lh.qq, lh.rr, Lebanon.AddDays(-1)));
         StringAssert.Contains(t.Format("info.armistice_line", leb.Name, "Lebanon-Israel General Armistice Agreement", "23 March 1949"),
             InfoPanelPresenter.RegionText(m, t, lh.qq, lh.rr, Lebanon));
+        // the 1950 line names the modus vivendi and its date, not the 1949 agreement
+        var mv = a.Lines.Single(l => l.Key == "egypt_mv1950_demarcation");
+        var mh = Hexes().First(h => a.LinesAt(h.q, h.r, new DateTime(1950, 3, 1)).Contains(mv));
+        var at1950 = InfoPanelPresenter.RegionText(m, t, mh.q, mh.r, new DateTime(1950, 3, 1));
+        StringAssert.Contains(t.Format("info.armistice_line", mv.Name, mv.Agreement, "22 February 1950"), at1950);
+        StringAssert.DoesNotContain(mv.Name, InfoPanelPresenter.RegionText(m, t, mh.q, mh.r, new DateTime(1950, 2, 21)));
+        // Jordan lines say they are low-accuracy; line A in the triangle only from its stage date
+        var tri = a.Lines.Single(l => l.Key == "jordan_adl_iraqi_a_triangle");
+        var th = Hexes().First(h => a.LinesAt(h.q, h.r, new DateTime(1949, 6, 1)).Contains(tri));
+        StringAssert.DoesNotContain(tri.Name, InfoPanelPresenter.RegionText(m, t, th.q, th.r, new DateTime(1949, 5, 7)));
+        StringAssert.Contains(t.Format("info.armistice_line_low", tri.Name, tri.Agreement, "3 April 1949"),
+            InfoPanelPresenter.RegionText(m, t, th.q, th.r, new DateTime(1949, 5, 8)));
     }
+
+    static System.Collections.Generic.IEnumerable<(int q, int r)> Hexes() =>
+        MapBuilder.LoadHexes(Inputs.Map.HexesJson, "hexes.json").hexes.Select(h => (h.q, h.r));
 
     [Test]
     public void ApplyDrawsTheComposedLayerOnItsDateAndBack()

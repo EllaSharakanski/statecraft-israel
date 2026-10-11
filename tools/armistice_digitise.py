@@ -10,7 +10,8 @@ to hex edges only for display (tools/armistice_bake.py). Research note: research
 
 Usage (the scans are downloads kept outside the repository and checked by SHA-256; SOURCES has the URLs):
   uv run tools/armistice_digitise.py --syria-pdf <dir>/S_1353_Rev_1.pdf --syria-tif <dir>/s1353rev1.tif \
-      --gaza-sheet "<dir>/Survey_of_Palestine,_Palestine_09-gaza_(FL33122277_2367645).jpg"
+      --gaza-sheet "<dir>/Survey_of_Palestine,_Palestine_09-gaza_(FL33122277_2367645).jpg" \
+      --s1471-sheet1 <dir>/s1471.tif --s1471-sheet2 <dir>/khan_yunis.pdf --jordan-map <dir>/Arm_1949.jpg
 
 Fronts, each a dated feature set (status draft):
 - Syria (signed 20 Jul 1949): the Armistice Demarcation Line through the 24 items of Annex I (Palestine-grid MR points,
@@ -24,8 +25,10 @@ Fronts, each a dated feature set (status draft):
   1948), built from the Survey of Palestine 1:100,000 sheet 9 "Gaza" (the Wadi Hasi mouth, Deir Suneid and the Gaza-Al
   Majdal highway), from the Wadi Hasi to Gaza (the stretch on to the frontier is a gap: EGYPT_SOUTH_GAP); the El Auja Demilitarized Zone from the Art. VIII.2 MR points,
   closed along the 1906 frontier (the Mandate frontier above).
-- Jordan (3 Apr 1949): not digitised. Its line exists only on the annexed maps (Art. V.1); no full-resolution,
-  public-domain scan of the signed map 1 or map 2 was found (JORDAN_SEARCH). The Mandate layer stays on that front.
+- Jordan (3 Apr 1949): low accuracy (owner ruling 2026-10-11). Traced from the UNISPAL copy of the signed map 1 (3119 x
+  8630 px), georeferenced on town symbols; line A staged by Art. VI.3; Jerusalem, the no-man's-lands and Mount Scopus
+  not legible, recorded as gaps. Every feature `source_quality: low_res_scan`, to be replaced from a full-resolution scan.
+- Egypt, 1950: the modus vivendi's signed map (S/1471) as its own dated feature (owner ruling 2026-10-11).
 Conversion: Palestine Grid, EPSG:28191 (Palestine 1923 / Palestine Grid, Cassini-Soldner; MR values are km), to WGS84
 with the EPSG Helmert transformation (stated accuracy 2 m), pinned as PG_PIPELINE and tested against pyproj's EPSG pair.
 """
@@ -111,8 +114,9 @@ MANDATE_FRONTIER = {"cite": "The Mandate frontier of content/map/subdistricts_19
 
 JORDAN_SEARCH = [
     "UNISPAL, 'Israel-Jordan General Armistice Agreement - Map' (https://www.un.org/unispal/document/auto-insert-181069/): "
-    "map 1 (Survey of Palestine 1:250,000 north and south sheets, signed) as a 925 x 2560 px image, about 160 m a pixel: "
-    "too coarse (the pen lines are 1-2 mm, 250-500 m, wide). No map 2.",
+    "map 1 (Survey of Palestine 1:250,000 north and south sheets, signed); the page shows a 925 x 2560 px copy, and its "
+    "original upload (f03d55e48f77ab698525643b00608d34_Arm_1949.jpg) is 3119 x 8630 px, about 51 m a pixel: the source used "
+    "(owner ruling 2026-10-11), low-resolution. No map 2.",
     "UN Official Document System, S/1302/Rev.1 (https://documents.un.org/api/symbol/access?s=S/1302/Rev.1&l=en&t=pdf) and "
     "S/1302: the text only (12 and 9 pages); no map plates.",
     "UNTS vol. 42 (https://treaties.un.org/doc/publication/UNTS/Volume%2042/v42.pdf): the maps were an insert 'between pages "
@@ -121,9 +125,9 @@ JORDAN_SEARCH = [
     "digitised map found through search engines.",
     "Wikimedia Commons (API searches: '1949 armistice map Jordan Israel', 'Jordan Israel armistice agreement map 1949', "
     "'Jerusalem armistice map 1949', 'Jerusalem cease-fire 30 November 1948 map', 'S/1302', 'Green Line 1949 original map'): "
-    "'File:Green Line - Cease Fire Agreement 30 Nov 1948.jpg' is a 3119 x 8630 px colour copy of the signed map 1 (about "
-    "50 m a pixel), but uploaded as the uploader's 'own work' under CC0 with no source or provenance, so neither its origin "
-    "nor its fidelity can be checked; 'File:UN Map of Central Jerusalem November 1949.jpg' is a later UN cartographic map "
+    "'File:Green Line - Cease Fire Agreement 30 Nov 1948.jpg' is a 3119 x 8630 px colour copy of the signed map 1, the same "
+    "size as UNISPAL's original but not the same file (SHA-1 3d5990f9... against 370af7aa...), uploaded as 'own work' under "
+    "CC0 with no source: not used, not even as a cross-check (owner ruling); 'File:UN Map of Central Jerusalem November 1949.jpg' is a later UN cartographic map "
     "(November 1949), not map 2; the others are later drawings (H212/10/1955, user-made comparisons).",
     "National Library of Israel and ECF ('Original Green Line Map', https://ecf.org.il/media_items/338): not reached with a "
     "plain HTTP client in this pass (JavaScript catalogues); to request.",
@@ -189,19 +193,21 @@ def check(path: Path, src: dict) -> None:
         raise SystemExit(f"{path}: sha256 {got}, expected {src['sha256']} ({src['url']})")
 
 
-def grid_fit(img_v: np.ndarray, img_h: np.ndarray, sheet: dict, px_per_km: float, thr: float, along: int, detrend: bool) -> dict:
+def grid_fit(img_v: np.ndarray, img_h: np.ndarray, sheet: dict, px_per_km, thr: float, along: int, detrend: bool,
+             tols=(0.15, 0.08, 0.05, 0.05)) -> dict:
     """Fits E and N (km) as affine functions of scan pixels from the map's drawn 1-km grid lines: in bands across each
     sheet, local darkness peaks (the lines) are matched to the nearest whole kilometre of the current fit and the fit is
     redone, with a shrinking tolerance. img_v / img_h: darkness (higher = darker) for the vertical and horizontal lines;
     detrend: take each band's profile less its 41-px running mean (raw ink masks)."""
     from scipy import ndimage as ndi
     (xe, ye, e0), (xn, yn, n0) = sheet["anchor"]
-    a = np.array([e0 - xe / px_per_km, 1 / px_per_km, 0.0]); b = np.array([n0 + yn / px_per_km, 0.0, -1 / px_per_km])
+    sx, sy = px_per_km if isinstance(px_per_km, tuple) else (px_per_km, px_per_km)   # a scan's pixels may not be square
+    a = np.array([e0 - xe / sx, 1 / sx, 0.0]); b = np.array([n0 + yn / sy, 0.0, -1 / sy])
 
     def peaks(p):
         q = p - ndi.uniform_filter1d(p, 41) if detrend else p
         return [i for i in range(3, len(p) - 3) if q[i] > thr and q[i] == q[i - 3:i + 4].max()]
-    for tol in (0.15, 0.08, 0.05, 0.05):
+    for tol in tols:
         ve, vn = [], []
         for y0 in range(sheet["y"][0], sheet["y"][1] - along, along):
             for px in peaks(img_v[y0:y0 + along, sheet["x"][0]:sheet["x"][1]].mean(axis=0)):
@@ -512,6 +518,231 @@ def egypt(gaza_path: Path, log) -> dict:
             "highway_km": round(hw.length, 1)}
 
 
+# --- Egypt, 1950: the modus vivendi (S/1471, signed at El Auja on 22 February 1950) ---------------------------------
+
+MV_SHEET1 = {"cite": "S/1471, signed map of the modus vivendi, sheet 1 'Ascalon' (1:20,000, Survey of Palestine base rev. 1946), "
+                     "1-bit scan on UNISPAL: the demarcation line as the parties drew it in 1950 (dash-dot) and the zone A line.",
+             "url": "https://www.un.org/unispal/wp-content/uploads/1950/03/02c98322cf78b99a8525705b004d7b73_s1471.tif",
+             "sha256": "55083142da168abffccb2db7f0da5516b6a26c8d3b8a7f2f4c11a982ed822434", "checked": CHECKED,
+             "licence": "Public domain (UN document with a symbol, ST/AI/189/Add.9/Rev.2 para. 2)"}
+MV_SHEET2 = {"cite": "The same map, sheet 2 'Khan Yunis' (1:20,000), the copy in the UN Treaty Collection (registered 14 August 1950): "
+                     "the demarcation line south of Khan Yunis and the zone C line.",
+             "url": "https://treaties.un.org/doc/Treaties/1950/08/19500814%2004-17%20PM/khan_yunis.pdf",
+             "sha256": "530866817158a041bb60d94e437af30de7a19068540ef6910575c07aa8b3b333", "checked": CHECKED,
+             "licence": MV_SHEET1["licence"]}
+MV_TEXT = {"cite": "S/1471 (17 March 1950), 'Modus vivendi to the Egyptian-Israeli General Armistice Agreement signed at El Auja "
+                   "on 22 February 1950', Art. I.1 (zones A, B, C by MR points), Art. III (it does not modify either party's "
+                   "position on the Art. VI.1 demarcation line), Art. V (the signed map decides).",
+           "url": "https://documents.un.org/api/symbol/access?s=S/1471&l=en&t=pdf", "checked": CHECKED, "licence": MV_SHEET1["licence"]}
+MV_DATE = "1950-02-22"
+MV_AGREEMENT = ("Modus vivendi to the Egypt-Israel General Armistice Agreement", MV_DATE, "El Auja", "S/1471")
+# The demarcation line as drawn (dash-dot) on the two signed sheets: waypoints (MR km) read off the georeferenced scans;
+# the route between them follows the drawn dashes. Points the text names on the line are exact (marked "text").
+MV_PIECES = [
+    ("sheet1", [(102.05, 100.02), (104.0, 101.07), (105.0, 101.42), (106.0, 102.08), (106.95, 102.40), (107.5, 102.56)]),
+    ("sheet2", [(90.0, 87.1), (89.35, 85.90), (89.17, 85.35)]),
+    ("sheet2", [(87.63, 77.31), (87.35, 76.70), (86.56, 75.16), (85.04, 73.94), (83.82, 73.33), (82.75, 72.64)]),
+]
+MV_TEXT_POINTS = {(106.95, 102.40), (89.35, 85.90), (87.35, 76.70)}   # Art. I.1(a) and (c): points on the demarcation line
+# Art. I.1 zone lines, exactly as the text gives them (MR "10170 - 11160" = 101.70 km E, 111.60 km N)
+MV_ZONE_A = [(101.70, 111.60), (106.90, 107.40), (107.95, 106.40), (109.00, 105.65), (108.80, 104.80), (108.10, 104.10), (106.95, 102.40)]
+MV_ZONE_C = [(89.35, 85.90), (90.35, 79.70), (89.70, 77.90), (87.35, 76.70)]
+MV_GAPS = ("The signed map draws the demarcation line only in pieces: on sheet 1 from its south edge (N 100) to MR 107.5-102.6; "
+           "on sheet 2 from its east edge to MR 89.2-85.4, and from MR 87.6-77.3 to MR 82.8-72.6. North of N 102.6 the 1949 line "
+           "is not redrawn on the map; between N 85.4 and 77.3 zone C lies against it but no demarcation line is drawn; the two "
+           "sheets do not cover N 90-100; south-west of MR 82.8-72.6 nothing is drawn. Those stretches are not drawn here.")
+
+
+def egypt_1950(sheet1: Path, sheet2: Path, log) -> dict:
+    """The demarcation line as drawn on the two signed sheets of S/1471, traced between waypoints."""
+    from PIL import Image
+    from pypdf import PdfReader
+    from scipy import ndimage as ndi
+    from shapely.geometry import LineString
+    from skimage.graph import route_through_array
+    Image.MAX_IMAGE_PIXELS = None
+    d1 = ~np.asarray(Image.open(sheet1).convert("1"))
+    f1 = grid_fit(d1.astype(np.float32), d1.astype(np.float32),
+                  {"y": (470, 9900), "x": (390, 4300), "anchor": ((772, 2000, 101.0), (2000, 850, 123.0))}, 390.0, 0.3, 150, True)
+    page = PdfReader(sheet2).pages[0]
+    g2 = np.asarray(max(page.images, key=lambda im: im.image.size[0] * im.image.size[1]).image.convert("L")).astype(np.float32)
+    f2 = grid_fit(ndi.uniform_filter1d(g2, 25, axis=1) - g2, ndi.uniform_filter1d(g2, 25, axis=0) - g2,
+                  {"y": (470, 6700), "x": (210, 3100), "anchor": ((193, 2000, 80.0), (1500, 452, 90.0))}, (295.0, 295.0), 6.0, 120, False)
+    d2 = g2 < 110
+    for k, f in (("sheet 1", f1), ("sheet 2", f2)):
+        log(f"S/1471 {k}: {f['obs']} grid observations, rms {f['rms_m'][0]:.0f} / {f['rms_m'][1]:.0f} m")
+    pieces, on_ink = [], []
+    for sheet, wps in MV_PIECES:
+        dark, fit = (d1, f1) if sheet == "sheet1" else (d2, f2)
+        cost = np.where(dark, 1.0, 15.0)
+        verts = [wps[0]]
+        hits = []
+        for (ea, na), (eb, nb) in zip(wps, wps[1:]):
+            xa, ya = en_to_px(fit, ea, na); xb, yb = en_to_px(fit, eb, nb)
+            m = 60
+            by0, bx0 = int(min(ya, yb)) - m, int(min(xa, xb)) - m
+            sub = cost[by0:int(max(ya, yb)) + m, bx0:int(max(xa, xb)) + m]
+            path, _ = route_through_array(sub, (int(round(ya)) - by0, int(round(xa)) - bx0), (int(round(yb)) - by0, int(round(xb)) - bx0),
+                                          fully_connected=True, geometric=True)
+            path = np.array(path, float) + [by0, bx0]
+            hits.append(dark[path[:, 0].astype(int), path[:, 1].astype(int)].mean())
+            xy = np.array(LineString(path[:, ::-1]).simplify(2.0).coords)[1:-1]
+            verts += [tuple(float(v) for v in px_to_en(fit, x, y)) for x, y in xy] + [(eb, nb)]
+        pieces.append(verts); on_ink.append(round(float(np.mean(hits)), 3))
+    return {"pieces": pieces, "on_ink": on_ink, "rms_m": {"sheet1": [round(x, 1) for x in f1["rms_m"]], "sheet2": [round(x, 1) for x in f2["rms_m"]]}}
+
+
+# --- Jordan: map 1 of Annex I, from the low-resolution UNISPAL copy (owner ruling 2026-10-11) -------------------------
+
+JORDAN_MAP = {"cite": "Annex I, map 1 of the Jordan-Israel General Armistice Agreement (S/1302/Rev.1): the Survey of Palestine "
+                      "1:250,000 'Palestine' north and south sheets with the lines drawn by hand and signed, as the UNISPAL page's "
+                      "original upload (3119 x 8630 px, about 51 m a pixel). Low resolution: to be replaced from a full-resolution "
+                      "scan (UN Archives, Israel State Archives, ECF).",
+              "url": "https://www.un.org/unispal/wp-content/uploads/1949/04/f03d55e48f77ab698525643b00608d34_Arm_1949.jpg",
+              "page": "https://www.un.org/unispal/document/auto-insert-181069/",
+              "sha256": "87c374a3199d2e606278549b017c954f56271817f3be37b2f435192f5c9cb23e", "checked": CHECKED,
+              "licence": "Public domain (UN document with a symbol, ST/AI/189/Add.9/Rev.2 para. 2); base map a Government of Palestine work (D-B)"}
+JORDAN_TOWNS = {"cite": "Control-point coordinates: Wikidata (P625) and the Wikipedia API (prop=coordinates), and "
+                        "content/map/settlements_1948.yaml, read 2026-10-11; used only to georeference the scan.",
+                "url": "https://www.wikidata.org/", "checked": CHECKED, "licence": "CC0 (Wikidata) / CC BY-SA 4.0 (Wikipedia)"}
+JORDAN_CONTROL = [   # (place, lon, lat (Wikidata/Wikipedia, 2026-10-11), scan x, y read off the town symbol)
+    ('Ramallah', 35.2017, 31.8969, 1953, 3193), ('Jerusalem', 35.2256, 31.7789, 1975, 3478),
+    ('Bethlehem', 35.2064, 31.7044, 1943, 3625), ('Lydda', 34.8881, 31.9519, 1384, 3096),
+    ('Ramla', 34.8625, 31.9275, 1334, 3151), ('Jaffa', 34.7531, 32.0522, 1105, 2875),
+    ('Nazareth', 35.3033, 32.7019, 2125, 1463), ('Afula', 35.2897, 32.6078, 2104, 1674),
+    ('Jenin', 35.3, 32.4611, 2123, 1996), ('Haifa', 34.9992, 32.8192, 1568, 1227),
+    ('Tiberias', 35.5333, 32.7944, 2563, 1279), ('Umm al-Fahm', 35.1536, 32.5194, 1851, 1874),
+    ('Beit Shean', 35.5, 32.5, 2501, 1917), ('Hadera', 34.9167, 32.45, 1420, 2038),
+    ('Tulkarm', 35.0308, 32.3111, 1619, 2318), ('Qalqilya', 34.9685, 32.1904, 1498, 2583),
+    ('Kafr Qasim', 34.9772, 32.1142, 1524, 2749), ('Nablus', 35.2608, 32.2211, 2055, 2509),
+    ('Jericho', 35.46, 31.8561, 2413, 3310), ('Hebron', 35.0969, 31.5286, 1750, 4025),
+    ('Bayt Jibrin', 34.8983, 31.6053, 1366, 3846), ('Gaza', 34.4597, 31.5075, 562, 4068),
+    ('Beersheba', 34.7867, 31.2522, 1168, 4647), ('Khan Yunis', 34.3031, 31.3444, 260, 4415),
+    ('Rafah', 34.2519, 31.2886, 141, 4512), ('Masada', 35.3539, 31.3156, 2226, 4477),
+    ('Ein Gedi', 35.3833, 31.45, 2305, 4155), ('El Auja', 34.4226, 30.886, 495, 5436),
+    ('Ein Husb', 35.2467, 30.7981, 2020, 5589), ('Aqaba', 35.0061, 29.5322, 1559, 8377),
+]
+JORDAN_WAYPOINTS = {   # scan px, read off the hand-drawn lines (each snapped to the nearest pen ink, then routed along it)
+    'A_iraqi': [(2600, 2150), (2556, 2137), (2512, 2125), (2462, 2112), (2406, 2094), (2369, 2062), (2344, 2006), (2325,
+        1956), (2281, 1881), (2240, 1868), (2160, 1872), (2100, 1875), (2070, 1865), (2030, 1825), (2000, 1797),
+        (1985, 1795), (1965, 1815), (1925, 1835), (1875, 1875), (1830, 1900), (1800, 1944), (1750, 1975), (1712,
+        2006), (1687, 2037), (1669, 2087), (1662, 2119), (1656, 2150), (1644, 2194), (1631, 2237), (1606, 2270),
+        (1590, 2330), (1585, 2370), (1600, 2410), (1610, 2440), (1600, 2470), (1590, 2510), (1570, 2545), (1555,
+        2580), (1542, 2620), (1548, 2670), (1555, 2720), (1560, 2780), (1560, 2840), (1560, 2900), (1560, 2960),
+        (1560, 3005)],
+    'a_latrun': [(1560, 3005), (1566, 3047), (1556, 3062), (1575, 3129), (1600, 3154), (1619, 3185), (1635, 3220), (1635,
+        3285), (1610, 3297), (1565, 3297), (1530, 3310), (1505, 3335), (1505, 3360), (1540, 3365), (1600, 3365),
+        (1620, 3330), (1680, 3318), (1740, 3332), (1800, 3346), (1870, 3360), (1930, 3378), (1950, 3395)],
+    'bc_south': [(1895, 3570), (1900, 3590), (1870, 3600), (1830, 3620), (1790, 3640), (1740, 3660), (1690, 3690), (1640,
+        3720), (1580, 3760), (1540, 3790), (1500, 3830), (1464, 3951), (1457, 4001), (1450, 4073), (1421, 4130),
+        (1364, 4230), (1330, 4283), (1383, 4390), (1423, 4397), (1520, 4393), (1620, 4388), (1720, 4382), (1810,
+        4377), (1900, 4362), (1997, 4343), (2037, 4310), (2103, 4250), (2183, 4190), (2240, 4140), (2300, 4090)],
+    'd_arava': [(2300, 4090), (2370, 4092), (2436, 4100), (2436, 4250), (2414, 4336), (2371, 4421), (2343, 4507), (2329,
+        4607), (2343, 4679), (2386, 4750), (2414, 4850), (2421, 4921), (2400, 4993), (2357, 5029), (2230, 5330),
+        (2114, 5600), (2035, 5870), (1960, 6140), (1900, 6433), (1842, 6833), (1783, 7200), (1733, 7550), (1683,
+        7900), (1615, 8215), (1600, 8300)],
+}
+JORDAN_STAGES = (
+    "Art. VI.3 stages for line A, as read here (the article names areas, not points): (a) 'west of the road from Baqa to "
+    "Jaljulia, and thence to the east of Kafr Qasim' = line A from Baqa south to Kafr Qasim, by 8 May 1949; (b) 'Wadi Ara "
+    "north of the line from Baqa to Zubeiba' = line A from Zububa round Wadi Ara to Baqa, by 22 May 1949; (c) 'all other "
+    "areas' = line A east of Zububa to the Jordan and south of Kafr Qasim to Kh Deir Arab, by 17 July 1949. Split at the "
+    "trace's points nearest Baqa al-Gharbiyye, Zububa and Kafr Qasim (Wikidata).")
+JORDAN_STAGE_PLACES = {"Zububa": (35.2236, 32.5455), "Baqa": (35.0422, 32.4203), "Kafr Qasim": (34.9772, 32.1142)}
+JORDAN_GAPS = (
+    "Not drawn (legibility, low-resolution scan): the Jerusalem sector (Art. V.1(b): the lines of the 30 November 1948 "
+    "cease-fire, map 2, not on UNISPAL; on map 1 the city's lines merge into one blot at 51 m a pixel), so the line stops at "
+    "the city's western edge on both sides; the Israeli and Jordanian lines and the no-man's-land between them, in "
+    "Jerusalem and at Latrun (map 1 shows a double line at Latrun, but the two cannot be told apart at this resolution; the "
+    "trace follows the outer drawn loop); the Mount Scopus enclave. To do from map 2 and a full-resolution map 1.")
+
+
+def jordan(path: Path, log) -> dict:
+    """Georeference map 1 on control points (town symbols on the map, Wikidata coordinates; the printed grid on this copy
+    is not usable: its fitted lines put the towns 5-8 km off) and trace each hand-drawn line between waypoints."""
+    from PIL import Image
+    from scipy import ndimage as ndi
+    from shapely.geometry import LineString, Point
+    from skimage.graph import route_through_array
+    Image.MAX_IMAGE_PIXELS = None
+    a = np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    lum = (r + g + b) / 3.0
+    del a
+    ink = (lum < 70) & (r - g < 25)            # the pen lines are blackish green: dark, unlike the red-brown roads
+    yy, xx = np.mgrid[-2:3, -2:3]
+    thick = ndi.binary_opening((lum < 95) & (r - g < 30), structure=(xx ** 2 + yy ** 2) <= 4)
+    cost = np.where(ink, 1.0, np.where(lum < 110, 6.0, 25.0))
+    cost_thick = np.where(thick, 1.0, np.where(ink, 8.0, 40.0))
+    del r, g, b, lum
+    _, (iy, ix) = ndi.distance_transform_edt(~ink, return_indices=True)
+    _, (ty, tx) = ndi.distance_transform_edt(~thick, return_indices=True)
+    # control-point georeference, one affine for the north sheet and one for the south (they meet near y 4050)
+    fits, diag = {}, {}
+    for sheet in ("north", "south"):
+        pts = [c for c in JORDAN_CONTROL if (c[4] < 4050) == (sheet == "north")]
+        en = np.array([[float(v) for v in lonlat_to_mr(c[1], c[2])] for c in pts])
+        px = np.array([[c[3], c[4]] for c in pts], float)
+        def fit(idx):
+            aa = np.c_[np.ones(len(idx)), px[idx]]
+            return np.linalg.lstsq(aa, en[idx, 0], rcond=None)[0], np.linalg.lstsq(aa, en[idx, 1], rcond=None)[0]
+        all_i = np.arange(len(pts)); fe, fn = fit(all_i)
+        res = np.hypot(np.c_[np.ones(len(pts)), px] @ fe - en[:, 0], np.c_[np.ones(len(pts)), px] @ fn - en[:, 1])
+        loo = []
+        for i in all_i:
+            ce, cn = fit(all_i[all_i != i]); q = np.array([1, *px[i]])
+            loo.append(float(np.hypot(q @ ce - en[i, 0], q @ cn - en[i, 1])))
+        fits[sheet] = (fe, fn)
+        diag[sheet] = {"control_points": len(pts), "rms_km": round(float(np.sqrt((res ** 2).mean())), 2),
+                       "leave_one_out_rms_km": round(float(np.sqrt(np.mean(np.square(loo)))), 2), "leave_one_out_max_km": round(max(loo), 2)}
+        log(f"Jordan map 1, {sheet}: {len(pts)} control points, rms {diag[sheet]['rms_km']} km, leave-one-out {diag[sheet]['leave_one_out_rms_km']} km (max {diag[sheet]['leave_one_out_max_km']})")
+
+    def to_en(x, y):
+        fe, fn = fits["north" if y < 4050 else "south"]
+        return float(fe @ [1, x, y]), float(fn @ [1, x, y])
+    traces = {}
+    for name, wps in JORDAN_WAYPOINTS.items():
+        th = name == "d_arava"
+        def snap(x, y):
+            jx, jy, rad = (tx, ty, 40) if th else (ix, iy, 15)
+            return (int(jx[y, x]), int(jy[y, x])) if np.hypot(jx[y, x] - x, jy[y, x] - y) <= rad else None
+        pts = []
+        for i, (x, y) in enumerate(wps):
+            s = snap(x, y)
+            if s is None and th and 0 < i < len(wps) - 1:
+                continue                                  # an inner waypoint off the pen line: dropped
+            pts.append(s or (x, y))
+        cst = cost_thick if th else cost
+        m = 60 if th else 25
+        path, hits = [pts[0]], []
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            bx0, by0 = max(min(x0, x1) - m, 0), max(min(y0, y1) - m, 0)
+            sub = cst[by0:max(y0, y1) + m, bx0:max(x0, x1) + m]
+            p_, _ = route_through_array(sub, (y0 - by0, x0 - bx0), (y1 - by0, x1 - bx0), fully_connected=True, geometric=True)
+            p_ = [(x + bx0, y + by0) for y, x in p_]
+            hits += [bool(ink[y, x]) for x, y in p_]
+            path += p_[1:]
+        clean = []                                        # out-and-back spurs cut
+        for q in path:
+            for j in range(len(clean) - 8, max(len(clean) - 400, -1), -1):
+                if j >= 0 and abs(clean[j][0] - q[0]) <= 2 and abs(clean[j][1] - q[1]) <= 2:
+                    del clean[j + 1:]; break
+            clean.append(q)
+        xy = np.array(LineString(clean).simplify(2.0).coords)
+        traces[name] = {"en": [to_en(x, y) for x, y in xy], "on_ink": round(float(np.mean(hits)), 3)}
+        log(f"Jordan map 1: {name} traced, {len(xy)} vertices, {traces[name]['on_ink']:.0%} on the pen ink")
+    # line A split into Art. VI.3's stages
+    a_line = LineString(traces["A_iraqi"]["en"])
+    cut = {k: a_line.project(Point(*[float(v) for v in lonlat_to_mr(*ll)])) for k, ll in JORDAN_STAGE_PLACES.items()}
+    from shapely.ops import substring
+    z, bq, kq = cut["Zububa"], cut["Baqa"], cut["Kafr Qasim"]
+    if not 0 < z < bq < kq < a_line.length:
+        raise SystemExit(f"line A: the stage places are not in order along the trace ({cut})")
+    stages = {"c_east": substring(a_line, 0, z), "b_wadi_ara": substring(a_line, z, bq), "a_triangle": substring(a_line, bq, kq),
+              "c_south": substring(a_line, kq, a_line.length)}
+    return {"traces": traces, "stages": stages, "georeference": diag}
+
+
 # --- Lebanon --------------------------------------------------------------------------------------------------------
 
 NAQURA = (35.0843, 33.0986)     # where the 1:750,000 frontier meets the DEM sea at Ras en Naqura (tools/borders_digitise.py)
@@ -540,13 +771,13 @@ def km_geom_to_lonlat(g):
     return shapely.transform(g, lambda c: np.c_[mr_to_lonlat(c[:, 0], c[:, 1])])
 
 
-def feature(fid, front, kind, name, geom_km, accuracy, method, sources, extra=None):
+def feature(fid, front, kind, name, geom_km, accuracy, method, sources, extra=None, agreement=None):
     import shapely
     from shapely.geometry import mapping
     g = shapely.set_precision(km_geom_to_lonlat(geom_km), 1e-5)
     if kind == "zone":
         g = shapely.orient_polygons(g)
-    agr, date, place, doc = AGREEMENTS[front]
+    agr, date, place, doc = agreement or AGREEMENTS[front]
     props = {"id": fid, "front": front, "kind": kind, "name": name, "agreement": agr, "signed": date, "place": place,
              "document": doc, "shown_from": date, "accuracy": accuracy, "method": method,
              "sources": [s["url"] for s in sources], "checked": CHECKED, "status": "draft"}
@@ -577,10 +808,10 @@ def write(doc: dict, path: Path) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def build(syria_pdf: Path, syria_tif: Path, gaza: Path, log=print) -> dict:
+def build(syria_pdf: Path, syria_tif: Path, gaza: Path, mv1: Path, mv2: Path, jordan_map: Path, log=print) -> dict:
     import shapely
     from shapely.geometry import LineString, MultiPolygon, Point
-    check(syria_pdf, SYRIA_PDF); check(syria_tif, SYRIA_TIF); check(gaza, GAZA_SHEET)
+    check(syria_pdf, SYRIA_PDF); check(syria_tif, SYRIA_TIF); check(gaza, GAZA_SHEET); check(mv1, MV_SHEET1); check(mv2, MV_SHEET2); check(jordan_map, JORDAN_MAP)
     feats = []
     # Lebanon
     leb, leb_diag = lebanon()
@@ -662,7 +893,7 @@ def build(syria_pdf: Path, syria_tif: Path, gaza: Path, log=print) -> dict:
                 "is read as the mouth-Deir Suneid direction carried on to the offset line. Cross-check: S/1471's demarcation line "
                 "(1950) lies on it, by eye within about 0.1 km, between MR 103-100.2 and 107-102.8. The Art. VI.3 Deir Suneid outpost "
                 "('on the north side of the Wadi', MR 1075-1090) lies 0.5 km from it.")
-    feats.append(feature("egypt_adl_gaza", "egypt", "line", "Armistice Demarcation Line (Egypt-Israel), Gaza-Rafah area: Wadi Hasi to Gaza",
+    feats.append(feature("egypt_adl_gaza", "egypt", "line", "Armistice Demarcation Line (Egypt-Israel) of 1949, Gaza-Rafah area: Wadi Hasi to Gaza",
                          LineString(eg["adl"]), gaza_acc,
                          "Art. VI.1 (para. 2.B(i) of the Memorandum of 13 November 1948): from the coast at the mouth of the Wadi "
                          "Hasi in an easterly direction through Deir Suneid and across the Gaza-Al Majdal Highway to a point 3 km "
@@ -679,23 +910,87 @@ def build(syria_pdf: Path, syria_tif: Path, gaza: Path, log=print) -> dict:
                          "(MR 0995-0145), and back along the Egypt-Palestine frontier.",
                          [EGYPT_TEXT, UNTS, MANDATE_FRONTIER],
                          {"points": [{"label": l, "mr": [e, n]} for l, e, n in EL_AUJA], "area_km2": round(eg["auja"].area, 1)}))
+    # Egypt, 1950: the modus vivendi (owner ruling 2026-10-11: its own dated feature; the 1949 stretch south of Gaza stays undrawn)
+    from shapely.geometry import MultiLineString
+    mv = egypt_1950(mv1, mv2, log)
+    feats.append(feature("egypt_mv1950_demarcation", "egypt", "line",
+                         "Demarcation line as drawn on the signed 1950 modus vivendi map (Gaza-Rafah area)",
+                         MultiLineString(mv["pieces"]),
+                         "about +-0.1 km: traced on the signed 1:20,000 sheets (georeference rms "
+                         f"{max(mv['rms_m']['sheet1'] + mv['rms_m']['sheet2']):.0f} m; the printed dash-dot is about 0.6 mm, 12 m, wide); "
+                         "the three points the text puts on the line are exact. " + MV_GAPS,
+                         "The modus vivendi of 22 February 1950 (S/1471) sets local patrol zones A, B and C beside the demarcation line "
+                         "and, by its Art. III, does not change either party's position on the Art. VI.1 line; its signed map draws that "
+                         "line (dash-dot, 'Demarcation line'). Traced here where it is drawn, between waypoints read off the "
+                         "georeferenced sheets. A later drawing of the 1949 line, kept as its own feature and date.",
+                         [MV_TEXT, MV_SHEET1, MV_SHEET2],
+                         {"label_note": "1950 modus vivendi", "pieces_on_ink": mv["on_ink"], "gaps": MV_GAPS,
+                          "text_points_on_line": [list(p) for p in sorted(MV_TEXT_POINTS)]}, agreement=MV_AGREEMENT))
+    feats.append(feature("egypt_mv1950_zone_lines", "egypt", "line",
+                         "Zone A and zone C lines of the 1950 modus vivendi (Gaza-Rafah area)",
+                         MultiLineString([MV_ZONE_A, MV_ZONE_C]),
+                         "+-0.1 km (the MR precision): straight lines between the text's points, as Art. I.1 describes them; on the "
+                         "signed map they lie on the drawn zone lines to within its georeference (about 20 m).",
+                         "Art. I.1(a): zone A between the demarcation line and the line MR 10170-11160, 10690-10740 (the railway "
+                         "crossing), 10795-10640, 10900-10565, 10880-10480, 10810-10410, to the demarcation line at 10695-10240; "
+                         "(c): zone C between the demarcation line and the line MR 08935-08590, 09035-07970, 08970-07790, to the "
+                         "demarcation line at 08735-07670. Zone A was patrolled by Israel, zones B and C by Egypt (Art. II). Zone B "
+                         "('between the line of (a) and the Egyptian fighting line north of Beit Lahaya') has no points in the text.",
+                         [MV_TEXT, MV_SHEET1, MV_SHEET2],
+                         {"label_note": "1950 modus vivendi", "zone_a": [list(p) for p in MV_ZONE_A], "zone_c": [list(p) for p in MV_ZONE_C]},
+                         agreement=MV_AGREEMENT))
+    # Jordan (owner ruling 2026-10-11): from the low-resolution UNISPAL copy of map 1, every feature marked low-accuracy
+    jo = jordan(jordan_map, log)
+    gn, gs = jo["georeference"]["north"], jo["georeference"]["south"]
+    def jo_acc(sheet_note: str, on_ink: float) -> str:
+        return ("LOW ACCURACY, about " + sheet_note + ": traced from a low-resolution copy of the signed map 1 (1:250,000; about "
+                "51 m a pixel; the pen line is about 5 px, 250 m, wide), georeferenced on town symbols (north sheet leave-one-out "
+                f"rms {gn['leave_one_out_rms_km']} km, max {gn['leave_one_out_max_km']}; south sheet {gs['leave_one_out_rms_km']} km, "
+                f"max {gs['leave_one_out_max_km']}); {on_ink:.0%} of the trace on the pen ink. To be replaced from a full-resolution scan.")
+    jq = {"source_quality": "low_res_scan",
+          "source_quality_note": "Traced from the UNISPAL copy of map 1 (3119 x 8630 px); to be replaced from a full-resolution scan."}
+    stage_dates = {"a_triangle": ("1949-05-08", "Art. VI.3(a): west of the Baqa-Jaljulia road and east of Kafr Qasim"),
+                   "b_wadi_ara": ("1949-05-22", "Art. VI.3(b): Wadi Ara north of the Baqa-Zubeiba line"),
+                   "c_east": ("1949-07-17", "Art. VI.3(c): all other areas of the Iraqi sector (east of Zububa to the Jordan)"),
+                   "c_south": ("1949-07-17", "Art. VI.3(c): all other areas of the Iraqi sector (Kafr Qasim to Kh Deir Arab)")}
+    for key, geom in jo["stages"].items():
+        date, why = stage_dates[key]
+        f = feature(f"jordan_adl_iraqi_{key}", "jordan", "line",
+                    f"Armistice Demarcation Line (Jordan-Israel), line A (the Iraqi sector), {why.split(': ')[1]}",
+                    geom, jo_acc("+-1-1.5 km", jo["traces"]["A_iraqi"]["on_ink"]),
+                    "Art. VI.2: line A on map 1 (the sector held by Iraqi forces), traced from the map; dated by Art. VI.3's "
+                    "stages (until each, the existing military lines held, which are not drawn). " + JORDAN_STAGES,
+                    [UNTS, JORDAN_MAP, JORDAN_TOWNS], {**jq, "stage": why})
+        f["properties"]["shown_from"] = date
+        feats.append(f)
+    for key, name, sheet_note, method in [
+        ("a_latrun", "Armistice Demarcation Line (Jordan-Israel), Kh Deir Arab to Jerusalem (Latrun)", "+-1-1.5 km",
+         "Art. V.1(a): from Kh Deir Arab (MR 1510-1574) to the northern end of the Jerusalem lines, the truce lines as "
+         "certified by UNTSO, as drawn on map 1; at Latrun the trace follows the outer drawn loop (the two lines and the "
+         "no-man's-land between them are not legible at this resolution); it stops at Jerusalem's western edge."),
+        ("bc_south", "Armistice Demarcation Line (Jordan-Israel), Jerusalem to the Dead Sea (line B, Hebron-Dead Sea)", "+-1-2 km",
+         "Art. V.1(b)-(c): from Jerusalem's southern edge west of Bethlehem, down past Beit Jibrin and round to the Dead Sea "
+         "north of Ein Gedi, as drawn on map 1 (line B marked in the Hebron-Dead Sea sector); where the Jerusalem lines end "
+         "and line B begins is not legible, so the stretch is one feature."),
+        ("d_arava", "Armistice Demarcation Line (Jordan-Israel), the Dead Sea to the Gulf of Aqaba", "+-1.5-2.5 km",
+         "Art. V.1(d): from the Dead Sea (MR 1925-0958) to the southernmost tip of Palestine, the positions surveyed by UN "
+         "observers in March 1949, as drawn on map 1 (through the Dead Sea and down the Wadi Araba).")]:
+        feats.append(feature(f"jordan_adl_{key}", "jordan", "line", name, LineString(jo["traces"][key]["en"]),
+                             jo_acc(sheet_note, jo["traces"][key]["on_ink"]), method, [UNTS, JORDAN_MAP, JORDAN_TOWNS], dict(jq)))
     fronts = []
     for key, (agr, date, place, docsym) in AGREEMENTS.items():
         f = {"key": key, "agreement": agr, "signed": date, "document": docsym}
         if key == "jordan":
-            f.update({"shown_from": None, "data": False,
-                      "gap": "No line data. Art. V.1 defines the line only by the maps of Annex I (map 1, the Survey of Palestine "
-                             "1:250,000 with the lines drawn by hand and signed; map 2, Jerusalem, the 30 November 1948 cease-fire "
-                             "lines). No full-resolution, public-domain scan of either was found (searched, below), and a later "
-                             "drawing may not be the source (owner ruling). The Mandate sub-district layer stays on this front.",
-                      "searched": JORDAN_SEARCH,
-                      "dating_when_found": "from 1949-04-03 for sectors (a), (b), (d); the Iraqi sector, line 'A', in stages (Art. VI.3): "
-                                           "west of the Baqa-Jaljulia road and east of Kafr Qasim by 1949-05-08, Wadi Ara north of the "
-                                           "Baqa-Zubeiba line by 1949-05-22, the rest by 1949-07-17; until each stage the earlier line holds."})
+            f.update({"shown_from": date, "data": True, "source_quality": "low_res_scan",
+                      "low_accuracy": "Traced from a low-resolution copy of the signed map 1 (about +-1-2.5 km); to be replaced from a full-resolution scan.",
+                      "gap": JORDAN_GAPS, "searched": JORDAN_SEARCH,
+                      "dating": "from 1949-04-03 for sectors (a), (b) (not drawn), (c), (d); line A in the Iraqi sector in stages "
+                                "(Art. VI.3): 1949-05-08, 1949-05-22 and 1949-07-17; until each stage the earlier military line held (not drawn)."})
         else:
             f.update({"shown_from": date, "data": True})
         if key == "egypt":
-            f["gap"] = (EGYPT_SOUTH_GAP + " Art. VI.4: in the Bethlehem-Hebron area no line was demarcated (left to a later agreement); nothing is drawn there. "
+            f["gap"] = (EGYPT_SOUTH_GAP + " From 22 Feb 1950 the line as drawn on the signed modus vivendi map (S/1471) is a "
+                        "separate feature (egypt_mv1950_demarcation). Art. VI.4: in the Bethlehem-Hebron area no line was demarcated (left to a later agreement); nothing is drawn there. "
                         "The 1950 modus vivendi (S/1471, zones A-C) is later and not drawn.")
         fronts.append(f)
     meta = {
@@ -706,9 +1001,13 @@ def build(syria_pdf: Path, syria_tif: Path, gaza: Path, log=print) -> dict:
                          "Instruction ST/AI/189/Add.9/Rev.2, para. 2; Commons {{PD-UN-doc}}, {{PD-UN-map}}). The Gaza sheet and the "
                          "Mandate frontier are Government of Palestine works (decision D-B). Only the lines' positions, facts of "
                          "the agreements, are taken, redrawn by our own method; no image is copied."),
-        "sources": [UNTS, SYRIA_PDF, SYRIA_TIF, EGYPT_TEXT, MEMO, GAZA_SHEET, MANDATE_FRONTIER, S1471, IBS46],
+        "sources": [UNTS, SYRIA_PDF, SYRIA_TIF, EGYPT_TEXT, MEMO, GAZA_SHEET, MANDATE_FRONTIER, S1471, IBS46, MV_TEXT, MV_SHEET1, MV_SHEET2],
         "conversion": "Palestine Grid (EPSG:28191) to WGS84 by the EPSG Helmert transformation (2 m), pipeline in tools/armistice_digitise.py",
         "fronts": fronts,
+        "partition": {"closed": False,
+                      "why": "The lines do not yet enclose the areas each side held: the Egypt line stops at Gaza and the Jordan "
+                             "line leaves out Jerusalem. Until they do, the Mandate sub-district layer stays as the base under them "
+                             "(tools/borders_bake.py), each front's end recorded per front."},
         "naming": "The agreements' own terms ('Armistice Demarcation Line', 'Demilitarized Zone'); owner review.",
         "sensitivity": "Every feature awaits the owner's sensitivity review (docs/m3-release.md); status stays draft until fact-checked.",
         "diagnostics": {"syria": {"dmz_total_km2": total, "line_to_zone_edge_median_m": diag["line_to_zone_edge_median_m"], "dmz_areas_km2": diag["dmz_areas_km2"], "dropped_hatch_km2": dropped,
@@ -726,9 +1025,12 @@ def main() -> None:
     ap.add_argument("--syria-pdf", required=True, type=Path)
     ap.add_argument("--syria-tif", required=True, type=Path)
     ap.add_argument("--gaza-sheet", required=True, type=Path)
+    ap.add_argument("--s1471-sheet1", required=True, type=Path)
+    ap.add_argument("--s1471-sheet2", required=True, type=Path)
+    ap.add_argument("--jordan-map", required=True, type=Path)
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args()
-    doc = build(args.syria_pdf, args.syria_tif, args.gaza_sheet)
+    doc = build(args.syria_pdf, args.syria_tif, args.gaza_sheet, args.s1471_sheet1, args.s1471_sheet2, args.jordan_map)
     write(doc, args.out)
     for f in doc["features"]:
         p = f["properties"]

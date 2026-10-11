@@ -84,27 +84,66 @@ def test_the_el_auja_points_are_art_viii_2s():
 
 # --- the true lines -------------------------------------------------------------------------------------------------
 
-def test_fronts_are_the_four_agreements_with_jordan_a_dated_gap():
+def test_fronts_are_the_four_agreements_and_jordan_is_low_accuracy():
     fronts = {f["key"]: f for f in SOURCE["statecraft"]["fronts"]}
     assert list(fronts) == ["egypt", "lebanon", "jordan", "syria"]
     for k, f in fronts.items():
         assert f["signed"] == DATES[k] and f["agreement"] and f["document"]
-    for k in ("egypt", "lebanon", "syria"):
-        assert fronts[k]["data"] is True and fronts[k]["shown_from"] == DATES[k]
+        assert f["data"] is True and f["shown_from"] == DATES[k]
     j = fronts["jordan"]
-    assert j["data"] is False and j["shown_from"] is None
-    assert "Mandate sub-district layer stays" in j["gap"] and len(j["searched"]) >= 5
+    assert j["source_quality"] == "low_res_scan" and "full-resolution" in j["low_accuracy"]
+    assert "Jerusalem" in j["gap"] and "Mount Scopus" in j["gap"] and len(j["searched"]) >= 5
     for stage in ("1949-05-08", "1949-05-22", "1949-07-17"):
-        assert stage in j["dating_when_found"], "the Iraqi sector's stages (Art. VI.3) are recorded for when a map is found"
-    assert not any(f["properties"]["front"] == "jordan" for f in SOURCE["features"]), "no Jordan geometry without its map"
+        assert stage in j["dating"]
+    assert SOURCE["statecraft"]["partition"]["closed"] is False
+
+
+def test_every_jordan_feature_is_marked_low_accuracy_and_staged():
+    jo = {k: f["properties"] for k, f in FEATS.items() if f["properties"]["front"] == "jordan"}
+    assert set(jo) == {"jordan_adl_iraqi_a_triangle", "jordan_adl_iraqi_b_wadi_ara", "jordan_adl_iraqi_c_east",
+                       "jordan_adl_iraqi_c_south", "jordan_adl_a_latrun", "jordan_adl_bc_south", "jordan_adl_d_arava"}
+    for k, p in jo.items():
+        assert p["source_quality"] == "low_res_scan" and "replaced" in p["source_quality_note"], k
+        assert p["accuracy"].startswith("LOW ACCURACY"), k
+        assert ad.JORDAN_MAP["url"] in p["sources"], k
+    assert jo["jordan_adl_iraqi_a_triangle"]["shown_from"] == "1949-05-08"
+    assert jo["jordan_adl_iraqi_b_wadi_ara"]["shown_from"] == "1949-05-22"
+    assert jo["jordan_adl_iraqi_c_east"]["shown_from"] == jo["jordan_adl_iraqi_c_south"]["shown_from"] == "1949-07-17"
+    for k in ("jordan_adl_a_latrun", "jordan_adl_bc_south", "jordan_adl_d_arava"):
+        assert jo[k]["shown_from"] == "1949-04-03"
+
+
+def test_the_jordan_georeference_is_measured_not_assumed():
+    """Control points on the map's town symbols: rms and leave-one-out errors recorded, about 1-2.5 km."""
+    for k in ("jordan_adl_a_latrun", "jordan_adl_d_arava"):
+        acc = FEATS[k]["properties"]["accuracy"]
+        assert "leave-one-out" in acc and "51 m a pixel" in acc
+    assert len(ad.JORDAN_CONTROL) >= 25
+
+
+def test_the_commons_copy_without_provenance_is_never_a_source():
+    for f in SOURCE["features"]:
+        assert not any("commons.wikimedia.org" in s and "Green_Line" in s for s in f["properties"]["sources"])
+    assert "not used" in " ".join(ad.JORDAN_SEARCH)
+
+
+def test_the_1950_modus_vivendi_is_its_own_dated_feature():
+    for k in ("egypt_mv1950_demarcation", "egypt_mv1950_zone_lines"):
+        p = FEATS[k]["properties"]
+        assert p["shown_from"] == p["signed"] == "1950-02-22" and "modus vivendi" in p["agreement"].lower()
+        assert p["document"] == "S/1471" and p["label_note"] == "1950 modus vivendi"
+    assert "not drawn" in FEATS["egypt_mv1950_demarcation"]["properties"]["gaps"]
+    assert FEATS["egypt_adl_gaza"]["properties"]["shown_from"] == "1949-02-24"
 
 
 def test_each_feature_is_dated_sourced_and_draft():
-    assert set(FEATS) == {"lebanon_adl", "syria_adl", "syria_dmz_north", "syria_dmz_central", "syria_dmz_south",
-                          "egypt_adl_gaza", "egypt_el_auja_dmz"}
+    assert {"lebanon_adl", "syria_adl", "syria_dmz_north", "syria_dmz_central", "syria_dmz_south",
+            "egypt_adl_gaza", "egypt_el_auja_dmz", "egypt_mv1950_demarcation"} <= set(FEATS)
     for fid, f in FEATS.items():
         p = f["properties"]
-        assert p["shown_from"] == p["signed"] == DATES[p["front"]], fid
+        assert p["shown_from"] >= p["signed"], fid
+        if "mv1950" not in fid:
+            assert p["signed"] == DATES[p["front"]], fid
         assert p["status"] == "draft" and p["checked"] == ad.CHECKED, fid
         assert p["sources"] and all(s.startswith("https://") for s in p["sources"]), fid
         assert p["accuracy"] and p["method"] and p["agreement"] and p["document"], fid
@@ -114,10 +153,14 @@ def test_each_feature_is_dated_sourced_and_draft():
 
 
 def test_no_later_green_line_drawing_is_a_source():
-    """Owner ruling: a later drawing may only be a named cross-check (S/1471 of 1950, IBS 46 of 1965)."""
+    """Owner ruling: a later drawing may only be a named cross-check (IBS 46 of 1965), unless it is its own dated feature
+    (the signed 1950 modus vivendi map, owner ruling 2026-10-11)."""
     for s in SOURCE["statecraft"]["sources"]:
-        if "1950" in s["cite"] or "1965" in s["cite"]:
+        if "1965" in s["cite"]:
             assert "cross-check" in s["cite"] + s["licence"], s["cite"]
+    for f in SOURCE["features"]:
+        if f["properties"]["signed"] != "1950-02-22":
+            assert not any("s1471" in u.lower() or "khan_yunis" in u for u in f["properties"]["sources"]) or f["properties"]["id"] == "egypt_adl_gaza"
     for f in SOURCE["features"]:
         for url in f["properties"]["sources"]:
             assert "Green_Line" not in url and "Talknic" not in url, url
@@ -153,9 +196,9 @@ def test_rings_are_closed_and_lines_are_inside_the_map():
     b = HEXES["bounds"]
     for fid, f in FEATS.items():
         g = f["geometry"]
-        rings = [g["coordinates"]] if g["type"] == "LineString" else (g["coordinates"] if g["type"] == "Polygon" else [r for p in g["coordinates"] for r in p])
+        rings = [g["coordinates"]] if g["type"] == "LineString" else (g["coordinates"] if g["type"] in ("Polygon", "MultiLineString") else [r for p in g["coordinates"] for r in p])
         for r in rings:
-            if g["type"] != "LineString":
+            if g["type"] in ("Polygon", "MultiPolygon"):
                 assert r[0] == r[-1] and len(r) >= 4, fid
             for lon, lat in r:
                 assert b["lon0"] - 0.1 <= lon <= b["lon1"] + 0.1 and b["lat0"] - 0.1 <= lat <= b["lat1"] + 0.1, fid
@@ -179,7 +222,7 @@ def test_the_lebanon_line_is_the_frontier_from_the_coast_to_the_tripoint():
     assert 70 < sum(km(*a, *b) for a, b in zip(c, c[1:])) < 130
 
 
-def test_the_egypt_line_runs_from_the_wadi_hasi_to_gaza_and_the_rest_is_a_stated_gap():
+def test_the_1949_egypt_line_runs_from_the_wadi_hasi_to_gaza_and_the_rest_is_a_stated_gap():
     pytest.importorskip("pyproj")
     p = FEATS["egypt_adl_gaza"]["properties"]
     c = FEATS["egypt_adl_gaza"]["geometry"]["coordinates"]
@@ -208,11 +251,13 @@ def test_the_bake_is_reproducible():
 def test_the_baked_layer_lists_the_fronts_zones_and_lines_with_their_dates():
     assert BAKED["layer"] == "armistice_1949" and BAKED["label"] and "nearest hex edge" in BAKED["line"]
     fronts = {f["key"]: f for f in BAKED["fronts"]}
-    assert {k: (str(f["shown_from"]) if f["shown_from"] else None) for k, f in fronts.items()} == \
-           {"egypt": "1949-02-24", "lebanon": "1949-03-23", "jordan": None, "syria": "1949-07-20"}
-    assert fronts["jordan"]["note"]
+    assert {k: str(f["shown_from"]) for k, f in fronts.items()} == DATES
+    assert fronts["jordan"]["low_accuracy"] is True and fronts["egypt"]["low_accuracy"] is False
     for z in BAKED["zones"]:
         assert z["style"] == "secondary" and str(z["shown_from"]) == DATES[z["front"]]
+    lines = {x["key"]: x for x in BAKED["lines"]}
+    assert str(lines["egypt_mv1950_demarcation"]["signed"]) == "1950-02-22" and "modus vivendi" in lines["egypt_mv1950_demarcation"]["agreement"].lower()
+    assert all(x["low_accuracy"] for x in BAKED["lines"] if x["front"] == "jordan")
     keys = {z["key"] for z in BAKED["zones"]} | {ln["key"] for ln in BAKED["lines"]}
     assert keys == set(FEATS)
 
@@ -247,17 +292,20 @@ def test_line_hexes_follow_the_line():
 # --- the sub-district layer's per-front ends ------------------------------------------------------------------------
 
 def test_the_subdistrict_layer_ends_per_front_on_each_agreement_with_a_line():
-    fronts = {f["key"]: (str(f["until"]) if f["until"] else None) for f in SUBD["fronts"]}
-    assert fronts == {"egypt": "1949-02-24", "lebanon": "1949-03-23", "jordan": None, "syria": "1949-07-20"}
-    assert SUBD["shown_until"] is None, "Jordan has no line, so the layer as a whole stays"
+    fronts = {f["key"]: str(f["until"]) for f in SUBD["fronts"]}
+    assert fronts == DATES
+    assert SUBD["shown_until"] is None, "the lines do not enclose each side's area yet, so the layer stays as the base"
 
 
-def test_the_layer_ends_as_a_whole_only_when_every_front_has_a_line():
+def test_the_layer_ends_as_a_whole_only_when_every_front_has_a_line_and_they_close():
     fake = {"statecraft": {"fronts": [{"key": "a", "data": True, "shown_from": "1949-02-24"},
-                                      {"key": "b", "data": True, "shown_from": "1949-07-20"}]}}
+                                      {"key": "b", "data": True, "shown_from": "1949-07-20"}], "partition": {"closed": True}}}
     source = json.loads((MAP / "subdistricts_1948.geojson").read_text(encoding="utf-8"))
     text = bb.render(source, [], {}, fake)
     assert "shown_until: 1949-07-20" in text
+    fake["statecraft"]["partition"]["closed"] = False
+    assert "shown_until: null" in bb.render(source, [], {}, fake), "not while the lines leave gaps"
+    fake["statecraft"]["partition"]["closed"] = True
     fake["statecraft"]["fronts"].append({"key": "c", "data": False, "shown_from": None})
     assert "shown_until: null" in bb.render(source, [], {}, fake)
 

@@ -68,11 +68,11 @@ namespace Statecraft.Game.UI
             var parts = new List<string>();
             var zone = regions.Armistice?.ZoneAt(q, r, date);
             var sub = regions.Subdistricts.SubdistrictAt(q, r);
-            if (zone != null) parts.Add(text.Format("info.armistice_zone", zone.Name, zone.Front.Agreement, MapRegions.DateText(zone.Front.Signed)));
+            if (zone != null) parts.Add(text.Format("info.armistice_zone", zone.Name, zone.Agreement, MapRegions.DateText(zone.Signed)));
             else if (sub != null) parts.Add(text.Format("info.region", sub.Name, sub.District));
             if (regions.Armistice != null)
                 foreach (var l in regions.Armistice.LinesAt(q, r, date))
-                    parts.Add(text.Format("info.armistice_line", l.Name, l.Front.Agreement, MapRegions.DateText(l.Front.Signed)));
+                    parts.Add(text.Format(l.LowAccuracy ? "info.armistice_line_low" : "info.armistice_line", l.Name, l.Agreement, MapRegions.DateText(l.Signed)));
             return string.Join("\n", parts);
         }
 

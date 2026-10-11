@@ -11,9 +11,9 @@ namespace Statecraft.Game.Map
     /// (<see cref="Armistice1949"/>), only for fronts whose line exists. A front's line replaces the Mandate layer there: its
     /// zones (the Demilitarized Zones) are drawn over the sub-districts in the secondary style, and its line is named in the
     /// info panel on the hexes it passes through (where it is the Mandate frontier, as for Lebanon, the band already drawn
-    /// is that line). A front without line data (Jordan) keeps the Mandate layer, and the map label says so. The layer as a
-    /// whole leaves the map only on the sub-district layer's own end (<see cref="Subdistricts1948.ShownUntil"/>), which is
-    /// null while any front has no line. Display only: reads no sim state but the date it is given.</summary>
+    /// is that line). A front without line data keeps the Mandate layer, and the map label says so; a low-accuracy front
+    /// (Jordan) is labelled so. The layer as a whole leaves the map only on the sub-district layer's own end
+    /// (<see cref="Subdistricts1948.ShownUntil"/>), null until the armistice lines enclose each side's area. Display only: reads no sim state but the date it is given.</summary>
     public sealed class MapRegions
     {
         /// <summary>Zones are region ids ZoneIdBase + zone id in the composed layer, apart from the sub-districts' ids.</summary>
@@ -81,12 +81,21 @@ namespace Statecraft.Game.Map
 
         /// <summary>The map label: the sub-district layer's, and once a front's line is shown, those fronts and the fronts
         /// still without line data. <paramref name="withLines"/> formats {0} label, {1} armistice label, {2} front names;
-        /// <paramref name="noData"/> formats {0} a front's name, appended for each front without data.</summary>
-        public string Label(DateTime date, string withLines, string noData)
+        /// <paramref name="noData"/> formats {0} a front's name, appended for each front without data; <paramref name="low"/>
+        /// formats {0} a low-accuracy front's name (Jordan, from a low-resolution scan); <paramref name="note"/> formats {0} a
+        /// front's name and {1} the notes of its items shown (the 1950 modus vivendi).</summary>
+        public string Label(DateTime date, string withLines, string noData, string low = "{0}", string note = "{0} ({1})")
         {
             var (on, none) = FrontsOn(date);
             if (on.Count == 0 || Armistice == null) return Subdistricts.Label;
-            var text = string.Format(CultureInfo.InvariantCulture, withLines, Subdistricts.Label, Armistice.Label, string.Join(", ", on.Select(f => f.Name)));
+            string Name(Armistice1949.Front f)
+            {
+                var n = f.LowAccuracy ? string.Format(CultureInfo.InvariantCulture, low, f.Name) : f.Name;
+                var notes = Armistice.Zones.Concat(Armistice.Lines).Where(x => x.Front == f && x.InForce(date) && x.LabelNote != "")
+                    .Select(x => x.LabelNote).Distinct().ToList();
+                return notes.Count == 0 ? n : string.Format(CultureInfo.InvariantCulture, note, n, string.Join(", ", notes));
+            }
+            var text = string.Format(CultureInfo.InvariantCulture, withLines, Subdistricts.Label, Armistice.Label, string.Join(", ", on.Select(Name)));
             foreach (var f in none) text += string.Format(CultureInfo.InvariantCulture, noData, f.Name);
             return text;
         }
