@@ -1158,7 +1158,11 @@ bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake
 - Review round 1 (`24b540f` on promo-sea), A/B against the same branch with the land call cut from the shader
   (`Builds/Web-noland`), profiled back to back while the machine was busy (another browser on the GPU: every number about
   5 ms above the night's): gameplay03 `all` 8.20 -> 9.09 ms (+0.89, spreads 0.09 / 0.07), `none` 7.10 -> 7.73; diorama02
-  `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms. Within the 2.5 ms feature budget; re-measure
+  `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms.
+- Idle re-measure (re-review R1): **not measured.** Waiting for a 1-minute load average under 3, checked every 5 minutes,
+  2026-10-11 09:02-10:47 and 14:32-15:32: it went under 3 once (2.64 at 09:22), but the A/B taken then was still inflated
+  (`none` 7.36 ms at gameplay03 against the night's 2.33) and the branch half was disturbed (spreads up to 10 ms), so it
+  is not used; otherwise the load stayed between 3.9 and 51. The busy-machine A/B above is the only cost figure; re-measure
   on an idle machine before the tier numbers are re-ratified.
 
 **Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory).
