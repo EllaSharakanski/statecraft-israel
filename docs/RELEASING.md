@@ -95,7 +95,7 @@ assets or content for commercial use. Finish the release gates above first; the 
 
 - [ ] Capture at least five gameplay screenshots, minimum 1920 x 1080, 16:9, from the real release build, not concept art,
   pre-rendered cinematic stills or marketing images. Record the build commit and zip SHA-256 with the capture date.
-  The README build shots (`docs/images/build-m3-*.jpg`, 1568 x 752 and not 16:9) do not meet this minimum. Show the
+  The README build shots (`docs/images/build-m3-*.jpg`, 1568 x 882) are smaller than this minimum. Show the
   actual UI when useful; do not pass off `promo/final/03-gameplay-1936.png` or the AI likenesses in promo/final/04 and
   08 as gameplay. Review each screenshot's age-suitability flag individually; never mark a sensitive scene suitable for
   all ages just to gain placement. If at least four genuinely qualify, mark them suitable for all ages; with fewer

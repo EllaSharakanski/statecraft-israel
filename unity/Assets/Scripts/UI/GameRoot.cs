@@ -144,6 +144,19 @@ namespace Statecraft.Game.UI
             Own(new WhyPresenter(root, bridge, text));
             Own(new CabinetPresenter(root, bridge, text, portraits));
             var names = SettlementPlacer.Parse(inputs.Map.SettlementsYaml).ToDictionary(s => s.Id, s => s.Name);
+            // The 1948 sub-districts, outlined on the map (display only: the sim never reads them; docs/visual-v1.md).
+            var subdistricts = Subdistricts1948.Show(inputs.Map.RegionsYaml, bridge.State.Date);
+            var layerLabel = root.Q<Label>("map-layer");
+            layerLabel.text = subdistricts.Label;
+            // Shown from the start until replaced (owner ruling 2026-10-11), with its label while drawn.
+            Action onDate = () =>
+            {
+                subdistricts.Apply(bridge.State.Date);
+                layerLabel.style.display = subdistricts.Shown ? DisplayStyle.Flex : DisplayStyle.None;
+            };
+            onDate();
+            bridge.Changed += onDate;
+            owned.Add(new Undo(() => bridge.Changed -= onDate));
             // The units in play (docs/units.md): drawn from the state and the sourced unit data, before the info panel so
             // the layer has followed a change before the panel renders the selected unit's card.
             var unitLayer = units = Statecraft.Game.Map.Units.UnitLayer.Create(map,
@@ -159,8 +172,9 @@ namespace Statecraft.Game.UI
             bridge.Changed += showUnits;
             owned.Add(new Undo(() => bridge.Changed -= showUnits));
             showUnits();
-            var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav,
-                () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null));
+            var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav: nav,
+                selectedUnit: () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null,
+                subdistricts: subdistricts));
             // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
             // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
             // right on every platform, and the scripted run never presses it.

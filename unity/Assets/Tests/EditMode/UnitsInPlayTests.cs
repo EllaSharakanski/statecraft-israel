@@ -115,6 +115,8 @@ public class UnitsInPlayTests
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-5-15', to: '1948-06-01', end_basis: source, end_note: n, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "from/to")]
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1948-06-01', end_basis: source, end_note: n, sources: [{url: 'https://x.org'}]}]}", "checked")]
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1948-06-01', sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "needs end_basis")]
+    [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: ~, end_basis: source, end_note: n, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "to is empty")]
+    [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1948-06-01', end_basis: source, end_note: n, toward: {place: T, lon: 34.8, lat: 32.0, note: n, sources: []}, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "toward needs a note and a source")]
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1948-06-01', end_basis: source, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "no end_note")]
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1949-07-20', end_basis: front_armistice, front: egypt, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "must end on the egypt armistice, 1949-02-24")]
     [TestCase(Unit + "{place: P, lon: 34.8, lat: 32.0, from: '1948-05-15', to: '1949-02-24', end_basis: front_armistice, front: iraq, sources: [{url: 'https://x.org', checked: '2026-10-11'}]}]}", "needs a front")]
@@ -412,16 +414,23 @@ public class UnitsInPlayTests
             var layer = UnitLayer.Create(map, Units, C.Hexes, still: true);
             layer.Show(bridge.Content, bridge.State);
             var nav = new ScreenNav(ui.Root);
-            var info = new InfoPanelPresenter(ui.Root, bridge, Text, new Dictionary<string, string>(), nav,
-                () => layer.Selected is string id ? layer.Tokens.First(p => p.Token.Unit.Id == id) : (PlacedToken?)null);
+            var subdistricts = Subdistricts1948.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName)));
+            var towns = SettlementPlacer.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName))).ToDictionary(t => t.Id, t => t.Name);
+            var info = new InfoPanelPresenter(ui.Root, bridge, Text, towns, nav: nav,
+                selectedUnit: () => layer.Selected is string id ? layer.Tokens.First(p => p.Token.Unit.Id == id) : (PlacedToken?)null,
+                subdistricts: subdistricts);
             var root = map.Terrain.transform.Find(UnitLayer.RootName);
             var golani = layer.Tokens.Single(p => p.Token.Unit.Id == "golani");
+            var tlv = C.SettlementHexes.Single(t => t.Id == "tel_aviv");
+            info.Show(tlv.Q, tlv.R);
+            Assert.IsNotEmpty(ui.Q<Label>("info-region").text, "a hex names its 1948 sub-district");
             map.Select(golani.Q, golani.R);   // MapPointer outlines the hex before it raises HexClicked
             GameRoot.OnHexClicked(map, layer, info, golani.Q, golani.R);
             Assert.AreEqual("golani", layer.Selected);
             Assert.IsNotNull(root.Find("SelectionRing"), "the promo's white ring round the selected token");
             Assert.IsFalse(map.Terrain.transform.Find(MapScene.SelectionName).GetComponent<MeshRenderer>().enabled, "one highlight: the ring, not the hex outline (review M2)");
             Assert.IsTrue(info.ShowsUnit);
+            Assert.AreEqual("", ui.Q<Label>("info-region").text, "a unit's card names no sub-district (review MF2)");
             var words = ui.Q<VisualElement>("info-panel").Query<Label>().ToList().Select(l => l.text).ToList();
             Assert.AreEqual("Golani Brigade", ui.Q<Label>("info-title").text);
             Assert.IsTrue(words.Any(w => w.Contains("At Yavne'el since February 1948")), string.Join(" | ", words));

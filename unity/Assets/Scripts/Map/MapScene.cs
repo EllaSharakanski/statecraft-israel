@@ -45,9 +45,6 @@ namespace Statecraft.Game.Map
         /// from z-fighting the terrain.</summary>
         public const float SelectionClearanceM = 30f;
 
-        /// <summary>Outlines hex (q, r) with a band draped on the terrain (MapBuilder.DrapedRing, HexMath corners) drawn with
-        /// the editor-made HexSelection.mat, whose depth offset keeps it from z-fighting the ground (no runtime material). The band is sampled at its outer, middle and inner rings and each index
-        /// takes the highest, so terrain inside the band cannot rise through it. A hex that is not on the map hides it.</summary>
         /// <summary>Hides the selected hex's outline (a selected unit has the ring instead: UnitLayer).</summary>
         public void ClearSelection()
         {
@@ -55,6 +52,9 @@ namespace Statecraft.Game.Map
             if (found != null) found.GetComponent<MeshRenderer>().enabled = false;
         }
 
+        /// <summary>Outlines hex (q, r) with a band draped on the terrain (MapBuilder.DrapedRing, HexMath corners) drawn with
+        /// the editor-made HexSelection.mat, whose depth offset keeps it from z-fighting the ground (no runtime material). The band is sampled at its outer, middle and inner rings and each index
+        /// takes the highest, so terrain inside the band cannot rise through it. A hex that is not on the map hides it.</summary>
         public void Select(int q, int r)
         {
             if (Terrain == null || Hexes == null) return;
