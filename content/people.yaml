@@ -30,9 +30,10 @@ people:
       - { office: defense_minister, from: 1948-05-14, sources: *prov }
       # Held Education after Remez died in office on 19 May 1951.
       - { office: education_minister, from: 1951-05-19, to: 1951-10-08, sources: &second [{ url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }] }
-      # Held Transportation after Pinkas died in office on 14 August 1952. The sources end it on 24 December 1952 (Fourth
-      # Government); it stays open until that government is authored (#26), like the other Third Government terms.
-      - { office: transportation_minister, from: 1952-08-14, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Ministry_of_Transport_and_Road_Safety", checked: 2026-10-11 }] }
+      # Held Transportation after Pinkas died in office on 14 August 1952, until the Fourth Government was sworn in on
+      # 24 December 1952 (Knesset data: Ben-Gurion 14 Aug - 24 Dec 1952; Serlin from 24 Dec). Serlin and Sapir are not
+      # authored yet (#26), so the seat shows as vacant from 24 December rather than keeping a wrong holder.
+      - { office: transportation_minister, from: 1952-08-14, to: 1952-12-24, sources: [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-11 }, { url: "https://en.wikipedia.org/wiki/Ministry_of_Transport_and_Road_Safety", checked: 2026-10-11 }, { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }] }
     status: fact-checked
   - id: zisling
     name: Aharon Zisling
@@ -340,6 +341,9 @@ people:
     party: mapai
     competence: 7
     loyalty: 8
+    # Yoichi Okamoto, official White House photograph, 2 August 1966; PD-USGov checked 2026-10-11.
+    # Later than the game period; human likeness/era review remains required.
+    portrait: { file: promo/ref/people/Zalman_Shazar_USGov_1966.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg", focus_y: 0.35 }
     offices:
       - { office: education_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
     status: fact-checked
@@ -509,6 +513,8 @@ people:
       # (stated on the cited en.wiki 1951 presidential election page), which is not used as a date.
       # Died in office on 9 November 1952.
       - { office: president, from: 1951-11-19, to: 1952-11-09, sources: [{ url: "https://en.wikipedia.org/wiki/1951_Israeli_presidential_election", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1951_in_Israel", checked: 2026-10-10 }, { url: "https://en.wikipedia.org/wiki/1952_Israeli_presidential_election", checked: 2026-10-11 }] }
+    # Bain/LOC dates this earlier likeness ca. 1915-1920, not his presidential term.
+    portrait: { file: promo/ref/people/Chaim_Weizmann_Bain.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg", focus_y: 0.32 }
     status: fact-checked
   - id: ben_zvi
     name: Yitzhak Ben-Zvi
