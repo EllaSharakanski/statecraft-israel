@@ -38,7 +38,7 @@ A deterministic C# simulation runs underneath. The same choices always give the 
 ## What it looks like today
 
 <p align="center">
-  <img src="docs/images/build-m3-map.jpg" alt="Current build: the coastal plain around Tel Aviv, Jaffa and Ramla with hex lines, settlement models and trees, the top bar and an event card" width="820">
+  <img src="docs/images/build-m3-map.jpg" alt="Current build: the coastal plain around Tel Aviv, Jaffa and Ramla with hex lines, settlement models, fields and groves, railways and roads, the top bar and an event card" width="820">
 </p>
 <p align="center">
   <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen listing the Provisional Government's ministers with portraits" width="405">
