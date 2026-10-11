@@ -10,7 +10,13 @@ namespace Statecraft.Game.Map
     {
         public static readonly int Map = Shader.PropertyToID("_ScMap"), MapOrigin = Shader.PropertyToID("_ScMapOrigin"),
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
-            HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn"), Grid = Shader.PropertyToID("_ScGrid");
+            HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn"), Grid = Shader.PropertyToID("_ScGrid"),
+            WaterTime = Shader.PropertyToID("_ScWaterTime");
+
+        /// <summary>Pins the water's clock (waves, surf) to the given seconds, or back to Unity's time with null: for tests and
+        /// frame captures that must render chosen moments (promo-sea review I2, M5).</summary>
+        public static void PinWaterTime(float? seconds) =>
+            Shader.SetGlobalVector(WaterTime, seconds.HasValue ? new Vector4(seconds.Value, 1f, 0f, 0f) : Vector4.zero);
 
         /// <summary>A warm, dusty haze over land (sRGB): warmer than the ground it covers (R - B 0.26), so the far land reads
         /// as dust, not as a cool milky veil (Task 6 review I1).</summary>

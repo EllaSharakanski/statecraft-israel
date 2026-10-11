@@ -21,6 +21,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A runtime quality fallback for slow machines in the browser: when frames stay slower than 30 fps, the game lowers its
   render scale (to 0.9, then 0.8) and then turns the tilt-shift off, and steps back up when frames are comfortably fast
   again. Presentation only; `?nofallback` turns it off (#44).
+- The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
+  so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
+  Dead Sea). Presentation only.
 
 ### Changed
 - The historical AI no longer sends an order the turn's attention cannot cover (the rule the UI's order queue applies),
