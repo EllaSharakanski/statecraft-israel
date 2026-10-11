@@ -328,7 +328,7 @@ public class PromoScreensTests
             texts["mob-cost"] = $"Costs {PlayerText.Money(C, "treasury", EconomySystem.MobilizationCost(C, callUp))} a year in pay and lost work";
             texts["mob-down"] = "-5%"; texts["mob-up"] = "+5%";   // the step, DefencePresenter.MobilizationStep
             Assert.AreEqual(0.05, DefencePresenter.MobilizationStep, 1e-12);
-            texts["ceasefire"] = s.Rung == 5 ? $"A UN ceasefire will be imposed in {s.CeasefireWeeksLeft} weeks" : "";
+            texts["ceasefire"] = s.Rung == 5 ? Text.Format("defence.ceasefire", s.CeasefireWeeksLeft) : "";
             texts["defence-budget-share"] = $"{PlayerText.Percent(s.Budget[DefencePresenter.BudgetLine])} of budget spending";
             bars["mob-bar"] = (float)callUp; bars["defence-budget-bar"] = (float)s.Budget[DefencePresenter.BudgetLine];
             foreach (var name in new[] { "screen-cabinet", "screen-defence" })
