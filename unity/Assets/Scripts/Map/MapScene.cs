@@ -126,8 +126,18 @@ namespace Statecraft.Game.Map
             Settlements = list;
             bool kitsOn = kitMaterial != null && treeMaterial != null;
             if (kitsOn)
+            {
+                if (string.IsNullOrWhiteSpace(inputs.PopulationYaml))
+                {
+                    // Review N1: without the file every town would quietly take the smallest footprint. The editor (and its
+                    // tests) refuses; a player warns and builds the small towns rather than no map.
+                    var missing = $"map/{Kits.KitPopulation.FileName} is missing or empty: the settlement kits need it to size the towns";
+                    if (Application.isEditor) throw new InvalidDataException(missing);
+                    Debug.LogWarning("KITS " + missing + "; every town takes the smallest footprint");
+                }
                 Kits.KitPopulation.Use(string.IsNullOrWhiteSpace(inputs.PopulationYaml)
                     ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName));
+            }
             float hexSizeM = Hexes.hex_size_km * 1000f;
             var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial,
                 kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, list, hexSizeM) : null);
