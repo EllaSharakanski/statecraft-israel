@@ -57,10 +57,32 @@ namespace Statecraft.Game.UI
         /// <summary>True while the panel shows a unit's card.</summary>
         public bool ShowsUnit => unitMode && selectedUnit() != null;
 
-        public void Show(int q, int r) { unitMode = false; Selected = (q, r); Render(); }
+        /// <summary>True while a screen covers the panel (a wide screen, or any screen in the two-row HUD): a map click
+        /// then changes neither the hex nor the unit shown (#210; units-in-play merge note).</summary>
+        public bool Covered
+        {
+            get
+            {
+                var hud = panel.parent;
+                return hud != null && (hud.ClassListContains(ScreenNav.WideOpenClass)
+                    || (hud.ClassListContains(ScreenNav.ScreenOpenClass) && hud.ClassListContains(HudPresenter.TwoRowClass)));
+            }
+        }
 
-        /// <summary>Shows the selected unit's card (the unit comes from the selectedUnit callback).</summary>
-        public void ShowUnit() { unitMode = true; Selected = null; Render(); }
+        /// <summary>Shows the hex; ignored while a screen covers the panel, so a map click cannot change a panel the player
+        /// cannot see.</summary>
+        public void Show(int q, int r)
+        {
+            if (Covered) return;   // covered (#210)
+            unitMode = false; Selected = (q, r); Render();
+        }
+
+        /// <summary>Shows the selected unit's card (the unit comes from the selectedUnit callback); ignored while covered.</summary>
+        public void ShowUnit()
+        {
+            if (Covered) return;
+            unitMode = true; Selected = null; Render();
+        }
 
         void Build(string action)
         {

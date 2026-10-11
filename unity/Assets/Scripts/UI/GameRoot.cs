@@ -44,6 +44,7 @@ namespace Statecraft.Game.UI
         /// <summary>The units in play (null before Begin).</summary>
         internal Statecraft.Game.Map.Units.UnitLayer? Units => units;
         MapLabelsPresenter? labels;
+        ScreenNav? nav;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -134,12 +135,12 @@ namespace Statecraft.Game.UI
             // The toast first: the autosave (below) must report a failed write after the toast has shown the turn's refusals.
             var toast = Own(new ToastPresenter(root, bridge, text));
             Own(new HudPresenter(root, bridge, text));
-            var nav = Own(new ScreenNav(root));                            // every screen starts hidden (USS); ScreenNav opens one at a time
+            nav = Own(new ScreenNav(root));                                      // every screen starts hidden (USS); ScreenNav opens one at a time
             Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)
             Own(new NavigationGuard(root));                                // the camera keys (WASD, arrows) never move UI focus (B6)
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
-            var card = Own(new EventCardPresenter(root, bridge, text, portraits));
-            Own(new DefencePresenter(root, bridge, text));
+            var card = Own(new EventCardPresenter(root, bridge, text, portraits, EventImageCatalog.Load()));   // event photos: Resources, no scene field
+            Own(new DefencePresenter(root, bridge, text, portraits));
             Own(new BudgetPresenter(root, bridge, text));
             Own(new WhyPresenter(root, bridge, text));
             Own(new CabinetPresenter(root, bridge, text, portraits));
@@ -251,6 +252,7 @@ namespace Statecraft.Game.UI
         /// never hides the hex's map actions).</summary>
         internal static void OnHexClicked(MapScene map, Statecraft.Game.Map.Units.UnitLayer units, InfoPanelPresenter info, int q, int r)
         {
+            if (info.Covered) return;   // a screen covers the panel: the click moves neither the ring nor the card (#210)
             var id = units.UnitToSelectAt(q, r);
             units.Select(id);
             if (id != null) { map.ClearSelection(); info.ShowUnit(); }
@@ -263,7 +265,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; rig = null; drawn = null; units = null; logCamera = false;
+            minimap = null; labels = null; nav = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -305,6 +307,9 @@ namespace Statecraft.Game.UI
 
         void Update()
         {
+            // Escape closes the open screen even when no element has the keyboard focus (ScreenNav also takes the UI
+            // Cancel event from a focused element; closing twice is harmless).
+            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) nav?.Close();
             SyncMinimap();
             if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
             loggedDistance = rig.Distance; loggedYaw = rig.Yaw;
