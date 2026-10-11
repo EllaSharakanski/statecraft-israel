@@ -16,6 +16,49 @@ public class ContentLoaderTests
         Assert.Equal(5, c.Rules.StartRung);
     }
 
+    [Theory]
+    [InlineData("policy", "model.yaml", "policies[rationing].office")]
+    [InlineData("effect", "model.yaml", "effects[rationing_food].office")]
+    [InlineData("event", "events/drought.yaml", "events[drought].office")]
+    [InlineData("budget", "rules.yaml", "budget_start.historical_title")]
+    public void HistoricalTitlesCannotOwnGameplayResponsibilities(string kind, string file, string field)
+    {
+        var overrides = new Dictionary<string, string>
+        {
+            ["offices.yaml"] = Fixture.Files["offices.yaml"] +
+                "\n  - { id: historical_title, title: Historical title, historical_only: true }\n"
+        };
+        var events = new Dictionary<string, string>();
+        if (kind == "policy") overrides["model.yaml"] = Fixture.Files["model.yaml"].Replace(
+            "default: 0.0\n    office: finance_minister", "default: 0.0\n    office: historical_title");
+        if (kind == "effect") overrides["model.yaml"] = Fixture.Files["model.yaml"].Replace(
+            "inertia: 2\n    office: finance_minister", "inertia: 2\n    office: historical_title");
+        if (kind == "event") events["drought.yaml"] = ValidationTests.Event.Replace(
+            "office: finance_minister", "office: historical_title");
+        if (kind == "budget") overrides["rules.yaml"] = Fixture.Files["rules.yaml"].Replace(
+            "budget_start: { finance_minister: 1.0 }", "budget_start: { historical_title: 1.0 }");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(overrides, events)));
+        Assert.Equal(file, ex.File);
+        Assert.Equal(field, ex.Field);
+        Assert.Contains("historical-only", ex.Message);
+    }
+
+    [Fact]
+    public void HistoricalTitlesRemainAvailableForDatedTextPlaceholders()
+    {
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+        {
+            ["offices.yaml"] = Fixture.Files["offices.yaml"] +
+                "\n  - { id: historical_title, title: Historical title, historical_only: true }\n",
+            ["people.yaml"] = Fixture.Files["people.yaml"].Replace("office: finance_minister", "office: historical_title")
+        }, new Dictionary<string, string>
+        {
+            ["drought.yaml"] = ValidationTests.Event.Replace("{finance_minister}", "{historical_title}")
+        }));
+        Assert.Equal("Def Two reports a drought.", EventSystem.Render(c, c.Events[0], new DateTime(1948, 6, 1)));
+        Assert.Equal("finance_minister", c.Events[0].Office);
+    }
+
     [Fact]
     public void PersonLifeMetadataHasSourcesPerFieldAndRemainsOptional()
     {

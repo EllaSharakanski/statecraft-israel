@@ -288,6 +288,7 @@ namespace Statecraft.Sim
         static void Validate(Content c, List<string> settlementIds)
         {
             var offices = new HashSet<string>(c.Offices.Select(o => o.Id));
+            var historicalOffices = new HashSet<string>(c.Offices.Where(o => o.HistoricalOnly).Select(o => o.Id));
             var parties = new HashSet<string>(c.Parties.Select(p => p.Id));
             var indicators = new HashSet<string>(c.Indicators.Select(i => i.Id));
             var sources = new HashSet<string>(c.Policies.Select(p => p.Id).Concat(indicators));
@@ -423,7 +424,10 @@ namespace Statecraft.Sim
                 Unit("model.yaml", $"policies[{p.Id}].default", p.Default);
             }
             foreach (var p in c.Policies)
+            {
                 if (!offices.Contains(p.Office)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", $"unknown office '{p.Office}'");
+                if (historicalOffices.Contains(p.Office)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", "historical-only titles cannot own policies");
+            }
             foreach (var e in c.Effects)
             {
                 if (!sources.Contains(e.Source)) throw new ContentException("model.yaml", $"effects[{e.Id}].source", $"unknown policy or indicator '{e.Source}'");
@@ -431,6 +435,7 @@ namespace Statecraft.Sim
                 Finite("model.yaml", $"effects[{e.Id}].k", e.K);
                 if (e.Inertia < 1) throw new ContentException("model.yaml", $"effects[{e.Id}].inertia", "must be >= 1");
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", $"unknown office '{e.Office}'");
+                if (historicalOffices.Contains(e.Office)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", "historical-only titles cannot own effects");
             }
             foreach (var s in c.Situations)
             {
@@ -493,6 +498,7 @@ namespace Statecraft.Sim
             foreach (var kv in r.BudgetStart)
             {
                 if (!offices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "unknown office");
+                if (historicalOffices.Contains(kv.Key)) throw new ContentException("rules.yaml", $"budget_start.{kv.Key}", "historical-only titles cannot have a budget line");
                 // A budget line must not silently stop mattering when its office is abolished: move it to the office that
                 // took over (plan amendment C3).
                 var until = c.Offices.First(o => o.Id == kv.Key).Until;

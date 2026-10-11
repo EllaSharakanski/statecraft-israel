@@ -31,3 +31,9 @@ offices:
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
   - { id: minister_without_portfolio, title: Minister without Portfolio }
   - { id: president, title: President of Israel }
+  # Historical deputy titles: dated lookup/text only, never playable Cabinet seats or gameplay owners.
+  # Sources and the start-date conflict are in research_notes/M3 content 1950-51/deputy-titles.md.
+  - { id: deputy_agriculture_minister, title: Deputy Minister of Agriculture, historical_only: true }
+  - { id: deputy_transportation_minister, title: Deputy Minister of Transportation, historical_only: true }
+  - { id: deputy_education_minister, title: Deputy Minister of Education and Culture, historical_only: true }
+  - { id: deputy_prime_minister, title: Deputy Prime Minister, historical_only: true }

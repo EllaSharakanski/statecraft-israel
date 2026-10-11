@@ -12,6 +12,8 @@ namespace Statecraft.Sim
     {
         public string Id { get; set; } = "";
         public string Title { get; set; } = "";
+        /// <summary>Historical record only: no Cabinet seat, player appointment or gameplay responsibility. Defaults false for existing offices.</summary>
+        public bool HistoricalOnly { get; set; }
         /// <summary>Day the office was abolished (exclusive end, like a term's `to`); null while it still exists.</summary>
         public DateTime? Until { get; set; }
     }

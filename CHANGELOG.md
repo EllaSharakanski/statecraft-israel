@@ -8,6 +8,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Historical-only deputy titles and sourced 1951 terms; Kaplan's June 1952 Deputy Prime Minister title and the linked Finance/Agriculture succession (issue #4).
 - People can carry a birth date and a source for each biographical value (Hebrew name, birth and death dates) in
   `people.yaml`; the loader rejects unknown source keys, sources without a `url` or `checked` date, and impossible birth
   dates.
