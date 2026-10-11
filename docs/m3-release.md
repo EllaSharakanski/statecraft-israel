@@ -5,7 +5,7 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
-- **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses until the sensitivity review below is done). Never zip by hand.
+- **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses while any sensitive event is not sensitivity-reviewed). Never zip by hand.
 - **After building:** drop the build's rewrites of the settings with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
   build-cache change gets committed.
@@ -109,14 +109,16 @@ Firefox is not installed on the development Mac, so the Firefox check is open.
 
 ## OWNER STEP: sensitivity review before any shared build
 Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,
-war-casualties). The seven events below are only `fact-checked`. The owner reviews each and records the sign-off **only**
-by moving the event's `status:` in its YAML file to `sensitivity-reviewed` and committing it (the loader accepts that
-value). Nothing else counts as a sign-off.
+war-casualties). The owner's sign-off for all seven events below is recorded in commit
+[25d2ef6](https://github.com/eyalgolan/statecraft-israel/commit/25d2ef6004436668b42e289aff3dce06af128e09)
+(2026-10-10; decision D11 in [docs/oss/DECISIONS.md](oss/DECISIONS.md)): each event's YAML `status:` is now
+`sensitivity-reviewed`. For any new sensitive event, the owner records the sign-off **only** by moving its YAML
+`status:` to `sensitivity-reviewed` and committing it (the loader accepts that value). Nothing else counts as a sign-off.
 
 - **Gate:** `Build.Web ... -shareable` and `Build.Mac ... -shareable` refuse to build while any sensitive event is not
   `sensitivity-reviewed`, and name them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). `tools/package_release.py`
   makes the shareable zip and runs the same check (`Statecraft.Cli --release-gate`) on the content inside the build, so
-  it prints `PACKAGE REFUSED ...` and exits 1 until the review is done. Use `-shareable` and the script for every build
+  it prints `PACKAGE REFUSED ...` and exits 1 while any sensitive event is not sensitivity-reviewed. Use `-shareable` and the script for every build
   that leaves this machine, including the M4 private Draft once it is shared with anyone. Local dev builds (no flag)
   are not gated, because web_check and the golden checks need them.
 - **Pinned set:** `FinalWaveTests.TheSensitiveEventsArePinned` lists the seven ids, and
@@ -180,4 +182,5 @@ Result: (owner fills in)
 - The wheel-zoom step (one notch = 10%) was measured in Chrome on macOS only. Firefox reports wheel deltas in lines and
   Windows at 125% scaling reports 125 px per notch, so re-check the step in the owner's M4 itch.io check.
 - Not uploaded to itch.io: the upload and the cross-upload save test are deferred to the start of M4 (owner ruling,
-  2026-10-10). The seven sensitive events await the owner's sensitivity review (see above).
+  2026-10-10). The seven sensitive events are `sensitivity-reviewed`, with the owner's sign-off recorded in commit
+  [25d2ef6](https://github.com/eyalgolan/statecraft-israel/commit/25d2ef6004436668b42e289aff3dce06af128e09) (see above).

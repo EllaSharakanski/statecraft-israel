@@ -6,7 +6,8 @@
 # living: false is set only after confirming each person's death date (en.wikipedia.org infobox; 2026-10-09 for the
 # 1948-49 cabinet, 2026-10-10 for people added in M3).
 # Portraits: public-domain files fetched with license check (promo/CREDITS.md).
-# Not modelled: deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title (research notes 1c, 1e).
+# Deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime Minister title are historical-only titles
+# (offices.yaml `historical_only: true`); sources in research_notes/M3 content 1950-51/deputy-titles.md.
 # portrait.focus_y: the face centre's height as a share of the picture (0 top, 1 bottom), measured on each picture;
 # the event card keeps it in view (playtest 2, P2-5).
 people:
@@ -36,6 +37,9 @@ people:
   - id: kaplan
     name: Eliezer Kaplan
     living: false
+    # Died in office on 13 July 1952.
+    died: 1952-07-13
+    biography_sources: { died: [{ url: "https://en.wikipedia.org/wiki/Eliezer_Kaplan", checked: 2026-10-11 }, { url: "https://he.wikipedia.org/wiki/אליעזר_קפלן", checked: 2026-10-11 }] }
     party: mapai
     competence: 8
     loyalty: 9
@@ -45,7 +49,22 @@ people:
       - { office: finance_minister, from: 1949-03-10, to: 1950-11-01, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
       - { office: trade_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
       - { office: finance_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
-      - { office: finance_minister, from: 1951-10-08, sources: &third [{ url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }] }
+      - office: finance_minister
+        from: 1951-10-08
+        to: 1952-06-25
+        sources:
+          - &third_en { url: "https://en.wikipedia.org/wiki/Third_government_of_Israel", checked: 2026-10-10 }
+          - &third_he { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השלישית", checked: 2026-10-10 }
+          - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250662.pdf", checked: 2026-10-11 }
+      # 25 June 1952: Kaplan leaves Finance and remains Deputy PM without portfolio; primary Knesset proceeding.
+      - office: deputy_prime_minister
+        from: 1952-06-25
+        to: 1952-07-13
+        sources: &june_1952
+          - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250662.pdf", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }
+          - { url: "https://en.wikipedia.org/wiki/Eliezer_Kaplan", checked: 2026-10-11 }
+      - { office: minister_without_portfolio, from: 1952-06-25, to: 1952-07-13, sources: *june_1952 }
     status: fact-checked
   - id: sharett
     name: Moshe Sharett
@@ -58,7 +77,7 @@ people:
       - { office: foreign_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: foreign_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
       - { office: foreign_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
-      - { office: foreign_minister, from: 1951-10-08, sources: *third }
+      - { office: foreign_minister, from: 1951-10-08, sources: &third [*third_en, *third_he] }
     status: fact-checked
   - id: shapira
     name: Haim-Moshe Shapira
@@ -204,6 +223,10 @@ people:
       # en.wiki lists Trade and Industry and Justice; he.wiki lists only Trade and Industry clearly (research notes 1e).
       - { office: trade_minister, from: 1951-10-08, sources: *third }
       - { office: justice_minister, from: 1951-10-08, sources: *third }
+      # Food supply and rationing within Trade and Industry, not a revival of the abolished ministry.
+      # Schiffman/Goldstein (2026), pp.6 n.9, 33, 62; Knesset 7 January 1952, questions 8-10.
+      # Exact start is explicit in the archival working paper; the research note records the conflicting Rozin date.
+      - { office: rationing_minister, from: 1951-10-08, to: 1952-12-24, sources: [{ url: "https://mpra.ub.uni-muenchen.de/129488/1/MPRA_paper_129488.pdf", checked: 2026-10-11 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250631.pdf", checked: 2026-10-11 }] }
     status: fact-checked
   - id: shazar
     name: Zalman Shazar
@@ -237,7 +260,7 @@ people:
       # Trade and Industry (Geri) took some supply departments (commodities and stock). Research notes, Addendum 2 (A1):
       # he.wiki was read directly; the Weitz PDF and SSRN 6351358 were not read directly, only their search summaries.
       - { office: rationing_minister, from: 1950-11-01, to: 1951-10-08, sources: [{ url: "https://he.wikipedia.org/wiki/משרד_האספקה_והקיצוב", checked: 2026-10-10 }, { url: "https://in.bgu.ac.il/bgi/iyunim/24/Yechiam-Weitz.pdf", checked: 2026-10-10 }, { url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6351358", checked: 2026-10-10 }] }
-      # From 8 October 1951: no source names the responsible minister (Addendum 2: not found), so the office is vacant.
+      # Yosef took food-supply/rationing responsibility in the Third Government (see his sourced term above).
     status: fact-checked
   - id: geri
     name: Ya'akov Geri
@@ -257,7 +280,8 @@ people:
     competence: 8
     loyalty: 8
     offices:
-      - { office: agriculture_minister, from: 1951-10-08, sources: *third }
+      - { office: agriculture_minister, from: 1951-10-08, to: 1952-06-25, sources: [*third_en, *third_he, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250662.pdf", checked: 2026-10-11 }] }
+      - { office: finance_minister, from: 1952-06-25, sources: *june_1952 }
     status: fact-checked
   - id: dinur
     name: Ben-Zion Dinur
@@ -296,7 +320,8 @@ people:
     competence: 7
     loyalty: 8
     offices:
-      - { office: minister_without_portfolio, from: 1951-10-08, sources: *third }
+      - { office: minister_without_portfolio, from: 1951-10-08, to: 1952-06-25, sources: [*third_en, *third_he, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250662.pdf", checked: 2026-10-11 }] }
+      - { office: agriculture_minister, from: 1952-06-25, sources: *june_1952 }
     status: fact-checked
   - id: weizmann
     name: Chaim Weizmann
@@ -329,4 +354,56 @@ people:
     offices:
       # In office through the M3 range: resigned 7 December 1952 (research notes 8).
       - { office: chief_of_staff, from: 1949-11-09, sources: *cos }
+    status: fact-checked
+  # Deputies use neutral game ratings, not claims about historical ability or loyalty.
+  - id: efrati
+    name: Yosef Efrati
+    living: false
+    party: mapai
+    competence: 5
+    loyalty: 5
+    offices:
+      - office: deputy_agriculture_minister
+        from: 1951-02-26
+        to: 1951-10-08
+        sources: &deputies
+          - { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plmsessionitem/kns_plmsessionitem.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plenumsession/kns_plenumsession.csv", checked: 2026-10-11 }
+          - { url: "https://en.wikipedia.org/wiki/Yosef_Efrati", checked: 2026-10-11 }
+      - { office: deputy_agriculture_minister, from: 1951-11-04, to: 1952-06-25, sources: *deputies }
+    status: fact-checked
+  - id: shari
+    name: Reuven Shari
+    living: false
+    party: mapai
+    competence: 5
+    loyalty: 5
+    offices:
+      # Knesset notification on 2 April, not the role table's 1 April. See deputy-titles.md and the 1951 law.
+      - office: deputy_transportation_minister
+        from: 1951-04-02
+        to: 1951-10-08
+        sources:
+          - { url: "https://fs.knesset.gov.il/1/law/1_lsr_208918.pdf", checked: 2026-10-11 }
+          - { url: "https://en.wikipedia.org/wiki/Reuven_Shari", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plmsessionitem/kns_plmsessionitem.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plenumsession/kns_plenumsession.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }
+    status: fact-checked
+  - id: kahana
+    name: Kalman Kahana
+    living: false
+    party: poalei_agudat_yisrael
+    competence: 5
+    loyalty: 5
+    offices:
+      - office: deputy_education_minister
+        from: 1951-11-04
+        to: 1952-12-24
+        sources:
+          - { url: "https://production.oknesset.org/pipelines/data/members/kns_persontoposition/kns_persontoposition.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plmsessionitem/kns_plmsessionitem.csv", checked: 2026-10-11 }
+          - { url: "https://production.oknesset.org/pipelines/data/plenum/kns_plenumsession/kns_plenumsession.csv", checked: 2026-10-11 }
+          - { url: "https://en.wikipedia.org/wiki/Kalman_Kahana", checked: 2026-10-11 }
     status: fact-checked
