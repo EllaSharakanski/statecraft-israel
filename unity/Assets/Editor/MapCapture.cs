@@ -170,6 +170,9 @@ public static class MapCapture
         var map = OpenAndBuild();
         // The unit art slice only when asked (-units, from tools/art_checkpoint.sh --units), as ?shot&units shows it.
         if (System.Array.IndexOf(args, "-units") >= 0) Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
+        // The 1948 sub-districts, as play draws them (GameRoot.Begin), so the editor renders pair with the WebGL shots.
+        var subdistricts = Subdistricts1948.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName)));
+        subdistricts.Apply(subdistricts.ShownFrom);   // the game's start
         // The border renderer's synthetic proof only when asked (-borderproof, from tools/art_checkpoint.sh --borderproof).
         if (System.Array.IndexOf(args, "-" + BorderProof.Flag) >= 0) BorderProof.Show(map);
         var rig = Camera.main.GetComponent<CameraRig>();

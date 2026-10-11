@@ -51,9 +51,9 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>As Build, also returning every claimed lot (centre, radius, owning settlement id): buildings and landmarks
         /// of all towns, none overlapping another (tests).</summary>
         public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
-            out List<(Vector2 centre, float radius, string id)> claimed)
+            out List<(Vector2 centre, float radius, string id)> claimed, Dictionary<string, Bounds[]>? columns = null)
         {
-            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground);
+            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground, columns);
             claimed = all.Claimed;
             return all.Towns;
         }
@@ -76,7 +76,7 @@ namespace Statecraft.Game.Map.Kits
         /// together on one lot list, largest first by population, then scatters the Bedouin camps of <paramref name="camps"/>
         /// into the ground left free. Seeded: the same inputs draw the same map.</summary>
         public static Result Build(IReadOnlyList<Settlement> towns, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
-            KitGround ground)
+            KitGround ground, Dictionary<string, Bounds[]>? columns = null)
         {
             var merged = new HashSet<string>();
             foreach (var s in localities) merged.Add(s.Id);
@@ -101,11 +101,14 @@ namespace Statecraft.Game.Map.Kits
             // One lot list for every town: a big town's buildings are placed first, and a neighbour's never overlap them.
             var lots = new Lots();
             var streams = new Dictionary<string, KitRandom>(); var landmarks = new Dictionary<string, int>();
+            var spans = new Dictionary<string, List<(KitMesh km, int from, int to)>>();   // each locality's vertices in its tile
             foreach (var s in order)
             {
                 if (!merged.Contains(s.Id)) continue;
                 var rnd = new KitRandom(s.Id, 1);
-                int n = BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Landmark, ref rnd, 0, null);
+                var tile = Tile(centres[s.Id]); int from = tile.VertexCount;
+                int n = BuildOne(s, centres[s.Id], ground, tile, lots, Phase.Landmark, ref rnd, 0, null);
+                spans[s.Id] = new List<(KitMesh, int, int)> { (tile, from, tile.VertexCount) };
                 result.LocalityBuildings += n; landmarks[s.Id] = n; streams[s.Id] = rnd;
             }
             foreach (var s in order)
@@ -113,7 +116,9 @@ namespace Statecraft.Game.Map.Kits
                 if (merged.Contains(s.Id))
                 {
                     var rnd = streams[s.Id];
-                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, Tile(centres[s.Id]), lots, Phase.Houses, ref rnd, landmarks[s.Id], null);
+                    var tile = Tile(centres[s.Id]); int from = tile.VertexCount;
+                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, tile, lots, Phase.Houses, ref rnd, landmarks[s.Id], null);
+                    spans[s.Id].Add((tile, from, tile.VertexCount));
                     continue;
                 }
                 var km = new KitMesh();
@@ -122,6 +127,7 @@ namespace Statecraft.Game.Map.Kits
                 // around its houses.
                 var rndTown = new KitRandom(s.Id, 1);
                 int n = BuildOne(s, centres[s.Id], ground, km, lots, Phase.All, ref rndTown, 0, merged);
+                if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
                 result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
             foreach (var area in camps)
@@ -129,6 +135,14 @@ namespace Statecraft.Game.Map.Kits
                 var (c, t) = Encampments(area, ground, lots, Tile);
                 result.Camps += c; result.Tents += t;
             }
+            // A locality's columns, from its own vertices in its tile (read before ToMesh drops the CPU copy).
+            if (columns != null)
+                foreach (var kv in spans)
+                {
+                    var pts = new List<Vector3>();
+                    foreach (var (km, from, to) in kv.Value) km.Positions(from, to, pts);
+                    if (pts.Count > 0) columns[kv.Key] = KitMesh.Columns(pts);
+                }
             foreach (var kv in tiles) result.Tiles.Add(($"Localities {kv.Key.Item1},{kv.Key.Item2}", kv.Value.ToMesh($"localities_{kv.Key.Item1}_{kv.Key.Item2}")));
             result.Claimed = lots.List.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
             return result;

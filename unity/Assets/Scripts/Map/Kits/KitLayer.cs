@@ -9,7 +9,9 @@ namespace Statecraft.Game.Map.Kits
     /// buildings, merged: one draw each, culled by its bounds) drawn with the editor-made Kit.mat, and the instanced trees
     /// (<see cref="VegetationLayer"/>) drawn with Tree.mat. Meshes are owned by the map's MapRuntimeAssets, so a rebuild
     /// frees them. Hides the marker boxes under <paramref name="markers"/> while the kits show. Registers the "kits" and
-        /// "trees" visual toggles, so the frame-time profile prices each ("kits" off shows the markers again).</summary>
+        /// "trees" visual toggles, so the frame-time profile prices each ("kits" off shows the markers again). Fills
+    /// <paramref name="columns"/>, when given, with each kit's columns (world space: the kits sit at the root's origin), the
+    /// 1948 localities' included.</summary>
     public static class KitLayer
     {
         public const string RootName = "Kits", VegetationName = "Vegetation";
@@ -24,16 +26,16 @@ namespace Statecraft.Game.Map.Kits
 
         public static GameObject Build(IReadOnlyList<Settlement> settlements, Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
             Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
-            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null) =>
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null, Dictionary<string, Bounds[]>? columns = null) =>
             Build(settlements, new List<Settlement>(), new List<Localities.Area>(), terrain, frame, hexes, elevMinM, kitMaterial, treeMaterial,
-                assets, markers, out stats, corridors);
+                assets, markers, out stats, corridors, columns);
 
         /// <summary>As Build, with the 1948 localities and the Bedouin camp areas (content/map/localities_1948.yaml) drawn
         /// beside the game settlements: their buildings merged per tile (SettlementKits.Result.Tiles), one renderer each.</summary>
         public static GameObject Build(IReadOnlyList<Settlement> settlements, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
             Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
             Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
-            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null)
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null, Dictionary<string, Bounds[]>? columns = null)
         {
             var st = stats = new Stats();
             var root = new GameObject(RootName);
@@ -43,7 +45,7 @@ namespace Statecraft.Game.Map.Kits
             if (corridors != null) foreach (var (line, half) in corridors) ground.AddCorridor(line, half);
             stats.CorridorSegments = ground.CorridorSegments;
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            var built = SettlementKits.Build(settlements, localities, camps, ground);
+            var built = SettlementKits.Build(settlements, localities, camps, ground, columns);   // columns: the labels' kit footprints (issue #214)
             foreach (var l in built.Claimed) ground.Lots.Add((l.centre, l.radius));
             void Add(string name, Mesh mesh)
             {

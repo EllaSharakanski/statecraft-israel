@@ -109,6 +109,21 @@ namespace Statecraft.Game.Map
         /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
         public Kits.KitLayer.Stats KitStats { get; private set; }
 
+        readonly Dictionary<string, Bounds[]> kitColumns = new Dictionary<string, Bounds[]>();
+
+        /// <summary>A settlement's kit (its buildings' merged mesh, as the last Build made it) as a few world boxes that hold
+        /// all of it: the occupied cells of a KitMesh.ColumnGrid-square grid over its footprint, each from the ground
+        /// under the kit to its tallest vertex in the cell. Much tighter on screen than the kit's one bounding box under a
+        /// tilted camera (a water tower at the back no longer lifts the whole box). False without kits or for a kit with no
+        /// buildings. The map labels keep clear of it (issue #214).</summary>
+        public bool TryKitColumns(string id, out Bounds[] columns) => kitColumns.TryGetValue(id, out columns);
+
+        MeshRenderer kitProbe;   // one kit's renderer: the "kits" toggle enables or disables them all together
+
+        /// <summary>Whether the kits are drawn (built, and the "kits" toggle on); when not, the marker boxes are, and the map
+        /// labels keep clear of those instead.</summary>
+        public bool KitsShown => kitProbe != null && kitProbe.enabled;
+
         /// <summary>Builds from the repository files with System.IO (editor and desktop only).</summary>
         public void Build() => Build(GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap));
 
@@ -124,6 +139,7 @@ namespace Statecraft.Game.Map
             if (cam == null) throw new InvalidOperationException("MapScene needs a camera tagged MainCamera");
 
             Clear();
+            kitColumns.Clear(); kitProbe = null;
             var (meta, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16z, MetaPath);
             DiagLog.BootPhase("heightmap decoded");
             Hexes = MapBuilder.LoadHexes(inputs.HexesJson, HexesPath);
@@ -195,8 +211,9 @@ namespace Statecraft.Game.Map
                 // The kits replace the marker boxes; the boxes stay as the labels' and tests' anchors, and come back when the
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, localitySettlements, localities.Encampments, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
-                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes));
+                    terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats, Routes.RouteLayer.Corridors(Frame, routes), kitColumns);
                 kits.transform.SetParent(transform, true);
+                kitProbe = kits.GetComponentInChildren<MeshRenderer>(true);
                 KitStats = stats;
                 DiagLog.BootPhase("kits built");
                 Debug.Log(stats.ToString());
