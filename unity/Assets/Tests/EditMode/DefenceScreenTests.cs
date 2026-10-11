@@ -14,6 +14,7 @@ public class DefenceScreenTests
     static (UiTestKit ui, SimBridge bridge, DefencePresenter defence) Open()
     {
         var ui = new UiTestKit();
+        ui.Q<VisualElement>("screen-defence").style.display = DisplayStyle.Flex;   // open, as ScreenNav opens it (a hidden screen does not re-render)
         var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
         new ToastPresenter(ui.Root, bridge, Text);
         return (ui, bridge, new DefencePresenter(ui.Root, bridge, Text));
