@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
+  stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
+  a "borders" visual toggle. Visual only. The game ships no region data yet (no invented boundaries: the sourced 1945-48
+  sub-districts, 1949 armistice lines and fronts are a research item), so nothing is drawn in play; `?borderproof` shows
+  a synthetic test pattern.
 - Browser-playable 1948–1951 (milestone M3): HUD, Cabinet with appointments, Budget, Events, Defence and "Why did this
   happen?" screens over the 3D hex map; sourced content to 31 December 1951; saves; a calibrated economy; the golden
   hash checked in WebGL and macOS players.

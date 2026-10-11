@@ -5,19 +5,22 @@
 # player run and fails if a screenshot is missing or blank. The art log lives in the main checkout's captures/ so every
 # worktree appends to one history. --units adds the unit art slice (docs/units.md) to both the WebGL shots (&units) and the
 # editor renders (-units), and its art-log rows are named <checkpoint-name>-units, so they cannot be mistaken for plain
-# checkpoints; without it the captures stay comparable across tracks. Usage:
-# tools/art_checkpoint.sh [--no-build] [--units] <checkpoint-name>
+# checkpoints; without it the captures stay comparable across tracks. --borderproof does the same for the region borders'
+# synthetic proof pattern (&borderproof / -borderproof, rows named <checkpoint-name>-borderproof; docs/visual-v1.md,
+# "Region borders"). Usage:
+# tools/art_checkpoint.sh [--no-build] [--units] [--borderproof] <checkpoint-name>
 set -euo pipefail
-build=1; units_query=""; units_arg=()
+build=1; units_query=""; units_arg=(); proof_query=""; proof_arg=()
 while [[ "${1:-}" == --* ]]; do
   case "$1" in
     --no-build) build=0 ;;
     --units) units_query="&units"; units_arg=(-units) ;;
+    --borderproof) proof_query="&borderproof"; proof_arg=(-borderproof) ;;
     *) echo "art_checkpoint: unknown option $1" >&2; exit 2 ;;
   esac
   shift
 done
-name="${1:?usage: tools/art_checkpoint.sh [--no-build] [--units] <checkpoint-name>}"
+name="${1:?usage: tools/art_checkpoint.sh [--no-build] [--units] [--borderproof] <checkpoint-name>}"
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 main_root="$(cd "$(git rev-parse --path-format=absolute --git-common-dir)/.." && pwd)"
@@ -41,7 +44,7 @@ fi
 [[ -f unity/Builds/Web-disabled/index.html ]] || { echo "art_checkpoint: no build at unity/Builds/Web-disabled (run without --no-build)" >&2; exit 2; }
 out="captures/visual/$name"
 rm -rf "$out"; mkdir -p "$out"
-uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&shot${units_query}" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" --shots "$out" --stall 180 \
+uv run tools/web_check.py unity/Builds/Web-disabled --query "golden&shot${units_query}${proof_query}" --expect "GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07" --expect "GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767" --expect "SHOT done" --shots "$out" --stall 180 \
   --fail 'GOLDEN FAIL|SMOKE FAIL|BOOT FAIL|Statecraft/.*(not supported|Unsupported)|(not supported|Unsupported).*Statecraft/'
 # The poses come from PromoPose.All's source, so a new pose is checked without editing this script (review M3).
 poses=$(grep -o 'new PromoPose("[A-Za-z0-9_]*"' unity/Assets/Scripts/Map/PromoPose.cs | cut -d'"' -f2)
@@ -49,7 +52,7 @@ poses=$(grep -o 'new PromoPose("[A-Za-z0-9_]*"' unity/Assets/Scripts/Map/PromoPo
 for pose in $poses; do
   [[ -s "$out/$pose.png" ]] || { echo "art_checkpoint: $out/$pose.png is missing" >&2; exit 1; }
 done
-shared "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" ${units_arg[@]+"${units_arg[@]}"} -logFile "$root/unity-capture-promo.log"
+shared "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget OSXUniversal -executeMethod MapCapture.Promo -captureDir "$root/$out/editor" ${units_arg[@]+"${units_arg[@]}"} ${proof_arg[@]+"${proof_arg[@]}"} -logFile "$root/unity-capture-promo.log"
 git checkout -- unity/ProjectSettings/QualitySettings.asset   # SetQualityLevel may have written m_CurrentQuality (no unstaged edits: checked above)
-uv run tools/art_compare.py "$out" "$name${units_query:+-units}" --log "$main_root/captures/visual/art-log.tsv"
+uv run tools/art_compare.py "$out" "$name${units_query:+-units}${proof_query:+-borderproof}" --log "$main_root/captures/visual/art-log.tsv"
 echo "ART CHECKPOINT $name: $(ls "$out"/*-compare*.png "$out"/editor/*-compare*.png | tr '\n' ' ')"

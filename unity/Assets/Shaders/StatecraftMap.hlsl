@@ -258,4 +258,7 @@ float ScGridAmount(float2 mapM, float3 positionWS)
     return cover * _ScGrid.w * fade;
 }
 
+// Region borders (promo-borders): their globals and ScBorderApply, which the terrain calls last.
+#include "Assets/Shaders/StatecraftBorders.hlsl"
+
 #endif

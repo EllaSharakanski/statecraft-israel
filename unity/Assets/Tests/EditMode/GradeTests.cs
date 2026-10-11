@@ -100,7 +100,7 @@ public class GradeTests
 
     /// <summary>Review I9: colour-blind players. Under simulated deuteranopia and protanopia (Machado 2009, severity 1), at
     /// the gameplay pose: sea against land, the selection against land and the selection against sea stay at deltaE76 >= 15.
-    /// (Borders are not drawn in visual v1; the art track's border task adds its colours here.)</summary>
+    /// (The region borders' colours: ColourBlindPlayersTellTheBorderStylesApart.)</summary>
     [UnityTest]
     public IEnumerator ColourBlindPlayersStillTellCoastAndSelectionApart()
     {
@@ -124,6 +124,45 @@ public class GradeTests
             Assert.GreaterOrEqual(selSea, 15f, $"{kind}: the selection against the sea");
         }
         map.Select(-9999, -9999);
+    }
+
+    /// <summary>promo-borders: colour-blind players tell the two border styles apart and see each against the land. At the
+    /// gameplay pose, across the border proof's primary-secondary edge, under simulated deuteranopia and protanopia (Machado
+    /// 2009, severity 1): the blue and the red-orange stripes stay at deltaE76 >= 15 from each other; each band's stronger
+    /// stripe stays >= 15 from the land under it (the bound the coast and the selection meet above); and each band's two
+    /// stripes, dark against light, stay >= 20 apart, so the band reads as a line on any ground. The red-orange stripe alone
+    /// can come near dry grass for these players (logged, not asserted): the two-tone band carries it, as in the promo.</summary>
+    [UnityTest]
+    public IEnumerator ColourBlindPlayersTellTheBorderStylesApart()
+    {
+        var (map, cam, rig) = BorderTests.Open();
+        yield return null;
+        try
+        {
+            VisualToggles.Set("tiltshift", false);
+            PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0f; rig.Apply();
+            BorderProof.Show(map);
+            var (inner, outer) = BorderTests.ProofEdge(map);
+            foreach (var w in BorderTests.WalkEdge(map, cam, inner, outer, 3, 1920, 1080))
+            {
+                var p = BorderTests.Read(w, -1, BorderTests.Blueness); var s = BorderTests.Read(w, +1, BorderTests.Redness);
+                foreach (var kind in new[] { RenderSample.Cvd.Deuteranopia, RenderSample.Cvd.Protanopia })
+                {
+                    Color Sim(Color c) => RenderSample.SimulateCvd(c, kind);
+                    float styles = RenderSample.DeltaE(Sim(p.Stripe), Sim(s.Stripe));
+                    float pColour = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Land)), pLight = RenderSample.DeltaE(Sim(p.Light), Sim(p.Land));
+                    float sColour = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Land)), sLight = RenderSample.DeltaE(Sim(s.Light), Sim(s.Land));
+                    float pPair = RenderSample.DeltaE(Sim(p.Stripe), Sim(p.Light)), sPair = RenderSample.DeltaE(Sim(s.Stripe), Sim(s.Light));
+                    TestContext.WriteLine($"{kind}: blue-orange {styles:0.0}; primary colour-land {pColour:0.0}, light-land {pLight:0.0}, colour-light {pPair:0.0}; secondary colour-land {sColour:0.0}, light-land {sLight:0.0}, colour-light {sPair:0.0}");
+                    Assert.GreaterOrEqual(styles, 15f, $"{kind}: the two styles");
+                    Assert.GreaterOrEqual(Mathf.Max(pColour, pLight), 15f, $"{kind}: the primary band on land");
+                    Assert.GreaterOrEqual(Mathf.Max(sColour, sLight), 15f, $"{kind}: the secondary band on land");
+                    Assert.GreaterOrEqual(pPair, 20f, $"{kind}: the primary band's two stripes");
+                    Assert.GreaterOrEqual(sPair, 20f, $"{kind}: the secondary band's two stripes");
+                }
+            }
+        }
+        finally { MapShaderGlobals.PinWaterTime(null); }
     }
 
     /// <summary>Review I9: with the Neutral tonemapper the sunlit desert does not clip: in the Negev (34.9 E, 30.8 N, 60 km)
