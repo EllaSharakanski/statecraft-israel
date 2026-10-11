@@ -317,6 +317,56 @@ public class SeaTests
         Assert.Less(far, 0.01f, "the overview sees the breakers' mean, not a crawl");
     }
 
+    /// <summary>Bug B10: the open sea showed a blocky checker up close. The waves came from value noise on map-aligned
+    /// lattices (700 m swell, 170 m chop), differenced along the axes, so the shading jumped at the lattice lines. Rendered
+    /// straight down (orthographic, 4 m a pixel, 25 km offshore, the chop and tilt at full strength), the luma gradient
+    /// across each axis is folded by its position within each lattice's cell (16 bins): a block grid piles its edges into a
+    /// few bins, isotropic waves spread them evenly. The block-edge energy is (largest bin - smallest) / mean.</summary>
+    [UnityTest]
+    public IEnumerator TheOpenSeaHasNoBlockGrid()
+    {
+        var map = OpenMap();
+        yield return null;
+        VisualToggles.Set("grid", false);
+        MapShaderGlobals.PinWaterTime(100f);
+        var centre = map.Frame.ToWorld(34.45, 32.0, 0); centre.y = map.Terrain.SampleHeight(centre);
+        var origin = map.Terrain.transform.position;
+        const int n = 1024; const float metresPerPixel = 4f;
+        var go = new GameObject("TopSea"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            cam.orthographic = true; cam.orthographicSize = n * metresPerPixel / 2f; cam.aspect = 1f;
+            cam.transform.position = centre + Vector3.up * 20000f; cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            var r = RenderSample.Render(cam, n, n);
+            float x0 = centre.x - origin.x - n * metresPerPixel / 2f, z0 = centre.z - origin.z - n * metresPerPixel / 2f;
+            float worst = 0f; string log = "";
+            foreach (var cell in new[] { 700f, 170f })
+                foreach (var alongX in new[] { true, false })
+                {
+                    var sum = new double[16]; var count = new int[16];
+                    for (int j = 1; j < n - 1; j++)
+                        for (int i = 1; i < n - 1; i++)
+                        {
+                            // The edge between pixel (i, j) and its next neighbour lies at map metre x0 + (i + 1) * 4 (x
+                            // east; image row 0 is the south edge, so rows run north like map z).
+                            float edgeM = (alongX ? x0 + (i + 1) * metresPerPixel : z0 + (j + 1) * metresPerPixel) / cell;
+                            int bin = Mathf.Clamp((int)((edgeM - Mathf.Floor(edgeM)) * 16f), 0, 15);
+                            float d = alongX ? Luma(r.At(i + 1, j)) - Luma(r.At(i, j)) : Luma(r.At(i, j + 1)) - Luma(r.At(i, j));
+                            sum[bin] += Mathf.Abs(d); count[bin]++;
+                        }
+                    double lo = double.MaxValue, hi = 0, all = 0;
+                    for (int b = 0; b < 16; b++) { double m = sum[b] / count[b]; lo = System.Math.Min(lo, m); hi = System.Math.Max(hi, m); all += m / 16; }
+                    float energy = (float)((hi - lo) / all);
+                    worst = Mathf.Max(worst, energy);
+                    log += $"{cell:0} m {(alongX ? "x" : "z")} {energy:0.000}; ";
+                }
+            TestContext.WriteLine($"block-edge energy: {log}worst {worst:0.000}");
+            Assert.Less(worst, 0.25f, "no lattice of block edges in the sea's shading");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>
     [UnityTest]
     public IEnumerator TheDeadSeaIsPalerThanTheOpenSea()

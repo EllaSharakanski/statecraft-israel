@@ -98,7 +98,10 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .top-bar--roomy .meter-icon { width: 38px; height: 38px; margin-right: 7px; }
 .top-bar--roomy .meter-value { font-size: 25px; }
 .meter-body { flex-shrink: 1; flex-grow: 1; min-width: 0; }
-.meter-name { font-size: 16px; color: var(--ink); white-space: normal; max-width: 120px; }   /* a long caption wraps rather than widen its meter */
+.meter-name { font-size: 16px; color: var(--ink); white-space: normal; }
+/* In the bar a long caption wraps rather than widen its meter; on the roomy bar it keeps one line, as in the promo (B8). */
+.meter .meter-name { max-width: 120px; }
+.top-bar--roomy .meter .meter-name { max-width: none; white-space: nowrap; }
 #security-level { font-size: 14px; color: var(--ink-dim); }
 .meter-row { flex-direction: row; align-items: flex-end; }
 .meter-value { font-size: 22px; color: var(--ink); }
@@ -213,7 +216,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .screen .row.grow { align-items: stretch; flex-basis: 0; flex-shrink: 1; min-height: 0; }
 .screen .row.grow > .grow { min-height: 0; flex-shrink: 1; }
 
-.toast { display: none; position: absolute; left: 30%; right: 30%; top: 112px; -unity-text-align: middle-center; white-space: normal; border-color: var(--gold); }
+/* The toast sits in the map's free top-left corner, above the info panel: opaque, and never over an open screen's title or
+   the event column (B7). */
+.toast {
+    display: none; position: absolute; left: 16px; width: 520px; top: 112px; -unity-text-align: middle-center; white-space: normal;
+    background-color: var(--navy-solid); border-color: var(--gold); border-width: 1.5px;
+}
 
 /* Scroll bars in the theme: a slim gold thumb on a faint track, no arrow buttons. */
 .unity-scroller--vertical { width: 10px; border-width: 0; background-color: rgba(0, 0, 0, 0); margin-left: 4px; }
@@ -225,6 +233,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .why-group { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); color: var(--gold); letter-spacing: 1px; margin-top: 10px; border-bottom-width: 1px; border-color: rgba(196, 160, 92, 0.25); }
 .why-line { white-space: normal; padding-left: 12px; }
 
+/* The candidate column (B5): a fixed share beside the portrait grid, clear of the grid's scroll bar, its heading on one line. */
+#cabinet-pick { flex-grow: 0; flex-shrink: 0; width: 42%; margin-left: 14px; }
+#cabinet-pick-title { white-space: normal; }
 /* The Cabinet as the promo's portrait cards (promo/final/04): the lineup wraps into a grid of cards, each a gold-framed
    portrait over the office and its holder; a long lineup scrolls. */
 #cabinet-seats .unity-scroll-view__content-container { flex-direction: row; flex-wrap: wrap; }

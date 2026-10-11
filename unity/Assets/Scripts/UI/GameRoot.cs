@@ -133,6 +133,7 @@ namespace Statecraft.Game.UI
             Own(new HudPresenter(root, bridge, text));
             Own(new ScreenNav(root));                                      // every screen starts hidden (USS); ScreenNav opens one at a time
             Own(new PointerBlur(root));                                    // a mouse click leaves no focus fill behind (keyboard keeps it)
+            Own(new NavigationGuard(root));                                // the camera keys (WASD, arrows) never move UI focus (B6)
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             var card = Own(new EventCardPresenter(root, bridge, text, portraits));
             Own(new DefencePresenter(root, bridge, text));
@@ -202,6 +203,8 @@ namespace Statecraft.Game.UI
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
+            // The border renderer's synthetic, labelled proof (?borderproof / -borderproof): development builds only.
+            if (Application.isPlaying && BorderProof.Requested()) BorderProof.Show(map);
             // The visual track's instruments (docs/visual-v1.md): both move the camera, so one per run.
             if (Application.isPlaying && FrameProfile.Requested())
                 StartCoroutine(FrameProfile.Run(camRig, map.Frame, Debug.Log, Application.platform != RuntimePlatform.WebGLPlayer));
@@ -227,6 +230,7 @@ namespace Statecraft.Game.UI
         void RenderPlacementsIfChanged()
         {
             if (Bridge == null) return;
+            Statecraft.Game.Map.Routes.RouteLayer.ShowAt(map, Bridge.State.Date);   // dated routes (the Burma Road from June 1948)
             var now = Bridge.State.Placements.Select(p => (p.Action, p.Q, p.R, p.Date)).ToList();
             if (drawn != null && drawn.SequenceEqual(now)) return;
             drawn = now;

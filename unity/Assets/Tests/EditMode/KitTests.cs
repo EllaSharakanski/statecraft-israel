@@ -89,6 +89,7 @@ public class KitTests
             Assert.IsFalse(map.transform.Find("Settlements").Find(s.Id).GetComponent<MeshRenderer>().enabled, s.Id + ": the marker box is hidden");
         }
         int V(string id) => root.Find(id).GetComponent<MeshFilter>().sharedMesh.vertexCount;
+        TestContext.WriteLine($"vertices tel_aviv {V("tel_aviv")} petah_tikva {V("petah_tikva")} jaffa {V("jaffa")} lod {V("lod")} hanita {V("hanita")}");
         Assert.Greater(V("tel_aviv"), V("petah_tikva")); Assert.Greater(V("jaffa"), V("lod")); Assert.Greater(V("petah_tikva"), V("hanita"));
         TestContext.WriteLine(map.KitStats);
     }

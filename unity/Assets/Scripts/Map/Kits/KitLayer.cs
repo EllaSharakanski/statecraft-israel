@@ -16,26 +16,32 @@ namespace Statecraft.Game.Map.Kits
 
         public sealed class Stats
         {
-            public int Buildings, Vertices, Triangles, Trees, Localities, LocalityBuildings, Camps, Tents, Draws; public float BuildMs, PlantMs;
+            public int Buildings, Vertices, Triangles, Trees, CorridorSegments, Localities, LocalityBuildings, Camps, Tents, Draws; public float BuildMs, PlantMs;
             public override string ToString() =>
-                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} build_ms={BuildMs:0} plant_ms={PlantMs:0} " +
+                $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} route_segments={CorridorSegments} build_ms={BuildMs:0} plant_ms={PlantMs:0} " +
                 $"localities={Localities} locality_buildings={LocalityBuildings} camps={Camps} tents={Tents} draws={Draws}";
         }
 
         public static GameObject Build(IReadOnlyList<Settlement> settlements, Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
-            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats) =>
+            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null) =>
             Build(settlements, new List<Settlement>(), new List<Localities.Area>(), terrain, frame, hexes, elevMinM, kitMaterial, treeMaterial,
-                assets, markers, out stats);
+                assets, markers, out stats, corridors);
 
         /// <summary>As Build, with the 1948 localities and the Bedouin camp areas (content/map/localities_1948.yaml) drawn
         /// beside the game settlements: their buildings merged per tile (SettlementKits.Result.Tiles), one renderer each.</summary>
         public static GameObject Build(IReadOnlyList<Settlement> settlements, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
             Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
-            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats)
+            Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null)
         {
             var st = stats = new Stats();
             var root = new GameObject(RootName);
             var ground = new KitGround(terrain, frame, hexes, elevMinM);
+            // Buildings and trees stay off the railways and roads (RouteLayer.Corridors): every route, whatever its date,
+            // since the kits are not rebuilt when a dated route (the Burma Road) appears.
+            if (corridors != null) foreach (var (line, half) in corridors) ground.AddCorridor(line, half);
+            stats.CorridorSegments = ground.CorridorSegments;
             var clock = System.Diagnostics.Stopwatch.StartNew();
             var built = SettlementKits.Build(settlements, localities, camps, ground);
             foreach (var l in built.Claimed) ground.Lots.Add((l.centre, l.radius));

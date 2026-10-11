@@ -557,6 +557,7 @@ The images live in the owner's local `captures/visual/` folder (git-ignored); ow
 | 8 | t08-grid | captures/visual/t08-grid/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 8 (fix 1) | t08-grid-r1 | captures/visual/t08-grid-r1/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png | (owner) |
 | 9 | t09-labels | captures/visual/t09-labels/*-compare*.png | (owner) |
+| borders | promo-borders-before, promo-borders-noproof, promo-borders-r2 | captures/visual/promo-borders-before/*-compare*.png (main 807e300), captures/visual/promo-borders-noproof/*-compare*.png (the branch as played: no data, no border), captures/visual/promo-borders-r2/editor/*-compare*.png (the synthetic `--borderproof` checker, labelled on screen; editor renders only), all at d1973db | (owner) Note: no real region data yet, so play shows no border (see "Region borders"). The earlier promo-borders-proof / -after rows ran on uncommitted work over 807e300 (old ring pattern). |
 | merge | t-merge | captures/visual/t-merge/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png (before the grade re-tune: t-merge-pre, t-merge-r1) | (owner) Note: the land is one dry-grass gold with no fields, orchards or cities yet; that gap is content (art track), not the grade. |
 | merge (fix 1) | t-merge-r3 | captures/visual/t-merge-r3/*-compare*.png (t-merge-r2 = with the rejected border colour) | (owner) Note: olive coastal plain and valleys; the selected hex is now the promo's ivory ring colour, gold stays the UI chrome's. |
 | 10 | t10-tiers | captures/visual/t10-tiers/*-compare*.png, hero06judea.png, hero06negev.png, editor/*-compare*.png; weak GPU: captures/visual/t10-swiftshader | (owner) Note: render scale 1.0 on the web (sharper lines and pills); bloom, SSAO and the depth/opaque copies off; the colour is unchanged within 0.001. |
@@ -966,6 +967,145 @@ Final macOS player (SSAO, copies and bloom off):
 macOS `-golden`, both builds: `GOLDEN OK 1950 71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07`,
 `GOLDEN OK 1952 73590e324f19e9959a455a4da79e93d7089dfcf283c13aac02af6b0a624b9767`.
 
+## Region borders (promo-borders, art track gap 5)
+Promo 03 outlines regions with coloured bands along hex edges, over the faint hex lattice; promo 02 draws none (its era has
+no such layer), so diorama02 is checked only for staying thin. Measured on promo/final/03-gameplay-1936.png (2752 px wide,
+row and column profiles across the lines):
+
+| Promo 03 band | From the region's edge inwards | Widths (2752 px, mid-depth) | sRGB |
+|---|---|---|---|
+| Blue | blue stripe, white stripe, a grey-blue wash fading inwards | 6 + 6 px, wash about 10 px | 125,140,182 / 251,251,248 |
+| Red-orange | red-orange stripe, cream stripe, a faint warm wash | 4 + 3 px, wash about 8 px | 176,93,61 / 246,188,124 |
+
+Each band lies inside its region, as Civ draws territory, so two outlined regions meet as a double band (blue+white next
+to red+cream: promo 03 near Tel Aviv). The bands are world-space: they widen towards the camera.
+
+**What is drawn.** `MapBorders` (C#) bakes one texel per hex (`RegionHexes`, RGBA8 linear, point-sampled, 47 x 58: r + 256 g
+the region id, b the style) and sets the globals; `StatecraftBorders.hlsl`'s `ScBorderApply`, called last in the terrain
+function, draws the band along each edge whose neighbour is in another region. A pixel farther from its hex's edges than
+the widest band plus wash can reach fetches nothing (exact: a segment is never nearer than its line); one nearer fetches its
+own hex and only the neighbours within reach (one, or two near a corner). The first version fetched all seven texels on
+every land pixel and cost 3.3 ms at gameplay03 (`visual=all` 14.97 against `-borders` 11.64, a loaded machine): over the
+2.5 ms budget. The distance is to the edge segment (corners rounded, so bands join without notches), in pixels
+across the edge (Task 8's anisotropic filter), box-filtered. Stripes and wash are unlit (they replace BaseColor and go out
+as Emission), so they read the same in sun and shadow, as the promo's glowing lines do. A hex in no region (id 0) gets no
+band and stops its neighbours' bands: the coast is never outlined. Bands stay on land: where a boundary between two coastal
+land hexes crosses the shore, the band fades with the water mask (`ScWater`) instead of running up to 4 km out to the hex
+edge (review M7; `BandsStayOffTheWater`). Styles (`MapBorders.Primary` / `Secondary`): band 230 m / 200 m (colour share
+0.5 / 0.6), wash 0.9 / 1.0 of the band at 0.40 / 0.18. The band is at least 2 px wide unless that would make band plus wash
+wider than half a hex's inradius, which wins: below about 8 px of inradius on screen (the far overview) it goes under 2 px
+(review M2). A style with no wash is safe (the wash ramp's width is floored, review M3). The light stripes are set above
+white (sRGB 1.08 / 1.05 red) so the graded result reaches the promo's. Toggle `borders`. `_ScBorders.z` (test seam
+`MapBorders.NoEarlyOut`) turns the early-out off; `TheEarlyOutIsExact` renders both promo poses both ways and finds 0
+pixels apart (review M6). Visual only: no sim state read or written, goldens unchanged.
+
+**Data: none yet, so the game draws no border.** Owner ruling (2026-10-11): no invented political boundaries; borders come
+from real data only (the 1945-48 districts and sub-districts, the 1949 armistice lines when dated, fronts). The repository
+has none of these: `hexes.json` holds elevation, land and biome; `settlements_1948.yaml` points; the armistice events
+(`content/events/armistice_*.yaml`) dates and text but no geometry; the sim has no fronts (war mode, #21 / M4 N4). So
+`MapBorders.Apply` runs on every build with no layer. Against main (review I1, branch merged with main 632edbd, both editor
+renders from the same Library):
+- `MapCapture.SurfFrames` (gameplay03, web tier, the water's clock pinned, 60 frames): **0 of 124,416,000 pixels differ**.
+  The renders are kept in `captures/visual/promo-borders-i1/` (`borders-maincheck/` main, `promo-borders/` the branch,
+  `main2/` main's second `Promo` run).
+- `MapCapture.Promo` (both poses, both tiers; the water's clock is not pinned there): main against the branch differs in
+  1,334 / 15,089 / 116,761 / 19,904 pixels (Mobile-diorama02, Mobile-gameplay03, PC-diorama02, PC-gameplay03; largest step
+  26/255 in PC-diorama02, 2/255 elsewhere), and main against a second main run in 513 / 1,737 / 116,542 / 10,498 pixels
+  with the same largest steps: the water's clock, not the branch.
+- Inside the branch, `WithoutRegionDataTheToggleIsANoOp` only shows the toggle does nothing without data.
+- The cost of the no-data path (the hoisted `ddx`/`ddy` and one uniform branch) against main's build is not measured:
+  the machine ran at load 22 with 13 Unity processes from other tracks, so a cross-build difference would be noise. The
+  in-build `all` against `-borders` difference (-0.02 / +0.05 ms) is the noise floor, not that cost.
+
+`BorderProof` is a synthetic pattern for tests and captures only (review I3): a checker of 4 x 4 axial hex blocks
+(parallelograms in a regular lattice over the whole map, unrelated to any town or line), alternately Primary and
+Secondary, land only. While it is drawn the camera carries the label "SYNTHETIC TEST PATTERN — not real boundaries", so
+every capture labels itself: a legacy `TextMesh` (bold, white with a dark drop copy, 3.3% of the frame high) that renders
+under URP, placed before each render from the camera's aspect, 35% down the frame inside the tilt-shift's sharp band
+(legible in `captures/visual/promo-borders-r2/editor/*-gameplay03.png` and `*-diorama02.png`).
+`TheProofLabelRendersAtTheTopLeft` renders it shown and hidden at 1920x1080 and 1440x1080: about 12,800 pixels change in
+the upper left, none elsewhere, and its left end is on screen; `TheProofIsLabelledOnScreenWhileDrawn` checks it goes with
+the toggle and the layer. Only the editor and development builds honour
+its flag (`Application.isEditor || Debug.isDebugBuild`; `AReleaseBuildIgnoresTheProofFlag`): `-borderproof` in the editor's
+promo renders and tests, `tools/art_checkpoint.sh --borderproof` (editor renders; the release WebGL shots ignore it, so the
+WebGL frame profile can no longer draw it), and `?borderproof` / `-borderproof` in a development player.
+
+**Research item: region data (to source, then the owner's sensitivity review).**
+- *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:
+  Galilee, Haifa, Samaria, Jerusalem, Lydda, Gaza; sixteen sub-districts: Acre, Beisan, Nazareth, Safad, Tiberias, Haifa,
+  Jenin, Nablus, Tulkarm, Hebron, Jerusalem, Ramallah, Jaffa, Ramle, Beersheba, Gaza), dated by the Gazette changes of
+  1942, 1945 and 1947; (b) the 1949 armistice lines, each dated by its agreement (Egypt 24 Feb, Lebanon 23 Mar, Jordan
+  3 Apr, Syria 20 Jul 1949; the events already in content/); (c) fronts, from war mode's data once #21 defines it.
+- *Sources to check:* Palestine Gazette, Supplement No. 2, No. 1163 (15 Jan 1942) pp. 119-132, No. 1415 (7 Jun 1945)
+  pp. 621-629, No. 1552 (30 Jan 1947) pp. 125-133 (cited by https://en.wikipedia.org/wiki/Districts_of_Mandatory_Palestine,
+  checked 2026-10-11); the Survey of Palestine 1:100,000 sheets (1944-48), which draw district and sub-district boundaries
+  (Princeton Digital Maps, https://maps.princeton.edu/catalog/princeton-dc5999ng80p); UN map "Palestine: Land ownership by
+  sub-districts" (1945 data), https://digitallibrary.un.org/record/498482; the armistice agreements themselves (UN S/1264/Corr.1,
+  S/1296, S/1302/Rev.1, S/1353; per https://en.wikipedia.org/wiki/1949_Armistice_Agreements, checked 2026-10-11), whose
+  lines are given as Palestine-grid map references; whether maps were annexed is to verify. No open, licensed vector file of the sub-districts was found (search 2026-10-11): AUB's
+  "Palestine Population Sources" (2018, https://scholarworks.aub.edu.lb/handle/10938/22154) covers four sub-districts and
+  states no licence; Palestine Open Maps states none either. So the boundaries must be digitised from a primary source
+  (the Gazette schedules or the Survey sheets), with the method and its error recorded; their copyright status (Government
+  of Palestine publications of the 1940s) is a licence question for the owner (docs/oss/DECISIONS.md) before any import.
+- *Shape:* sourced, dated geometry in content (the chapters design's `lines.yaml`, §448, or a polygon file beside it), and a
+  tool that labels each hex by its centre (as `tools/settlement_hexes.py` does for settlements) into the per-hex layer the
+  renderer takes (`RegionLayer`). Every entry is submitted `fact-checked`; the owner sets `sensitivity-reviewed` before a
+  shareable build (chapters design §13).
+- *Limits of the renderer's data seam (review M8), for the data work to plan around:*
+  1. Two drawn styles (Primary, Secondary) plus None. The 1949 lines set Israel against four neighbours; with two styles
+     the four share the red-orange band (the texel's style byte allows 255, but each new style needs colours that stay
+     apart for colour-blind players, so it is a design task, not a constant). Districts may want a neutral third style.
+  2. One layer at a time: districts and armistice lines cannot show together.
+  3. Styles are per region, not per edge: an edge's look comes from the regions on its two sides.
+  4. Hex snapping moves a line by up to half a hex (see the owner decision below).
+  Follow-up: more styles or per-edge styles when the data and the owner's ruling on snapping need them.
+- *Owner decision needed:* the promo snaps borders to hex edges, but spec §3 (map state) says hex boundaries carry no
+  political meaning and the chapters design draws lines as true polylines. Snapping a line to hex edges moves it by up to
+  half a hex (about 4 km). Options: (1) hex-snapped regions (this renderer, the promo look); (2) true polylines (a separate
+  overlay, not the promo look); (3) both, hex-snapped at the gameplay zoom and true lines in a map mode.
+
+**Measured.**
+- Rendered tests (EditMode, `BorderTests`, 1920x1080 at gameplay03's distance and yaw, tilt-shift off, on the proof's
+  primary-secondary edge (3, 11)-(4, 11) on the flat coastal plain, where the promo's lines are measured): along 9 points
+  of the edge a blue stripe (graded sRGB 0.48, 0.58, 0.79; promo 0.49, 0.55, 0.71), a white one (0.93, 0.91, 0.89; promo
+  0.98), a red-orange one (0.74, 0.37, 0.18; promo 0.69, 0.36, 0.24), a cream one (0.92, 0.79, 0.53; promo 0.96, 0.74,
+  0.49). Band widths (median, stripes classified by colour so the wash is not counted): primary **8 px**, secondary
+  **6 px**, against the promo's about 8 and 5 (bounds 6-11 and 3.5-8). Nothing changes 1.2 km or more from the edge; the
+  middle of a coast edge is unchanged (0/134 pixels); no clearly-water pixel moves at gameplay03 (0 of 631,101); diorama02
+  3.2% of pixels changed (thin, label included); renders repeat exactly.
+- Colour-blind (`GradeTests.ColourBlindPlayersTellTheBorderStylesApart`, Machado 2009 severity 1, deuteranopia and
+  protanopia, five points on a coastal-plain edge and five on a Negev desert edge): blue against red-orange 69-80;
+  primary colour-land 54-77, light-land 38-47, colour-light 44-50; secondary colour-land 9-31, light-land 3-49,
+  colour-light 30-35. Asserted per point: styles >= 15; each band's stronger stripe >= 15 from the land; its two stripes
+  >= 20 apart; its weaker stripe >= 5 unless the stronger one is >= 25. Not both stripes >= 15 (review M5), because a
+  light stripe is meant to be light: on pale Negev sand the promo's cream stripe melts into the ground for normal vision
+  too (3.2-6.1, logged), and the band reads by its red-orange stripe there (19-31). The red-orange is a little more
+  saturated than the promo's (set 0.75, 0.31, 0.13) so it keeps that contrast on olive and on dry grass.
+- Frame cost (WebGL, 1920x1080, headless). Measured on the first, wider version (300 m / 230 m, before the water fade),
+  when the release WebGL player still honoured `?borderproof`; the machine was loaded (`visual=none` 10 ms against
+  Task 8's 2.4 ms `all`), so read the differences:
+  - Seven fetches on every land pixel: gameplay03 `all` 14.97 - `-borders` 11.64 = 3.3 ms, over the 2.5 ms budget; hence
+    the early-out.
+  - With the early-out, the proof drawn: gameplay03 13.33 (spread 0.31) - 12.42 (0.22) = **0.91 ms**, within budget.
+    diorama02 16.93 (1.06) - 15.82 (0.73) = 1.11 ms is within one spread: **not resolved**; re-measure on an idle machine
+    with real data (promo-borderdata), in a development build or a release build with a data layer.
+  - Without data: see I1 above (not measurable against main on this machine).
+- WebGL build: no `Shader error`, no "not supported" line (GLES3: `LOAD_TEXTURE2D` is `texelFetch`, static const arrays,
+  no new derivative use beyond Task 8's `ddx`/`ddy` in uniform control flow); both goldens OK (Hash1952 62f8ec61 since
+  #137), and `golden&smoke=5` passes on the build of d1973db.
+- Texture units with promo-land merged (review M10): the terrain fragment's own textures are 6 (Bake, Coast,
+  Ao and Land through the graph, `_ScBiomeTex`, `_ScRegionTex`; promo-land dropped Tracks), plus URP's (main-light shadow
+  map, reflection probe and the like): about 10-11 by the source, under WebGL2's guaranteed 16. Built, not only counted:
+  a local test merge of d1973db with origin/promo-land 7db1a3a (not pushed) built for WebGL with 0 errors and no
+  `Shader error` (76.0 MB), and booted in Chrome for Testing with `GOLDEN OK 1950` and `GOLDEN OK 1952` and no "not
+  supported" or `Shader` line (web_check's fail pattern).
+- Checkpoints (art-log rows): `promo-borders-before` (main 807e300); `promo-borders-proof` and `promo-borders-after` were run
+  on 807e300's tree plus the then-uncommitted branch, so the art log records 807e300 for them (now marked `807e300+wip`
+  there); the rings in them are the old pattern. The review rounds' checkpoints are on d1973db (art-log rows
+  `promo-borders-noproof` and `promo-borders-r2-borderproof`): `promo-borders-noproof` (no proof: the branch as played,
+  goldens OK) and `promo-borders-r2` (`--borderproof`: the editor renders show the labelled checker; its WebGL shots, a
+  release build, ignore the flag and match `-noproof`'s numbers exactly).
+
 ## promo-sea: water, surf and beach (art track, open item 3, issue #38)
 `ScWaterShade` (`StatecraftMap.hlsl`) is reworked on both sides of the edge, and a new `ScShore` paints the land's shore.
 Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are the shipped ones.
@@ -989,9 +1129,30 @@ Review round 1 (staff review I1-I2, M1-M8) is folded in; the values below are th
   - the 700 m swell (unchanged);
   - a 170 m chop moving the other way, `ScChopGain` 1.4 times the swell, full under a 40 m pixel and gone by 170 m.
 
-  The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to Task 7's
-  0.15 by 120 m: the far sea reads calm, and the seam test's patch means stay within bound (at a flat 0.6, one 7x7 patch
-  at 120 km carried 0.032 against 0.012). Glint unchanged (0.06).
+  The tilt is `ScWaveTilt` 0.6 under a 50 m pixel (gameplay03 is about 45 m: chop and sparkle show). It eases to
+  `ScWaveTiltFar` 0.10 by 120 m (Task 7's 0.15 until sea-fix): the far sea reads calm, and the seam test's patch means
+  stay within bound (at a flat 0.6, one 7x7 patch at 120 km carried 0.032 against 0.012). The glint (0.06) fades out
+  between 60 and 120 m pixels (sea-fix, below).
+
+  Bug B10 (sea-fix): both layers were value noise differenced along the map's axes, on axis-aligned lattices. Their
+  slope jumped at every cell edge, so the open sea showed a blocky checker at 6-20 km. Both layers are now gradient noise
+  with its analytic slope (`ScGradientNoiseD`, quintic fade: smooth across cell edges), the swell's lattice turned
+  0.6 rad and the chop's -0.9 rad (`ScWaveSlope`), scaled by `ScWaveSlopeGain` 0.22 to the old layers' strength (open
+  sea luma std at 6 / 12 / 18 km: 5.5 / 6.6 / 6.8 before, 6.0 / 6.8 / 7.1 after, in 8-bit levels). Fewer hashes than
+  before: 4 gradients per layer against 16 value-noise lookups. `TheOpenSeaHasNoBlockGrid` renders the open sea straight
+  down at 4 m a pixel and folds the luma gradient by its position in each old lattice's cell; the block-edge energy
+  ((largest bin - smallest) / mean, bound 0.25) was 0.660 before (170 m along z) and 0.122 after. `MapCapture.SeaClose`
+  renders the sea at 6, 12 and 18 km. With the new swell the seam test's single +-2.5 km patches (one 7x7 patch is about
+  one swell cell at 120 km) read up to 0.016 apart (bound 0.012) at the far tilt of 0.15, so the far tilt is now 0.10,
+  and the glint, the near zoom's sparkle, fades out between 60 and 120 m pixels.
+  Frame time (headless; another session loaded the machine, load average 4-18, so the spreads are wide):
+  - `PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=8.35 spread_ms=0.11 median_p95_ms=10.00`
+  - `PROFILE summary visual=-water pose=gameplay03 runs=3 median_avg_ms=8.03 spread_ms=2.69 median_p95_ms=9.00`
+  - `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=13.54 spread_ms=0.22 median_p95_ms=14.00`
+  - `PROFILE summary visual=-water pose=diorama02 runs=3 median_avg_ms=13.24 spread_ms=0.21 median_p95_ms=14.00`
+
+  Water and shore cost 0.32 ms at gameplay03 (inside a 2.69 ms spread) and 0.30 ms at diorama02, against the 2.5 ms
+  budget (0.89 / 0.13 ms in promo-sea round 1); p95 with everything on is 10 / 14 ms, under 16.7 ms.
 - **Surf** (review I2).
   - A swash line, full to `ScSwashM` 180 m and gone by 324 m.
   - Breakers through a `ScSurfM` 900 m zone. They are a squared triangle wave in the distance from the shore, spacing
@@ -1120,6 +1281,77 @@ Water and shore together (the toggle now covers both):
   unmeasured.
 - diorama02: 0.13 ms, below the noise (spread 0.18 ms).
 - p95 is at or under 16.7 ms at both poses.
+## Promo track: land use (issue #33, branch promo-land)
+The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 20 s, deterministic:
+`test_the_committed_textures_are_the_bake` checks the committed PNGs against a fresh bake) decides where from real data
+and paints what procedurally, baked:
+- where (158 x 211 m grid): fields on gentle slopes (< ~7%) with enough rain for dry farming (CHELSA bio12,
+  station-corrected as `hexgrid.py`: smoothstep 180-380 mm; the irrigated Jordan valley floor at least 0.7); the citrus
+  belt on the flat coastal plain and valley floor below 150 m near the 1948 towns (the hex-wise biome inputs softened over
+  1.5 km, so nothing steps at hex edges); garrigue, terraces and scrub where the rain is 250-600 mm, the ground unfarmed
+  and not the shader's rock;
+- what (`landuse.png`, 2048 x 4096 RGBA, about 79 x 105 m): strip-field parcels in rotated 5 km blocks (green, ochre
+  stubble, ploughed, fallow, grass, groves), soft grassy rims, hedges, some block edges as farm tracks; on the wet hills patches
+  of stony soil and grass, terraces along the real contours every 40 m of rise, scrub; 2 x 2 samples per texel; sRGB
+  colour (the sampler decodes it) spread into the empty texels so mips and BC3 blocks never blend with black; weight in
+  alpha;
+- no roads between the towns: the first rounds joined each town to its three nearest with seeded meandering tracks
+  (`tracks.png`); a controller ruling removed them, as invented routes would draw a second road beside the real 1948 roads
+  and railways the roads track traces from the 1946 Survey of Palestine map (`tools/routes_1948.py`). A finer track
+  network, if wanted, is traced there, not generated.
+The shader lays the land between `ScGroundBase` and `ScGroundShade` (relief, AO and breakup shade the fields), up to the
+waterline: promo-sea's beach band (`ScShore`, drawn after) covers it where there is a beach, and fields reach the water
+where there is none (the Sea of Galilee, cliffs). The `land` visual toggle lerps it away: a visual switch, not a price
+(the sample still runs).
+
+**Why baked, not procedural in the shader.** The first cut drew the same pattern in the shader (about 150 instructions).
+WebGL headless, same night: base 2.72 / 9.76 ms (gameplay03 / diorama02 `all`), procedural 13.94 / 15.44; with a
+per-pixel `[branch]` and one shared noise 10.37 / 13.60; branch-free 9.58 / 13.58; flattened 10.91 / 15.01. The cost stayed
+when no pixel took the branch (`-land` 8.11 at gameplay03), and sampling the textures alone cost nothing (2.69 ms):
+most likely register pressure / occupancy from the shader's size (the GPU reserves registers for the worst path, and
+ANGLE may flatten the branch), not its arithmetic. Single builds differ by a few tenths of a millisecond, so the
+bisecting steps (fields alone +4.3 ms) are indicative only. The decision to bake holds either way.
+
+**Cost, measured base vs branch (separate builds; the toggle cannot price it).**
+- Night of 2026-10-11, idle machine: main base 2.72 / 9.76 ms -> promo-land (`4b3c307`, before the review fixes) 2.68 / 9.93
+  ms (`PROFILE summary visual=all pose=gameplay03 runs=3 median_avg_ms=2.68 spread_ms=0.09 median_p95_ms=5.00`,
+  `... pose=diorama02 ... median_avg_ms=9.93 spread_ms=0.02 median_p95_ms=11.00`): within the noise between builds.
+- Review round 1 (`24b540f` on promo-sea), A/B against the same branch with the land call cut from the shader
+  (`Builds/Web-noland`), profiled back to back while the machine was busy (another browser on the GPU: every number about
+  5 ms above the night's): gameplay03 `all` 8.20 -> 9.09 ms (+0.89, spreads 0.09 / 0.07), `none` 7.10 -> 7.73; diorama02
+  `all` 14.07 -> 13.70 (-0.37, inside the spreads 0.49 / 0.25). p95 10 / 16 ms.
+- Idle re-measure (re-review R1): **not measured.** Waiting for a 1-minute load average under 3, checked every 5 minutes,
+  2026-10-11 09:02-10:47 and 14:32-15:32: it went under 3 once (2.64 at 09:22), but the A/B taken then was still inflated
+  (`none` 7.36 ms at gameplay03 against the night's 2.33) and the branch half was disturbed (spreads up to 10 ms), so it
+  is not used; otherwise the load stayed between 3.9 and 51. The busy-machine A/B above is the only cost figure; re-measure
+  on an idle machine before the tier numbers are re-ratified.
+
+**Size and memory.** `landuse.png` is 10.7 MB in the build report (2048 x 4096 BC3 with mips: 10.7 MiB of GPU memory).
+The WebGL `.data` is LZ4-compressed, so the download grows less: `Web-disabled.data` 21.53 MB (promo-sea) -> 24.40 MB
+(+2.86 MB, then with the since-removed tracks texture's 0.02 MB). Halving the texture (the platforms' 2048 cap gives 1024 x 2048) blurred the
+hedges, rims and rows (gameplay03 local gradient on the plain 0.0220 -> 0.0174, -21%), so it stays 4096 rows; BC1 cannot
+hold the weight, so BC3 stays.
+
+**Platforms.** The default web build targets desktop browsers (S3TC/BC, as the map's other textures already need). The land
+texture's WebGL override pins only the size (4096) and leaves the format automatic, so the build's texture subtarget picks
+it: DXT5 by default; `Build.Web -textureSubtarget astc` (or `etc2`) makes a build for browsers without S3TC (iOS Safari,
+most Android Chrome), where the land is ASTC 6x6, 4.8 MB (`unity-build-astc.log`), and golden + smoke=5 pass. A desktop
+build opened on such a browser would decompress the land to RGBA32 on the CPU: 42.7 MiB. WebGL2 guarantees only 2048-texel
+textures; virtually every GPU offers 4096.
+
+Tests, review round 1: EditMode 465 passed (`LandUseTests`: import settings for every platform, the subtarget argument,
+`-extraPose` validation, the land follows slope/rain/towns, gameplay detail; `TheTerrainShaderCompilesForWebGL2`); tools
+pytest 194 passed; `dotnet test` 628; golden and smoke unchanged on `Web-disabled` and `Web-astc`.
+
+Colour (WebGL `?shot`, checkpoint `promo-land-r5` against `promo-sea-r2`): gameplay03 saturation 0.4792 -> 0.4681
+(promo 0.38), warmth 0.1018 -> 0.0921 (promo 0.064), contrast 0.1738 -> 0.1730, palette distance 0.5971 -> 0.5148;
+diorama02 saturation 0.4183 -> 0.4164 (bar <= 0.48), warmth 0.1171 -> 0.1154 (bar 0.087-0.145), palette distance
+0.5869 -> 0.5868. Open item 3: the land lowers gameplay03 saturation by 0.011. Open item 5: the olive plain / gold hills
+seam is now fields against garrigue, a softer step (owner to judge).
+Licence: the texture is `owner-verify` in `ASSETS.yaml` pending decision D13 (`docs/oss/DECISIONS.md`).
+Still different from the promo: soft at close zoom (rows, hedges and bushes read at the gameplay zoom, blur at 15-20 km
+and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
+its grade.
 
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
