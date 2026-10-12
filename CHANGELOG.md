@@ -13,6 +13,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
   whole window of the record using it; an event that fires after its window leaves out records that have ended. With no
   dates nothing changes (goldens unchanged). Offices and regions come later.
+- Offices accept `successor`, the office that takes over when this one is abolished (chapters spec 3.2, refs #57). The
+  loader refuses an unknown or self successor, one without `until`, one not in office at the handover, and one that
+  could not own the budget lines and policies it takes over (several holders, or a historical title). Nothing reads it
+  yet. Goldens unchanged.
 - Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
   elsewhere hides it, and a mouse still hovers as before. The info panel lists the selected hex's 1948 localities with
   today's name where a living place carries on, by the same rule as the tooltip. Keyboard players reach the panel list
