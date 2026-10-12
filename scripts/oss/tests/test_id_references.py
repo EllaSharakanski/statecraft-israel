@@ -1,5 +1,7 @@
 """Id references (#346): hits grouped by area, whole-word matching, no hits, and the real repo."""
 import importlib.util
+
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -27,6 +29,16 @@ def test_no_references(make_repo, capsys):
     root = make_repo({'content/model.yaml': 'x\n'})
     assert m.main(['nothing_here', '--root', str(root)]) == 0
     assert capsys.readouterr().out.strip() == 'no references'
+
+
+def test_a_git_error_is_an_error_not_no_references(tmp_path, monkeypatch, capsys):
+    """`no references` tells an agent a record is safe to delete, so a failed `git grep` must never print it."""
+    monkeypatch.setenv('GIT_CEILING_DIRECTORIES', str(tmp_path.parent))   # tmp_path is not inside any checkout
+    with pytest.raises(SystemExit) as e:
+        m.main(['morale', '--root', str(tmp_path)])
+    assert e.value.code not in (0, None)
+    assert 'not a git repository' in str(e.value.code)
+    assert 'no references' not in capsys.readouterr().out
 
 
 def test_real_repo_finds_a_code_named_indicator():

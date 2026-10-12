@@ -6,7 +6,8 @@
 
 Runs `git grep -n -w` for the id over the tracked files in content/, sim/ and unity/Assets and prints one line per
 hit (file:line: text), grouped as content, sim, tests and unity. Code reads some ids by name, which a YAML-only search
-misses. Prints `no references` and exits 0 when there are none. Read-only, offline."""
+misses. Prints `no references` and exits 0 when there are none; a git error prints git's message and exits 1.
+Read-only, offline."""
 import argparse
 import subprocess
 import sys
@@ -18,8 +19,11 @@ AREAS = [("content", "content/"), ("sim", "sim/Statecraft.Sim/"), ("tests", "sim
 
 def hits(root: Path, record_id: str) -> list[tuple[str, str]]:
     """(area, "file:line: text") per hit; a path belongs to the first area whose prefix matches."""
-    out = subprocess.run(["git", "-C", str(root), "grep", "-n", "-w", "-F", "-e", record_id, "--", "content", "sim", "unity/Assets"],
-                         capture_output=True, text=True).stdout
+    r = subprocess.run(["git", "-C", str(root), "grep", "-n", "-w", "-F", "-e", record_id, "--", "content", "sim", "unity/Assets"],
+                       capture_output=True, text=True)
+    if r.returncode > 1:   # 1 means no match; anything above is a git error, never "no references"
+        raise SystemExit(r.stderr.strip() or "git grep failed")
+    out = r.stdout
     rows = []
     for line in out.splitlines():
         path = line.split(":", 1)[0]
