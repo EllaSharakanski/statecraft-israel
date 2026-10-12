@@ -58,7 +58,7 @@ public class SliceSmokeTests
                 cmds.Add(new AllocateBudget(new Dictionary<string, double>(s.Budget) { [from] = s.Budget[from] - 0.05, [to] = s.Budget[to] + 0.05 }));
         }
         if (turn % 10 == 3) cmds.Add(new SetMobilization(Math.Min(1, Math.Round(s.Mobilization + 0.1, 2))));
-        if (turn % 10 == 8) cmds.Add(new SetMobilization(SecuritySystem.MinMobilization(c, s.Rung)));
+        if (turn % 10 == 8) cmds.Add(new SetMobilization(SecuritySystem.MinMobilization(c, s.Date, s.Rung)));
         if (turn % 2 == 0)
             foreach (var action in new[] { MapActions.TransitCamp, MapActions.Housing })
             {
