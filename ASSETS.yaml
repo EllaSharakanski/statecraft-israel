@@ -35,6 +35,23 @@ rules:
     source: "Web copy of promo/final/03-gameplay-1936.png (published 2026-10-10); same provenance as promo/final"
     status: owner-verify
     note: "Owner-ruled README hero, captioned as concept art. Blocker if D5 disallows redistribution: the owner rules, an agent never drops it. D-H: no Civilization VII icon, logo or wordmark."
+  - glob: "unity/Assets/UI/StartScreen/declaration-hall.jpg"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Dreamina (dreamina.capcut.com), model GPT Image 2.5, 2026-10-12, with promo/final/03-gameplay-1936.png as the style reference; the start screen's painting. Option C of promo/start-screen (prompt in promo/start-screen/prompt-c.txt), resized from 1536x864 to 1920x1080 (Lanczos) and saved as JPEG; the Dreamina AI badge is kept"
+    status: owner-verify
+    note: "Decision D1: AI-only images CC0 / no rights claimed. Content policy: no identifiable real person (the hall from behind the audience, tiny soft-focus figures at the table, the frame between the flags holds an abstract warm blur with no figure or face in it, not a portrait). The model gave 1536x864 with a reference image; Dreamina's own upscale was not run (no free credits left), so the 1920x1080 is a plain resize."
+  - glob: "promo/start-screen/declaration-hall-option-*.png"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Dreamina (dreamina.capcut.com), model GPT Image 2.5, 2026-10-12, 1536x864 as downloaded, with promo/final/03-gameplay-1936.png as the style reference; prompts in promo/start-screen/prompt-b.txt and -c.txt"
+    status: owner-verify
+    note: "Decision D1: AI-only images CC0 / no rights claimed. Two options for the start screen; C is used."
+  - glob: "docs/sources/declaration-1948/*.txt"
+    licence: Public-Domain
+    source: "The Declaration of the Establishment of the State of Israel: the Hebrew as published in Iton Rishmi (Official Gazette) No. 1, 14 May 1948, via https://he.wikisource.org/wiki/הכרזה_על_הקמת_מדינת_ישראל; the English translation via https://avalon.law.yale.edu/20th_century/israel.asp, checked against the Israel MFA's https://www.gov.il/en/pages/declaration-of-establishment-state-of-israel (all 2026-10-12)"
+    status: owner-verify
+    note: "The start screen quotes two lines of each (Game.uxml; StartScreenTests checks them against these files). No copyright is claimed or needed: an official State publication of 1948, and the State's copyright in its works (50 years from creation, Israeli Copyright Act 2007, s. 42) has expired in any case. Owner to confirm the legal reading."
   # --- Reference sheets composed from the public-domain portraits ---
   - glob: "promo/ref/*-sheet.jpg"
     licence: Public-Domain
@@ -73,10 +90,15 @@ rules:
     ai_generated: true
     note: "The contributor reports the drawing was AI-assisted (PR #169); flagged for the AI-content disclosure by controller ruling."
   # --- Fonts ---
-  - glob: "unity/Assets/UI/Fonts/*.ttf"
+  - glob: "unity/Assets/UI/Fonts/EBGaramond-*.ttf"
     licence: OFL-1.1
     source: "https://github.com/octaviopardo/EBGaramond12 @ 106a4a6d377987459ae5e68673a4570f13b957fb (unity/Assets/UI/Fonts/SOURCE.txt)"
     status: verified
+  - glob: "unity/Assets/UI/Fonts/FrankRuhlLibre/*.ttf"
+    licence: OFL-1.1
+    source: "https://github.com/fontef/frankruhllibre @ 2372d1998e51dc011f86554c0d23f1ccf44afddf, fonts/ttf/ (unity/Assets/UI/Fonts/FrankRuhlLibre/SOURCE.txt), unmodified"
+    status: verified
+    note: "The Hebrew face (EB Garamond has no Hebrew glyphs; #193); first used for the start screen's quotations."
   # --- Map data ---
   - glob: "unity/Assets/StreamingAssets/map/heightmap.*"
     licence: Copernicus-DEM
@@ -100,6 +122,11 @@ rules:
     source: "tools/borders_digitise.py from the Survey of Palestine map 'Administrative Divisions' (1:750,000, 1946, overprinted May 1947; two Commons scans, SHA-256 in the file) per the 1947 Schedule (Palestine Gazette No. 1552); coast from the Copernicus DEM (NOTICE); the hex layer by tools/borders_bake.py; content/ is CC BY-SA 4.0"
     status: verified
     note: "Decision D-B (owner-delegated, 2026-10-11): allowed; facts redrawn, no image copied. Government of Palestine works of 1945-47, public domain in Israel and the UK since 1997; the file holds facts (where legally defined lines run) redrawn by our own method, which a possible US copyright in the map's drawing does not reach (Feist). Hebrew and Arabic names from Wikipedia, noted per row."
+  - glob: "content/map/armistice*"
+    licence: CC-BY-SA-4.0
+    source: "tools/armistice_digitise.py from the 1949 General Armistice Agreements (UNTS vol. 42) and their annexed maps: Syria, Annex I's MR points and the annexed 1:50,000 map (S/1353/Rev.1: the UN ODS colour scan and the UNISPAL 1-bit scan, SHA-256 in the tool); Lebanon, Art. V.1's international boundary as the Mandate frontier of content/map/subdistricts_1948.geojson; Egypt, Art. VI.1 and VIII.2 with the Survey of Palestine 1:100,000 sheet 9 'Gaza' (Commons, NLI copy) for the Wadi Hasi mouth, Deir Suneid and the highway; the 1950 modus vivendi line from S/1471's signed map (UNISPAL; sheet 2 from the UN Treaty Collection); Jordan from the low-resolution UNISPAL copy of the signed map 1 (source_quality low_res_scan), georeferenced on town coordinates from Wikidata (CC0) and Wikipedia; IBS 46 (1965) a named cross-check only; coast from the Copernicus DEM (NOTICE); the hex layer by tools/armistice_bake.py; content/ is CC BY-SA 4.0"
+    status: owner-verify
+    note: "Decision D-A: UN documents with symbols are not copyrighted (ST/AI/189/Add.9/Rev.2 para. 2); the Gaza sheet, the Mandate frontier and Jordan map 1's 1:250,000 base fall under D-B (Government of Palestine); S/1471's base sheets are a Survey of Israel reprint of about 1949-50 (outside D-B; facts only taken). Only the lines' positions are taken, redrawn by our own method. Status draft until the owner's fact check and sensitivity review."
   - glob: "content/map/settlements_1948.yaml"
     licence: CC-BY-SA-4.0
     source: "Coordinates from the Wikipedia API (prop=coordinates) and tools/settlement_hexes.py; per-settlement URLs and check dates in settlements_1948.yaml"
@@ -118,6 +145,11 @@ rules:
     source: "Railways and main roads of May 1948 (issue #35): traced by tools/routes_1948.py on the Survey of Palestine 1:250,000 map of 1946 (public domain; scans and georeferencing by Palestine Open Maps, https://palopenmaps.org/en/maps?basemap=pal250k1946) between waypoints at Wikipedia API (CC BY-SA) and Wikidata (CC0) coordinates; per-route sources and check dates in routes_1948.yaml"
     status: verified
     note: "Public domain checked 2026-10-11: PD-UKGov (expired Crown copyright: 50 years from publication for published works, which HMSO treats as worldwide) and PD-scan, as Wikimedia Commons files the 1946 Survey of Palestine sheets (e.g. https://commons.wikimedia.org/wiki/File:Gaza_sh._04,_1946.jpg). Palestine Open Maps' About page calls its maps public domain under the UK Copyright, Designs and Patents Act and publishes no terms of its own for its tiles or georeferencing; the traced lines are our own derivative and copy none of its layers. No OpenStreetMap (ODbL) geometry is copied: OSM and OpenHistoricalMap lines are only measured against (tools/routes_accuracy.py, docs/routes.md)."
+  - glob: "content/map/units_1948.yaml"
+    licence: CC-BY-SA-4.0
+    source: "The 1948 brigades, 101 Squadron and the first navy ships, with their dated positions (docs/units.md, Units in play): facts and place coordinates read from English and Hebrew Wikipedia (CC BY-SA; Wikipedia API prop=coordinates) and Wikidata (CC0), and the S-199 markings from Eduard Info 11/2025 pp. 53-54 (facts only, no text or image copied); per-row sources and check dates in the file"
+    status: owner-verify
+    note: "Presentation only (the map's unit tokens); the sim never reads it, so the content hash does not move (UnitsInPlayTests). Rows marked wikipedia_only are drafts until checked against a published history (Lorch, The Edge of the Sword) or the IDF and Defense Establishment Archives."
   # --- Baked map textures (derived from the heightmap) ---
   - glob: "unity/Assets/Textures/Map/landuse.png"
     licence: Copernicus-DEM

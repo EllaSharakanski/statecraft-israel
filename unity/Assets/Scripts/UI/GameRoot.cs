@@ -19,7 +19,8 @@ namespace Statecraft.Game.UI
     /// the minimap to the camera, and State.Placements to the placement layer. Disabling it disposes all of that.
     /// With "smoke" in the page URL (WebGL, e.g. ?smoke=5) or -smoke N (desktop) it starts a fresh game with the golden
     /// seed (the player's autosave is neither read nor written), plays N turns through the UI's own buttons and logs
-    /// "SMOKE OK ..." (or "SMOKE FAIL ...").
+    /// "SMOKE OK ..." (or "SMOKE FAIL ..."). In a player, unless an automated run skips it (StartScreenPresenter.Skipped),
+    /// the start screen shows over the started game before its first turn, with the camera keys stopped until it closes.
     /// ExecuteAlways only so that disabling it disposes the presenters in edit mode too (tests); GameBoot raises Ready
     /// in play mode and players only.</summary>
     [ExecuteAlways]
@@ -40,8 +41,12 @@ namespace Statecraft.Game.UI
         /// <summary>Everything Begin created that must be undone, disposed in reverse order.</summary>
         readonly List<IDisposable> owned = new List<IDisposable>();
         MinimapPresenter? minimap;
+        Statecraft.Game.Map.Units.UnitLayer? units;
+        /// <summary>The units in play (null before Begin).</summary>
+        internal Statecraft.Game.Map.Units.UnitLayer? Units => units;
         MapLabelsPresenter? labels;
         ScreenNav? nav;
+        StartScreenPresenter? start;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -105,11 +110,13 @@ namespace Statecraft.Game.UI
         public static int SmokeTurns() =>
             SmokeTurns(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
 
-        /// <summary>GameBoot.Ready: starts the game, smoke-testing when the URL or command line asks.</summary>
-        public void Begin(GameInputs inputs) => Begin(inputs, SmokeTurns());
+        /// <summary>GameBoot.Ready: starts the game, smoke-testing when the URL or command line asks, with the start screen
+        /// unless an automated run skips it.</summary>
+        public void Begin(GameInputs inputs) => Begin(inputs, SmokeTurns(), Application.isPlaying && !StartScreenPresenter.Skipped());
 
-        /// <summary>Starts (or restarts) the game over the built map. <paramref name="smoke"/> &gt; 0 plays that many turns.</summary>
-        internal void Begin(GameInputs inputs, int smoke)
+        /// <summary>Starts (or restarts) the game over the built map. <paramref name="smoke"/> &gt; 0 plays that many turns;
+        /// <paramref name="startScreen"/> shows the start screen first (never in a smoke run, which has no New Game).</summary>
+        internal void Begin(GameInputs inputs, int smoke, bool startScreen = false)
         {
             if (inputs == null) throw new ArgumentNullException(nameof(inputs));
             foreach (var (value, field) in new (UnityEngine.Object?, string)[] { (document, nameof(document)), (strings, nameof(strings)),
@@ -122,9 +129,10 @@ namespace Statecraft.Game.UI
             var store = Store ?? SaveStore.ForPlatform();
             var notes = new List<string>();
             // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave.
+            bool resumed;
             var session = smoke > 0
-                ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, fresh: true)
-                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text);
+                ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, out resumed, fresh: true)
+                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed);
             DiagLog.BootPhase($"session started (turn {session.State.Turn}, replayed)");
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
@@ -142,26 +150,46 @@ namespace Statecraft.Game.UI
             Own(new WhyPresenter(root, bridge, text));
             Own(new CabinetPresenter(root, bridge, text, portraits));
             var names = SettlementPlacer.Parse(inputs.Map.SettlementsYaml).ToDictionary(s => s.Id, s => s.Name);
-            // The 1948 sub-districts, outlined on the map (display only: the sim never reads them; docs/visual-v1.md).
-            var subdistricts = Subdistricts1948.Show(inputs.Map.RegionsYaml, bridge.State.Date);
+            // The 1948 sub-districts, outlined on the map, and each front's 1949 armistice line from its agreement's date
+            // where the line exists (display only: the sim never reads them; docs/visual-v1.md, owner rulings 2026-10-11).
+            var regions = new MapRegions(Subdistricts1948.Parse(inputs.Map.RegionsYaml),
+                string.IsNullOrWhiteSpace(inputs.Map.ArmisticeYaml) ? null : Armistice1949.Parse(inputs.Map.ArmisticeYaml));
             var layerLabel = root.Q<Label>("map-layer");
-            layerLabel.text = subdistricts.Label;
-            // Shown from the start until replaced (owner ruling 2026-10-11), with its label while drawn.
             Action onDate = () =>
             {
-                subdistricts.Apply(bridge.State.Date);
-                layerLabel.style.display = subdistricts.Shown ? DisplayStyle.Flex : DisplayStyle.None;
+                regions.Apply(bridge.State.Date);
+                layerLabel.text = regions.Label(bridge.State.Date, text["map.layer_with_armistice"], text["map.layer_front_no_data"],
+                    text["map.layer_front_low"], text["map.layer_front_note"]);
+                layerLabel.style.display = regions.Shown ? DisplayStyle.Flex : DisplayStyle.None;
             };
             onDate();
             bridge.Changed += onDate;
             owned.Add(new Undo(() => bridge.Changed -= onDate));
-            var info = Own(new InfoPanelPresenter(root, bridge, text, names, subdistricts));
+            // The units in play (docs/units.md): drawn from the state and the sourced unit data, before the info panel so
+            // the layer has followed a change before the panel renders the selected unit's card.
+            var unitLayer = units = Statecraft.Game.Map.Units.UnitLayer.Create(map,
+                Statecraft.Game.Map.Units.UnitData.ReadOrNone(inputs.Map.UnitsYaml, Debug.LogWarning), inputs.Content.Hexes,
+                Statecraft.Game.Map.Units.UnitShowcase.StillRequested(Application.absoluteURL, Environment.GetCommandLineArgs(),
+                    Application.platform == RuntimePlatform.WebGLPlayer));
+            // A screenshot run (?shot) leaves the units out unless it also asks for them (&units), so the art log's plain
+            // checkpoints stay comparable across tracks (review I5; tools/art_checkpoint.sh --units).
+            if (Statecraft.Game.Map.Units.UnitLayer.HiddenInCaptures(Application.absoluteURL, Environment.GetCommandLineArgs(),
+                    Application.platform == RuntimePlatform.WebGLPlayer))
+                VisualToggles.Set(Statecraft.Game.Map.Units.UnitLayer.ToggleName, false);
+            Action showUnits = () => unitLayer.Show(bridge.Content, bridge.State);
+            bridge.Changed += showUnits;
+            owned.Add(new Undo(() => bridge.Changed -= showUnits));
+            showUnits();
+            var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav: nav,
+                selectedUnit: () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null,
+                regions: regions));
             // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
             // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
             // right on every platform, and the scripted run never presses it.
+            NewGamePresenter? newGame = null;
             if (smoke == 0)
             {
-                Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
+                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
                 Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
@@ -169,17 +197,20 @@ namespace Statecraft.Game.UI
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
             var oldBounds = cameraController.Bounds;
+            var oldGround = cameraController.Ground; var oldTop = cameraController.GroundTop;
             cameraController.IsOverUi = overUi;
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
+            cameraController.Ground = CameraController.GroundOf(terrain);
+            cameraController.GroundTop = CameraController.GroundTopOf(terrain);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
-            Action<int, int> onHex = info.Show;
+            Action<int, int> onHex = (q, r) => OnHexClicked(map, unitLayer, info, q, r);
             pointer.HexClicked += onHex;
             var camRig = rig = cameraController.GetComponent<CameraRig>();
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
             labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>()));
-            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
+            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); cameraController.Settle(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
             // One console line per turn, so a browser run (reload, Continue) can be checked against the hash.
@@ -197,10 +228,19 @@ namespace Statecraft.Game.UI
                 if (cameraController.IsOverUi == overUi) cameraController.IsOverUi = null;
                 if (pointer.Map == map) pointer.Map = null;
                 cameraController.Bounds = oldBounds;
+                cameraController.Ground = oldGround; cameraController.GroundTop = oldTop;
             }));
             drawn = null;
             RenderPlacementsIfChanged();
             SyncMinimap();
+            // The start screen goes up in the same frame the loading state ends, so the HUD never flashes before it. While it
+            // shows, the camera keys are off (keyboard pan would otherwise move the hidden map; plan amendment A4).
+            if (startScreen && newGame != null)
+            {
+                var cam = cameraController;
+                start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }));
+                start.Show();
+            }
             root.Q("root")?.RemoveFromClassList("loading");                // ready: the bar, panels and screens may show (P2-1)
             DiagLog.BootPhase("screens ready");
 
@@ -213,7 +253,7 @@ namespace Statecraft.Game.UI
             }
             if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
             // The unit art slice at gameplay03 (a showcase, never in normal play; war mode's units are issue #104). Before the
-            // instruments, so the frame profile lists its "units" toggle (the profile reads the toggles when it starts).
+            // instruments, so the frame profile lists its "unitshowcase" toggle (the profile reads the toggles when it starts).
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
@@ -227,13 +267,31 @@ namespace Statecraft.Game.UI
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }
 
+        /// <summary>A map click: on a unit's hex it selects the unit (the ring and its card; the hex outline is cleared, so
+        /// the unit has the promo's one highlight); a second click on it, or a click anywhere else, shows the hex (so a token
+        /// never hides the hex's map actions).</summary>
+        internal static void OnHexClicked(MapScene map, Statecraft.Game.Map.Units.UnitLayer units, InfoPanelPresenter info, int q, int r)
+        {
+            if (info.Covered)
+            {
+                // A screen covers the panel: the click moves neither the ring nor the card (#210), and MapPointer's outline
+                // goes back to the hex the panel shows (or away, while it shows a unit).
+                if (info.Selected is (int sq, int sr) && !info.ShowsUnit) map.Select(sq, sr); else map.ClearSelection();
+                return;
+            }
+            var id = units.UnitToSelectAt(q, r);
+            units.Select(id);
+            if (id != null) { map.ClearSelection(); info.ShowUnit(); }
+            else info.Show(q, r);
+        }
+
         /// <summary>Disposes every presenter, the autosave and the camera/pointer hooks (newest first). Safe to call twice.</summary>
         void Shutdown()
         {
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; nav = null; rig = null; drawn = null; logCamera = false;
+            minimap = null; labels = null; nav = null; start = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -276,8 +334,9 @@ namespace Statecraft.Game.UI
         void Update()
         {
             // Escape closes the open screen even when no element has the keyboard focus (ScreenNav also takes the UI
-            // Cancel event from a focused element; closing twice is harmless).
-            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) nav?.Close();
+            // Cancel event from a focused element; closing twice is harmless). On the start screen it withdraws an open New
+            // Game request (StartScreenPresenter.Escape; idempotent too).
+            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { start?.Escape(); nav?.Close(); }
             SyncMinimap();
             if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
             loggedDistance = rig.Distance; loggedYaw = rig.Yaw;
