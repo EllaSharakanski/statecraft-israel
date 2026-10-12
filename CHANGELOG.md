@@ -13,6 +13,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
   runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
   Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
+- Rules per era (#58, first piece): an era can override `rules.yaml` keys in `content/rules/<era>.yaml` (only the keys it
+  changes; maps merge key by key, a list or a value replaces). The merged rules are read with the strict `Rules` type, so a
+  misspelt key or wrong type fails naming the era file and line, start values (`treasury_start`, `start_rung` and so on) are
+  refused, a file that names no era is refused, and `rules/` is in the player manifest. They are checked like `rules.yaml`. `Content.RulesAt(date)` returns the rules of
+  the era a date is in (built once at load); the founding era has no file, so its rules are `rules.yaml`. Nothing reads
+  `RulesAt` yet, so the goldens do not move.
 - Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
   dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
   reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
