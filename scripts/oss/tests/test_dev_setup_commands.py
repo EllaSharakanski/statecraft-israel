@@ -11,7 +11,8 @@ SPEC.loader.exec_module(m)
 def test_missing_script_is_reported_with_its_line(make_repo, capsys):
     root = make_repo({
         'docs/dev-setup.md': '# Setup\n| a | `uv run scripts/here.py [x]` | none |\n| b | `uv run scripts/gone.py` | none |\n'
-                             'plain scripts/not_in_backticks.py\n| c | `bash tools/run.sh` | none |\n',
+                             'plain scripts/not_in_backticks.py\n| c | `bash tools/run.sh` | none |\n'
+                             '| d | `uv run sim/tools/x.py` | `foo-scripts/a.py` |\n',  # inside a longer path: not reported
         'scripts/here.py': 'x\n',
     })
     assert m.missing(root) == [(3, 'scripts/gone.py'), (5, 'tools/run.sh')]
