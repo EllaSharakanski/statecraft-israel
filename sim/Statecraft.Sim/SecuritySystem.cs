@@ -6,8 +6,16 @@ namespace Statecraft.Sim
     /// <summary>The always-on escalation ladder: 1 routine, 2 wave, 3 limited operation, 4 prolonged conflict, 5 full war.</summary>
     public static class SecuritySystem
     {
+        /// <summary>The default `turn_lengths` table (rules without the key): quarter on rungs 1-3, month on 4, week on 5. The
+        /// game reads <see cref="TurnLengthFor(Content, DateTime, int)"/>; this stays for the Defence screen's legend until the
+        /// GDD cutover (spec 2026-10-12 section 3).</summary>
         public static TurnLength TurnLengthFor(int rung) =>
             rung >= 5 ? TurnLength.Week : rung == 4 ? TurnLength.Month : TurnLength.Quarter;
+
+        /// <summary>The length of a turn that starts on <paramref name="date"/> on <paramref name="rung"/>: rules `turn_lengths` of
+        /// the era the date is in (docs/determinism.md, "Rules per era"). R-TURN-001.</summary>
+        public static TurnLength TurnLengthFor(Content c, DateTime date, int rung) =>
+            SimTime.ParseLength(c.RulesAt(date).TurnLengths[ClampRung(rung) - 1]);
 
         static int Weeks(TurnLength len) => len == TurnLength.Week ? 1 : len == TurnLength.Month ? 4 : 13;
 

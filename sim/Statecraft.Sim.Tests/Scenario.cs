@@ -56,17 +56,23 @@ public sealed class Scenario
     static double Num(Dictionary<string, object> c, string key) =>
         double.TryParse(Str(c, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : throw new InvalidDataException($"command '{c["kind"]}': '{key}' must be a number");
 
-    static Command Build(Dictionary<string, object> c)
+    /// <summary>The command kinds a scenario can script, with their fields (CommandGuardTests checks every kind is here).</summary>
+    static readonly Dictionary<string, string[]> Allowed = new Dictionary<string, string[]>
+    {
+        ["set_policy"] = new[] { "policy", "level" }, ["allocate_budget"] = new[] { "shares" },
+        ["choose_event_option"] = new[] { "event", "option" }, ["set_mobilization"] = new[] { "level" },
+        ["security_order"] = new[] { "delta" }, ["appoint"] = new[] { "office", "person" },
+        ["map_action"] = new[] { "action", "q", "r" },
+    };
+
+    public static IReadOnlyCollection<string> Kinds => Allowed.Keys;
+    internal static IReadOnlyList<string> FieldsOf(string kind) => Allowed[kind];
+
+    internal static Command Build(Dictionary<string, object> c)
     {
         if (!c.ContainsKey("kind")) throw new InvalidDataException("a command needs 'kind'");
         var kind = Str(c, "kind");
-        var allowed = new Dictionary<string, string[]>
-        {
-            ["set_policy"] = new[] { "policy", "level" }, ["allocate_budget"] = new[] { "shares" },
-            ["choose_event_option"] = new[] { "event", "option" }, ["set_mobilization"] = new[] { "level" },
-            ["security_order"] = new[] { "delta" }, ["appoint"] = new[] { "office", "person" },
-            ["map_action"] = new[] { "action", "q", "r" },
-        };
+        var allowed = Allowed;
         if (!allowed.TryGetValue(kind, out var keys)) throw new InvalidDataException($"unknown command kind '{kind}' (known: {string.Join(", ", allowed.Keys)})");
         var extra = c.Keys.Where(k => k != "kind" && !keys.Contains(k)).ToList();
         if (extra.Count > 0) throw new InvalidDataException($"command '{kind}' has unknown field '{extra[0]}'");
@@ -78,10 +84,19 @@ public sealed class Scenario
                 return new AllocateBudget(map.ToDictionary(kv => Convert.ToString(kv.Key, CultureInfo.InvariantCulture)!, kv => double.Parse(Convert.ToString(kv.Value, CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture)));
             case "choose_event_option": return new ChooseEventOption(Str(c, "event"), Str(c, "option"));
             case "set_mobilization": return new SetMobilization(Num(c, "level"));
-            case "security_order": return new SecurityOrder((int)Num(c, "delta"));
+            case "security_order": return new SecurityOrder(Whole(c, "delta"));
             case "appoint": return new Appoint(Str(c, "office"), Str(c, "person"));
-            default: return new MapAction(Str(c, "action"), (int)Num(c, "q"), (int)Num(c, "r"));
+            case "map_action": return new MapAction(Str(c, "action"), Whole(c, "q"), Whole(c, "r"));
+            default: throw new InvalidDataException($"command kind '{kind}' has no builder");
         }
+    }
+
+    /// <summary>A whole number: 1.5 is refused instead of silently becoming 1.</summary>
+    static int Whole(Dictionary<string, object> c, string key)
+    {
+        var v = Num(c, key);
+        if (v != Math.Floor(v)) throw new InvalidDataException($"'{key}' must be a whole number, got {v.ToString(CultureInfo.InvariantCulture)}");
+        return (int)v;
     }
 
     /// <summary>Plays the scenario and returns the final state. Fails with the date, the order and the sim's reason when a command is rejected.</summary>

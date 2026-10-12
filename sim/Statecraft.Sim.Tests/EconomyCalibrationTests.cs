@@ -116,7 +116,7 @@ public class EconomyCalibrationTests
         {
             var (a, b) = (History[i - 1], History[i]);
             if (a.Date < new DateTime(1950, 1, 1) || a.Date >= new DateTime(1952, 1, 1)) continue;
-            var yf = SimTime.YearFraction(SecuritySystem.TurnLengthFor(a.Rung));
+            var yf = SimTime.YearFraction(SecuritySystem.TurnLengthFor(C, a.Date, a.Rung));
             var trade = C.Rules.ExportsPerYear * yf - C.Rules.ImportsPerCapitaPerYear * a.TotalPopulation * yf;
             inflow += (b.FxReserves - a.FxReserves) - trade;     // everything that reached the reserves except trade
         }

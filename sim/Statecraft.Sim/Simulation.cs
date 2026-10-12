@@ -52,7 +52,7 @@ namespace Statecraft.Sim
             }
             EventSystem.Delegate(c, s, why);
 
-            var len = SecuritySystem.TurnLengthFor(s.Rung);
+            var len = SecuritySystem.TurnLengthFor(c, s.Date, s.Rung);
             // The next era's start, or the last era's end, is a boundary: the turn that reaches it ends on it, with that turn's real days (spec 4.1, 4.5).
             var end = c.Eras[c.Eras.Count - 1].To;
             var boundary = c.Eras.Select(e => e.From).Where(f => f > s.Date).DefaultIfEmpty(end).Min();

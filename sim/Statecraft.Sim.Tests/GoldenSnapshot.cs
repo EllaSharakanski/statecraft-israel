@@ -36,6 +36,9 @@ public static class GoldenSnapshot
         Assert.Fail(sb.ToString());
     }
 
+    /// <summary>The committed snapshot of <paramref name="name"/>, with CRLF read as LF.</summary>
+    public static string Read(string name) => File.ReadAllText(Path_(name)).Replace("\r\n", "\n");
+
     /// <summary>Changed lines between two descriptions, grouped by section (see <see cref="StateDiff"/>).</summary>
     public static string Diff(string before, string after) => StateDiff.Lines(before, after);
 }
