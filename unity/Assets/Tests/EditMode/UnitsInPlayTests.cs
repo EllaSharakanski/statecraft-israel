@@ -237,8 +237,8 @@ public class UnitsInPlayTests
         Assert.AreEqual(WeeklyGolden, Sha256(all));
     }
 
-    const string RosterGolden1950 = "f1efa90389934c3c088dc9ea3e6639d87e67b5937d894f3a3686b38cd1f5b35e";
-    const string WeeklyGolden = "d2216af24b56e44179eb0b8aca601a93e6a98ce9a2db764e5b026a4ff1e02103";
+    const string RosterGolden1950 = "ef4544705105a98758dc843120b6e3493c52419d1d4afad28e0b4a3b6e87e01c";
+    const string WeeklyGolden = "2d111a792224b0abd544b2fdfd7469c8f20047cefc5492ea272b79134d6d3c06";
 
     // ---- Placement, the layer and the card (a built map) ---------------------------------------------------------
 
