@@ -87,6 +87,7 @@ namespace Statecraft.Game.Map.Kits
             public string? DraftId { get; set; } public string? Note { get; set; }
             public string Checked { get; set; } = ""; public string Status { get; set; } = "";
             public List<SourceRow> Sources { get; set; } = new List<SourceRow>();
+            public int Line;
         }
 
         sealed class AreaRow
@@ -95,6 +96,7 @@ namespace Statecraft.Game.Map.Kits
             public List<string> ListedAs { get; set; } = new List<string>(); public string? Note { get; set; }
             public string Checked { get; set; } = ""; public string Status { get; set; } = "";
             public List<SourceRow> Sources { get; set; } = new List<SourceRow>();
+            public int Line;
         }
 
         sealed class FileRow
@@ -124,13 +126,13 @@ namespace Statecraft.Game.Map.Kits
         {
             FileRow f;
             try { f = Read(yaml, file); }
-            catch (YamlException e) { throw new InvalidDataException($"{file}: {e.Message}", e); }
+            catch (YamlException e) { throw new InvalidDataException($"{file}:{e.Start.Line}: {e.Message}", e); }
             if (f?.Places == null || f.Places.Count == 0) throw new InvalidDataException($"{file}: no places");
             var doc = new Doc(); var ids = new HashSet<string>();
             foreach (var p in f.Places)
             {
-                if (p == null || string.IsNullOrWhiteSpace(p.Id)) throw new InvalidDataException($"{file}: a place has an empty id");
-                string at = $"{file}: '{p.Id}'";
+                if (p == null || string.IsNullOrWhiteSpace(p.Id)) throw new InvalidDataException($"{file}:{p?.Line}: a place has an empty id");
+                string at = $"{file}:{p.Line}: '{p.Id}'";
                 if (!IdRule.IsMatch(p.Id)) throw new InvalidDataException($"{at} id must be lower snake_case");
                 if (!ids.Add(p.Id)) throw new InvalidDataException($"{at} duplicate id");
                 if (reserved.Contains(p.Id)) throw new InvalidDataException($"{at} is a game settlement's id (settlements_1948.yaml keeps those)");
@@ -153,8 +155,8 @@ namespace Statecraft.Game.Map.Kits
             var subs = new HashSet<string>();
             foreach (var a in f.Encampments ?? new List<AreaRow>())
             {
-                if (a == null || string.IsNullOrWhiteSpace(a.Subdistrict)) throw new InvalidDataException($"{file}: an encampment row has no subdistrict");
-                string at = $"{file}: encampments '{a.Subdistrict}'";
+                if (a == null || string.IsNullOrWhiteSpace(a.Subdistrict)) throw new InvalidDataException($"{file}:{a?.Line}: an encampment row has no subdistrict");
+                string at = $"{file}:{a.Line}: encampments '{a.Subdistrict}'";
                 if (!subs.Add(a.Subdistrict)) throw new InvalidDataException($"{at} duplicate subdistrict");
                 if (a.Population < 1) throw new InvalidDataException($"{at} population {a.Population} is not a count of people");
                 CheckSourced(at, a.Status, a.Checked, a.Sources);
@@ -182,13 +184,13 @@ namespace Statecraft.Game.Map.Kits
             parser.Consume<StreamStart>();
             if (parser.Accept<StreamEnd>(out _)) return new FileRow();
             parser.Consume<DocumentStart>();
-            var root = Node(parser) as Dictionary<string, object?> ?? throw new InvalidDataException($"{file}: not a mapping");
+            var root = Node(parser) as YMap ?? throw new InvalidDataException($"{file}: not a mapping");
             Keys(root, FileKeys, file);
             var f = new FileRow { Status = Str(root, "status") };
-            foreach (var o in List(root, "places"))
+            foreach (var o in List(root, "places", file))
             {
                 var m = Map(o, $"{file}: a place");
-                string at = $"{file}: '{Str(m, "id")}'";
+                string at = $"{file}:{m.Line}: '{Str(m, "id")}'";
                 Keys(m, PlaceKeys, at);
                 var t = m.TryGetValue("today", out var tv) && tv != null ? Map(tv, at + " today") : null;
                 if (t != null) Keys(t, TodayKeys, at + " today");
@@ -197,24 +199,30 @@ namespace Statecraft.Game.Map.Kits
                     Id = Str(m, "id"), Name = Str(m, "name"), Kind = Str(m, "kind"), Type = Str(m, "type"), Landmark = Str(m, "landmark"),
                     Lon = Num(m, "lon", at), Lat = Num(m, "lat", at), Population = (int)Num(m, "population", at, -1),
                     Today = t == null ? null : new TodayRow { Name = Str(t, "name"), NameHe = Str(t, "name_he"), Source = Str(t, "source") },
-                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at),
+                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at), Line = m.Line,
                 });
             }
-            foreach (var o in List(root, "encampments"))
+            foreach (var o in List(root, "encampments", file))
             {
                 var m = Map(o, $"{file}: an encampment row");
-                string at = $"{file}: encampments '{Str(m, "subdistrict")}'";
+                string at = $"{file}:{m.Line}: encampments '{Str(m, "subdistrict")}'";
                 Keys(m, AreaKeys, at);
                 f.Encampments.Add(new AreaRow
                 {
                     Subdistrict = Str(m, "subdistrict"), Population = (int)Num(m, "population", at, -1),
-                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at),
+                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at), Line = m.Line,
                 });
             }
             return f;
         }
 
-        /// <summary>A node as a tree: a scalar's string (null for "null" or "~" or empty), a list, or a key-ordered map.</summary>
+        /// <summary>A mapping node, with the line it starts on and the line of each key (for the error messages).</summary>
+        sealed class YMap : Dictionary<string, object?>
+        {
+            public int Line; public readonly Dictionary<string, int> KeyLine = new Dictionary<string, int>();
+        }
+
+        /// <summary>A node as a tree: a scalar's string (null for "null" or "~" or empty), a list, or a <see cref="YMap"/>.</summary>
         static object? Node(IParser p)
         {
             if (p.TryConsume<Scalar>(out var sc))
@@ -227,44 +235,47 @@ namespace Statecraft.Game.Map.Kits
             }
             if (p.TryConsume<MappingStart>(out var ms))
             {
-                var map = new Dictionary<string, object?>();
+                var map = new YMap { Line = (int)ms.Start.Line };
                 while (!p.TryConsume<MappingEnd>(out _))
                 {
                     var key = p.Consume<Scalar>();
                     if (map.ContainsKey(key.Value)) throw new YamlException(key.Start, key.End, $"duplicate key '{key.Value}'");
+                    map.KeyLine[key.Value] = (int)key.Start.Line;
                     map[key.Value] = Node(p);
                 }
                 return map;
             }
-            throw new YamlException("anchors and aliases are not supported here");
+            var ev = p.Current;
+            if (ev != null) throw new YamlException(ev.Start, ev.End, "anchors and aliases are not supported here");
+            throw new YamlException("unexpected end of the file");
         }
 
-        static void Keys(Dictionary<string, object?> m, HashSet<string> allowed, string at)
+        static void Keys(YMap m, HashSet<string> allowed, string at)
         {
-            foreach (var k in m.Keys) if (!allowed.Contains(k)) throw new InvalidDataException($"{at} has unknown key '{k}'");
+            foreach (var k in m.Keys) if (!allowed.Contains(k)) throw new InvalidDataException($"{at} has unknown key '{k}' (line {m.KeyLine[k]})");
         }
 
-        static Dictionary<string, object?> Map(object? o, string at) =>
-            o as Dictionary<string, object?> ?? throw new InvalidDataException($"{at} is not a mapping");
+        static YMap Map(object? o, string at) => o as YMap ?? throw new InvalidDataException($"{at} is not a mapping");
 
-        static List<object?> List(Dictionary<string, object?> m, string key) =>
-            m.TryGetValue(key, out var v) && v != null ? v as List<object?> ?? throw new InvalidDataException($"'{key}' is not a list") : new List<object?>();
+        static List<object?> List(YMap m, string key, string at) =>
+            m.TryGetValue(key, out var v) && v != null
+                ? v as List<object?> ?? throw new InvalidDataException($"{at} '{key}' is not a list (line {m.KeyLine[key]})") : new List<object?>();
 
-        static string Str(Dictionary<string, object?> m, string key) => m.TryGetValue(key, out var v) && v is string s ? s : "";
+        static string Str(YMap m, string key) => m.TryGetValue(key, out var v) && v is string s ? s : "";
 
-        static double Num(Dictionary<string, object?> m, string key, string at, double missing = double.NaN)
+        static double Num(YMap m, string key, string at, double missing = double.NaN)
         {
             if (!m.TryGetValue(key, out var v) || v == null) return missing;
             if (v is string s && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d)) return d;
-            throw new InvalidDataException($"{at} {key} is not a number");
+            throw new InvalidDataException($"{at} {key} is not a number (line {m.KeyLine[key]})");
         }
 
         /// <summary>A row's sources: a list of URLs, all read on the row's checked date (the file's header says what each
         /// host is the source of).</summary>
-        static List<SourceRow> Sources(Dictionary<string, object?> m, string at)
+        static List<SourceRow> Sources(YMap m, string at)
         {
             var list = new List<SourceRow>();
-            foreach (var o in List(m, "sources"))
+            foreach (var o in List(m, "sources", at))
                 list.Add(new SourceRow { Url = o as string ?? throw new InvalidDataException($"{at} a source is not a URL"), Checked = Str(m, "checked") });
             return list;
         }

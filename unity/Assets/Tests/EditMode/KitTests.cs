@@ -339,6 +339,24 @@ public class KitTests
         Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 0\n" + src, "population");
         Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  name: Camp\n" + src, "name");
         Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  hexes: [[1, 2]]\n" + src, "hexes");
+        // Malformed YAML (the event reader, review I6): each error names the file and the line.
+        Bad("places:\n" + Place("a").Replace("name: X", "name: \"X"), "loc.yaml:3: ");                 // an unclosed quote (from its line)
+        Bad("places:\n" + Place("a").Replace("name: X", "name: X\n  name: Y"), "duplicate key 'name'");
+        Bad("places:\n" + Place("a").Replace("name: X", "name: X\n  name: Y"), "loc.yaml:4: ");
+        Bad("places:\n" + Place("a").Replace("lon: 35.0", "lon: 35,0"), "lon is not a number (line 4)");
+        Bad("places:\n" + Place("a", "  fate: x\n"), "line 9");
+        Bad("places:\n" + Place("a").Replace("population: 1200", "population: 0"), "loc.yaml:2: 'a'");
+        Bad("places:\n" + Place("a").Replace("name: X", "name: &n X\n  name_he: *n"), "loc.yaml:4: anchors and aliases");
+        Bad("places: x\n", "'places' is not a list (line 1)");
+        Bad("places:\n" + Place("a").Replace("  sources:\n  - https://example.org/x", "  sources: https://example.org/x"), "'sources' is not a list");
+        // Quoting, escapes and Hebrew read as YAML says: a quoted "null" is a name, "\u05D0" is aleph.
+        var ok = Localities.Parse("places:\n" + Place("a").Replace("name: X", "name: \"null\"")
+            .Replace("type: village", "type: village\n  today: {name: 'Bet \\u05D0', name_he: \"\\u05D0'\", source: 'https://x.org/it''s'}")
+            .Replace("lon: 35.0", "lon: '35.0'"), b, reserved, "loc.yaml").Places[0];
+        Assert.AreEqual("null", ok.Settlement.Name);
+        Assert.AreEqual("Bet \\u05D0", ok.Today, "single quotes keep a backslash");
+        Assert.AreEqual("\u05D0'", ok.TodayHe, "double quotes read the escape");
+        Assert.AreEqual(35.0, ok.Settlement.Lon);
     }
 
     /// <summary>Review M6: switching the kits off shows the marker boxes again, so a settlement is never left undrawn.</summary>
