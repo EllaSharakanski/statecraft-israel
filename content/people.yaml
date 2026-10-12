@@ -393,7 +393,7 @@ people:
     offices:
       - { office: trade_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       # Split at the General Zionists' resignation (25 May 1953) and return (3 June 1953); see Ben-Gurion. Issue #314.
-      - { office: trade_minister, from: 1952-12-24, to: 1953-05-25, sources: &gov4_gz [*gov4_k, *gz_resign, *gz_return] }
+      - { office: trade_minister, from: 1952-12-24, to: 1953-05-25, sources: &gov4_gz [*gov4_k, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_הרביעית", checked: 2026-10-12 }, { url: "https://en.wikipedia.org/wiki/Fourth_government_of_Israel", checked: 2026-10-12 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250689.pdf", checked: 2026-10-12 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250350.pdf", checked: 2026-10-12 }, *gz_resign, *gz_return] }
       - { office: trade_minister, from: 1953-06-03, to: 1954-01-26, sources: *gov4_gz }
       - { office: trade_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
       # Responsibility for rationing stayed with Trade and Industry when the Fourth Government took office: the Knesset
