@@ -1562,10 +1562,13 @@ Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id 
   | diorama02, none | 12.62 [12.27-12.66] | 7.97 [7.89-8.12] |
   | diorama02, all | 17.97 [17.63-19.29] | 11.51 [11.18-11.91] |
 
-- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`): `map_build_ms` median 2384 -> 2520 ms (budget 2720), `first_frame_ms`
-  7690 -> 7769 ms. The water mesh is 86 ms of it (`terrain water`; 22 ms unthrottled). The rest, about 50 ms, shows in
-  `terrain heights set` (Unity's own `TerrainData.SetHeights`), only under CPU throttling and even without the water mesh;
-  its cause is not found.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, after merging main 2ca920b): `map_build_ms` median main 2559 / 2501
+  ms against the fix 2596 / 2598 ms in two rounds (main first, then last), budget 2720. The water mesh is 86-87 ms of it
+  (`terrain water`; 22 ms unthrottled); the rest is run-to-run spread. Before the merge (base c2089b4) `terrain heights
+  set` (Unity's `TerrainData.SetHeights`) also measured about 50-90 ms slower in the fix, under CPU throttling only. On
+  the merged result it does not reproduce: main 1324-1377 ms, the fix 1319-1396 ms, and main plus each part of the fix
+  alone (Terrain.mat's queue and MapMaterials; the three shaders; the C# of MapBorders, MapBuilder and MapScene)
+  1318-1345 ms. No part of the fix carries it; it went with the base.
 - **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
   hitch.
 - **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); building
