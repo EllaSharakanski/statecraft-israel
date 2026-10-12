@@ -23,7 +23,7 @@ namespace Statecraft.Sim
         /// <summary>Day the office was abolished (exclusive end, like a term's `to`); null while it still exists.</summary>
         public DateTime? Until { get; set; }
         /// <summary>Id of the office that takes over when this one is abolished (chapters spec 3.2). Empty means none.
-        /// Read and validated by the loader; used when an era boundary is crossed (#58).</summary>
+        /// Read and validated by the loader; used when an era boundary is crossed (#59).</summary>
         public string Successor { get; set; } = "";
         /// <summary>True when the office exists on <paramref name="date"/>: on or after From and before Until.</summary>
         public bool ExistsOn(DateTime date) => (!From.HasValue || date >= From.Value) && (!Until.HasValue || date < Until.Value);

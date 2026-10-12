@@ -22,11 +22,25 @@ public class OfficeSuccessorTests
         Assert.Equal("", c.Offices.Single(o => o.Id == "new_office").Successor);
     }
 
-    [Fact] public void AnUnknownSuccessorIsRefused() => Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: ghost\n", "unknown office 'ghost'");
+    [Fact] public void AnUnknownSuccessorIsRefused() => Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: ghost\n", "offices.yaml: offices[o].successor: unknown office 'ghost'");
     [Fact] public void AnOfficeCannotSucceedItself() => Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: o\n", "cannot succeed itself");
     [Fact] public void ASuccessorNeedsUntil() => Refused("  - id: o\n    title: O\n    successor: finance_minister\n", "needs until");
     [Fact] public void ASuccessorEstablishedAfterTheHandoverIsRefused() =>
         Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: n\n  - id: n\n    title: N\n    from: 1951-01-01\n", "after o is abolished");
     [Fact] public void ASuccessorAbolishedBeforeTheHandoverIsRefused() =>
         Refused("  - id: o\n    title: O\n    until: 1951-01-01\n    successor: n\n  - id: n\n    title: N\n    until: 1950-01-01\n", "before it can take over");
+
+    // The handover day is the old office's `until` (exclusive): the successor may start on it and must still exist on it.
+    [Fact] public void ASuccessorEstablishedOnTheHandoverDayIsAccepted() =>
+        Assert.Equal("n", Load("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: n\n  - id: n\n    title: N\n    from: 1950-01-01\n").Offices.Single(x => x.Id == "o").Successor);
+    [Fact] public void ASuccessorAbolishedOnTheHandoverDayIsRefused() =>
+        Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: n\n  - id: n\n    title: N\n    until: 1950-01-01\n", "before it can take over");
+
+    // Spec 4.2: budget lines and policies pass to the successor, so it must be able to own them.
+    [Fact] public void ASuccessorWithSeveralHoldersIsRefused() =>
+        Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: n\n  - id: n\n    title: N\n    several_holders: true\n", "cannot take over budget lines");
+    [Fact] public void AHistoricalOnlySuccessorIsRefused() =>
+        Refused("  - id: o\n    title: O\n    until: 1950-01-01\n    successor: n\n  - id: n\n    title: N\n    historical_only: true\n", "is a historical title");
+    [Fact] public void AHistoricalTitleMayPassToAnother() =>
+        Assert.Equal("n", Load("  - id: o\n    title: O\n    until: 1950-01-01\n    historical_only: true\n    successor: n\n  - id: n\n    title: N\n    historical_only: true\n").Offices.Single(x => x.Id == "o").Successor);
 }

@@ -603,6 +603,12 @@ namespace Statecraft.Sim
                 if (next == null) throw new ContentException("offices.yaml", at, $"unknown office '{o.Successor}'");
                 if (next == o) throw new ContentException("offices.yaml", at, "an office cannot succeed itself");
                 if (!o.Until.HasValue) throw new ContentException("offices.yaml", at, "needs until: only an abolished office has a successor");
+                // The successor takes over the old office's budget lines and policies (chapters spec 4.2, #59), so it must be able
+                // to own whatever the old office could.
+                if (next.SeveralHolders && !o.SeveralHolders)
+                    throw new ContentException("offices.yaml", at, $"office '{next.Id}' has several holders, so it cannot take over budget lines and policies");
+                if (next.HistoricalOnly && !o.HistoricalOnly)
+                    throw new ContentException("offices.yaml", at, $"office '{next.Id}' is a historical title, so it cannot take over budget lines and policies");
                 if (next.From.HasValue && next.From.Value > o.Until.Value)
                     throw new ContentException("offices.yaml", at, FormattableString.Invariant($"office '{next.Id}' is established on {next.From:yyyy-MM-dd}, after {o.Id} is abolished ({o.Until:yyyy-MM-dd})"));
                 if (next.Until.HasValue && next.Until.Value <= o.Until.Value)
