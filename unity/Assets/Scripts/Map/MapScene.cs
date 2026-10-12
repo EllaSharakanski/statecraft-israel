@@ -31,6 +31,11 @@ namespace Statecraft.Game.Map
         public const string SelectionName = "HexSelection";
         /// <summary>The land and sea past the map's edge: a child of the terrain (so a rebuild destroys it).</summary>
         public const string BorderSkirtName = "BorderSkirt";
+        /// <summary>The water inside the map: a mesh over the water and its shore, a child of the terrain (issue #195).</summary>
+        public const string TerrainWaterName = "TerrainWater";
+        /// <summary>The terrain water's render queue: after the terrain (Terrain.mat, one queue earlier: MapMaterials) and
+        /// before every other opaque, so boats, harbours and units drawn on the water cover it despite its depth pull.</summary>
+        public const int TerrainWaterQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry - 1;
         /// <summary>Highlight colour of the selected hex, to read against every biome; MapMaterials bakes it into the
         /// editor-made HexSelection.mat. Warm ivory since the visual v1 merge point: the earlier gold (1, 0.84, 0.38) shares
         /// the hue of the terrain shader's dry-grass coastal plain (MapPalette), so at gameplay03 it stood out from the land
@@ -165,6 +170,8 @@ namespace Statecraft.Game.Map
             var size = Terrain.terrainData.size;
             AddBorderSkirt(terrainGo, meta.elev_min_m);
             DiagLog.BootPhase("border skirt");
+            AddTerrainWater(terrainGo, heights, meta.elev_min_m);
+            DiagLog.BootPhase("terrain water");
             Frame = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, size.x, size.z);
             var markers = SettlementPlacer.Place(list, Frame, Terrain, markerMaterial);
             markers.transform.SetParent(transform, true);
@@ -220,6 +227,32 @@ namespace Statecraft.Game.Map
                 MapBuilder.BuildBorderSkirt(Terrain.terrainData, elevMinM, terrainGo.GetComponent<MapRuntimeAssets>());
             var renderer = skirt.AddComponent<MeshRenderer>();
             renderer.sharedMaterials = new[] { seaMaterial, borderLandMaterial };
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        /// <summary>The water inside the map (issue #195): MapBuilder.BuildWaterMesh's copy of the terrain's surface over the
+        /// water and its shore, drawn with a copy of Sea.mat in its terrain-water mode (Sea.shader _ScTerrainWater), which
+        /// adds the water's colour times its coverage on top of the terrain graph (black there) and discards the land. Drawn
+        /// right after the terrain, before the other opaques (TerrainWaterQueue); no depth write, no shadow, no collider
+        /// (clicks still pick only the terrain). The water's shading thus stays out of the terrain's fragment shader, whose
+        /// size it had pushed past a WebGL cost cliff (about 3 ms a frame at gameplay03, even with the water toggled
+        /// off).</summary>
+        void AddTerrainWater(GameObject terrainGo, float[,] heights, float elevMinM)
+        {
+            var assets = terrainGo.GetComponent<MapRuntimeAssets>();
+            var material = assets.Own(new Material(seaMaterial) { name = TerrainWaterName });
+            material.SetFloat("_ScTerrainWater", 1f);
+            material.SetFloat("_ScSrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_ScDstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_ScZWrite", 0f);
+            material.SetShaderPassEnabled("DepthOnly", false);
+            material.SetShaderPassEnabled("DepthNormals", false);
+            material.renderQueue = TerrainWaterQueue;
+            var go = new GameObject(TerrainWaterName);
+            go.transform.SetParent(terrainGo.transform, false);
+            go.AddComponent<MeshFilter>().sharedMesh = MapBuilder.BuildWaterMesh(Terrain.terrainData, heights, elevMinM, assets);
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 

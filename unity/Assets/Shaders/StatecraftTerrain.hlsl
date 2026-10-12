@@ -17,9 +17,6 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     bake.r = SAMPLE_TEXTURE2D(Ao.tex, Ao.samplerstate, UV).r;
     float coast = SAMPLE_TEXTURE2D(Coast.tex, Coast.samplerstate, UV).r;
     float2 mapM = UV * _ScMap.xy;
-    // The pixel's footprint (m), for the water's chop and breakers, taken here in uniform
-    // control flow (derivatives are undefined inside the water branch).
-    float footprintM = max(length(ddx(mapM)), length(ddy(mapM)));
     // ScGround with the land use (StatecraftLand.hlsl) laid between its colour and its shading: curvature, AO and breakup
     // shade the fields too. The "land" toggle lerps it away (it does not skip the sample: a visual switch, not a price).
     float4 land = SAMPLE_TEXTURE2D(Land.tex, Land.samplerstate, UV);
@@ -29,27 +26,23 @@ void StatecraftTerrain_float(float2 UV, float3 PositionWS, float3 NormalWS, Unit
     float h = _ScHaze.a * ScHazeAmount(PositionWS);                 // land haze, applied after lighting via Emission
     float ao = bake.r * lerp(0.6, 1.0, bake.b);
     float water = ScWater(coast);
-    // Water: ScWaterShade's colour (sunlit with its shadows, then the cool water haze) as emission on a black, fully metallic,
-    // fully occluded surface, so Lit adds nothing (no diffuse, specular colour 0, indirect light times occlusion 0): exactly
-    // what Sea.shader returns past the edge. Land keeps its after-lighting haze through the same Emission.
+    // Water: a black, fully metallic, fully occluded surface with no emission, so Lit outputs 0 there; the water's colour
+    // (ScWaterShade, sunlit with its shadows, then the water haze) is added on top, times the same coverage, by the terrain
+    // water (Sea.shader's _ScTerrainWater, MapScene.TerrainWaterName): the sum is what this function drew before issue
+    // #195. Kept out of here because its size, not its arithmetic, cost about 3 ms a frame at gameplay03 in WebGL even with
+    // the water off (perf-investigation). Land keeps its after-lighting haze through Emission.
     float elevM = (PositionWS.y - _ScMap.z) / _ScMap.w;
-    // Land pixels (water 0, spatially coherent) skip the water shading: its noise and second shadow lookup would only be
-    // multiplied away (Task 7 fix round 1, M3).
-    float2 breakers = ScBreakers(coast, mapM);
-    float3 waterColour = 0;
-    [branch] if (water > 0.0) waterColour = ScHazeWater(ScWaterShade(coast, elevM, PositionWS, mapM, footprintM, breakers), PositionWS);
     ground = ScShore(ground, coast, elevM, n, mapM);   // the beach and the Dead Sea's salt flats (promo-sea)
-    // The hex grid (visual v1 Task 8), light and faint on land and water, thinner towards the overview: the same lines as
-    // Sea.shader past the edge. Computed outside the branch: its fwidth needs uniform control flow.
+    // The hex grid (visual v1 Task 8), light and faint on land, thinner towards the overview: the same lines as Sea.shader
+    // draws on the water. Computed in uniform control flow: its fwidth needs it.
     float gridLine = ScGridAmount(mapM, PositionWS);
     ground = lerp(ground, SRGBToLinear(ScGridLandSrgb), gridLine * _ScGrid.x);
-    waterColour = lerp(waterColour, SRGBToLinear(ScGridWaterSrgb), gridLine * _ScGrid.y);
     BaseColor = ground * (1.0 - h) * (1.0 - water);
     NormalOut = normalize(lerp(n, float3(0, 1, 0), water));
     Occlusion = lerp(lerp(1.0, ao, 0.8), 0.0, water);
     Smoothness = 0.0;
     Metallic = water;
-    Emission = lerp(_ScHaze.rgb * h, waterColour, water);
+    Emission = _ScHaze.rgb * h * (1.0 - water);
     ScBorderApply(mapM, water, BaseColor, Emission);   // region borders (StatecraftBorders.hlsl), last: unlit, on land only
 }
 

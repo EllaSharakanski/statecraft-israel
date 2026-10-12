@@ -126,6 +126,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
+  into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
+  Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
+  in the browser, even with the water and the borders toggled off. The look is unchanged. Presentation only.
 - Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
   now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
   any town. With the "kits" visual toggle off, names keep clear of the marker boxes instead. Presentation only.
