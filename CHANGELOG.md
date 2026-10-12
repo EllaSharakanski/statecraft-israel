@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
+  elsewhere hides it, and a mouse still hovers as before. The info panel lists the selected hex's 1948 localities with
+  today's name where a living place carries on, by the same rule as the tooltip. Keyboard players reach the panel list
+  once a hex can be selected from the keyboard (#41) (refs #245).
 - Budget lines owned by office and date (`budget_owners` in `rules.yaml`, issue #108): the Immigration line (its id stays
   `prime_minister`) belongs to the Minister of Immigration until 7 October 1951 and to the Prime Minister from 8 October
   1951. A line scales effects through the owner of the day, and the Budget screen names that office. An office with
