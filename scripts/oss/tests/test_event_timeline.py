@@ -14,22 +14,35 @@ def repo(tmp_path):
         "eras:\n  - { id: a, from: 1948-05-15, to: 1950-01-01 }\n  - { id: b, from: 1950-01-01, to: 1957-01-01 }\n")
     (tmp_path / 'content/events/late.yaml').write_text("id: late\nfrom: 1951-01-01\nstatus: fact-checked\n")
     (tmp_path / 'content/events/early.yaml').write_text("id: early\nfrom: 1948-06-01\nto: 1948-07-01\ntags: [security]\nanchor: hard\n")
+    # named so that id order is not date order; this one starts on the era boundary, so it belongs to era b
+    (tmp_path / 'content/events/a_edge.yaml').write_text("id: a_edge\nfrom: 1950-01-01\nstatus: fact-checked\n")
     return tmp_path
 
 
 def test_sorted_with_era_open_window_and_default_status(tmp_path):
     rows = m.load(repo(tmp_path))
-    assert [r['id'] for r in rows] == ['early', 'late']
-    assert rows[0]['era'] == 'a' and rows[1]['era'] == 'b'
-    assert rows[1]['to'] == 'open' and rows[0]['status'] == 'draft' and rows[0]['anchor'] == 'hard'
+    assert [r['id'] for r in rows] == ['early', 'a_edge', 'late']
+    assert [r['era'] for r in rows] == ['a', 'b', 'b']
+    assert rows[2]['to'] == 'open' and rows[0]['status'] == 'draft' and rows[0]['anchor'] == 'hard'
     out = m.render(rows)
-    assert '[security]' in out and out.splitlines()[-1] == '2 events: 1 draft, 1 fact-checked'
+    assert '[security]' in out and out.splitlines()[-1] == '3 events: 1 draft, 2 fact-checked'
 
 
 def test_status_filter(tmp_path, capsys):
     assert m.main(['--root', str(repo(tmp_path)), '--status', 'draft']) == 0
     out = capsys.readouterr().out
     assert 'early' in out and 'late' not in out.split('\n')[0]
+    assert m.main(['--root', str(tmp_path), '--status', 'historian-reviewed']) == 0
+    assert capsys.readouterr().out.strip() == '0 events'
+
+
+def test_defaults_match_the_sim():
+    # a missing anchor or status must show as the sim reads it (GameEvent in Content.cs)
+    cs = (ROOT / 'sim/Statecraft.Sim/Content.cs').read_text()
+    game_event = cs[cs.index('class GameEvent'):]
+    game_event = game_event[:game_event.index('\n    }')]
+    assert f'Anchor {{ get; set; }} = "{m.DEFAULT_ANCHOR}";' in game_event
+    assert f'Status {{ get; set; }} = "{m.DEFAULT_STATUS}";' in game_event
 
 
 def test_real_content_every_event_lands_in_an_era():

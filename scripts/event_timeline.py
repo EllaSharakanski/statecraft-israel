@@ -14,6 +14,9 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+# The sim's defaults for a missing key (GameEvent in sim/Statecraft.Sim/Content.cs; a test keeps them equal).
+DEFAULT_ANCHOR = "soft"
+DEFAULT_STATUS = "draft"
 
 
 def load(root: Path) -> list[dict]:
@@ -22,10 +25,11 @@ def load(root: Path) -> list[dict]:
     for f in sorted((root / "content/events").glob("*.yaml")):
         e = yaml.safe_load(f.read_text(encoding="utf-8"))
         start = str(e["from"])
-        era = next((x["id"] for x in eras if str(x["from"]) <= start < str(x["to"])), "-")
+        era = next((x["id"] for x in eras
+                    if str(x["from"]) <= start and (not x.get("to") or start < str(x["to"]))), "-")
         rows.append({"from": start, "to": str(e["to"]) if e.get("to") else "open", "era": era,
-                     "anchor": e.get("anchor", "soft"), "status": e.get("status", "draft"), "id": e["id"],
-                     "tags": ",".join(e.get("tags") or [])})
+                     "anchor": e.get("anchor", DEFAULT_ANCHOR), "status": e.get("status", DEFAULT_STATUS),
+                     "id": e["id"], "tags": ",".join(e.get("tags") or [])})
     return sorted(rows, key=lambda r: (r["from"], r["id"]))
 
 
@@ -35,7 +39,8 @@ def render(rows: list[dict]) -> str:
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
-    lines.append(f"{len(rows)} events: " + ", ".join(f"{n} {s}" for s, n in sorted(counts.items())))
+    summary = ", ".join(f"{n} {s}" for s, n in sorted(counts.items()))
+    lines.append(f"{len(rows)} events: {summary}" if summary else "0 events")
     return "\n".join(lines)
 
 
