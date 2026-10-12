@@ -138,7 +138,18 @@ people:
     offices:
       - { office: finance_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: finance_minister, from: 1949-03-10, to: 1950-11-01, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
-      - { office: trade_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      # Trade and Industry from 22 March 1949, not 10 March: on 8 March 1949 the Prime Minister named Kaplan Minister of
+      # Finance only and said the unassigned portfolios would follow in the coming weeks or days; on 22 March he told the
+      # Knesset the government had decided that, for now, Kaplan would run Trade and Industry and Shapira Health (plenum
+      # 1_ptm_250087.pdf, p. 192). The Knesset position record also starts both terms on 22 March. Issue #310.
+      - office: trade_minister
+        from: 1949-03-22
+        to: 1950-11-01
+        sources: &first_22_march
+          - &gov1_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%201", checked: 2026-10-12 }
+          - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250087.pdf", checked: 2026-10-12 }
+          - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250177.pdf", checked: 2026-10-12 }
+          - &gov1_pdf { url: "https://main.knesset.gov.il/mk/government/documents/gov1.pdf", checked: 2026-10-12 }
       - { office: finance_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
       - office: finance_minister
         from: 1951-10-08
@@ -211,7 +222,8 @@ people:
     offices:
       - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: health_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      # Health from 22 March 1949, when the Prime Minister told the Knesset Shapira would run it (see Kaplan). Issue #310.
+      - { office: health_minister, from: 1949-03-22, to: 1950-11-01, party: united_religious_front, sources: *first_22_march }
       - { office: immigration_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
       - { office: interior_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
       # en.wiki lists all three portfolios in the Second Government; the he.wiki extract did not clearly show Interior
@@ -448,7 +460,7 @@ people:
       # the Prime Minister told the Knesset that Trade and Industry, Health, Agriculture and Minorities were not yet
       # assigned and that the whole government was answerable for them for now (gov1.pdf). The 1 June 1949 date in the
       # he.wiki First Government table is not in the Knesset records. Issue #225.
-      - { office: agriculture_minister, from: 1949-03-22, to: 1950-11-01, sources: [&gov1_pdf { url: "https://main.knesset.gov.il/mk/government/documents/gov1.pdf", checked: 2026-10-12 }, &gov1_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%201", checked: 2026-10-12 }] }
+      - { office: agriculture_minister, from: 1949-03-22, to: 1950-11-01, sources: [*gov1_pdf, *gov1_k] }
       # As Minister of Rationing and Supply: named in the First Government presented to the Knesset on 8 March 1949 and in
       # office from 10 March 1949 (Knesset gov1.pdf; he.wiki First Government table and "דב יוסף"). Rationing itself was
       # decided on 26 April 1949 (austerity event), the date en.wiki "Rationing and Supply Minister of Israel" and

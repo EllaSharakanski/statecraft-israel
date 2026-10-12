@@ -234,6 +234,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Eliezer Kaplan's Trade and Industry term and Haim-Moshe Shapira's Health term in the First Government start on 22
+  March 1949, not 10 March: on 22 March the Prime Minister told the Knesset the government had assigned them, and the
+  Knesset's position records give the same date. The goldens do not move (fixes #310).
 - The Unity idle test `PromoScreensTests.AnOpenScreenIsStillWhenIdle` no longer fails now and then (#242). It was not a
   font atlas and not a recurring layout. A batch-mode editor runs few frames, and now and then it tells
   `UIDocument` late that the test's GameObject exists. `UIDocument` then re-adds its root and the whole screen lays out
