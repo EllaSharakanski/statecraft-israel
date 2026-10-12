@@ -37,7 +37,8 @@ namespace Statecraft.Game.Map.Kits
         public static GameObject Build(IReadOnlyList<Settlement> settlements, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
             Terrain terrain, GeoFrame frame, HexFile hexes, float elevMinM,
             Material kitMaterial, Material treeMaterial, MapRuntimeAssets assets, GameObject markers, out Stats stats,
-            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null, Dictionary<string, Bounds[]>? columns = null)
+            IReadOnlyList<(List<Vector2> line, float halfWidth)>? corridors = null, Dictionary<string, Bounds[]>? columns = null,
+            IReadOnlyList<(Vector2 centre, float radius)>? tokens = null)
         {
             var st = stats = new Stats();
             var root = new GameObject(RootName);
@@ -46,6 +47,7 @@ namespace Statecraft.Game.Map.Kits
             // since the kits are not rebuilt when a dated route (the Burma Road) appears.
             if (corridors != null) foreach (var (line, half) in corridors) ground.AddCorridor(line, half);
             stats.CorridorSegments = ground.CorridorSegments;
+            if (tokens != null) ground.Tokens.AddRange(tokens);
             var clock = System.Diagnostics.Stopwatch.StartNew();
             var built = SettlementKits.Build(settlements, localities, camps, ground, columns);   // columns: the labels' kit footprints (issue #214)
             foreach (var l in built.Claimed) ground.Lots.Add((l.centre, l.radius));

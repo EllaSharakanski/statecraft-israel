@@ -1563,7 +1563,7 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
     then all houses, largest place first. The 25 game settlements keep their cells and their landmarks (tested); a
     village fills in around them.
   - Localities and camps are merged into one mesh per 30 km tile.
-- **Camps:** one per 1,000 of an area's total, rounded half up with no floor, so Nablus draws none: 65 camps, 177 tents.
+- **Camps:** one per 1,000 of an area's total, rounded half up with no floor, so Nablus draws none: 65 camps, 175 tents (after #250).
   - The areas are the sub-districts as `content/map/subdistrict_hexes_1948.yaml` draws them, read at load
     (`Localities.FillHexes`).
   - Each camp is placed at a seeded spot, dry, gentle, outside every town and off every route.
@@ -1572,18 +1572,25 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   after every game settlement with the same declutter rules.
   - Hovering one shows its tooltip, in the UI's language (`ui.lang`).
   - Touch and keyboard players have no route to the tooltip yet (#245).
-- **Merge note for units-in-play (review I5):** the units must keep off the villages and camps too.
-  - Build its `SettlementFootprints` from `MapScene.KitFootprints` (the towns', localities' and camps' footprints), not
-    from the 25 game settlements alone.
-  - Pass its unit clearings into the localities overload of `KitLayer.Build`, so that village houses and tents keep them
-    clear.
-  - Add a test that no token's ring overlaps a locality footprint.
-  - If the units are placed before the kits are built, the localities' discs are `Localities.Place.Settlement` at
-    `SettlementKits.FootprintRadiusM`. The camps exist only after the kit build.
-- **Grid readability** with the villages: 78% (69 of 89 edge midpoints) at gameplay03, against 84% before. The floor stays at 75%.
-  - The next data round (places under 1,000) will push this under the floor by construction.
-  - Plan for it now: gate small places by distance, as the labels are, or keep them out of the edge-midpoint hexes.
-    Don't lower the floor.
+- **Units in play (review I5, merged with #250):** the unit tokens keep off the villages and camps as they keep off the
+  game towns.
+  - The units are placed before the kits are built, since their clearings feed the kit build. So
+    `MapScene.SettlementFootprints`, which the units place against, holds the game settlements' and the localities' discs
+    (`SettlementKits.FootprintRadiusM`), the same discs the kit build claims.
+  - A token standing in a town or village gets a clearing. The kits take the clearings as corridors, so village houses,
+    tents and trees keep off them, as they do on main.
+  - The camps are placed after the units. They keep off every token outside the towns (`KitGround.Tokens`): a camp's
+    centre stays `SettlementKits.CampReach` house-scale metres plus the token's ring away from it.
+  - `UnitsInPlayTests.NoTokenStandsInAVillageOrACamp` builds the map with the kits on. It checks that every token outside
+    a town has its ring clear of every `MapScene.KitFootprints` entry (towns, localities, camps), and that every token in
+    one has its clearing.
+- **Grid readability** with the villages: 79% (70 of 89 edge midpoints) at gameplay03, against 84% before. The floor stays at 75%.
+  - Merging #250 made the units keep off the villages and the camps keep off the units. The camps and village houses
+    moved, and the share fell to 72%, under the floor.
+  - The fix is the plan from review M10. A 1948 locality's houses and a camp's tents keep off the edge midpoints of the
+    hex they stand in (`KitGround.OnGridMark`). This costs one locality building (1,330) and a few tents (175).
+  - The game settlements are unchanged.
+  - The next data round (places under 1,000) gets the same rule. Don't lower the floor.
 - **Bands** stay legible through the villages: `BorderTests.TheBandsStillReadThroughTheVillages` reads the bands with the
   kits and trees on (18 of 18 walks at gameplay03 and Tulkarm). The other border tests measure the bands with the kits
   and trees off.

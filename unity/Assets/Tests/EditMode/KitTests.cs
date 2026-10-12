@@ -482,7 +482,8 @@ public class KitTests
     /// than 3/255 (HexGridTests' threshold). With kits and trees on, at least <see cref="GridReadableShare"/> of the
     /// midpoints whose line shows on bare ground must still show it (the rest are covered by a building or a crown).</summary>
     /// <remarks>Measured 84% (76 of 90) with the 25 game settlements alone; 78% (69 of 89) with the 272 localities of 1948
-    /// and main's routes (2026-10-11).</remarks>
+    /// and main's routes (2026-10-11); 79% (70 of 89) after #250's units, with the localities' houses and tents off the edge
+    /// midpoints (KitGround.OnGridMark, 2026-10-12).</remarks>
     public const float GridReadableShare = 0.75f;
 
     [UnityTest]

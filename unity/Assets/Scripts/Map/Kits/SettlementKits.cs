@@ -291,6 +291,8 @@ namespace Statecraft.Game.Map.Kits
                 var a2 = mixed ? (p.x < centre.x ? Archetype.ArabTown : Archetype.Moshava) : arch;
                 var b = Pick(a2, t, ref rnd, m);
                 if (!Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;   // off the railways and roads too
+                // A 1948 locality's house (only localities build houses with no ignoreCellsOf) keeps off the grid's edge midpoints.
+                if (phase == Phase.Houses && ignoreCellsOf == null && ground.OnGridMark(p, b.lotR)) continue;
                 if (ground.Slope(p.x, p.y, b.w) > (a2 == Archetype.ArabTown || a2 == Archetype.OldTown ? 0.6f : 0.35f)) continue;
                 // Corner and seaward checks: the whole footprint is dry.
                 if (ground.Water(p.x + b.w * 0.5f, p.y) || ground.Water(p.x - b.w * 0.5f, p.y) || ground.Water(p.x, p.y + b.d * 0.5f) || ground.Water(p.x, p.y - b.d * 0.5f)) continue;
@@ -580,6 +582,11 @@ namespace Statecraft.Game.Map.Kits
         /// points): each camp, seeded by the sub-district and its number, takes a random spot in one of the area's hexes that
         /// is dry, gentle and outside every town's footprint, and pitches two to four black goat-hair tents in a loose row
         /// (each tent its own lot, so nothing overlaps). Returns the camps and tents built.</summary>
+        /// <summary>How far (in house-scale metres) a camp's tents and its footprint reach from its centre: the longest row
+        /// (four tents, 28 apart at most, offset up to 9 to a side) and its footprint's 8 of margin, rounded up. A camp keeps
+        /// this clear of every unit token (KitGround.Tokens).</summary>
+        public const float CampReach = 64f;
+
         static (int camps, int tents) Encampments(Localities.Area area, KitGround ground, Lots lots, System.Func<Vector2, KitMesh> tile)
         {
             if (area.Hexes.Count == 0) return (0, 0);
@@ -595,7 +602,8 @@ namespace Statecraft.Game.Map.Kits
                     var w = HexGrid.ToWorld(HexGrid.Centre(q, r, hex), origin, ground.Length);
                     float a = rnd.Range(0f, 2f * Mathf.PI), d = hex * 0.7f * Mathf.Sqrt(rnd.Value());
                     var c = new Vector2(w.x + Mathf.Cos(a) * d, w.z + Mathf.Sin(a) * d);
-                    if (!ground.Inside(c.x, c.y) || ground.Water(c.x, c.y) || ground.InTown(c.x, c.y, 1.2f) || ground.Slope(c.x, c.y, 600f) > 0.12f) continue;
+                    if (!ground.Inside(c.x, c.y) || ground.Water(c.x, c.y) || ground.InTown(c.x, c.y, 1.2f) || ground.Slope(c.x, c.y, 600f) > 0.12f
+                        || ground.OnToken(c, CampReach * m)) continue;
                     float yaw = rnd.Range(-25f, 25f), ca = Mathf.Cos(yaw * Mathf.Deg2Rad), sa = Mathf.Sin(yaw * Mathf.Deg2Rad);
                     int n = rnd.Range(2, 5), pitched = 0;
                     var km = tile(c);
@@ -609,7 +617,7 @@ namespace Statecraft.Game.Map.Kits
                         along += rnd.Range(16f, 28f) * m;
                         float tyaw = yaw + rnd.Range(-20f, 20f);
                         float lotR = 0.55f * Mathf.Sqrt(tw * tw + td * td);
-                        if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR) || ground.OnRoute(p, lotR)) continue;
+                        if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR) || ground.OnRoute(p, lotR) || ground.OnGridMark(p, lotR)) continue;
                         lots.Add(new Lot { c = p, r = lotR, id = "camp:" + area.Subdistrict });
                         var (bottom, top) = GroundSpan(p, tyaw, tw, td, ground, m);
                         // Goat-hair cloth, a warm dark brown rather than black: at the overview a black row read as a scratch.
