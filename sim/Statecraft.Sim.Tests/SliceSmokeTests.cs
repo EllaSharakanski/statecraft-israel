@@ -230,8 +230,9 @@ public class SliceSmokeTests
         Assert.True(run.Orders > 0);
         // The same policy over five turns ends where the WebGL player's ?smoke=5 run ends (docs/determinism.md).
         var five = Play(Real, FirstOption, reload: false, guard: null, maxTurns: 5).Final;
+        var expected = WebSmoke5;   // read before an update rewrites the manifest, so a moved value still fails this run
         if (GoldenManifest.UpdateRequested) GoldenManifest.Update("smoke5", five.Hash());
-        Assert.Equal(WebSmoke5, FormattableString.Invariant($"SMOKE OK 5 turns {five.Date:yyyy-MM-dd} {five.Hash()}"));
+        Assert.Equal(expected, FormattableString.Invariant($"SMOKE OK 5 turns {five.Date:yyyy-MM-dd} {five.Hash()}"));
         Assert.True(clock.Elapsed < TimeSpan.FromMinutes(1), $"took {clock.Elapsed}");
     }
 

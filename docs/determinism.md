@@ -43,7 +43,8 @@ and `hash1952.txt`, written by `GameState.Describe()`, which uses the same write
 different fields) and shows every number as a plain value next to its IEEE bits. If the change is deliberate, run
 `STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln`: it rewrites the snapshots, so the PR's diff of them shows
 reviewers what moved. The same command rewrites `sim/Statecraft.Sim.Tests/golden/manifest.txt` (the pinned hashes) and the
-`GoldenRun.cs` constants. Then update the docs below by hand (`GoldenManifestTests` names any place still showing the old
+`GoldenRun.cs` constants. That run still fails for every golden that moved, against the value it started with; the tests
+never take a hash from the run without the variable, so a second plain run is the check. Then update the docs below by hand (`GoldenManifestTests` names any place still showing the old
 hash), add a row to the rebaseline history, and say why in the commit message. The snapshot test also fails if a snapshot is
 stale while the hash is unchanged.
 
@@ -67,7 +68,9 @@ goldens (playtest 2 changed every line's casing with no hash change). They are s
 Each golden hash is pinned in `sim/Statecraft.Sim.Tests/golden/manifest.txt` (`hash1950`, `hash1952`, `smoke5`). The .NET tests
 compare against it. These places must agree with it, and `GoldenManifestTests` fails naming the one that does not:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against (the update command rewrites it);
-- this file and `tools/web_check.py`'s usage example (by hand).
+- this file, `docs/RELEASING.md` and `tools/web_check.py`'s usage example (by hand).
+
+`tools/art_checkpoint.sh` reads its expected hashes from the manifest, so it needs no edit.
 
 `unity/Assets/Tests/EditMode/SimSmokeTests.cs` runs the same playthroughs inside Unity against `GoldenRun`'s constants
 (run `tools/build_sim_for_unity.sh` first so Unity has the current DLLs).

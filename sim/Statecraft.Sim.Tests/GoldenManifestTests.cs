@@ -33,8 +33,17 @@ public class GoldenManifestTests
     {
         var hash = GoldenManifest.Expected(name);
         Assert.True(Text("docs", "determinism.md").Contains(hash), $"docs/determinism.md does not show the current {name} hash {hash}");
+        Assert.True(Text("docs", "RELEASING.md").Contains(hash), $"docs/RELEASING.md does not show the current {name} hash {hash}");
         if (name != "smoke5")
             Assert.True(Text("tools", "web_check.py").Contains(hash), $"tools/web_check.py does not show the current {name} hash {hash}");
+    }
+
+    [Fact]
+    public void TheArtCheckpointReadsTheManifestInsteadOfPinningAHash()
+    {
+        var script = Text("tools", "art_checkpoint.sh");
+        Assert.Contains("sim/Statecraft.Sim.Tests/golden/manifest.txt", script);
+        Assert.DoesNotMatch("[0-9a-f]{64}", script);
     }
 
     [Fact]
