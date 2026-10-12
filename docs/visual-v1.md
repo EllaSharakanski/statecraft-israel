@@ -1625,6 +1625,7 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
     | main f974c9f | 2581 ms | 8114 ms |
     | this branch | 2768 ms | 8508 ms |
     | this branch, light read of the sub-district file | 2745 ms (25 over 2720) | 8489 ms |
+    | the same after merging #253, #255, #261 and #267 (4b9283a) | 2850 ms (130 over) | 8904 ms |
 
     - The `localities parsed` phase included a second, full parse of `subdistrict_hexes_1948.yaml` (the camps' areas,
       review I4), done with the reflection deserializer. GameRoot parses that file in full again later in the boot.
@@ -1633,7 +1634,8 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
       to 172 ms.
     - Main itself grew 75 ms since c2089b4 (#250's unit placement, #251's routes). The branch adds about 165 ms over
       main at cpu 4, nearly all of it the localities file's YAML scan.
-    - **Open:** map_build is 25 ms over the 2720 ms budget at cpu 4, within run-to-run spread but over the gate. Getting
+    - **Open:** map_build is over the 2720 ms budget at cpu 4 (25 ms before the last merge of main, 130 ms after it; main
+      was not re-measured after #255). The branch's own phase, `localities parsed`, is 166 to 172 ms. Getting
       under it needs one of these:
       - a smaller runtime form of the localities file (for example a baked compact file beside the sourced YAML);
       - deferring the villages' kit build until after the first frame;
