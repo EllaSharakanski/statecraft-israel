@@ -75,6 +75,10 @@ rules:
     licence: CC-BY-4.0
     source: "Real screenshots of the game's own WebGL build, dated in the README caption; map derived from Copernicus DEM, portraits public domain"
     status: verified
+  - glob: "docs/GDD-v0.1.pdf"
+    licence: CC-BY-4.0
+    source: "The owner's game design document (Statecraft-Israel-GDD-v0.1.pages), exported to PDF on 2026-10-12; text copy in docs/GDD.md"
+    status: verified
   - glob: "docs/images/social-preview.jpg"
     licence: CC-BY-4.0
     source: "Padded copy of docs/images/build-m3-map.jpg, 1280x640, for the GitHub social preview (a real build image, not concept art)"
