@@ -180,12 +180,23 @@ public class EraTests
     [Fact]
     public void ATurnThatWouldLeaveUnder14DaysIsLengthenedInstead()
     {
-        var c = EndingOn("1948-07-01");
+        var c = EndingOn("1948-06-09");
         PlayToTheEnd(c, out var dates);
-        // The turn after 19 June would be 12 days, under 14, so the turn from 12 June runs to 1 July (19 days).
-        Assert.Equal(new DateTime(1948, 6, 12), dates[^2]);
-        Assert.Equal(new DateTime(1948, 7, 1), dates[^1]);
+        // Weekly turns from 15 May. The turn from 22 May would end on 29 May and leave 11 days to 9 June, under 14, so it
+        // runs to 9 June (18 days) instead of a week and then 11 days. Fails if the limit is 7 days, not 14.
+        Assert.Equal(new[] { new DateTime(1948, 5, 15), new DateTime(1948, 5, 22), new DateTime(1948, 6, 9) }, dates);
         Assert.All(dates.Zip(dates.Skip(1), (a, b) => (b - a).Days), d => Assert.InRange(d, 7, 21));
+    }
+
+    /// <summary>The limit is exactly 14 days: 13 left is folded into the turn before, 14 left is a turn of its own.</summary>
+    [Theory]
+    [InlineData("1948-06-18", "1948-05-29")]   // from 29 May, a week leaves 13 days: 29 May runs to 18 June
+    [InlineData("1948-06-19", "1948-06-05")]   // from 29 May, a week leaves 14 days: 5 June is a turn
+    public void TheLimitIsFourteenDaysExactly(string end, string lastTurnStart)
+    {
+        PlayToTheEnd(EndingOn(end), out var dates);
+        Assert.Equal(DateTime.Parse(lastTurnStart, System.Globalization.CultureInfo.InvariantCulture), dates[^2]);
+        Assert.Equal(DateTime.Parse(end, System.Globalization.CultureInfo.InvariantCulture), dates[^1]);
     }
 
     [Fact]
