@@ -1710,14 +1710,20 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   | diorama02, none | 12.62 [12.27-12.66] | 7.97 [7.89-8.12] |
   | diorama02, all | 17.97 [17.63-19.29] | 11.51 [11.18-11.91] |
 
-- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, after merging main 2ca920b): `map_build_ms` median main 2559 / 2501
-  ms against the fix 2596 / 2598 ms in two rounds (main first, then last), budget 2720. The water mesh is 86-87 ms of it
-  (`terrain water`; 22 ms unthrottled); the rest is run-to-run spread. Before the merge (base c2089b4) `terrain heights
-  set` (Unity's `TerrainData.SetHeights`) also measured about 50-90 ms slower in the fix, under CPU throttling only. On
-  the merged result it does not reproduce: main 1324-1377 ms, the fix 1319-1396 ms, and main plus each part of the fix
-  alone (Terrain.mat's queue and MapMaterials; the three shaders; the C# of MapBorders, MapBuilder and MapScene)
-  1318-1345 ms. No part of the fix carries it; it went with the base.
+- **Baked.** The mesh's samples and triangles are baked into `Assets/Textures/Map/terrain_water.bytes` (3.4 MB;
+  `Statecraft.Game.EditorTools.TerrainWaterBake.Bake`, re-run whenever `heightmap.r16z` changes), referenced by
+  `Map.unity`'s `MapScene`, so a player only places the vertices on the heights it loaded. The file carries the
+  heightmap's resolution and a check of its heights; a stale or missing bake is refused (a warning) and the mesh derived at
+  load as before (22 ms unthrottled, about 87 ms at `--cpu 4`). `SeaTests.TheBakedWaterMeshMatchesTheHeightmap` fails on
+  a stale bake.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock, against main a3202ad with
+  promo-villages): `map_build_ms` median main 2549 / 2553 ms, the fix 2567 / 2553 ms (budget 2720); `first_frame_ms`
+  main 8208 / 8238, the fix 8259 / 8162. `terrain water` takes 10-11 ms. The ~50 ms once seen in `terrain heights set`
+  (Unity's `TerrainData.SetHeights`, under CPU throttling only, against base c2089b4) does not reproduce on the merged
+  result: main 1283-1308 ms, the fix 1285-1302 ms; earlier, main plus each part of the fix alone (Terrain.mat's queue
+  and MapMaterials; the three shaders; the C# of MapBorders, MapBuilder and MapScene) measured 1318-1345 ms against main's
+  1324-1377. No part of the fix carries it; it went with the base.
 - **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
   hitch.
-- **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); building
-  it allocates about 6 MB of short-lived lists. The borders add nothing (the edge bits ride in the existing texel).
+- **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
+  it from the bake allocates its 3.4 MB of bytes and about 1.5 MB of vertices, short-lived. The borders add nothing (the edge bits ride in the existing texel).

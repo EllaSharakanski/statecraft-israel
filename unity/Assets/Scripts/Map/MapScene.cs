@@ -16,6 +16,9 @@ namespace Statecraft.Game.Map
         /// <summary>The art spike's procedural settlement kits and trees (Kit.mat, Tree.mat: Statecraft/Kit). Optional: without
         /// them the map keeps the placeholder marker boxes.</summary>
         [SerializeField] Material kitMaterial, treeMaterial;
+        /// <summary>The terrain water's mesh, baked (MapTexturePaths.WaterMesh, issue #195). Optional: without it, or when it
+        /// is for other heights, the map derives the mesh at load (about 90 ms at the boot budget's CPU throttling).</summary>
+        [SerializeField] TextAsset terrainWaterMesh;
 
         public GeoFrame Frame { get; private set; }
         /// <summary>hexes.json as the last Build read it (bounds, hex size, biomes).</summary>
@@ -341,11 +344,27 @@ namespace Statecraft.Game.Map
             material.renderQueue = TerrainWaterQueue;
             var go = new GameObject(TerrainWaterName);
             go.transform.SetParent(terrainGo.transform, false);
-            go.AddComponent<MeshFilter>().sharedMesh = MapBuilder.BuildWaterMesh(Terrain.terrainData, heights, elevMinM, assets);
+            go.AddComponent<MeshFilter>().sharedMesh = WaterMesh(heights, elevMinM, assets);
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
+
+        /// <summary>The baked water mesh when it matches these heights, else the one derived from them.</summary>
+        Mesh WaterMesh(float[,] heights, float elevMinM, MapRuntimeAssets assets)
+        {
+            var data = Terrain.terrainData;
+            if (terrainWaterMesh != null)
+            {
+                if (MapBuilder.TryReadWaterMesh(terrainWaterMesh.bytes, data.heightmapResolution, heights, out var grid, out var indices, out var why))
+                    return assets.Own(MapBuilder.WaterMesh(data.heightmapResolution, data.size, heights, grid, indices));
+                Debug.LogWarning($"MAP {MapTexturePaths.WaterMesh}: {why}; deriving the water mesh at load");
+            }
+            return MapBuilder.BuildWaterMesh(data, heights, elevMinM, assets);
+        }
+
+        /// <summary>Test and editor seam: the baked water mesh (null: derived at load).</summary>
+        public void ConfigureWater(TextAsset baked) => terrainWaterMesh = baked;
 
         static string MetaPath => "heightmap.json";
         static string HexesPath => "hexes.json";

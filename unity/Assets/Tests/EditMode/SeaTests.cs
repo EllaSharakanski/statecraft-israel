@@ -99,6 +99,34 @@ public class SeaTests
         Assert.IsFalse(Covers(35.21, 31.77), "Jerusalem's hills");
     }
 
+    /// <summary>Issue #195: the baked water mesh (terrain_water.bytes, Editor TerrainWaterBake.Bake) is what the shipped
+    /// heightmap gives now, byte for byte, and the map scene uses it; a stale bake is refused and the map derives the mesh
+    /// instead, so it is never wrong, only slower to boot.</summary>
+    [Test]
+    public void TheBakedWaterMeshMatchesTheHeightmap()
+    {
+        var (meta, heights) = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap);
+        var (grid, indices) = MapBuilder.WaterMeshGrid(meta.width, MapBuilder.TerrainSize(meta), heights, meta.elev_min_m);
+        var baked = AssetDatabase.LoadAssetAtPath<TextAsset>(MapTexturePaths.WaterMesh);
+        Assert.IsNotNull(baked, MapTexturePaths.WaterMesh);
+        CollectionAssert.AreEqual(MapBuilder.WaterMeshBytes(meta.width, heights, grid, indices), baked.bytes,
+            "stale: re-run Statecraft.Game.EditorTools.TerrainWaterBake.Bake");
+        Assert.IsTrue(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out var why), why);
+        heights[145, 1995] += 0.001f;   // sample 997 x 300, one HeightsCheck reads
+        Assert.IsFalse(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out why), "other heights");
+        var derived = new System.Collections.Generic.List<string>();
+        void Watch(string message, string stack, LogType type) { if (message.Contains("deriving the water mesh")) derived.Add(message); }
+        Application.logMessageReceived += Watch;
+        try
+        {
+            var map = OpenMap();
+            var mesh = map.Terrain.transform.Find(MapScene.TerrainWaterName).GetComponent<MeshFilter>().sharedMesh;
+            Assert.AreEqual(grid.Length, mesh.vertexCount);
+        }
+        finally { Application.logMessageReceived -= Watch; }
+        CollectionAssert.IsEmpty(derived, "the scene's map uses the bake");
+    }
+
     /// <summary>Issue #195: the terrain graph's function carries no water shading. Its size, not its arithmetic, cost about
     /// 3 ms a frame at gameplay03 in WebGL (even with the water toggled off, so no toggle measures it); the water belongs in
     /// Sea.shader's terrain-water mode.</summary>

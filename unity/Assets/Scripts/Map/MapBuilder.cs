@@ -302,8 +302,20 @@ namespace Statecraft.Game.Map
         /// 16 bits, a few centimetres off, well inside the water's depth pull (Sea.shader).</summary>
         public static Mesh BuildWaterMesh(TerrainData data, float[,] heights, float elevMinM, MapRuntimeAssets assets)
         {
-            int res = data.heightmapResolution, cells = res - 1;
-            var size = data.size;
+            var (grid, indices) = WaterMeshGrid(data.heightmapResolution, data.size, heights, elevMinM);
+            return assets.Own(WaterMesh(data.heightmapResolution, data.size, heights, grid, indices));
+        }
+
+        /// <summary>The terrain's size (m: width, relief, length) for a heightmap, as Build gives it.</summary>
+        public static Vector3 TerrainSize(HeightmapMeta meta) =>
+            new Vector3(meta.width_km * 1000f, (meta.elev_max_m - meta.elev_min_m) * VerticalExaggeration, meta.length_km * 1000f);
+
+        /// <summary>BuildWaterMesh's geometry as heightmap samples: each vertex is sample (x, y) packed as x | y << 16, and
+        /// the triangles index them (three a triangle, facing up). Baked into terrain_water.bytes (WaterMeshBytes) so a
+        /// player only places the vertices (issue #195: boot time).</summary>
+        public static (int[] grid, int[] indices) WaterMeshGrid(int res, Vector3 size, float[,] heights, float elevMinM)
+        {
+            int cells = res - 1;
             // Thresholds on the 0..1 heights (one sample is h * size.y / VerticalExaggeration + elevMinM metres): the scan
             // below runs over every sample (4.2 million), so it stays a compare (boot time, issue #195).
             float perMetre = VerticalExaggeration / size.y, zero = -elevMinM * perMetre;
@@ -351,8 +363,7 @@ namespace Statecraft.Game.Map
                 return false;
             }
 
-            var verts = new List<Vector3>(1 << 17); var tris = new List<int>(3 << 18);
-            float stepX = size.x / cells, stepZ = size.z / cells;
+            var verts = new List<int>(1 << 17); var tris = new List<int>(3 << 18);
             // Each sample's vertex is made once: samples on the blocks' grid lines are indexed globally, a block's inner
             // samples in a block-local table (no dictionary: boot time).
             var onColumn = new int[(blocks + 1) * res]; var onRow = new int[(blocks + 1) * res];
@@ -365,7 +376,7 @@ namespace Statecraft.Game.Map
                 if (x % B == 0) { table = onColumn; at = x / B * res + y; }
                 else if (y % B == 0) { table = onRow; at = y / B * res + x; }
                 else { table = inner; at = (y - by0 - 1) * (B - 1) + (x - bx0 - 1); }
-                if (table[at] < 0) { table[at] = verts.Count; verts.Add(new Vector3(x * stepX, heights[y, x] * size.y, y * stepZ)); }
+                if (table[at] < 0) { table[at] = verts.Count; verts.Add(x | y << 16); }
                 return table[at];
             }
             // Triangles face up: every cell and fan below is listed anticlockwise seen from above (x east, z north), which
@@ -440,7 +451,7 @@ namespace Statecraft.Game.Map
             void Fan(int x0, int y0, int s)                             // from the centre to every sample on the edge: 4 s triangles
             {
                 int c = verts.Count;
-                verts.Add(new Vector3((x0 + 0.5f * s) * stepX, heights[y0, x0] * size.y, (y0 + 0.5f * s) * stepZ));
+                verts.Add((x0 + s / 2) | (y0 + s / 2) << 16);              // a sample: s is even, the block level
                 var ring = new List<int>(4 * s);
                 for (int i = 0; i < s; i++) ring.Add(Vertex(x0 + i, y0));
                 for (int i = 0; i < s; i++) ring.Add(Vertex(x0 + s, y0 + i));
@@ -473,12 +484,70 @@ namespace Statecraft.Game.Map
                     Dilate(x0, y0);
                     Block(x0, y0, B);
                 }
-            var mesh = assets.Own(new Mesh { name = "TerrainWater", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
+            return (verts.ToArray(), tris.ToArray());
+        }
+
+        /// <summary>The water mesh from its samples (WaterMeshGrid): every vertex on the terrain's own heightmap sample.</summary>
+        public static Mesh WaterMesh(int res, Vector3 size, float[,] heights, int[] grid, int[] indices)
+        {
+            int cells = res - 1;
+            float stepX = size.x / cells, stepZ = size.z / cells;
+            var verts = new Vector3[grid.Length];
+            for (int i = 0; i < grid.Length; i++)
+            {
+                int x = grid[i] & 0xFFFF, y = grid[i] >> 16;
+                verts[i] = new Vector3(x * stepX, heights[y, x] * size.y, y * stepZ);
+            }
+            var mesh = new Mesh { name = "TerrainWater", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
             mesh.SetVertices(verts);
-            mesh.SetTriangles(tris, 0);
-            mesh.RecalculateBounds();
+            mesh.SetIndices(indices, MeshTopology.Triangles, 0, false);
+            mesh.bounds = new Bounds(size * 0.5f, size);
             if (!Application.isEditor) mesh.UploadMeshData(true);   // players keep only the GPU copy (about 4.5 MB less heap)
             return mesh;
+        }
+
+        /// <summary>terrain_water.bytes (MapTexturePaths.WaterMesh): "SCW1", the heightmap's resolution, a check of its
+        /// heights (HeightsCheck), the vertex and index counts, then WaterMeshGrid's two arrays, all little-endian int32.</summary>
+        const int WaterMagic = 0x31574353;
+        public static byte[] WaterMeshBytes(int res, float[,] heights, int[] grid, int[] indices)
+        {
+            var bytes = new byte[20 + 4 * (grid.Length + indices.Length)];
+            int[] head = { WaterMagic, res, HeightsCheck(heights), grid.Length, indices.Length };
+            Buffer.BlockCopy(head, 0, bytes, 0, 20);
+            Buffer.BlockCopy(grid, 0, bytes, 20, 4 * grid.Length);
+            Buffer.BlockCopy(indices, 0, bytes, 20 + 4 * grid.Length, 4 * indices.Length);
+            return bytes;
+        }
+
+        /// <summary>Reads terrain_water.bytes; false (and the reason) when it is not for this heightmap.</summary>
+        public static bool TryReadWaterMesh(byte[] bytes, int res, float[,] heights, out int[] grid, out int[] indices, out string reason)
+        {
+            grid = indices = Array.Empty<int>();
+            if (bytes == null || bytes.Length < 20) { reason = "missing or short"; return false; }
+            var head = new int[5];
+            Buffer.BlockCopy(bytes, 0, head, 0, 20);
+            if (head[0] != WaterMagic) { reason = "not a water mesh"; return false; }
+            if (head[1] != res) { reason = $"made for a {head[1]} heightmap, this one is {res}"; return false; }
+            if (head[2] != HeightsCheck(heights)) { reason = "made for other heights (re-bake: TerrainWaterBake.Bake)"; return false; }
+            if (bytes.Length != 20 + 4L * (head[3] + head[4])) { reason = "truncated"; return false; }
+            grid = new int[head[3]]; indices = new int[head[4]];
+            Buffer.BlockCopy(bytes, 20, grid, 0, 4 * grid.Length);
+            Buffer.BlockCopy(bytes, 20 + 4 * grid.Length, indices, 0, 4 * indices.Length);
+            reason = "";
+            return true;
+        }
+
+        /// <summary>A cheap check that baked water data still matches the heights: FNV-1a over every 997th sample's bits.</summary>
+        public static int HeightsCheck(float[,] heights)
+        {
+            int res = heights.GetLength(1), n = heights.Length;
+            uint h = 2166136261;
+            for (int i = 0; i < n; i += 997)
+            {
+                uint bits = (uint)BitConverter.SingleToInt32Bits(heights[i / res, i % res]);
+                for (int k = 0; k < 4; k++) { h ^= (bits >> (8 * k)) & 0xFF; h *= 16777619; }
+            }
+            return (int)h;
         }
 
         /// <summary>Vertices of one draped hex ring (<see cref="DrapedRing"/>).</summary>
