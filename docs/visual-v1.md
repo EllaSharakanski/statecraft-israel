@@ -1716,13 +1716,27 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   heightmap's resolution and a check of its heights; a stale or missing bake is refused (a warning) and the mesh derived at
   load as before (22 ms unthrottled, about 87 ms at `--cpu 4`). `SeaTests.TheBakedWaterMeshMatchesTheHeightmap` fails on
   a stale bake.
-- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock, against main 1cdb356, nine
-  runs each over three rounds): `map_build_ms` median main 2617 [2600-2718] ms, the fix 2626 [2590-2871] ms (budget
-  2720; the fix's 2871 run is one slow `terrain heights set`, 1508 ms). `terrain water` takes 10-11 ms, the fix's whole
-  share. A fourth round on a loaded machine (both over 3000 ms) was discarded. The ~50 ms once seen in `terrain heights
-  set` (Unity's `TerrainData.SetHeights`, under CPU throttling only, against base c2089b4) does not reproduce on the
-  merged result; main plus each part of the fix alone (Terrain.mat's queue and MapMaterials; the three shaders; the C#
-  of MapBorders, MapBuilder and MapScene) measured 1318-1345 ms against main's 1324-1377. No part of the fix carries it.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock per round, order rotated; six
+  rounds, 18 runs each, 2026-10-13, main 244723f against the fix merged on it, cc3c954): `map_build_ms` median main 3023
+  [3006-3042] ms, the fix 3039 [3017-3064] ms. `terrain water` takes 19 [17-22] ms, the fix's whole share; `terrain
+  heights set` is 1389 [1374-1411] ms on main and 1397 [1372-1409] ms on the fix.
+- **`SetHeights` moves with the build, not with the fix.** The review measured the fix merged on main 6d439a7 (44e1d63)
+  at about 105 ms over that main, 85 ms of it in `terrain heights set`, and it reproduces here (1473 [1462-1496] ms
+  against 1385 [1375-1418], nine runs each). It is not the 3.4 MB bake, and not the WebGL heap:
+  - The same commit rebuilt without `Map.unity`'s reference to the bake (the same wasm, byte for byte; the water mesh
+    then derived at load) keeps the slow `terrain heights set`: 1487 [1466-1503] ms against 1491 [1463-1499] with it.
+  - With heap probes (a `WebAssembly.Memory.grow` hook and the heap size after every boot phase) in builds of main 244723f
+    and of the fix merged on it, both grow the wasm heap at the same points to the same sizes (286 MB to 343 MB at
+    `new TerrainData`, none inside `SetHeights`); the bake adds 3 MB of reserved native memory and no grow. The
+    `SetHeights` call alone measured 1185-1198 ms on both.
+  - A small C# change that runs only after `SetHeights` (reading the bake through `TextAsset.GetData`, which cut
+    `terrain water` from 20 to 17 ms) made `terrain heights set` 1511 [1489-1530] ms in its build, against the fix's
+    1397. It was dropped.
+  - With V8's tiering off (`--js-flags=--no-wasm-dynamic-tiering`: every function compiled by TurboFan up front), five
+    builds (both mains, the fix, 44e1d63 and the `GetData` variant) all take 1426-1455 ms in `terrain heights set`.
+  So each wasm binary gets its own `SetHeights` time, about 1390 or about 1490 ms at `--cpu 4`, from when V8 tiers up
+  the code it runs. Any change can move it either way, and the next merge of main draws again. So judge a boot change
+  by its own phases, and read `terrain heights set` apart from them.
 - **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
   hitch.
 - **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
