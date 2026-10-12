@@ -104,6 +104,78 @@ eras:
         Assert.True(Grow(Late) > Grow(Early));
     }
 
+    [Fact]
+    public void AppointmentStabilityCostComesFromTheTurnsEra()
+    {
+        var dir = Fixture.Write(new Dictionary<string, string>
+        {
+            ["eras.yaml"] = Eras,
+            ["people.yaml"] = Fixture.Files["people.yaml"] + @"
+  - id: loyalist
+    name: Loy Alist
+    living: false
+    party: alpha
+    competence: 2
+    loyalty: 9
+    offices: []
+",
+        });
+        Directory.CreateDirectory(Path.Combine(dir, "rules"));
+        File.WriteAllText(Path.Combine(dir, "rules", "later.yaml"), "appoint_stability_cost_other_party: 0.4\n");
+        var c = ContentLoader.Load(dir);
+        double Cost(DateTime d)
+        {
+            var s = At(c, d); var before = s.CoalitionStability;
+            Assert.Null(Cabinet.Appoint(c, s, "finance_minister", "loyalist", new List<Cause>()));
+            return before - s.CoalitionStability;
+        }
+        Assert.Equal(c.Rules.AppointStabilityCostOtherParty, Cost(Early), 9);
+        Assert.Equal(0.4, Cost(Late), 9);
+    }
+
+    /// <summary>Through <c>Simulation.Step</c>, across a boundary that falls inside a turn (1948-06-01; weekly war turns run
+    /// 05-29 to 06-05): the turn that starts before the boundary taxes at the founding rate for its whole length, the first
+    /// turn that starts after it at the later era's rate, and attention is refilled at the later era's value from the end
+    /// of the crossing turn on (the refill is for the turn that starts on the new date).</summary>
+    [Fact]
+    public void ARunPicksUpTheOverrideFromTheFirstTurnThatStartsInTheNewEra()
+    {
+        var dir = Fixture.Write(new Dictionary<string, string> { ["eras.yaml"] = @"
+eras:
+  - id: founding
+    name: The Founding
+    from: 1948-05-15
+    to: 1948-06-01
+  - id: later
+    name: A Later Chapter
+    from: 1948-06-01
+    to: 1957-01-01
+" });
+        Directory.CreateDirectory(Path.Combine(dir, "rules"));
+        File.WriteAllText(Path.Combine(dir, "rules", "later.yaml"), "attention_per_turn: 7.5\ntax_per_capita_per_year: 1.0\n");
+        var c = ContentLoader.Load(dir);
+        var boundary = new DateTime(1948, 6, 1);
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Equal(c.Rules.AttentionPerTurn, s.Attention);
+        var crossed = false;
+        while (s.Date < boundary.AddDays(7))   // through the first whole turn of the new era (the fixture's ceasefire ends the weekly turns after it)
+        {
+            var start = s.Date;
+            var step = Simulation.Step(c, s, new List<Command>());
+            var end = step.State.Date;
+            Assert.Equal(7, (end - start).Days);   // weekly turns; no turn here is adjusted to the boundary yet (spec 4.1)
+            var tax = start < boundary ? c.Rules.TaxPerCapitaPerYear : 1.0;
+            var expected = (tax - c.Rules.SpendingPerCapitaPerYear) * step.State.TotalPopulation * (7 / 365.0)
+                - c.Rules.MobilizationCostPerYear * s.Mobilization * (7 / 365.0);
+            var treasury = step.Why.Single(w => w.System == "economy" && w.Target == "treasury").Delta;
+            Assert.True(Math.Abs(expected - treasury) < 1e-9, $"{start:yyyy-MM-dd}: treasury {treasury}, expected {expected}");
+            Assert.Equal(end < boundary ? c.Rules.AttentionPerTurn : 7.5, step.State.Attention);
+            crossed |= start < boundary && end > boundary;
+            s = step.State;
+        }
+        Assert.True(crossed);
+    }
+
     /// <summary>The only places the sim reads the base rules directly are the values <c>NewGame</c> reads once (an era
     /// override cannot set them) and a map action's display name (an override cannot remove an action). Everything else
     /// reads <c>RulesAt(date)</c>, so a new <c>c.Rules.X</c> read in a system fails here until it is deliberate.</summary>
@@ -119,8 +191,10 @@ eras:
             if (name == "ContentLoader.cs" || name == "Content.cs") continue;
             var lines = File.ReadAllLines(f);
             for (int i = 0; i < lines.Length; i++)
-                foreach (Match m in Regex.Matches(lines[i], @"\bc\.Rules\.(\w+)"))
-                    if (!allowed.Contains(m.Groups[1].Value)) bad.Add($"{name}:{i + 1} {m.Value}");
+                // Any receiver (c, content, ...), and a bare `x.Rules` with no member after it (`var r = c.Rules;`), which
+                // would hand every later read the base rules.
+                foreach (Match m in Regex.Matches(lines[i], @"\b\w+\.Rules\b(?!\s*\()(?:\.(\w+))?"))
+                    if (!m.Groups[1].Success || !allowed.Contains(m.Groups[1].Value)) bad.Add($"{name}:{i + 1} {m.Value}");
         }
         Assert.True(bad.Count == 0, "read RulesAt(date) instead: " + string.Join(", ", bad));
     }
