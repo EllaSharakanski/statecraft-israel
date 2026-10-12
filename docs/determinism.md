@@ -37,6 +37,14 @@ uv run tools/web_check.py unity/Builds/Web-<compression> --query "golden&smoke=5
   --expect "SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6"
 ```
 
+**Rules per era.** A system reads `Content.RulesAt(date)`, where `date` is the date of the state the turn starts from (`s.Date`
+before the step). So a turn that starts in one era and ends in the next uses the starting era's rules for the whole turn;
+rules change only at era boundaries (chapters spec section 3.3), and the boundary turn is adjusted by spec section 4.1. Start
+values (`start`, `treasury_start`, `fx_start`, `start_rung`, `initial_population`, `budget_start`) are read once by `NewGame`
+from the base `rules.yaml`: an era override cannot set them. A map action's display name is also read from the base rules,
+because an override cannot remove an action. `EraRulesSwitchTests.OnlyStartValuesAndMapActionNamesReadTheBaseRulesDirectly`
+fails if a system reads `c.Rules.X` for anything else.
+
 **Cause text is derived, not hashed.** The "Why did this happen?" lines (`Cause.Message`, `Cause.Delta`) are output
 computed from the hashed state; replaying a save's commands regenerates them. Wording changes therefore do not move the
 goldens (playtest 2 changed every line's casing with no hash change). They are still deterministic:

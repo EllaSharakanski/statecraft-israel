@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Rules per era (#58, second piece): the attention, economy, population, security, map-action and cabinet systems read
+  `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
+  HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
+  system reads the base rules directly for anything but a start value.
 - A start screen (#247): a painting of the 14 May 1948 ceremony in the Tel Aviv Museum hall (AI-generated concept art
   with no identifiable person), two lines of the Declaration of Independence in the official Hebrew with the official
   English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
