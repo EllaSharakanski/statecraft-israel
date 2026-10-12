@@ -44,6 +44,7 @@ public class PreviewTests
     [InlineData("budget_start=1", "is a block")]
     [InlineData("tax_per_capita_per_year", "wants key=value")]
     [InlineData("Tax=1", "not a rules.yaml key")]
+    [InlineData("tax_per_capita_per_year=", "needs a value")]
     public void BadSetsFailWithAReason(string set, string message)
     {
         var ex = Assert.Throws<ArgumentException>(() => Preview.Run(Root, new DateTime(1949, 1, 1), GoldenRun.Seed, new[] { set }, Show, 8));
@@ -64,4 +65,8 @@ public class PreviewTests
         var src = "a: 1   # note\nb: 2\nblock:\n  x: 1\n";
         Assert.Equal("a: 1   # note\nb: 5\nblock:\n  x: 1\n", Preview.SetRule(src, "b", "5"));
     }
+
+    [Fact]
+    public void SetRuleWorksOnACrlfFile() =>
+        Assert.Equal("a: 1\r\nb: 5\r\n", Preview.SetRule("a: 1\r\nb: 2\r\n", "b", "5"));
 }

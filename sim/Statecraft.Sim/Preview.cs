@@ -17,11 +17,12 @@ namespace Statecraft.Sim
         public static string SetRule(string rulesYaml, string key, string value)
         {
             if (!Regex.IsMatch(key, @"^[a-z][a-z0-9_]*$")) throw new ArgumentException($"'{key}' is not a rules.yaml key (use the snake_case name, for example tax_per_capita_per_year)");
-            var m = Regex.Match(rulesYaml, @"(?m)^" + key + @":[ \t]*([^\r\n]*)$");
+            var m = Regex.Match(rulesYaml, @"(?m)^" + key + @":[ \t]*([^\r\n]*)(?=\r?$)");   // a CRLF checkout keeps its line ends
             if (!m.Success) throw new ArgumentException($"rules.yaml has no top-level key '{key}'");
             if (m.Groups[1].Value.Trim().Length == 0 || m.Groups[1].Value.TrimStart().StartsWith("#"))
                 throw new ArgumentException($"'{key}' is a block, not a single value; edit it in rules.yaml");
             if (value.IndexOfAny(new[] { '\r', '\n' }) >= 0) throw new ArgumentException("a value must be one line");
+            if (value.Trim().Length == 0) throw new ArgumentException($"'{key}' needs a value (an empty one would read as 0)");
             return rulesYaml.Substring(0, m.Index) + key + ": " + value + rulesYaml.Substring(m.Index + m.Length);
         }
 
@@ -54,10 +55,10 @@ namespace Statecraft.Sim
         {
             var s = Simulation.NewGame(c, seed, Mode.Historical);
             var states = new List<GameState> { s };
-            for (int turn = 1; turn < 1000 && s.Date < until && s.GameOver == null; turn++)
+            for (int turn = 0; turn < 1000 && s.Date < until && s.GameOver == null; turn++)   // the same stop as GoldenRun.Play
             {
                 s = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
-                if (turn % every == 0 || s.Date >= until || s.GameOver != null) states.Add(s);
+                if ((turn + 1) % every == 0 || s.Date >= until || s.GameOver != null) states.Add(s);
             }
             return states;
         }
