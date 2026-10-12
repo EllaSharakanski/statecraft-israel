@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- A start screen (#247): a painting of the 14 May 1948 ceremony in the Tel Aviv Museum hall (AI-generated concept art
+  with no identifiable person), two lines of the Declaration of Independence in the official Hebrew with the official
+  English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
+  runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
+  Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
 - Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
   dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
   reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
@@ -154,6 +159,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Ministry of Rationing and Supply, and Dov Yosef as its minister, now start on 10 March 1949, when the First
+  Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The
+  Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move; the
+  content hash does, so an older save loads with the "different game content" warning (#225).
+- Railways keep their width outside the gorges: a rail band narrows only where the ground leaves its tolerance on both
+  sides (a gorge floor, a gorge side, a ridge), not for one hill or one drop beside the line. The Jaffa–Jerusalem line
+  keeps 94.9% of its width outside the Sorek (87.4% before) and the Jezreel Valley line 92.1% outside its gorges (82.8%).
+  Map only; the goldens do not move (#252).
 - Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
   bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
   flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).

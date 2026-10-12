@@ -19,7 +19,8 @@ namespace Statecraft.Game.UI
     /// the minimap to the camera, and State.Placements to the placement layer. Disabling it disposes all of that.
     /// With "smoke" in the page URL (WebGL, e.g. ?smoke=5) or -smoke N (desktop) it starts a fresh game with the golden
     /// seed (the player's autosave is neither read nor written), plays N turns through the UI's own buttons and logs
-    /// "SMOKE OK ..." (or "SMOKE FAIL ...").
+    /// "SMOKE OK ..." (or "SMOKE FAIL ..."). In a player, unless an automated run skips it (StartScreenPresenter.Skipped),
+    /// the start screen shows over the started game before its first turn, with the camera keys stopped until it closes.
     /// ExecuteAlways only so that disabling it disposes the presenters in edit mode too (tests); GameBoot raises Ready
     /// in play mode and players only.</summary>
     [ExecuteAlways]
@@ -45,6 +46,7 @@ namespace Statecraft.Game.UI
         internal Statecraft.Game.Map.Units.UnitLayer? Units => units;
         MapLabelsPresenter? labels;
         ScreenNav? nav;
+        StartScreenPresenter? start;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -108,11 +110,13 @@ namespace Statecraft.Game.UI
         public static int SmokeTurns() =>
             SmokeTurns(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
 
-        /// <summary>GameBoot.Ready: starts the game, smoke-testing when the URL or command line asks.</summary>
-        public void Begin(GameInputs inputs) => Begin(inputs, SmokeTurns());
+        /// <summary>GameBoot.Ready: starts the game, smoke-testing when the URL or command line asks, with the start screen
+        /// unless an automated run skips it.</summary>
+        public void Begin(GameInputs inputs) => Begin(inputs, SmokeTurns(), Application.isPlaying && !StartScreenPresenter.Skipped());
 
-        /// <summary>Starts (or restarts) the game over the built map. <paramref name="smoke"/> &gt; 0 plays that many turns.</summary>
-        internal void Begin(GameInputs inputs, int smoke)
+        /// <summary>Starts (or restarts) the game over the built map. <paramref name="smoke"/> &gt; 0 plays that many turns;
+        /// <paramref name="startScreen"/> shows the start screen first (never in a smoke run, which has no New Game).</summary>
+        internal void Begin(GameInputs inputs, int smoke, bool startScreen = false)
         {
             if (inputs == null) throw new ArgumentNullException(nameof(inputs));
             foreach (var (value, field) in new (UnityEngine.Object?, string)[] { (document, nameof(document)), (strings, nameof(strings)),
@@ -125,9 +129,10 @@ namespace Statecraft.Game.UI
             var store = Store ?? SaveStore.ForPlatform();
             var notes = new List<string>();
             // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave.
+            bool resumed;
             var session = smoke > 0
-                ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, fresh: true)
-                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text);
+                ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, out resumed, fresh: true)
+                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed);
             DiagLog.BootPhase($"session started (turn {session.State.Turn}, replayed)");
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
@@ -181,9 +186,10 @@ namespace Statecraft.Game.UI
             // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
             // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
             // right on every platform, and the scripted run never presses it.
+            NewGamePresenter? newGame = null;
             if (smoke == 0)
             {
-                Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
+                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
                 Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
@@ -229,6 +235,14 @@ namespace Statecraft.Game.UI
             drawn = null;
             RenderPlacementsIfChanged();
             SyncMinimap();
+            // The start screen goes up in the same frame the loading state ends, so the HUD never flashes before it. While it
+            // shows, the camera keys are off (keyboard pan would otherwise move the hidden map; plan amendment A4).
+            if (startScreen && newGame != null)
+            {
+                var cam = cameraController;
+                start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }));
+                start.Show();
+            }
             root.Q("root")?.RemoveFromClassList("loading");                // ready: the bar, panels and screens may show (P2-1)
             DiagLog.BootPhase("screens ready");
 
@@ -279,7 +293,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; nav = null; rig = null; drawn = null; units = null; logCamera = false;
+            minimap = null; labels = null; nav = null; start = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -329,8 +343,9 @@ namespace Statecraft.Game.UI
         void Update()
         {
             // Escape closes the open screen even when no element has the keyboard focus (ScreenNav also takes the UI
-            // Cancel event from a focused element; closing twice is harmless).
-            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) nav?.Close();
+            // Cancel event from a focused element; closing twice is harmless). On the start screen it withdraws an open New
+            // Game request (StartScreenPresenter.Escape; idempotent too).
+            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { start?.Escape(); nav?.Close(); }
             SyncMinimap();
             if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
             loggedDistance = rig.Distance; loggedYaw = rig.Yaw;
