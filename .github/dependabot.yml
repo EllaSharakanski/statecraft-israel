@@ -7,3 +7,11 @@ updates:
       interval: weekly
     commit-message:
       prefix: "ci"
+  # Keeps the dev container features in .devcontainer/devcontainer.json current. The uv image is bumped by hand with
+  # CI's setup-uv version, so the two never differ.
+  - package-ecosystem: devcontainers
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "repo"
