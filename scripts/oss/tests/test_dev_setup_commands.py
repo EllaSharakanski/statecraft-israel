@@ -30,10 +30,16 @@ def test_this_repo_is_clean():
 
 
 def test_a_script_with_no_row_is_reported(make_repo, capsys):
-    root = make_repo({'docs/dev-setup.md': '`uv run scripts/a.py`\n', 'scripts/a.py': 'x\n', 'scripts/b.sh': 'x\n', 'scripts/notes.txt': 'x\n'})
-    assert m.undocumented(root) == ['scripts/b.sh']
+    root = make_repo({'docs/dev-setup.md': '`uv run scripts/a.py`\nSee scripts/c.sh for the rest.\n',  # prose only: not a name
+                      'scripts/a.py': 'x\n', 'scripts/b.sh': 'x\n', 'scripts/c.sh': 'x\n', 'scripts/notes.txt': 'x\n'})
+    assert m.undocumented(root) == ['scripts/b.sh', 'scripts/c.sh']
     assert m.main(['--root', str(root)]) == 1
-    assert 'scripts/b.sh has no row' in capsys.readouterr().out
+    assert 'scripts/b.sh is not named in docs/dev-setup.md' in capsys.readouterr().out
+
+
+def test_a_directory_named_like_a_script_is_not_a_script(make_repo):
+    root = make_repo({'docs/dev-setup.md': '`uv run scripts/a.py`\n', 'scripts/a.py': 'x\n', 'scripts/d.py/inner.txt': 'x\n'})
+    assert m.undocumented(root) == []
 
 
 def test_this_repo_documents_every_script():

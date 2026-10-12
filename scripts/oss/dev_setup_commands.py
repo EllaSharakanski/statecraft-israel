@@ -2,7 +2,7 @@
 """Every script named in the dev-setup table exists (#359): `uv run scripts/oss/dev_setup_commands.py [--root DIR]`.
 
 Reads docs/dev-setup.md, takes each backticked `scripts/...` or `tools/...` path ending in .py or .sh, and checks that
-the file is there. One line per missing file (line number and path). Also lists each top-level scripts/ file the table never names. Exit 1 if any."""
+the file is there. One line per missing file (line number and path). Also lists each top-level scripts/*.py or scripts/*.sh that no backticked path names. Exit 1 if any."""
 import argparse
 import re
 import sys
@@ -23,11 +23,17 @@ def missing(root: Path) -> list[tuple[int, str]]:
     return bad
 
 
-def undocumented(root: Path) -> list[str]:
-    """Top-level scripts/*.py and scripts/*.sh that no line of the dev-setup table names."""
+def named(root: Path) -> set[str]:
+    """Every `scripts/...` or `tools/...` path inside a backticked span of docs/dev-setup.md, as missing() reads them."""
     text = (root / "docs/dev-setup.md").read_text(encoding="utf-8")
+    return {p for span in re.findall(r"`([^`]+)`", text) for p in PATH.findall(span)}
+
+
+def undocumented(root: Path) -> list[str]:
+    """Top-level scripts/*.py and scripts/*.sh that no backticked path in docs/dev-setup.md names."""
+    names = named(root)
     scripts = sorted(p for p in (root / "scripts").iterdir() if p.is_file() and p.suffix in (".py", ".sh"))
-    return [f"scripts/{p.name}" for p in scripts if f"scripts/{p.name}" not in text]
+    return [f"scripts/{p.name}" for p in scripts if f"scripts/{p.name}" not in names]
 
 
 def main(argv: list[str]) -> int:
@@ -39,7 +45,7 @@ def main(argv: list[str]) -> int:
         print(f"docs/dev-setup.md:{n}: {p} does not exist")
     loose = undocumented(args.root)
     for p in loose:
-        print(f"{p} has no row in docs/dev-setup.md")
+        print(f"{p} is not named in docs/dev-setup.md")
     return 1 if bad or loose else 0
 
 
