@@ -252,7 +252,13 @@ namespace Statecraft.Game.UI
         /// never hides the hex's map actions).</summary>
         internal static void OnHexClicked(MapScene map, Statecraft.Game.Map.Units.UnitLayer units, InfoPanelPresenter info, int q, int r)
         {
-            if (info.Covered) return;   // a screen covers the panel: the click moves neither the ring nor the card (#210)
+            if (info.Covered)
+            {
+                // A screen covers the panel: the click moves neither the ring nor the card (#210), and MapPointer's outline
+                // goes back to the hex the panel shows (or away, while it shows a unit).
+                if (info.Selected is (int sq, int sr) && !info.ShowsUnit) map.Select(sq, sr); else map.ClearSelection();
+                return;
+            }
             var id = units.UnitToSelectAt(q, r);
             units.Select(id);
             if (id != null) { map.ClearSelection(); info.ShowUnit(); }

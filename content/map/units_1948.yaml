@@ -175,33 +175,23 @@ units:
   service: army
   formed: 16 May 1948
   first_commander: Shlomo Shamir
-  sector: "The battles of Latrun (Operation Bin Nun, 24 May to 1 June 1948); in June 1948 it moved to the northern front, organising for a time at Ein Shemer."
+  sector: "The battles of Latrun (Operation Bin Nun, 24 May to 1 June 1948), from the headquarters at Hulda; in June 1948 it moved to the northern front, organising for a time at Ein Shemer."
   wikipedia_only: true
   status: draft
   anchors:
-  - place: Latrun
-    lon: 34.98139
-    lat: 31.83194
+  - place: Hulda (headquarters for the Latrun attacks)
+    lon: 34.88333
+    lat: 31.83222
     from: '1948-05-24'
     since: 24 May 1948
     to: '1948-06-01'
     end_basis: source
     end_note: "Operation Bin Nun Alef (24-25 May) and Bin Nun Bet (30 May-1 June); he.wiki: in June 1948 the brigade moved north."
-    note: Shlomo Shamir led both attacks.
-    place_hex: [-3, 23]
-    toward:
-      place: Bayt Jiz
-      lon: 34.95417
-      lat: 31.81278
-      note: "The 7th Brigade occupied Bayt Jiz between the first and second assaults on Latrun, and Bayt Susin beside it was taken on 20 April 1948; the Arab Legion held Latrun and the ridge behind it (Yalu, Bayt Nuba), where the token's nearest clear spot fell without this. The hex west of Latrun (al-Qubab) was taken only in July."
-      sources:
-      - {url: 'https://en.wikipedia.org/wiki/Bayt_Jiz', checked: '2026-10-11'}
-      - {url: 'https://en.wikipedia.org/wiki/Bayt_Susin', checked: '2026-10-11'}
-      - {url: 'https://en.wikipedia.org/wiki/Al-Qubab', checked: '2026-10-11'}
-      - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
+    note: "The brigade attacked Latrun from the Israeli headquarters at Hulda (Battles of Latrun); Shlomo Shamir led both attacks. Anchored at Hulda, not Latrun: the Arab Legion held Latrun and the ridge behind it (Yalu, Bayt Nuba), and the ground between was contested until the area of Bayt Jiz and Bayt Susin was cleared on 28 May; Sar'a was taken only on 13-14 July."
     sources:
     - {url: 'https://en.wikipedia.org/wiki/Battles_of_Latrun_(1948)', checked: '2026-10-11'}
-    - {url: 'https://en.wikipedia.org/wiki/Latrun', checked: '2026-10-11'}
+    - {url: 'https://en.wikipedia.org/wiki/Hulda,_Israel', checked: '2026-10-12'}
+    - {url: "https://en.wikipedia.org/wiki/Sar'a", checked: '2026-10-12'}
   - place: Ein Shemer
     lon: 35.00667
     lat: 32.46139

@@ -113,7 +113,7 @@ After the staff review the controller ruled:
 | Kiryati (4th) | Tel Aviv (since February 1948) | 3 Apr 1949 (Jordan) |
 | Givati (5th) | Gedera, one of the three places its sector names (no start given) | 24 Feb 1949 (Egypt) |
 | Etzioni (6th) | Jerusalem (since late 1947) | 3 Apr 1949 (Jordan) |
-| 7th Brigade | Latrun, 24–31 May 1948; Ein Shemer, June 1948 | sources |
+| 7th Brigade | Hulda, its headquarters for the Latrun attacks, 24–31 May 1948; Ein Shemer, June 1948 | sources |
 | Harel (10th) | Sha'ar HaGai, one place picked from the Jerusalem corridor (since the first half of May 1948) | 22 Dec 1948, Operation Horev (source) |
 | Yiftach (11th) | Lydda, 11–19 July 1948 (Operation Dani; the IDF entered Lydda on 11 July) | 20 Jul 1948 (source); disbanded May 1949 |
 | Negev (12th) | the Mekorot camp near Nir Am (since March 1948) | 24 Feb 1949 (Egypt) |
@@ -159,15 +159,16 @@ A spot is clear when:
 the nearest clear spot can be the other side's ground. So an anchor where that happens has a sourced `toward`, a place on its own side, and where needed a `place_hex`, the hex
 next to the anchor on that side. The token stands at the clear spot nearest that place, in that hex when one is given:
 - Etzioni stands in West Jerusalem, about 2 km west of the place the West Jerusalem article gives, not on the Hizma and
-  Anata side, which Jordan held. It is in town, with a clearing. In the compact rounds the placer also tries rings round a
+  Anata side, which Jordan held. It is in town, with a clearing. In every round the placer also tries rings round a
   `toward` point, every 500 m out to 2.5 km, so a spot can sit between a town's roads near the sourced place.
-- The 7th Brigade at Latrun stands by Bayt Jiz and Bayt Susin, hex (-3,23). The brigade occupied Bayt Jiz between the
-  two assaults, and Bayt Susin was taken on 20 April. It no longer stands on the Yalu and Bayt Nuba ridge, which the
-  Arab Legion held. The hex west of Latrun, al-Qubab, was taken only in July.
+- The 7th Brigade is anchored at Hulda, its headquarters for the Latrun attacks (Battles of Latrun), not at Latrun.
+  The Arab Legion held Latrun and the Yalu–Bayt Nuba ridge. The ground between was contested until the Bayt Jiz and
+  Bayt Susin area was cleared on 28 May, and Sar'a was taken only on 13–14 July.
 - Harel stands by Saris on the corridor road, hex (-2,23), taken on 16–17 April 1948. It no longer stands by Sar'a and
   Artuf.
 
-The test pins all three spots. Once dated front data lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
+The test pins Etzioni's distance from the West Jerusalem point, Harel's hex, and the 7th within 2.6 km of Hulda; both
+the 7th and Harel stay more than 3 km from Sar'a. Once dated front data lands, the placer should also reject ground the other side held. `EveryAnchorStandsWithinOneHexClearOfTheTownsAndTheRoutes`
 checks every anchor and logs each spot and its distance.
 
 **Look.**
@@ -185,7 +186,7 @@ checks every anchor and logs each spot and its distance.
 - **Slopes (owner question, 2026-10-11).** Each rifleman stands on the highest ground under its boots
   (`UnitShowcase.Stand`: the centre plus 48 points on three rings out to the boots' 400 m radius), so no boot sinks into
   a hill. Where the ground under the boots falls more than 20 m, the figure stands on a base, as a painted miniature
-  does. The base is a dark earth-coloured disc of the boots' radius, reaching down to the lowest ground, so the
+  does. The base is a dark grey-brown disc (the palette's deck shade) of the boots' radius, reaching down to the lowest ground, so the
   downhill boot never floats.
   - **Steepest spots:** the worst drop is about 0.6–1 km, against a 3.6 km figure, on the 3x relief of the Jerusalem
     hills.

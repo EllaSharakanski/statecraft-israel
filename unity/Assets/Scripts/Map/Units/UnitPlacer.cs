@@ -116,13 +116,13 @@ namespace Statecraft.Game.Map.Units
             return result;
         }
 
-        /// <summary>Within the one-hex limit around a `toward` point (compact rounds): rings every
+        /// <summary>Within the one-hex limit around a `toward` point (every round): rings every
         /// <see cref="TowardStepM"/> out to <see cref="TowardReachM"/>, twelve points each, so a spot can sit between a
         /// town's roads near the sourced place, not only on the hex grid's points.</summary>
         public const double TowardStepM = 500.0, TowardReachM = 2500.0;
 
         /// <summary>The round's candidate spots, each with the index of the hex it lies in: every hex centre, and for a
-        /// compact round the points inside each hex and the rings round the `toward` point.</summary>
+        /// compact round the points inside each hex; and in every round the rings round the `toward` point.</summary>
         static IEnumerable<(int i, double x, double z)> Candidates(IReadOnlyList<MapHex> hexes, (double x, double z)[] centres, double hexSizeM,
             bool compact, (double x, double z)? toward)
         {
@@ -132,7 +132,7 @@ namespace Statecraft.Game.Map.Units
                 if (!compact) continue;
                 for (int k = 0; k < 6 * InsideOffsets.Length; k++) { var (x, z) = Inside(centres[i], k, hexSizeM); yield return (i, x, z); }
             }
-            if (!compact || toward == null) yield break;
+            if (toward == null) yield break;   // the rings round a `toward` point are tried in every round
             var t = toward.Value;
             for (double rad = 0; rad <= TowardReachM; rad += TowardStepM)
                 for (int k = 0; k < (rad == 0 ? 1 : 12); k++)

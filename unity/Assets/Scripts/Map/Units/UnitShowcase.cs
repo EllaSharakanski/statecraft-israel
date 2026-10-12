@@ -239,7 +239,7 @@ namespace Statecraft.Game.Map.Units
             return (top, low);
         }
 
-        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short earth-coloured disc of the
+        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short dark grey-brown disc (the palette deck shade) of the
         /// boots' radius from its feet down to the lowest ground under them, so the downhill boot never floats. Not drawn
         /// on ground flatter than this rise (m).</summary>
         public const float BaseFromRiseM = 20f;

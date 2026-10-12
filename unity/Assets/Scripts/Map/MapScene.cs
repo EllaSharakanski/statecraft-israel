@@ -119,9 +119,11 @@ namespace Statecraft.Game.Map
         /// their figures off them. Empty before Build.</summary>
         public IReadOnlyList<(List<Vector2> line, float halfWidth)> RouteCorridors { get; private set; } = new List<(List<Vector2>, float)>();
 
-        /// <summary>The spots of the units that stand in a town (UnitPlacer's last round), where the kits keep a clearing of
-        /// UnitGround.ClearingRadius so no token stands in a building. Empty before Build or without the unit file.</summary>
-        public IReadOnlyList<Vector2> UnitClearings { get; private set; } = new List<Vector2>();
+        /// <summary>Where the kits keep their buildings and trees off the units (centre x, z; radius m): the spot of a unit that
+        /// stands in a town (UnitPlacer's last round, UnitGround.ClearingRadius), and under every rifleman and parked aircraft
+        /// (UnitGround.FigureClearingM), so no figure stands in a building or an orchard. Empty before Build or without the
+        /// unit file.</summary>
+        public IReadOnlyList<(Vector2 centre, float radius)> UnitClearings { get; private set; } = new List<(Vector2, float)>();
 
         /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
         public Kits.KitLayer.Stats KitStats { get; private set; }
@@ -200,10 +202,22 @@ namespace Statecraft.Game.Map
             var unitHexes = Hexes.hexes.Select(h => new Statecraft.Sim.MapHex { Q = h.q, R = h.r, Lon = h.lon, Lat = h.lat, ElevM = h.elev_m, Land = h.land, Biome = h.biome }).ToList();
             var unitGround = new Units.UnitGround(SettlementFootprints, RouteCorridors, unitHexes,
                 (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, hexSizeM);
-            var clearingRadius = unitGround.ClearingRadius;
-            UnitClearings = unitData.Count == 0 ? new List<Vector2>()
-                : unitGround.Place(unitData, (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, null)
-                    .Values.Where(s => s.InTown).Select(s => new Vector2((float)s.X, (float)s.Z)).Distinct().ToList();
+            var clearings = new List<(Vector2 centre, float radius)>();
+            if (unitData.Count > 0)
+            {
+                var spots = unitGround.Place(unitData, (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, null);
+                var service = unitData.SelectMany(u => u.Anchors.Select(a => (a, u.Service))).ToDictionary(x => x.a, x => x.Service);
+                foreach (var kv in spots.OrderBy(k => k.Value.X).ThenBy(k => k.Value.Z))
+                {
+                    var c = new Vector2((float)kv.Value.X, (float)kv.Value.Z);
+                    if (kv.Value.InTown && !clearings.Exists(x => x.centre == c)) clearings.Add((c, unitGround.ClearingRadius));
+                    var s = service[kv.Key];
+                    if (s == Units.UnitData.Navy) continue;
+                    foreach (var f in s == Units.UnitData.Army ? unitGround.FigurePoints(c, kv.Value.Compact) : new[] { c })
+                        if (!clearings.Exists(x => x.centre == f)) clearings.Add((f, Units.UnitGround.FigureClearingM));
+                }
+            }
+            UnitClearings = clearings;
             if (kitsOn)
             {
                 // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city
@@ -220,7 +234,7 @@ namespace Statecraft.Game.Map
                 // "kits" toggle turns the kits off (so settlements are never left undrawn).
                 var kits = Kits.KitLayer.Build(list, Terrain, Frame, Hexes, meta.elev_min_m, kitMaterial, treeMaterial,
                     terrainGo.GetComponent<MapRuntimeAssets>(), markers, out var stats,
-                    RouteCorridors.Concat(UnitClearings.Select(c => (new List<Vector2> { c, c + Vector2.right }, clearingRadius))).ToList(), kitColumns);
+                    RouteCorridors.Concat(UnitClearings.Select(c => (new List<Vector2> { c.centre, c.centre + Vector2.right }, c.radius))).ToList(), kitColumns);
                 kits.transform.SetParent(transform, true);
                 kitProbe = kits.GetComponentInChildren<MeshRenderer>(true);
                 KitStats = stats;

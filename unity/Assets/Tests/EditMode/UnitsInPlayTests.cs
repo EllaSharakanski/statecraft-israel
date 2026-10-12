@@ -288,7 +288,7 @@ public class UnitsInPlayTests
                 if (s.InTown)
                 {
                     Assert.IsTrue(s.Compact, at);
-                    CollectionAssert.Contains(map.UnitClearings, c, $"{at}: a token in a town has the kits' clearing, so it stands in no building");
+                    Assert.IsTrue(map.UnitClearings.Any(x => x.centre == c), $"{at}: a token in a town has the kits' clearing, so it stands in no building");
                 }
                 else
                 {
@@ -313,7 +313,16 @@ public class UnitsInPlayTests
             // Review MF1: the three anchors whose nearest clear spot was the other side's ground stand in their sourced
             // own-side hex (West Jerusalem; Bayt Jiz and Bayt Susin by Latrun; Saris on the corridor road).
             (int, int) Spot(string id, string place) { var a = anchors.Single(x => x.u.Id == id && x.a.Place == place).a; return (layer.Spots[a].Q, layer.Spots[a].R); }
-            Assert.AreEqual((-3, 23), Spot("brigade_7", "Latrun"));
+            float Km(string id, string place, double lon, double lat)
+            {
+                var sp = layer.Spots[anchors.Single(x => x.u.Id == id && x.a.Place.StartsWith(place)).a];
+                var w = map.Frame.ToWorld(lon, lat, 0);
+                return (new Vector2((float)sp.X, (float)sp.Z) - new Vector2(w.x, w.z)).magnitude / 1000f;
+            }
+            // The 7th Brigade at its Latrun headquarters, Hulda, far from Sar'a (Arab until 13-14 July).
+            Assert.Less(Km("brigade_7", "Hulda", 34.88333, 31.83222), 2.6f, "the 7th stands by Hulda");
+            Assert.Greater(Km("brigade_7", "Hulda", 34.985, 31.77528), 3f, "and well away from Sar'a");
+            Assert.Greater(Km("harel", "Sha'ar HaGai", 34.985, 31.77528), 3f, "Harel well away from Sar'a too");
             Assert.AreEqual((-2, 23), Spot("harel", "Sha'ar HaGai"));
             foreach (var (u, a) in anchors.Where(x => x.a.PlaceHex != null))
                 Assert.AreEqual((a.PlaceHex[0], a.PlaceHex[1]), (layer.Spots[a].Q, layer.Spots[a].R), $"{u.Id} {a.Place}: in its place_hex");
@@ -519,8 +528,10 @@ public class UnitsInPlayTests
             // A screen covering the panel (#210): a click behind it moves neither the ring nor the card.
             var hud = ui.Q<VisualElement>("info-panel").parent;
             hud.AddToClassList(ScreenNav.WideOpenClass);
+            map.Select(golani.Q, golani.R);   // MapPointer outlines the clicked hex first
             GameRoot.OnHexClicked(map, layer, info, golani.Q, golani.R);
             Assert.IsNull(layer.Selected, "covered: no selection");
+            Assert.IsFalse(map.Terrain.transform.Find(MapScene.SelectionName).GetComponent<MeshRenderer>().enabled, "covered: no new outline either");
             Assert.IsFalse(info.ShowsUnit);
             hud.RemoveFromClassList(ScreenNav.WideOpenClass);
             info.Dispose(); nav.Dispose();
