@@ -23,7 +23,8 @@
         "historical_only": { "type": "boolean", "description": "Historical record only: no Cabinet seat, no player appointment, no gameplay." },
         "several_holders": { "type": "boolean", "description": "Several people may hold it on the same day (Minister without Portfolio, a second deputy minister). Such an office cannot appear in event text or own policies or effects, and the player cannot appoint to it." },
         "from": { "$ref": "#/definitions/date", "description": "Day the office was established (inclusive). Leave out if it exists from the start." },
-        "until": { "$ref": "#/definitions/date", "description": "Day the office was abolished (exclusive). Leave out while it still exists." }
+        "until": { "$ref": "#/definitions/date", "description": "Day the office was abolished (exclusive). Leave out while it still exists." },
+        "successor": { "type": "string", "description": "Id of the office that takes over when this one is abolished. Needs until. Leave out if none." }
       }
     }
   }
