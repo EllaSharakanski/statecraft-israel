@@ -5,8 +5,8 @@
 """Write a valid skeleton for a new event (#323): `uv run scripts/new_event.py <id> [--from YYYY-MM-DD] [--to YYYY-MM-DD]`.
 
 The file has the schema line, every required field of content/schema/event.schema.json and an empty `sources` list the
-writer must fill (docs/CONTENT_POLICY.md). It refuses an existing file and an id that is not lower_snake_case. It never
-overwrites and writes nothing else."""
+writer must fill (docs/CONTENT_POLICY.md). The sim loads it as written; the content tests fail until `sources` is filled.
+It refuses an existing file and an id that is not lower_snake_case. It never overwrites and writes nothing else."""
 import argparse
 import re
 import sys
@@ -18,14 +18,15 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = """# yaml-language-server: $schema=../schema/event.schema.json
 id: @ID@
 title: TODO title
-text: TODO what the player reads. Say who must decide, e.g. {defense_minister}.
+text: TODO what the player reads, and who must decide
+# text may name an office, e.g. {defense_minister}; the office needs a holder on every day of the window.
 anchor: soft
 # tags: [security]   # holocaust, terror, massacre and war-casualties are sensitive (docs/CONTENT_POLICY.md)
 # office: prime_minister
 # Say in a comment what happened and when, with the source.
 from: @FROM@
 @TO@options:
-  - id: TODO_option
+  - id: todo_option   # lower_snake_case, like every id
     text: TODO what the player does
     effects:
       - { target: morale, delta: 0.0 }
@@ -49,6 +50,8 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         return 2
     for d in filter(None, (a.start, a.end)):
         try:
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d):
+                raise ValueError
             date.fromisoformat(d)
         except ValueError:
             print(f"bad date {d!r}: use YYYY-MM-DD", file=sys.stderr)
