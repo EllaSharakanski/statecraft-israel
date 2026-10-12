@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using YamlDotNet.Serialization;
 
@@ -47,18 +46,8 @@ namespace Statecraft.Sim
             };
         }
 
-        /// <summary>The content at <paramref name="contentRoot"/> (a directory laid out like content/) through <see cref="Overlay"/>.</summary>
-        public static Content Load(string contentRoot)
-        {
-            var eventsDir = Path.Combine(contentRoot, "events");
-            var eventFiles = Directory.Exists(eventsDir)
-                ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
-                : new List<string>();
-            return ContentLoader.Load(Overlay(rel =>
-            {
-                var path = Path.Combine(contentRoot, rel);
-                return File.Exists(path) ? File.ReadAllText(path) : null;
-            }), eventFiles);
-        }
+        /// <summary>The content at <paramref name="contentRoot"/> (a directory laid out like content/) through <see cref="Overlay"/>,
+        /// with the same directory checks as ContentLoader.Load(string).</summary>
+        public static Content Load(string contentRoot) => ContentLoader.Load(contentRoot, Overlay);
     }
 }

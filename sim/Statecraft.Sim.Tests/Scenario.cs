@@ -66,8 +66,9 @@ public sealed class Scenario
     };
 
     public static IReadOnlyCollection<string> Kinds => Allowed.Keys;
+    internal static IReadOnlyList<string> FieldsOf(string kind) => Allowed[kind];
 
-    static Command Build(Dictionary<string, object> c)
+    internal static Command Build(Dictionary<string, object> c)
     {
         if (!c.ContainsKey("kind")) throw new InvalidDataException("a command needs 'kind'");
         var kind = Str(c, "kind");
@@ -85,7 +86,8 @@ public sealed class Scenario
             case "set_mobilization": return new SetMobilization(Num(c, "level"));
             case "security_order": return new SecurityOrder((int)Num(c, "delta"));
             case "appoint": return new Appoint(Str(c, "office"), Str(c, "person"));
-            default: return new MapAction(Str(c, "action"), (int)Num(c, "q"), (int)Num(c, "r"));
+            case "map_action": return new MapAction(Str(c, "action"), (int)Num(c, "q"), (int)Num(c, "r"));
+            default: throw new InvalidDataException($"command kind '{kind}' has no builder");
         }
     }
 

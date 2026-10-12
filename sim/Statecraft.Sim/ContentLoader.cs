@@ -264,17 +264,21 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
-        public static Content Load(string contentRoot)
+        public static Content Load(string contentRoot) => Load(contentRoot, read => read);
+
+        /// <summary>Loads content from a directory through <paramref name="wrap"/>, which may change the text of the files read
+        /// (MvpSlice.Overlay). The directory checks are the same as for <see cref="Load(string)"/>.</summary>
+        internal static Content Load(string contentRoot, Func<Func<string, string?>, Func<string, string?>> wrap)
         {
             var eventsDir = Path.Combine(contentRoot, "events");
             var eventFiles = Directory.Exists(eventsDir)
                 ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
                 : new List<string>();
-            var content = Load(rel =>
+            var content = Load(wrap(rel =>
             {
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
-            }, eventFiles);
+            }), eventFiles);
             // Only this overload can list the directory. The readFile overload (WebGL) cannot, so a misnamed file is caught
             // here and by RealContentTests before anything ships.
             var rulesDir = Path.Combine(contentRoot, "rules");

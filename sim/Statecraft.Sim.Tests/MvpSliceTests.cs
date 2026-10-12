@@ -55,4 +55,15 @@ public class MvpSliceTests
         Assert.Contains("loop: gdd", text);
         Assert.Null(read("missing.yaml"));
     }
+
+    [Fact]
+    public void LoadKeepsTheLoadersDirectoryChecks()
+    {
+        var dir = Fixture.Write();
+        System.IO.Directory.CreateDirectory(System.IO.Path.Combine(dir, "rules"));
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "rules", "nosuchera.yaml"), "attention_per_turn: 5\n");
+        var ex = Assert.Throws<ContentException>(() => MvpSlice.Load(dir));
+        Assert.Equal("rules/nosuchera.yaml", ex.File);
+        Assert.Contains("must be the id of an era", ex.Message);
+    }
 }

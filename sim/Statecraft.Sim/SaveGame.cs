@@ -52,8 +52,6 @@ namespace Statecraft.Sim
         /// <summary>GameState.Hash() after the last recorded turn (the new game's hash before any turn).</summary>
         public string FinalHash { get; private set; }
 
-        public SaveGame(string contentHash, ulong seed, Mode mode, string initialHash) : this(contentHash, seed, mode, LegacyRuleset, initialHash) { }
-
         public SaveGame(string contentHash, ulong seed, Mode mode, string ruleset, string initialHash)
         {
             ContentHash = contentHash ?? throw new ArgumentNullException(nameof(contentHash));

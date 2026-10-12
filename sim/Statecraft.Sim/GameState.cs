@@ -64,7 +64,8 @@ namespace Statecraft.Sim
         public int NextId;
         /// <summary>The date each completed objective was completed, by objective id (ordinal).</summary>
         public SortedDictionary<string, DateTime> Objectives = new SortedDictionary<string, DateTime>(StringComparer.Ordinal);
-        /// <summary>The player's score (GDD "Objectives": bonus points).</summary>
+        /// <summary>The player's score (GDD "Objectives": bonus points). An int assumes whole-number points; the point values and
+        /// the timing bonus are open decisions with the owner (D-B2, D-B6), so the type is revisited when they are set.</summary>
         public int Score;
 
         public double TotalPopulation => Population.Values.Sum();

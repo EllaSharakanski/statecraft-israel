@@ -58,7 +58,13 @@ public class CommandGuardTests
     [Fact]
     public void TheScenarioRunnerKnowsEveryKind()
     {
-        foreach (var cmd in Samples.Values) Assert.Contains(cmd.Kind, Scenario.Kinds);
+        foreach (var cmd in Samples.Values)
+        {
+            Assert.Contains(cmd.Kind, Scenario.Kinds);
+            var fields = new Dictionary<string, object> { ["kind"] = cmd.Kind };
+            foreach (var f in Scenario.FieldsOf(cmd.Kind)) fields[f] = f == "shares" ? new Dictionary<object, object> { ["x"] = "1" } : (object)"1";
+            Assert.Equal(cmd.GetType(), Scenario.Build(fields).GetType());
+        }
     }
 
     [Fact]
