@@ -197,13 +197,23 @@ public static class MapCapture
         finally { QualitySettings.SetQualityLevel(saved, true); }
     }
 
-    /// <summary>The units in play as a new game starts (golden seed, historical mode): what the player draws on turn 1.</summary>
+    /// <summary>The units in play as a new game starts (golden seed, historical mode): what the player draws on turn 1, or, with
+    /// -unitsDate, on that day.</summary>
     static void ShowStartUnits(MapScene map)
     {
         var content = Statecraft.Sim.ContentLoader.Load(Paths.Content);
         var units = Statecraft.Game.Map.Units.UnitData.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Statecraft.Game.Map.Units.UnitData.DefaultFileName)));
         var layer = Statecraft.Game.Map.Units.UnitLayer.Create(map, units, content.Hexes, still: true);
-        layer.Show(content, Statecraft.Sim.Simulation.NewGame(content, Statecraft.Sim.GoldenRun.Seed, Statecraft.Sim.Mode.Historical));
+        var state = Statecraft.Sim.Simulation.NewGame(content, Statecraft.Sim.GoldenRun.Seed, Statecraft.Sim.Mode.Historical);
+        // -unitsDate YYYY-MM-DD: the units as on that day (a render of a unit outside the first turn; the sim never sees it).
+        var args = System.Environment.GetCommandLineArgs();
+        int at = System.Array.IndexOf(args, "-unitsDate");
+        if (at >= 0 && at + 1 < args.Length)
+        {
+            state = state.Clone();
+            state.Date = Statecraft.Game.Map.Units.UnitData.Day(args[at + 1]);
+        }
+        layer.Show(content, state);
     }
 
     /// <summary>PromoPose.All, plus any "-extraPose name:lon:lat:distanceM:yaw" given (close looks while tuning the art, for
