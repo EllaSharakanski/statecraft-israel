@@ -11,8 +11,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - An office can now have several holders at once (`several_holders: true` in offices.yaml): Minister without Portfolio
   and the deputy ministers of Education. Adds Dov Yosef's term without portfolio (24 December 1952 to 15 June 1953)
   and Ami Assaf as a second Deputy Minister of Education (from 11 June 1956). Event text, policies and effects cannot
-  name such an office, and the Cabinet refuses to appoint to it. The Cabinet screen still shows one name per seat
-  (`Seat.Holders` has them all). No golden moves (refs #277).
+  name such an office, and the Cabinet refuses to appoint to it. The Cabinet screen shows a card for each holder. No
+  golden moves (#277).
 - JSON Schemas for `people.yaml`, `offices.yaml`, `parties.yaml` and the event files (#265), in `content/schema/`. Each file
   names its schema on the first line, so an editor with a YAML language server flags a wrong field name or a missing
   `sources:` as you type. `SchemaTests` checks all real content against them, keeps their field names equal to the loader
