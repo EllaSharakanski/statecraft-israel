@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- An office can now have several holders at once (`several_holders: true` in offices.yaml): Minister without Portfolio
+  and the deputy ministers of Education. Adds Dov Yosef's term without portfolio (24 December 1952 to 15 June 1953)
+  and Ami Assaf as a second Deputy Minister of Education (from 11 June 1956). Event text, policies and effects cannot
+  name such an office, and the Cabinet refuses to appoint to it. The Cabinet screen still shows one name per seat
+  (`Seat.Holders` has them all). No golden moves (refs #277).
 - The Fourth to Seventh Governments (24 December 1952 to 1956) with their coalitions and the ministers' dated terms,
   the 1953-1956 deputy ministers, the Ministries of Postal Services (from 3 November 1952) and Development (from
   15 June 1953), and the Chiefs of Staff Maklef and Dayan. Dates follow the Knesset's own position records and plenum
