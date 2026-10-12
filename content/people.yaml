@@ -56,6 +56,22 @@ people:
           - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250689.pdf", checked: 2026-10-12 }
           - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250350.pdf", checked: 2026-10-12 }
       - { office: defense_minister, from: 1952-12-24, to: 1954-01-26, sources: *gov4 }
+      # The four General Zionist ministers resigned on 25 May 1953 and returned on 3 June 1953. On 25 May the Prime
+      # Minister told the Knesset that until the government met he would, by custom, be responsible for the four vacated
+      # ministries (plenum 2_ptm_250584.pdf, p. 1383); on 3 June the Knesset approved their return and they made their
+      # declarations again (2_ptm_250727.pdf, pp. 1481, 1502). Rationing goes with Trade and Industry (see Bernstein).
+      # The Knesset position records show the four terms without a break; the plenum record of the resignation and the
+      # new declarations is used (issue #314).
+      - office: interior_minister
+        from: 1953-05-25
+        to: 1953-06-03
+        sources: &gz_1953
+          - &gz_resign { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250584.pdf", checked: 2026-10-12 }
+          - &gz_return { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250727.pdf", checked: 2026-10-12 }
+      - { office: trade_minister, from: 1953-05-25, to: 1953-06-03, sources: *gz_1953 }
+      - { office: rationing_minister, from: 1953-05-25, to: 1953-06-03, sources: *gz_1953 }
+      - { office: transportation_minister, from: 1953-05-25, to: 1953-06-03, sources: *gz_1953 }
+      - { office: health_minister, from: 1953-05-25, to: 1953-06-03, sources: *gz_1953 }
       # Back as Minister of Defense when Lavon resigned on 21 February 1955 (Fifth Government).
       - office: defense_minister
         from: 1955-02-21
@@ -138,7 +154,18 @@ people:
     offices:
       - { office: finance_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: finance_minister, from: 1949-03-10, to: 1950-11-01, sources: &first [{ url: "https://en.wikipedia.org/wiki/First_government_of_Israel", checked: 2026-10-10 }, { url: "https://bengurionarchive.bgu.ac.il/en/node/14566", checked: 2026-10-09 }] }
-      - { office: trade_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
+      # Trade and Industry from 22 March 1949, not 10 March: on 8 March 1949 the Prime Minister named Kaplan Minister of
+      # Finance only and said the unassigned portfolios would follow in the coming weeks or days; on 22 March he told the
+      # Knesset the government had decided that, for now, Kaplan would run Trade and Industry and Shapira Health (plenum
+      # 1_ptm_250087.pdf, p. 192). The Knesset position record also starts both terms on 22 March. Issue #310.
+      - office: trade_minister
+        from: 1949-03-22
+        to: 1950-11-01
+        sources: &first_22_march
+          - &gov1_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%201", checked: 2026-10-12 }
+          - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250087.pdf", checked: 2026-10-12 }
+          - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250177.pdf", checked: 2026-10-12 }
+          - &gov1_pdf { url: "https://main.knesset.gov.il/mk/government/documents/gov1.pdf", checked: 2026-10-12 }
       - { office: finance_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
       - office: finance_minister
         from: 1951-10-08
@@ -211,7 +238,8 @@ people:
     offices:
       - { office: health_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: immigration_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: health_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
+      # Health from 22 March 1949, when the Prime Minister told the Knesset Shapira would run it (see Kaplan). Issue #310.
+      - { office: health_minister, from: 1949-03-22, to: 1950-11-01, party: united_religious_front, sources: *first_22_march }
       - { office: immigration_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
       - { office: interior_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }
       # en.wiki lists all three portfolios in the Second Government; the he.wiki extract did not clearly show Interior
@@ -376,7 +404,9 @@ people:
     portrait: { file: promo/ref/people/Peretz_Bernstein.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg", focus_y: 0.28 }
     offices:
       - { office: trade_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
-      - { office: trade_minister, from: 1952-12-24, to: 1954-01-26, sources: *gov4 }
+      # Split at the General Zionists' resignation (25 May 1953) and return (3 June 1953); see Ben-Gurion. Issue #314.
+      - { office: trade_minister, from: 1952-12-24, to: 1953-05-25, sources: &gov4_gz [*gov4_k, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_הרביעית", checked: 2026-10-12 }, { url: "https://en.wikipedia.org/wiki/Fourth_government_of_Israel", checked: 2026-10-12 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250689.pdf", checked: 2026-10-12 }, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250350.pdf", checked: 2026-10-12 }, *gz_resign, *gz_return] }
+      - { office: trade_minister, from: 1953-06-03, to: 1954-01-26, sources: *gov4_gz }
       - { office: trade_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
       # Responsibility for rationing stayed with Trade and Industry when the Fourth Government took office: the Knesset
       # records show no Ministry of Rationing and Supply or rationing minister in the Fourth Government, and on
@@ -384,7 +414,8 @@ people:
       # still held the supply tasks and, to some extent, rationing, with a special food division. On 15 March 1954 he said
       # the same about the ministry's past and its move from control to development. No separate handover is recorded, so
       # the term starts with his Trade term. Plenum minutes of the Second Knesset, checked 2026-10-12. Issue #283.
-      - { office: rationing_minister, from: 1952-12-24, to: 1954-01-26, sources: [*gov4_k, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250540.pdf", checked: 2026-10-12 }] }
+      - { office: rationing_minister, from: 1952-12-24, to: 1953-05-25, sources: &bernstein_rationing [*gov4_k, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250540.pdf", checked: 2026-10-12 }, *gz_resign, *gz_return] }
+      - { office: rationing_minister, from: 1953-06-03, to: 1954-01-26, sources: *bernstein_rationing }
       - { office: rationing_minister, from: 1954-01-26, to: 1955-06-29, sources: [*gov5_k, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250596.pdf", checked: 2026-10-12 }] }
     status: fact-checked
   - id: remez
@@ -448,7 +479,7 @@ people:
       # the Prime Minister told the Knesset that Trade and Industry, Health, Agriculture and Minorities were not yet
       # assigned and that the whole government was answerable for them for now (gov1.pdf). The 1 June 1949 date in the
       # he.wiki First Government table is not in the Knesset records. Issue #225.
-      - { office: agriculture_minister, from: 1949-03-22, to: 1950-11-01, sources: [&gov1_pdf { url: "https://main.knesset.gov.il/mk/government/documents/gov1.pdf", checked: 2026-10-12 }, &gov1_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%201", checked: 2026-10-12 }] }
+      - { office: agriculture_minister, from: 1949-03-22, to: 1950-11-01, sources: [*gov1_pdf, *gov1_k] }
       # As Minister of Rationing and Supply: named in the First Government presented to the Knesset on 8 March 1949 and in
       # office from 10 March 1949 (Knesset gov1.pdf; he.wiki First Government table and "דב יוסף"). Rationing itself was
       # decided on 26 April 1949 (austerity event), the date en.wiki "Rationing and Supply Minister of Israel" and
@@ -732,7 +763,9 @@ people:
     competence: 5
     loyalty: 5
     offices:
-      - { office: interior_minister, from: 1952-12-24, to: 1954-01-26, sources: *gov4 }
+      # Split at the General Zionists' resignation and return (25 May - 3 June 1953); see Ben-Gurion. Issue #314.
+      - { office: interior_minister, from: 1952-12-24, to: 1953-05-25, sources: *gov4_gz }
+      - { office: interior_minister, from: 1953-06-03, to: 1954-01-26, sources: *gov4_gz }
       - { office: interior_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
     status: fact-checked
   - id: serlin
@@ -756,7 +789,9 @@ people:
       # en.wiki's Fourth Government table dates the swap 29 December 1953; the government ended on 26 January 1954, so
       # 1952 is used.
       - { office: transportation_minister, from: 1952-12-24, to: 1952-12-29, sources: &swap_1952 [*gov4_k, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_הרביעית", checked: 2026-10-12 }] }
-      - { office: health_minister, from: 1952-12-29, to: 1954-01-26, sources: *swap_1952 }
+      # Split at the General Zionists' resignation and return (25 May - 3 June 1953); see Ben-Gurion. Issue #314.
+      - { office: health_minister, from: 1952-12-29, to: 1953-05-25, sources: &swap_gz [*gov4_k, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_הרביעית", checked: 2026-10-12 }, *gz_resign, *gz_return] }
+      - { office: health_minister, from: 1953-06-03, to: 1954-01-26, sources: *swap_gz }
       - { office: health_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
     status: fact-checked
   - id: yosef_sapir
@@ -774,7 +809,9 @@ people:
     loyalty: 5
     offices:
       - { office: health_minister, from: 1952-12-24, to: 1952-12-29, sources: *swap_1952 }
-      - { office: transportation_minister, from: 1952-12-29, to: 1954-01-26, sources: *swap_1952 }
+      # Split at the General Zionists' resignation and return (25 May - 3 June 1953); see Ben-Gurion. Issue #314.
+      - { office: transportation_minister, from: 1952-12-29, to: 1953-05-25, sources: *swap_gz }
+      - { office: transportation_minister, from: 1953-06-03, to: 1954-01-26, sources: *swap_gz }
       - { office: transportation_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
     status: fact-checked
   - id: aran

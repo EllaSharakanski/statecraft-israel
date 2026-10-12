@@ -21,6 +21,19 @@ public class GoldenManifestTests
     }
 
     [Fact]
+    public void EveryScenarioSnapshotHasItsScenarioFile()
+    {
+        var names = System.IO.Directory.GetFiles(Scenario.Dir(), "*.yaml").Select(f => System.IO.Path.GetFileNameWithoutExtension(f)).ToHashSet();
+        var snapshots = System.IO.Directory.GetFiles(System.IO.Path.Combine(Repo, "sim", "Statecraft.Sim.Tests", "golden"), "scenario-*.txt");
+        Assert.NotEmpty(snapshots);
+        foreach (var f in snapshots)
+        {
+            var n = System.IO.Path.GetFileNameWithoutExtension(f).Substring("scenario-".Length);
+            Assert.True(names.Contains(n), $"golden/{System.IO.Path.GetFileName(f)} has no scenarios/{n}.yaml: delete the snapshot with its scenario");
+        }
+    }
+
+    [Fact]
     public void TheLibraryConstantsUnityComparesAgainstEqualTheManifest()
     {
         Assert.Equal(GoldenRun.Hash1950, GoldenManifest.Expected("hash1950"));

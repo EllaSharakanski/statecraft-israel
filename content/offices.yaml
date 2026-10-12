@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=./schema/offices.schema.json
 offices:
+  # `from: 1948-05-14` is the state's founding (issue #80). For the deputy titles and any post created later (some date from
+  # 1951) it is a design floor, not the day the post was created.
   - { id: prime_minister, title: Prime Minister, from: 1948-05-14 }
   # Spelling is deliberate, do not "fix" it (playtest 1, item 8): the office title keeps Israel's official English,
   # "Ministry of Defense" / "Minister of Defense", because it is a proper noun. The UI is otherwise British English, so
@@ -49,7 +51,8 @@ offices:
   # (the austerity event), not when the office began (issue #225).
   - { id: rationing_minister, title: Minister responsible for rationing, from: 1949-03-10 }
   # Before the state the chief of staff led the Haganah (Yaakov Dori, from 1 June 1947), so the same post is split at the
-  # state's founding (issue #80; sources on Dori's two terms in people.yaml).
+  # state's founding (issue #80; sources on Dori's two terms in people.yaml). 14 May 1948 is the design's date; the IDF Ordinance
+  # followed on 26 May 1948. Do not "correct" it to 26 May in a fact-check: it would move the goldens.
   - { id: haganah_chief_of_staff, title: Haganah Chief of the General Staff, until: 1948-05-14 }
   - { id: chief_of_staff, title: IDF Chief of the General Staff, from: 1948-05-14 }
   # The role first appeared in the Third Government (Peretz Naphtali, 8 October 1951): he.wiki "שר בלי תיק"; the
