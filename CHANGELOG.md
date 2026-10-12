@@ -22,6 +22,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   yet. Goldens unchanged.
 - Aliyah regions accept `from`/`to` (chapters spec 3.2, refs #57). The loader refuses a window that runs backwards or is
   empty, and an aliyah period that counts a region outside its window. With no dates nothing changes (goldens unchanged).
+- A `map_actions` entry in `rules.yaml` accepts `from`/`to` (chapters spec 3.2, refs #57). Outside the window the action
+  is refused with the day it opens or the last day it was open ("A housing project can be placed from 1 January 1950").
+  The loader refuses a window that runs backwards or is empty.
+  With no dates nothing changes (goldens unchanged). This finishes the model-record windows of #57.
 - Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
   elsewhere hides it, and a mouse still hovers as before. The info panel lists the selected hex's 1948 localities with
   today's name where a living place carries on, by the same rule as the tooltip. Keyboard players reach the panel list

@@ -320,6 +320,10 @@ namespace Statecraft.Sim
         public double Morale { get; set; }
         /// <summary>The phrase the player reads in a sentence ("a transit camp"); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the action may be placed (inclusive); null when it is open from the start (chapters spec 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>First day it may no longer be placed (exclusive); null while it still may.</summary>
+        public DateTime? To { get; set; }
     }
 
     /// <summary>Money the sim tracks (model.yaml money): treasury, debt and fx_reserves, each with the name and currency

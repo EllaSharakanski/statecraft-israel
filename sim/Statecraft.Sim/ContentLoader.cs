@@ -391,6 +391,8 @@ namespace Statecraft.Sim
                 if (!MapActions.Actions.Contains(kv.Key)) throw new ContentException(file, $"map_actions.{kv.Key}", "unknown map action (transit_camp or housing)");
                 if (!(kv.Value.Cost >= 0 && IsFinite(kv.Value.Cost))) throw new ContentException(file, $"map_actions.{kv.Key}.cost", "must be a finite number >= 0");
                 Named(file, $"map_actions.{kv.Key}.name", kv.Value.Name);
+                if (kv.Value.From.HasValue && kv.Value.To.HasValue && kv.Value.To.Value <= kv.Value.From.Value)
+                    throw new ContentException(file, $"map_actions.{kv.Key}.to", FormattableString.Invariant($"must be after from ({kv.Value.From:yyyy-MM-dd})"));
                 foreach (var (key, v) in new[] { ("housing", kv.Value.Housing), ("morale", kv.Value.Morale) })
                     if (!(v >= -1 && v <= 1)) throw new ContentException(file, $"map_actions.{kv.Key}.{key}", "must be a number from -1 to 1");
             }
