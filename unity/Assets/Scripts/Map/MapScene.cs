@@ -188,10 +188,10 @@ namespace Statecraft.Game.Map
                 }
                 var table = string.IsNullOrWhiteSpace(inputs.PopulationYaml)
                     ? new Dictionary<string, int>() : Kits.KitPopulation.Parse(inputs.PopulationYaml, "map/" + Kits.KitPopulation.FileName);
-                if (string.IsNullOrWhiteSpace(inputs.LocalitiesYaml))
+                if (string.IsNullOrWhiteSpace(inputs.LocalitiesTsv))
                 {
                     // As the population file: the editor refuses, a player warns and draws the 25 game settlements only.
-                    var missing = $"map/{Kits.Localities.FileName} is missing or empty: the kits draw the 1948 localities from it";
+                    var missing = $"map/{Kits.Localities.RuntimeFileName} is missing or empty: the kits draw the 1948 localities from it (tools/localities_bake.py)";
                     if (Application.isEditor) throw new InvalidDataException(missing);
                     Debug.LogWarning("KITS " + missing);
                     localities = new Kits.Localities.Doc();
@@ -199,8 +199,9 @@ namespace Statecraft.Game.Map
                 else
                 {
                     var reserved = new HashSet<string>(); foreach (var s in list) reserved.Add(s.Id);
-                    localities = Kits.Localities.Parse(inputs.LocalitiesYaml, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), reserved,
-                        "map/" + Kits.Localities.FileName);
+                    // The baked runtime form, not the 176k-character YAML (boot budget; pytest fails a stale bake).
+                    localities = Kits.Localities.ParseRuntime(inputs.LocalitiesTsv, (meta.lon0, meta.lon1, meta.lat0, meta.lat1), reserved,
+                        "map/" + Kits.Localities.RuntimeFileName);
                 }
                 foreach (var p in localities.Places) table[p.Settlement.Id] = p.Population;
                 Kits.KitPopulation.Use(table);

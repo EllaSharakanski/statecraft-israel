@@ -1541,13 +1541,19 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   - The camp areas total 64,670 people: Beersheba 47,980, Jerusalem 7,070 (its "Tribal Units" row only), Ramle 3,780,
     Jaffa 2,270, Hebron 2,000, Safad 820, Gaza 530 and Nablus 220. Tulkarm's "Tribal Units" row has no figure.
   - The file is presentation only, outside the content hash (`SaveGameTests.TheLocalitiesFileIsOutsideTheContentHash`),
-    and read through `MapInputs.LocalitiesYaml`. `tools/tests/test_localities.py` checks it.
+    `tools/tests/test_localities.py` checks it. The player reads a baked runtime form, `localities_1948.tsv` (see
+    "Boot" below), through `MapInputs.LocalitiesTsv`.
   - Left for later rounds: places under 1,000, the 70 VS rows with no point, and the 29 foundings dated only "1948".
-- **Today's name:** a `today` entry (`{name, name_he, source}`) exists only for a place that carries on. There are 160 of
+- **Today's name:** a `today` entry (`{name, name_he, source}`) exists only for a place that carries on. There are 161 of
   them.
   - None is given where Wikidata classes the place's item as a depopulated village or a former settlement. The test's
     QID list is `tools/tests/data/localities_no_today_qids.txt`; the content records no such class.
-  - The exception is Majdal, whose item is today's Ashkelon (the owner's example).
+  - There are two exceptions:
+    - Majdal, whose item is today's Ashkelon (the owner's example).
+    - Sha'b → Sha'ab (שעב). Its item, Q2655669, is also the living Arab local council. This applies the owner's rule
+      (2026-10-12 re-review).
+  - Walaja, Samakh and Lubiya are classed both ways too, but no living place carries them on, so they have no today
+    name.
   - Jewish places merged into a later municipality take the municipality: Magdiel and Ramatayim become Hod HaSharon, and
     Kfar Ganim becomes Petah Tikva.
 - **Kits:**

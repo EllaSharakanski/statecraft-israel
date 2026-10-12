@@ -15,11 +15,14 @@ namespace Statecraft.Game.Map.Kits
     /// <summary>The localities of 15 May 1948 beyond the 25 game settlements (owner rulings 2026-10-11: places of 1,000 or more
     /// people first, shown by their 1948 names with today's name in the label's tooltip) and the Bedouin encampment areas
     /// (one per sub-district whose Village Statistics rows name tribes or nomads, with their total). Read from
-    /// content/map/localities_1948.yaml through the map inputs (MapInputs.LocalitiesYaml). Presentation only: the sim never
+    /// content/map/localities_1948.yaml, which the player reads as its baked runtime form (localities_1948.tsv, MapInputs.LocalitiesTsv). Presentation only: the sim never
     /// reads the file, so it is outside the content hash (SaveGameTests.TheLocalitiesFileIsOutsideTheContentHash).</summary>
     public static class Localities
     {
         public const string FileName = "localities_1948.yaml";
+        /// <summary>The runtime form the player reads (tools/localities_bake.py bakes it from <see cref="FileName"/>, the sourced
+        /// source of truth; pytest fails a stale bake). Tab-separated, one row per line: the boot budget (docs/visual-v1.md).</summary>
+        public const string RuntimeFileName = "localities_1948.tsv";
 
         public sealed class Place
         {
@@ -32,12 +35,14 @@ namespace Statecraft.Game.Map.Kits
             public Landmark Landmark;
             /// <summary>A mixed locality (Nesher: Arab and Jewish in one VS row), drawn with both archetypes side by side.</summary>
             public bool Mixed;
+            /// <summary>How many sources the row cites (their URLs are in the YAML).</summary>
+            public int Sources;
         }
 
         public sealed class Area
         {
             public string Subdistrict = "";
-            public int Population;
+            public int Population, Sources;
             /// <summary>The sub-district's land hexes as content/map/subdistrict_hexes_1948.yaml draws them (FillHexes, at
             /// load: the localities file keeps no copy of them).</summary>
             public List<(int q, int r)> Hexes = new List<(int, int)>();
@@ -128,7 +133,7 @@ namespace Statecraft.Game.Map.Kits
             public string? DraftId { get; set; } public string? Note { get; set; }
             public string Checked { get; set; } = ""; public string Status { get; set; } = "";
             public List<SourceRow> Sources { get; set; } = new List<SourceRow>();
-            public int Line;
+            public int Line, SourceCount;
         }
 
         sealed class AreaRow
@@ -137,7 +142,7 @@ namespace Statecraft.Game.Map.Kits
             public List<string> ListedAs { get; set; } = new List<string>(); public string? Note { get; set; }
             public string Checked { get; set; } = ""; public string Status { get; set; } = "";
             public List<SourceRow> Sources { get; set; } = new List<SourceRow>();
-            public int Line;
+            public int Line, SourceCount;
         }
 
         sealed class FileRow
@@ -168,6 +173,61 @@ namespace Statecraft.Game.Map.Kits
             FileRow f;
             try { f = Read(yaml, file); }
             catch (YamlException e) { throw new InvalidDataException($"{file}:{e.Start.Line}: {e.Message}", e); }
+            return Validate(f, bounds, reserved, file, runtime: false);
+        }
+
+        /// <summary>Parses the runtime form (<see cref="RuntimeFileName"/>) with the same checks as <see cref="Parse"/>, but
+        /// for the source URLs, which only the YAML holds: a row must cite at least one. Every malformed line throws
+        /// InvalidDataException naming <paramref name="file"/> and the line.</summary>
+        public static Doc ParseRuntime(string tsv, (double lon0, double lon1, double lat0, double lat1) bounds,
+            ICollection<string> reserved, string file = RuntimeFileName) =>
+            Validate(ReadRuntime(tsv, file), bounds, reserved, file, runtime: true);
+
+        static FileRow ReadRuntime(string tsv, string file)
+        {
+            var f = new FileRow();
+            var lines = tsv.Split('\n');
+            int Int(string text, string what, int line) =>
+                int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var v)
+                    ? v : throw new InvalidDataException($"{file}:{line}: {what} '{text}' is not an integer");
+            double Num(string text, string what, int line) =>
+                double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v)
+                    ? v : throw new InvalidDataException($"{file}:{line}: {what} '{text}' is not a number");
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var text = lines[i].TrimEnd('\r');
+                if (text.Length == 0 || text[0] == '#') continue;
+                int line = i + 1;
+                var c = text.Split('\t');
+                if (c[0] == "place")
+                {
+                    if (c.Length != 14) throw new InvalidDataException($"{file}:{line}: a place row has {c.Length} fields, not 14");
+                    f.Places.Add(new PlaceRow
+                    {
+                        Id = c[1], Name = c[2], Today = c[3].Length == 0 ? null : new TodayRow { Name = c[3], NameHe = c[4] },
+                        Lon = Num(c[5], "lon", line), Lat = Num(c[6], "lat", line), Type = c[7], Landmark = c[8],
+                        Kind = c[9] == "1" ? "mixed_locality" : c[9] == "0" ? "" : throw new InvalidDataException($"{file}:{line}: mixed '{c[9]}' is not 0 or 1"),
+                        Population = Int(c[10], "population", line), Status = c[11], Checked = c[12],
+                        SourceCount = Int(c[13], "sources", line), Line = line,
+                    });
+                }
+                else if (c[0] == "camp")
+                {
+                    if (c.Length != 6) throw new InvalidDataException($"{file}:{line}: a camp row has {c.Length} fields, not 6");
+                    f.Encampments.Add(new AreaRow
+                    {
+                        Subdistrict = c[1], Population = Int(c[2], "population", line), Status = c[3], Checked = c[4],
+                        SourceCount = Int(c[5], "sources", line), Line = line,
+                    });
+                }
+                else throw new InvalidDataException($"{file}:{line}: a row starts '{c[0]}', not place or camp");
+            }
+            return f;
+        }
+
+        static Doc Validate(FileRow f, (double lon0, double lon1, double lat0, double lat1) bounds, ICollection<string> reserved,
+            string file, bool runtime)
+        {
             if (f?.Places == null || f.Places.Count == 0) throw new InvalidDataException($"{file}: no places");
             var doc = new Doc(); var ids = new HashSet<string>();
             foreach (var p in f.Places)
@@ -178,19 +238,19 @@ namespace Statecraft.Game.Map.Kits
                 if (!ids.Add(p.Id)) throw new InvalidDataException($"{at} duplicate id");
                 if (reserved.Contains(p.Id)) throw new InvalidDataException($"{at} is a game settlement's id (settlements_1948.yaml keeps those)");
                 if (string.IsNullOrWhiteSpace(p.Name)) throw new InvalidDataException($"{at} needs a name");
-                if (p.Today != null && (string.IsNullOrWhiteSpace(p.Today.Name) || string.IsNullOrWhiteSpace(p.Today.Source)))
+                if (p.Today != null && (string.IsNullOrWhiteSpace(p.Today.Name) || (!runtime && string.IsNullOrWhiteSpace(p.Today.Source))))
                     throw new InvalidDataException($"{at} today needs a name and a source");
                 if (!Types.Contains(p.Type ?? "")) throw new InvalidDataException($"{at} has unknown type '{p.Type}'");
                 if (!Landmarks.TryGetValue(p.Landmark ?? "", out var landmark)) throw new InvalidDataException($"{at} has unknown landmark '{p.Landmark}'");
                 if (double.IsNaN(p.Lon) || double.IsNaN(p.Lat) || p.Lon < bounds.lon0 || p.Lon > bounds.lon1 || p.Lat < bounds.lat0 || p.Lat > bounds.lat1)
                     throw new InvalidDataException($"{at} lon/lat {p.Lon}, {p.Lat} missing or outside the map");
                 if (p.Population < 1) throw new InvalidDataException($"{at} population {p.Population} is not a count of people");
-                CheckSourced(at, p.Status, p.Checked, p.Sources);
+                CheckSourced(at, p.Status, p.Checked, p.Sources, runtime ? p.SourceCount : p.Sources.Count);
                 doc.Places.Add(new Place
                 {
                     Settlement = new Settlement { Id = p.Id, Name = p.Name, Type = p.Type, Lon = p.Lon, Lat = p.Lat, PreModern = true },
                     Today = p.Today?.Name, TodayHe = p.Today?.NameHe, Population = p.Population, Landmark = landmark,
-                    Mixed = p.Kind == "mixed_locality",
+                    Mixed = p.Kind == "mixed_locality", Sources = runtime ? p.SourceCount : p.Sources.Count,
                 });
             }
             var subs = new HashSet<string>();
@@ -200,8 +260,8 @@ namespace Statecraft.Game.Map.Kits
                 string at = $"{file}:{a.Line}: encampments '{a.Subdistrict}'";
                 if (!subs.Add(a.Subdistrict)) throw new InvalidDataException($"{at} duplicate subdistrict");
                 if (a.Population < 1) throw new InvalidDataException($"{at} population {a.Population} is not a count of people");
-                CheckSourced(at, a.Status, a.Checked, a.Sources);
-                doc.Encampments.Add(new Area { Subdistrict = a.Subdistrict, Population = a.Population });
+                CheckSourced(at, a.Status, a.Checked, a.Sources, runtime ? a.SourceCount : a.Sources.Count);
+                doc.Encampments.Add(new Area { Subdistrict = a.Subdistrict, Population = a.Population, Sources = runtime ? a.SourceCount : a.Sources.Count });
             }
             return doc;
         }
@@ -321,11 +381,11 @@ namespace Statecraft.Game.Map.Kits
             return list;
         }
 
-        static void CheckSourced(string at, string status, string checkedOn, List<SourceRow> sources)
+        static void CheckSourced(string at, string status, string checkedOn, List<SourceRow> sources, int count)
         {
             if (!Statuses.Contains(status ?? "")) throw new InvalidDataException($"{at} status '{status}' is not draft, owner-verify, fact-checked or verified");
             if (string.IsNullOrWhiteSpace(checkedOn)) throw new InvalidDataException($"{at} has no checked date");
-            if (sources == null || sources.Count == 0) throw new InvalidDataException($"{at} sources is empty");
+            if (count < 1) throw new InvalidDataException($"{at} sources is empty");
             for (int i = 0; i < sources.Count; i++)
                 if (string.IsNullOrWhiteSpace(sources[i]?.Url) || !sources[i].Url.StartsWith("https://"))
                     throw new InvalidDataException($"{at} sources[{i}] is not an https URL");

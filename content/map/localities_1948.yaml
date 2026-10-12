@@ -3217,6 +3217,10 @@ places:
 - id: shaab
   name: Sha'b
   name_basis: vs1945
+  today:
+    name: Sha'ab
+    name_he: שעב
+    source: https://www.wikidata.org/wiki/Q2655669
   name_he: שעב
   name_ar: شعب
   lon: 35.2369

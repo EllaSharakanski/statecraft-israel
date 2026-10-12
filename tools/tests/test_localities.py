@@ -86,8 +86,10 @@ def test_start_of_game_only_no_later_fate():
 def test_no_place_that_did_not_carry_on_has_a_today_name():
     """Owner ruling 2026-10-12: "Today:" only where a living place carries on. A place whose Wikidata item is classed a
     depopulated village or a former settlement (tools/tests/data/localities_no_today_qids.txt) has no today name; the
-    one exception is the owner's own example, Majdal, whose item is today's city of Ashkelon."""
-    exceptions = {"al_majdal"}
+    exceptions are the owner's own example, Majdal, whose item is today's city of Ashkelon, and Sha'b, whose item is also
+    the living local council of Sha'ab (Q2655669 is classed both; coordinator ruling 2026-10-12 under the owner's rule).
+    Walaja, Samakh and Lubiya, classed both as well, have no living successor and stay without one."""
+    exceptions = {"al_majdal", "shaab"}
     offending = [p["id"] for p in PLACES if p["wikidata"] in NO_TODAY and "today" in p and p["id"] not in exceptions]
     assert not offending
     assert sum(1 for p in PLACES if p["wikidata"] in NO_TODAY) >= 100
@@ -113,3 +115,21 @@ def test_encampments_are_sourced_totals_of_real_subdistricts():
         sourced(c)
         assert c["population"] > 0 and c["listed_as"] and "hexes" not in c
         assert "name" not in c, "camps are never named"
+
+
+def test_the_runtime_file_is_a_fresh_bake():
+    """The player reads content/map/localities_1948.tsv, baked from the YAML (boot budget). A stale bake fails here: rerun
+    uv run tools/localities_bake.py after editing the YAML."""
+    import localities_bake
+    assert (MAP / "localities_1948.tsv").read_text(encoding="utf-8") == localities_bake.bake((MAP / "localities_1948.yaml").read_text(encoding="utf-8"))
+
+
+def test_the_bake_refuses_a_field_with_a_tab_and_keeps_every_row():
+    import localities_bake
+    text = (MAP / "localities_1948.yaml").read_text(encoding="utf-8")
+    rows = [line for line in localities_bake.bake(text).splitlines() if not line.startswith("#")]
+    assert len([r for r in rows if r.startswith("place\t")]) == len(PLACES)
+    assert len([r for r in rows if r.startswith("camp\t")]) == len(CAMPS)
+    assert all(len(r.split("\t")) == (14 if r.startswith("place\t") else 6) for r in rows)
+    with pytest.raises(ValueError, match="place 'hebron'"):
+        localities_bake.bake(text.replace("  name: Hebron\n", "  name: \"Heb\\tron\"\n", 1))

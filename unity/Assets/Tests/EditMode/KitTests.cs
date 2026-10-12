@@ -106,10 +106,10 @@ public class KitTests
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
-        var localities = inputs.LocalitiesYaml;
-        inputs.LocalitiesYaml = "";
-        StringAssert.Contains(Localities.FileName, Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs)).Message);
-        inputs.LocalitiesYaml = localities;
+        var localities = inputs.LocalitiesTsv;
+        inputs.LocalitiesTsv = "";
+        StringAssert.Contains(Localities.RuntimeFileName, Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs)).Message);
+        inputs.LocalitiesTsv = localities;
         inputs.PopulationYaml = "";
         var ex = Assert.Throws<System.IO.InvalidDataException>(() => map.Build(inputs));
         StringAssert.Contains(KitPopulation.FileName, ex.Message);
@@ -162,14 +162,17 @@ public class KitTests
         Assert.Greater(trees.Count, 3000, "the groves and hills still have their trees");
     }
 
+    static string LocalitiesYaml =>
+        System.IO.File.ReadAllText(System.IO.Path.Combine(Statecraft.Game.Paths.Content, "map", Localities.FileName));
+
     static Localities.Doc LoadLocalities(MapScene map)
     {
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
         var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
-        var doc = Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+        var doc = Localities.Parse(LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
         Localities.FillHexes(doc, Subdistricts1948.Parse(inputs.RegionsYaml), map.Hexes);
         // The map build's light reader of the sub-district file (boot budget) gives the same areas as the full parse.
-        var light = Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+        var light = Localities.Parse(LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
         Localities.FillHexes(light, inputs.RegionsYaml, map.Hexes);
         for (int i = 0; i < doc.Encampments.Count; i++)
             CollectionAssert.AreEqual(doc.Encampments[i].Hexes, light.Encampments[i].Hexes, doc.Encampments[i].Subdistrict);
@@ -316,6 +319,56 @@ public class KitTests
                 foreach (var t in r.Tiles) Object.DestroyImmediate(t.mesh);
             }
         }
+    }
+
+    /// <summary>The boot reads the baked runtime form (tools/localities_bake.py; pytest fails a stale bake). It yields the same
+    /// rows as the sourced YAML: ids, 1948 and today's names (English and Hebrew), coordinates, type, landmark, the mixed
+    /// flag, population and how many sources each row cites; and the same camp areas.</summary>
+    [Test]
+    public void TheRuntimeFileYieldsTheSameRowsAsTheYaml()
+    {
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
+        var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
+        var bounds = (b.lon0, b.lon1, b.lat0, b.lat1);
+        var reserved = new[] { "tel_aviv" };
+        var yaml = Localities.Parse(LocalitiesYaml, bounds, reserved);
+        var tsv = Localities.ParseRuntime(inputs.LocalitiesTsv, bounds, reserved);
+        Assert.AreEqual(yaml.Places.Count, tsv.Places.Count);
+        for (int i = 0; i < yaml.Places.Count; i++)
+        {
+            var (y, t) = (yaml.Places[i], tsv.Places[i]);
+            string id = y.Settlement.Id;
+            Assert.AreEqual((id, y.Settlement.Name, y.Settlement.Type, y.Settlement.Lon, y.Settlement.Lat),
+                (t.Settlement.Id, t.Settlement.Name, t.Settlement.Type, t.Settlement.Lon, t.Settlement.Lat), id);
+            Assert.AreEqual((y.Today, y.TodayHe, y.Population, y.Landmark, y.Mixed, y.Sources), (t.Today, t.TodayHe, t.Population, t.Landmark, t.Mixed, t.Sources), id);
+            Assert.Greater(t.Sources, 0, id);
+        }
+        Assert.AreEqual(yaml.Encampments.Select(a => (a.Subdistrict, a.Population, a.Sources)).ToList(),
+            tsv.Encampments.Select(a => (a.Subdistrict, a.Population, a.Sources)).ToList());
+        Assert.AreEqual("Sha'ab", tsv.Places.Single(p => p.Settlement.Id == "shaab").Today, "owner rule: Sha'ab is a living local council");
+        Assert.IsTrue(tsv.Places.Single(p => p.Settlement.Id == "nesher").Mixed);
+    }
+
+    /// <summary>A malformed runtime row is an error naming the file and the line.</summary>
+    [Test]
+    public void TheRuntimeFileRejectsBadRowsByLine()
+    {
+        var b = (34.2, 35.9, 29.45, 33.35);
+        var reserved = new[] { "tel_aviv" };
+        const string ok = "place\ta\tA\t\t\t35.0\t32.0\tvillage\tmosque\t0\t1200\tdraft\t2026-10-11\t3";
+        Assert.AreEqual(1, Localities.ParseRuntime("# header\n" + ok + "\n", b, reserved, "loc.tsv").Places.Count);
+        void Bad(string tsv, string expect)
+        {
+            var ex = Assert.Throws<System.IO.InvalidDataException>(() => Localities.ParseRuntime(tsv, b, reserved, "loc.tsv"));
+            StringAssert.Contains(expect, ex.Message);
+        }
+        Bad("# header\n" + ok.Replace("\t35.0\t", "\t35,0\t") + "\n", "loc.tsv:2: lon '35,0' is not a number");
+        Bad("# header\n" + ok + "\n" + ok.Substring(0, ok.LastIndexOf('\t')) + "\n", "loc.tsv:3: a place row has 13 fields");
+        Bad("# header\n" + ok.Replace("\t1200\t", "\t0\t") + "\n", "loc.tsv:2: 'a' population 0");
+        Bad("# header\n" + ok.Replace("\t2026-10-11\t3", "\t2026-10-11\t0") + "\n", "loc.tsv:2: 'a' sources is empty");
+        Bad("# header\n" + ok.Replace("\tmosque\t0\t", "\tmosque\t2\t") + "\n", "loc.tsv:2: mixed '2'");
+        Bad("# header\n" + ok.Replace("place\t", "town\t") + "\n", "loc.tsv:2: a row starts 'town'");
+        Bad("# header\n" + ok.Replace("\tvillage\t", "\thamlet\t") + "\n", "loc.tsv:2: 'a' has unknown type");
     }
 
     [Test]
