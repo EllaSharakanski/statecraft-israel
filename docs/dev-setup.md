@@ -23,6 +23,7 @@ Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the cont
 | Policy checker tests | `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` | Repo policy |
 | Data tool tests (one runs the sim's release gate, so they need the .NET SDK too) | `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 --with pyproj==3.8.0 pytest tools/tests -q` | Tools (pytest) |
 | GDD feature sections (also run by the policy checker tests) | `uv run scripts/oss/gdd_lint.py` | Repo policy |
+| New event file (skeleton with every required field) | `uv run scripts/new_event.py <id> [--from D] [--to D]` | none (helper) |
 | Changelog line | `uv run scripts/oss/changelog_check.py --base origin/main` | Changelog |
 
 `scripts/check.sh` runs all of them in one go, cheapest first, plus a sim build with warnings as errors. It stops at the first failure and shows the end of its output. It takes the base ref as its argument (default `origin/main`); set `CHECK_NO_CHANGELOG=1` if the PR has the `no-changelog` label.
