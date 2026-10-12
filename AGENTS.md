@@ -75,5 +75,6 @@ Before writing or editing content, review:
 - `docs/WRITING_EVENTS.md`: required YAML structure for content
 - `docs/WRITING_GUIDE.md`: tone, style and writing expectations
 - `CONTRIBUTING.md`: repo workflow and validation standards
+- `docs/SOURCING_FOR_CONTRIBUTORS.md`: a sourcing checklist, and what to do when a source cannot be reached
 
 Keep the work in scope, sourced, and readable.
