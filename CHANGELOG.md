@@ -8,6 +8,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The loader refuses an event whose window runs past the end of its era (chapters spec 9: an event may not span a boundary;
+  split it). A `to` on the boundary is fine (it is exclusive); an open window (no `to`) is allowed only in the last era.
+  No current event is affected (refs #65).
 - The loader refuses a `from`/`to` window on the indicators the code reads by name (`morale`, `food_supply`, `housing`,
   `security`, `intl_standing`), a follow-up from the review of #313 (refs #57).
 - Turn lengths per security rung are data: `turn_lengths` in `rules.yaml` or an era override, read in the era the turn

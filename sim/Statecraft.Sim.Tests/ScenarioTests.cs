@@ -59,6 +59,13 @@ public class ScenarioTests
     }
 
     [Theory]
+    [InlineData("      - { kind: security_order, delta: 1.5 }\n", "'delta' must be a whole number")]
+    [InlineData("      - { kind: map_action, action: housing, q: 2.5, r: 1 }\n", "'q' must be a whole number")]
+    [InlineData("      - { kind: map_action, action: housing, q: 2, r: 1.1 }\n", "'r' must be a whole number")]
+    public void AFractionalWholeNumberIsRefusedNotTruncated(string command, string expected) =>
+        Assert.Contains(expected, Assert.Throws<InvalidDataException>(() => Scenario.Parse(Head + command)).Message);
+
+    [Theory]
     [InlineData("      - { kind: fly_to_moon }\n", "unknown command kind 'fly_to_moon'")]
     [InlineData("      - { kind: set_policy, policy: rationing }\n", "needs 'level'")]
     [InlineData("      - { kind: set_policy, policy: rationing, level: 1, extra: 2 }\n", "unknown field 'extra'")]
