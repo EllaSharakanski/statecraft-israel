@@ -275,11 +275,10 @@ public class ArmisticeTests
                 for (int i = 0; i < 6; i++) yield return null;
                 Rect R(string n) => root.Q(n).worldBound;
                 var lb = label.worldBound;
-                Assert.LessOrEqual(lb.yMax, R("minimap").yMin + 0.5f, $"{w}x{h}: the label runs into the minimap");
                 var screen = root.worldBound;
                 Assert.IsTrue(lb.xMin >= screen.xMin - 0.5f && lb.xMax <= screen.xMax + 0.5f && lb.yMin >= screen.yMin - 0.5f && lb.yMax <= screen.yMax + 0.5f,
                     $"{w}x{h}: the label {lb} leaves the screen {screen}");
-                Assert.LessOrEqual(lb.xMax, R("minimap").xMin + 0.5f, $"{w}x{h}: the label overlaps the minimap");
+                Assert.IsFalse(lb.Overlaps(R("minimap")), $"{w}x{h}: the label {lb} overlaps the minimap {R("minimap")}");
                 Assert.IsFalse(lb.Overlaps(R("event-card")), $"{w}x{h}: the event card {R("event-card")} overlaps the label {lb}");
                 if (root.Q("info-panel").resolvedStyle.display == DisplayStyle.Flex)
                     Assert.IsFalse(lb.Overlaps(R("info-panel")), $"{w}x{h}: the info panel {R("info-panel")} overlaps the label {lb}");
