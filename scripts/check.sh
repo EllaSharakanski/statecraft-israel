@@ -36,6 +36,7 @@ run() {
 
 run "changelog (against $base)" uv run scripts/oss/changelog_check.py --base "$base" --skip-label "$skip"
 run "policy checker tests" uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q
+run "gdd lint" python3 scripts/oss/gdd_lint.py
 run "repo policy" uv run scripts/oss/check_repo.py
 run "sim build, warnings as errors" dotnet build sim/Statecraft.sln -c Release --nologo -warnaserror
 run "sim and content tests" dotnet test sim/Statecraft.sln -c Release --nologo
