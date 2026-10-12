@@ -237,6 +237,31 @@
             <ui:ScrollView name="why-rows" class="grow" />
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
+        <!-- The start screen (StartScreenPresenter): shown over the started game before its first turn (never in automated
+             runs). The painting is AI-generated concept art (ASSETS.yaml), with no identifiable person. The two quotations
+             are the Declaration of the Establishment of the State of Israel, word for word: the official Hebrew (Iton
+             Rishmi No. 1, 14 May 1948) with the official English translation under each line; StartScreenTests checks them
+             against docs/sources/declaration-1948. The Hebrew labels use the advanced text generator, which lays out
+             right-to-left text (#193), with a right-to-left base direction (each line starts with a neutral ellipsis or ends with a full stop, which would otherwise take the left-to-right default). Drawn above the HUD and below the toast, which carries New Game's prompt. -->
+        <ui:VisualElement name="start-screen" class="start-screen">
+            <ui:VisualElement name="start-art" class="start-art" picking-mode="Ignore" />
+            <ui:VisualElement name="start-body" class="start-body" picking-mode="Ignore">
+                <ui:VisualElement name="start-panel" class="panel start-panel">
+                    <ui:Label name="start-title" text="Statecraft: Israel" class="start-title" />
+                    <ui:VisualElement class="gold-rule start-rule" />
+                    <ui:Label name="start-he-proclamation" text="…אנו מכריזים בזאת על הקמת מדינה יהודית בארץ־ישראל, היא מדינת ישראל." class="start-he" language-direction="RTL" />
+                    <ui:Label name="start-en-proclamation" text="…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL." class="start-en" />
+                    <ui:Label name="start-he-date" text="בעיר תל־אביב, היום הזה, ערב שבת, ה׳ אייר תש״ח, 14 במאי 1948." class="start-he start-he-date" language-direction="RTL" />
+                    <ui:Label name="start-en-date" text="IN THE CITY OF TEL-AVIV, ON THIS SABBATH EVE, THE 5TH DAY OF IYAR, 5708 (14TH MAY, 1948)." class="start-en" />
+                    <ui:Label name="start-source" text="From the Declaration of the Establishment of the State of Israel (Official Gazette No. 1, 14 May 1948) and its official English translation. Painting: AI-generated." class="start-source" />
+                    <ui:VisualElement name="start-actions" class="start-actions">
+                        <ui:Button name="start-continue" text="Continue" class="start-button" />
+                        <ui:Button name="start-new-game" text="New Game" class="start-button" />
+                    </ui:VisualElement>
+                    <Statecraft.Game.UI.UiFrame />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:Label name="toast" class="panel toast" />
     </ui:VisualElement>
 </ui:UXML>

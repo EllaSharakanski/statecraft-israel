@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- A start screen (#247): a painting of the 14 May 1948 ceremony in the Tel Aviv Museum hall (AI-generated concept art
+  with no identifiable person), two lines of the Declaration of Independence in the official Hebrew with the official
+  English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
+  runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
+  Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
 - Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
   stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
   a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
