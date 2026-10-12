@@ -180,11 +180,12 @@ public class EraTests
     [Fact]
     public void ATurnThatWouldLeaveUnder14DaysIsLengthenedInstead()
     {
-        var c = EndingOn("1948-07-01");
+        var c = EndingOn("1948-06-09");
         PlayToTheEnd(c, out var dates);
-        // The turn after 19 June would be 12 days, under 14, so the turn from 12 June runs to 1 July (19 days).
-        Assert.Equal(new DateTime(1948, 6, 12), dates[^2]);
-        Assert.Equal(new DateTime(1948, 7, 1), dates[^1]);
+        // Weekly turns: 15 May, 22 May, 29 May. The turn after 29 May would be 11 days (to 9 June), under 14, so the turn
+        // from 22 May runs to 9 June (18 days) instead of two short ones. Fails if the limit is 7 days, not 14.
+        Assert.Equal(new DateTime(1948, 5, 22), dates[^2]);
+        Assert.Equal(new DateTime(1948, 6, 9), dates[^1]);
         Assert.All(dates.Zip(dates.Skip(1), (a, b) => (b - a).Days), d => Assert.InRange(d, 7, 21));
     }
 
