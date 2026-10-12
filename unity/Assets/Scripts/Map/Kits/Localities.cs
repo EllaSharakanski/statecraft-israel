@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Core.Events;
 
 namespace Statecraft.Game.Map.Kits
 {
@@ -124,7 +123,7 @@ namespace Statecraft.Game.Map.Kits
             ICollection<string> reserved, string file = FileName)
         {
             FileRow f;
-            try { f = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).WithDuplicateKeyChecking().Build().Deserialize<FileRow>(yaml); }
+            try { f = Read(yaml, file); }
             catch (YamlException e) { throw new InvalidDataException($"{file}: {e.Message}", e); }
             if (f?.Places == null || f.Places.Count == 0) throw new InvalidDataException($"{file}: no places");
             var doc = new Doc(); var ids = new HashSet<string>();
@@ -164,14 +163,120 @@ namespace Statecraft.Game.Map.Kits
             return doc;
         }
 
+        // --- A reader over YamlDotNet's parser events (review I6, boot budget): the reflection deserializer took about 85% of
+        // the localities' load (some 80 ms of 100 at cpu 1 in the WebGL player, four times that at cpu 4). Same strictness:
+        // unknown and duplicate keys are errors naming the key. ---
+
+        static readonly HashSet<string> FileKeys = new HashSet<string> { "status", "places", "encampments" };
+        static readonly HashSet<string> PlaceKeys = new HashSet<string>
+        {
+            "id", "name", "name_basis", "today", "name_he", "name_ar", "lon", "lat", "kind", "type", "landmark", "population",
+            "listed_as", "match", "owner_verify", "wikidata", "draft_id", "note", "checked", "status", "sources",
+        };
+        static readonly HashSet<string> AreaKeys = new HashSet<string> { "subdistrict", "population", "listed_as", "note", "checked", "status", "sources" };
+        static readonly HashSet<string> TodayKeys = new HashSet<string> { "name", "name_he", "source" };
+
+        static FileRow Read(string yaml, string file)
+        {
+            var parser = new Parser(new StringReader(yaml));
+            parser.Consume<StreamStart>();
+            if (parser.Accept<StreamEnd>(out _)) return new FileRow();
+            parser.Consume<DocumentStart>();
+            var root = Node(parser) as Dictionary<string, object?> ?? throw new InvalidDataException($"{file}: not a mapping");
+            Keys(root, FileKeys, file);
+            var f = new FileRow { Status = Str(root, "status") };
+            foreach (var o in List(root, "places"))
+            {
+                var m = Map(o, $"{file}: a place");
+                string at = $"{file}: '{Str(m, "id")}'";
+                Keys(m, PlaceKeys, at);
+                var t = m.TryGetValue("today", out var tv) && tv != null ? Map(tv, at + " today") : null;
+                if (t != null) Keys(t, TodayKeys, at + " today");
+                f.Places.Add(new PlaceRow
+                {
+                    Id = Str(m, "id"), Name = Str(m, "name"), Kind = Str(m, "kind"), Type = Str(m, "type"), Landmark = Str(m, "landmark"),
+                    Lon = Num(m, "lon", at), Lat = Num(m, "lat", at), Population = (int)Num(m, "population", at, -1),
+                    Today = t == null ? null : new TodayRow { Name = Str(t, "name"), NameHe = Str(t, "name_he"), Source = Str(t, "source") },
+                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at),
+                });
+            }
+            foreach (var o in List(root, "encampments"))
+            {
+                var m = Map(o, $"{file}: an encampment row");
+                string at = $"{file}: encampments '{Str(m, "subdistrict")}'";
+                Keys(m, AreaKeys, at);
+                f.Encampments.Add(new AreaRow
+                {
+                    Subdistrict = Str(m, "subdistrict"), Population = (int)Num(m, "population", at, -1),
+                    Checked = Str(m, "checked"), Status = Str(m, "status"), Sources = Sources(m, at),
+                });
+            }
+            return f;
+        }
+
+        /// <summary>A node as a tree: a scalar's string (null for "null" or "~" or empty), a list, or a key-ordered map.</summary>
+        static object? Node(IParser p)
+        {
+            if (p.TryConsume<Scalar>(out var sc))
+                return sc.Style == ScalarStyle.Plain && (sc.Value == "" || sc.Value == "null" || sc.Value == "~") ? null : sc.Value;
+            if (p.TryConsume<SequenceStart>(out _))
+            {
+                var list = new List<object?>();
+                while (!p.TryConsume<SequenceEnd>(out _)) list.Add(Node(p));
+                return list;
+            }
+            if (p.TryConsume<MappingStart>(out var ms))
+            {
+                var map = new Dictionary<string, object?>();
+                while (!p.TryConsume<MappingEnd>(out _))
+                {
+                    var key = p.Consume<Scalar>();
+                    if (map.ContainsKey(key.Value)) throw new YamlException(key.Start, key.End, $"duplicate key '{key.Value}'");
+                    map[key.Value] = Node(p);
+                }
+                return map;
+            }
+            throw new YamlException("anchors and aliases are not supported here");
+        }
+
+        static void Keys(Dictionary<string, object?> m, HashSet<string> allowed, string at)
+        {
+            foreach (var k in m.Keys) if (!allowed.Contains(k)) throw new InvalidDataException($"{at} has unknown key '{k}'");
+        }
+
+        static Dictionary<string, object?> Map(object? o, string at) =>
+            o as Dictionary<string, object?> ?? throw new InvalidDataException($"{at} is not a mapping");
+
+        static List<object?> List(Dictionary<string, object?> m, string key) =>
+            m.TryGetValue(key, out var v) && v != null ? v as List<object?> ?? throw new InvalidDataException($"'{key}' is not a list") : new List<object?>();
+
+        static string Str(Dictionary<string, object?> m, string key) => m.TryGetValue(key, out var v) && v is string s ? s : "";
+
+        static double Num(Dictionary<string, object?> m, string key, string at, double missing = double.NaN)
+        {
+            if (!m.TryGetValue(key, out var v) || v == null) return missing;
+            if (v is string s && double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d)) return d;
+            throw new InvalidDataException($"{at} {key} is not a number");
+        }
+
+        /// <summary>A row's sources: a list of URLs, all read on the row's checked date (the file's header says what each
+        /// host is the source of).</summary>
+        static List<SourceRow> Sources(Dictionary<string, object?> m, string at)
+        {
+            var list = new List<SourceRow>();
+            foreach (var o in List(m, "sources"))
+                list.Add(new SourceRow { Url = o as string ?? throw new InvalidDataException($"{at} a source is not a URL"), Checked = Str(m, "checked") });
+            return list;
+        }
+
         static void CheckSourced(string at, string status, string checkedOn, List<SourceRow> sources)
         {
             if (!Statuses.Contains(status ?? "")) throw new InvalidDataException($"{at} status '{status}' is not draft, owner-verify, fact-checked or verified");
             if (string.IsNullOrWhiteSpace(checkedOn)) throw new InvalidDataException($"{at} has no checked date");
             if (sources == null || sources.Count == 0) throw new InvalidDataException($"{at} sources is empty");
             for (int i = 0; i < sources.Count; i++)
-                if (string.IsNullOrWhiteSpace(sources[i]?.Url) || string.IsNullOrWhiteSpace(sources[i].Checked))
-                    throw new InvalidDataException($"{at} sources[{i}] needs a url and a checked date");
+                if (string.IsNullOrWhiteSpace(sources[i]?.Url) || !sources[i].Url.StartsWith("https://"))
+                    throw new InvalidDataException($"{at} sources[{i}] is not an https URL");
         }
 
         static Dictionary<string, Landmark> landmarks = new Dictionary<string, Landmark>();

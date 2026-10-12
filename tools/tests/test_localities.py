@@ -26,10 +26,15 @@ NO_TODAY = {line.strip() for line in (ROOT / "tools" / "tests" / "data" / "local
 LANDMARKS = {"mosque", "church", "none", "water_tower", "mosque_and_water_tower"}
 
 
+VS_URL = "https://en.wikipedia.org/w/index.php?title=Village_Statistics,_1945&oldid=1359600351"
+
+
 def sourced(row):
-    assert row["status"] == "draft" and row["checked"]
-    assert row["sources"] and all(s["url"].startswith("https://") and s["checked"] and s["licence"] in ("CC0", "CC BY-SA 4.0")
-                                  for s in row["sources"])
+    """A row's sources are URLs read on its checked date, from the hosts the header names (Wikidata CC0, Wikipedia
+    CC BY-SA 4.0), the Village Statistics revision first."""
+    assert row["status"] == "draft" and str(row["checked"]) == "2026-10-11"
+    assert row["sources"] and row["sources"][0] == VS_URL
+    assert all(u.startswith(("https://www.wikidata.org/wiki/Q", "https://en.wikipedia.org/")) for u in row["sources"])
 
 
 def test_scope_is_the_1000_plus_places_beside_the_game_settlements():
@@ -51,8 +56,7 @@ def test_place_is_sourced_named_and_on_land(p):
     multi = any(" and " in x.rsplit(" (", 1)[0] for x in p["listed_as"])
     if p["match"] in ("low", "manual") or multi:
         assert p["owner_verify"], "low and manual matches, and VS rows that name more than one place, stay owner-verify"
-    assert any(s["url"].startswith("https://www.wikidata.org/wiki/") for s in p["sources"])
-    assert any("Village_Statistics,_1945" in s["url"] for s in p["sources"])
+    assert f"https://www.wikidata.org/wiki/{p['wikidata']}" in p["sources"]
     b = HEXES["bounds"]
     assert b["lon0"] <= p["lon"] <= b["lon1"] and b["lat0"] <= p["lat"] <= b["lat1"]
     q, r = hg.settlement_hex(p["lon"], p["lat"], HEXES)

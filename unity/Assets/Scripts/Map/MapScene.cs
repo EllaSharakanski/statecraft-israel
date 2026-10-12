@@ -187,6 +187,7 @@ namespace Statecraft.Game.Map
                 else Kits.Localities.FillHexes(localities, Subdistricts1948.Parse(inputs.RegionsYaml), Hexes, "map/" + Kits.Localities.FileName);
             }
             Kits.Localities.Use(localities.Places);   // on every build, so a map without the kits inherits nothing (review M13)
+            if (kitsOn) DiagLog.BootPhase("localities parsed");
             Localities = localities.Places;
             var localitySettlements = localities.Places.ConvertAll(p => p.Settlement);
             var painted = new List<Settlement>(list); painted.AddRange(localitySettlements);

@@ -317,7 +317,7 @@ public class KitTests
     {
         var b = (34.2, 35.9, 29.45, 33.35);
         var reserved = new[] { "tel_aviv" };
-        const string src = "  checked: '2026-10-11'\n  status: draft\n  sources:\n  - url: https://example.org/x\n    checked: '2026-10-11'\n";
+        const string src = "  checked: '2026-10-11'\n  status: draft\n  sources:\n  - https://example.org/x\n";
         string Place(string id, string extra = "") =>
             $"- id: {id}\n  name: X\n  lon: 35.0\n  lat: 32.0\n  type: village\n  landmark: mosque\n  population: 1200\n{extra}" + src;
         Assert.AreEqual(1, Localities.Parse("places:\n" + Place("a"), b, reserved, "loc.yaml").Places.Count);
@@ -333,6 +333,7 @@ public class KitTests
         Bad("places:\n" + Place("a").Replace("lon: 35.0", "lon: 36.5"), "outside");
         Bad("places:\n" + Place("a").Replace("population: 1200", "population: 0"), "population");
         Bad("places:\n" + Place("a").Replace("status: draft", "status: guess"), "status");
+        Bad("places:\n" + Place("a").Replace("https://example.org/x", "example.org/x"), "URL");
         Bad("places:\n" + Place("a", "  fate: x\n"), "fate");
         Bad("places:\n" + Place("a", "  today:\n    name: Y\n") , "today");
         Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 0\n" + src, "population");
