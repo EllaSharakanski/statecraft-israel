@@ -137,6 +137,22 @@ war-casualties). The owner's sign-off for all seven events below is recorded in 
 | `bernadotte_assassination` | security, terror | the `terror` tag follows the Israeli government's own Prevention of Terrorism Ordinance |
 | `reparations_claim` | holocaust | the claim's framing (the cost of absorbing survivors: 500,000 at $3,000 each); the "refuse" option |
 
+**Map lines (display only; not gated by the release gate).** The 1949 armistice lines and zones
+(`content/map/armistice_lines_1949.geojson`, decision D-A) need the same review before a shared build shows them. The owner
+records the sign-off by moving each feature's `status` to `sensitivity-reviewed` (after `fact-checked`). The 1948
+sub-districts (D-B) are reviewed with them.
+
+| Line or zone | Front, from | What to review |
+|---|---|---|
+| `egypt_adl_gaza` | Egypt, 24 Feb 1949 | the Gaza-Rafah line, Wadi Hasi to Gaza only (the stretch to the frontier is a gap, shown as nothing); its name |
+| `egypt_el_auja_dmz` | Egypt, 24 Feb 1949 | the El Auja Demilitarized Zone and its name |
+| `lebanon_adl` | Lebanon, 23 Mar 1949 | the line shown as the Mandate frontier it follows; "the international boundary" in its name |
+| `syria_adl` | Syria, 20 Jul 1949 | the line and its name |
+| `syria_dmz_north`, `syria_dmz_central`, `syria_dmz_south` | Syria, 20 Jul 1949 | the three parts of the Demilitarized Zone, their names (place names chosen by us: Banias, Tell el Qadi, Dardara, Mishmar HaYarden, Ein Gev, El Hamma; a mix of Arabic forms, Tell el Qadi rather than Dan and El Hamma rather than Hamat Gader, and Hebrew ones) |
+| `egypt_mv1950_demarcation`, `egypt_mv1950_zone_lines` | Egypt, 22 Feb 1950 | the line as drawn on the signed modus vivendi map and the zone A and C lines; that the label and panel name the modus vivendi apart from the 1949 line |
+| `jordan_adl_iraqi_*` (four stages), `jordan_adl_a_latrun`, `jordan_adl_bc_south`, `jordan_adl_d_arava` | Jordan, 3 Apr 1949 (line A by its deadlines: 8 May, 22 May, 17 Jul 1949) | low accuracy, traced from a low-resolution scan, and labelled so; the Art. VI.3 stage areas as read; Latrun traced along the outer loop; Jerusalem, the no-man's-lands and Mount Scopus left out (gaps) |
+| On-screen strings | from 1949 | the map label ("Mandate sub-districts, 1947 · 1949 armistice lines: Egypt (and the 1950 modus vivendi), Lebanon, Jordan (low accuracy), Syria"), the info panel lines ("On the ... · low accuracy, from a low-resolution scan"), the agreement titles in the "Egypt-Israel" style (the agreements' own: "Egyptian-Israeli", "Lebanese-Israeli", "Hashemite Jordan Kingdom-Israel", "Israeli-Syrian"), and the seven Hebrew strings in `strings.he.yaml` (Hebrew is off until reviewed) |
+
 ## Deferred to M4: upload to itch.io (OWNER STEP)
 Deferred to the start of M4, as a private Draft (owner ruling, 2026-10-10). The steps stay correct for then. This needs the
 owner's itch.io account and is never automated, and the build must pass the sensitivity gate above (`-shareable`).
