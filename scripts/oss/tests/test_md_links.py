@@ -10,7 +10,7 @@ SPEC.loader.exec_module(m)
 
 def test_finds_only_dead_relative_links(make_repo, capsys):
     root = make_repo({
-        'README.md': '[ok](docs/a.md) [anchor](docs/a.md#x) [url](https://x.example/y) [mail](mailto:a@b.example) [top](#t)\n'
+        'README.md': '[ok](docs/a.md) [anchor](docs/a.md#x) [url](https://x.example/y) [mail](mailto:someone) [top](#t)\n'
                      '```\n[in a fence](nope.md)\n```\n[ref][one] [odd](a[b])\n[dead](missing.md#s)\n',
         'docs/a.md': '[up](../README.md) [bad](../../README.md)\n',
     })
