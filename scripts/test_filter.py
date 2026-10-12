@@ -35,7 +35,7 @@ def classes_for(paths: list[str], known: dict[str, str]) -> list[str]:
     for p in paths:
         if p.startswith(SRC) and p.endswith(".cs"):
             stem = Path(p).stem
-            for cand in (stem + "Tests"):
+            for cand in (stem + "Tests",):
                 if cand in known:
                     wanted.add(cand)
         elif p.startswith(TESTS) and p.endswith(".cs"):
