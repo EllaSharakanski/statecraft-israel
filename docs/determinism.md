@@ -139,6 +139,16 @@ content in `content/`, or the hash format. When it happens, update the manifest 
 the history below, and say in the commit message why the hash moved. If a hash changes and you did not mean to change
 rules or content, treat it as a determinism bug.
 
+## Content windows
+
+Records with `from`/`to` (chapters spec 3.2) are resolved by date through `Content.At(date)`. The active lists are built
+once at load, one per segment between cut dates, so a turn does a binary search and no allocation. When the date crosses
+a cut, `ContentWindows.Update` adds starting records at their defaults and removes ending ones, in ordinal id order, right
+after the date moves (before the cabinet, attention and events; the turn's effects already ran on the turn's start date).
+The hash reads the state keys, so it never sees a record outside its window. An event that fires late (after its window,
+`EventSystem.Trigger`) can find a record it names already gone: a condition on it is not met, and an option's effect or
+`set_policy` on it is left out. With no windows there is one segment and the same view everywhere.
+
 ## Rebaseline history
 
 | Plan task | Run | New hash (first 8) | Why |
