@@ -739,8 +739,8 @@ namespace Statecraft.Sim
                 {
                     if (c.Regions.All(g => g.Id != kv.Key)) throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"unknown region '{kv.Key}' (add it to regions with a name)");
                     var region = c.Regions.First(g => g.Id == kv.Key);
-                    // A period's dates are inclusive, a region's `to` is exclusive: the period must end before it.
-                    if ((region.From.HasValue && a.From < region.From.Value) || (region.To.HasValue && a.To >= region.To.Value))
+                    // A period's dates are inclusive, a region's window is [from, to): the period covers [a.From, a.To + 1 day).
+                    if (!Window.Covers(region.From, region.To, a.From, a.To.AddDays(1)))
                         throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"region '{kv.Key}' does not exist for the whole period (its window is {(region.From.HasValue ? region.From.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "the start")} to {(region.To.HasValue ? region.To.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "open")})");
                     Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
                 }

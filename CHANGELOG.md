@@ -13,8 +13,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
   whole window of the record using it; an event that fires after its window leaves out records that have ended. With no
   dates nothing changes (goldens unchanged). Offices and regions come later.
-- Aliyah regions accept `from`/`to` (chapters spec 3.2, refs #57). The loader refuses a window that runs backwards and an
-  aliyah period that counts a region outside its window. With no dates nothing changes (goldens unchanged).
+- Aliyah regions accept `from`/`to` (chapters spec 3.2, refs #57). The loader refuses a window that runs backwards or is
+  empty, and an aliyah period that counts a region outside its window. With no dates nothing changes (goldens unchanged).
 - Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
   elsewhere hides it, and a mouse still hovers as before. The info panel lists the selected hex's 1948 localities with
   today's name where a living place carries on, by the same rule as the tooltip. Keyboard players reach the panel list
