@@ -125,7 +125,7 @@ public class StartScreenTests
         foreach (var q in new[] { "", "?bootlog", "?navlog", "?camlog", "?smoke=0", "?goldenx", "?nostartx", "?shots" })
             Assert.IsFalse(StartScreenPresenter.Skipped("http://localhost:8000/index.html" + q, none, webgl: true), q);
         foreach (var args in new[] { new[] { "-golden" }, new[] { "-smoke", "5" }, new[] { "-smoke" }, new[] { "-shot" }, new[] { "-vprofile" },
-                     new[] { "-profile" }, new[] { "-units" }, new[] { "-nostart" } })
+                     new[] { "-profile" }, new[] { "-units" }, new[] { "-" + BorderProof.Flag }, new[] { "-nostart" } })
             Assert.IsTrue(StartScreenPresenter.Skipped(null, args, webgl: false), string.Join(" ", args));
         Assert.IsFalse(StartScreenPresenter.Skipped(null, new[] { "-batchmode" }, webgl: false));
         Assert.IsFalse(StartScreenPresenter.Skipped(null, new[] { "-smoke", "0" }, webgl: false));
@@ -136,7 +136,6 @@ public class StartScreenTests
 
     // --- Behaviour ------------------------------------------------------------------------------------------------------
 
-    /// <summary>The start the way GameRoot makes it: GameStart.Begin over the store, the toast, New Game and the screen.</summary>
     /// <summary>Game.uxml on a panel that renders into a 1920x1080 texture, so layout, style and focus run as in a player
     /// once frames pass (UiTestKit's panel has no target and is not laid out in edit mode).</summary>
     sealed class RenderedUi : IDisposable
@@ -169,6 +168,7 @@ public class StartScreenTests
         public void Dispose() { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
     }
 
+    /// <summary>The start the way GameRoot makes it: GameStart.Begin over the store, the toast, New Game and the screen.</summary>
     sealed class Rig : IDisposable
     {
         public readonly RenderedUi Ui = new RenderedUi();
@@ -475,11 +475,12 @@ public class StartScreenTests
     /// (Frank Ruhl Libre, the advanced generator, RTL). "שי" is shin then yod in logical order: right to left, the big shin
     /// is drawn on the right and the small yod on its left, so the ink leans right; drawn left to right (a reversed line,
     /// what the standard generator does: the control) it leans left. "ש." checks the paragraph's direction: a right-to-left
-    /// paragraph puts the full stop on the left of the shin (ink leans right), a left-to-right one on its right.</summary>
+    /// paragraph puts the full stop on the left of the shin (ink leans right), a left-to-right one (the second control) on its
+    /// right.</summary>
     [UnityTest]
     public IEnumerator HebrewIsLaidOutRightToLeft()
     {
-        const int W = 400, H = 240;
+        const int W = 400, H = 320;
         var rt = new RenderTexture(W, H, 0);
         var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
         ps.targetTexture = rt;
@@ -491,10 +492,10 @@ public class StartScreenTests
         doc.panelSettings = ps;
         go.SetActive(true);
         doc.rootVisualElement.styleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/UI/Statecraft.uss"));
-        void Make(int row, bool advanced, string text)
+        void Make(int row, bool advanced, string text, LanguageDirection direction = LanguageDirection.RTL)
         {
             var l = new Label(text);
-            if (advanced) { l.AddToClassList("start-he"); l.languageDirection = LanguageDirection.RTL; }
+            if (advanced) { l.AddToClassList("start-he"); l.languageDirection = direction; }
             else l.style.unityFontDefinition = new StyleFontDefinition(AssetDatabase.LoadAssetAtPath<Font>(UiPaths.FontHebrew));
             l.style.position = Position.Absolute; l.style.left = 20; l.style.top = row * 80; l.style.width = 360; l.style.height = 80;
             l.style.fontSize = 60; l.style.color = Color.white; l.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -505,6 +506,7 @@ public class StartScreenTests
         Make(0, advanced: true, "\u05E9\u05D9");                        // שי
         Make(1, advanced: false, "\u05E9\u05D9");
         Make(2, advanced: true, "\u05E9.");                             // ש.
+        Make(3, advanced: true, "\u05E9.", LanguageDirection.LTR);      // the control: a left-to-right paragraph
         var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
         try
         {
@@ -521,20 +523,21 @@ public class StartScreenTests
                 centre /= total;
                 return (centre - (first + last) / 2f) / Mathf.Max(1, last - first);
             }
-            float rtl = float.NaN, ltr = float.NaN, stop = float.NaN;
-            for (int frame = 0; frame < 30 && (float.IsNaN(rtl) || float.IsNaN(ltr) || float.IsNaN(stop)); frame++)
+            float rtl = float.NaN, ltr = float.NaN, stop = float.NaN, ltrStop = float.NaN;
+            for (int frame = 0; frame < 30 && (float.IsNaN(rtl) || float.IsNaN(ltr) || float.IsNaN(stop) || float.IsNaN(ltrStop)); frame++)
             {
                 yield return null;
                 RenderTexture.active = rt;
                 tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply();
                 RenderTexture.active = null;
-                rtl = Lean(0); ltr = Lean(1); stop = Lean(2);
+                rtl = Lean(0); ltr = Lean(1); stop = Lean(2); ltrStop = Lean(3);
             }
-            Assert.IsFalse(float.IsNaN(rtl) || float.IsNaN(ltr) || float.IsNaN(stop), "the labels were not drawn (no ink in the render)");
+            Assert.IsFalse(float.IsNaN(rtl) || float.IsNaN(ltr) || float.IsNaN(stop) || float.IsNaN(ltrStop), "the labels were not drawn (no ink in the render)");
             Assert.AreEqual("Advanced", doc.rootVisualElement[0].resolvedStyle.unityTextGenerator.ToString());
             Assert.AreEqual("Standard", doc.rootVisualElement[1].resolvedStyle.unityTextGenerator.ToString());
             Assert.Less(ltr, -0.05f, $"control: drawn left to right, the shin comes first and the ink leans left ({ltr:0.000})");
             Assert.Greater(rtl, 0.05f, $"the start screen's Hebrew is drawn right to left: the ink leans right ({rtl:0.000})");
+            Assert.Less(ltrStop, -0.05f, $"control: a left-to-right paragraph puts the full stop on the right ({ltrStop:0.000})");
             Assert.Greater(stop, 0.05f, $"a right-to-left paragraph: the full stop is on the left ({stop:0.000})");
         }
         finally { Object.DestroyImmediate(tex); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }

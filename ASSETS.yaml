@@ -40,7 +40,7 @@ rules:
     ai_generated: true
     source: "Dreamina (dreamina.capcut.com), model GPT Image 2.5, 2026-10-12, with promo/final/03-gameplay-1936.png as the style reference; the start screen's painting. Option C of promo/start-screen (prompt in promo/start-screen/prompt-c.txt), resized from 1536x864 to 1920x1080 (Lanczos) and saved as JPEG; the Dreamina AI badge is kept"
     status: owner-verify
-    note: "Decision D1: AI-only images CC0 / no rights claimed. Content policy: no identifiable real person (the hall from behind the audience, tiny soft-focus figures at the table, the frame between the flags holds a blurred landscape, not a portrait). The model gave 1536x864 with a reference image; Dreamina's own upscale was not run (no free credits left), so the 1920x1080 is a plain resize."
+    note: "Decision D1: AI-only images CC0 / no rights claimed. Content policy: no identifiable real person (the hall from behind the audience, tiny soft-focus figures at the table, the frame between the flags holds an abstract warm blur with no figure or face in it, not a portrait). The model gave 1536x864 with a reference image; Dreamina's own upscale was not run (no free credits left), so the 1920x1080 is a plain resize."
   - glob: "promo/start-screen/declaration-hall-option-*.png"
     licence: CC0-1.0
     ai_generated: true

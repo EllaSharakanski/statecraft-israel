@@ -192,7 +192,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 }
 .event-photo-credit {
     flex-shrink: 0; font-size: 13px; white-space: normal; -unity-text-align: middle-center; margin: 0; padding: 2px 8px 3px 8px;
-    color: var(--ink); background-color: rgba(5, 9, 18, 0.92);   /* 0.92: blending is linear, so less reads grey */
+    color: var(--ink); background-color: rgba(5, 9, 18, 0.92); -unity-font-style: italic;   /* 0.92: blending is linear, so less reads grey */
 }
 .event-office { white-space: normal; -unity-text-align: middle-center; font-size: 18px; }
 /* Options wrap inside the card (playtest 2, P2-2); each has a round gold-rimmed sign at its left, as the promo's choices. */
@@ -300,7 +300,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     font-size: 19px; color: var(--ink); -unity-text-align: upper-center; white-space: normal; margin: 6px 6px 0 6px; padding: 0;
 }
 .card-office { font-size: 15px; color: var(--ink-dim); -unity-text-align: upper-center; white-space: normal; margin: 0 6px; padding: 0; }
-.card-party { font-size: 15px; color: var(--gold); -unity-text-align: upper-center; white-space: normal; margin: 0 6px 4px 6px; padding: 0; }
+.card-party { font-size: 15px; color: var(--gold); -unity-text-align: upper-center; white-space: normal; -unity-font-style: italic; margin: 0 6px 4px 6px; padding: 0; }
 .card-stat { flex-direction: row; align-items: center; height: 21px; padding: 0 10px; }
 .card-stat-name { width: 82px; flex-shrink: 0; font-size: 14px; color: var(--ink-dim); -unity-text-align: middle-left; padding: 0; margin: 0; }
 .card-stat-value { width: 24px; flex-shrink: 0; font-size: 16px; color: var(--ink); -unity-text-align: middle-right; padding: 0; margin: 0; }
