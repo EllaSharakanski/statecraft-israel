@@ -1,0 +1,10 @@
+# A cautious player: modest rationing from the start, accepts the First Truce, keeps the army's mobilisation low.
+name: cautious
+until: 1949-01-01
+steps:
+  - on: 1948-05-15
+    commands:
+      - { kind: set_policy, policy: rationing, level: 0.4 }
+  - on: 1948-06-01
+    commands:
+      - { kind: choose_event_option, event: first_truce, option: accept }
