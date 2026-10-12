@@ -454,11 +454,12 @@ namespace Statecraft.Sim
             if (r.BudgetStart.Count > 0 && Math.Abs(r.BudgetStart.Values.Sum() - 1.0) > 1e-6) throw new ContentException(file, "budget_start", "shares must sum to 1");
         }
 
+        // Indicators the code reads by name: food_supply (EconomySystem, FX crisis), housing and morale (MapActions), security
+        // and intl_standing (Unity HudModel). A window on one would make those reads miss, so the loader refuses it.
+        static readonly string[] CodeNamedIndicators = { "morale", "food_supply", "housing", "security", "intl_standing" };
+
         /// <summary>Chapters design 3.2: a window must run forward, and nothing may reach a record that is not active for the
         /// whole window of whatever uses it (effect sources and targets, situations, voter-group weights, policy and effect offices).</summary>
-        // Indicators the code reads by name (the sim's own morale, food, housing, security and standing rules): a window on one
-        // would make those reads miss, so the loader refuses it.
-        static readonly string[] CodeNamedIndicators = { "morale", "food_supply", "housing", "security", "intl_standing" };
 
         static void ValidateWindows(Content c)
         {

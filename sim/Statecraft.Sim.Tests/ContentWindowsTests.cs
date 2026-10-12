@@ -11,9 +11,11 @@ public class ContentWindowsTests
     static readonly DateTime Cut = new DateTime(1948, 8, 1);
 
     // The fixture model plus `shelter`, an indicator no code reads by name, so these tests can give it a window (the loader
-    // refuses one on morale, food_supply, housing, security and intl_standing).
+    // refuses one on morale, food_supply, housing, security and intl_standing). `security` and `intl_standing` are added too,
+    // since the fixture model has neither and the refusal test needs both.
     const string Shelter = "  - id: shelter\n    base: 0.3\n    name: Shelter\n";
-    static string Base => Fixture.Files["model.yaml"].Replace("policies:\n", Shelter + "policies:\n");
+    const string HudRead = "  - id: security\n    base: 0.3\n    name: Security\n  - id: intl_standing\n    base: 0.5\n    name: Standing\n";
+    static string Base => Fixture.Files["model.yaml"].Replace("policies:\n", Shelter + HudRead + "policies:\n");
     static string Model(Func<string, string>? edit = null) => edit == null ? Base : edit(Base);
     static string Offices(Func<string, string> edit) => edit(Fixture.Files["offices.yaml"]);
 
@@ -173,6 +175,8 @@ public class ContentWindowsTests
     [InlineData("morale", "  - id: morale\n    base: 0.5")]
     [InlineData("food_supply", "  - id: food_supply\n    base: 0.4")]
     [InlineData("housing", "  - id: housing\n    base: 0.3")]
+    [InlineData("security", "  - id: security\n    base: 0.3")]
+    [InlineData("intl_standing", "  - id: intl_standing\n    base: 0.5")]
     public void AWindowOnAnIndicatorTheCodeReadsByNameIsRefused(string id, string anchor)
     {
         foreach (var w in new[] { "from: 1948-08-01", "to: 1949-01-01" })
