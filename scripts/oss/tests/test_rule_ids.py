@@ -45,6 +45,25 @@ def test_the_same_id_defined_twice_is_reported(tmp_path):
     assert [p.split(':')[0] for p in m.check(t)] == ['duplicate']
 
 
+def test_a_heading_that_starts_with_an_id_is_a_definition(tmp_path):
+    t = tree(tmp_path, '## R-ECON-014 Tax\n', '// R-ECON-014\n')
+    assert m.check(t) == []
+
+
+def test_a_unity_file_citing_an_id_no_rule_defines_is_dead(tmp_path):
+    t = tree(tmp_path)
+    (t / 'unity/Assets/Tests/EditMode').mkdir(parents=True)
+    (t / 'unity/Assets/Tests/EditMode/U.cs').write_text('// R-MAP-001\n')
+    assert [p.split(':')[0] for p in m.check(t)] == ['dead']
+
+
+def test_build_output_is_skipped_even_under_a_bin_folder(tmp_path):
+    t = tree(tmp_path / 'bin' / 'repo', 'R-ECON-014: tax.\n', '// R-ECON-014\n')
+    (t / 'sim/Statecraft.Sim/obj').mkdir(parents=True)
+    (t / 'sim/Statecraft.Sim/obj/G.cs').write_text('// R-ECON-099\n')
+    assert m.check(t) == []
+
+
 def test_prose_mentioning_an_id_is_not_a_definition(tmp_path):
     t = tree(tmp_path, 'See R-ECON-014 for tax.\n', '')
     assert m.check(t) == []
