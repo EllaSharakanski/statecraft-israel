@@ -252,6 +252,8 @@ namespace Statecraft.Game.Map.Routes
         public const float RailSpanShare = 0.3f;
         /// <summary>Clearance (m, world) of the rails over the highest ground under them, where a section had to be lifted.</summary>
         public const float RailClearanceM = 3f;
+        /// <summary>Ground samples each side of the line when a section checks the ground under its rails (<see cref="RailSpanShare"/>).</summary>
+        const int LiftSamples = 4;
 
         /// <summary>The half-widths of a rail line's sections (centre points <paramref name="pts"/>, unit directions
         /// <paramref name="dirs"/>, heights <paramref name="ys"/>), smoothed along the line: FlatHalfWidth per section, then
@@ -306,7 +308,7 @@ namespace Statecraft.Game.Map.Routes
                     {
                         var side = new Vector2(dirs[i].y, -dirs[i].x);                   // right of the direction of travel
                         float y = ys[i], span = RailSpanShare * halves[i];
-                        for (int k = -4; k <= 4; k++) y = Mathf.Max(y, Ground(data, origin, pts[i] + side * (span * k / 4f)) + RailClearanceM);
+                        for (int k = -LiftSamples; k <= LiftSamples; k++) y = Mathf.Max(y, Ground(data, origin, pts[i] + side * (span * k / (float)LiftSamples)) + RailClearanceM);
                         var normal = data.GetInterpolatedNormal(Mathf.Clamp01((pts[i].x - origin.x) / data.size.x), Mathf.Clamp01((pts[i].y - origin.z) / data.size.z));
                         for (int j = 0; j < Across; j++)
                         {
