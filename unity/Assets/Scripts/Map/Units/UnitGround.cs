@@ -18,9 +18,6 @@ namespace Statecraft.Game.Map.Units
         /// <summary>Clearance (m) between a figure's centre and a railway's or road's corridor: about half a figure's width
         /// at <see cref="UnitShowcase.FigureScale"/> (0.6 m x 2000 = 1.2 km across) plus a margin.</summary>
         public const float FigureClearanceM = 700f;
-        /// <summary>The kits keep their buildings and trees this far (m) from each figure's centre, so no rifleman stands in an
-        /// orchard: about half a figure's width at 2,000x plus a margin.</summary>
-        public const float FigureClearingM = 700f;
         /// <summary>A compact token (beside or in a town) draws its ring and trio at this share of the full size.</summary>
         public const float CompactScale = 0.5f;
 

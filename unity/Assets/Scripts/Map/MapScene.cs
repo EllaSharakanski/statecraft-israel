@@ -120,9 +120,8 @@ namespace Statecraft.Game.Map
         public IReadOnlyList<(List<Vector2> line, float halfWidth)> RouteCorridors { get; private set; } = new List<(List<Vector2>, float)>();
 
         /// <summary>Where the kits keep their buildings and trees off the units (centre x, z; radius m): the spot of a unit that
-        /// stands in a town (UnitPlacer's last round, UnitGround.ClearingRadius), and under every rifleman and parked aircraft
-        /// (UnitGround.FigureClearingM), so no figure stands in a building or an orchard. Empty before Build or without the
-        /// unit file.</summary>
+        /// stands in a town (UnitPlacer's last round, UnitGround.ClearingRadius), so no token stands in a building. Empty before
+        /// Build or without the unit file.</summary>
         public IReadOnlyList<(Vector2 centre, float radius)> UnitClearings { get; private set; } = new List<(Vector2, float)>();
 
         /// <summary>The last Build's kit numbers (buildings, vertices, trees, build time), or null without kits.</summary>
@@ -206,15 +205,10 @@ namespace Statecraft.Game.Map
             if (unitData.Count > 0)
             {
                 var spots = unitGround.Place(unitData, (lon, lat) => { var w = Frame.ToWorld(lon, lat, 0); return new Vector2(w.x, w.z); }, null);
-                var service = unitData.SelectMany(u => u.Anchors.Select(a => (a, u.Service))).ToDictionary(x => x.a, x => x.Service);
                 foreach (var kv in spots.OrderBy(k => k.Value.X).ThenBy(k => k.Value.Z))
                 {
                     var c = new Vector2((float)kv.Value.X, (float)kv.Value.Z);
                     if (kv.Value.InTown && !clearings.Exists(x => x.centre == c)) clearings.Add((c, unitGround.ClearingRadius));
-                    var s = service[kv.Key];
-                    if (s == Units.UnitData.Navy) continue;
-                    foreach (var f in s == Units.UnitData.Army ? unitGround.FigurePoints(c, kv.Value.Compact) : new[] { c })
-                        if (!clearings.Exists(x => x.centre == f)) clearings.Add((f, Units.UnitGround.FigureClearingM));
                 }
             }
             UnitClearings = clearings;

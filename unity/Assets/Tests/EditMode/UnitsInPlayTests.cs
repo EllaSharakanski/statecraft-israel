@@ -469,7 +469,7 @@ public class UnitsInPlayTests
         StringAssert.Contains("At Gedera\n", givati.Body + "\n");
         StringAssert.DoesNotContain("since", givati.Body.Split('\n').First(l => l.StartsWith("At ")), "its move south is not dated");
         var latrun = StateAt(new DateTime(1948, 5, 29), 5, 0.8);
-        StringAssert.Contains("At Latrun since 24 May 1948", UnitCard.For(Token("brigade_7", latrun), latrun, text).Body);
+        StringAssert.Contains("At Hulda (headquarters for the Latrun attacks) since 24 May 1948", UnitCard.For(Token("brigade_7", latrun), latrun, text).Body);
         var ship = UnitCard.For(Token("ins_haganah", start), start, text);
         StringAssert.Contains("commissioned 1948", ship.Subtitle);
         StringAssert.Contains("Wikipedia only", kiryati.Note);
@@ -528,10 +528,12 @@ public class UnitsInPlayTests
             // A screen covering the panel (#210): a click behind it moves neither the ring nor the card.
             var hud = ui.Q<VisualElement>("info-panel").parent;
             hud.AddToClassList(ScreenNav.WideOpenClass);
-            map.Select(golani.Q, golani.R);   // MapPointer outlines the clicked hex first
-            GameRoot.OnHexClicked(map, layer, info, golani.Q, golani.R);
+            var tlvHex = C.SettlementHexes.Single(t => t.Id == "tel_aviv");
+            map.Select(tlvHex.Q, tlvHex.R);   // MapPointer outlines the clicked hex (Tel Aviv) before it raises HexClicked
+            GameRoot.OnHexClicked(map, layer, info, tlvHex.Q, tlvHex.R);
             Assert.IsNull(layer.Selected, "covered: no selection");
-            Assert.IsFalse(map.Terrain.transform.Find(MapScene.SelectionName).GetComponent<MeshRenderer>().enabled, "covered: no new outline either");
+            Assert.AreEqual((golani.Q, golani.R), info.Selected, "covered: the panel keeps its hex");
+            Assert.IsTrue(map.Terrain.transform.Find(MapScene.SelectionName).GetComponent<MeshRenderer>().enabled, "the outline is back on the panel's hex");
             Assert.IsFalse(info.ShowsUnit);
             hud.RemoveFromClassList(ScreenNav.WideOpenClass);
             info.Dispose(); nav.Dispose();
