@@ -10,11 +10,26 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Added
 - The loader refuses an event whose window runs past the end of its era (chapters spec 6: an event may not span a boundary;
   split it). A `to` on the boundary is fine (it is exclusive). No current event is affected (refs #58).
+- The loader refuses a `from`/`to` window on the indicators the code reads by name (`morale`, `food_supply`, `housing`,
+  `security`, `intl_standing`), a follow-up from the review of #313 (refs #57).
+- Turn lengths per security rung are data: `turn_lengths` in `rules.yaml` or an era override, read in the era the turn
+  starts in (R-TURN-001). The default is today's table, so the goldens do not move. GDD v0.1 Phase 1 uses it for monthly
+  turns (refs #81).
 - Indicators, policies, effects, situations, voter groups and actors can carry `from`/`to` dates (chapters spec 3.2, refs
   #57). The sim reads the records active on the game date; the state gains a record at its start and drops it at its end,
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
   whole window of the record using it; an event that fires after its window leaves out records that have ended. With no
   dates nothing changes (goldens unchanged). Offices and regions come later.
+- Offices accept `successor`, the office that takes over when this one is abolished (chapters spec 3.2, refs #57). The
+  loader refuses an unknown or self successor, one without `until`, one not in office at the handover, and one that
+  could not own the budget lines and policies it takes over (several holders, or a historical title). Nothing reads it
+  yet. Goldens unchanged.
+- Aliyah regions accept `from`/`to` (chapters spec 3.2, refs #57). The loader refuses a window that runs backwards or is
+  empty, and an aliyah period that counts a region outside its window. With no dates nothing changes (goldens unchanged).
+- A `map_actions` entry in `rules.yaml` accepts `from`/`to` (chapters spec 3.2, refs #57). Outside the window the action
+  is refused with the day it opens or the last day it was open ("A housing project can be placed from 1 January 1950").
+  The loader refuses a window that runs backwards or is empty.
+  With no dates nothing changes (goldens unchanged). This finishes the model-record windows of #57.
 - Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
   elsewhere hides it, and a mouse still hovers as before. The info panel lists the selected hex's 1948 localities with
   today's name where a living place carries on, by the same rule as the tooltip. Keyboard players reach the panel list
@@ -236,6 +251,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
+  June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
+  Knesset's position records show no break; the plenum record of the resignation and of the new declarations of
+  allegiance is used. The goldens do not move (fixes #314).
+- Eliezer Kaplan's Trade and Industry term and Haim-Moshe Shapira's Health term in the First Government start on 22
+  March 1949, not 10 March: on 22 March the Prime Minister told the Knesset the government had assigned them, and the
+  Knesset's position records give the same date. The goldens do not move (fixes #310).
+- The start screen's painting no longer shows sunbeams: on 14 May 1948 the hall's windows were darkened for fear of an
+  air raid, so the new painting shows them blacked out and the hall lamplit. It is a native 2048x1152 render, no longer
+  a 1536x864 upscale, and a window narrower than 16:9 now crops both sides of it alike (fixes #268).
 - The Unity idle test `PromoScreensTests.AnOpenScreenIsStillWhenIdle` no longer fails now and then (#242). It was not a
   font atlas and not a recurring layout. A batch-mode editor runs few frames, and now and then it tells
   `UIDocument` late that the test's GameObject exists. `UIDocument` then re-adds its root and the whole screen lays out

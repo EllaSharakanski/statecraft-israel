@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Statecraft.Sim
 {
@@ -22,6 +23,18 @@ namespace Statecraft.Sim
             var next = Advance(date, len);
             return next >= boundary || (boundary - next).TotalDays < 14 ? boundary : next;
         }
+
+        /// <summary>The names rules.yaml `turn_lengths` accepts.</summary>
+        public static readonly IReadOnlyList<string> LengthNames = new[] { "quarter", "month", "week" };
+
+        /// <summary>The turn length a `turn_lengths` name stands for. Throws on anything else (the loader refuses it first).</summary>
+        public static TurnLength ParseLength(string name) => name switch
+        {
+            "quarter" => TurnLength.Quarter,
+            "month" => TurnLength.Month,
+            "week" => TurnLength.Week,
+            _ => throw new ArgumentException($"unknown turn length '{name}'", nameof(name)),
+        };
 
         /// <summary>Share of a year one turn represents (used to scale yearly rates).</summary>
         public static double YearFraction(TurnLength len) => len switch
