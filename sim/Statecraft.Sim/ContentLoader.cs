@@ -274,6 +274,8 @@ namespace Statecraft.Sim
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
             }, eventFiles);
+            // Only this overload can list the directory. The readFile overload (WebGL) cannot, so a misnamed file is caught
+            // here and by RealContentTests before anything ships.
             var rulesDir = Path.Combine(contentRoot, "rules");
             if (Directory.Exists(rulesDir))
                 foreach (var f in Directory.GetFiles(rulesDir, "*.yaml").OrderBy(f => f, StringComparer.Ordinal))
