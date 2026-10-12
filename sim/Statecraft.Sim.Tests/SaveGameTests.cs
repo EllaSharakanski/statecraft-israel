@@ -53,10 +53,11 @@ public class SaveGameTests
         var c = Fixture1();
         var text = Played(c).Save.Write();
         var lines = text.Split('\n');
-        Assert.Equal("statecraft-save 1", lines[0]);
+        Assert.Equal("statecraft-save 2", lines[0]);
         Assert.Equal("content " + c.Hash, lines[1]);
         Assert.Equal("seed 99", lines[2]);
         Assert.Equal("mode Historical", lines[3]);
+        Assert.Equal("ruleset legacy", lines[4]);
         Assert.Contains("policy rationing 3FD5555555555555", lines);       // 1/3, bit for bit
         Assert.Contains("policy odd%20id%20with%20spaces%25 3FE0000000000000", lines);
         Assert.Contains("budget defense_minister=3FD0000000000000,finance_minister=3FE8000000000000", lines);
@@ -98,7 +99,7 @@ public class SaveGameTests
     }
 
     [Theory]
-    [InlineData("statecraft-save 2", 1, "line 1: save schema version 2 is newer than this game (1)")]
+    [InlineData("statecraft-save 3", 1, "line 1: save schema version 3 is newer than this game (2)")]
     [InlineData("statecraft-save x", 1, "line 1: bad schema version")]
     [InlineData("chess-save 1", 1, "line 1: expected 'statecraft-save'")]
     public void BadHeadersAreRejected(string first, int line, string message)
@@ -119,10 +120,10 @@ public class SaveGameTests
     {
         var c = Fixture1();
         var lines = Played(c).Save.Write().Split('\n').ToList();
-        lines.Insert(5, command);                                             // after the first "turn"
+        lines.Insert(6, command);                                             // after the first "turn" (schema 2: the ruleset line is line 5)
         var ex = Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
-        Assert.Equal(6, ex.Line);
-        Assert.Equal("line 6: " + message, ex.Message);
+        Assert.Equal(7, ex.Line);
+        Assert.Equal("line 7: " + message, ex.Message);
     }
 
     [Fact]
@@ -186,7 +187,7 @@ public class SaveGameTests
         Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new Appoint(null!, "pm_one") }));
         Assert.Throws<ArgumentNullException>(() => g.Step(new Command[] { new MapAction(null!, 1, 1) }));
         Assert.Empty(g.Save.Turns);                                  // nothing half-recorded
-        Assert.StartsWith("statecraft-save 1", g.Save.Write());
+        Assert.StartsWith("statecraft-save 2\n", g.Save.Write());
     }
 
     [Fact]
@@ -282,9 +283,9 @@ public class SaveGameTests
     {
         var c = Fixture1();
         var lines = Played(c).Save.Write().Split('\n').ToList();
-        lines.Insert(5, command);
+        lines.Insert(6, command);
         var ex = Assert.Throws<SaveException>(() => GameSession.Load(c, string.Join("\n", lines), out _));
-        Assert.Equal("line 6: " + message, ex.Message);
+        Assert.Equal("line 7: " + message, ex.Message);
     }
 
     [Fact]
@@ -410,7 +411,7 @@ public class SaveGameTests
 
     [Theory]
     [InlineData("statecraft-save 0", "unknown save schema version 0")]
-    [InlineData("statecraft-save 2", "save schema version 2 is newer than this game (1)")]
+    [InlineData("statecraft-save 3", "save schema version 3 is newer than this game (2)")]
     [InlineData("statecraft-save -1", "bad schema version")]
     public void SchemaVersionsOutsideOneAreRefused(string first, string message)
     {
@@ -438,7 +439,7 @@ public class SaveGameTests
         var g = GameSession.New(Fixture1(), 1, Mode.Historical);
         Assert.Throws<ArgumentException>(() => g.Step(new Command[] { new Foreign() }));
         g.Step(new Command[0]);
-        Assert.StartsWith("statecraft-save 1", g.Save.Write());
+        Assert.StartsWith("statecraft-save 2\n", g.Save.Write());
         Assert.Single(g.Save.Turns);
     }
 
@@ -468,5 +469,69 @@ public class SaveGameTests
         var live = g.Last!.Rejected.Single().Reason;
         Assert.Equal("The budget names a ministry that does not exist in this game", live);   // no id in player text (final review M4)
         Assert.Equal(live, GameSession.Load(c, g.Save.Write(), out _).Last!.Rejected.Single().Reason);
+    }
+
+    // R-SAVE-001
+    [Fact]
+    public void AGddSaveNamesItsRulesetAndRoundTrips()
+    {
+        var c = MvpSlice.Load(RealContentTests.ContentRoot());
+        var g = GameSession.New(c, 1, Mode.Historical);
+        g.Step(HistoricalAI.Commands(c, g.State));
+        var text = g.Save.Write();
+        Assert.StartsWith("statecraft-save 2\n", text);
+        Assert.Contains("\nruleset gdd-0.1\n", text);
+        Assert.Equal("gdd-0.1", SaveGame.Parse(text).Ruleset);
+        Assert.Equal(g.State.Hash(), GameSession.Load(c, text, out var warnings).State.Hash());
+        Assert.Empty(warnings);
+    }
+
+    // R-SAVE-001
+    [Fact]
+    public void AVersionOneSaveReadsAsLegacyAndStillLoadsInTheLegacyGame()
+    {
+        var c = Fixture1();
+        var g = Played(c);
+        var v1 = g.Save.Write().Replace("statecraft-save 2\n", "statecraft-save 1\n").Replace("ruleset legacy\n", "");
+        Assert.Equal("legacy", SaveGame.Parse(v1).Ruleset);
+        Assert.Equal(g.State.Hash(), GameSession.Load(c, v1, out _).State.Hash());
+        Assert.StartsWith("statecraft-save 2\n", SaveGame.Parse(v1).Write());   // written back as schema 2
+        Assert.Contains("\nruleset legacy\n", SaveGame.Parse(v1).Write());
+    }
+
+    // R-SAVE-001
+    [Fact]
+    public void AGddGameRefusesALegacySave()
+    {
+        var real = ContentLoader.Load(RealContentTests.ContentRoot());
+        var g = GameSession.New(real, 1, Mode.Historical);
+        g.Step(new Command[0]);
+        var gdd = MvpSlice.Load(RealContentTests.ContentRoot());
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(gdd, g.Save.Write(), out _));
+        Assert.Equal("This save was made with an earlier version of the game's rules; start a new game.", ex.Message);
+        var v1 = g.Save.Write().Replace("statecraft-save 2\n", "statecraft-save 1\n").Replace("ruleset legacy\n", "");
+        Assert.Equal(ex.Message, Assert.Throws<SaveException>(() => GameSession.Load(gdd, v1, out _)).Message);
+    }
+
+    // R-SAVE-001
+    [Fact]
+    public void ALegacyGameRefusesAGddSave()
+    {
+        var gdd = MvpSlice.Load(RealContentTests.ContentRoot());
+        var text = GameSession.New(gdd, 1, Mode.Historical).Save.Write();
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(ContentLoader.Load(RealContentTests.ContentRoot()), text, out _));
+        Assert.Equal("This save was made with another version of the game's rules; start a new game.", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("ruleset chess", "unknown ruleset 'chess'")]
+    [InlineData("ruleset", "expected 'ruleset'")]
+    [InlineData("turn", "expected 'ruleset'")]
+    public void ABadRulesetLineIsRefused(string line, string message)
+    {
+        var text = "statecraft-save 2\ncontent " + Hex64('a') + "\nseed 1\nmode Historical\n" + line + "\nturn\nend " + Hex64('b') + "\n";
+        var ex = Assert.Throws<SaveException>(() => SaveGame.Parse(text));
+        Assert.Equal(5, ex.Line);
+        Assert.Contains(message, ex.Message);
     }
 }

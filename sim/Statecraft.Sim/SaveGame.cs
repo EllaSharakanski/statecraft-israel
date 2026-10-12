@@ -16,9 +16,10 @@ namespace Statecraft.Sim
     /// <summary>
     /// A save is seed + command log + content hash + schema version (spec section 3); loading replays it. Text format,
     /// one item per line:
-    ///   statecraft-save 1          schema version
+    ///   statecraft-save 2          schema version (a schema 1 save has no ruleset line and is legacy)
     ///   content &lt;hex&gt;             Content.Hash of the content it was played with
     ///   seed &lt;ulong&gt;  /  mode Historical
+    ///   ruleset legacy|gdd-0.1     the rules it was played under (Content.Ruleset); another ruleset refuses it (R-SAVE-001)
     ///   turn                       starts the next turn's command list (one per Simulation.Step)
     ///   &lt;command&gt; ...              policy ID LEVEL | budget OFFICE=SHARE,... | event ID OPTION | mobilize LEVEL |
     ///                              security DELTA | appoint OFFICE PERSON | map ACTION Q R
@@ -27,7 +28,7 @@ namespace Statecraft.Sim
     /// </summary>
     public sealed class SaveGame
     {
-        public const int SchemaVersion = 1;
+        public const int SchemaVersion = 2;
         /// <summary>The ruleset of the legacy loop (Content.Ruleset).</summary>
         public const string LegacyRuleset = "legacy";
         /// <summary>The ruleset of the GDD v0.1 loop (eras.yaml systems.loop: gdd).</summary>
@@ -43,16 +44,21 @@ namespace Statecraft.Sim
         public string ContentHash { get; }
         public ulong Seed { get; }
         public Mode Mode { get; }
+        /// <summary>The ruleset the game was played under: <see cref="LegacyRuleset"/> or <see cref="GddRuleset"/> (R-SAVE-001).</summary>
+        public string Ruleset { get; }
         /// <summary>The recorded turns as new command objects each time it is read (changing them changes nothing in the save).</summary>
         public IReadOnlyList<IReadOnlyList<Command>> Turns =>
             turns.Select(t => (IReadOnlyList<Command>)t.Select(l => ParseCommand(0, l)).ToList().AsReadOnly()).ToList().AsReadOnly();
         /// <summary>GameState.Hash() after the last recorded turn (the new game's hash before any turn).</summary>
         public string FinalHash { get; private set; }
 
-        public SaveGame(string contentHash, ulong seed, Mode mode, string initialHash)
+        public SaveGame(string contentHash, ulong seed, Mode mode, string initialHash) : this(contentHash, seed, mode, LegacyRuleset, initialHash) { }
+
+        public SaveGame(string contentHash, ulong seed, Mode mode, string ruleset, string initialHash)
         {
             ContentHash = contentHash ?? throw new ArgumentNullException(nameof(contentHash));
-            Seed = seed; Mode = mode;
+            if (ruleset != LegacyRuleset && ruleset != GddRuleset) throw new ArgumentException($"unknown ruleset '{ruleset}'", nameof(ruleset));
+            Seed = seed; Mode = mode; Ruleset = ruleset;
             FinalHash = initialHash ?? throw new ArgumentNullException(nameof(initialHash));
         }
 
@@ -73,6 +79,7 @@ namespace Statecraft.Sim
             sb.Append("content ").Append(ContentHash).Append('\n');
             sb.Append("seed ").Append(Seed.ToString(CultureInfo.InvariantCulture)).Append('\n');
             sb.Append("mode ").Append(Mode.ToString()).Append('\n');
+            sb.Append("ruleset ").Append(Ruleset).Append('\n');
             foreach (var t in turns)
             {
                 sb.Append("turn\n");
@@ -127,11 +134,20 @@ namespace Statecraft.Sim
             if (!Enum.GetNames(typeof(Mode)).Contains(modeName)) throw new SaveException(4, "bad mode");   // names only: Enum.TryParse would accept "0"
             var mode = (Mode)Enum.Parse(typeof(Mode), modeName);
             if (mode == Mode.Open) throw new SaveException(4, "mode Open is not supported");   // Simulation.NewGame cannot start it before M4
+            var first = 4;   // the first line after the header
+            var ruleset = LegacyRuleset;
+            if (version >= 2)
+            {
+                if (n < 6) throw new SaveException(0, "Not a Statecraft save (too short)");
+                ruleset = Head(4, "ruleset", 2)[1];
+                if (ruleset != LegacyRuleset && ruleset != GddRuleset) throw new SaveException(5, $"unknown ruleset '{ruleset}'");
+                first = 5;
+            }
             var end = Head(n - 1, "end", 2)[1];
             if (!IsHash(end)) throw new SaveException(n, "bad end hash");
-            var save = new SaveGame(content, seed, mode, end);
+            var save = new SaveGame(content, seed, mode, ruleset, end);
             List<string>? current = null;
-            for (int i = 4; i < n - 1; i++)
+            for (int i = first; i < n - 1; i++)
             {
                 if (lines[i] == "turn") { current = new List<string>(); save.turns.Add(current); continue; }
                 if (current == null) throw new SaveException(i + 1, "command before the first 'turn'");

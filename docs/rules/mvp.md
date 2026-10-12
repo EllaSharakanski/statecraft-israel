@@ -15,3 +15,7 @@ R-LOOP-001: `systems.loop` in eras.yaml is `legacy` (the default) or `gdd`, and 
 R-LOOP-003: `MvpSlice.Overlay` loads the real content with `systems.loop: gdd` in every era and `turn_lengths` all month, and changes nothing else. Tests, the MVP goldens and the dev flag use it until cutover.
 
 R-LOOP-002: The GDD state (cities, units, the next unit id, completed objectives, the score) is written into the state hash only when it is set. With the legacy loop the hash text is unchanged, byte for byte.
+
+## Saves
+
+R-SAVE-001: A save names the ruleset it was played under (`ruleset legacy` or `ruleset gdd-0.1`, save schema 2). A game refuses a save made under another ruleset, with a message to start a new game. A schema 1 save has no ruleset line and is legacy.
