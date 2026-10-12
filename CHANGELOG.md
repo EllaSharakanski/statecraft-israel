@@ -11,6 +11,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A turn now ends on the next era's start date, not only on the last era's end (chapters spec 4.1). A turn that would
   leave under 14 days before the boundary is lengthened to it. Real days scale the turn's rates. With one era, or no
   boundary in a run, nothing changes; goldens unchanged (refs #59).
+- Writer preview: `dotnet run --project sim/Statecraft.Cli -- --preview --set key=value` plays the historical run with a
+  rules.yaml change applied in memory and prints the changed state lines and a table of chosen values, without Unity and
+  without touching `content/` (fixes #295).
 - One golden manifest (`sim/Statecraft.Sim.Tests/golden/manifest.txt`) pins the golden hashes; `STATECRAFT_UPDATE_GOLDEN=1`
   now rewrites it and the `GoldenRun.cs` constants, and a test names any doc that shows an old hash (fixes #293).
 - Era system switches in eras.yaml (`systems`): `legislature: state | assembly` (an assembly's vote against a policy or
