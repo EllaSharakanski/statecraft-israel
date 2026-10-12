@@ -16,15 +16,15 @@ namespace Statecraft.Game.UI
     /// with a save it goes through NewGamePresenter's two presses, the same flow as the top bar's New Game, so one stray
     /// press never wipes the save (#175, B6). Continue and Escape withdraw an open request.
     /// While it shows, the root has OpenClass (Statecraft.uss hides the HUD under it, so Tab reaches only these buttons)
-    /// and <c>shownChanged</c> is told, so GameRoot can stop the camera keys. The painting's AI badge (its top-left corner)
-    /// shows at every window shape (Fit).</summary>
+    /// and <c>shownChanged</c> is told, so GameRoot can stop the camera keys. The panel's source line says the painting is
+    /// AI-generated.</summary>
     public sealed class StartScreenPresenter : IDisposable
     {
         /// <summary>On the "root" element while the start screen shows.</summary>
         public const string OpenClass = "start-open";
         /// <summary>On the start screen when the painting is a full-width band with the panel under it (Fit).</summary>
         public const string BandClass = "start-band";
-        /// <summary>The painting's width over its height (Assets/UI/StartScreen/declaration-hall.jpg, 1920x1080).</summary>
+        /// <summary>The painting's width over its height (Assets/UI/StartScreen/declaration-hall.jpg, 2048x1152).</summary>
         public const float ArtAspect = 16f / 9f;
         /// <summary>The URL flag (WebGL) or command-line flag (desktop, "-nostart") that skips the screen by hand.</summary>
         public const string NoStartFlag = "nostart";
@@ -141,7 +141,7 @@ namespace Statecraft.Game.UI
         /// bottom) with the panel at the foot over the audience. In a narrower window that is tall enough for the painting's
         /// full-width 16:9 band and the panel under it (a phone held upright, a square window), the band and the panel are
         /// stacked and centred together (BandClass), so nothing of the painting is cropped. Otherwise (16:10, 4:3) it fills
-        /// the window anchored at its top-left corner, so only its right-hand side is cropped and the AI badge stays.</summary>
+        /// the window anchored at its top centre, so both sides are cropped alike and the aisle stays in the middle.</summary>
         void Fit()
         {
             var size = screen.layout.size;
