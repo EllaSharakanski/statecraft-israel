@@ -48,3 +48,8 @@ def test_the_same_id_defined_twice_is_reported(tmp_path):
 def test_prose_mentioning_an_id_is_not_a_definition(tmp_path):
     t = tree(tmp_path, 'See R-ECON-014 for tax.\n', '')
     assert m.check(t) == []
+
+
+def test_this_repository_has_no_untested_dead_or_duplicate_rule_ids():
+    # The policy checker tests run in CI, so this is the CI gate for the real tree.
+    assert m.check(ROOT) == []

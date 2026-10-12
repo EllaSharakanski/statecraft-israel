@@ -20,4 +20,4 @@ R-ECON-014: Each turn the treasury gains tax per head times the population share
 - an ID cited in `sim/` or `content/` is defined nowhere (dead), or
 - an ID is defined twice.
 
-It runs in CI and in `scripts/check.sh`. Prose that only mentions an ID mid-line is not a definition.
+It runs in CI as one of the policy checker tests (`pytest scripts/oss/tests`) and in `scripts/check.sh`. Prose that only mentions an ID mid-line is not a definition.
