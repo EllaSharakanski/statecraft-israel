@@ -8,9 +8,10 @@ namespace Statecraft.Sim
     {
         public static void Init(Content c, GameState s)
         {
-            foreach (var i in c.Indicators) { s.Indicators[i.Id] = i.Base; s.IndicatorShifts[i.Id] = 0.0; }
-            foreach (var p in c.Policies) s.Policies[p.Id] = p.Default;
-            foreach (var e in c.Effects) s.EffectContributions[e.Id] = 0;
+            var v = c.At(s.Date);   // the records that exist on the start date (all of them when none has a window)
+            foreach (var i in v.Indicators) { s.Indicators[i.Id] = i.Base; s.IndicatorShifts[i.Id] = 0.0; }
+            foreach (var p in v.Policies) s.Policies[p.Id] = p.Default;
+            foreach (var e in v.Effects) s.EffectContributions[e.Id] = 0;
         }
 
         /// <summary>Competence (0.5 + competence/20) of the office holder (player appointments included) times budget
@@ -43,24 +44,25 @@ namespace Statecraft.Sim
         public static void Apply(Content c, GameState s, List<Cause> why)
         {
             // Read every source before writing anything, so effect order cannot change results.
-            var targets = c.Effects.ToDictionary(e => e.Id, e =>
+            var v = c.At(s.Date);
+            var targets = v.Effects.ToDictionary(e => e.Id, e =>
                 e.K * (s.Policies.TryGetValue(e.Source, out var p) ? p : s.Indicators[e.Source]) * Multiplier(c, s, e.Office));
             var moved = new HashSet<string>();
-            foreach (var e in c.Effects)
+            foreach (var e in v.Effects)
             {
                 var old = s.EffectContributions[e.Id];
                 var now = old + (targets[e.Id] - old) / e.Inertia;
                 s.EffectContributions[e.Id] = now;
                 if (Math.Abs(now - old) > 1e-9) moved.Add(e.Id);
             }
-            var before = c.Indicators.ToDictionary(i => i.Id, i => s.Indicators[i.Id]);
-            foreach (var i in c.Indicators) s.Indicators[i.Id] = Level(c, s, i);
+            var before = v.Indicators.ToDictionary(i => i.Id, i => s.Indicators[i.Id]);
+            foreach (var i in v.Indicators) s.Indicators[i.Id] = Level(c, s, i);
             // One cause per indicator that actually changed (a clamped indicator reports nothing).
-            foreach (var i in c.Indicators)
+            foreach (var i in v.Indicators)
             {
                 var delta = s.Indicators[i.Id] - before[i.Id];
                 if (Math.Abs(delta) <= 1e-9) continue;
-                var names = c.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Name).ToList();
+                var names = v.Effects.Where(e => e.Target == i.Id && moved.Contains(e.Id)).Select(e => e.Name).ToList();
                 var from = names.Count > 0 ? $" ({string.Join(", ", names)})" : "";
                 why.Add(new Cause("effects", i.Id, delta, $"{PlayerText.Change(c, i.Id, delta)}{from}"));
             }
@@ -69,7 +71,7 @@ namespace Statecraft.Sim
 
         /// <summary>clamp(base + effect contributions) to [0, 1], before event shifts.</summary>
         internal static double Inner(Content c, GameState s, Indicator i) =>
-            Math.Max(0, Math.Min(1, i.Base + c.Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id])));
+            Math.Max(0, Math.Min(1, i.Base + c.At(s.Date).Effects.Where(e => e.Target == i.Id).Sum(e => s.EffectContributions[e.Id])));
 
         /// <summary>clamp(inner + event shift) to [0, 1].</summary>
         internal static double Level(Content c, GameState s, Indicator i) =>
@@ -80,7 +82,7 @@ namespace Statecraft.Sim
         /// Returns the change actually applied (0 when the indicator was already at the clamp).</summary>
         public static double Shift(Content c, GameState s, string indicator, double delta)
         {
-            var ind = c.Indicators.First(i => i.Id == indicator);
+            var ind = c.At(s.Date).Indicators.First(i => i.Id == indicator);
             var level = Level(c, s, ind);
             var newLevel = Math.Max(0, Math.Min(1, level + delta));
             s.IndicatorShifts[ind.Id] = newLevel - Inner(c, s, ind);
@@ -90,7 +92,7 @@ namespace Statecraft.Sim
 
         public static void UpdateSituations(Content c, GameState s, List<Cause> why)
         {
-            foreach (var sit in c.Situations)
+            foreach (var sit in c.At(s.Date).Situations)
             {
                 var v = s.Indicators[sit.Indicator];
                 bool on = s.ActiveSituations.Contains(sit.Id);
@@ -102,7 +104,7 @@ namespace Statecraft.Sim
         }
 
         public static double Approval(Content c, GameState s) =>
-            c.VoterGroups.Count == 0 ? 0.5 :
-            c.VoterGroups.Average(g => Math.Max(0, Math.Min(1, g.Weights.Sum(w => w.Value * s.Indicators[w.Key]))));
+            c.At(s.Date).VoterGroups.Count == 0 ? 0.5 :
+            c.At(s.Date).VoterGroups.Average(g => Math.Max(0, Math.Min(1, g.Weights.Sum(w => w.Value * s.Indicators[w.Key]))));
     }
 }
