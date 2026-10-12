@@ -80,11 +80,29 @@ namespace Statecraft.Sim
         /// written as 0.0), so hashes match across .NET, Mono and IL2CPP.</summary>
         public string Hash()
         {
+            using var sha = SHA256.Create();
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalText(false)));
+            return string.Concat(bytes.Select(b => b.ToString("x2")));
+        }
+
+        /// <summary>The state in the order and form <see cref="Hash"/> hashes it, one line per section, with each number
+        /// also written as a plain value (`name=1.5 [3FF8000000000000]`). For humans: a golden-hash failure diffs this
+        /// (issue #256). It shares one writer with <see cref="Hash"/>, so the two cannot list different fields.</summary>
+        public string Describe() => CanonicalText(true);
+
+        string CanonicalText(bool readable)
+        {
             var sb = new StringBuilder();
-            void Num(string k, double v) => sb.Append(k).Append('=').Append(BitConverter.DoubleToInt64Bits(v == 0.0 ? 0.0 : v).ToString("X16", CultureInfo.InvariantCulture)).Append(';');
+            void Nl() { if (readable) sb.Append('\n'); }
+            void Num(string k, double v)
+            {
+                var bits = BitConverter.DoubleToInt64Bits(v == 0.0 ? 0.0 : v).ToString("X16", CultureInfo.InvariantCulture);
+                if (readable) sb.Append("\n  ").Append(k).Append('=').Append((v == 0.0 ? 0.0 : v).ToString("R", CultureInfo.InvariantCulture)).Append(" [").Append(bits).Append(']');
+                else sb.Append(k).Append('=').Append(bits).Append(';');
+            }
             void Map(string name, Dictionary<string, double> m)
             {
-                sb.Append(name).Append('{');
+                Nl(); sb.Append(name).Append('{');
                 foreach (var kv in m.OrderBy(k => k.Key, StringComparer.Ordinal)) Num(kv.Key, kv.Value);
                 sb.Append('}');
             }
@@ -92,28 +110,26 @@ namespace Statecraft.Sim
               .Append(RngState).Append(';').Append(Mode).Append(';').Append(Turn).Append(';');
             Map("ind", Indicators); Map("pol", Policies); Map("eff", EffectContributions); Map("shift", IndicatorShifts);
             Map("bud", Budget); Map("pop", Population);
-            sb.Append("sit[").Append(string.Join(",", ActiveSituations)).Append(']');
+            Nl(); sb.Append("sit[").Append(string.Join(",", ActiveSituations)).Append(']');
             Num("treasury", Treasury); Num("debt", Debt); Num("fx", FxReserves);
-            sb.Append("rung=").Append(Rung).Append(";cf=").Append(CeasefireWeeksLeft).Append(';');
+            Nl(); sb.Append("rung=").Append(Rung).Append(";cf=").Append(CeasefireWeeksLeft).Append(';');
             Num("mob", Mobilization); Num("stab", CoalitionStability); Num("att", Attention);
-            sb.Append("fired[").Append(string.Join(",", FiredEvents)).Append(']');
-            sb.Append("pending[").Append(string.Join(",", PendingEvents)).Append(']');
-            sb.Append("chosen{");
+            Nl(); sb.Append("fired[").Append(string.Join(",", FiredEvents)).Append(']');
+            Nl(); sb.Append("pending[").Append(string.Join(",", PendingEvents)).Append(']');
+            Nl(); sb.Append("chosen{");
             foreach (var kv in ChosenOptions.OrderBy(k => k.Key, StringComparer.Ordinal)) sb.Append(kv.Key).Append('=').Append(kv.Value).Append(';');
             sb.Append('}');
-            sb.Append("appt{");
+            Nl(); sb.Append("appt{");
             foreach (var kv in Appointments.OrderBy(k => k.Key, StringComparer.Ordinal))
                 sb.Append(kv.Key).Append('=').Append(kv.Value.Person).Append('@').Append(kv.Value.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
             sb.Append("}under=").Append(AppointedUnder).Append(';');
-            sb.Append("map[");
+            Nl(); sb.Append("map[");
             foreach (var p in Placements)
                 sb.Append(p.Action).Append('@').Append(p.Q).Append(',').Append(p.R).Append('@').Append(p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
             sb.Append(']');
-            sb.Append("mapturn=").Append(MapActionsTurnDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':').Append(MapActionsThisTurn).Append(';');
-            sb.Append("over=").Append(GameOver ?? "");
-            using var sha = SHA256.Create();
-            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
-            return string.Concat(bytes.Select(b => b.ToString("x2")));
+            Nl(); sb.Append("mapturn=").Append(MapActionsTurnDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':').Append(MapActionsThisTurn).Append(';');
+            Nl(); sb.Append("over=").Append(GameOver ?? "");
+            return sb.ToString();
         }
     }
 }
