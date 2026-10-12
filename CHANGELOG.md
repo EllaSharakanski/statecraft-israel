@@ -156,6 +156,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Rationing no longer has a vacant minister from 24 December 1952. The Knesset records show no Ministry of Rationing and
+  Supply in the Fourth Government, and on 4 May 1953 the Minister of Trade and Industry, Peretz Bernstein, told the
+  Knesset that his ministry held the supply tasks and, to some extent, rationing. He answers for rationing until
+  29 June 1955. Dov Yosef's Agriculture term now starts on 22 March 1949, as in the Knesset position record, not 10 March
+  (issues #225 and #283). The golden hashes do not move.
 - The game settlements Lod and Ramla show their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
