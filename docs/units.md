@@ -182,6 +182,15 @@ checks every anchor and logs each spot and its distance.
 - **Badge:** each token has the promo's badge (`UnitBadge`): a dark rounded plate with an ivory glyph (two figures, an
   aircraft or a ship). It is turned to face each camera as it renders.
 - **Ring:** the white ring appears only on selection.
+- **Slopes (owner question, 2026-10-11).** Each rifleman stands on the highest ground under its boots
+  (`UnitShowcase.Stand`: the centre plus 48 points on three rings out to the boots' 400 m radius), so no boot sinks into
+  a hill. Where the ground under the boots falls more than 20 m, the figure stands on a base, as a painted miniature
+  does. The base is a dark earth-coloured disc of the boots' radius, reaching down to the lowest ground, so the
+  downhill boot never floats.
+  - **Steepest spots:** the worst drop is about 0.6–1 km, against a 3.6 km figure, on the 3x relief of the Jerusalem
+    hills.
+  - **Tests:** `AFigureStandsOnASteepSlopeWithoutSinking` and `NoRiflemanSinksIntoTheHillsOfTheMap`.
+  - **Close-ups** (`MapCapture.Promo -units -extraPose …`, at 12 and 20 km): at 6 km the camera sees only boots.
 
 **Selection and the card.**
 - Clicking a token's hex selects it. The ring goes round it and the hex outline is cleared, so it has one highlight.
