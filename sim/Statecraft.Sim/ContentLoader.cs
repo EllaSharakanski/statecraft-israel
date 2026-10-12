@@ -371,6 +371,10 @@ namespace Statecraft.Sim
                 if (i > 0 && r.RungMinMobilization[i] < r.RungMinMobilization[i - 1])
                     throw new ContentException(file, field, "must not be below the previous rung's floor");
             }
+            if (r.TurnLengths.Count != 5) throw new ContentException(file, "turn_lengths", "needs exactly 5 values (rungs 1-5)");
+            for (int i = 0; i < 5; i++)
+                if (!SimTime.LengthNames.Contains(r.TurnLengths[i]))
+                    throw new ContentException(file, FormattableString.Invariant($"turn_lengths[{i}]"), "must be quarter, month or week");
             if (r.StartRung < 1 || r.StartRung > 5) throw new ContentException(file, "start_rung", "must be 1-5");
             if (r.CeasefireWeeks <= 0) throw new ContentException(file, "ceasefire_weeks", "must be > 0");
             foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
