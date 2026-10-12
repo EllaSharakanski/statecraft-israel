@@ -74,35 +74,48 @@ namespace Statecraft.Sim
             .WithDuplicateKeyChecking()   // two equal keys would otherwise silently keep only the last value
             .Build();
 
+        static readonly IDeserializer NodeYaml = new DeserializerBuilder().WithDuplicateKeyChecking().Build();
+        static readonly ISerializer NodeWriter = new SerializerBuilder().Build();
+
+        /// <summary>Keys an era override may not set: the values <c>NewGame</c> reads once. A later era's start values
+        /// belong in start/&lt;era&gt;.yaml (chapters spec section 6), and the set of budget lines in the carry rules (section 4).</summary>
+        static readonly string[] StartOnlyKeys = { "start", "treasury_start", "fx_start", "start_rung", "initial_population", "budget_start" };
+
         /// <summary>Era rules (#58): for each era with a content/rules/&lt;era&gt;.yaml file, rules.yaml with that file's keys
         /// merged in at the YAML-node level (maps merge key by key, a list or a value replaces), then read with the strict
-        /// <see cref="Rules"/> type, so a misspelt key still fails, naming the era file. The base text is read through
-        /// <paramref name="rawRead"/> so that it is not hashed twice; an override file is read through
-        /// <paramref name="readFile"/>, so it counts in the content hash. An era with no file is left out of the map.</summary>
-        static Dictionary<string, Rules> ReadEraRules(Func<string, string?> rawRead, Func<string, string?> readFile, List<Era> eras)
+        /// <see cref="Rules"/> type. The override is first read on its own with the same strict reader, so a misspelt key
+        /// or a wrong type fails naming the era file and the line. An override cannot remove a key: an era cannot drop a
+        /// budget_start line, a map_actions entry or an attention_cost kind. An override file is read through
+        /// <paramref name="readFile"/>, so it counts in the content hash; <paramref name="baseText"/> is the text of
+        /// rules.yaml already read (and hashed) once. An era with no file is left out of the map.</summary>
+        static Dictionary<string, Rules> ReadEraRules(string baseText, Func<string, string?> readFile, List<Era> eras)
         {
             var result = new Dictionary<string, Rules>();
-            var nodes = new DeserializerBuilder().WithDuplicateKeyChecking().Build();
             foreach (var era in eras)
             {
-                if (!System.Text.RegularExpressions.Regex.IsMatch(era.Id ?? "", "^[a-z][a-z0-9_]*$")) continue;   // eras.yaml validation names a bad id
+                if (!Offices.OfficeId.IsMatch(era.Id ?? "")) continue;   // eras.yaml validation names a bad id
                 var rel = "rules/" + era.Id + ".yaml";
                 string? text;
                 try { text = readFile(rel); }
                 catch (IOException e) { throw new ContentException(rel, "(file)", e.Message); }
                 catch (UnauthorizedAccessException e) { throw new ContentException(rel, "(file)", e.Message); }
                 if (text == null) continue;
+                Dictionary<object, object> over;
                 try
                 {
-                    var merged = nodes.Deserialize<Dictionary<object, object>>(rawRead("rules.yaml") ?? "") ?? new Dictionary<object, object>();
-                    var over = nodes.Deserialize<Dictionary<object, object>>(text) ?? throw new ContentException(rel, "(file)", "empty file: list the keys this era changes");
-                    if (over.ContainsKey("start")) throw new ContentException(rel, "start", "an era cannot change the start date");
-                    MergeNodes(merged, over);
-                    var rules = Yaml.Deserialize<Rules>(new SerializerBuilder().Build().Serialize(merged)) ?? throw new ContentException(rel, "(file)", "empty file");
-                    CheckNulls(rel, "", rules);
-                    result[era.Id!] = rules;
+                    var alone = Yaml.Deserialize<Rules>(text) ?? throw new ContentException(rel, "(file)", "empty file: list the keys this era changes");
+                    CheckNulls(rel, "", alone);
+                    over = NodeYaml.Deserialize<Dictionary<object, object>>(text) ?? throw new ContentException(rel, "(file)", "empty file: list the keys this era changes");
                 }
-                catch (YamlException e) { throw new ContentException(rel, "(rules)", e.InnerException?.Message ?? e.Message); }
+                catch (YamlException e) { throw new ContentException(rel, $"line {e.Start.Line}", e.InnerException?.Message ?? e.Message); }
+                foreach (var k in StartOnlyKeys)
+                    if (over.ContainsKey(k))
+                        throw new ContentException(rel, k, k == "start" ? "an era cannot change the start date"
+                            : "start values go in start/<era>.yaml (chapters spec section 6), not in an override");
+                var merged = NodeYaml.Deserialize<Dictionary<object, object>>(baseText) ?? new Dictionary<object, object>();
+                MergeNodes(merged, over);
+                try { result[era.Id!] = Yaml.Deserialize<Rules>(NodeWriter.Serialize(merged)) ?? throw new ContentException(rel, "(file)", "empty file"); }
+                catch (YamlException e) { throw new ContentException(rel, "(merged with rules.yaml)", e.InnerException?.Message ?? e.Message); }
             }
             return result;
         }
@@ -203,8 +216,9 @@ namespace Statecraft.Sim
             var m = Read<ModelFile>(readFile, "model.yaml");
             c.Indicators = m.Indicators; c.Policies = m.Policies; c.Effects = m.Effects;
             c.Situations = m.Situations; c.VoterGroups = m.VoterGroups; c.Actors = m.Actors; c.Money = m.Money;
-            c.Rules = Read<Rules>(readFile, "rules.yaml");
-            c.EraRules = ReadEraRules(inner, readFile, c.Eras);
+            string rulesText = "";
+            c.Rules = Read<Rules>(p => { var t = readFile(p); rulesText = t ?? ""; return t; }, "rules.yaml");
+            c.EraRules = ReadEraRules(rulesText, readFile, c.Eras);
             var aliyah = Read<AliyahFile>(readFile, "aliyah.yaml");
             c.Aliyah = aliyah.Series; c.Regions = aliyah.Regions;
             c.PopulationAnchors = Read<PopulationFile>(readFile, "population.yaml").Anchors;
@@ -255,11 +269,17 @@ namespace Statecraft.Sim
             var eventFiles = Directory.Exists(eventsDir)
                 ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
                 : new List<string>();
-            return Load(rel =>
+            var content = Load(rel =>
             {
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
             }, eventFiles);
+            var rulesDir = Path.Combine(contentRoot, "rules");
+            if (Directory.Exists(rulesDir))
+                foreach (var f in Directory.GetFiles(rulesDir, "*.yaml").OrderBy(f => f, StringComparer.Ordinal))
+                    if (!content.EraRules.ContainsKey(Path.GetFileNameWithoutExtension(f)))
+                        throw new ContentException("rules/" + Path.GetFileName(f), "(file)", "the file name must be the id of an era in eras.yaml");
+            return content;
         }
 
         internal const string IdRule = "must be lowercase letters, digits and underscores, starting with a letter";
@@ -350,7 +370,7 @@ namespace Statecraft.Sim
             }
             if (r.StartRung < 1 || r.StartRung > 5) throw new ContentException(file, "start_rung", "must be 1-5");
             if (r.CeasefireWeeks <= 0) throw new ContentException(file, "ceasefire_weeks", "must be > 0");
-                        foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
+            foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
                 ("spending_per_capita_per_year", r.SpendingPerCapitaPerYear), ("exports_per_year", r.ExportsPerYear), ("imports_per_capita_per_year", r.ImportsPerCapitaPerYear),
                 ("mobilization_cost_per_year", r.MobilizationCostPerYear), ("natural_increase_per_year", r.NaturalIncreasePerYear),
                 ("capital_inflow_per_year", r.CapitalInflowPerYear), ("fx_crisis_food_per_year", r.FxCrisisFoodPerYear) })
@@ -402,8 +422,6 @@ namespace Statecraft.Sim
             Unique("governments.yaml", "governments", c.Governments.Select(g => g.Id));
             Unique("eras.yaml", "eras", c.Eras.Select(e => e.Id));
             ValidateEras(c);
-            foreach (var kv in c.EraRules)
-                ValidateRules(c, kv.Value, "rules/" + kv.Key + ".yaml", indicators, offices, historicalOffices);
             Unique("model.yaml", "indicators", c.Indicators.Select(i => i.Id));
             Unique("model.yaml", "policies", c.Policies.Select(p => p.Id));
             Unique("model.yaml", "effects", c.Effects.Select(e => e.Id));
@@ -575,6 +593,8 @@ namespace Statecraft.Sim
                 }
             foreach (var a in c.Actors) Unit("model.yaml", $"actors[{a.Id}].standing", a.Standing);
             ValidateRules(c, c.Rules, "rules.yaml", indicators, offices, historicalOffices);
+            foreach (var kv in c.EraRules)
+                ValidateRules(c, kv.Value, "rules/" + kv.Key + ".yaml", indicators, offices, historicalOffices);
             for (int i = 0; i < c.Aliyah.Count; i++)
             {
                 var a = c.Aliyah[i]; var path = FormattableString.Invariant($"series[{i}]");

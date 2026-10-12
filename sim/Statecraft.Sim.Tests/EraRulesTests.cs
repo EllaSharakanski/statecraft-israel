@@ -88,7 +88,8 @@ eras:
     [Fact]
     public void AnEmptyOverrideFileFails()
     {
-        Assert.Throws<ContentException>(() => ContentLoader.Load(Write("")));
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(Write("")));
+        Assert.Contains("rules/later.yaml", e.Message);
     }
 
     [Fact]
@@ -105,5 +106,77 @@ eras:
         var c = ContentLoader.Load(Write(null));
         Assert.Empty(c.EraRules);
         Assert.Same(c.Rules, c.RulesAt(new DateTime(1953, 1, 1)));
+    }
+
+    [Fact]
+    public void ABaseRulesErrorNamesRulesYamlEvenWithAnEraFile()
+    {
+        var dir = Write("attention_per_turn: 5\n");
+        var rulesPath = Path.Combine(dir, "rules.yaml");
+        File.WriteAllText(rulesPath, System.Text.RegularExpressions.Regex.Replace(File.ReadAllText(rulesPath), @"(?m)^ceasefire_weeks:.*$", "ceasefire_weeks: -1"));
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+        Assert.Contains("rules.yaml", e.Message);
+        Assert.DoesNotContain("rules/later.yaml", e.Message);
+    }
+
+    [Fact]
+    public void ATypeErrorInAnOverrideNamesTheFileAndLine()
+    {
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(Write("# note\nattention_per_turn: abc\n")));
+        Assert.Contains("rules/later.yaml", e.Message);
+        Assert.Contains("line 2", e.Message);
+    }
+
+    [Fact]
+    public void ANestedUnknownKeyNamesTheFileAndLine()
+    {
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(Write("map_actions:\n  housing:\n    costt: 9\n")));
+        Assert.Contains("rules/later.yaml", e.Message);
+        Assert.Contains("line 3", e.Message);
+    }
+
+    [Theory]
+    [InlineData("treasury_start: 999\n")]
+    [InlineData("fx_start: 1\n")]
+    [InlineData("start_rung: 2\n")]
+    [InlineData("initial_population:\n  jews: 1\n")]
+    [InlineData("budget_start:\n  defence: 1\n")]
+    public void AnOverrideCannotSetAStartValue(string yaml)
+    {
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(Write(yaml)));
+        Assert.Contains("rules/later.yaml", e.Message);
+        Assert.Contains("start/<era>.yaml", e.Message);
+    }
+
+    [Fact]
+    public void AFileThatNamesNoEraIsRefused()
+    {
+        var dir = Write(null);
+        Directory.CreateDirectory(Path.Combine(dir, "rules"));
+        File.WriteAllText(Path.Combine(dir, "rules", "latr.yaml"), "attention_per_turn: 5\n");
+        var e = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+        Assert.Contains("rules/latr.yaml", e.Message);
+    }
+
+    [Fact]
+    public void ARealOverrideFileInContentNamesAnEra()
+    {
+        var root = RealContentTests.ContentRoot();
+        var dir = Path.Combine(root, "rules");
+        if (!Directory.Exists(dir)) return;
+        var eras = new HashSet<string>(ContentLoader.Load(root).Eras.ConvertAll(e => e.Id));
+        foreach (var f in Directory.GetFiles(dir, "*.yaml")) Assert.Contains(Path.GetFileNameWithoutExtension(f), eras);
+    }
+
+    [Fact]
+    public void AMergeTwoLevelsDeepKeepsTheSiblingKeys()
+    {
+        var c = ContentLoader.Load(Write("map_actions:\n  housing:\n    cost: 9\n"));
+        var later = c.RulesAt(new DateTime(1953, 1, 1)).MapActions;
+        var basis = c.Rules.MapActions;
+        Assert.Equal(9, later["housing"].Cost);
+        Assert.Equal(basis["housing"].Housing, later["housing"].Housing);
+        Assert.Equal(basis["housing"].Name, later["housing"].Name);
+        Assert.Equal(basis.Count, later.Count);
     }
 }
