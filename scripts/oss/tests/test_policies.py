@@ -48,6 +48,20 @@ def test_contributing_names_every_ci_command_and_the_unity_gate():
         assert cmd in text, cmd
 
 
+def test_check_script_runs_every_ci_command():
+    # scripts/check.sh (#263) promises to run what CI runs; a pin changed in ci.yml must change there too.
+    import yaml
+    ci = yaml.safe_load(read(".github/workflows/ci.yml"))
+    script = read("scripts/check.sh")
+    runs = [s["run"] for job in ci["jobs"].values() for s in job["steps"] if "run" in s]
+    assert len(runs) == 5, runs
+    for cmd in runs:
+        # The changelog job passes the PR's SHAs; the script passes its own base ref.
+        cmd = cmd.split(" --base ")[0]
+        assert cmd in script, cmd
+    assert f'UV_PYTHON:-{ci["env"]["UV_PYTHON"]}' in script
+
+
 def test_changelog_has_unreleased_on_top():
     text = read("CHANGELOG.md")
     assert text.index("## [Unreleased]") == text.index("## [")
@@ -62,6 +76,15 @@ def test_historical_accuracy_form_requires_a_source():
     cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
     assert cfg["blank_issues_enabled"] is False
     assert any("security/advisories/new" in c["url"] for c in cfg["contact_links"])
+
+
+def test_task_form_has_every_field_and_all_are_required():
+    import yaml
+    form = yaml.safe_load(read(".github/ISSUE_TEMPLATE/task.yml"))
+    fields = {b["id"]: b for b in form["body"] if b["type"] != "markdown"}
+    assert set(fields) == {"goal", "files", "done", "sources", "signoff", "unity"}
+    assert all(f["validations"]["required"] is True for f in fields.values())
+    assert fields["unity"]["type"] == "dropdown"
 
 
 def test_content_policy_states_the_owner_rules_and_only_real_mechanisms():

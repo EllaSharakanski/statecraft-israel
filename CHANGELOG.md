@@ -12,6 +12,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
   HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
   system reads the base rules directly for anything but a start value.
+- JSON Schemas for `people.yaml`, `offices.yaml`, `parties.yaml` and the event files (#265), in `content/schema/`. Each file
+  names its schema on the first line, so an editor with a YAML language server flags a wrong field name or a missing
+  `sources:` as you type. `SchemaTests` checks all real content against them, keeps their field names equal to the loader
+  types and checks that they reject the usual mistakes. The comment changes the content hash, so an old save shows the
+  content-changed warning once. The golden hashes do not move.
 - The Fourth to Seventh Governments (24 December 1952 to 1956) with their coalitions and the ministers' dated terms,
   the 1953-1956 deputy ministers, the Ministries of Postal Services (from 3 November 1952) and Development (from
   15 June 1953), and the Chiefs of Staff Maklef and Dayan. Dates follow the Knesset's own position records and plenum
@@ -52,6 +57,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
+- The Third Knesset and the 26 July 1955 election results (seats by list), with the National Religious Front and the
+  Religious Torah Front as parties; the Second Knesset now ends on 15 August 1955 (refs #26).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).

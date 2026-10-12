@@ -14,7 +14,7 @@
 
 ## Without Unity (Linux, a container, a sandbox)
 
-Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the content and the policy checks run headless. These are the commands CI runs (`.github/workflows/ci.yml`), with the .NET SDK 10.0.401 and `uv`:
+Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the content and the policy checks run headless, also in the dev container (`.devcontainer/README.md`, for a local container or a Codespace). These are the commands CI runs (`.github/workflows/ci.yml`), with the .NET SDK 10.0.401 and `uv`:
 
 | Check | Command | CI job |
 |---|---|---|
@@ -23,6 +23,8 @@ Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the cont
 | Policy checker tests | `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` | Repo policy |
 | Data tool tests (one runs the sim's release gate, so they need the .NET SDK too) | `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 --with pyproj==3.8.0 pytest tools/tests -q` | Tools (pytest) |
 | Changelog line | `uv run scripts/oss/changelog_check.py --base origin/main` | Changelog |
+
+`scripts/check.sh` runs all five in one go, cheapest first, plus a sim build with warnings as errors. It stops at the first failure and shows the end of its output. It takes the base ref as its argument (default `origin/main`); set `CHECK_NO_CHANGELOG=1` if the PR has the `no-changelog` label.
 
 Not possible without Unity and not in CI: the Unity EditMode tests, player builds, `tools/web_check.py` and the visual profiles below. If your change touches `unity/`, or `sim/` code that Unity compiles, say in the PR that you could not run them. The maintainer runs them (`CONTRIBUTING.md`, "Unity EditMode tests are not in CI").
 
