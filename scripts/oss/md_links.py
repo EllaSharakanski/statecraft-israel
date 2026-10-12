@@ -27,7 +27,7 @@ def tracked_markdown(root: Path) -> list[str]:
 def tracked_paths(root: Path) -> set[str]:
     """Every tracked file and every directory above one, with the exact letter case git stores."""
     out = subprocess.run(["git", "-C", str(root), "ls-files", "-z"], capture_output=True, text=True, check=True).stdout
-    paths = set()
+    paths = {"."}  # the repository root, which `[top](..)` from docs/ or `[x](./)` resolves to
     for f in filter(None, out.split("\0")):
         parts = f.split("/")
         paths.update("/".join(parts[:i]) for i in range(1, len(parts) + 1))
