@@ -1783,7 +1783,7 @@ houses (review M8). "Main" is `a3202ad`, with the villages and before towns roun
 | Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
 | Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
 | Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
-| all 25 | 216 → 365 | | | 27 → 55 |
+| all 25 | 216 → 365 (367 after the review) | | | 27 → 55 |
 
 Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
 blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
@@ -1843,6 +1843,27 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - The earlier session on a quieter machine (main `a3202ad`, before those cuts) measured map_build 2668 → 2683 ms at
     cpu 4 (6 runs each), with the cpu 1 kit phase 129 → 137 ms.
   - The budget at cpu 4 is 2720 ms; #195 needs about 100 ms of it. Towns round 2 takes none.
+
+### Review (2026-10-12, on the merge with main `471c300`)
+- **Fixed on the branch:**
+  - The beach setback tested any water, so it also applied on the Sea of Galilee. It now tests the sea only (`Sea`: water
+    that is not a lake hex). Degania goes from 0 houses back to main's 1.
+  - Nahalal's ring ended at 0.88 of the radius, but its lattice's first ring of plots stands at 0.76 and 0.89, so it drew
+    no houses. The ring now runs out to the radius: 0 → 1 (main 1).
+  - Tel Aviv's blocks are capped at eight storeys, promo 03's tallest: the cap was ten. The tallest block is now 7
+    storeys (1,386 m) and the median is still 4.
+  - `TownCensusTests.SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` covers all three.
+- **Each test fails under a mutation:**
+  - Reverting the lake test, the ring and the cap fails the new test on all three counts.
+  - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
+  - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
+  - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
+- **Still open, filed as issues:**
+  - #317: small towns draw almost no houses on the 100x lattice (Tiberias 3 → 0, Rosh Pinna 0).
+  - #318: Tel Aviv's cover is held down by the localities' landmark lots.
+  - #319: the symbolic Old City has roads crossing inside its walls.
+- **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at
+  79% (26 of 33).
 
 ### Sources (checked 2026-10-12)
 - Tel Aviv:

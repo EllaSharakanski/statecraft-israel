@@ -390,7 +390,9 @@ namespace Statecraft.Game.Map.Kits
                     // The lower town by the bay (old Arab Haifa, below about 35 m) and Hadar HaCarmel up the slope.
                     return (L.Style == Style.OldHouse) == (ground.ElevM(p.x, p.y) < 35f);
                 case "nahalal":
-                    return t > 0.42f && t < 0.88f;   // Nahalal's ring of farmsteads round the public buildings
+                    // Nahalal's ring of farmsteads round the public buildings, out to the footprint's edge: its lattice's
+                    // first ring of plots stands at 0.76 and 0.89 of the radius.
+                    return t > 0.42f && t <= 1f;
             }
             if (L.Style == Style.TownBlock) return t < 0.42f;
             if (L.Style == Style.Moshava && L.Group == 1) return t > 0.36f;
@@ -499,7 +501,11 @@ namespace Statecraft.Game.Map.Kits
         /// town by the port) meet the water.</summary>
         const float BeachSetbackM = 700f;
 
-        /// <summary>Any water on 24 rays from <paramref name="c"/>, sampled every kilometre out to <paramref name="radius"/>: whether a
+        /// <summary>Water that is not a lake: the beach strip is the Mediterranean's. The Sea of Galilee's and the Hula's towns
+        /// (Tiberias, Degania) meet the water, as the old towns do.</summary>
+        static bool Sea(float x, float z, KitGround ground) => ground.Water(x, z) && !(ground.Inside(x, z) && ground.Biome(x, z) == "lake");
+
+        /// <summary>Any sea on 24 rays from <paramref name="c"/>, sampled every kilometre out to <paramref name="radius"/>: whether a
         /// town's plots need the beach setback test at all.</summary>
         static bool WaterWithin(Vector2 c, float radius, KitGround ground)
         {
@@ -510,19 +516,19 @@ namespace Statecraft.Game.Map.Kits
                 for (float d = 1000f; d <= radius; d += 1000f)
                 {
                     var p = c + dir * d;
-                    if (ground.Water(p.x, p.y)) return true;
+                    if (Sea(p.x, p.y, ground)) return true;
                 }
             }
             return false;
         }
 
-        /// <summary>Any water at the corners or edge midpoints of a w x d rectangle at <paramref name="p"/>.</summary>
+        /// <summary>Any sea (not a lake) at the corners or edge midpoints of a w x d rectangle at <paramref name="p"/>.</summary>
         static bool NearSea(Vector2 p, float yawDeg, float w, float d, KitGround ground)
         {
-            if (CornerInWater(p, yawDeg, w, d, ground)) return true;
             float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
-            foreach (var (u, v) in new[] { (0.5f * w, 0f), (-0.5f * w, 0f), (0f, 0.5f * d), (0f, -0.5f * d) })
-                if (ground.Water(p.x + u * ca - v * sa, p.y + u * sa + v * ca)) return true;
+            foreach (var (u, v) in new[] { (-0.5f * w, -0.5f * d), (0.5f * w, -0.5f * d), (-0.5f * w, 0.5f * d), (0.5f * w, 0.5f * d),
+                         (0.5f * w, 0f), (-0.5f * w, 0f), (0f, 0.5f * d), (0f, -0.5f * d) })
+                if (Sea(p.x + u * ca - v * sa, p.y + u * sa + v * ca, ground)) return true;
             return false;
         }
 
@@ -555,8 +561,8 @@ namespace Statecraft.Game.Map.Kits
                     // Taller near the centre, a few taller still: promo 03's five- to eight-storey skyline, above the real White
                     // City's three or four storeys (owner ruling 2026-10-10: where the promo departs from the era, the promo wins).
                     storeys = Mathf.RoundToInt(Mathf.Lerp(7f, 3f, Mathf.Clamp01(t)) + rnd.Range(-1.5f, 1.5f));
-                    if (t < 0.5f && rnd.Chance(0.1f)) storeys = rnd.Range(8, 11);
-                    storeys = Mathf.Clamp(storeys, 2, 10);
+                    if (t < 0.5f && rnd.Chance(0.1f)) storeys = rnd.Range(7, 9);
+                    storeys = Mathf.Clamp(storeys, 2, 8);   // promo 03's tallest block is eight storeys; nothing reads as a later tower
                     break;
                 case Style.TownBlock:
                     w = rnd.Range(12f, 17f); d = rnd.Range(9f, 13f);

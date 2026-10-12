@@ -186,6 +186,25 @@ public class TownCensusTests
         CollectionAssert.IsEmpty(bad.Take(20), $"{bad.Count} placements on a route or in the sea");
     }
 
+    /// <summary>Review of towns round 2. The beach setback is the Mediterranean's: on the Sea of Galilee, Degania keeps its
+    /// house (main 1, 0 with the setback on the lake). Nahalal's ring reaches its lattice's first ring of plots (main 1, 0 with
+    /// the ring ending at 0.88 of the radius). No block stands taller than promo 03's tallest, eight storeys (60x: 1,584 m).</summary>
+    [Test]
+    public void SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo()
+    {
+        var map = OpenMap();
+        var rows = Census(map, out var placed).ToDictionary(r => r.Id);
+        var bad = new List<string>();
+        foreach (var id in new[] { "degania_alef", "nahalal" })
+        {
+            TestContext.WriteLine(rows[id]);
+            if (rows[id].Buildings < 1) bad.Add(id + " builds no house");
+        }
+        float tallest = placed.Where(p => p.Kind == "building").Max(p => p.H);
+        if (tallest > 8f * 3.3f * KitScale.CityBlocks + 1f) bad.Add($"a block {tallest:0} m tall, over eight storeys");
+        CollectionAssert.IsEmpty(bad);
+    }
+
     /// <summary>The floors of the four cities' buildings and built cover (share of the town's own land under a building or
     /// landmark, whole footprint and inner half radius). Towns round 2 measured them with the 1948 localities (docs/visual-v1.md,
     /// "Towns round 2"): Tel Aviv 43 / 17.4% / 18.5%, Jaffa 33 / 32.6% / 31.9%, Haifa 45 / 21.0% / 20.6%, Jerusalem 110 /
