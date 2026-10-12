@@ -266,6 +266,10 @@ namespace Statecraft.Sim
         public Dictionary<string, double> AttentionCost { get; set; } = new Dictionary<string, double>();
         public double RungAttentionStep { get; set; }
         public int CeasefireWeeks { get; set; }
+        /// <summary>The turn length on each security rung, rungs 1 to 5: quarter, month or week. The default is the legacy
+        /// table; the GDD v0.1 cutover sets all five to month (spec 2026-10-12 section 3). Read through
+        /// SecuritySystem.TurnLengthFor(c, date, rung). R-TURN-001.</summary>
+        public List<string> TurnLengths { get; set; } = new List<string> { "quarter", "quarter", "quarter", "month", "week" };
         public List<double> RungMinMobilization { get; set; } = new List<double>();
         public double TreasuryStart { get; set; }
         public double FxStart { get; set; }
@@ -316,6 +320,10 @@ namespace Statecraft.Sim
         public double Morale { get; set; }
         /// <summary>The phrase the player reads in a sentence ("a transit camp"); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the action may be placed (inclusive); null when it is open from the start (chapters spec 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>First day it may no longer be placed (exclusive); null while it still may.</summary>
+        public DateTime? To { get; set; }
     }
 
     /// <summary>Money the sim tracks (model.yaml money): treasury, debt and fx_reserves, each with the name and currency
@@ -333,6 +341,10 @@ namespace Statecraft.Sim
         public string Id { get; set; } = "";
         /// <summary>Display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the origin group exists (inclusive); null when it exists from the start (chapters spec 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>First day it no longer exists (exclusive, like every window); null while it still does.</summary>
+        public DateTime? To { get; set; }
     }
 
     public sealed class AliyahPeriod
