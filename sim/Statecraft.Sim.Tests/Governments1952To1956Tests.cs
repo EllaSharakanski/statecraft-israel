@@ -157,6 +157,23 @@ public class Governments1952To1956Tests
         Assert.Equal("bernstein", Who("rationing_minister", 1954, 3, 15));
     }
 
+    /// <summary>The four General Zionist ministers resigned on 25 May 1953 and returned on 3 June 1953 (plenum
+    /// 2_ptm_250584 and 2_ptm_250727). In between, the Prime Minister holds their ministries, as he told the Knesset on
+    /// 25 May; rationing goes with Trade and Industry (#314).</summary>
+    [Fact]
+    public void ThePrimeMinisterHoldsTheGeneralZionistMinistriesFrom25MayTo3June1953()
+    {
+        var gz = new[] { ("interior_minister", "rokach"), ("trade_minister", "bernstein"), ("rationing_minister", "bernstein"),
+            ("transportation_minister", "yosef_sapir"), ("health_minister", "serlin") };
+        foreach (var (office, minister) in gz)
+        {
+            Assert.Equal(minister, Who(office, 1953, 5, 24));
+            Assert.Equal("ben_gurion", Who(office, 1953, 5, 25));
+            Assert.Equal("ben_gurion", Who(office, 1953, 6, 2));
+            Assert.Equal(minister, Who(office, 1953, 6, 3));
+        }
+    }
+
     /// <summary>Postal Services (3 November 1952) and Development (15 June 1953) are not seats before they exist, cannot
     /// be filled then, and an appointment to them works once they do (#224).</summary>
     [Fact]
