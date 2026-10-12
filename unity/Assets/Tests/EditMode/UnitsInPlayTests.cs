@@ -555,6 +555,45 @@ public class UnitsInPlayTests
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }
 
+    /// <summary>The 1948-49 IAF roundel (owner question, 2026-10-12): a FILLED blue Star of David, not an outline, its
+    /// points clear of the white disc's edge, no outer ring (Efrati, Colors &amp; Markings of the Israeli Air Force, p. 6:
+    /// the open star was filled for ground visibility in May 1948, "as applied on IAF aircraft ever since"; FOTW).</summary>
+    [Test]
+    public void TheRoundelIsAFilledStarOfDavidOnAWhiteDiscWithNoRing()
+    {
+        var star = UnitModels.RoundelStar();
+        Assert.AreEqual(2, star.Length, "two triangles");
+        foreach (var tri in star)
+        {
+            Assert.AreEqual(3, tri.Count, "each triangle is one filled plate (an outline would be a band with a hole)");
+            Assert.IsTrue(Inside(Vector2.zero, tri), "filled: the star covers the disc's centre, which an outline star leaves white");
+            foreach (var v in tri) Assert.AreEqual(UnitModels.RoundelStarShare, v.magnitude, 1e-4f);
+        }
+        Assert.Less(UnitModels.RoundelStarShare, 0.9f, "the points stay clear of the disc's edge");
+        Assert.Greater(UnitModels.RoundelStarShare, 0.6f);
+        var points = star.SelectMany(t => t).Select(v => Mathf.Repeat(Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg, 360f)).OrderBy(a => a).ToList();
+        for (int i = 0; i < 6; i++) Assert.AreEqual(30f + 60f * i, points[i], 1e-3f, "a six-pointed star, a point straight up the plane's local axis");
+        var turned = UnitModels.RoundelStar(30f).SelectMany(t => t).Select(v => Mathf.Repeat(Mathf.Atan2(v.y, v.x) * Mathf.Rad2Deg, 360f)).ToList();
+        Assert.IsTrue(turned.Any(a => Mathf.Abs(a - 0f) < 1e-3f || Mathf.Abs(a - 360f) < 1e-3f) && turned.Any(a => Mathf.Abs(a - 180f) < 1e-3f),
+            "turned 30 degrees on a fuselage side, a point is straight up on either side");
+        // On the models: six roundels on the Spitfire (two fuselage, two on top of the wings, two under), four on the S-199
+        // (two fuselage, two under the wings: no over-wing roundels before October 1948), each star 2 triangles x 2 faces.
+        var spit = UnitModels.Spitfire("s");
+        try
+        {
+            int blue = spit.uv.Count(uv => Mathf.Abs(uv.x - UnitPalette.U(UnitPalette.RoundelBlue)) < 1e-4f);
+            Assert.AreEqual(6 * 2 * 3 * 2, blue, "six filled stars, no blue ring");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(spit); }
+    }
+
+    static bool Inside(Vector2 p, List<Vector2> tri)
+    {
+        float Cross(Vector2 a, Vector2 b, Vector2 c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        float d1 = Cross(tri[0], tri[1], p), d2 = Cross(tri[1], tri[2], p), d3 = Cross(tri[2], tri[0], p);
+        return (d1 >= 0 && d2 >= 0 && d3 >= 0) || (d1 <= 0 && d2 <= 0 && d3 <= 0);
+    }
+
     [Test]
     public void TheS199IsRepeatableAndToScale()
     {

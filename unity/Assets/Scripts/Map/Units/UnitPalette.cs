@@ -46,7 +46,7 @@ namespace Statecraft.Game.Map.Units
             new Color(0.12f, 0.12f, 0.13f),   // Waterline
             new Color(0.30f, 0.31f, 0.32f),   // Funnel top
             new Color(0.72f, 0.12f, 0.10f),   // MarkingRed: 101 Squadron's spinner and rudder stripes
-            new Color(0.30f, 0.34f, 0.23f),   // AviaGreen: the S-199's one green on all surfaces (Eduard Info 11/2025 pp. 53-54; the exact shade is unverified)
+            new Color(0.47f, 0.45f, 0.32f),   // AviaGreen: the S-199's one khaki green on all surfaces, about RAL 6013 (Efrati p. 11: confirmed from an Avia fuel cap; Eduard Info 11/2025 pp. 53-54)
         };
 
         /// <summary>u of a slot's column centre.</summary>
