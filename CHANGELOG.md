@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- JSON Schemas for `people.yaml`, `offices.yaml`, `parties.yaml` and the event files (#265), in `content/schema/`. Each file
+  names its schema on the first line, so an editor with a YAML language server flags a wrong field name or a missing
+  `sources:` as you type. `SchemaTests` checks all real content against them, keeps their field names equal to the loader
+  types and checks that they reject the usual mistakes. The comment changes the content hash, so an old save shows the
+  content-changed warning once. The golden hashes do not move.
 - The Fourth to Seventh Governments (24 December 1952 to 1956) with their coalitions and the ministers' dated terms,
   the 1953-1956 deputy ministers, the Ministries of Postal Services (from 3 November 1952) and Development (from
   15 June 1953), and the Chiefs of Staff Maklef and Dayan. Dates follow the Knesset's own position records and plenum
