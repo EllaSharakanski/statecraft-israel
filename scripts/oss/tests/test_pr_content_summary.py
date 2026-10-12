@@ -1,5 +1,6 @@
 """PR content summary (#325): added, removed and re-dated records against a base, and the no-change line."""
 import importlib.util
+import re
 from pathlib import Path
 
 from conftest import commit_all, git
@@ -51,3 +52,11 @@ def test_main_moving_on_is_not_this_branchs_change(make_repo, capsys):
     assert m.main(["main", "--root", str(root)]) == 0
     out = capsys.readouterr().out
     assert "**Added** (1)" in out and "`event:t`" in out and "event:n" not in out and "Removed" not in out
+
+
+def test_lists_are_the_sims_dated_model_records():
+    cs = (ROOT / "sim/Statecraft.Sim/Content.cs").read_text()
+    view = cs[cs.index("class ModelView"):]
+    view = view[:view.index("\n    }")]
+    props = re.findall(r"IReadOnlyList<\w+> (\w+) \{ get; \}", view)
+    assert [re.sub(r"(?<!^)([A-Z])", r"_\1", p).lower() for p in props] == m.LISTS

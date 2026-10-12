@@ -7,8 +7,8 @@
 `uv run scripts/pr_content_summary.py [BASE]` (BASE defaults to origin/main; the branch is HEAD).
 
 Compares committed content only, against the merge base (BASE...HEAD), like the changelog check. Covers
-content/events/*.yaml (by id) and the lists in content/model.yaml (indicators, policies, effects, situations, money,
-voter_groups, actors). A record is "re-dated" when its `from` or `to` changed. Prints nothing but "No content records changed." when there is no difference."""
+content/events/*.yaml (by id) and the dated record lists in content/model.yaml (indicators, policies, effects,
+situations, voter_groups, actors). A record is "re-dated" when its `from` or `to` changed. Prints nothing but "No content records changed." when there is no difference."""
 import argparse
 import subprocess
 import sys
@@ -17,7 +17,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-LISTS = ["indicators", "policies", "effects", "situations", "money", "voter_groups", "actors"]
+# The dated model records: the sim's ModelView (sim/Statecraft.Sim/Content.cs; a test keeps them equal).
+LISTS = ["indicators", "policies", "effects", "situations", "voter_groups", "actors"]
 
 
 def git(root: Path, *args: str) -> str:
