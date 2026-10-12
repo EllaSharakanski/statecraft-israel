@@ -35,15 +35,20 @@ You sit in the prime minister's chair from the founding of the state. Each turn 
 
 A deterministic C# simulation runs underneath. The same choices always give the same result, and a saved game is the seed plus the list of commands. Unity draws a real terrain map of the country built from elevation and climate data.
 
+The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): monthly turns in which you build and defend Israel from 1948 to 1951 with units, cities and construction, and choose your ministers. The list above is the game you can play today. The new design is not built yet; the [build plan](docs/superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md) brings it in phases.
+
 ## What it looks like today
 
 <p align="center">
-  <img src="docs/images/build-m3-map.jpg" alt="Current build: the coastal plain around Tel Aviv, Jaffa and Ramla with hex lines, settlement models, fields and groves, railways and roads, the top bar and an event card" width="820">
+  <img src="docs/images/build-m3-map.jpg" alt="Current build, 22 May 1948: the coastal plain from Tel Aviv and Jaffa to Jerusalem with towns and villages, groves, railways and roads, brigade tokens and an aircraft, the top bar, and the One Army event card with an archival photograph" width="820">
 </p>
 <p align="center">
-  <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen listing the Provisional Government's ministers with portraits" width="405">
+  <img src="docs/images/build-m3-start.jpg" alt="Current build: the start screen, two lines of the Declaration of Independence in Hebrew and English over an AI-generated painting of the 14 May 1948 ceremony" width="405">
+  <img src="docs/images/build-m3-city.jpg" alt="Current build: close-up of Tel Aviv and Jaffa with its harbour, a rifle-trio brigade token, an aircraft, railways and the Mandate sub-district borders" width="405">
+  <br>
+  <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen with the Provisional State Council as a half circle of seats and the ministers' portrait cards" width="405">
   <img src="docs/images/build-m3-why.jpg" alt="Current build: the Why panel explaining a turn's changes" width="405">
-  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-11.</em>
+  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-12. The start screen's painting is AI-generated.</em>
 </p>
 
 ## Is this any good?
@@ -52,25 +57,29 @@ It is an early, honest prototype.
 
 **What works now (M3, 1948–1951):**
 - Turns from 15 May 1948 to the end of 1951.
+- The start screen.
+- The 1948 map: towns, villages and Bedouin camps, railways and roads, and the 1949 armistice zones and lines from each agreement's date.
+- The 1948 brigades, 101 Squadron and the first navy ships as tokens at their sourced positions. They take no orders yet.
 - The Cabinet with appointments.
 - The Budget screen.
 - The Defence screen with the escalation ladder and reserve call-up.
-- Sourced historical events from the 1948 war through the 1951 foreign-currency crisis.
+- Sourced historical events from the 1948 war through the 1951 foreign-currency crisis, most with an archival photograph.
 - The "Why?" panel.
 - Autosave and load.
 - The browser (WebGL) build.
 
 **What is missing:**
 - The art in the concept image above. Settlements and trees are still placeholder art.
+- Everything new in the [GDD](docs/GDD.md): one month per turn, units you train and command, cities with housing and jobs, construction, combat and the three objectives.
 - Diplomacy.
-- War mode.
 - Anything after 1951.
 - A hosted build you can play with one click.
 
 ## Roadmap
 
 - **Visual v1 (done):** shadows at map scale, a two-band tilt-shift, a stylised terrain shader, a graded sea, a cleaner hex grid and serif labels.
-- **M4:** the full 1948–1956 slice, war mode for 1948 and Suez, the legacy report, a historian review and a hosted browser build.
+- **GDD v0.1 (next):** the [build plan](docs/superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md), in phases: a first slice with one city, training and one new settlement, then monthly turns and the five resources, cities, pioneers and construction, military units and combat, settlement control, and the 48-turn 1948–1951 game.
+- **M4:** a historian review and a hosted browser build.
 - **Art track:** era-correct 3D settlements, vegetation and units, toward the concept image.
 
 ## Play
@@ -125,7 +134,7 @@ You need Unity **6000.3.25f1 (6.3 LTS)** with Web Build Support; the exact versi
 
 This project is built with heavy AI assistance, disclosed here using itch.io's categories:
 - **Code:** written with AI coding agents and reviewed through tests and review gates.
-- **Graphics:** the concept and promo images in `promo/` are AI-generated, and the web page's tab icon was drawn with AI help. The game's terrain comes from real elevation data. The portraits are public-domain or CC0 photographs.
+- **Graphics:** the concept and promo images in `promo/` are AI-generated, as is the start screen's painting, and the web page's tab icon was drawn with AI help. The game's terrain comes from real elevation data. The portraits are public-domain or CC0 photographs, and the event cards use archival photographs.
 - **Text:** event and content text was drafted with AI, and every fact is checked against the cited source.
 - **Sound:** none yet.
 
@@ -137,7 +146,7 @@ Nothing is generated live while you play.
 - **Original art, docs and data:** [CC BY 4.0](LICENSES/CC-BY-4.0.txt).
 - **Game content text** (`content/`, which paraphrases its sources, many from Wikipedia): [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt).
 - **AI-generated images:** marked [CC0](LICENSES/CC0-1.0.txt), with no rights claimed.
-- **Third-party material:** fonts, public-domain and CC0 portraits and the Unity engine and packages are under their own terms.
+- **Third-party material:** fonts, public-domain and CC0 portraits, the archival event photographs, and the Unity engine and packages are under their own terms.
 
 Details are in [LICENSING.md](LICENSING.md); attributions are in [NOTICE](NOTICE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), and every image's source is in [ASSETS.yaml](ASSETS.yaml).
 
