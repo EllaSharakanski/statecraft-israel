@@ -18,6 +18,9 @@ fight is war mode's job (#104, with the sim side in #21). The golden hashes do n
   editor renders. With `shot` the aircraft holds a fixed point, so the screenshots repeat.
 - **Desktop player:** run with `-units`.
 - **Editor:** `MapCapture.Promo` renders it when given `-units`.
+- **Aircraft close-ups:** `MapCapture.Aircraft` renders the S-199 and the Spitfire alone, from the top, the bottom, the left
+  side and three quarters, into `-captureDir` (default `captures/visual/aircraft`), for checking the markings against the
+  photographs. `MapCapture.Promo -units -unitsDate YYYY-MM-DD` draws the units in play as on that day.
 - **Frame cost:** `?vprofile&units` prices it as the `unitshowcase` toggle (`median(all) - median(-unitshowcase)`). The
   `units` toggle is the units in play.
 
