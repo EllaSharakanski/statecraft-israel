@@ -75,6 +75,7 @@ namespace Statecraft.Sim
                 s.GameOver = GameOverCodes.EraEnded;   // the legacy report (#19) will come before this once it exists
                 why.Add(new Cause("era", "era_ended", 0, PlayerText.GameOver(s.GameOver)));
             }
+            ContentWindows.Update(c, s, turnStart);
             Cabinet.ExpireOnGovernmentChange(c, s, why);
             AttentionSystem.Refill(c, s);
             if (s.GameOver == null) EventSystem.Trigger(c, s, why, turnStart);   // a game that just ended raises no new events
@@ -90,6 +91,7 @@ namespace Statecraft.Sim
             {
                 case SetPolicy p:
                     if (c.Policies.All(x => x.Id != p.Policy)) return "That policy does not exist in this game";
+                    if (c.At(s.Date).Policies.All(x => x.Id != p.Policy)) return "That policy is not available at this time";
                     if (!(p.Level >= 0 && p.Level <= 1)) return "Policy level must be between 0 and 1";
                     var legislature = Offices.Legislature(c, s.Date);
                     if (legislature == null) return "No legislature is sitting";

@@ -119,6 +119,14 @@ content in `content/`, or the hash format. When it happens, update the manifest 
 the history below, and say in the commit message why the hash moved. If a hash changes and you did not mean to change
 rules or content, treat it as a determinism bug.
 
+## Content windows
+
+Records with `from`/`to` (chapters spec 3.2) are resolved by date through `Content.At(date)`. The active lists are built
+once at load, one per segment between cut dates, so a turn does a binary search and no allocation. When the date crosses
+a cut, `ContentWindows.Update` adds starting records at their defaults and removes ending ones, in ordinal id order, before
+the cabinet and effects run. The hash reads the state keys, so it never sees a record outside its window. With no windows
+there is one segment and the same view everywhere.
+
 ## Rebaseline history
 
 | Plan task | Run | New hash (first 8) | Why |
