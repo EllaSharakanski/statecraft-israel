@@ -41,3 +41,14 @@ def test_real_content_has_sources_and_all_are_dated():
 
 def test_render_shows_the_date(tmp_path):
     assert '2026-10-10' in m.render(m.collect(repo(tmp_path), TODAY))
+
+
+def test_alias_counts_once_and_plain_url_lists_are_read(tmp_path):
+    (tmp_path / 'content/map').mkdir(parents=True)
+    (tmp_path / 'content/p.yaml').write_text(
+        "a:\n  name: &bio [{ url: 'https://p.example', checked: 2026-10-01 }]\n  born: *bio\n  died: *bio\n")
+    (tmp_path / 'content/map/l.yaml').write_text(
+        "- id: x\n  checked: '2026-10-11'\n  sources:\n  - https://l.example/1\n  - https://l.example/2\n")
+    rows = m.collect(tmp_path, TODAY)
+    assert sorted((r['url'], r['age']) for r in rows) == [('https://l.example/1', 2), ('https://l.example/2', 2),
+                                                          ('https://p.example', 12)]

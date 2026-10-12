@@ -6,7 +6,8 @@
 """List every source in content/ with its check date and age (#330):
 `uv run scripts/source_report.py [--root DIR] [--older-than DAYS] [--today YYYY-MM-DD]`.
 
-A source is any mapping with `url` and `checked` anywhere in content/**/*.yaml. One line per source, oldest check first:
+A source is any mapping with `url` and `checked` anywhere in content/**/*.yaml, or a url in a plain `sources` list next
+to a `checked` date. A YAML alias counts once. One line per source, oldest check first:
 age in days, checked date, file, url. `--older-than N` keeps only sources checked more than N days ago. A non-https url
 is marked `http`; a source with no valid check date is marked `NO-DATE`. A report, not a gate: always exits 0. Reads only."""
 import argparse
@@ -19,15 +20,23 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def walk(node, out: list[dict]) -> None:
+def walk(node, out: list[dict], seen: set[int]) -> None:
+    # A YAML alias (*name) is the same object as its anchor: count it once, where it is defined.
+    if isinstance(node, (dict, list)):
+        if id(node) in seen:
+            return
+        seen.add(id(node))
     if isinstance(node, dict):
         if "url" in node and "checked" in node:
             out.append(node)
+        elif "checked" in node and isinstance(node.get("sources"), list):
+            # a row with one check date and a plain list of urls (content/map/localities_1948.yaml)
+            out += [{"url": u, "checked": node["checked"]} for u in node["sources"] if isinstance(u, str)]
         for v in node.values():
-            walk(v, out)
+            walk(v, out, seen)
     elif isinstance(node, list):
         for v in node:
-            walk(v, out)
+            walk(v, out, seen)
 
 
 def to_date(v) -> date | None:
@@ -43,7 +52,7 @@ def collect(root: Path, today: date) -> list[dict]:
     rows = []
     for f in sorted((root / "content").rglob("*.yaml")):
         found: list[dict] = []
-        walk(yaml.safe_load(f.read_text(encoding="utf-8")), found)
+        walk(yaml.safe_load(f.read_text(encoding="utf-8")), found, set())
         for s in found:
             d = to_date(s["checked"])
             rows.append({"file": str(f.relative_to(root)), "url": str(s["url"]), "checked": d,
