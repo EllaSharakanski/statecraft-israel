@@ -1588,7 +1588,7 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   - Merging #250 made the units keep off the villages and the camps keep off the units. The camps and village houses
     moved, and the share fell to 72%, under the floor.
   - The fix is the plan from review M10. A 1948 locality's houses and a camp's tents keep off the edge midpoints of the
-    hex they stand in (`KitGround.OnGridMark`). This costs one locality building (1,330) and a few tents (175).
+    hex they stand in (`KitGround.OnGridMark`). This costs a few locality buildings (1,332 after #251) and a few tents (175).
   - The game settlements are unchanged.
   - The next data round (places under 1,000) gets the same rule. Don't lower the floor.
 - **Bands** stay legible through the villages: `BorderTests.TheBandsStillReadThroughTheVillages` reads the bands with the
