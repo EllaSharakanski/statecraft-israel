@@ -8,6 +8,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The loader refuses an event whose window runs past the end of its era (chapters spec 6: an event may not span a boundary;
+  split it). A `to` on the boundary is fine (it is exclusive). No current event is affected (refs #58).
 - Indicators, policies, effects, situations, voter groups and actors can carry `from`/`to` dates (chapters spec 3.2, refs
   #57). The sim reads the records active on the game date; the state gains a record at its start and drops it at its end,
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
