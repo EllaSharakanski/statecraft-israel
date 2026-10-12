@@ -189,6 +189,23 @@ public class EraTests
     }
 
     [Fact]
+    public void ATurnLandsOnTheNextErasStartAndTheGameGoesOn()
+    {
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+        {
+            ["eras.yaml"] = Eras(Era("founding", "1948-05-15", "1948-07-01"), Era("next", "1948-07-01", "1948-12-01")),
+        }));
+        var s = Simulation.NewGame(c, 1948, Mode.Historical);
+        var dates = new List<DateTime> { s.Date };
+        for (int i = 0; i < 12 && s.Date < new DateTime(1948, 8, 1); i++) { s = Simulation.Step(c, s, new Command[0]).State; dates.Add(s.Date); }
+        Assert.Contains(new DateTime(1948, 7, 1), dates);   // the boundary is a turn end, as in the single-era case
+        Assert.DoesNotContain(new DateTime(1948, 7, 3), dates);
+        Assert.Null(s.GameOver);   // a boundary inside the game does not end it
+        var upTo = dates.Take(dates.IndexOf(new DateTime(1948, 7, 1)) + 1).ToList();
+        Assert.All(upTo.Zip(upTo.Skip(1), (a, b) => (b - a).Days), d => Assert.InRange(d, 7, 21));
+    }
+
+    [Fact]
     public void TheEndReasonShowsNoIdAndNoIsoDate()
     {
         var c = EndingOn("1948-07-03");
