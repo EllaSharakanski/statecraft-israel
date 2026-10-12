@@ -45,6 +45,17 @@ different fields) and shows every number as a plain value next to its IEEE bits.
 reviewers what moved. Then update the hash constants in the three places below by hand, and say why in the commit
 message. The snapshot test also fails if a snapshot is stale while the hash is unchanged.
 
+**Rules per era.** A system reads `Content.RulesAt(date)`, where `date` is the date of the state the turn starts from (`s.Date`
+before the step); `AttentionSystem.Refill` runs after the date moves, so it fills the next turn from that turn's era. Rules
+change only at era boundaries (chapters spec section 3.3). Spec section 4.1 will end the turn that reaches a boundary exactly
+on it, so every turn then lies in one era; until that lands, only the last era's end is a boundary turn, and a turn that
+starts in one era and ends in the next uses the starting era's rules for its whole length
+(`EraRulesSwitchTests.ARunPicksUpTheOverrideFromTheFirstTurnThatStartsInTheNewEra`). Start
+values (`start`, `treasury_start`, `fx_start`, `start_rung`, `initial_population`, `budget_start`) are read once by `NewGame`
+from the base `rules.yaml`: an era override cannot set them. A map action's display name is also read from the base rules,
+because an override cannot remove an action. `EraRulesSwitchTests.OnlyStartValuesAndMapActionNamesReadTheBaseRulesDirectly`
+fails if a file in `sim/Statecraft.Sim` reads `Rules` directly for anything else, including a bare `var r = c.Rules;`.
+
 **Cause text is derived, not hashed.** The "Why did this happen?" lines (`Cause.Message`, `Cause.Delta`) are output
 computed from the hashed state; replaying a save's commands regenerates them. Wording changes therefore do not move the
 goldens (playtest 2 changed every line's casing with no hash change). They are still deterministic:
