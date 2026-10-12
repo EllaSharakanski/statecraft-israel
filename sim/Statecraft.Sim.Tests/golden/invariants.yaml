@@ -1,5 +1,6 @@
 # Invariant checks with tolerance bands (#294), evaluated on the golden runs by InvariantTests. A hash golden says
-# "something changed"; these say "it is still plausible", so a tuned number can move inside its band.
+# "something changed"; these say "it is still plausible". They only add checks: a tuned number still moves the hash
+# goldens, which are rebaselined as before (docs/determinism.md).
 #
 # Fields: name, run (1950 or 1952), value (an indicator id, or treasury, debt, fx, population, stability),
 # when (end | always | yyyy-MM-dd = the first state on or after that date), min and/or max, reason (a source, or the
@@ -29,7 +30,7 @@ invariants:
     when: always
     min: 600000
     max: 1800000
-    reason: "Plausibility guard: about 650,000 at the start; no turn may empty or double it. Band set around the current run, not a sourced figure."
+    reason: "Plausibility guard, not a sourced range: the run starts at 649,400 (rules.yaml initial_population) and ends near 1.4 million after the immigration of 1948-51. The band catches a run that loses people or runs away."
 
   - name: coalition-stays-clear-of-collapse
     run: 1952

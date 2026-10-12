@@ -70,6 +70,16 @@ public class InvariantTests
     }
 
     [Fact]
+    public void ANonFiniteValueFailsWhateverTheBand()
+    {
+        var states = Fixture3();
+        states[2].FxReserves = double.NaN;
+        Assert.Contains("fx = NaN", Invariants.Evaluate(new[] { Inv("fx", "end", -5, 100) }, states).Single());
+        states[2].FxReserves = double.PositiveInfinity;
+        Assert.Single(Invariants.Evaluate(new[] { Inv("fx", "end", -5, null) }, states));
+    }
+
+    [Fact]
     public void AnUnknownValueFails()
     {
         Assert.Contains("neither a state value nor an indicator", Invariants.Evaluate(new[] { Inv("no_such", "end", 0, 1) }, Fixture3()).Single());

@@ -8,8 +8,9 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 /// <summary>Invariant checks with tolerance bands (#294), read from sim/Statecraft.Sim.Tests/golden/invariants.yaml and
-/// evaluated on the golden runs. A hash golden says "something changed"; an invariant says "it is still plausible", so a
-/// tuned number can move inside its band without a rebaseline. Each one carries a reason or source, like content does.</summary>
+/// evaluated on the golden runs. A hash golden says "something changed"; an invariant says "it is still plausible". The
+/// invariants only add checks: a tuned number still moves the hash goldens, which are rebaselined as before
+/// (docs/determinism.md). Each one carries a reason or source, like content does.</summary>
 public sealed class Invariant
 {
     public string Name { get; set; } = "";
@@ -95,7 +96,8 @@ public static class Invariants
             {
                 var v = Read(s, i.Value);
                 if (v == null) { failures.Add($"{Describe(i)}: '{i.Value}' is neither a state value nor an indicator"); break; }
-                if ((i.Min != null && v < i.Min) || (i.Max != null && v > i.Max))
+                // NaN compares false with every bound, so it would sit inside any band; a non-finite value always fails.
+                if (double.IsNaN(v.Value) || double.IsInfinity(v.Value) || (i.Min != null && v < i.Min) || (i.Max != null && v > i.Max))
                 {
                     failures.Add($"{Describe(i)}: {i.Value} = {v.Value.ToString("0.###", CultureInfo.InvariantCulture)} on {s.Date:yyyy-MM-dd} is outside {Band(i)}");
                     if (i.When == "always") break;   // the first state that leaves the band is enough
