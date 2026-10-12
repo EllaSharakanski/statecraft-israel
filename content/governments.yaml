@@ -79,8 +79,9 @@ governments:
     # had resigned; on 3 June 1953 (2_ptm_250727.pdf) the Knesset approved the government's decision to add the four
     # again, and they made their declarations of allegiance. he.wiki gives 26 May and 2 June (citing Davar of 26 May).
     # Without the General Zionists and the three MKs who sat in their faction, the coalition held 64 seats (he.wiki).
-    # The position records (KNS_PersonToPosition) show the four ministers' terms without a break, so their terms in
-    # people.yaml are unchanged.
+    # The position records (KNS_PersonToPosition) show the four ministers' terms without a break. people.yaml follows the
+    # plenum record instead: the four terms end on 25 May and start again on 3 June, and the Prime Minister holds the
+    # four ministries in between, as he told the Knesset on 25 May (#314).
     from: 1952-12-24
     to: 1954-01-26
     coalition: [mapai, general_zionists, sephardim, yemenite_association, hapoel_hamizrachi, mizrachi, progressive, democratic_list_israeli_arabs, progress_and_work, agriculture_and_development]

@@ -234,6 +234,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
+  June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
+  Knesset's position records show no break; the plenum record of the resignation and of the new declarations of
+  allegiance is used. The goldens do not move (fixes #314).
 - Eliezer Kaplan's Trade and Industry term and Haim-Moshe Shapira's Health term in the First Government start on 22
   March 1949, not 10 March: on 22 March the Prime Minister told the Knesset the government had assigned them, and the
   Knesset's position records give the same date. The goldens do not move (fixes #310).
