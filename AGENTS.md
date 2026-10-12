@@ -61,6 +61,33 @@ Before writing or editing content, review:
 - Never run `git commit` or `git push` unless the user asks for it in that message.
 - Stage and commit only the files the user names or the task clearly covers.
 
+## Engineering (sim, tests, tools)
+
+For changes under `sim/`, `tools/`, `scripts/` or `unity/`, not only content.
+
+**Layout**
+- `sim/Statecraft.Sim/` is the game rules library (netstandard2.1, so Unity can use it). `sim/Statecraft.Cli/` is the command line. `sim/Statecraft.Sim.Tests/` holds the tests (net10.0). The tests load the real `content/`.
+- `unity/` only draws and takes input. Rules never live there (`CONTRIBUTING.md`).
+
+**Checks that run without Unity** (run both before every PR)
+- `dotnet test sim/Statecraft.sln`: .NET SDK 10 (`docs/dev-setup.md`); it must end with 0 warnings.
+- `uv run scripts/oss/check_repo.py`: the repository policy checks CI runs.
+- CI also runs `Tools (pytest)` and `Changelog`. Unity EditMode tests, WebGL builds and `tools/web_check.py` need a Unity licence and are not in CI. If your change touches `unity/` or code Unity compiles and you cannot run them, say so in the PR; do not claim they passed.
+
+**Determinism** (`docs/determinism.md`)
+- The sim must give the same state, bit for bit, on .NET, Mono and IL2CPP: no new RNG, no trigonometry, no unordered iteration into state, no culture-dependent formatting.
+- `GoldenRun.Hash1950`, `Hash1952` and the browser smoke value must not move unless the change is a deliberate rules or content change. If they move, update every place the doc lists in the same commit and say why in the message and the PR.
+- A content edit changes the content hash and old saves then warn; that is expected and is not a golden change.
+
+**Pull requests**
+- Branch from `main`, one focused change per PR, no force-push to `main`. Fill in `.github/pull_request_template.md`, including "AI assistance". Use "Fixes #N" only if the PR completes the issue, otherwise "Refs #N".
+- Add a line under `## [Unreleased]` in `CHANGELOG.md` for any change to `sim/`, `content/` or `unity/`.
+- Write the test first and check it fails without the change.
+
+**Leave to the maintainer**
+- The framing in `docs/CONTENT_POLICY.md` section 1, sensitivity tags and the release gates.
+- Anything that needs a design call (for example which date a rule is read at). Put the question in the PR description with the options and what each costs.
+
 ## Red flags
 
 - Unattributed claims or vague historical language
