@@ -41,11 +41,25 @@ def test_contributing_names_every_ci_command_and_the_unity_gate():
     text = read("CONTRIBUTING.md")
     for cmd in ("dotnet test sim/Statecraft.sln",
                 "uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 "
-                "--with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q",
+                "--with pillow==12.3.0 --with requests==2.32.5 --with pyproj==3.8.0 pytest tools/tests -q",
                 "uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q",
                 "uv run scripts/oss/check_repo.py",
                 "-buildTarget OSXUniversal -runTests -testPlatform EditMode", "## What CI runs", "CHANGELOG.md"):
         assert cmd in text, cmd
+
+
+def test_check_script_runs_every_ci_command():
+    # scripts/check.sh (#263) promises to run what CI runs; a pin changed in ci.yml must change there too.
+    import yaml
+    ci = yaml.safe_load(read(".github/workflows/ci.yml"))
+    script = read("scripts/check.sh")
+    runs = [s["run"] for job in ci["jobs"].values() for s in job["steps"] if "run" in s]
+    assert len(runs) == 5, runs
+    for cmd in runs:
+        # The changelog job passes the PR's SHAs; the script passes its own base ref.
+        cmd = cmd.split(" --base ")[0]
+        assert cmd in script, cmd
+    assert f'UV_PYTHON:-{ci["env"]["UV_PYTHON"]}' in script
 
 
 def test_changelog_has_unreleased_on_top():
@@ -62,6 +76,15 @@ def test_historical_accuracy_form_requires_a_source():
     cfg = yaml.safe_load(read(".github/ISSUE_TEMPLATE/config.yml"))
     assert cfg["blank_issues_enabled"] is False
     assert any("security/advisories/new" in c["url"] for c in cfg["contact_links"])
+
+
+def test_task_form_has_every_field_and_all_are_required():
+    import yaml
+    form = yaml.safe_load(read(".github/ISSUE_TEMPLATE/task.yml"))
+    fields = {b["id"]: b for b in form["body"] if b["type"] != "markdown"}
+    assert set(fields) == {"goal", "files", "done", "sources", "signoff", "unity"}
+    assert all(f["validations"]["required"] is True for f in fields.values())
+    assert fields["unity"]["type"] == "dropdown"
 
 
 def test_content_policy_states_the_owner_rules_and_only_real_mechanisms():
@@ -209,3 +232,10 @@ def test_m3_release_records_the_completed_sensitivity_review():
         assert "sensitivity-reviewed" in section
     assert "only `fact-checked`" not in review
     assert "await the owner's sensitivity review" not in limits
+
+
+def test_release_gate_runs_the_tools_tests_exactly_as_ci_does():
+    # Without the same --with list (pyproj), the gate skipped 12 tools tests that CI runs.
+    ci = [l.strip() for l in read(".github/workflows/ci.yml").splitlines() if "pytest tools/tests" in l]
+    assert len(ci) == 1 and ci[0].startswith("run: ")
+    assert ci[0][len("run: "):] in read("scripts/oss/release_gate.sh")
