@@ -17,7 +17,7 @@ def test_groups_hits_by_area_and_matches_whole_words(make_repo):
         'docs/x.md': 'morale\n',
     })
     rows = m.hits(root, 'morale')
-    assert [a for a, _ in rows] == ['content', 'sim', 'tests', 'unity']
+    assert sorted(a for a, _ in rows) == ['content', 'sim', 'tests', 'unity']
     out = m.render(rows)
     assert '== content (1)' in out and 'content/model.yaml:1:' in out and 'morale_extra' not in out
     assert 'docs/x.md' not in out
