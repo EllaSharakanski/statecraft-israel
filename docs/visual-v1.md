@@ -1771,6 +1771,61 @@ Causes, in order of weight:
   - No building stands on a route or in the sea.
   - Each of the four cities has a floor on its built cover.
 
+### Result (after merging the villages, #291)
+The census as the map now builds it: with the 1948 localities, whose landmarks claim their hearts before any town's
+houses (review M8). "Main" is `a3202ad`, with the villages and before towns round 2; same census, same corridors.
+
+| town | buildings, main → round 2 | cover all / core, main → round 2 | median wall height | landmarks, round 2 |
+|---|---|---|---|---|
+| Tel Aviv | 36 (+12 wings) → 43 (+11) | 18.4 / 19.7% → 17.4 / 18.5% | 396 → 792 m (2 → 4 storeys) | port, 3 hangar sheds |
+| Jaffa | 15 → 33 | 29.0 / 21.8% → 32.6 / 31.9% | 660 m | Mahmoudiya Mosque, clock tower, St Peter's, lighthouse on the hill, breakwater |
+| Haifa | 30 (+10) → 45 (+5) | 16.4 / 19.4% → 21.0 / 20.6% | 594 → 660 m | port (main and lee breakwaters, 4 quay sheds), German Colony (Templer houses in two rows) |
+| Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
+| Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
+| Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
+| all 25 | 216 → 365 | | | 27 → 55 |
+
+Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
+blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
+
+- **Tel Aviv's cover did not rise.** Before the merge, round 2 had 62 blocks and 30.0% / 25.6%.
+  - The villages' landmarks inside its 7.6 km disc (Sheikh Muwannis, Summeil, Jammasin, Ramat Gan, Bnei Brak and
+    others) now claim their spots first. The lattice loses every plot their mosque or water-tower lots reach.
+  - What changed there is the form: narrower (12-16 m real), taller blocks in rows on the Geddes grid, with a 700 m beach
+    strip in front. The close-up crops show the difference better than the cover does.
+  - Taking the villages' spots back would break the villages' rule that a village keeps its heart, so it is left for the
+    owner.
+- **Jerusalem's Old City is symbolic and squeezed by the roads.**
+  - It is 4 km across, about 4 times the real one. The drawn 1948 roads (300 m ribbons) meet by Jaffa Gate and loop
+    round the north and east, so at any readable size they cross inside the square, through gaps in the walls.
+  - Only one place in its south-east quadrant fits a platform clear of every route: 1.3 x 1.1 km, wider than long. Al-Aqsa
+    therefore stands in its south-east corner, not across its south end.
+  - The citadel is moved east off the drawn Hebron road.
+  - The houses inside the walls are capped at two storeys, and the Dome's walls and drum are 30x high, so the walls and
+    the Dome stand above the roofs.
+- **Readability and colour:**
+  - The grid stays readable: 78% of edge midpoints (69 of 89), against the 75% floor and main's 79%.
+  - The beach beside Tel Aviv reads as sand at 26 of 33 samples (79%, floor 75%).
+  - At gameplay03 (WebGL), the palette distance to promo 03 is 0.43 (main 0.44), warmth 0.068 (0.070) and saturation
+    0.45 (0.45).
+- **Trees:** `Vegetation.Plant` now draws each tree's random numbers before its lot and route test. A town's new lots
+  remove only the trees they touch, instead of reshuffling every later grove.
+  - Two grade tests sample the selection ring against the land and could land on a crown. They now measure with the
+    trees off: the ring against the ground's graded colour, which is what they test.
+- **Frame time** (headless WebGL `?vprofile`, `machine_lock.py --exclusive --wait-unity`, main `a3202ad` against
+  `49bc88e`, two interleaved rounds each, 2026-10-12, load 3.6 at the start and 7.3 at the end):
+
+  | | gameplay03 all (p95) | gameplay03 all − none | diorama02 all (p95) | diorama02 all − none |
+  |---|---|---|---|---|
+  | main | 13.70 / 14.22 ms (15 / 16) | 3.00 / 3.45 ms | 18.07 / 18.71 ms (20 / 20) | 4.84 / 5.60 ms |
+  | round 2 | 14.15 / 13.97 ms (16 / 15) | 3.59 / 3.15 ms | 18.06 / 18.70 ms (21 / 21) | 5.54 / 5.53 ms |
+
+  - The kits stay one merged mesh per town: 63 draws, as on main. The triangles grow from 61,054 to 65,684.
+  - "-kits" draws the marker boxes instead, so the kits' own cost is within the noise (all − (-kits) is −0.6 / −1.1 ms
+    at gameplay03).
+  - Every budget holds: all − none is under 8 ms, and the p95 at gameplay03 is under 16.7 ms. The diorama02 p95 of 20-21
+    ms is main's too (the villages section).
+
 ### Sources (checked 2026-10-12)
 - Tel Aviv:
   - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
