@@ -143,15 +143,15 @@ namespace Statecraft.Game.Map.Units
                 var w = TRS(V(side * 0.4f, -0.38f, 0.3f), V(0, 0, side * 6f), V(side, 1f, 1f));
                 m.Wing(w, lead, trail, semi, 0.06f, camo, (i, j) => P.Underside, spanSteps: 12, chordSteps: 4);
                 // Wing roundel near the tip, on top and below.
-                var rp = w.MultiplyPoint3x4(V(semi * 0.66f, 0.12f, -0.15f));
+                var rp = w.MultiplyPoint3x4(V(semi * 0.62f, 0.16f, -0.15f));
                 Roundel(m, TRS(rp, V(0, 0, side * 6f), Vector3.one), 0.62f);
-                Roundel(m, TRS(rp - V(0, 0.24f, 0), V(0, 0, side * 6f), V(1f, -1f, 1f)), 0.62f);   // underneath: stacked downwards
+                Roundel(m, TRS(rp - V(0, 0.32f, 0), V(0, 0, side * 6f), V(1f, -1f, 1f)), 0.62f);   // underneath: stacked downwards
                 // Tailplane: small ellipses.
                 var tp = TRS(V(side * 0.2f, 0.1f, -5.6f), Vector3.zero, V(side, 1f, 1f));
                 m.Wing(tp, s => 0.45f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.02f, s => 0.55f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.02f,
                     1.55f, 0.05f, (i, j) => (i + j) % 3 == 0 ? P.CamoGreen : P.CamoGrey, (i, j) => P.Underside, spanSteps: 5, chordSteps: 2);
                 // Fuselage roundel.
-                Roundel(m, TRS(V(side * 0.58f, 0.15f, -2.6f), V(0, 0, side * 90f), Vector3.one), 0.48f, turnDegrees: 30f);
+                Roundel(m, TRS(V(side * 0.58f, 0.15f, -2.6f), V(0, 0, -side * 90f), Vector3.one), 0.48f, turnDegrees: 30f);   // its face (local +Y) outwards
                 // Radiator under each wing.
                 m.Box(TRS(V(side * 1.7f, -0.62f, 0.0f), Vector3.zero, V(0.42f, 0.28f, 1.3f)), P.Underside);
             }
@@ -191,7 +191,7 @@ namespace Statecraft.Game.Map.Units
             // A roundel on each fuselage side, behind the cockpit (Efrati p. 11: D-120's "left fuselage identification
             // roundel", D-123's photograph; the Sherut Avir aircraft had roundels "on the sides of the fuselage", p. 6).
             foreach (var side in new[] { 1f, -1f })
-                Roundel(m, TRS(V(side * 0.36f, 0.10f, -2.15f), V(0, 0, side * 90f), Vector3.one), 0.42f, turnDegrees: 30f);
+                Roundel(m, TRS(V(side * 0.42f, 0.10f, -2.15f), V(0, 0, -side * 90f), Vector3.one), 0.42f, turnDegrees: 30f);   // its face (local +Y) outwards
             // Spinner: the big Jumo spinner, in the airframe's green.
             m.Lathe(TRS(V(0, 0.02f, 2.95f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.40f), new Vector2(0.30f, 0.30f), new Vector2(0.55f, 0f) },
                 P.AviaGreen, 10);
