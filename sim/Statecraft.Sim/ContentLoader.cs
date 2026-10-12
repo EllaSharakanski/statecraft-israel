@@ -533,6 +533,7 @@ namespace Statecraft.Sim
                 {
                     var (a, b) = (terms[i], terms[j]);
                     if (a.term.Office != b.term.Office || a.person == b.person) continue;
+                    if (c.Offices.Any(o => o.Id == a.term.Office && o.SeveralHolders)) continue;
                     if (a.term.From < (b.term.To ?? DateTime.MaxValue) && b.term.From < (a.term.To ?? DateTime.MaxValue))
                         throw new ContentException("people.yaml", $"offices.{a.term.Office}", $"held by both {a.person} and {b.person} on overlapping dates");
                 }
@@ -569,6 +570,7 @@ namespace Statecraft.Sim
             {
                 if (!offices.Contains(p.Office)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", $"unknown office '{p.Office}'");
                 if (historicalOffices.Contains(p.Office)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", "historical-only titles cannot own policies");
+                if (c.Offices.Any(o => o.Id == p.Office && o.SeveralHolders)) throw new ContentException("model.yaml", $"policies[{p.Id}].office", "an office with several holders cannot own policies");
             }
             foreach (var e in c.Effects)
             {
@@ -578,6 +580,7 @@ namespace Statecraft.Sim
                 if (e.Inertia < 1) throw new ContentException("model.yaml", $"effects[{e.Id}].inertia", "must be >= 1");
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", $"unknown office '{e.Office}'");
                 if (historicalOffices.Contains(e.Office)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", "historical-only titles cannot own effects");
+                if (c.Offices.Any(o => o.Id == e.Office && o.SeveralHolders)) throw new ContentException("model.yaml", $"effects[{e.Id}].office", "an office with several holders cannot own effects");
             }
             foreach (var s in c.Situations)
             {

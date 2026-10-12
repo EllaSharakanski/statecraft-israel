@@ -15,6 +15,9 @@ namespace Statecraft.Sim
         public string Title { get; set; } = "";
         /// <summary>Historical record only: no Cabinet seat, player appointment or gameplay responsibility. Defaults false for existing offices.</summary>
         public bool HistoricalOnly { get; set; }
+        /// <summary>True when several people may hold the office on the same day (Minister without Portfolio, a second
+        /// deputy minister). Every other office has one holder at a time, and the loader refuses overlapping terms.</summary>
+        public bool SeveralHolders { get; set; }
         /// <summary>Day the office was established (inclusive, like a term's `from`); null when it exists from the start.</summary>
         public DateTime? From { get; set; }
         /// <summary>Day the office was abolished (exclusive end, like a term's `to`); null while it still exists.</summary>
