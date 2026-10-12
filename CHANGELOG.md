@@ -8,6 +8,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Turn lengths per security rung are data: `turn_lengths` in `rules.yaml` or an era override, read in the era the turn
+  starts in (R-TURN-001). The default is today's table, so the goldens do not move. GDD v0.1 Phase 1 uses it for monthly
+  turns (refs #81).
 - Indicators, policies, effects, situations, voter groups and actors can carry `from`/`to` dates (chapters spec 3.2, refs
   #57). The sim reads the records active on the game date; the state gains a record at its start and drops it at its end,
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
