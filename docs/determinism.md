@@ -73,6 +73,14 @@ uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOL
 The player needs an absolute `-logFile` path: with a relative one it wrote no log file in the check run. The editor
 commands are fine with relative paths.
 
+**A content change can move the content hash without moving a golden.** Settlement names, for example, are content (the
+hash covers `content/map/settlements_1948.yaml`) but not state. On 2026-10-12 the owner ruled that the game settlements
+`lod` and `ramla` take their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them ("Lydda (Urban)", "Ramle
+(Urban)"). That commit changed only those two names and added a source to each. Both goldens and the five-turn smoke are
+unchanged: .NET 667 of 667, and the WebGL `golden&smoke=5` check passes with the three values above. Only the content hash
+moved. A save made before it therefore loads with the "different game content" warning (`GameSession.Load`) and replays
+to the same state.
+
 **Any change to a golden hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
 content in `content/`, or the hash format. When it happens, update every place above in the same commit, add a row to
 the history below, and say in the commit message why the hash moved. If a hash changes and you did not mean to change
