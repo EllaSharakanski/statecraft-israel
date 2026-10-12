@@ -151,7 +151,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
-- The Ministry of Rationing and Supply, and Dov Yosef as its minister, now start on 10 March 1949, when the First Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move (#225).
+- The Ministry of Rationing and Supply, and Dov Yosef as its minister, now start on 10 March 1949, when the First
+  Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The
+  Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move; the
+  content hash does, so an older save loads with the "different game content" warning (#225).
 - Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
   bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
   flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).
