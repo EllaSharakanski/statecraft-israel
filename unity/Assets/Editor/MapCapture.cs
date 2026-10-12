@@ -170,14 +170,22 @@ public static class MapCapture
         int at = System.Array.IndexOf(args, "-captureDir");
         var dir = at >= 0 && at + 1 < args.Length ? args[at + 1] : Path.Combine(CaptureDir, "visual", "editor");
         var map = OpenAndBuild();
+        // The unit art slice and the units in play only when asked (-units, from tools/art_checkpoint.sh --units).
         if (System.Array.IndexOf(args, "-units") >= 0)
         {
             Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, still: true);
             ShowStartUnits(map);
         }
-        // The 1948 sub-districts, as play draws them (GameRoot.Begin), so the editor renders pair with the WebGL shots.
+        // The 1948 sub-districts and the 1949 armistice lines, as play draws them (GameRoot.Begin), so the editor renders pair
+        // with the WebGL shots: on the game's start by default, or on -regionsDate yyyy-MM-dd (a 1949 date shows the
+        // armistice zones in force then).
         var subdistricts = Subdistricts1948.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName)));
-        subdistricts.Apply(subdistricts.ShownFrom);   // the game's start
+        var regions = new MapRegions(subdistricts, Armistice1949.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Armistice1949.FileName))));
+        int dateAt = System.Array.IndexOf(args, "-regionsDate");
+        var date = dateAt >= 0 && dateAt + 1 < args.Length
+            ? System.DateTime.ParseExact(args[dateAt + 1], "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            : subdistricts.ShownFrom;
+        regions.Apply(date);
         // The border renderer's synthetic proof only when asked (-borderproof, from tools/art_checkpoint.sh --borderproof).
         if (System.Array.IndexOf(args, "-" + BorderProof.Flag) >= 0) BorderProof.Show(map);
         var rig = Camera.main.GetComponent<CameraRig>();

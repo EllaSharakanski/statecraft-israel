@@ -2,7 +2,10 @@
 
 Plan: `docs/superpowers/plans/2026-10-11-statecraft-visual-v1.md`. Promo targets: `promo/final/03-gameplay-1936.png`,
 `promo/final/02-map-diorama.png`. Poses: `PromoPose.Gameplay03` (34.86 E, 32.00 N, 60 km, yaw 10) and
-`PromoPose.Diorama02` (35.05 E, 31.55 N, 250 km, yaw 0).
+`PromoPose.Diorama02` (35.05 E, 31.55 N, 250 km, yaw 0). Since #174 the camera keeps its view on the map, and centres
+it east to west wherever the view is wider than the map. In the player, which runs that fit every frame, diorama02 can
+shift by up to a few hundred metres from its pose. The controller accepted this (owner-delegated). The other poses do
+not move.
 
 ## How to measure
 - Frame time: `?vprofile` (WebGL) or `-vprofile` (desktop player, quits when done), always under
@@ -1086,8 +1089,20 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   Arabic Mandate text reachable online; "لواء نابلس" is the common usage; unverified, noted in the file); the Hebrew and
   Arabic names from Wikipedia are accepted for now; the sensitivity review is done (`sensitivity-reviewed`), while the
   1947-48 amendment check stays open.
-- *1949 armistice lines:* research note only, `research_notes/Map borders/armistice-lines-1949.md` (the four agreements and
-  their annex maps, UNTS vol. 42, digitising and dating).
+- *1949 armistice lines (armistice-lines, #196):* `content/map/armistice_lines_1949.geojson` (true lines, draft) and
+  `armistice_hexes_1949.yaml` (snapped), from the agreements and their annexed maps
+  (`research_notes/Map borders/armistice-lines-1949.md`, "Built"): Syria (line and three-part DMZ), Lebanon (the
+  frontier), Egypt (El Auja DMZ; the Gaza-Rafah line from the Wadi Hasi to Gaza; from 22 Feb 1950 the line on the
+  signed modus vivendi map, S/1471), Jordan (low accuracy, from the low-resolution UNISPAL copy of map 1; line A by
+  its Art. VI.3 stages; Jerusalem a gap). Each front switches on its agreement's date, which the sub-district layer records per
+  front (`Subdistricts1948.FrontReplaced`, used by `MapRegions`): from then its zones are drawn over the sub-districts in the
+  secondary style and its lines named in the info panel with their own agreement and date, while the sub-district bands
+  stay as the base; the map label adds "1949 armistice lines: <fronts>", with "Jordan (low
+  accuracy)" and "Egypt (and the 1950 modus vivendi)" (`ArmisticeTests`); its box takes up to the right column's
+  480 px (`.map-layer`, was 160 px), so the longest label is three lines, checked beside a real event card at seven window
+  shapes (`ArmisticeTests.TheLongestMapLabelFitsBesideTheEventCard`). The sub-district layer stays as the base
+  while the lines leave gaps. A line is visible as a band only where it bounds a zone or is the Mandate frontier; at
+  5-km hexes two of the three Syrian DMZ parts take no hex (true-polyline overlay: #237).
 
 **Research item: region data (to source, then the owner's sensitivity review).**
 - *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:

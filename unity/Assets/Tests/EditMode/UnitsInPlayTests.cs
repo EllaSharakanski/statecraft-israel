@@ -492,11 +492,12 @@ public class UnitsInPlayTests
             layer.Show(bridge.Content, bridge.State);
             var nav = new ScreenNav(ui.Root);
             var subdistricts = Subdistricts1948.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Subdistricts1948.FileName)));
-            subdistricts.Apply(subdistricts.ShownFrom);   // shown, as at the game's start
+            var regions = new MapRegions(subdistricts, Armistice1949.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", Armistice1949.FileName))));
+            regions.Apply(subdistricts.ShownFrom);   // shown, as at the game's start
             var towns = SettlementPlacer.Parse(File.ReadAllText(Path.Combine(Paths.Content, "map", SettlementPlacer.DefaultFileName))).ToDictionary(t => t.Id, t => t.Name);
             var info = new InfoPanelPresenter(ui.Root, bridge, Text, towns, nav: nav,
                 selectedUnit: () => layer.Selected is string id ? layer.Tokens.First(p => p.Token.Unit.Id == id) : (PlacedToken?)null,
-                subdistricts: subdistricts);
+                regions: regions);
             var root = map.Terrain.transform.Find(UnitLayer.RootName);
             var golani = layer.Tokens.Single(p => p.Token.Unit.Id == "golani");
             var tlv = C.SettlementHexes.Single(t => t.Id == "tel_aviv");
