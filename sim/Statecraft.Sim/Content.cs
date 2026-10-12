@@ -267,6 +267,10 @@ namespace Statecraft.Sim
         public string Id { get; set; } = "";
         /// <summary>Display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the origin group exists (inclusive); null when it exists from the start (chapters spec 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>First day it no longer exists (exclusive, like every window); null while it still does.</summary>
+        public DateTime? To { get; set; }
     }
 
     public sealed class AliyahPeriod
