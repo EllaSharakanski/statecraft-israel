@@ -458,6 +458,31 @@ public class SeaTests
         finally { Object.DestroyImmediate(go); }
     }
 
+    /// <summary>Issue #195 review: the terrain water's depth pull follows an orthographic camera's parallel rays. Pulled
+    /// towards the camera's position instead, the water slid towards the view's axis, and the terrain's black water showed
+    /// between it and the shore. Straight down over the coast south of Tel Aviv, 30 km across with the axis 12 km offshore,
+    /// no pixel is black.</summary>
+    [UnityTest]
+    public IEnumerator TheTerrainWaterStaysPutUnderAnOrthographicCamera()
+    {
+        var map = OpenMap();
+        yield return null;
+        var centre = map.Frame.ToWorld(34.62, 32.0, 0); centre.y = 0f;
+        var go = new GameObject("TopCoast"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            const int n = 512;
+            cam.orthographic = true; cam.orthographicSize = 15000f; cam.aspect = 1f;
+            cam.transform.position = centre + Vector3.up * 20000f; cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            var r = RenderSample.Render(cam, n, n);
+            int black = r.Pixels.Count(c => Mathf.Max(c.r, Mathf.Max(c.g, c.b)) < 0.02f);
+            TestContext.WriteLine($"black pixels: {black} of {n * n}");
+            Assert.AreEqual(0, black, "the water covers the terrain's black water up to the shore");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     /// <summary>Rendered: the Dead Sea is pale turquoise, much lighter than the open Mediterranean.</summary>
     [UnityTest]
     public IEnumerator TheDeadSeaIsPalerThanTheOpenSea()

@@ -58,11 +58,15 @@ Shader "Statecraft/Sea"
                 // ray: the same pixel, never behind the terrain it lies on (a depth offset alone left specks at the
                 // overview). Drawn before every other opaque (MapScene.TerrainWaterQueue), so it covers nothing else.
                 // Shading keeps the true position.
-                float3 toCamera = _WorldSpaceCameraPos - p.positionWS;
-                float dist = max(length(toCamera), 1.0);
-                float pixelM = dist * 2.0 / (abs(UNITY_MATRIX_P._m11) * _ScreenParams.y);
+                // An orthographic camera (MapCapture.TopDown, the top-down sea tests) has parallel rays and pixels the same
+                // size at every distance: the pull goes along its forward axis, by its pixel size, or the water would slide
+                // across the screen towards the camera's axis.
+                float dist = max(length(_WorldSpaceCameraPos - p.positionWS), 1.0);
+                bool perspective = IsPerspectiveProjection();
+                float3 towards = perspective ? (_WorldSpaceCameraPos - p.positionWS) / dist : -GetViewForwardDir();
+                float pixelM = (perspective ? dist : 1.0) * 2.0 / (abs(UNITY_MATRIX_P._m11) * _ScreenParams.y);
                 float pull = _ScTerrainWater * min(ScWaterDepthPullPx * pixelM, 0.5 * dist);
-                o.positionCS = TransformWorldToHClip(p.positionWS + toCamera / dist * pull);
+                o.positionCS = TransformWorldToHClip(p.positionWS + towards * pull);
                 return o;
             }
             half4 Frag(Varyings input) : SV_Target
