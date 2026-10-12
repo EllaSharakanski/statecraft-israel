@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PATH = re.compile(r"(?<![\w/.-])((?:scripts|tools)/[\w./-]+\.(?:py|sh))")
+PATH = re.compile(r"(?<![\w/.-])((?:scripts|tools)/[\w./-]+\.(?:py|sh))(?![\w.-])")
 
 
 def missing(root: Path) -> list[tuple[int, str]]:

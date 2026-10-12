@@ -42,5 +42,11 @@ def test_a_directory_named_like_a_script_is_not_a_script(make_repo):
     assert m.undocumented(root) == []
 
 
+def test_a_longer_name_does_not_name_the_script_inside_it(make_repo):
+    root = make_repo({'docs/dev-setup.md': '`uv run scripts/a.py` and `scripts/e.py.old`\n', 'scripts/a.py': 'x\n',
+                      'scripts/e.py': 'x\n'})
+    assert m.undocumented(root) == ['scripts/e.py']
+
+
 def test_this_repo_documents_every_script():
     assert m.undocumented(ROOT) == []
