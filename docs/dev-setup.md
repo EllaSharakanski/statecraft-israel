@@ -28,6 +28,7 @@ Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the cont
 | Content records a branch adds, removes or re-dates (paste into the PR) | `uv run scripts/pr_content_summary.py [origin/main]` | none (helper) |
 | Dead relative links in Markdown files (also run by the policy checker tests) | `uv run scripts/oss/md_links.py` | Repo policy |
 | Every script this table names exists (also run by the policy checker tests) | `uv run scripts/oss/dev_setup_commands.py` | Repo policy |
+| Events in play on a date (window is end-exclusive) | `uv run scripts/events_on.py DATE` | none (helper) |
 | New event file (skeleton with every required field) | `uv run scripts/new_event.py <id> [--from D] [--to D]` | none (helper) |
 | Every place a record id is read, in content and code | `uv run scripts/id_references.py <id>` | none (helper) |
 | Changelog line | `uv run scripts/oss/changelog_check.py --base origin/main` | Changelog |
