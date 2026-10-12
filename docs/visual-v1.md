@@ -1659,6 +1659,7 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
       | this branch f715717, round 1 | 2588 ms | 8229 ms |
       | main 316a042, round 2 | 2610 ms | 8234 ms |
       | this branch f715717, round 2 | 2553 ms | 8131 ms |
+      | this branch after merging main (05390da), final checks | 2658 ms | 8367 ms |
 
       The branch is 130 to 170 ms under the 2720 ms budget: real headroom for the towns' round 2. That round should bake
       the same way.
