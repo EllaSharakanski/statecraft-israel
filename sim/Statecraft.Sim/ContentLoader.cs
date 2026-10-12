@@ -799,6 +799,10 @@ namespace Statecraft.Sim
                     if (!MapActions.Actions.Contains(a)) throw new ContentException("eras.yaml", at + ".systems.map_actions", $"unknown map action '{a}' (transit_camp or housing)");
                 if (e.Systems.MapActions.Distinct().Count() != e.Systems.MapActions.Count)
                     throw new ContentException("eras.yaml", at + ".systems.map_actions", "lists an action twice");
+                if (e.Systems.Loop != EraSystems.Legacy && e.Systems.Loop != EraSystems.Gdd)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "must be legacy or gdd");
+                if (e.Systems.Loop != c.Eras[0].Systems.Loop)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "every era runs the same loop (a save names one ruleset)");
                 if (i == 0)
                 {
                     if (c.Rules.Start != default && e.From != c.Rules.Start)   // a missing start is rules.yaml's own error

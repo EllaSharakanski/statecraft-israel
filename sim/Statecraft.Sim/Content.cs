@@ -51,6 +51,12 @@ namespace Statecraft.Sim
         public string Legislature { get; set; } = State;
         /// <summary>The map actions allowed in the era (transit_camp, housing). Absent means both. An empty list means none.</summary>
         public List<string> MapActions { get; set; } = new List<string> { "transit_camp", "housing" };
+        public const string Legacy = "legacy";
+        public const string Gdd = "gdd";
+        /// <summary>`legacy`: today's game. `gdd`: the GDD v0.1 loop (docs/GDD.md), built behind this switch until cutover
+        /// (spec 2026-10-12 section 2.1). One value for the whole game: the loader refuses eras that differ, because a save
+        /// names one ruleset (section 2.4). R-LOOP-001.</summary>
+        public string Loop { get; set; } = Legacy;
     }
 
     public sealed class Party { public string Id { get; set; } = ""; public string Name { get; set; } = ""; }
@@ -437,6 +443,12 @@ namespace Statecraft.Sim
         public Era? EraAt(DateTime date) => Eras.FirstOrDefault(e => date >= e.From && date < e.To);
         /// <summary>The system switches in force on <paramref name="date"/>; the defaults outside every era.</summary>
         public EraSystems SystemsAt(DateTime date) => EraAt(date)?.Systems ?? new EraSystems();
+        /// <summary>The game's loop (eras.yaml systems.loop, the same in every era): legacy or gdd. R-LOOP-001.</summary>
+        public string Loop => Eras.Count == 0 ? EraSystems.Legacy : Eras[0].Systems.Loop;
+        /// <summary>True when the GDD v0.1 loop runs.</summary>
+        public bool IsGdd => Loop == EraSystems.Gdd;
+        /// <summary>The ruleset a save names (SaveGame.Ruleset): "legacy" or "gdd-0.1".</summary>
+        public string Ruleset => IsGdd ? SaveGame.GddRuleset : SaveGame.LegacyRuleset;
         public List<Indicator> Indicators = new List<Indicator>();
         public List<Policy> Policies = new List<Policy>();
         public List<Effect> Effects = new List<Effect>();

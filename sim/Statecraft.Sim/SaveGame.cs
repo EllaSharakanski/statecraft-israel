@@ -28,6 +28,10 @@ namespace Statecraft.Sim
     public sealed class SaveGame
     {
         public const int SchemaVersion = 1;
+        /// <summary>The ruleset of the legacy loop (Content.Ruleset).</summary>
+        public const string LegacyRuleset = "legacy";
+        /// <summary>The ruleset of the GDD v0.1 loop (eras.yaml systems.loop: gdd).</summary>
+        public const string GddRuleset = "gdd-0.1";
         /// <summary>Turns are at least a week long, so 2000 turns is 38 years, far past any content; a save with more is hostile or damaged.</summary>
         public const int MaxTurns = 2000;
         const string Magic = "statecraft-save";
