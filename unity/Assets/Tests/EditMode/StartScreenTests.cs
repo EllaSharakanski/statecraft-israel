@@ -398,7 +398,7 @@ public class StartScreenTests
                     Assert.AreEqual(window.height, art.height, 0.5f, $"{at}: the painting fills the window");
                     Assert.AreEqual(BackgroundPositionKeyword.Center, root.Q("start-art").resolvedStyle.backgroundPositionX.keyword, $"{at}: a crop takes both sides alike (the aisle stays in the middle)");
                     Assert.AreEqual(BackgroundPositionKeyword.Top, root.Q("start-art").resolvedStyle.backgroundPositionY.keyword, $"{at}: a crop keeps the top (the flags and the table)");
-                    // Cover, anchored top-left: the painting's upper half (the flags and the table) stays clear of the panel.
+                    // Cover, anchored at the top: the painting's upper half (the flags and the table) stays clear of the panel.
                     var painted = Mathf.Max(window.height, window.width / StartScreenPresenter.ArtAspect);
                     Assert.GreaterOrEqual(panel.yMin, window.yMin + painted * 0.5f - 0.5f, $"{at}: the panel {panel} covers the painting's upper half");
                 }
