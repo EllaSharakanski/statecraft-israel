@@ -48,7 +48,7 @@ it, and there are no level-of-detail switches yet.
 | Piece | Model | Where (PromoPose.Gameplay03) |
 |---|---|---|
 | Rifle trio | three 1948 IDF riflemen: bush hat with rifle held ready, Mk II steel helmet with rifle grounded, Palmach stocking cap with rifle slung | on the centre of the hex nearest 34.88 E, 32.01 N (east of Tel Aviv, clear of the settlement labels), inside a white selection ring that fits within the hex |
-| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, late 1948 – January 1949: red spinner and red-and-white rudder (attested on Spitfires for January 1949), roundel without an outer ring | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
+| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, from October 1948: clipped wing, red spinner and diagonal red-and-white rudder stripes, filled Star of David roundels with no outer ring (Efrati pp. 13–14) | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
 | Navy | modified Flower-class corvette INS Haganah (K-20), 1948, 63.4 m | off Jaffa (34.63 E, 32.02 N) |
 
 Not in the slice:
@@ -204,11 +204,12 @@ checks every anchor and logs each spot and its distance.
 **The Avia S-199** (`UnitModels.AviaS199`; type `avia-s199-101sqn-1948`):
 - The Bf 109G airframe, 8.94 m long with a 9.92 m span, with the Jumo 211F's wide three-blade paddle propeller and the
   MG 151 pods under the wings (Avia S-199 article).
-- One green on all surfaces: Avia's standard finish, and "the same shade of green" on D-123 in Israel (Eduard Info
-  11/2025, pp. 53–54). The exact shade is unverified.
-- Two white bands round the rear fuselage, and Star of David roundels under the wings. These come from the 101 Squadron
-  photographs of 1948 on Wikimedia Commons: the roundels show from a low camera in front of a nose-up aircraft, so they
-  are on the lower surface.
+- One khaki green on all surfaces, about RAL 6013: Efrati p. 11, confirmed from an Avia fuel cap. Eduard Info
+  11/2025, pp. 53–54, also has one green.
+- The identification band round the rear fuselage is white, blue, white (Efrati p. 11).
+- Filled Star of David roundels sit on both fuselage sides behind the cockpit and under the wings (Efrati pp. 6 and 11,
+  and the 1948 photographs). None sit on top of the wings: over-wing roundels were "standard" on no IAF aircraft from May
+  1948 to January 1949 (p. 6) and were adopted on the Avias only after the Velvetta Spitfires arrived (pp. 11 and 14).
 - The red spinner, the rudder stripes and the upper-wing roundels of Operation Ten Plagues (from 15 October 1948, Eduard
   p. 53) are not drawn, because the map shows the Spitfire from that day.
 - The squadron's skull badge on the nose is too small to read at map scale and is left out.
@@ -304,10 +305,12 @@ Aircraft:
 - Ferry flights of the Czech Spitfires to Israel (Operation Velvetta, 1948). https://en.wikipedia.org/wiki/Operation_Velvetta
 - The Avia S-199 flew first, on 29 May 1948 (Operation Pleshet). https://en.wikipedia.org/wiki/Avia_S-199
   The Spitfire was chosen over it because the promo shows a Spitfire (promo beats era, and both are 1948-correct).
-- Spitfire Mk IX shape (an elliptical wing, a four-blade propeller): the IAF Museum airframe at Hatzerim. CC BY 2.5.
+- Spitfire Mk IX shape (a four-blade propeller): the IAF Museum airframe at Hatzerim. CC BY 2.5.
   https://commons.wikimedia.org/wiki/File:Spitfire-MkIX-hatzerim-1-1.jpg
-  Many IAF IXes had clipped wing tips (Fundekals review, below). The slice keeps the full elliptical wing that the promo
-  shows.
+  **Clipped wing (corrected 2026-10-12):** "All Spitfires ferry flown to Israel during the 1948 war were clipped wing
+  Mk.IXe versions" (Efrati p. 14). The clipped tips cut the span by 3 ft 6 in
+  (https://en.wikipedia.org/wiki/Supermarine_Spitfire). The model now has the clipped wing, not the promo's full
+  elliptical one.
 - Variant **LF.IXe**, and 101 Squadron's **red spinner** and **red-and-white striped rudder**. On the Spitfires these are
   attested for **January 1949** (IsraDecal); the slice is dated "late 1948 – January 1949".
   - IsraDecal Studio, "Spitfire Mk.IX, Israeli Air Force" (IAF-123, 1:24) marking instructions, May 2023. It lists
@@ -321,16 +324,33 @@ Aircraft:
     October 1948, but **on the Spitfires the October 1948 date is unverified**.
   - A Fundekals decal review also says 101 Squadron "had the white and red stripes on the rudder".
     https://mail.modelingmadness.com/scott/decals/fundekals/fd48idfspit.htm
-  - **Unverified:** the stripes' direction. The slice draws them across the rudder.
-- Roundel of 1948–49: a blue Star of David on a white disc, the star clear of the disc's edge, **with no outer blue ring**.
+  - **Diagonal (corrected 2026-10-12):** from early October 1948 the squadron painted "their spinners red and rudders
+    with diagonal red and white stripes" (Efrati p. 13; the photographs of Spitfires 14 and 17, pp. 12–13). This also
+    dates the Spitfires' markings to October 1948.
+- Roundel of 1948–49: a **filled** blue Star of David on a white disc, the star clear of the disc's edge, **with no outer
+  blue ring**.
+  - **Filled, not an outline** (checked 2026-10-12, after the owner asked).
+    - Efrati, p. 6, on the Bonanzas after 15 May 1948: "Ground visibility of the open star was poor so he [Boris Senior]
+      suggested that the Star of David be filled resulting in the IAF insignia as applied on IAF aircraft ever since."
+    - Every 1948–49 photograph checked shows the star filled: the S-199s D-120 and D-123 and the Spitfires 14 and 17
+      (Efrati pp. 11–13), and the public-domain S-199 photographs on Commons (below).
+    - An open, outline star was used only briefly before that change. The model draws the filled star, and
+      `UnitsInPlayTests.TheRoundelIsAFilledStarOfDavidOnAWhiteDiscWithNoRing` pins it.
+  - Where the roundels sit:
+    - Spitfire: both fuselage sides and both wing surfaces. The Velvetta Spitfires arrived with over-wing roundels
+      painted over their Czechoslovak ones (Efrati p. 14).
+    - S-199: the fuselage sides and under the wings (see "The Avia S-199" above).
+    - On the fuselage a point is straight up, as in the photographs.
   - Flags of the World, citing a 2002 survey of *Born in Battle*: "almost all the roundels show the star within, but not
     reaching the edges of, the white disk ... This includes early planes from the 1948/49 war of independence (like
     Spitfire ...)". It adds: "the only aircraft showing a roundel with a thin blue ring around are Mosquitos and Meteors
     from the 1950ies". https://crwflags.com/fotw/flags/il%5Eairfo.html
   - The Commons "early variant" SVG with the ring is drawn from a Mosquito photograph, a 1950s type, so it is not used.
-- **Unverified (one hobby source, IsraDecal):** the camouflage, RAF ocean grey and dark green over medium sea grey. A
-  forum report of brown overpaint in theatre is an open question. The museum airframe is bare metal in post-war markings.
-  The standard reference, Alex Yofe's *Spitfire Mk. IX in Israeli Air Force Service 1948–1956*, has not been checked.
+- The camouflage, RAF Ocean Grey and Dark Green over Medium Sea Grey, is now **confirmed** for "all Spitfires ferry flown
+  to Israel during the 1948 war" (Efrati p. 14; it was a single hobby source before). Alex Yofe's *Spitfire Mk. IX in
+  Israeli Air Force Service 1948–1956* has still not been checked.
+- Yoav Efrati, *Colors & Markings of the Israeli Air Force* (IAF, 2005), http://files.iaflibrary.org.il/DigitalLibrary/English/ColorsMarkings.pdf: the IAF's own library publishes this reference, which these marking corrections rest on (pages are the
+  book's own numbers).
 
 Navy:
 - INS Haganah (K-20), ex-HMCS Norsyd, a modified Flower-class corvette, 208 ft (63.4 m) overall, with an upright
