@@ -1545,4 +1545,11 @@ Village Statistics tribal totals, inventing no names or points.
   (`BOOT OK content 892c9dce...`) and both goldens are unchanged. Build: wasm +111,913 bytes, data +14,441, plus the
   255,557-byte file (25,956 gzipped) fetched at boot. A first version scanned every lot and footprint linearly and took
   350 ms (kits) and 330 ms (trees) in the editor; `DiscIndex` (a 4 km grid) brought that to about 30 ms each. Frame time
-  and boot against the budgets: pending a quiet machine (see the report).
+  and boot against the budgets (headless WebGL `vprofile`, `machine_lock --exclusive --wait-unity`, this branch at aa1a40a
+  against main c2089b4, 2026-10-12): gameplay03 all 13.83 ms (p95 15) against main's 14.33 (16), diorama02 18.01 (p95 20)
+  against 17.53 (20); all - none 3.33 / 5.29 ms (main 3.91 / 4.96), within 8 ms; kits all - (-kits) -0.73 / -0.19 ms and
+  trees 0.48 / 1.26 ms (main 0.52 / 0.90), within 2.5 ms; labels 0.02 / 0.06 ms. The diorama02 p95 of 20 ms is main's too.
+  Boot (`headed.py boot --runs 3`, main then this branch): cpu 1 map_build 594 -> 681 ms, first_frame 3818 -> 3910; cpu 4
+  2379 -> 2712, 7700 -> 8066 (budgets 2720 / 10445: within, map_build by 8 ms). The growth is in "terrain heights set"
+  (+80 ms at cpu 1, +330 at cpu 4: the ground tint painted under 272 more footprints), not in "kits built" (92 ms either
+  way): the first lever if the boot budget tightens.
