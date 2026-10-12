@@ -14,11 +14,21 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   minutes, checked against both Wikipedias. The Third Government now ends on 24 December 1952 and gains its 1952 changes:
   Haim Cohn at Justice, Lavon without portfolio, Nurock at Postal Services, and Welfare vacant after Levin left on
   18 September (refs #26).
+- A golden-hash failure now shows what changed (#256): `GameState.Describe()` writes the state `Hash()` hashes as readable
+  lines, each golden run's final state is committed under `sim/Statecraft.Sim.Tests/golden/`, and a failing golden test
+  prints the changed lines by section. `STATECRAFT_UPDATE_GOLDEN=1 dotnet test` rewrites the snapshots. `Hash()` is
+  unchanged, so the goldens do not move.
 - A start screen (#247): a painting of the 14 May 1948 ceremony in the Tel Aviv Museum hall (AI-generated concept art
   with no identifiable person), two lines of the Declaration of Independence in the official Hebrew with the official
   English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
   runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
   Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
+- Rules per era (#58, first piece): an era can override `rules.yaml` keys in `content/rules/<era>.yaml` (only the keys it
+  changes; maps merge key by key, a list or a value replaces). The merged rules are read with the strict `Rules` type, so a
+  misspelt key or wrong type fails naming the era file and line, start values (`treasury_start`, `start_rung` and so on) are
+  refused, a file that names no era is refused, and `rules/` is in the player manifest. They are checked like `rules.yaml`. `Content.RulesAt(date)` returns the rules of
+  the era a date is in (built once at load); the founding era has no file, so its rules are `rules.yaml`. Nothing reads
+  `RulesAt` yet, so the goldens do not move.
 - Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
   dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
   reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
@@ -157,6 +167,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Ministry of Rationing and Supply, and Dov Yosef as its minister, now start on 10 March 1949, when the First
+  Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The
+  Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move; the
+  content hash does, so an older save loads with the "different game content" warning (#225).
 - Railways keep their width outside the gorges: a rail band narrows only where the ground leaves its tolerance on both
   sides (a gorge floor, a gorge side, a ridge), not for one hill or one drop beside the line. The Jaffa–Jerusalem line
   keeps 94.9% of its width outside the Sorek (87.4% before) and the Jezreel Valley line 92.1% outside its gorges (82.8%).

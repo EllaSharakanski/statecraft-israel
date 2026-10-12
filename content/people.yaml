@@ -436,9 +436,11 @@ people:
     loyalty: 8
     offices:
       - { office: agriculture_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
-      # As Minister of Rationing and Supply: the ministry was created on 26 April 1949, the day rationing was decided,
-      # and abolished on 1 November 1950.
-      - { office: rationing_minister, from: 1949-04-26, to: 1950-11-01, sources: &rationing [{ url: "https://en.wikipedia.org/wiki/Rationing_and_Supply_Minister_of_Israel", checked: 2026-10-10 }, { url: "https://he.wikipedia.org/wiki/תקופת_הצנע", checked: 2026-10-10 }] }
+      # As Minister of Rationing and Supply: named in the First Government presented to the Knesset on 8 March 1949 and in
+      # office from 10 March 1949 (Knesset gov1.pdf; he.wiki First Government table and "דב יוסף"). Rationing itself was
+      # decided on 26 April 1949 (austerity event), the date en.wiki "Rationing and Supply Minister of Israel" and
+      # he.wiki "משרד האספקה והקיצוב" give for the office. The ministry was abolished on 1 November 1950. Issue #225.
+      - { office: rationing_minister, from: 1949-03-10, to: 1950-11-01, sources: &rationing [{ url: "https://main.knesset.gov.il/mk/government/documents/gov1.pdf", checked: 2026-10-12 }, { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_הראשונה", checked: 2026-10-12 }, { url: "https://he.wikipedia.org/wiki/דב_יוסף", checked: 2026-10-12 }] }
       - { office: transportation_minister, from: 1950-11-01, to: 1951-10-08, sources: *second }
       # en.wiki lists Trade and Industry and Justice; he.wiki lists only Trade and Industry clearly (research notes 1e).
       # The Knesset records give Justice too, until Haim Cohn took it on 25 June 1952 (en.wiki and he.wiki agree).

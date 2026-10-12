@@ -38,10 +38,12 @@ offices:
   # functions split: most went to Agriculture (Lavon), some supply departments to Trade and Industry (Geri) (research
   # notes, Addendum 2). From 8 October 1951 food-supply/rationing responsibility was with Trade and Industry (Yosef);
   # see people.yaml and research_notes/M3 content 1950-51/rationing-responsibility.md for evidence and caveats.
-  # No rationing ministry or minister in the Provisional Government: the Ministry of Rationing and Supply was created on
-  # 26 April 1949 under Dov Yosef (en.wiki "Rationing and Supply Minister of Israel" and "Provisional government of
-  # Israel", he.wiki "משרד האספקה והקיצוב" (April 1949), checked 2026-10-11).
-  - { id: rationing_minister, title: Minister responsible for rationing, from: 1949-04-26 }
+  # No rationing ministry or minister in the Provisional Government. Dov Yosef is named Minister of Rationing and Supply
+  # in the First Government that Ben-Gurion presented to the Knesset on 8 March 1949 and that took office on
+  # 10 March 1949 (Knesset, gov1.pdf; he.wiki "דב יוסף", en.wiki "Dov Yosef", checked 2026-10-12). The 26 April 1949 date
+  # in en.wiki "Rationing and Supply Minister of Israel" and he.wiki "משרד האספקה והקיצוב" is when rationing was decided
+  # (the austerity event), not when the office began (issue #225).
+  - { id: rationing_minister, title: Minister responsible for rationing, from: 1949-03-10 }
   - { id: chief_of_staff, title: IDF Chief of the General Staff }
   # The role first appeared in the Third Government (Peretz Naphtali, 8 October 1951): he.wiki "שר בלי תיק"; the
   # Provisional, First and Second Governments' tables on en.wiki list none (checked 2026-10-11).
