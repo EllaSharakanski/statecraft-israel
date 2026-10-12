@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Statecraft.Sim;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+
+/// <summary>A golden playthrough with scripted player choices (#296). The two hash goldens use HistoricalAI, so they cover
+/// the path history took; a scenario covers a path a player might take instead. File: sim/Statecraft.Sim.Tests/scenarios/&lt;name&gt;.yaml.
+/// <code>
+/// name: reckless
+/// seed: 1948          # optional, default GoldenRun.Seed
+/// until: 1949-01-01   # the run stops when the date reaches it
+/// steps:
+///   - on: 1948-05-15  # the commands go in on the first turn that starts on or after this date, once
+///     commands:
+///       - { kind: set_policy, policy: rationing, level: 1.0 }
+/// </code>
+/// Kinds: set_policy (policy, level), allocate_budget (shares: {office: share}), choose_event_option (event, option),
+/// set_mobilization (level), security_order (delta), appoint (office, person), map_action (action, q, r). A turn with no
+/// scripted command passes; events nobody answered are delegated, as in the game. A command the sim rejects fails the run.</summary>
+public sealed class Scenario
+{
+    public string Name { get; set; } = "";
+    public ulong? Seed { get; set; }
+    public string Until { get; set; } = "";
+    public List<ScenarioStep> Steps { get; set; } = new List<ScenarioStep>();
+
+    public static string Dir() =>
+        Path.Combine(Directory.GetParent(RealContentTests.ContentRoot())!.FullName, "sim", "Statecraft.Sim.Tests", "scenarios");
+
+    public static Scenario Parse(string yaml)
+    {
+        var d = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
+        var s = d.Deserialize<Scenario>(yaml) ?? throw new InvalidDataException("the scenario file is empty");
+        if (string.IsNullOrWhiteSpace(s.Name)) throw new InvalidDataException("a scenario needs a name");
+        s.UntilDate = Date(s.Until, "until");
+        foreach (var step in s.Steps)
+        {
+            step.OnDate = Date(step.On, "on");
+            foreach (var c in step.Commands) step.Built.Add(Build(c));
+        }
+        return s;
+    }
+
+    [YamlIgnore] public DateTime UntilDate { get; private set; }
+
+    static DateTime Date(string text, string field) =>
+        DateTime.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d
+            : throw new InvalidDataException($"'{field}' must be yyyy-MM-dd, got '{text}'");
+
+    static string Str(Dictionary<string, object> c, string key) =>
+        c.TryGetValue(key, out var v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture)! : throw new InvalidDataException($"command '{c["kind"]}' needs '{key}'");
+    static double Num(Dictionary<string, object> c, string key) =>
+        double.TryParse(Str(c, key), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : throw new InvalidDataException($"command '{c["kind"]}': '{key}' must be a number");
+
+    static Command Build(Dictionary<string, object> c)
+    {
+        if (!c.ContainsKey("kind")) throw new InvalidDataException("a command needs 'kind'");
+        var kind = Str(c, "kind");
+        var allowed = new Dictionary<string, string[]>
+        {
+            ["set_policy"] = new[] { "policy", "level" }, ["allocate_budget"] = new[] { "shares" },
+            ["choose_event_option"] = new[] { "event", "option" }, ["set_mobilization"] = new[] { "level" },
+            ["security_order"] = new[] { "delta" }, ["appoint"] = new[] { "office", "person" },
+            ["map_action"] = new[] { "action", "q", "r" },
+        };
+        if (!allowed.TryGetValue(kind, out var keys)) throw new InvalidDataException($"unknown command kind '{kind}' (known: {string.Join(", ", allowed.Keys)})");
+        var extra = c.Keys.Where(k => k != "kind" && !keys.Contains(k)).ToList();
+        if (extra.Count > 0) throw new InvalidDataException($"command '{kind}' has unknown field '{extra[0]}'");
+        switch (kind)
+        {
+            case "set_policy": return new SetPolicy(Str(c, "policy"), Num(c, "level"));
+            case "allocate_budget":
+                if (!(c.TryGetValue("shares", out var sh) && sh is Dictionary<object, object> map)) throw new InvalidDataException("allocate_budget needs 'shares' as a map");
+                return new AllocateBudget(map.ToDictionary(kv => Convert.ToString(kv.Key, CultureInfo.InvariantCulture)!, kv => double.Parse(Convert.ToString(kv.Value, CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture)));
+            case "choose_event_option": return new ChooseEventOption(Str(c, "event"), Str(c, "option"));
+            case "set_mobilization": return new SetMobilization(Num(c, "level"));
+            case "security_order": return new SecurityOrder((int)Num(c, "delta"));
+            case "appoint": return new Appoint(Str(c, "office"), Str(c, "person"));
+            default: return new MapAction(Str(c, "action"), (int)Num(c, "q"), (int)Num(c, "r"));
+        }
+    }
+
+    /// <summary>Plays the scenario and returns the final state. Fails with the date, the order and the sim's reason when a command is rejected.</summary>
+    public GameState Play(Content c)
+    {
+        var s = Simulation.NewGame(c, Seed ?? GoldenRun.Seed, Mode.Historical);
+        var pending = Steps.OrderBy(x => x.OnDate).ToList();
+        for (int turn = 0; turn < 1000 && s.Date < UntilDate && s.GameOver == null; turn++)
+        {
+            var now = new List<Command>();
+            while (pending.Count > 0 && pending[0].OnDate <= s.Date) { now.AddRange(pending[0].Built); pending.RemoveAt(0); }
+            var r = Simulation.Step(c, s, now);
+            if (r.Rejected.Count > 0)
+            {
+                var x = r.Rejected[0];
+                throw new InvalidOperationException($"scenario '{Name}': on {s.Date:yyyy-MM-dd} the sim rejected {x.Command.Kind} ({Describe(x.Command)}): {x.Reason}");
+            }
+            s = r.State;
+        }
+        if (pending.Count > 0) throw new InvalidOperationException($"scenario '{Name}': the step on {pending[0].On} never ran (the run ends {s.Date:yyyy-MM-dd})");
+        return s;
+    }
+
+    static string Describe(Command c) => c switch
+    {
+        SetPolicy p => $"{p.Policy} {p.Level}", ChooseEventOption e => $"{e.EventId}/{e.OptionId}", SetMobilization m => m.Level.ToString(CultureInfo.InvariantCulture),
+        SecurityOrder o => o.Delta.ToString(CultureInfo.InvariantCulture), Appoint a => $"{a.Office} {a.Person}", MapAction m => $"{m.Action} {m.Q},{m.R}", _ => c.Kind,
+    };
+}
+
+public sealed class ScenarioStep
+{
+    public string On { get; set; } = "";
+    public List<Dictionary<string, object>> Commands { get; set; } = new List<Dictionary<string, object>>();
+    [YamlIgnore] public DateTime OnDate { get; set; }
+    [YamlIgnore] public List<Command> Built { get; } = new List<Command>();
+}
