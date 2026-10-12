@@ -60,11 +60,16 @@ namespace Statecraft.Sim
                 Holder(c, s, m.Groups[1].Value, date)?.Name
                 ?? throw new InvalidOperationException(FormattableString.Invariant($"no holder of '{m.Groups[1].Value}' on {date:yyyy-MM-dd}")));
 
-        /// <summary>Every playable office that exists on the state's date, in offices.yaml order, with its holder (null = vacant).</summary>
+        /// <summary>Every playable office that exists on the state's date, in offices.yaml order, with its holder (null = vacant).
+        /// A player's appointee is the seat's only holder (an appointment from a save made before an office allowed several
+        /// holders), so Seat.Holders never disagrees with Seat.Holder.</summary>
         public static IReadOnlyList<Seat> Lineup(Content c, GameState s) =>
             c.Offices.Where(o => !o.HistoricalOnly && o.ExistsOn(s.Date))
-                .Select(o => new Seat(o, Holder(c, s, o.Id), Active(c, s, o.Id, s.Date) != null,
-                    o.SeveralHolders ? Offices.Holders(c, o.Id, s.Date) : null))
+                .Select(o =>
+                {
+                    bool appointed = Active(c, s, o.Id, s.Date) != null;
+                    return new Seat(o, Holder(c, s, o.Id), appointed, o.SeveralHolders && !appointed ? Offices.Holders(c, o.Id, s.Date) : null);
+                })
                 .ToList();
 
         /// <summary>Null when <paramref name="personId"/> may be appointed to <paramref name="officeId"/> now, else the
