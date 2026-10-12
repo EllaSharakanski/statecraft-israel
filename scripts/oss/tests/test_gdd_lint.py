@@ -99,3 +99,36 @@ def test_this_repository_gdd_files_lint_clean():
     # Runs in CI with the other policy checker tests; includes the shipped example.
     assert m.check(ROOT) == []
     assert (ROOT / 'docs/gdd/example-turn-grid.md').exists()
+
+
+def test_an_unfilled_copy_of_the_template_fails():
+    # The likeliest mistake: the template copied and a placeholder left in.
+    found = m.lint(ROOT / 'docs/gdd/TEMPLATE.md', 'TEMPLATE.md')
+    assert any(': placeholder:' in p for p in found)
+    assert 'placeholder' in kinds_of(GOOD.replace('- Nothing else.', '- <what this does not do>'))
+    assert kinds_of(GOOD.replace('- Nothing else.', '- See <https://example.org/x>.')) == []
+
+
+def test_a_section_with_only_a_comment_is_empty(tmp_path):
+    out = kinds(tmp_path, GOOD.replace('- Nothing else.', '<!-- Say what\n     this does not do. -->'))
+    assert out == ['missing-section']
+
+
+def test_dates_ordinals_and_scales_as_the_specs_write_them(tmp_path):
+    ok = GOOD.replace('- A turn lasts 7 days.', '- The 13th government falls on 26 Jun 1963 [S1] (spec §4.1).\n'
+                      '- In the 1950s [S1] it grows to 1.6 million people, 61 of 120 seats.\n- The check ran 2026-10-10 [S1].')
+    assert kinds(tmp_path, ok) == []
+    assert kinds(tmp_path, GOOD.replace('- A turn lasts 7 days.', '- Ben-Gurion resigns on 7 Dec 1953.')) == ['no-source']
+    assert kinds(tmp_path, GOOD.replace('- A turn lasts 7 days.', '- It ran short in the 1950s.')) == ['no-source']
+
+
+def test_a_linked_source_needs_a_checked_date(tmp_path):
+    linked = GOOD.replace('docs/superpowers/specs/x.md', 'https://example.org/x')
+    assert kinds(tmp_path, linked) == ['no-source']
+    assert kinds(tmp_path, linked.replace('https://example.org/x', 'https://example.org/x, checked 2026-10-12')) == []
+
+
+def kinds_of(text):
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        return kinds(Path(d), text)

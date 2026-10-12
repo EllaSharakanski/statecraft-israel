@@ -1,6 +1,6 @@
 # Example: the turn grid reaches an era boundary
 
-<!-- A filled-in example of the template, built from a rule that already exists in the sim. Not a new design. -->
+<!-- A filled-in example of the template, built from a rule the chapters design already sets (§4.1). Not a new design. -->
 
 ## Player story
 
@@ -21,7 +21,7 @@ As a player in a chapter, I want each turn to end exactly on the date the next c
 ## Done when
 
 - A two-era test lands on the boundary date and the game goes on.
-- No turn in the run is shorter than 7 days or longer than 21 days.
+- An adjusted weekly turn is never shorter than 7 days or longer than 21 days.
 - The golden hashes do not move.
 
 ## Out of scope

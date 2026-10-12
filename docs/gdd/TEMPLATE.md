@@ -1,6 +1,6 @@
 # <Feature name>
 
-<!-- Copy this file to docs/gdd/<feature>.md. `python3 scripts/oss/gdd_lint.py` checks it. Replace every line below. -->
+<!-- Copy this file to docs/gdd/<feature>.md. `uv run scripts/oss/gdd_lint.py` checks it. Replace every <...> below; the linter fails a file that still has one. -->
 
 ## Player story
 
@@ -31,9 +31,9 @@ As a <player role>, I want <what>, so that <why>.
 
 ## Sources
 
-<!-- One per line, with a link or a repo path: -->
+<!-- One per line: a link with the day you checked it (docs/CONTENT_POLICY.md), or a repo path. -->
 
-- [S1] <title>, <https://... or docs/...>
+- [S1] <title>, <https://...>, checked <YYYY-MM-DD>
 
 ## Open questions
 
