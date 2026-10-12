@@ -47,6 +47,8 @@ namespace Statecraft.Sim
             var rules = c.RulesAt(s.Date);   // the era the turn starts in
             var rule = rules.MapActions.TryGetValue(action, out var x) ? x : null;
             if (rule == null) return "That map action is not available in this game";
+            if ((rule.From.HasValue && s.Date < rule.From.Value) || (rule.To.HasValue && s.Date >= rule.To.Value))
+                return "That map action is not available at this time";
             if (s.Date < rules.MapActionsFrom)
                 return $"Transit camps and housing projects can be placed from {PlayerText.Date(rules.MapActionsFrom)}";
             if (action == TransitCamp && !(s.Policies.TryGetValue(MaabarotPolicy, out var m) && m >= 0.5))
