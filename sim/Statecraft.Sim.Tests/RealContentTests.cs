@@ -186,6 +186,15 @@ public class RealContentTests
         // #225: Yosef held Rationing from 10 March 1949 (Knesset OData, gov1.pdf). Agriculture was unassigned until 22 March 1949.
         Assert.Null(Offices.Holder(C, "agriculture_minister", new DateTime(1949, 3, 21)));
         Assert.Equal("dov_yosef", Offices.Holder(C, "agriculture_minister", new DateTime(1949, 3, 22))!.Id);
+        // #310: Trade and Industry and Health were assigned on 22 March 1949 too (plenum 1_ptm_250087, Knesset OData).
+        foreach (var (office, holder) in new[] { ("trade_minister", "kaplan"), ("health_minister", "shapira") })
+        {
+            Assert.Null(Offices.Holder(C, office, new DateTime(1949, 3, 10)));
+            Assert.Null(Offices.Holder(C, office, new DateTime(1949, 3, 21)));
+            Assert.Equal(holder, Offices.Holder(C, office, new DateTime(1949, 3, 22))!.Id);
+        }
+        Assert.Equal("bernstein", Offices.Holder(C, "trade_minister", new DateTime(1949, 3, 9))!.Id);
+        Assert.Equal("shapira", Offices.Holder(C, "health_minister", new DateTime(1949, 3, 9))!.Id);
         Assert.Equal((30, 37), PoliticsSystem.CoalitionSeats(C, new DateTime(1948, 6, 1)));
         Assert.Equal((73, 120), PoliticsSystem.CoalitionSeats(C, new DateTime(1949, 6, 1)));
         Assert.Equal(101828, C.Aliyah[0].Origins.Values.Sum());
@@ -228,7 +237,7 @@ public class RealContentTests
         Assert.Equal("ben_gurion", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 23))!.Id);
         Assert.Equal("serlin", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 24))!.Id);
         Assert.Equal("yosef_sapir", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 29))!.Id);
-        var term = C.People.Single(p => p.Id == "ben_gurion").Offices.Single(t => t.Office == "transportation_minister");
+        var term = C.People.Single(p => p.Id == "ben_gurion").Offices.Single(t => t.Office == "transportation_minister" && t.From < new DateTime(1953, 1, 1));   // the 1953 one is #314's gap
         Assert.Equal(new DateTime(1952, 12, 24), term.To);
         Assert.NotEmpty(term.Sources);
     }

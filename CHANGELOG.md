@@ -13,6 +13,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
   whole window of the record using it; an event that fires after its window leaves out records that have ended. With no
   dates nothing changes (goldens unchanged). Offices and regions come later.
+- Offices accept `successor`, the office that takes over when this one is abolished (chapters spec 3.2, refs #57). The
+  loader refuses an unknown or self successor, one without `until`, one not in office at the handover, and one that
+  could not own the budget lines and policies it takes over (several holders, or a historical title). Nothing reads it
+  yet. Goldens unchanged.
 - Aliyah regions accept `from`/`to` (chapters spec 3.2, refs #57). The loader refuses a window that runs backwards or is
   empty, and an aliyah period that counts a region outside its window. With no dates nothing changes (goldens unchanged).
 - Map: today's name of a 1948 locality by tap and in the info panel. A tap on a locality pill toggles its tooltip, a tap
@@ -175,6 +179,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Inland lowlands are no longer labelled "Coastal plain" (refs #204). `tools/hexgrid.py` now measures the distance from
+  each hex centre to the shore and keeps `coastal_plain` for 0 to 200 m land within 25 km of it. Further inland the new
+  biome `lowland` ("Inland lowland") applies: 30 of the 109 coastal plain hexes change, among them the hex that holds
+  Tiberias, Afula and the Hula valley margin. The map colours, the info panel text (English and Hebrew) and the land
+  tools know the new name. The change moves the content hash, so an old save shows the content-changed warning once. The
+  golden hashes do not move, because the sim does not read `biome`.
 - Rationing no longer has a vacant minister from 24 December 1952. The Knesset records show no Ministry of Rationing and
   Supply in the Fourth Government, and on 4 May 1953 the Minister of Trade and Industry, Peretz Bernstein, told the
   Knesset that his ministry held the supply tasks and, to some extent, rationing. He answers for rationing until
@@ -230,6 +240,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
+  June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
+  Knesset's position records show no break; the plenum record of the resignation and of the new declarations of
+  allegiance is used. The goldens do not move (fixes #314).
+- Eliezer Kaplan's Trade and Industry term and Haim-Moshe Shapira's Health term in the First Government start on 22
+  March 1949, not 10 March: on 22 March the Prime Minister told the Knesset the government had assigned them, and the
+  Knesset's position records give the same date. The goldens do not move (fixes #310).
 - The Unity idle test `PromoScreensTests.AnOpenScreenIsStillWhenIdle` no longer fails now and then (#242). It was not a
   font atlas and not a recurring layout. A batch-mode editor runs few frames, and now and then it tells
   `UIDocument` late that the test's GameObject exists. `UIDocument` then re-adds its root and the whole screen lays out
