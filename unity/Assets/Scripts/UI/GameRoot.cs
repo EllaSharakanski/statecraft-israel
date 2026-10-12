@@ -142,20 +142,22 @@ namespace Statecraft.Game.UI
             Own(new WhyPresenter(root, bridge, text));
             Own(new CabinetPresenter(root, bridge, text, portraits));
             var names = SettlementPlacer.Parse(inputs.Map.SettlementsYaml).ToDictionary(s => s.Id, s => s.Name);
-            // The 1948 sub-districts, outlined on the map (display only: the sim never reads them; docs/visual-v1.md).
-            var subdistricts = Subdistricts1948.Show(inputs.Map.RegionsYaml, bridge.State.Date);
+            // The 1948 sub-districts, outlined on the map, and each front's 1949 armistice line from its agreement's date
+            // where the line exists (display only: the sim never reads them; docs/visual-v1.md, owner rulings 2026-10-11).
+            var regions = new MapRegions(Subdistricts1948.Parse(inputs.Map.RegionsYaml),
+                string.IsNullOrWhiteSpace(inputs.Map.ArmisticeYaml) ? null : Armistice1949.Parse(inputs.Map.ArmisticeYaml));
             var layerLabel = root.Q<Label>("map-layer");
-            layerLabel.text = subdistricts.Label;
-            // Shown from the start until replaced (owner ruling 2026-10-11), with its label while drawn.
             Action onDate = () =>
             {
-                subdistricts.Apply(bridge.State.Date);
-                layerLabel.style.display = subdistricts.Shown ? DisplayStyle.Flex : DisplayStyle.None;
+                regions.Apply(bridge.State.Date);
+                layerLabel.text = regions.Label(bridge.State.Date, text["map.layer_with_armistice"], text["map.layer_front_no_data"],
+                    text["map.layer_front_low"], text["map.layer_front_note"]);
+                layerLabel.style.display = regions.Shown ? DisplayStyle.Flex : DisplayStyle.None;
             };
             onDate();
             bridge.Changed += onDate;
             owned.Add(new Undo(() => bridge.Changed -= onDate));
-            var info = Own(new InfoPanelPresenter(root, bridge, text, names, subdistricts));
+            var info = Own(new InfoPanelPresenter(root, bridge, text, names, regions));
             // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
             // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
             // right on every platform, and the scripted run never presses it.
@@ -169,8 +171,11 @@ namespace Statecraft.Game.UI
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
             var oldBounds = cameraController.Bounds;
+            var oldGround = cameraController.Ground; var oldTop = cameraController.GroundTop;
             cameraController.IsOverUi = overUi;
             cameraController.Bounds = new Rect(terrain.transform.position.x, terrain.transform.position.z, size.x, size.z);
+            cameraController.Ground = CameraController.GroundOf(terrain);
+            cameraController.GroundTop = CameraController.GroundTopOf(terrain);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
             Action<int, int> onHex = info.Show;
@@ -179,7 +184,7 @@ namespace Statecraft.Game.UI
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
             labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>()));
-            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); camRig.Apply(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
+            mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); cameraController.Settle(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
             // One console line per turn, so a browser run (reload, Continue) can be checked against the hash.
@@ -197,6 +202,7 @@ namespace Statecraft.Game.UI
                 if (cameraController.IsOverUi == overUi) cameraController.IsOverUi = null;
                 if (pointer.Map == map) pointer.Map = null;
                 cameraController.Bounds = oldBounds;
+                cameraController.Ground = oldGround; cameraController.GroundTop = oldTop;
             }));
             drawn = null;
             RenderPlacementsIfChanged();

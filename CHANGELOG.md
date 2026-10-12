@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- `content/eras.yaml` with the `founding` era (15 May 1948 to 1 January 1957), a `Content.EraAt(date)` lookup, and the end
+  of the last era: the turn that reaches it ends on it (a turn that would leave under 14 days is lengthened to it), the
+  game ends with the stable code `era_ended` and the text "The chapter has ended", and later orders are refused. The
+  rejection text for a finished game now shows the reason, not its code. The Why panel shows the end under a new
+  "Chapter" group. The golden hashes do not change (#56).
 - Region borders in the promo look (promo-borders): two-tone outlines along hex edges (a blue band with a white inner
   stripe, a red-orange band with a cream one), drawn inside each region by the terrain shader from one texel per hex, with
   a "borders" visual toggle. Visual only. No invented boundaries: the first real data is the 1948 sub-districts (below);
@@ -37,6 +42,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   as true lines (`content/map/subdistricts_1948.geojson`, sensitivity-reviewed); the map shows them snapped to hex edges in the
   blue border style, labelled "Mandate sub-districts, 1947" from the 1948 start until the 1949 armistice lines replace
   them; the info panel names a hex's sub-district and district. Display only: the sim does not read them.
+- The 1949 armistice lines on the map (armistice-lines, #196): from each agreement's date (the Mandate sub-district
+  layer's per-front switch) that front's armistice zones are drawn over the sub-districts, and the label and info panel
+  name its lines; the sub-district bands stay as the base. Egypt (24 Feb 1949): the El Auja Demilitarized Zone and the Gaza-Rafah line from the
+  Wadi Hasi to Gaza, and from 22 Feb 1950 the line on the signed modus vivendi map; Lebanon (23 Mar 1949): the
+  international boundary; Jordan (3 Apr 1949, line A in the Iraqi sector by its May-July 1949 stages): low accuracy,
+  traced from a low-resolution copy of the signed map and labelled so, Jerusalem left out; Syria (20 Jul 1949): the line
+  through Annex I's points and the three-part Demilitarized Zone, from the annexed 1:50,000 map. Stored as true lines
+  (`content/map/armistice_lines_1949.geojson`, status draft), drawn snapped to hex edges in the red-orange style; the
+  info panel names the line or zone and its agreement. Display only: the sim does not read them.
 - Open-source release (public since 2026-10-10): licences (MIT code, CC BY-SA 4.0 content, CC BY 4.0 original docs
   and art, CC0 for AI-only images), asset provenance (`ASSETS.yaml`), contributor
   and content policies, CI for the sim, tools and repository policy.
@@ -150,3 +164,6 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - "International Standing" keeps to one line on a full-width bar.
 - The open sea no longer shows a blocky checker up close (about 6-20 km): its waves now come from smooth gradient noise
   on rotated lattices instead of value noise differenced along the map's axes. Presentation only.
+- Panning past the map's edge no longer fills the view with flat land and a hard seam: the camera stops where the view
+  meets the edge of the map, and at close zoom over high ground (the Golan, the Galilee hills) it no longer sinks into
+  the hills. At the overview, where the view is wider than the map, it is centred east to west (#174).
