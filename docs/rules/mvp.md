@@ -2,7 +2,7 @@
 
 The rules of the 1948–1951 MVP in [docs/GDD.md](../GDD.md), as Phase 1 builds them behind the `systems.loop` switch
 ([the approved plan](../superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md), §6). Balance values are the owner's.
-Until the owner sets them, they are placeholders marked `# PLACEHOLDER: owner sets` in `content/`.
+Until the owner sets them, they are placeholders in the dev and test overlay (`MvpSlice.Overlay`) or in test fixtures, never in `content/`.
 
 ## Turns
 
