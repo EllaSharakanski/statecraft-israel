@@ -57,7 +57,7 @@ def render(rows: list[dict]) -> str:
     for r in rows:
         flags = (" NO-DATE" if r["checked"] is None else "") + ("" if r["url"].startswith("https://") else " http")
         age = "?" if r["age"] is None else str(r["age"])
-        lines.append(f"{age:>5}d  {r['checked'] or '-':<10}  {r['file']}  {r['url']}{flags}")
+        lines.append(f"{age:>5}d  {str(r['checked'] or '-'):<10}  {r['file']}  {r['url']}{flags}")
     lines.append(f"{len(rows)} sources")
     return "\n".join(lines)
 

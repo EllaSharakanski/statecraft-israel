@@ -37,3 +37,7 @@ def test_older_than_keeps_stale_and_undated(tmp_path, capsys):
 def test_real_content_has_sources_and_all_are_dated():
     rows = m.collect(ROOT, date.today())
     assert rows and all(r['checked'] is not None for r in rows)
+
+
+def test_render_shows_the_date(tmp_path):
+    assert '2026-10-10' in m.render(m.collect(repo(tmp_path), TODAY))
