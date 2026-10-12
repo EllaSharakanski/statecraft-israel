@@ -1826,6 +1826,24 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - Every budget holds: all − none is under 8 ms, and the p95 at gameplay03 is under 16.7 ms. The diorama02 p95 of 20-21
     ms is main's too (the villages section).
 
+- **Boot** (`headed.py boot --runs 3`, three interleaved rounds per side, so 9 runs each; main `2b7212e` against this
+  branch's final head; `machine_lock.py --exclusive --wait-unity`, 2026-10-12).
+  - Other sessions loaded the machine (load average 6.5 rising to 25), so single runs reach 3.3 s at cpu 4. The medians
+    and the "kits built" phase are the fair comparison.
+
+  | | map_build median | `kits built` phase median | first_frame median |
+  |---|---|---|---|
+  | cpu 4, main | 2739 ms | 570 ms | 9494 ms |
+  | cpu 4, round 2 | 2679 ms | 563 ms | 8750 ms |
+  | cpu 1, main | 659 ms | 132 ms | 4029 ms |
+  | cpu 1, round 2 | 662 ms | 138 ms | 4020 ms |
+
+  - The towns add about nothing to the boot: the kit phase is 7 ms lighter at cpu 4 and 6 ms heavier at cpu 1.
+  - The lattice checks are cheap first, and only towns with water near them run the beach test.
+  - The earlier session on a quieter machine (main `a3202ad`, before those cuts) measured map_build 2668 → 2683 ms at
+    cpu 4 (6 runs each), with the cpu 1 kit phase 129 → 137 ms.
+  - The budget at cpu 4 is 2720 ms; #195 needs about 100 ms of it. Towns round 2 takes none.
+
 ### Sources (checked 2026-10-12)
 - Tel Aviv:
   - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
