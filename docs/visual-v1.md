@@ -1640,12 +1640,28 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
       to 172 ms.
     - Main itself grew 75 ms since c2089b4 (#250's unit placement, #251's routes). The branch adds about 165 ms over
       main at cpu 4, nearly all of it the localities file's YAML scan.
-    - **Open:** map_build is over the 2720 ms budget at cpu 4 (25 ms before the last merge of main, 130 ms after it; main
-      was not re-measured after #255). The branch's own phase, `localities parsed`, is 166 to 172 ms. Getting
-      under it needs one of these:
-      - a smaller runtime form of the localities file (for example a baked compact file beside the sourced YAML);
-      - deferring the villages' kit build until after the first frame;
-      - an owner ruling to re-baseline the budget on today's main.
+    - **Resolved by a baked runtime file (coordinator ruling 2026-10-12: fix the root cause, not defer the kit build or
+      re-baseline the budget):**
+      - `localities_1948.yaml` stays the sourced, hand-edited source of truth.
+      - `tools/localities_bake.py` bakes it into `localities_1948.tsv`: 26k characters against 176k, one tab-separated
+        row per place or camp.
+      - The player reads the file with `Localities.ParseRuntime` (a split, no YAML), with the same checks as the YAML
+        reader. Errors name `file:line`.
+      - The manifest ships the .tsv and no longer the YAML.
+      - pytest fails a stale bake; `KitTests.TheRuntimeFileYieldsTheSameRowsAsTheYaml` compares every row.
+      - The `localities parsed` phase went from 172 ms to 53 ms. Main and the branch now boot within noise of each other.
+
+      Measured at cpu 4, three runs each, interleaved, exclusive lock, 2026-10-12:
+
+      | build | map_build | first_frame |
+      |---|---|---|
+      | main 316a042, round 1 | 2573 ms | 8113 ms |
+      | this branch f715717, round 1 | 2588 ms | 8229 ms |
+      | main 316a042, round 2 | 2610 ms | 8234 ms |
+      | this branch f715717, round 2 | 2553 ms | 8131 ms |
+
+      The branch is 130 to 170 ms under the 2720 ms budget: real headroom for the towns' round 2. That round should bake
+      the same way.
   - The growth is the localities file's parse: the `localities parsed` boot phase is 50 ms at cpu 1 and 220 ms at cpu 4.
     It is not the ground tint, which the player logs as `KITS ground_tint_ms=0.8`. My earlier attribution to the tint was
     checked with that timer and was wrong; the earlier "terrain heights set" growth was the parse that ran before it.
