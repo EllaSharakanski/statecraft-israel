@@ -120,7 +120,8 @@ namespace Statecraft.Sim
             var oldParty = Offices.PartyOf(c, displaced, s.Date);
             var newParty = Offices.PartyOf(c, person, s.Date);
             bool sameParty = oldParty != "" && oldParty == newParty;
-            var cost = sameParty ? c.Rules.AppointStabilityCostSameParty : c.Rules.AppointStabilityCostOtherParty;
+            var rules = c.RulesAt(s.Date);
+            var cost = sameParty ? rules.AppointStabilityCostSameParty : rules.AppointStabilityCostOtherParty;
             if (cost <= 0) return null;
             var before = s.CoalitionStability;
             s.CoalitionStability = Math.Max(0, before - cost);

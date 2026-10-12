@@ -41,9 +41,13 @@ public class TownCensusTests
         // The corridors MapScene.Build gives the kits: the routes and the units' clearings.
         foreach (var c in map.RouteCorridors) g.AddCorridor(c.line, c.halfWidth);
         foreach (var c in map.UnitClearings) g.AddCorridor(new List<Vector2> { c.centre, c.centre + Vector2.right }, c.radius);
-        var built = SettlementKits.Build(map.Settlements, g, out _, out placed);
-        foreach (var k in built) Object.DestroyImmediate(k.mesh);
+        // With the 1948 localities, as the map builds them (their landmarks claim their hearts before any town's houses).
+        var localities = map.Localities.Select(p => p.Settlement).ToList();
+        var built = SettlementKits.Build(map.Settlements, localities, new List<Localities.Area>(), g, out placed);
+        foreach (var k in built.Towns) Object.DestroyImmediate(k.mesh);
+        foreach (var t in built.Tiles) Object.DestroyImmediate(t.mesh);
         var rows = new List<Row>();
+        var towns = new HashSet<string>(map.Settlements.Select(t => t.Id));
         foreach (var s in map.Settlements)
         {
             var w = map.Frame.ToWorld(s.Lon, s.Lat, 0); var centre = new Vector2(w.x, w.z);
@@ -60,7 +64,8 @@ public class TownCensusTests
                     float d = (p - centre).magnitude / R;
                     if (d > 1f || g.Water(p.x, p.y)) continue;
                     bool own = true;
-                    foreach (var f in g.Footprints) if (f.id != s.Id && (p - f.centre).magnitude / f.radius < d) { own = false; break; }
+                    // Its cell among the game settlements (a town's houses ignore the 1948 localities' cells).
+                    foreach (var f in g.Footprints) if (f.id != s.Id && towns.Contains(f.id) && (p - f.centre).magnitude / f.radius < d) { own = false; break; }
                     if (!own) continue;
                     bool hit = mine.Any(b => Inside(p, b));
                     row.LandCells++; if (hit) covered++;

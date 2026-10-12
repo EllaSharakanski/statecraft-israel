@@ -19,18 +19,23 @@ namespace Statecraft.Game.Boot
 
         /// <summary>Map files that only the offline tools read, so players never download them: routes_1948.yaml is the
         /// hand-written input of tools/routes_1948.py; the map reads its traced output (review M10).</summary>
-        public static readonly IReadOnlyCollection<string> ToolInputs = new HashSet<string> { "map/routes_1948.yaml" };
+        /// localities_1948.yaml is the sourced input of tools/localities_bake.py; the map reads its baked runtime form.
+        public static readonly IReadOnlyCollection<string> ToolInputs = new HashSet<string> { "map/routes_1948.yaml", "map/localities_1948.yaml" };
+
+        /// <summary>Baked map files that are not YAML, listed when present: the 1948 localities' runtime form (boot budget).</summary>
+        public static readonly IReadOnlyList<string> RuntimeData = new[] { "map/localities_1948.tsv" };
 
         [Serializable] sealed class ManifestJson { public string[] files = new string[0]; }
 
-        /// <summary>Every *.yaml in <paramref name="contentDir"/>, events/ and map/ (but <see cref="ToolInputs"/>), plus
+        /// <summary>Every *.yaml in <paramref name="contentDir"/>, events/, map/ and rules/ (era rule overrides, #58; the folder may be absent) (but <see cref="ToolInputs"/>), plus
         /// map/hexes.json; ordinal order.</summary>
         public static List<string> Collect(string contentDir)
         {
-            IEnumerable<string> Yaml(string sub) => Directory.GetFiles(Path.Combine(contentDir, sub), "*.yaml")
+            IEnumerable<string> Yaml(string sub) => sub == "rules" && !Directory.Exists(Path.Combine(contentDir, sub)) ? new string[0] : Directory.GetFiles(Path.Combine(contentDir, sub), "*.yaml")
                 .Select(f => (sub == "" ? "" : sub + "/") + Path.GetFileName(f));
             if (!File.Exists(Path.Combine(contentDir, HexesJson))) throw new FileNotFoundException("content file missing", HexesJson);
-            return Yaml("").Concat(Yaml("events")).Concat(Yaml("map")).Append(HexesJson)
+            return Yaml("").Concat(Yaml("events")).Concat(Yaml("map")).Concat(Yaml("rules")).Append(HexesJson)
+                .Concat(RuntimeData.Where(f => File.Exists(Path.Combine(contentDir, f))))
                 .Where(f => !ToolInputs.Contains(f)).OrderBy(f => f, StringComparer.Ordinal).ToList();
         }
 

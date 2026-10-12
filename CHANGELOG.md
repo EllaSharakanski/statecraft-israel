@@ -8,11 +8,36 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Rules per era (#58, second piece): the attention, economy, population, security, map-action and cabinet systems read
+  `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
+  HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
+  system reads the base rules directly for anything but a start value.
+- JSON Schemas for `people.yaml`, `offices.yaml`, `parties.yaml` and the event files (#265), in `content/schema/`. Each file
+  names its schema on the first line, so an editor with a YAML language server flags a wrong field name or a missing
+  `sources:` as you type. `SchemaTests` checks all real content against them, keeps their field names equal to the loader
+  types and checks that they reject the usual mistakes. The comment changes the content hash, so an old save shows the
+  content-changed warning once. The golden hashes do not move.
+- The Fourth to Seventh Governments (24 December 1952 to 1956) with their coalitions and the ministers' dated terms,
+  the 1953-1956 deputy ministers, the Ministries of Postal Services (from 3 November 1952) and Development (from
+  15 June 1953), and the Chiefs of Staff Maklef and Dayan. Dates follow the Knesset's own position records and plenum
+  minutes, checked against both Wikipedias. The Third Government now ends on 24 December 1952 and gains its 1952 changes:
+  Haim Cohn at Justice, Lavon without portfolio, Nurock at Postal Services, and Welfare vacant after Levin left on
+  18 September (refs #26).
+- A golden-hash failure now shows what changed (#256): `GameState.Describe()` writes the state `Hash()` hashes as readable
+  lines, each golden run's final state is committed under `sim/Statecraft.Sim.Tests/golden/`, and a failing golden test
+  prints the changed lines by section. `STATECRAFT_UPDATE_GOLDEN=1 dotnet test` rewrites the snapshots. `Hash()` is
+  unchanged, so the goldens do not move.
 - A start screen (#247): a painting of the 14 May 1948 ceremony in the Tel Aviv Museum hall (AI-generated concept art
   with no identifiable person), two lines of the Declaration of Independence in the official Hebrew with the official
   English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
   runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
   Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
+- Rules per era (#58, first piece): an era can override `rules.yaml` keys in `content/rules/<era>.yaml` (only the keys it
+  changes; maps merge key by key, a list or a value replaces). The merged rules are read with the strict `Rules` type, so a
+  misspelt key or wrong type fails naming the era file and line, start values (`treasury_start`, `start_rung` and so on) are
+  refused, a file that names no era is refused, and `rules/` is in the player manifest. They are checked like `rules.yaml`. `Content.RulesAt(date)` returns the rules of
+  the era a date is in (built once at load); the founding era has no file, so its rules are `rules.yaml`. Nothing reads
+  `RulesAt` yet, so the goldens do not move.
 - Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
   dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
   reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
@@ -32,6 +57,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - A portrait of Chaim Weizmann: a crop of a Bain News Service photo, ca. 1915-1920, from the Library of Congress
   (US public domain, PD-Bain; an earlier likeness than his presidency; #6).
 - A portrait of Yaakov Dori: a crop of Willem van de Poll's 1949 Nationaal Archief photo (CC0; #6).
+- The Third Knesset and the 26 July 1955 election results (seats by list), with the National Religious Front and the
+  Religious Torah Front as parties; the Second Knesset now ends on 15 August 1955 (refs #26).
 - Hebrew UI translation data with key and format-token checks; not yet enabled in the game (#12).
 - A local multi-size favicon for the WebGL page.
 - A portrait of Zalman Shazar: a crop of Yoichi Okamoto's 1966 White House photo (US public domain, PD-USGov; #6).
@@ -75,6 +102,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   stone Jaffa with its harbour, Arab towns, moshavot and kibbutzim sized by their 1945 population
   (`content/map/settlement_population_1945.yaml`), with citrus groves, olives, palms and cypresses, at the owner's
   symbolic scale (about 60x real size for city blocks, 100x for houses and trees). Presentation only (#31, #32, #34).
+- Map: the 271 other places of 1,000 or more people on 15 May 1948 (Village Statistics, 1945) as Arab village and Jewish
+  settlement kits beside the 25 game settlements (Nesher as a mixed locality), named by their 1948 names at close zoom,
+  with today's name in a tooltip only where a living place carries on, and a light scatter of Bedouin camps sized by
+  each sub-district's listed tribal total (`content/map/localities_1948.yaml`, draft; the player reads its baked
+  compact form, `localities_1948.tsv`, from `tools/localities_bake.py`). The unit tokens keep off the
+  villages and camps as they do off the towns. Presentation only: the sim never reads the file.
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.
@@ -104,6 +137,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The game settlements Lod and Ramla show their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them
+  (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
+  "different game content" warning.
 - Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
   of random spots (235 buildings on main, now several times more; Tel Aviv, Jaffa and the small towns read as dense
   miniatures). Old Jaffa is packed small stone houses; Tel Aviv's white blocks are taller in the core (promo ruling);
@@ -159,6 +195,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Ministry of Rationing and Supply, and Dov Yosef as its minister, now start on 10 March 1949, when the First
+  Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The
+  Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move; the
+  content hash does, so an older save loads with the "different game content" warning (#225).
 - Railways keep their width outside the gorges: a rail band narrows only where the ground leaves its tolerance on both
   sides (a gorge floor, a gorge side, a ridge), not for one hill or one drop beside the line. The Jaffa–Jerusalem line
   keeps 94.9% of its width outside the Sorek (87.4% before) and the Jezreel Valley line 92.1% outside its gorges (82.8%).

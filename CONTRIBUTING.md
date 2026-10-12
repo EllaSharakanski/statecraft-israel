@@ -11,6 +11,8 @@ Thanks for helping. This file covers how to get set up, the rules every change f
 
 If you're unsure where to start, open an issue first and describe what you want to do.
 
+**Picking an issue.** Issues with the label `ready for a contributor` are the easiest to start. They come from the **Task** issue form: a goal, the files likely touched, the commands that must pass, the agreed sources, what needs the maintainer's sign-off, and whether Unity is needed. When every field is filled, you can finish the work without asking the maintainer. If a field is missing or unclear, ask in the issue before you start. The label `needs-unity` marks an issue you cannot finish without Unity (see "Without Unity" in [docs/dev-setup.md](docs/dev-setup.md)); `area: unity` only says the issue touches `unity/`.
+
 ## Licence of your contribution
 
 There is no CLA and no sign-off. By opening a pull request you agree that your contribution is licensed under this repository's licences, as GitHub's Terms of Service (section D.6) also say:
@@ -37,7 +39,7 @@ Follow [docs/dev-setup.md](docs/dev-setup.md). In short:
 3. **Tests first.** Add or change a test that fails without your change, then make it pass. Run:
    - `dotnet test sim/Statecraft.sln`, which must pass with 0 warnings (warnings are errors);
    - the tools tests (they need the .NET SDK too: one runs the sim's release gate):
-     `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q`;
+     `uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 --with pillow==12.3.0 --with requests==2.32.5 --with pyproj==3.8.0 pytest tools/tests -q`;
    - the repository policy checks:
      `uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q` and `uv run scripts/oss/check_repo.py` (the command CI runs);
    - Unity EditMode tests, if you touched `unity/` (`-buildTarget OSXUniversal` keeps an earlier WebGL build from leaving the editor on the wrong platform):
@@ -96,4 +98,4 @@ Never commit keys, tokens or `.env` files. Secret scanning and push protection a
 
 ## Conduct
 
-Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated. The full [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies in every project space, including its section on historical and political discussion. The content rules, and how to dispute a fact, are in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).
+Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated. The full [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies in every project space, including its section on historical and political discussion. The content rules, and how to dispute a fact, are in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md). A short sourcing checklist, including what to do when a source cannot be reached, is in [docs/SOURCING_FOR_CONTRIBUTORS.md](docs/SOURCING_FOR_CONTRIBUTORS.md).

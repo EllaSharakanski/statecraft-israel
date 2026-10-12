@@ -37,6 +37,25 @@ uv run tools/web_check.py unity/Builds/Web-<compression> --query "golden&smoke=5
   --expect "SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6"
 ```
 
+**When a golden moves.** The test fails with the lines that changed, grouped by section (`[ind]`, `[pol]`, `[bud]`,
+`[sit]` and so on), against a committed snapshot of the run's final state: `sim/Statecraft.Sim.Tests/golden/hash1950.txt`
+and `hash1952.txt`, written by `GameState.Describe()`, which uses the same writer as `Hash()` (so the two cannot list
+different fields) and shows every number as a plain value next to its IEEE bits. If the change is deliberate, run
+`STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln`: it rewrites the snapshots, so the PR's diff of them shows
+reviewers what moved. Then update the hash constants in the three places below by hand, and say why in the commit
+message. The snapshot test also fails if a snapshot is stale while the hash is unchanged.
+
+**Rules per era.** A system reads `Content.RulesAt(date)`, where `date` is the date of the state the turn starts from (`s.Date`
+before the step); `AttentionSystem.Refill` runs after the date moves, so it fills the next turn from that turn's era. Rules
+change only at era boundaries (chapters spec section 3.3). Spec section 4.1 will end the turn that reaches a boundary exactly
+on it, so every turn then lies in one era; until that lands, only the last era's end is a boundary turn, and a turn that
+starts in one era and ends in the next uses the starting era's rules for its whole length
+(`EraRulesSwitchTests.ARunPicksUpTheOverrideFromTheFirstTurnThatStartsInTheNewEra`). Start
+values (`start`, `treasury_start`, `fx_start`, `start_rung`, `initial_population`, `budget_start`) are read once by `NewGame`
+from the base `rules.yaml`: an era override cannot set them. A map action's display name is also read from the base rules,
+because an override cannot remove an action. `EraRulesSwitchTests.OnlyStartValuesAndMapActionNamesReadTheBaseRulesDirectly`
+fails if a file in `sim/Statecraft.Sim` reads `Rules` directly for anything else, including a bare `var r = c.Rules;`.
+
 **Cause text is derived, not hashed.** The "Why did this happen?" lines (`Cause.Message`, `Cause.Delta`) are output
 computed from the hashed state; replaying a save's commands regenerates them. Wording changes therefore do not move the
 goldens (playtest 2 changed every line's casing with no hash change). They are still deterministic:
@@ -72,6 +91,14 @@ uv run tools/web_check.py unity/Builds/Web-disabled --query golden --expect "GOL
 
 The player needs an absolute `-logFile` path: with a relative one it wrote no log file in the check run. The editor
 commands are fine with relative paths.
+
+**A content change can move the content hash without moving a golden.** Settlement names, for example, are content (the
+hash covers `content/map/settlements_1948.yaml`) but not state. On 2026-10-12 the owner ruled that the game settlements
+`lod` and `ramla` take their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them ("Lydda (Urban)", "Ramle
+(Urban)"). That commit changed only those two names and added a source to each. Both goldens and the five-turn smoke are
+unchanged: .NET 667 of 667, and the WebGL `golden&smoke=5` check passes with the three values above. Only the content hash
+moved. A save made before it therefore loads with the "different game content" warning (`GameSession.Load`) and replays
+to the same state.
 
 **Any change to a golden hash is a deliberate rules or content change.** Such a change could be to a rule, a system,
 content in `content/`, or the hash format. When it happens, update every place above in the same commit, add a row to

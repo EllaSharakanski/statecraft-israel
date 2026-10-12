@@ -81,15 +81,45 @@ namespace Statecraft.Game.Map.Kits
         public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
             out List<(Vector2 centre, float radius, string id)> claimed, out List<Placed> placed, Dictionary<string, Bounds[]>? columns = null)
         {
+            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground, out placed, columns);
+            claimed = all.Claimed;
+            return all.Towns;
+        }
+
+        /// <summary>As the full Build, also listing everything placed (<see cref="Placed"/>), in placement order.</summary>
+        public static Result Build(IReadOnlyList<Settlement> towns, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
+            KitGround ground, out List<Placed> placed, Dictionary<string, Bounds[]>? columns = null)
+        {
             census = placed = new List<Placed>();
-            try { return BuildAll(list, ground, out claimed, columns); }
+            try { return Build(towns, localities, camps, ground, columns); }
             finally { census = null; }
         }
 
-        static List<(Settlement s, Mesh mesh, int buildings)> BuildAll(IReadOnlyList<Settlement> list, KitGround ground,
-            out List<(Vector2 centre, float radius, string id)> claimed, Dictionary<string, Bounds[]>? columns)
+        /// <summary>What <see cref="Build(IReadOnlyList{Settlement}, IReadOnlyList{Settlement}, IReadOnlyList{Localities.Area}, KitGround)"/>
+        /// made: one mesh per game settlement, and the 1948 localities and Bedouin camps merged into one mesh per
+        /// <see cref="TileM"/> tile (a few dozen draws for some three hundred places).</summary>
+        public sealed class Result
         {
-            var order = new List<Settlement>(list);
+            public List<(Settlement s, Mesh mesh, int buildings)> Towns = new List<(Settlement, Mesh, int)>();
+            public List<(string name, Mesh mesh)> Tiles = new List<(string, Mesh)>();
+            public List<(Vector2 centre, float radius, string id)> Claimed = new List<(Vector2, float, string)>();
+            public int LocalityBuildings, Camps, Tents;
+            /// <summary>Landmarks each game settlement built (SettlementKits.Landmarks.cs: a city's own, else its archetype's).</summary>
+            public Dictionary<string, int> TownLandmarks = new Dictionary<string, int>();
+        }
+
+        /// <summary>Side of the square tiles the localities' and camps' buildings are merged into (the trees' tile size).</summary>
+        public const float TileM = VegetationLayer.TileM;
+
+        /// <summary>Builds the game settlements (<paramref name="towns"/>) and the 1948 localities (<paramref name="localities"/>)
+        /// together on one lot list, largest first by population, then scatters the Bedouin camps of <paramref name="camps"/>
+        /// into the ground left free. Seeded: the same inputs draw the same map.</summary>
+        public static Result Build(IReadOnlyList<Settlement> towns, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
+            KitGround ground, Dictionary<string, Bounds[]>? columns = null)
+        {
+            var merged = new HashSet<string>();
+            foreach (var s in localities) merged.Add(s.Id);
+            var order = new List<Settlement>(towns); order.AddRange(localities);
             order.Sort((a, b) => KitPopulation.Of(b.Id).CompareTo(KitPopulation.Of(a.Id)) != 0
                 ? KitPopulation.Of(b.Id).CompareTo(KitPopulation.Of(a.Id)) : string.CompareOrdinal(a.Id, b.Id));
             var centres = new Dictionary<string, Vector2>();
@@ -99,57 +129,113 @@ namespace Statecraft.Game.Map.Kits
                 centres[s.Id] = new Vector2(w.x, w.z);
                 ground.Footprints.Add((centres[s.Id], FootprintRadiusM(s, ground.HexSizeM), s.Id));
             }
-            // One lot list for every town. Every town's landmarks first (largest town first), so no town's houses take
-            // another's landmark spot (a harbour, a wall); then the houses, largest town first.
+            var result = new Result();
+            var tiles = new SortedDictionary<(int, int), KitMesh>();
+            KitMesh Tile(Vector2 p)
+            {
+                var key = (Mathf.FloorToInt(p.x / TileM), Mathf.FloorToInt(p.y / TileM));
+                if (!tiles.TryGetValue(key, out var km)) tiles[key] = km = new KitMesh();
+                return km;
+            }
+            // One lot list for every town: a big town's buildings are placed first, and a neighbour's never overlap them.
             var lots = new Lots();
-            var meshes = new Dictionary<string, KitMesh>(); var streams = new Dictionary<string, KitRandom>(); var counts = new Dictionary<string, int>();
+            var streams = new Dictionary<string, KitRandom>(); var landmarks = new Dictionary<string, int>();
+            var spans = new Dictionary<string, List<(KitMesh km, int from, int to)>>();   // each locality's vertices in its tile
+            var townMeshes = new Dictionary<string, KitMesh>();
+            // Landmarks first: every game settlement's (largest first), then every locality's, each at its heart, before any
+            // houses. A village at a city's edge (Jammasin by Tel Aviv) keeps its heart, and no village takes a game town's
+            // landmark spot (review M8).
+            foreach (var pass in new[] { false, true })
+                foreach (var s in order)
+                {
+                    if (merged.Contains(s.Id) != pass) continue;
+                    var rnd = new KitRandom(s.Id, 1);
+                    var km = pass ? Tile(centres[s.Id]) : (townMeshes[s.Id] = new KitMesh());
+                    int from = km.VertexCount;
+                    // A game settlement's own landmarks (towns round 2: TownLandmarks), a locality's its archetype's.
+                    int n = pass ? BuildOne(s, centres[s.Id], ground, km, lots, Phase.Landmark, ref rnd, 0, null)
+                        : TownLandmarks(s, centres[s.Id], ground, km, lots, ref rnd);
+                    if (pass) { spans[s.Id] = new List<(KitMesh, int, int)> { (km, from, km.VertexCount) }; result.LocalityBuildings += n; }
+                    else result.TownLandmarks[s.Id] = n;
+                    landmarks[s.Id] = n; streams[s.Id] = rnd;
+                }
+            // Then the houses, largest place first. A game settlement's houses ignore the localities' cells (their landmarks'
+            // lots still stand): the 25 towns keep the ground they had before the villages came, and a village next to one
+            // (Fajja by Petah Tikva) fills in around its houses.
             foreach (var s in order)
             {
-                var rnd = new KitRandom(s.Id, 1);
-                var km = meshes[s.Id] = new KitMesh();
-                counts[s.Id] = PlaceLandmarks(s, centres[s.Id], ground, km, lots, ref rnd);
-                streams[s.Id] = rnd;
-            }
-            var result = new List<(Settlement, Mesh, int)>();
-            foreach (var s in order)
-            {
-                var rnd = streams[s.Id]; var km = meshes[s.Id];
-                int n = counts[s.Id] + PlaceHouses(s, centres[s.Id], ground, km, lots, ref rnd);
+                var rnd = streams[s.Id];
+                if (merged.Contains(s.Id))
+                {
+                    var tile = Tile(centres[s.Id]); int from = tile.VertexCount;
+                    result.LocalityBuildings += BuildOne(s, centres[s.Id], ground, tile, lots, Phase.Houses, ref rnd, landmarks[s.Id], null);
+                    spans[s.Id].Add((tile, from, tile.VertexCount));
+                    continue;
+                }
+                var km = townMeshes[s.Id];
+                int n = landmarks[s.Id] + PlaceHouses(s, centres[s.Id], ground, km, lots, ref rnd, merged);   // towns round 2: plot lattices
                 if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
-                result.Add((s, km.ToMesh(s.Id + "_kit"), n));
+                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
             }
-            claimed = lots.List.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
+            foreach (var area in camps)
+            {
+                var (c, t) = Encampments(area, ground, lots, Tile);
+                result.Camps += c; result.Tents += t;
+            }
+            // A locality's columns, from its own vertices in its tile (read before ToMesh drops the CPU copy).
+            if (columns != null)
+                foreach (var kv in spans)
+                {
+                    var pts = new List<Vector3>();
+                    foreach (var (km, from, to) in kv.Value) km.Positions(from, to, pts);
+                    if (pts.Count > 0) columns[kv.Key] = KitMesh.Columns(pts);
+                }
+            foreach (var kv in tiles) result.Tiles.Add(($"Localities {kv.Key.Item1},{kv.Key.Item2}", kv.Value.ToMesh($"localities_{kv.Key.Item1}_{kv.Key.Item2}")));
+            result.Claimed = lots.List.ConvertAll(l => (centre: l.c, radius: l.r, id: l.id));
             return result;
         }
 
         /// <summary>Tints the ground of each settlement's footprint in the baked biome colour texels (sRGB, row 0 = south):
-        /// pale paving and sand in the towns, as in promo 03, fading out over the outer half of the footprint.</summary>
+        /// pale paving and sand in the towns, as in promo 03, fading out over the outer half of the footprint. Review I6 (boot
+        /// budget, ~300 places): each row is clipped to the circle, the inner half (a constant weight) skips the square root
+        /// and the smoothstep, and the blend is in integers. Same weights as before, to within a 1/256 step.</summary>
         public static void PaintGround(Color32[] px, int res, GeoFrame frame, IReadOnlyList<Settlement> list, float hexSizeM)
         {
+            float sx = frame.WidthM / res, sz = frame.LengthM / res;
             foreach (var s in list)
             {
                 var arch = ArchetypeOf(s);
-                var (sand, strength) = arch switch
+                var (sandF, strength) = arch switch
                 {
                     Archetype.WhiteCity => (new Color(0.80f, 0.75f, 0.64f), 0.62f),
                     Archetype.OldTown => (new Color(0.78f, 0.68f, 0.52f), 0.62f),
                     Archetype.ArabTown => (new Color(0.74f, 0.64f, 0.48f), 0.5f),
                     _ => (new Color(0.70f, 0.63f, 0.47f), 0.32f),
                 };
+                Color32 sand = sandF;
                 var c = frame.ToWorld(s.Lon, s.Lat, 0);
-                float R = FootprintRadiusM(s, hexSizeM) * 1.1f;
-                int x0 = Mathf.Max(0, Mathf.FloorToInt((c.x - R) / frame.WidthM * res)), x1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.x + R) / frame.WidthM * res));
-                int y0 = Mathf.Max(0, Mathf.FloorToInt((c.z - R) / frame.LengthM * res)), y1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.z + R) / frame.LengthM * res));
+                float R = FootprintRadiusM(s, hexSizeM) * 1.1f, R2 = R * R, inner2 = 0.25f * R2;
+                int full = Mathf.RoundToInt(strength * 256f);
+                int y0 = Mathf.Max(0, Mathf.FloorToInt((c.z - R) / sz)), y1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.z + R) / sz));
                 for (int y = y0; y <= y1; y++)
+                {
+                    float wz = (y + 0.5f) * sz - c.z, rest = R2 - wz * wz;
+                    if (rest <= 0f) continue;
+                    float half = Mathf.Sqrt(rest);   // the circle's half-width on this row
+                    int x0 = Mathf.Max(0, Mathf.FloorToInt((c.x - half) / sx)), x1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.x + half) / sx));
+                    int row = y * res;
                     for (int x = x0; x <= x1; x++)
                     {
-                        float wx = (x + 0.5f) / res * frame.WidthM - c.x, wz = (y + 0.5f) / res * frame.LengthM - c.z;
-                        float d = Mathf.Sqrt(wx * wx + wz * wz) / R;
-                        if (d >= 1f) continue;
-                        float w = strength * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 1f, d)));
-                        int i = y * res + x;
-                        px[i] = Color32.Lerp(px[i], sand, w);
+                        float wx = (x + 0.5f) * sx - c.x, d2 = wx * wx + wz * wz;
+                        if (d2 >= R2) continue;
+                        int w = d2 <= inner2 ? full
+                            : Mathf.RoundToInt(256f * strength * (1f - Mathf.SmoothStep(0f, 1f, (Mathf.Sqrt(d2) / R - 0.5f) * 2f)));
+                        if (w <= 0) continue;
+                        ref var p = ref px[row + x];
+                        p.r = (byte)(p.r + (((sand.r - p.r) * w) >> 8)); p.g = (byte)(p.g + (((sand.g - p.g) * w) >> 8));
+                        p.b = (byte)(p.b + (((sand.b - p.b) * w) >> 8));
                     }
+                }
             }
         }
 
@@ -312,14 +398,15 @@ namespace Statecraft.Game.Map.Kits
         }
 
         /// <summary>Places a town's houses on its lattices, nearest the centre first; returns how many.</summary>
-        static int PlaceHouses(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
+        static int PlaceHouses(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, HashSet<string>? ignoreCellsOf)
         {
             var arch = ArchetypeOf(s);
             float R = FootprintRadiusM(s, ground.HexSizeM), reach = R * PlotReach;
             var lattices = Lattices(s, arch);
 
             // A point belongs to the settlement whose footprint it is deepest inside (distance over radius), so Jaffa and Tel
-            // Aviv, or Lod and Ramla, meet along a seam instead of overlapping.
+            // Aviv, or Lod and Ramla, meet along a seam instead of overlapping. The 1948 localities' cells (ignoreCellsOf) do
+            // not count: a game settlement keeps the ground it had before the villages came (their landmarks' lots still stand).
             bool Mine(Vector2 p)
             {
                 float mine = (p - centre).magnitude / R;
@@ -328,7 +415,8 @@ namespace Statecraft.Game.Map.Kits
                 for (int k = 0; k < near.Count; k++)
                 {
                     int i = near[k];
-                    if (fp[i].id != s.Id && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
+                    if (fp[i].id != s.Id && (ignoreCellsOf == null || !ignoreCellsOf.Contains(fp[i].id))
+                        && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
                 }
                 return true;
             }
@@ -607,6 +695,270 @@ namespace Statecraft.Game.Map.Kits
             }
             return c;
         }
+
+        // ---- The 1948 localities (promo-villages) ---------------------------------------------------------------------
+
+        /// <summary>Which part of a settlement BuildOne places: only its landmark (the first passes: every game settlement's,
+        /// then every locality's, claims its heart before any houses), or only its houses (continuing the same random stream,
+        /// so a place draws as it would in one pass).</summary>
+        enum Phase { Landmark, Houses }
+
+        /// <summary>A 1948 locality's landmark or houses (promo-villages): random spots over its disc, its archetype's buildings,
+        /// clear of the grid's edge midpoints. The 25 game settlements use TownLandmarks and PlaceHouses (towns round 2).</summary>
+        static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, Phase phase, ref KitRandom rnd, int landmarksBefore,
+            HashSet<string>? ignoreCellsOf)
+        {
+            var arch = ArchetypeOf(s);
+            float R = FootprintRadiusM(s, ground.HexSizeM);
+            float m = KitScale.For(arch);
+            int placed = 0;
+
+            // This settlement's cell: a point belongs to the settlement whose footprint it is deepest inside (distance over
+            // radius), so Jaffa and Tel Aviv, or Lod and Ramla, meet along a seam instead of overlapping.
+            bool Mine(Vector2 p)
+            {
+                float mine = (p - centre).magnitude / R;
+                var fp = ground.Footprints;
+                var near = fp.Near(p);
+                for (int k = 0; k < near.Count; k++)
+                {
+                    int i = near[k];
+                    if (fp[i].id != s.Id && (ignoreCellsOf == null || !ignoreCellsOf.Contains(fp[i].id))
+                        && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
+                }
+                return true;
+            }
+            bool Free(Vector2 p, float r) => FreeAt(lots, p, r);
+
+            // Landmarks first, at the centre (or the nearest dry spot to it).
+            if (phase != Phase.Houses) placed += PlaceLandmark(s, arch, centre, R, ground, km, lots, ref rnd);
+            if (phase == Phase.Landmark) return placed;
+
+            bool mixed = Localities.IsMixed(s.Id);
+            int target = mixed ? Mathf.Max(TargetCount(Archetype.ArabTown, R), TargetCount(Archetype.Moshava, R)) : TargetCount(arch, R);
+            if (phase == Phase.Houses) target -= landmarksBefore;
+            int attempts = target * 30;
+            bool ring = s.Type == "moshav";   // Nahalal's ring of farmsteads round the public buildings
+            for (int i = 0; i < attempts && placed < target; i++)
+            {
+                // The disc grows slowly when the sea or a neighbour eats into it, so the count stays tied to the population.
+                float reach = R * (1f + 0.6f * i / attempts);
+                float u = rnd.Value(), a = rnd.Range(0f, 2f * Mathf.PI);
+                float rr = ring ? reach * rnd.Range(0.55f, 0.75f) : reach * Mathf.Pow(u, arch == Archetype.Moshava ? 0.5f : 0.62f);
+                var p = centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * rr;
+                if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !Mine(p)) continue;
+                float t = rr / R;   // 0 at the heart, 1 at the edge
+                // A mixed locality (Nesher, owner ruling 2026-10-12): Arab village houses on its west side, Jewish ones on its
+                // east, side by side.
+                var a2 = mixed ? (p.x < centre.x ? Archetype.ArabTown : Archetype.Moshava) : arch;
+                var b = Pick(a2, t, ref rnd, m);
+                if (!Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;   // off the railways and roads too
+                // A 1948 locality's house (only localities build houses with no ignoreCellsOf) keeps off the grid's edge midpoints.
+                if (phase == Phase.Houses && ignoreCellsOf == null && ground.OnGridMark(p, b.lotR)) continue;
+                if (ground.Slope(p.x, p.y, b.w) > (a2 == Archetype.ArabTown || a2 == Archetype.OldTown ? 0.6f : 0.35f)) continue;
+                // Corner and seaward checks: the whole footprint is dry.
+                if (ground.Water(p.x + b.w * 0.5f, p.y) || ground.Water(p.x - b.w * 0.5f, p.y) || ground.Water(p.x, p.y + b.d * 0.5f) || ground.Water(p.x, p.y - b.d * 0.5f)) continue;
+                float yaw = a2 == Archetype.WhiteCity || a2 == Archetype.Moshava
+                    ? GridYaw(s.Id) + (rnd.Chance(0.15f) ? 90f : 0f) + rnd.Range(-4f, 4f)
+                    : rnd.Range(0f, 90f);
+                lots.Add(new Lot { c = p, r = b.lotR, id = s.Id });
+                Emit(a2, p, yaw, b, ground, km, ref rnd);
+                placed++;
+            }
+            return placed;
+        }
+
+        /// <summary>A settlement's landmark at its heart (the dry spot nearest its centre): Jaffa's and the old towns', an Arab
+        /// town's or village's mosque (a 1948 locality's follows its Village Statistics religion columns: a church in
+        /// Christian Bethlehem, none in the Druze villages; a village's is smaller than a town's), a Jewish place's water
+        /// tower. Returns how many were built.</summary>
+        static int PlaceLandmark(Settlement s, Archetype arch, Vector2 centre, float R, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
+        {
+            var heart = DryNear(centre, ground, R * 0.3f, ref rnd);
+            if (Localities.LandmarkOf(s.Id) == Landmark.Mixed)   // a mixed locality: a mosque on its west side, a water tower on its east
+                return Mosque(s.Id, heart - new Vector2(R * 0.3f, 0f), ground, km, lots, ref rnd, 0.8f)
+                    + WaterTower(s.Id, heart + new Vector2(R * 0.35f, 0f), ground, km, lots);
+            switch (arch)
+            {
+                case Archetype.OldTown: return Mosque(s.Id, heart, ground, km, lots, ref rnd, 1.2f);   // no locality is an old town today
+                case Archetype.ArabTown:
+                    float size = s.Type == "village" ? 0.8f : 1f;
+                    switch (Localities.LandmarkOf(s.Id) ?? Landmark.Mosque)
+                    {
+                        case Landmark.Mosque: return Mosque(s.Id, heart, ground, km, lots, ref rnd, size);
+                        case Landmark.Church: return Church(s.Id, heart, ground, km, lots, size) ? 1 : 0;
+                        default: return 0;
+                    }
+                case Archetype.Moshava:
+                    return (Localities.LandmarkOf(s.Id) ?? Landmark.WaterTower) == Landmark.WaterTower
+                        ? WaterTower(s.Id, heart + new Vector2(R * 0.35f, -R * 0.2f), ground, km, lots) : 0;
+                default: return 0;
+            }
+        }
+
+        /// <summary>Buildings per settlement: the footprint area times the archetype's built-up share over its mean lot.</summary>
+        static int TargetCount(Archetype arch, float R)
+        {
+            float area = Mathf.PI * R * R, m = KitScale.For(arch);
+            float lot = arch switch
+            {
+                Archetype.WhiteCity => 21f * 15f, Archetype.OldTown => 11f * 10f, Archetype.ArabTown => 10f * 9f, _ => 10f * 8f,
+            } * m * m;
+            float share = arch switch { Archetype.WhiteCity => 0.36f, Archetype.OldTown => 0.46f, Archetype.ArabTown => 0.28f, _ => 0.09f };
+            return Mathf.Clamp(Mathf.RoundToInt(area * share / lot), 6, 900);
+        }
+
+        /// <summary>A locality's building, by archetype (promo-villages).</summary>
+        static Spec Pick(Archetype arch, float t, ref KitRandom rnd, float m)
+        {
+            float w, d; int storeys;
+            switch (arch)
+            {
+                case Archetype.WhiteCity:
+                    w = rnd.Range(15f, 26f); d = rnd.Range(11f, 18f);
+                    // Taller near the centre; a few landmarks taller still (the promo's skyline, owner ruling: promo wins).
+                    storeys = Mathf.RoundToInt(Mathf.Lerp(5.2f, 2.2f, t) + rnd.Range(-1.2f, 1.2f));
+                    if (t < 0.45f && rnd.Chance(0.07f)) storeys = rnd.Range(7, 10);
+                    storeys = Mathf.Clamp(storeys, 2, 9);
+                    break;
+                case Archetype.OldTown:
+                    w = rnd.Range(7f, 14f); d = rnd.Range(7f, 12f);
+                    storeys = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3.2f, 1.4f, t) + rnd.Range(-0.8f, 0.8f)), 1, 4);
+                    break;
+                case Archetype.ArabTown:
+                    w = rnd.Range(6.5f, 12f); d = rnd.Range(6f, 10f);
+                    storeys = rnd.Chance(Mathf.Lerp(0.45f, 0.1f, t)) ? 2 : 1;
+                    break;
+                default:
+                    w = rnd.Range(8f, 12f); d = rnd.Range(6.5f, 9f);
+                    storeys = rnd.Chance(0.15f) ? 2 : 1;
+                    if (rnd.Chance(0.06f)) { w = rnd.Range(18f, 28f); d = rnd.Range(8f, 10f); }   // a barn, a dining hall, a packing house
+                    break;
+            }
+            float storeyM = 3.3f;
+            float gap = arch switch { Archetype.WhiteCity => 1.25f, Archetype.OldTown => 0.92f, Archetype.ArabTown => 1.05f, _ => 2.4f };
+            return new Spec
+            {
+                w = w * m, d = d * m, h = storeys * storeyM * m, storeys = storeys,
+                lotR = 0.5f * Mathf.Sqrt(w * w + d * d) * m * gap * (arch == Archetype.OldTown ? 0.8f : 0.72f),
+            };
+        }
+
+        /// <summary>Draws a locality's building (promo-villages).</summary>
+        static void Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
+        {
+            float m = KitScale.For(arch);
+            var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground, m);
+            switch (arch)
+            {
+                case Archetype.WhiteCity:
+                {
+                    var wall = rnd.Chance(0.12f) ? Jitter(C(0.90f, 0.84f, 0.72f), ref rnd, 0.04f) : Jitter(C(0.94f, 0.92f, 0.87f), ref rnd, 0.035f);
+                    var roof = Jitter(C(0.80f, 0.78f, 0.74f), ref rnd, 0.05f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.WhiteCity, m);
+                    // Some blocks are L-shaped: a lower wing at one end, back from the street.
+                    if (rnd.Chance(0.3f))
+                    {
+                        float a = yaw * Mathf.Deg2Rad, side = rnd.Chance(0.5f) ? 1f : -1f;
+                        float ww = b.w * 0.42f, wd = b.d * 0.8f;
+                        float u = side * (b.w - ww) * 0.5f, v = (b.d + wd) * 0.5f * 0.92f;
+                        var wc = new Vector2(p.x + u * Mathf.Cos(a) - v * Mathf.Sin(a), p.y + u * Mathf.Sin(a) + v * Mathf.Cos(a));
+                        if (!ground.Water(wc.x, wc.y))
+                            km.Box(wc.x, wc.y, yaw, ww, wd, bottom, top, Mathf.Max(2f * 3.3f * m, b.h - 3.3f * m), wall, roof, Facade.WhiteCity, m);
+                    }
+                    // A stair tower or roof room on many Bauhaus blocks, and a parapet's shadow line.
+                    if (rnd.Chance(0.55f))
+                    {
+                        float rw = b.w * rnd.Range(0.25f, 0.4f), rd = b.d * rnd.Range(0.3f, 0.45f);
+                        km.Box(p.x + b.w * rnd.Range(-0.2f, 0.2f), p.y + b.d * rnd.Range(-0.15f, 0.15f), yaw, rw, rd, top + b.h - 2f, top + b.h, 2.8f * m, wall, roof, Facade.Plain, m);
+                    }
+                    break;
+                }
+                case Archetype.OldTown:
+                {
+                    var wall = Jitter(C(0.83f, 0.72f, 0.54f), ref rnd, 0.06f);
+                    var roof = Jitter(C(0.86f, 0.77f, 0.60f), ref rnd, 0.05f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m);
+                    if (rnd.Chance(0.22f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.33f, Jitter(C(0.88f, 0.84f, 0.76f), ref rnd, 0.05f));
+                    else if (rnd.Chance(0.03f)) km.Pyramid(p.x, p.y, yaw, b.w * 1.04f, b.d * 1.04f, top + b.h, 2.2f * m, Jitter(C(0.70f, 0.33f, 0.22f), ref rnd, 0.06f));
+                    break;
+                }
+                case Archetype.ArabTown:
+                {
+                    var wall = Jitter(C(0.80f, 0.70f, 0.53f), ref rnd, 0.07f);
+                    var roof = Jitter(C(0.84f, 0.75f, 0.59f), ref rnd, 0.06f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m);
+                    if (rnd.Chance(0.10f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.3f, roof);
+                    break;
+                }
+                default:
+                {
+                    var wall = Jitter(C(0.92f, 0.89f, 0.82f), ref rnd, 0.04f);
+                    var roof = Jitter(C(0.74f, 0.31f, 0.20f), ref rnd, 0.08f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m, roofed: true);
+                    km.Gable(p.x, p.y, yaw, b.w, b.d, top + b.h, Mathf.Min(b.w, b.d) * 0.42f, roof, wall);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>A sub-district's Bedouin camps (owner ruling 2026-10-11: a light scatter sized by the sourced total, no named
+        /// points): each camp, seeded by the sub-district and its number, takes a random spot in one of the area's hexes that
+        /// is dry, gentle and outside every town's footprint, and pitches two to four black goat-hair tents in a loose row
+        /// (each tent its own lot, so nothing overlaps). Returns the camps and tents built.</summary>
+        /// <summary>How far (in house-scale metres) a camp's tents and its footprint reach from its centre: the longest row
+        /// (four tents, 28 apart at most, offset up to 9 to a side) and its footprint's 8 of margin, rounded up. A camp keeps
+        /// this clear of every unit token (KitGround.Tokens).</summary>
+        public const float CampReach = 64f;
+
+        static (int camps, int tents) Encampments(Localities.Area area, KitGround ground, Lots lots, System.Func<Vector2, KitMesh> tile)
+        {
+            if (area.Hexes.Count == 0) return (0, 0);
+            float m = KitScale.Houses, hex = ground.HexSizeM;
+            int want = Localities.CampsOf(area), camps = 0, tents = 0;
+            var origin = ground.TerrainOrigin;
+            for (int i = 0; i < want; i++)
+            {
+                var rnd = new KitRandom("camp:" + area.Subdistrict, (ulong)i + 1);
+                for (int attempt = 0; attempt < 12; attempt++)
+                {
+                    var (q, r) = area.Hexes[rnd.Range(0, area.Hexes.Count)];
+                    var w = HexGrid.ToWorld(HexGrid.Centre(q, r, hex), origin, ground.Length);
+                    float a = rnd.Range(0f, 2f * Mathf.PI), d = hex * 0.7f * Mathf.Sqrt(rnd.Value());
+                    var c = new Vector2(w.x + Mathf.Cos(a) * d, w.z + Mathf.Sin(a) * d);
+                    if (!ground.Inside(c.x, c.y) || ground.Water(c.x, c.y) || ground.InTown(c.x, c.y, 1.2f) || ground.Slope(c.x, c.y, 600f) > 0.12f
+                        || ground.OnToken(c, CampReach * m)) continue;
+                    float yaw = rnd.Range(-25f, 25f), ca = Mathf.Cos(yaw * Mathf.Deg2Rad), sa = Mathf.Sin(yaw * Mathf.Deg2Rad);
+                    int n = rnd.Range(2, 5), pitched = 0;
+                    var km = tile(c);
+                    float along = -(n - 1) * 11f * m;
+                    for (int k = 0; k < n; k++)
+                    {
+                        // A loose, uneven line (a neat row of equal boxes read as a train): each tent its own length, gap,
+                        // offset and angle.
+                        float tw = rnd.Range(7f, 12f) * m, td = rnd.Range(4f, 5.5f) * m;
+                        var p = c + new Vector2(along * ca, along * sa) + new Vector2(-sa, ca) * rnd.Range(-9f, 9f) * m;
+                        along += rnd.Range(16f, 28f) * m;
+                        float tyaw = yaw + rnd.Range(-20f, 20f);
+                        float lotR = 0.55f * Mathf.Sqrt(tw * tw + td * td);
+                        if (ground.Water(p.x, p.y) || !FreeAt(lots, p, lotR) || ground.OnRoute(p, lotR) || ground.OnGridMark(p, lotR)) continue;
+                        lots.Add(new Lot { c = p, r = lotR, id = "camp:" + area.Subdistrict });
+                        var (bottom, top) = GroundSpan(p, tyaw, tw, td, ground, m);
+                        // Goat-hair cloth, a warm dark brown rather than black: at the overview a black row read as a scratch.
+                        // Low side walls under a peaked roof, so it reads as a tent rather than a shed.
+                        var cloth = Jitter(C(0.33f, 0.27f, 0.21f), ref rnd, 0.08f);
+                        km.Box(p.x, p.y, tyaw, tw, td, bottom, top, 1.1f * m, Jitter(C(0.42f, 0.35f, 0.27f), ref rnd, 0.06f), cloth, Facade.Plain, m, roofed: true);
+                        km.Gable(p.x, p.y, tyaw, tw, td, top + 1.1f * m, 1.4f * m, cloth, cloth);
+                        pitched++;
+                    }
+                    if (pitched == 0) continue;
+                    ground.Footprints.Add((c, Mathf.Abs(along) * 0.5f + 8f * m, "camp:" + area.Subdistrict));   // about the row's half length: groves stay out
+                    camps++; tents += pitched;
+                    break;
+                }
+            }
+            return (camps, tents);
+        }
     }
 
     /// <summary>The symbolic scale per class (owner ruling 2026-10-11, superseding the 10-25x ruling: match promo 03's
@@ -625,6 +977,7 @@ namespace Statecraft.Game.Map.Kits
         public static float Trees = DefaultTrees;
 
         public static float Landmarks => CityBlocks;
+        public static float For(Archetype a) => a == Archetype.WhiteCity ? CityBlocks : Houses;
 
         public static float Clamp(float v) => Mathf.Clamp(v, Min, Max);
 

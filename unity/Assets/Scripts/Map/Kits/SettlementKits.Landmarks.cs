@@ -10,7 +10,7 @@ namespace Statecraft.Game.Map.Kits
     {
         /// <summary>A settlement's landmarks: the four cities' own (Jaffa, Jerusalem, Haifa, Tel Aviv) and Ramla's White
         /// Tower, else its archetype's (an old town's or an Arab town's mosque, a moshava's water tower). Returns how many.</summary>
-        static int PlaceLandmarks(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
+        static int TownLandmarks(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
         {
             var arch = ArchetypeOf(s);
             float R = FootprintRadiusM(s, ground.HexSizeM);

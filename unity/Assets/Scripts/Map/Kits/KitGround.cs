@@ -115,6 +115,33 @@ namespace Statecraft.Game.Map.Kits
             }
         }
 
+        /// <summary>True when a disc of radius <paramref name="r"/> at <paramref name="p"/> (world x, z) covers the midpoint of
+        /// an edge of the hex it stands in. The 1948 villages' houses and the camps' tents keep off these, so the hex grid
+        /// still reads through them where it is easiest to see (review M10, KitTests.TheGridStaysReadableThroughTownsAndGroves).</summary>
+        public bool OnGridMark(Vector2 p, float r)
+        {
+            var g = HexGrid.FromWorld(new Vector3(p.x, 0f, p.y), TerrainOrigin, Length);
+            var c = HexGrid.NearestCentre(g, HexSizeM);
+            float inradius = 0.8660254f * HexSizeM;
+            for (int k = 0; k < 6; k++)
+            {
+                float a = k * Mathf.PI / 3f;
+                if ((g - (c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * inradius)).sqrMagnitude < r * r) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The unit tokens that stand outside every footprint (centre x, z; ring radius m; MapScene). The Bedouin camps,
+        /// the one kit placed where no footprint is, keep off them (units-in-play merge, review I5).</summary>
+        public readonly List<(Vector2 centre, float radius)> Tokens = new List<(Vector2, float)>();
+
+        /// <summary>True when a disc of radius <paramref name="r"/> at <paramref name="p"/> reaches a unit token's ring.</summary>
+        public bool OnToken(Vector2 p, float r)
+        {
+            foreach (var (c, tr) in Tokens) if ((p - c).sqrMagnitude < (tr + r) * (tr + r)) return true;
+            return false;
+        }
+
         /// <summary>True when a disc of radius <paramref name="r"/> at <paramref name="p"/> reaches into any route corridor.</summary>
         public bool OnRoute(Vector2 p, float r)
         {
