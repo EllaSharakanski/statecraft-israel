@@ -8,6 +8,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Budget lines owned by office and date (`budget_owners` in `rules.yaml`, issue #108): the Immigration line (its id stays
+  `prime_minister`) belongs to the Minister of Immigration until 7 October 1951 and to the Prime Minister from 8 October
+  1951. A line scales effects through the owner of the day, and the Budget screen names that office. An office with
+  several holders cannot own a line. The goldens do not move.
+- Coalition changes inside a government's term (`coalition_changes` in governments.yaml, each with a date and sources).
+  Seats, majority, the Cabinet's party rule and the causes use the coalition of the day. Adds Agudat Yisrael and Poalei
+  Agudat Yisrael leaving the Third Government (18 September 1952, so 60 of 120 seats and no majority until 24 December),
+  the General Zionists leaving the Fourth (25 May 1953) and returning (3 June 1953), and the Progressive Party joining
+  the Fifth (1 February 1954). The goldens do not move (fixes #278).
 - A turn now ends on the next era's start date, not only on the last era's end (chapters spec 4.1). A turn that would
   leave under 14 days before the boundary is lengthened to it. Real days scale the turn's rates. With one era, or no
   boundary in a run, nothing changes; goldens unchanged (refs #59).
@@ -15,7 +24,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   rules.yaml change applied in memory and prints the changed state lines and a table of chosen values, without Unity and
   without touching `content/` (fixes #295).
 - One golden manifest (`sim/Statecraft.Sim.Tests/golden/manifest.txt`) pins the golden hashes; `STATECRAFT_UPDATE_GOLDEN=1`
-  now rewrites it and the `GoldenRun.cs` constants, and a test names any doc that shows an old hash (fixes #293).
+  now rewrites it and the `GoldenRun.cs` constants, `tools/art_checkpoint.sh` reads it, and a test names any doc that
+  shows an old hash (fixes #293).
 - Era system switches in eras.yaml (`systems`): `legislature: state | assembly` (an assembly's vote against a policy or
   the budget is held and reported, but does not bind) and `map_actions` (the actions the era allows). The Cabinet and
   Budget screens say when the body's vote does not bind, and the hex panel shows only the era's map actions. With no
@@ -25,8 +35,6 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and Ami Assaf as a second Deputy Minister of Education (from 11 June 1956). Event text, policies and effects cannot
   name such an office, and the Cabinet refuses to appoint to it. The Cabinet screen shows a card for each holder. No
   golden moves (#277).
-  now rewrites it and the `GoldenRun.cs` constants, `tools/art_checkpoint.sh` reads it, and a test names any doc that shows an
-  old hash (fixes #293).
 - Rules per era (#58, second piece): the attention, economy, population, security, map-action and cabinet systems read
   `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
   HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
