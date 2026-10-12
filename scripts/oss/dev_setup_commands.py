@@ -2,7 +2,7 @@
 """Every script named in the dev-setup table exists (#359): `uv run scripts/oss/dev_setup_commands.py [--root DIR]`.
 
 Reads docs/dev-setup.md, takes each backticked `scripts/...` or `tools/...` path ending in .py or .sh, and checks that
-the file is there. One line per missing file (line number and path); exit 1 if any."""
+the file is there. One line per missing file (line number and path). Also lists each top-level scripts/ file the table never names. Exit 1 if any."""
 import argparse
 import re
 import sys
@@ -23,6 +23,13 @@ def missing(root: Path) -> list[tuple[int, str]]:
     return bad
 
 
+def undocumented(root: Path) -> list[str]:
+    """Top-level scripts/*.py and scripts/*.sh that no line of the dev-setup table names."""
+    text = (root / "docs/dev-setup.md").read_text(encoding="utf-8")
+    scripts = sorted(p for p in (root / "scripts").iterdir() if p.is_file() and p.suffix in (".py", ".sh"))
+    return [f"scripts/{p.name}" for p in scripts if f"scripts/{p.name}" not in text]
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--root", type=Path, default=ROOT)
@@ -30,7 +37,10 @@ def main(argv: list[str]) -> int:
     bad = missing(args.root)
     for n, p in bad:
         print(f"docs/dev-setup.md:{n}: {p} does not exist")
-    return 1 if bad else 0
+    loose = undocumented(args.root)
+    for p in loose:
+        print(f"{p} has no row in docs/dev-setup.md")
+    return 1 if bad or loose else 0
 
 
 if __name__ == "__main__":
