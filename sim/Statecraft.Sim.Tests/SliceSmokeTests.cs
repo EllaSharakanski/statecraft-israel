@@ -24,7 +24,7 @@ public class SliceSmokeTests
     static readonly Content Real = ContentLoader.Load(RealContentTests.ContentRoot());
 
     /// <summary>docs/determinism.md: the WebGL smoke (?smoke=5) ends here; its policy is FirstOption.</summary>
-    const string WebSmoke5 = "SMOKE OK 5 turns 1948-06-19 d3fdd459ddb876bd8d775c20edd1202cf56ca7134a8ad06f873d4d92034aa5b6";
+    static string WebSmoke5 => "SMOKE OK 5 turns 1948-06-19 " + GoldenManifest.Expected("smoke5");
 
     static readonly Regex IsoDate = new Regex(@"\d{4}-\d{2}-\d{2}");
 
@@ -118,7 +118,7 @@ public class SliceSmokeTests
         // CabinetPresenter: every seat, its holder and why each person cannot take it.
         foreach (var seat in Cabinet.Lineup(c, s))
         {
-            yield return (seat.Office.Title + ": " + (seat.Holder?.Name ?? ""), false);
+            yield return (seat.Office.Title + ": " + string.Join(", ", seat.Holders.Select(p => p.Name)), false);
             foreach (var reason in Cabinet.Candidates(c, s, seat.Office.Id).Select(x => x.reason).Where(x => x != null).Distinct())
                 yield return (reason!, false);
         }
@@ -230,7 +230,9 @@ public class SliceSmokeTests
         Assert.True(run.Orders > 0);
         // The same policy over five turns ends where the WebGL player's ?smoke=5 run ends (docs/determinism.md).
         var five = Play(Real, FirstOption, reload: false, guard: null, maxTurns: 5).Final;
-        Assert.Equal(WebSmoke5, FormattableString.Invariant($"SMOKE OK 5 turns {five.Date:yyyy-MM-dd} {five.Hash()}"));
+        var expected = WebSmoke5;   // read before an update rewrites the manifest, so a moved value still fails this run
+        if (GoldenManifest.UpdateRequested) GoldenManifest.Update("smoke5", five.Hash());
+        Assert.Equal(expected, FormattableString.Invariant($"SMOKE OK 5 turns {five.Date:yyyy-MM-dd} {five.Hash()}"));
         Assert.True(clock.Elapsed < TimeSpan.FromMinutes(1), $"took {clock.Elapsed}");
     }
 
