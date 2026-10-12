@@ -238,4 +238,20 @@ public class CabinetScreenTests
         cabinet.Dispose();
         Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("cabinet-pick").style.display.value);
     }
+
+    /// <summary>eras.yaml systems.legislature (#58): in an assembly era the screen says the body's votes do not bind; in a
+    /// state era it is the body the government answers to. Played on a copy of the content with the switch set.</summary>
+    [Test]
+    public void TheLegislatureLineFollowsTheErasSwitch()
+    {
+        var c = ContentLoader.Load(Paths.Content);
+        using var ui = Shown();
+        var cabinet = new CabinetPresenter(ui.Root, new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), Text), Text, null);
+        var leg = Offices.Legislature(c, c.Rules.Start)!;
+        Assert.AreEqual($"Answerable to the {leg.Body} · {leg.Size} members", ui.Q<Label>("cabinet-legislature").text);
+        c.Eras[0].Systems.Legislature = EraSystems.Assembly;
+        cabinet.Render();
+        Assert.AreEqual($"Consults the {leg.Body} · {leg.Size} members · its votes do not bind", ui.Q<Label>("cabinet-legislature").text);
+        cabinet.Dispose();
+    }
 }

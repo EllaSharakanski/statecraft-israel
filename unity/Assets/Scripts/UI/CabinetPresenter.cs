@@ -101,7 +101,8 @@ namespace Statecraft.Game.UI
             var leg = Offices.Legislature(c, s.Date);
             var (seats, size) = PoliticsSystem.CoalitionSeats(c, s.Date);
             screen.Q<Label>("cabinet-government").text = gov?.Name ?? "";
-            screen.Q<Label>("cabinet-legislature").text = leg == null ? "" : text.Format("cabinet.legislature", leg.Body, leg.Size);
+            var advisory = c.SystemsAt(s.Date).Legislature == EraSystems.Assembly;   // eras.yaml systems.legislature (#58)
+            screen.Q<Label>("cabinet-legislature").text = leg == null ? "" : text.Format(advisory ? "cabinet.legislature_advisory" : "cabinet.legislature", leg.Body, leg.Size);
             RenderHouse(c, s, gov, leg, seats, size);
 
             var lineup = Cabinet.Lineup(c, s);

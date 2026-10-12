@@ -630,6 +630,7 @@ namespace Statecraft.Sim
                 Named("eras.yaml", at + ".name", e.Name);
                 if (e.To == default) throw new ContentException("eras.yaml", at + ".to", "required (the first day after the era)");
                 Period("eras.yaml", at, e.From, e.To);
+                if (e.Systems == null) throw new ContentException("eras.yaml", at + ".systems", "must be a map of switches (leave it out for the defaults)");
                 if (e.Systems.Legislature != EraSystems.State && e.Systems.Legislature != EraSystems.Assembly)
                     throw new ContentException("eras.yaml", at + ".systems.legislature", "must be state or assembly");
                 foreach (var a in e.Systems.MapActions)
