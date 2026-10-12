@@ -25,6 +25,7 @@ Unity, a Unity licence and macOS are only needed for `unity/`. The sim, the cont
 | GDD feature sections (also run by the policy checker tests) | `uv run scripts/oss/gdd_lint.py` | Repo policy |
 | Every event by date, with era, anchor and review status | `uv run scripts/event_timeline.py [--status draft]` | none (helper) |
 | Every content source with its check date and age (`--older-than DAYS`) | `uv run scripts/source_report.py` | none (helper) |
+| Content records a branch adds, removes or re-dates (paste into the PR) | `uv run scripts/pr_content_summary.py [origin/main]` | none (helper) |
 | Dead relative links in Markdown files (also run by the policy checker tests) | `uv run scripts/oss/md_links.py` | Repo policy |
 | New event file (skeleton with every required field) | `uv run scripts/new_event.py <id> [--from D] [--to D]` | none (helper) |
 | Changelog line | `uv run scripts/oss/changelog_check.py --base origin/main` | Changelog |
