@@ -10,7 +10,11 @@ public class ContentWindowsTests
     static readonly DateTime D0 = new DateTime(1948, 5, 15);
     static readonly DateTime Cut = new DateTime(1948, 8, 1);
 
-    static string Model(Func<string, string>? edit = null) => edit == null ? Fixture.Files["model.yaml"] : edit(Fixture.Files["model.yaml"]);
+    // The fixture model plus `shelter`, an indicator no code reads by name, so these tests can give it a window (the loader
+    // refuses one on morale, food_supply, housing, security and intl_standing).
+    const string Shelter = "  - id: shelter\n    base: 0.3\n    name: Shelter\n";
+    static string Base => Fixture.Files["model.yaml"].Replace("policies:\n", Shelter + "policies:\n");
+    static string Model(Func<string, string>? edit = null) => edit == null ? Base : edit(Base);
     static string Offices(Func<string, string> edit) => edit(Fixture.Files["offices.yaml"]);
 
     static Content Load(string model, string? offices = null, Dictionary<string, string>? events = null)
@@ -63,7 +67,7 @@ public class ContentWindowsTests
     // ---- the state follows the windows
 
     // The fixture's turns run weekly to 12 June, then every quarter (the ceasefire ends the war rung): 5/15 ... 6/12, 9/12.
-    static Content Windowed() => Load(Model(m => Window(Window(m, "  - id: maabarot\n    default: 0.0", "from: 1948-06-20"), "  - id: housing\n    base: 0.3", "to: 1948-08-01")));
+    static Content Windowed() => Load(Model(m => Window(Window(m, "  - id: maabarot\n    default: 0.0", "from: 1948-06-20"), "  - id: shelter\n    base: 0.3", "to: 1948-08-01")));
 
     [Fact]
     public void ANewGameHoldsOnlyTheRecordsActiveOnTheStartDate()
@@ -71,7 +75,7 @@ public class ContentWindowsTests
         var c = Windowed();
         var s = Simulation.NewGame(c, 1, Mode.Historical);
         Assert.DoesNotContain("maabarot", s.Policies.Keys);
-        Assert.Contains("housing", s.Indicators.Keys);
+        Assert.Contains("shelter", s.Indicators.Keys);
     }
 
     static GameState Play(Content c, DateTime until)
@@ -87,11 +91,11 @@ public class ContentWindowsTests
         var c = Windowed();
         var early = Play(c, new DateTime(1948, 6, 10));
         Assert.DoesNotContain("maabarot", early.Policies.Keys);
-        Assert.Contains("housing", early.Indicators.Keys);
+        Assert.Contains("shelter", early.Indicators.Keys);
         var later = Play(c, new DateTime(1948, 9, 10));
         Assert.Equal(0.0, later.Policies["maabarot"]);             // added as Init would add it
-        Assert.DoesNotContain("housing", later.Indicators.Keys);   // removed with its shift
-        Assert.DoesNotContain("housing", later.IndicatorShifts.Keys);
+        Assert.DoesNotContain("shelter", later.Indicators.Keys);   // removed with its shift
+        Assert.DoesNotContain("shelter", later.IndicatorShifts.Keys);
         Assert.NotEmpty(later.Hash());                              // the hash never reads a missing key
         Assert.NotEmpty(later.Describe());
     }
@@ -149,7 +153,7 @@ public class ContentWindowsTests
 
     [Theory]
     [InlineData("  - id: maabarot\n    default: 0.0", "policies[maabarot]")]
-    [InlineData("  - id: housing\n    base: 0.3", "indicators[housing]")]
+    [InlineData("  - id: shelter\n    base: 0.3", "indicators[shelter]")]
     [InlineData("  - id: rationing_morale\n    source: rationing", "effects[rationing_morale]")]
     [InlineData("  - id: hunger\n    indicator: food_supply", "situations[hunger]")]
     [InlineData("  - id: everyone", "voter_groups[everyone]")]
@@ -165,6 +169,17 @@ public class ContentWindowsTests
         }
     }
 
+    [Theory]
+    [InlineData("morale", "  - id: morale\n    base: 0.5")]
+    [InlineData("food_supply", "  - id: food_supply\n    base: 0.4")]
+    [InlineData("housing", "  - id: housing\n    base: 0.3")]
+    public void AWindowOnAnIndicatorTheCodeReadsByNameIsRefused(string id, string anchor)
+    {
+        foreach (var w in new[] { "from: 1948-08-01", "to: 1949-01-01" })
+            Refused(Model(m => Window(m, anchor, w)), $"'{id}' is read by name in the code");
+        Assert.NotNull(Load(Model()));   // no window: fine
+    }
+
     [Fact]
     public void AnEffectSourceThatIsNotActiveThroughTheEffectIsRefused()
     {
@@ -176,16 +191,15 @@ public class ContentWindowsTests
 
     [Fact]
     public void AnEffectTargetThatIsNotActiveThroughTheEffectIsRefused() =>
-        Refused(Model(m => Window(m, "  - id: food_supply\n    base: 0.4", "to: 1948-09-01")), "target 'food_supply' is not active");
+        Refused(Model(m => Window(m, "  - id: shelter\n    base: 0.3", "to: 1948-09-01").Replace("situations:\n", "  - id: shelter_effect\n    source: rationing\n    target: shelter\n    k: 0.1\n    inertia: 1\n    name: Shelter effect\nsituations:\n")), "target 'shelter' is not active");
 
     [Fact]
     public void ASituationOnAnIndicatorThatEndsEarlyIsRefused() =>
-        Refused(Model(m => Window(m, "  - id: food_supply\n    base: 0.4", "to: 1948-09-01")
-            .Replace("  - id: rationing_food\n", "  - id: rationing_food\n    to: 1948-09-01\n")), "indicator 'food_supply' is not active");
+        Refused(Model(m => Window(m, "  - id: shelter\n    base: 0.3", "to: 1948-09-01").Replace("situations:\n", "situations:\n  - id: homeless\n    indicator: shelter\n    on_below: 0.2\n    off_above: 0.3\n    name: Homeless\n")), "indicator 'shelter' is not active");
 
     [Fact]
     public void AVoterGroupWeightOnAnIndicatorThatBeginsLateIsRefused() =>
-        Refused(Model(m => Window(m, "  - id: morale\n    base: 0.5", "from: 1948-08-01")), "is not active for the whole window");
+        Refused(Model(m => Window(m, "  - id: shelter\n    base: 0.3", "from: 1948-08-01").Replace("weights: { morale: 1.0 }", "weights: { morale: 1.0, shelter: 0.5 }")), "is not active for the whole window");
 
     [Fact]
     public void AWindowedRecordMayUseARecordWithAWiderWindow()
@@ -211,8 +225,8 @@ public class ContentWindowsTests
 
     [Fact]
     public void AnEventConditionOnAnIndicatorThatBeginsInsideItsWindowIsRefused() =>
-        Refused(Model(m => Window(m, "  - id: housing\n    base: 0.3", "from: 1948-07-01")), "not active for the whole window of this event",
-            events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "conditions: [{ indicator: housing, min: 0.1 }]\n", "") });
+        Refused(Model(m => Window(m, "  - id: shelter\n    base: 0.3", "from: 1948-07-01")), "not active for the whole window of this event",
+            events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "conditions: [{ indicator: shelter, min: 0.1 }]\n", "") });
 
     [Fact]
     public void AnEventOptionThatSetsAPolicyOrMovesAnIndicatorOutsideItsWindowIsRefused()
@@ -220,22 +234,22 @@ public class ContentWindowsTests
         var model = Model(m => Window(m, "  - id: maabarot\n    default: 0.0", "from: 1948-07-01"));
         Refused(model, "not active for the whole window of this event",
             events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "", "    set_policy: { maabarot: 1.0 }\n") });
-        Refused(Model(m => Window(m, "  - id: housing\n    base: 0.3", "to: 1948-09-01")), "not active for the whole window of this event",
-            events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "", "    effects: [{ target: housing, delta: 0.1 }]\n") });
+        Refused(Model(m => Window(m, "  - id: shelter\n    base: 0.3", "to: 1948-09-01")), "not active for the whole window of this event",
+            events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "", "    effects: [{ target: shelter, delta: 0.1 }]\n") });
     }
 
     // ---- a late fire (EventSystem.Trigger) can come after the window of a record the event reaches has ended
 
     // The event's window [20 June, 1 July) falls inside the fixture's quarterly turn 12 June to 12 September, so it fires late,
-    // on 12 September, after housing (and maabarot) have left the state on 1 July.
+    // on 12 September, after shelter (and maabarot) have left the state on 1 July.
     static Content LateFire(string conditions, string option) => Load(
-        Model(m => Window(Window(m, "  - id: housing\n    base: 0.3", "to: 1948-07-01"), "  - id: maabarot\n    default: 0.0", "to: 1948-07-01")),
+        Model(m => Window(Window(m, "  - id: shelter\n    base: 0.3", "to: 1948-07-01"), "  - id: maabarot\n    default: 0.0", "to: 1948-07-01")),
         events: new Dictionary<string, string> { ["probe.yaml"] = "id: probe\ntitle: Probe\ntext: A probe.\nanchor: soft\nfrom: 1948-06-20\nto: 1948-07-01\n" + conditions + "options:\n  - id: a\n    text: Do a\n" + option });
 
     [Fact]
     public void ALateFireDoesNotReadAnIndicatorWhoseWindowHasEnded()
     {
-        var c = LateFire("conditions: [{ indicator: housing, min: 0.0 }]\n", "");
+        var c = LateFire("conditions: [{ indicator: shelter, min: 0.0 }]\n", "");
         var s = Play(c, new DateTime(1948, 9, 1));
         Assert.Equal(new DateTime(1948, 9, 12), s.Date);
         Assert.DoesNotContain("probe", s.FiredEvents);   // its condition reads a record that no longer exists, so it is not met
@@ -244,13 +258,13 @@ public class ContentWindowsTests
     [Fact]
     public void ALateFiredEventResolvedAfterTheWindowLeavesEndedRecordsOut()
     {
-        var c = LateFire("", "    effects: [{ target: housing, delta: 0.1 }, { target: treasury, delta: 5 }]\n    set_policy: { maabarot: 1.0 }\n");
+        var c = LateFire("", "    effects: [{ target: shelter, delta: 0.1 }, { target: treasury, delta: 5 }]\n    set_policy: { maabarot: 1.0 }\n");
         var s = Play(c, new DateTime(1948, 9, 1));
         Assert.Contains("probe", s.PendingEvents);
         var r = Simulation.Step(c, s, new Command[] { new ChooseEventOption("probe", "a") });
         Assert.Empty(r.Rejected);
-        Assert.DoesNotContain("housing", r.State.Indicators.Keys);
-        Assert.DoesNotContain("housing", r.State.IndicatorShifts.Keys);
+        Assert.DoesNotContain("shelter", r.State.Indicators.Keys);
+        Assert.DoesNotContain("shelter", r.State.IndicatorShifts.Keys);
         Assert.DoesNotContain("maabarot", r.State.Policies.Keys);   // not added back by the option
         Assert.Contains("probe", r.State.ChosenOptions.Keys);
         Assert.Contains(r.Why, w => w.Target == "treasury" && w.Delta == 5);   // treasury is not a dated record: the option still pays it

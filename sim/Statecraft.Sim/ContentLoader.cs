@@ -456,12 +456,19 @@ namespace Statecraft.Sim
 
         /// <summary>Chapters design 3.2: a window must run forward, and nothing may reach a record that is not active for the
         /// whole window of whatever uses it (effect sources and targets, situations, voter-group weights, policy and effect offices).</summary>
+        // Indicators the code reads by name (the sim's own morale, food, housing, security and standing rules): a window on one
+        // would make those reads miss, so the loader refuses it.
+        static readonly string[] CodeNamedIndicators = { "morale", "food_supply", "housing", "security", "intl_standing" };
+
         static void ValidateWindows(Content c)
         {
             void Order(string where, DateTime? from, DateTime? to)
             {
                 if (from.HasValue && to.HasValue && from.Value >= to.Value) throw new ContentException("model.yaml", where, "from must be before to");
             }
+            foreach (var x in c.Indicators)
+                if ((x.From.HasValue || x.To.HasValue) && CodeNamedIndicators.Contains(x.Id))
+                    throw new ContentException("model.yaml", $"indicators[{x.Id}]", $"'{x.Id}' is read by name in the code, so it cannot have a from/to window");
             foreach (var x in c.Indicators) Order($"indicators[{x.Id}]", x.From, x.To);
             foreach (var x in c.Policies) Order($"policies[{x.Id}]", x.From, x.To);
             foreach (var x in c.Effects) Order($"effects[{x.Id}]", x.From, x.To);
