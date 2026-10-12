@@ -63,6 +63,9 @@ Before writing or editing content, review:
 
 - `uv run scripts/new_event.py <id> [--from YYYY-MM-DD] [--to YYYY-MM-DD]` writes a skeleton `content/events/<id>.yaml`. Fill every TODO and `sources` before you run the tests.
 - `uv run scripts/event_timeline.py [--status draft]` prints every event by date with its era, anchor and review status.
+- `uv run scripts/pr_content_summary.py [BASE]` prints, as markdown, the events and model records the branch adds, removes or re-dates. Paste it in the PR.
+- `uv run scripts/source_report.py [--older-than DAYS]` lists every content source with its check date and age.
+- `uv run scripts/id_references.py <id>` lists every place a record id is read in content, sim and unity (code reads some ids by name).
 - `uv run scripts/oss/md_links.py` lists relative Markdown links that point at a missing file (it also runs in the policy tests).
 
 ## Git
