@@ -1528,3 +1528,125 @@ Code: `unity/Assets/Scripts/Map/Kits/` (built at load, seeded per settlement id 
 - **Authored meshes later:** trees swap as is (`Vegetation.Build(kind)` returns a mesh in real metres). Buildings will need
   `Emit` to return placements (archetype, variant, position, yaw, scale) drawn through the same tile instancing and a
   textured, instanced variant of `Kit.shader`; that refactor waits for the first authored mesh.
+
+## Towns round 2: dense, era-correct towns (branch `promo-towns-2`, issue #31)
+Question: why do Tel Aviv, Jaffa, Lod, Ramla, Rishon and Petah Tikva read as a sparse handful of boxes at gameplay03
+when promo 03 shows dense miniature towns, and what closes the gap within the frame-time and boot budgets?
+
+### Diagnosis (main `bdb5cd2`, measured before any change)
+Measured with `TownCensusTests.TheCensusIsLogged`. It builds the kits as `MapScene.Build` does, with the routes' and the
+units' clearings as corridors, and logs one `CENSUS` line per town. It reports:
+- **Buildings:** counted per town. Wings are a block's lower part.
+- **Cover:** the share of the town's own land under a building or landmark footprint. "Own land" is its footprint disc,
+  on land, in its cell. It is sampled every 100 m, over the whole disc and over its inner half radius ("core").
+- **Wall heights:** symbolic metres; one storey is 198 m at 60x and 330 m at 100x.
+- **Wall colours:** distinct sRGB colours at 4 bits per channel.
+
+The player logged `KITS buildings=261 vertices=10244 triangles=6892 trees=7283`.
+
+| town | footprint R | buildings (+wings) | landmarks | cover: all / core | wall height min / median / max | wall colours |
+|---|---|---|---|---|---|---|
+| Tel Aviv | 7.6 km | 43 (+11) | none | 24.7% / 24.9% | 396 / 594 / 1188 m | 7 |
+| Jaffa | 5.7 km | 16 | mosque, clock tower, church, lighthouse, breakwater | 42.6% / 14.6% | 330 / 660 / 990 m | 4 |
+| Haifa | 6.9 km | 34 (+10) | none | 17.8% / 23.7% | 396 / 594 / 990 m | 8 |
+| Jerusalem | 7.4 km | 70 | a generic mosque | 32.2% / 16.2% | 330 / 660 / 990 m | 8 |
+| Lod | 2.4 km | 5 | mosque | 13.6% / 11.8% | 330 / 330 / 660 m | 4 |
+| Ramla | 2.3 km | 5 | mosque | 19.5% / 27.6% | 330 m only | 3 |
+| Petah Tikva | 2.4 km | 3 | water tower | 10.5% / 7.0% | 330 / 330 / 660 m | 3 |
+| Rishon LeZion | 1.7 km | 2 | water tower | 9.5% / 2.7% | 330 m only | 2 |
+| all 25 | | 235 (+21) | 26 | | | |
+
+Jaffa's whole-disc cover is above its core cover because its cell is small (Tel Aviv's footprint takes its north) and
+four landmarks of up to 1 km sit in it.
+
+Causes, in order of weight:
+1. **Counts.** `TargetCount` was tuned at 25x and falls with the square of the scale. At the 60x / 100x ruling, every
+   town under about 30,000 people gets its floor of 6 buildings, and then places fewer: 1 to 5 in the moshavot, and 5 in
+   Lod and Ramla.
+2. **Placement.** Buildings went to random spots over the whole footprint (radius drawn as u^0.62), tried against
+   every lot. Each town had about 30 tries per building, and the footprint could stretch to 1.6 R.
+   - That spreads a town evenly at low cover, with no dense core and no street rows. Promo 03's towns are a solid core
+     with streets as the only gaps.
+   - The routes' corridors (300-680 m ribbons plus a 100 m margin) and the units' clearings then cut each disc further.
+3. **Old-town houses too big.** Old towns drew 7-14 m houses at 100x, so each was 0.7-1.4 km wide. Jaffa came out as 16
+   large blocks, not a packed old city.
+4. **Heights.** Tel Aviv's median block was 3 storeys and its tallest 6. Promo 03 shows 5-8. The owner's "promo over
+   era" ruling covers this.
+5. **Landmarks.** Only Jaffa had its own. Jerusalem had a generic mosque, and Haifa and Tel Aviv had none. Jaffa's
+   lighthouse stood at the breakwater's head; the real one (1865) stands on the hilltop above the old port.
+6. **Palette.** It is not the gap: each archetype's colours already match promo 03 (white and cream city, honey stone,
+   tan villages, terracotta roofs). Variety is limited by the counts.
+
+### Plan
+- **Plot lattices** replace the random tries (`SettlementKits.PlaceHouses`).
+  - Each town is laid out in rows of plots at its street grid's angle. Old towns and villages stagger alternate rows
+    and jitter each plot.
+  - Each plot is built with a probability that is near 1 in the core and falls towards the edge, to none at 1.1 R. That
+    is `UnitGround.FootprintMargin`: the units assume no building past it, and `PaintGround` tints the same disc.
+  - A plot by a road, or by another town's lot, tries a smaller building, then a small nudge within the plot, before it
+    stays empty.
+  - Plots are visited nearest the centre first. Each plot draws its random numbers whether or not it is built, so one
+    plot's fate never shifts another's.
+- **Building styles per quarter, at the ruled scales** (city blocks 60x, houses 100x).
+  - **Tel Aviv:** white International Style blocks with flat roofs (the White City, 1930s, Geddes plan 1925-29), some
+    stepped. Taller in the core under the promo ruling.
+  - **Jaffa and the old towns:** small stone houses (4.6-6.6 m real), packed, with domes and roof rooms. Some red tiled
+    roofs outside the core.
+  - **Haifa:** the lower town by the port in stone houses (below about 35 m elevation). Hadar HaCarmel up the slope in
+    white blocks.
+  - **Jerusalem:** stone-faced blocks in the new city to the west (Storrs' 1918 stone ordinance), a few with red roofs.
+    Arab-quarter houses round the other sides. Old-town houses within the walls.
+  - **Large moshavot** (Petah Tikva, Rehovot, Rishon LeZion, Hadera; 7,500+ people in 1945): a plastered two- and
+    three-storey centre inside red-roofed houses.
+  - **Arab towns and villages:** smaller stone houses (4.4-6.6 m) on a staggered lattice.
+- **Landmarks**, placed before any town's houses. Positions keep the real bearing from the settlement's point to the
+  landmark's sourced coordinate; distances and sizes are symbolic.
+  - **Jaffa:** the Mahmoudiya Mosque, the clock tower on the plaza east of it, St Peter's Church, the lighthouse on the
+    hill above the port (red and white bands), and the breakwater and boats.
+  - **Jerusalem:** Suleiman's walls round a symbolic square Old City with five gates, the citadel, the Haram platform,
+    the Dome of the Rock and Al-Aqsa.
+    - The Dome of the Rock is blue and white tiles with a dark lead dome: the gilded dome dates from the 1959-64
+      restoration, so it would be an anachronism in 1948.
+    - Al-Aqsa's dome is lead.
+  - **Haifa:** the 1933 port (main and lee breakwaters, quay sheds) and the German Colony: the Templer houses of 1868 in
+    stone with red roofs, in two rows along its north-south main street.
+  - **Tel Aviv:** its port (1936/1938) at its sourced coordinate.
+  - **Ramla:** the White Tower east of the town's heart.
+- **No anachronisms:**
+  - The Shrine of the Báb's dome (1953) is not drawn.
+  - Neither is the Dagon silo (1955), the gold Dome of the Rock, or any post-1948 tower.
+- **Performance:** one merged mesh per town as before, so the draw calls do not change. The lot index is promo-villages'
+  `DiscIndex`, ported byte for byte with its `KitGround` hunks so the two branches merge cleanly there. It also takes the
+  trees' lot test off its linear scan.
+- **Tests** (`TownCensusTests`):
+  - The towns are deterministic.
+  - Each city's landmarks are present.
+  - No building stands on a route or in the sea.
+  - Each of the four cities has a floor on its built cover.
+
+### Sources (checked 2026-10-12)
+- Tel Aviv:
+  - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
+  - Port of Tel Aviv (opened 1936, completed 1938, closed 1965; 32.0965 N, 34.7733 E): https://en.wikipedia.org/wiki/Port_of_Tel_Aviv
+- Jaffa:
+  - Clock Tower (1900-03, limestone, at the north end of Yefet Street): https://en.wikipedia.org/wiki/Jaffa_Clock_Tower
+  - Mahmoudiya Mosque (mostly 1812, the old town's north-east corner, its east gate on the clock-tower plaza; 32.0549 N,
+    34.7555 E): https://en.wikipedia.org/wiki/Mahmoudiya_Mosque
+  - St Peter's Church (1888-94, on a hill near the shore, bell tower; 32.0548 N, 34.7521 E): https://en.wikipedia.org/wiki/St._Peter%27s_Church,_Jaffa
+  - Jaffa Light (1865, 10 m, red and white bands, on the hilltop above the old port; 32.0535 N, 34.7505 E): https://en.wikipedia.org/wiki/Jaffa_Light
+- Haifa:
+  - Port of Haifa (opened 31 October 1933; 32.8201 N, 35.0045 E): https://en.wikipedia.org/wiki/Port_of_Haifa
+  - German Colony (Templer colony of 1868; main street north-south down to the harbour; 32.8200 N, 34.9906 E): https://en.wikipedia.org/wiki/German_Colony,_Haifa
+  - Templer houses (stone, red roofs): https://en.wikipedia.org/wiki/Templers_(religious_believers)
+  - Shrine of the Báb (superstructure and dome completed 1953): https://en.wikipedia.org/wiki/Shrine_of_the_B%C3%A1b
+- Jerusalem:
+  - Walls (1537-41, 4,018 m, about 12 m high): https://en.wikipedia.org/wiki/Walls_of_Jerusalem
+  - Old City (0.9 km^2; 31.7767 N, 35.2342 E; the gates' sides): https://en.wikipedia.org/wiki/Old_City_of_Jerusalem
+  - Damascus Gate (the wall's north-west side): https://en.wikipedia.org/wiki/Damascus_Gate
+  - Tower of David (near Jaffa Gate; 31.7761 N, 35.2278 E): https://en.wikipedia.org/wiki/Tower_of_David
+  - Temple Mount (the Old City's eastern section, platform about 488 x 315 m; Al-Aqsa at its south end): https://en.wikipedia.org/wiki/Temple_Mount
+  - Dome of the Rock (blackened lead before 1959; Ottoman blue and white tiles): https://en.wikipedia.org/wiki/Dome_of_the_Rock
+  - Al-Aqsa Mosque (lead dome before 1969): https://en.wikipedia.org/wiki/Al-Aqsa_Mosque
+  - Jerusalem stone (Storrs' ordinance, 1918): https://en.wikipedia.org/wiki/Jerusalem_stone
+- Ramla:
+  - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
