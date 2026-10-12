@@ -1869,6 +1869,12 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`). With the
     scatter off, it fails for Beersheba, Netanya, Tiberias and Rosh Pinna.
   - The grid stays readable at 78% (69 of 89), and the beach reads as sand at 79%.
+  - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
+    other sessions to load 15, so every number is high):
+    - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.
+    - Boot map_build median is 2982 against 3075 ms. The "kits built" phase is 746 against 686 ms.
+    - The editor's kit build_ms is 85-89 ms, with or without the floor.
+    - The floor adds no measurable cost; the boot difference is load. Still 63 draws.
   - The label refresh is unchanged: `MapLabelTests.RefreshWhileTheCameraMovesIsCheapAndAllocationFree` measured 162-163 µs
     with the floor and 171-180 µs without it, interleaved. The single 238 µs (fail) came in a full run at load 24.
 - **Still open, filed as issues:**
