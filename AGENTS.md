@@ -8,6 +8,7 @@ Help the project stay historically grounded, readable, and technically consisten
 
 ## Core rules
 
+- The game design of record is [`docs/GDD.md`](docs/GDD.md) (owner, v0.1, 12 October 2026). Follow it. Where an older spec, plan or ruling disagrees, the GDD wins. Anything it marks Open, Proposal or TBD needs an owner decision before it is built: do not invent values or rules for it.
 - Every historical fact must be sourced. If a fact is not supported by a cited source, do not add it.
 - No invented quotes. Paraphrase, and never put words in a real person’s mouth.
 - Use the Israeli framing set in `docs/CONTENT_POLICY.md`, section 1. It is a stated design decision and is not reopened in content work.
@@ -19,6 +20,7 @@ Help the project stay historically grounded, readable, and technically consisten
 
 Before writing or editing content, review:
 
+- `docs/GDD.md` (the game design)
 - `README.md`
 - `CONTRIBUTING.md`
 - `docs/CONTENT_POLICY.md`
