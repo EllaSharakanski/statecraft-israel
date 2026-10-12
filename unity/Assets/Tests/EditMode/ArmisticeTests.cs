@@ -310,6 +310,6 @@ public class ArmisticeTests
         StringAssert.Contains("Egypt", L(later, june));
         Assert.IsTrue(later.LinesAt(gh.q, gh.r, june).Contains(gaza));
         // as shipped, the Mandate layer's ends are the agreements' dates
-        Assert.AreSame(auja, Regions().ZoneAt(q, r, Egypt));
+        Assert.AreEqual(auja.Key, Regions().ZoneAt(q, r, Egypt)?.Key);
     }
 }
