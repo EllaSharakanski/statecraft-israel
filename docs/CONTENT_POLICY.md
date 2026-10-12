@@ -57,7 +57,10 @@ Facts are open to correction. The framing (section 1) is not.
 
 - Content without sources, or with a source that does not support the claim.
 - Quotes, speeches or letters that are not sourced verbatim.
-- Mechanics or text that reward or celebrate violence against civilians, from any side.
+- Mechanics or text that reward or celebrate violence against civilians, from any side. A player choice that harms
+  civilians, such as the GDD's Deport outcome, may exist only as a historical possibility that never pays: it carries its
+  real costs (refugees, Social cohesion, International Support), gives no reward, and is shown soberly through sourced
+  events (owner ruling, 12 October 2026).
 - Images of real people that are not public domain or CC0. One narrow exception, by owner ruling 2026-10-11
   (summarised): archival photographs of events (not portraits) under CC BY 4.0 are allowed, on these terms:
   - Each carries a credit line naming the photographer and collection (for the Meitar Collection: photographer,

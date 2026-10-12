@@ -22,13 +22,27 @@ namespace Statecraft.Sim
                 if (e.Anchor != "hard" && e.Anchor != "soft") throw new ContentException(e.File, F("anchor"), $"unknown anchor '{e.Anchor}' (must be hard or soft)");
                 ContentLoader.Status(e.File, F("status"), e.Status);
                 ContentLoader.Period(e.File, $"events[{e.Id}]", e.From, e.To);
+                // Chapters design 9: an event may not span a boundary; it is split. An open window (no `to`) is allowed only in
+                // the last era, since EventSystem keeps an open event eligible to the end of the game.
+                var era = c.Eras.FirstOrDefault(x => x.From <= e.From && e.From < x.To);
+                if (era != null && (e.To.HasValue ? e.To.Value > era.To : era.To < c.Eras.Max(x => x.To)))
+                    throw new ContentException(e.File, F("to"), FormattableString.Invariant($"the window runs past the end of era '{era.Id}' ({era.To:yyyy-MM-dd}); an event may not span a boundary, split it"));
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException(e.File, F("office"), $"unknown office '{e.Office}'");
                 if (c.Offices.Any(o => o.Id == e.Office && o.HistoricalOnly))
                     throw new ContentException(e.File, F("office"), "historical-only titles cannot be delegated events");
                 CheckPlaceholders(c, e, F("title"), e.Title, offices);
                 CheckPlaceholders(c, e, F("text"), e.Text, offices);
+                // Chapters design 3.2: an event may only name model records that are active for its whole window.
+                void Active(string field, string id)
+                {
+                    var ind = c.Indicators.FirstOrDefault(x => x.Id == id);
+                    var pol = c.Policies.FirstOrDefault(x => x.Id == id);
+                    var (rf, rt) = ind != null ? (ind.From, ind.To) : pol != null ? (pol.From, pol.To) : ((DateTime?)null, (DateTime?)null);
+                    if (!Window.Covers(rf, rt, e.From, e.To)) throw new ContentException(e.File, field, $"'{id}' is not active for the whole window of this event");
+                }
                 foreach (var cond in e.Conditions)
                 {
+                    Active(F($"conditions.{cond.Indicator}"), cond.Indicator);
                     if (!indicators.Contains(cond.Indicator)) throw new ContentException(e.File, F($"conditions.{cond.Indicator}"), "unknown indicator");
                     // Indicators live in [0,1], so a bound outside it (or min above max) could never be met.
                     if (cond.Min.HasValue) { ContentLoader.Finite(e.File, F($"conditions.{cond.Indicator}.min"), cond.Min.Value); ContentLoader.Unit(e.File, F($"conditions.{cond.Indicator}.min"), cond.Min.Value); }
@@ -57,12 +71,14 @@ namespace Statecraft.Sim
                     {
                         if (c.Policies.All(p => p.Id != kv.Key)) throw new ContentException(e.File, F($"options[{o.Id}].set_policy.{kv.Key}"), "unknown policy");
                         ContentLoader.Unit(e.File, F($"options[{o.Id}].set_policy.{kv.Key}"), kv.Value);
+                        Active(F($"options[{o.Id}].set_policy.{kv.Key}"), kv.Key);
                     }
                     if (o.SetRung.HasValue && (o.SetRung < 1 || o.SetRung > 5)) throw new ContentException(e.File, F($"options[{o.Id}].set_rung"), "must be 1-5");
                     foreach (var fx in o.Effects)
                     {
                         if (!indicators.Contains(fx.Target) && !SpecialTargets.Contains(fx.Target))
                             throw new ContentException(e.File, F($"options[{o.Id}].effects.{fx.Target}"), "unknown target");
+                        Active(F($"options[{o.Id}].effects.{fx.Target}"), fx.Target);
                         ContentLoader.Finite(e.File, F($"options[{o.Id}].effects.{fx.Target}.delta"), fx.Delta);
                         if (sensitive && (fx.Target == "treasury" || fx.Target == "fx_reserves") && fx.Delta > 0)
                             throw new ContentException(e.File, F($"options[{o.Id}].effects.{fx.Target}"), $"sensitive events cannot reward {fx.Target}");

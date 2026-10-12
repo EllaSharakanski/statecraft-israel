@@ -4,6 +4,8 @@
 # the start of play to 1 January 1957, the spec's "Q2 1948 to Q4 1956". These are game-design dates, not historical facts.
 # Optional per era: `systems: { legislature: state | assembly, map_actions: [transit_camp, housing] }` (issue #58). Absent means
 # a state legislature and both map actions. A key is added only with the code behind it.
+# `systems.loop: legacy | gdd` (GDD v0.1, docs/rules/mvp.md R-LOOP-001): which game loop runs; the same in every era. Absent
+# means legacy. The real game stays legacy until the GDD cutover.
 eras:
   - id: founding
     name: The Founding

@@ -55,6 +55,18 @@ namespace Statecraft.Sim
         public int MapActionsThisTurn;
         /// <summary>Why the game ended, as one of the <see cref="GameOverCodes"/>; null while it is on. Never display it: use PlayerText.GameOver.</summary>
         public string? GameOver;
+        // GDD v0.1 state (spec 2026-10-12 section 2.2). Empty in the legacy loop, and then left out of the hash (R-LOOP-002).
+        /// <summary>The cities by id (ordinal).</summary>
+        public SortedDictionary<string, City> Cities = new SortedDictionary<string, City>(StringComparer.Ordinal);
+        /// <summary>The movable units by id.</summary>
+        public SortedList<int, Unit> Units = new SortedList<int, Unit>();
+        /// <summary>The next id a new unit takes. Ids are never reused.</summary>
+        public int NextId;
+        /// <summary>The date each completed objective was completed, by objective id (ordinal).</summary>
+        public SortedDictionary<string, DateTime> Objectives = new SortedDictionary<string, DateTime>(StringComparer.Ordinal);
+        /// <summary>The player's score (GDD "Objectives": bonus points). An int assumes whole-number points; the point values and
+        /// the timing bonus are open decisions with the owner (D-B2, D-B6), so the type is revisited when they are set.</summary>
+        public int Score;
 
         public double TotalPopulation => Population.Values.Sum();
 
@@ -73,6 +85,9 @@ namespace Statecraft.Sim
             c.ChosenOptions = new Dictionary<string, string>(ChosenOptions);
             c.Appointments = new Dictionary<string, Appointment>(Appointments);
             c.Placements = new List<Placement>(Placements);
+            c.Cities = new SortedDictionary<string, City>(Cities, StringComparer.Ordinal);
+            c.Units = new SortedList<int, Unit>(Units);
+            c.Objectives = new SortedDictionary<string, DateTime>(Objectives, StringComparer.Ordinal);
             return c;
         }
 
@@ -146,6 +161,21 @@ namespace Statecraft.Sim
             Close(']');
             Nl(); sb.Append("mapturn=").Append(MapActionsTurnDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':').Append(MapActionsThisTurn).Append(';');
             Nl(); sb.Append("over=").Append(GameOver ?? "");
+            // GDD v0.1 sections (spec 2026-10-12 section 2.4): each written only when set, so with the legacy loop the text
+            // above is the whole text, byte for byte. The over= line has no separator after it, so each section adds one.
+            // R-LOOP-002.
+            void Section(string name, char open, char close, IEnumerable<string> items)
+            {
+                Sep(); Nl(); sb.Append(name).Append(open);
+                foreach (var i in items) { Entry(); sb.Append(i); Sep(); }
+                Close(close);
+            }
+            if (Cities.Count > 0) Section("city", '{', '}', Cities.Values.Select(x => x.Canonical()));
+            if (Units.Count > 0) Section("units", '[', ']', Units.Values.Select(x => x.Canonical()));
+            if (NextId != 0) { Sep(); Nl(); sb.Append("next=").Append(NextId.ToString(CultureInfo.InvariantCulture)); }
+            if (Objectives.Count > 0)
+                Section("obj", '{', '}', Objectives.Select(kv => kv.Key + "=" + kv.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            if (Score != 0) { Sep(); Nl(); sb.Append("score=").Append(Score.ToString(CultureInfo.InvariantCulture)); }
             return sb.ToString();
         }
     }

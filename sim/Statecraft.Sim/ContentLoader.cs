@@ -245,6 +245,7 @@ namespace Statecraft.Sim
                 c.Events.Add(e);
             }
             Validate(c, settlementIds);
+            c.BuildWindows();
             c.Hash = HashOf(read);
             return c;
         }
@@ -263,17 +264,21 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
-        public static Content Load(string contentRoot)
+        public static Content Load(string contentRoot) => Load(contentRoot, read => read);
+
+        /// <summary>Loads content from a directory through <paramref name="wrap"/>, which may change the text of the files read
+        /// (MvpSlice.Overlay). The directory checks are the same as for <see cref="Load(string)"/>.</summary>
+        internal static Content Load(string contentRoot, Func<Func<string, string?>, Func<string, string?>> wrap)
         {
             var eventsDir = Path.Combine(contentRoot, "events");
             var eventFiles = Directory.Exists(eventsDir)
                 ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
                 : new List<string>();
-            var content = Load(rel =>
+            var content = Load(wrap(rel =>
             {
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
-            }, eventFiles);
+            }), eventFiles);
             // Only this overload can list the directory. The readFile overload (WebGL) cannot, so a misnamed file is caught
             // here and by RealContentTests before anything ships.
             var rulesDir = Path.Combine(contentRoot, "rules");
@@ -370,6 +375,10 @@ namespace Statecraft.Sim
                 if (i > 0 && r.RungMinMobilization[i] < r.RungMinMobilization[i - 1])
                     throw new ContentException(file, field, "must not be below the previous rung's floor");
             }
+            if (r.TurnLengths.Count != 5) throw new ContentException(file, "turn_lengths", "needs exactly 5 values (rungs 1-5)");
+            for (int i = 0; i < 5; i++)
+                if (!SimTime.LengthNames.Contains(r.TurnLengths[i]))
+                    throw new ContentException(file, FormattableString.Invariant($"turn_lengths[{i}]"), "must be quarter, month or week");
             if (r.StartRung < 1 || r.StartRung > 5) throw new ContentException(file, "start_rung", "must be 1-5");
             if (r.CeasefireWeeks <= 0) throw new ContentException(file, "ceasefire_weeks", "must be > 0");
             foreach (var (key, v) in new[] { ("treasury_start", r.TreasuryStart), ("fx_start", r.FxStart), ("tax_per_capita_per_year", r.TaxPerCapitaPerYear),
@@ -386,6 +395,8 @@ namespace Statecraft.Sim
                 if (!MapActions.Actions.Contains(kv.Key)) throw new ContentException(file, $"map_actions.{kv.Key}", "unknown map action (transit_camp or housing)");
                 if (!(kv.Value.Cost >= 0 && IsFinite(kv.Value.Cost))) throw new ContentException(file, $"map_actions.{kv.Key}.cost", "must be a finite number >= 0");
                 Named(file, $"map_actions.{kv.Key}.name", kv.Value.Name);
+                if (kv.Value.From.HasValue && kv.Value.To.HasValue && kv.Value.To.Value <= kv.Value.From.Value)
+                    throw new ContentException(file, $"map_actions.{kv.Key}.to", FormattableString.Invariant($"must be after from ({kv.Value.From:yyyy-MM-dd})"));
                 foreach (var (key, v) in new[] { ("housing", kv.Value.Housing), ("morale", kv.Value.Morale) })
                     if (!(v >= -1 && v <= 1)) throw new ContentException(file, $"map_actions.{kv.Key}.{key}", "must be a number from -1 to 1");
             }
@@ -451,6 +462,72 @@ namespace Statecraft.Sim
                         throw new ContentException(file, $"budget_start.{b.line}", $"office '{a.office}' would own both '{a.line}' and '{b.line}' on the same day");
             // The same rule EconomySystem.Allocate applies to every later allocation.
             if (r.BudgetStart.Count > 0 && Math.Abs(r.BudgetStart.Values.Sum() - 1.0) > 1e-6) throw new ContentException(file, "budget_start", "shares must sum to 1");
+        }
+
+        // Indicators the code reads by name: food_supply (EconomySystem, FX crisis), housing and morale (MapActions), security
+        // and intl_standing (Unity HudModel). A window on one would make those reads miss, so the loader refuses it.
+        static readonly string[] CodeNamedIndicators = { "morale", "food_supply", "housing", "security", "intl_standing" };
+
+        /// <summary>Chapters design 3.2: a window must run forward, and nothing may reach a record that is not active for the
+        /// whole window of whatever uses it (effect sources and targets, situations, voter-group weights, policy and effect offices).</summary>
+
+        static void ValidateWindows(Content c)
+        {
+            void Order(string where, DateTime? from, DateTime? to)
+            {
+                if (from.HasValue && to.HasValue && from.Value >= to.Value) throw new ContentException("model.yaml", where, "from must be before to");
+            }
+            foreach (var x in c.Indicators)
+                if ((x.From.HasValue || x.To.HasValue) && CodeNamedIndicators.Contains(x.Id))
+                    throw new ContentException("model.yaml", $"indicators[{x.Id}]", $"'{x.Id}' is read by name in the code, so it cannot have a from/to window");
+            foreach (var x in c.Indicators) Order($"indicators[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Policies) Order($"policies[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Effects) Order($"effects[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Situations) Order($"situations[{x.Id}]", x.From, x.To);
+            foreach (var x in c.VoterGroups) Order($"voter_groups[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Actors) Order($"actors[{x.Id}]", x.From, x.To);
+
+            void Reach(string where, DateTime? from, DateTime? to, string kind, string id, DateTime? rFrom, DateTime? rTo)
+            {
+                if (!Window.Covers(rFrom, rTo, from, to))
+                    throw new ContentException("model.yaml", where, $"{kind} '{id}' is not active for the whole window of this record (give both the same from/to, or a wider one on '{id}')");
+            }
+            // The reached record's window, or null when the id is a record kind with none: (null, null) means "always".
+            (DateTime?, DateTime?) Win(string id)
+            {
+                var ind = c.Indicators.FirstOrDefault(x => x.Id == id);
+                if (ind != null) return (ind.From, ind.To);
+                var pol = c.Policies.FirstOrDefault(x => x.Id == id);
+                return pol != null ? (pol.From, pol.To) : ((DateTime?)null, (DateTime?)null);
+            }
+            foreach (var e in c.Effects)
+            {
+                var s = Win(e.Source); var t = Win(e.Target);
+                Reach($"effects[{e.Id}].source", e.From, e.To, "source", e.Source, s.Item1, s.Item2);
+                Reach($"effects[{e.Id}].target", e.From, e.To, "target", e.Target, t.Item1, t.Item2);
+            }
+            foreach (var s in c.Situations)
+            {
+                var w = Win(s.Indicator);
+                Reach($"situations[{s.Id}].indicator", s.From, s.To, "indicator", s.Indicator, w.Item1, w.Item2);
+            }
+            foreach (var g in c.VoterGroups)
+                foreach (var k in g.Weights.Keys)
+                {
+                    var w = Win(k);
+                    Reach($"voter_groups[{g.Id}].weights.{k}", g.From, g.To, "indicator", k, w.Item1, w.Item2);
+                }
+            // A record with a window of its own must have its office for that whole window. Records with no window keep the
+            // existing rule (a policy may name an office that is created later: it has no holder until then).
+            void OfficeFor(string where, string office, DateTime? from, DateTime? to)
+            {
+                if (office == "" || (!from.HasValue && !to.HasValue)) return;
+                var o = c.Offices.FirstOrDefault(x => x.Id == office);
+                if (o != null && !Window.Covers(o.From, o.Until, from, to))
+                    throw new ContentException("model.yaml", where, $"office '{office}' does not exist for the whole window of this record");
+            }
+            foreach (var p in c.Policies) OfficeFor($"policies[{p.Id}].office", p.Office, p.From, p.To);
+            foreach (var e in c.Effects) OfficeFor($"effects[{e.Id}].office", e.Office, e.From, e.To);
         }
 
         static void Validate(Content c, List<string> settlementIds)
@@ -536,6 +613,24 @@ namespace Statecraft.Sim
                     if (t.Party != "" && !parties.Contains(t.Party)) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}.party", $"unknown party '{t.Party}'");
                     if (t.To.HasValue && t.To.Value <= t.From) throw new ContentException("people.yaml", $"people[{p.Id}].offices.{t.Office}", FormattableString.Invariant($"term ends ({t.To:yyyy-MM-dd}) before it starts ({t.From:yyyy-MM-dd})"));
                 }
+            }
+            foreach (var o in c.Offices.Where(o => o.Successor != ""))
+            {
+                var at = $"offices[{o.Id}].successor";
+                var next = c.Offices.FirstOrDefault(x => x.Id == o.Successor);
+                if (next == null) throw new ContentException("offices.yaml", at, $"unknown office '{o.Successor}'");
+                if (next == o) throw new ContentException("offices.yaml", at, "an office cannot succeed itself");
+                if (!o.Until.HasValue) throw new ContentException("offices.yaml", at, "needs until: only an abolished office has a successor");
+                // The successor takes over the old office's budget lines and policies (chapters spec 4.2, #59), so it must be able
+                // to own whatever the old office could.
+                if (next.SeveralHolders && !o.SeveralHolders)
+                    throw new ContentException("offices.yaml", at, $"office '{next.Id}' has several holders, so it cannot take over budget lines and policies");
+                if (next.HistoricalOnly && !o.HistoricalOnly)
+                    throw new ContentException("offices.yaml", at, $"office '{next.Id}' is a historical title, so it cannot take over budget lines and policies");
+                if (next.From.HasValue && next.From.Value > o.Until.Value)
+                    throw new ContentException("offices.yaml", at, FormattableString.Invariant($"office '{next.Id}' is established on {next.From:yyyy-MM-dd}, after {o.Id} is abolished ({o.Until:yyyy-MM-dd})"));
+                if (next.Until.HasValue && next.Until.Value <= o.Until.Value)
+                    throw new ContentException("offices.yaml", at, FormattableString.Invariant($"office '{next.Id}' is abolished on {next.Until:yyyy-MM-dd}, before it can take over on {o.Until:yyyy-MM-dd}"));
             }
             foreach (var o in c.Offices.Where(o => o.From.HasValue))
             {
@@ -669,6 +764,8 @@ namespace Statecraft.Sim
             ValidateRules(c, c.Rules, "rules.yaml", indicators, offices, historicalOffices);
             foreach (var kv in c.EraRules)
                 ValidateRules(c, kv.Value, "rules/" + kv.Key + ".yaml", indicators, offices, historicalOffices);
+            foreach (var g in c.Regions.Where(g => g.From.HasValue && g.To.HasValue && g.To.Value <= g.From.Value))
+                throw new ContentException("aliyah.yaml", $"regions[{g.Id}].to", FormattableString.Invariant($"must be after from ({g.From:yyyy-MM-dd})"));
             for (int i = 0; i < c.Aliyah.Count; i++)
             {
                 var a = c.Aliyah[i]; var path = FormattableString.Invariant($"series[{i}]");
@@ -677,6 +774,10 @@ namespace Statecraft.Sim
                 foreach (var kv in a.Origins)
                 {
                     if (c.Regions.All(g => g.Id != kv.Key)) throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"unknown region '{kv.Key}' (add it to regions with a name)");
+                    var region = c.Regions.First(g => g.Id == kv.Key);
+                    // A period's dates are inclusive, a region's window is [from, to): the period covers [a.From, a.To + 1 day).
+                    if (!Window.Covers(region.From, region.To, a.From, a.To.AddDays(1)))
+                        throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"region '{kv.Key}' does not exist for the whole period (its window is {(region.From.HasValue ? region.From.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "the start")} to {(region.To.HasValue ? region.To.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "open")})");
                     Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
                 }
             }
@@ -687,6 +788,7 @@ namespace Statecraft.Sim
                 Count("population.yaml", path + ".jews", a.Jews);
             }
             ValidateMap(c, settlementIds);
+            ValidateWindows(c);
             EventRules.Validate(c, offices, indicators);
         }
 
@@ -709,6 +811,10 @@ namespace Statecraft.Sim
                     if (!MapActions.Actions.Contains(a)) throw new ContentException("eras.yaml", at + ".systems.map_actions", $"unknown map action '{a}' (transit_camp or housing)");
                 if (e.Systems.MapActions.Distinct().Count() != e.Systems.MapActions.Count)
                     throw new ContentException("eras.yaml", at + ".systems.map_actions", "lists an action twice");
+                if (e.Systems.Loop != EraSystems.Legacy && e.Systems.Loop != EraSystems.Gdd)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "must be legacy or gdd");
+                if (e.Systems.Loop != c.Eras[0].Systems.Loop)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "every era runs the same loop (a save names one ruleset)");
                 if (i == 0)
                 {
                     if (c.Rules.Start != default && e.From != c.Rules.Start)   // a missing start is rules.yaml's own error

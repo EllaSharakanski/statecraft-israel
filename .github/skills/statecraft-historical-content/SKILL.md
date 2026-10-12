@@ -19,11 +19,11 @@ disable-model-invocation: false
 
 Before drafting, read these first:
 
-- [README.md](../../README.md)
-- [CONTRIBUTING.md](../../CONTRIBUTING.md)
-- [docs/CONTENT_POLICY.md](../../docs/CONTENT_POLICY.md)
-- [docs/WRITING_EVENTS.md](../../docs/WRITING_EVENTS.md)
-- [docs/WRITING_GUIDE.md](../../docs/WRITING_GUIDE.md)
+- [README.md](../../../README.md)
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md)
+- [docs/CONTENT_POLICY.md](../../../docs/CONTENT_POLICY.md)
+- [docs/WRITING_EVENTS.md](../../../docs/WRITING_EVENTS.md)
+- [docs/WRITING_GUIDE.md](../../../docs/WRITING_GUIDE.md)
 
 ## Mandatory workflow
 
@@ -63,7 +63,7 @@ This skill package is intentionally structured like a real agent skill bundle, n
 ## References
 
 - [Historical writing guide](./references/historical-writing-checklist.md)
-- [Content policy](../../docs/CONTENT_POLICY.md)
-- [Event schema](../../docs/WRITING_EVENTS.md)
+- [Content policy](../../../docs/CONTENT_POLICY.md)
+- [Event schema](../../../docs/WRITING_EVENTS.md)
 - [Event draft template](./templates/event-draft.yaml)
 - [Source coverage script](./scripts/check_source_coverage.py)

@@ -63,9 +63,9 @@ This skill package is intentionally structured as a reusable agent workflow with
 
 ## References
 
-- [Writing guide](../../docs/WRITING_GUIDE.md)
-- [Content policy](../../docs/CONTENT_POLICY.md)
-- [Event writing rules](../../docs/WRITING_EVENTS.md)
+- [Writing guide](../../../docs/WRITING_GUIDE.md)
+- [Content policy](../../../docs/CONTENT_POLICY.md)
+- [Event writing rules](../../../docs/WRITING_EVENTS.md)
 - [Tone rules](./references/tone-rules.md)
 - [Tone pass template](./templates/tone-pass-checklist.md)
 - [Phrase scan script](./scripts/scan_for_generic_ai_phrases.py)

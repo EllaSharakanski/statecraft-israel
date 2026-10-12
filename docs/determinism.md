@@ -68,6 +68,13 @@ manifest line and the snapshot), then run the tests plain. A scenario that moves
 command; its snapshot diff in the PR shows what moved, and the commit message says why. Two ship: `cautious` and `reckless`. They stay in 1948, before any change a
 later era makes, so they move only when a 1948 rule or event does.
 
+**MVP goldens (GDD v0.1, before cutover).** `mvp-slice` plays `MvpSlice.Load`, the real content with the loop switch on and
+monthly turns (spec 2026-10-12 section 2.1, R-LOOP-003), from the golden seed in Historical mode with `HistoricalAI` until
+`MvpGolden.Until` (15 January 1949, eight monthly turns). `MvpGoldenTests` checks it against the manifest line `mvp-slice` and the
+snapshot `golden/mvp-slice.txt`, and the update command re-pins it like the others. It is not shown in this file's table or in
+`tools/web_check.py`, because the players run only the legacy goldens until cutover. A Phase 1 PR that adds a GDD rule the slice
+exercises moves it, re-pins it and says why; the legacy goldens never move for it.
+
 **Invariants.** A hash says something changed; `sim/Statecraft.Sim.Tests/golden/invariants.yaml` says whether it is
 still plausible. Each entry names a golden run (`1950` or `1952`), a value (an indicator id, or `treasury`, `debt`,
 `fx`, `population`, `stability`), when it is read (`end`, `always`, or a date: the first state on or after it), a `min`
@@ -138,6 +145,16 @@ to the same state.
 content in `content/`, or the hash format. When it happens, update the manifest and every place above in the same commit, add a row to
 the history below, and say in the commit message why the hash moved. If a hash changes and you did not mean to change
 rules or content, treat it as a determinism bug.
+
+## Content windows
+
+Records with `from`/`to` (chapters spec 3.2) are resolved by date through `Content.At(date)`. The active lists are built
+once at load, one per segment between cut dates, so a turn does a binary search and no allocation. When the date crosses
+a cut, `ContentWindows.Update` adds starting records at their defaults and removes ending ones, in ordinal id order, right
+after the date moves (before the cabinet, attention and events; the turn's effects already ran on the turn's start date).
+The hash reads the state keys, so it never sees a record outside its window. An event that fires late (after its window,
+`EventSystem.Trigger`) can find a record it names already gone: a condition on it is not met, and an option's effect or
+`set_policy` on it is left out. With no windows there is one segment and the same view everywhere.
 
 ## Rebaseline history
 

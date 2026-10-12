@@ -21,7 +21,7 @@ namespace Statecraft.Sim
         {
             if (c == null) throw new ArgumentNullException(nameof(c));
             var s = Simulation.NewGame(c, seed, mode);
-            return new GameSession(c, s, new SaveGame(c.Hash, seed, mode, s.Hash()));
+            return new GameSession(c, s, new SaveGame(c.Hash, seed, mode, c.Ruleset, s.Hash()));
         }
 
         /// <summary>Runs one turn and records it in the save.</summary>
@@ -40,6 +40,11 @@ namespace Statecraft.Sim
         {
             if (c == null) throw new ArgumentNullException(nameof(c));
             var saved = SaveGame.Parse(saveText);
+            // R-SAVE-001: a save replays only under the rules it was played with (spec 2026-10-12 section 2.4, decision D-E4).
+            if (saved.Ruleset != c.Ruleset)
+                throw new SaveException(0, saved.Ruleset == SaveGame.LegacyRuleset
+                    ? "This save was made with an earlier version of the game's rules; start a new game."
+                    : "This save was made with another version of the game's rules; start a new game.");
             var list = new List<string>();
             bool sameContent = saved.ContentHash == c.Hash;
             if (!sameContent) list.Add("This save was made with different game content; the replayed game may differ.");
