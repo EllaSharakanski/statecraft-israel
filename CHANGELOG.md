@@ -8,6 +8,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Writer preview: `dotnet run --project sim/Statecraft.Cli -- --preview --set key=value` plays the historical run with a
+  rules.yaml change applied in memory and prints the changed state lines and a table of chosen values, without Unity and
+  without touching `content/` (fixes #295).
 - Rules per era (#58, second piece): the attention, economy, population, security, map-action and cabinet systems read
   `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
   HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
