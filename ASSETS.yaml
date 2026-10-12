@@ -163,7 +163,7 @@ rules:
     note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
-    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"
+    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
     status: verified
   # --- Event-card header photographs: real archival photos, never AI (docs/event-images.md; owner rulings 2026-10-11) ---
   # Licences and artists re-read from each Commons file page on 2026-10-11; CC BY 4.0 credits are the licensor's credit
