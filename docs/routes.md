@@ -155,8 +155,10 @@ measurement in `docs/units.md`:
   - **The old rule.** Each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up
     both walls and its rails and sleepers warped.
   - **Width.** It narrows to the gorge floor and ramps: `RailHalfWidths`.
-    - Per section, `FlatHalfWidth` cuts the band back symmetrically to where the ground on both sides is neither above
-      it nor more than 40 m below it, down to 25% of the width.
+    - Per section, `FlatHalfWidth` cuts the band back symmetrically to where the ground on both sides is neither more
+      than 40 m above it nor more than 60 m below it, down to 25% of the width.
+      - An edge under a little higher ground reads as a cutting.
+      - A stricter rule (any rise over the clearance) also thinned the band on the rolling Shephelah foothills.
     - Then it takes the minimum over two sections each way.
     - Then it limits the change to 5% of the width per 120 m step, in forward and backward passes that only narrow.
     - So the width never jumps by more than a tenth between sections (review A-I1).

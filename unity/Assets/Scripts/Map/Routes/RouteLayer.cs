@@ -196,7 +196,11 @@ namespace Statecraft.Game.Map.Routes
 
         /// <summary>How far ground may lie below a cross-section before the section narrows (m, world): a ribbon edge floating
         /// higher than this over a falling slope would read as a shelf.</summary>
-        public const float FallToleranceM = 40f;
+        public const float FallToleranceM = 60f;
+        /// <summary>How far ground may rise above a cross-section before it narrows (m, world): an edge running under a
+        /// little higher ground reads as a cutting, and the rails are kept clear by the lift (RailSpanShare). Without it,
+        /// any rise over the clearance narrowed the band on the rolling foothills too, not only in the gorges.</summary>
+        public const float RiseToleranceM = 40f;
         /// <summary>The narrowest a cross-section gets, as a share of the ribbon's width (a gorge floor).</summary>
         public const float MinWidthShare = 0.25f;
         /// <summary>Samples per side when a cross-section looks for where it must stop.</summary>
@@ -204,7 +208,7 @@ namespace Statecraft.Game.Map.Routes
 
         /// <summary>The half-width (m) a cross-section at <paramref name="q"/> (flat at <paramref name="y"/>) may span: the full
         /// <paramref name="half"/>, cut back symmetrically (so the rails stay centred) to the last sample where the ground on
-        /// both sides is neither above the section (it would bury it) nor more than <see cref="FallToleranceM"/> below it, but
+        /// both sides is neither more than <see cref="RiseToleranceM"/> above the section nor more than <see cref="FallToleranceM"/> below it, but
         /// never under <see cref="MinWidthShare"/> of the width. Railways only (RailHalfWidths smooths it along the line):
         /// in the Sorek gorge the band keeps to the floor instead of riding up the walls (review B15); on the plains nothing
         /// changes.</summary>
@@ -215,7 +219,7 @@ namespace Statecraft.Game.Map.Routes
             {
                 float o = half * k / NarrowSamples;
                 float gl = Ground(data, origin, q - side * o), gr = Ground(data, origin, q + side * o);
-                if (gl > y || gr > y || gl < y - FallToleranceM || gr < y - FallToleranceM) { allowed = half * (k - 1) / NarrowSamples; break; }
+                if (gl > y + RiseToleranceM || gr > y + RiseToleranceM || gl < y - FallToleranceM || gr < y - FallToleranceM) { allowed = half * (k - 1) / NarrowSamples; break; }
             }
             return Mathf.Max(allowed, half * MinWidthShare);
         }

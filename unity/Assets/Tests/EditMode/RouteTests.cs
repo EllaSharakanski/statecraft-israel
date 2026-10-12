@@ -101,7 +101,7 @@ public class RouteTests
         using var sha = System.Security.Cryptography.SHA256.Create();
         return string.Concat(sha.ComputeHash(bytes.ToArray()).Select(b => b.ToString("x2")));
     }
-    const string RailMeshHash = "35b67eeb775ba6e8767a50d07346e039791bf682910b3ae9197aef639f8479e2";
+    const string RailMeshHash = "f54a7a63ead7bed5db05f09aa2284ba7251573fb95b8a6e1e701e3cc736061b1";
 
     [Test]
     public void TheMapBuildsRibbonsOnTheGroundAndTheTogglesHideThem()
