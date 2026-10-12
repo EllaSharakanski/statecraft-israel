@@ -20,7 +20,7 @@ required attribution texts are in [`NOTICE`](NOTICE).
 | EB Garamond | `unity/Assets/UI/Fonts/` | SIL Open Font License 1.1 | Keep `OFL.txt` with the fonts; do not sell the fonts on their own |
 | Frank Ruhl Libre | `unity/Assets/UI/Fonts/FrankRuhlLibre/` | SIL Open Font License 1.1 | Keep `OFL.txt` with the fonts; do not sell the fonts on their own |
 | Unity template-derived files | `unity/Assets/Settings/`, `spikes/m0/unity/Assets/Settings/`, `spikes/m0/unity/Assets/UI Toolkit/UnityThemes/`, and Shader Graphs generated from a Unity template (`unity/Assets/Shaders/StatecraftTerrain.shadergraph`) | Unity Companion License | Use with Unity; see `LICENSING.md` |
-| AI-generated concept art | `promo/final/01`–`08`, `promo/ref/*-src.jpg`, `docs/images/hero-concept-1936.jpg`, `promo/start-screen/*.png`, `unity/Assets/UI/StartScreen/declaration-hall.jpg` (in every build) | CC0 / no rights claimed (`LICENSING.md`); generator terms under owner review (D5) | Disclose as AI-generated (Steam and itch.io require it) |
+| AI-generated concept art | `promo/final/01`–`08`, `promo/ref/*-src.jpg`, `docs/images/hero-concept-1936.jpg`, `promo/start-screen/*.png`, `unity/Assets/UI/StartScreen/declaration-hall.jpg` (in every build) | CC0 / no rights claimed (`LICENSING.md`); generator terms under owner review (D5; D-D for the start screen's painting and options) | Disclose as AI-generated (Steam and itch.io require it) |
 
 Code dependencies are fetched at build or run time under their own licences and are not vendored: NuGet packages in
 `sim/**/*.csproj` (YamlDotNet MIT; test-only: xUnit Apache-2.0, Microsoft.NET.Test.Sdk MIT, xunit.runner.visualstudio
