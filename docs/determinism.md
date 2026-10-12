@@ -48,6 +48,16 @@ never take a hash from the run without the variable, so a second plain run is th
 hash), add a row to the rebaseline history, and say why in the commit message. The snapshot test also fails if a snapshot is
 stale while the hash is unchanged.
 
+**Adding an era golden.** In a test, call `EraGolden.Check("hash_<era>_<year>", content, "<era id>", new DateTime(<year>, 1, 1))`. It plays a fresh
+start of that era (golden seed unless one is passed, Historical mode, `HistoricalAI`, the same loop as `GoldenRun.Play`) and checks the hash
+against the manifest line of that name and the snapshot `golden/<name>.txt`. The run stays inside the era: it stops before the turn that would
+reach the era's `to`, because that turn ends on the boundary and its state already holds the next era's attention and events, so the
+next era's rules would move this era's golden (`EraGoldenTests.TheRunStaysInsideTheEraSoTheNextErasRulesDoNotMoveIt`). Bless it with `STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln`, which adds the
+manifest line and the snapshot; list the name in `GoldenManifestTests.TheManifestHoldsExactlyTheKnownGoldens`. Today only the first era can
+be started fresh, because `NewGame` reads the base rules' start; a later era fails with a message saying its start values are not read yet.
+The carry-over check (play era N into N+1 and compare with a fresh N+1 on each carried quantity, chapters design section 6) waits on that
+and on `EraSystem.Cross`.
+
 **Scenario goldens.** The two hash goldens follow `HistoricalAI`, the path history took. A scenario is a path a player might take
 instead: `sim/Statecraft.Sim.Tests/scenarios/<name>.yaml` lists commands by date (`on:`), the runner (`Scenario`, in the tests) plays
 them from a seed (default 1948) in Historical mode until `until:`, and `ScenarioTests` checks the final hash against the manifest line
