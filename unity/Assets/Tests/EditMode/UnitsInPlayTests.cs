@@ -310,8 +310,8 @@ public class UnitsInPlayTests
                     if (overlap) Assert.AreNotEqual((layer.Spots[a].Q, layer.Spots[a].R), (layer.Spots[b].Q, layer.Spots[b].R), $"{anchors[i].u.Id} and {anchors[j].u.Id} share a hex");
                 }
             Debug.Log("UNITS spots\n" + string.Join("\n", log));
-            // Review MF1: the three anchors whose nearest clear spot was the other side's ground stand in their sourced
-            // own-side hex (West Jerusalem; Bayt Jiz and Bayt Susin by Latrun; Saris on the corridor road).
+            // Review MF1: the anchors whose nearest clear spot was the other side's ground stand on their own side (Etzioni in
+            // West Jerusalem; Harel by Saris on the corridor road), and the 7th Brigade is anchored at Hulda, not Latrun.
             (int, int) Spot(string id, string place) { var a = anchors.Single(x => x.u.Id == id && x.a.Place == place).a; return (layer.Spots[a].Q, layer.Spots[a].R); }
             float Km(string id, string place, double lon, double lat)
             {
@@ -597,6 +597,13 @@ public class UnitsInPlayTests
         {
             int blue = spit.uv.Count(uv => Mathf.Abs(uv.x - UnitPalette.U(UnitPalette.RoundelBlue)) < 1e-4f);
             Assert.AreEqual(6 * 2 * 3 * 2, blue, "six filled stars, no blue ring");
+            var avia = UnitModels.AviaS199("a-wings");
+            try
+            {
+                int wingBlue = avia.vertices.Where((p, i) => Mathf.Abs(p.x) > 1.5f && Mathf.Abs(avia.uv[i].x - UnitPalette.U(UnitPalette.RoundelBlue)) < 1e-4f).Count();
+                Assert.AreEqual(2 * 2 * 3 * 2, wingBlue, "the S-199's wing stars: under the wings only, none on top (Efrati pp. 6, 11)");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avia); }
             // The fuselage roundels face outwards: each star sits outside its white disc, not behind it.
             foreach (var mesh in new[] { spit, UnitModels.AviaS199("a") })
             {
