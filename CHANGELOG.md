@@ -8,6 +8,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The loader refuses a `from`/`to` window on the indicators the code reads by name (`morale`, `food_supply`, `housing`,
+  `security`, `intl_standing`), a follow-up from the review of #313 (refs #57).
 - Turn lengths per security rung are data: `turn_lengths` in `rules.yaml` or an era override, read in the era the turn
   starts in (R-TURN-001). The default is today's table, so the goldens do not move. GDD v0.1 Phase 1 uses it for monthly
   turns (refs #81).
