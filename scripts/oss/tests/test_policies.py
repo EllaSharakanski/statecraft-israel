@@ -41,7 +41,7 @@ def test_contributing_names_every_ci_command_and_the_unity_gate():
     text = read("CONTRIBUTING.md")
     for cmd in ("dotnet test sim/Statecraft.sln",
                 "uv run --with pytest==9.1.1 --with rasterio==1.5.2 --with numpy==2.5.3 --with pyyaml==6.0.3 "
-                "--with pillow==12.3.0 --with requests==2.32.5 pytest tools/tests -q",
+                "--with pillow==12.3.0 --with requests==2.32.5 --with pyproj==3.8.0 pytest tools/tests -q",
                 "uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q",
                 "uv run scripts/oss/check_repo.py",
                 "-buildTarget OSXUniversal -runTests -testPlatform EditMode", "## What CI runs", "CHANGELOG.md"):
