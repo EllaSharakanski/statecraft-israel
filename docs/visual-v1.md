@@ -1617,6 +1617,27 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
     | cpu 4 | 2506 → 2572 ms (148 ms under budget) | 8141 → 8006 ms |
 
     Before this review round, cpu 4 map_build was 2712 against 2720.
+
+    **Re-measured after merging #248, #250 and #251 (2026-10-12, cpu 4, three runs, exclusive lock):**
+
+    | build | map_build | first_frame |
+    |---|---|---|
+    | main f974c9f | 2581 ms | 8114 ms |
+    | this branch | 2768 ms | 8508 ms |
+    | this branch, light read of the sub-district file | 2745 ms (25 over 2720) | 8489 ms |
+
+    - The `localities parsed` phase included a second, full parse of `subdistrict_hexes_1948.yaml` (the camps' areas,
+      review I4), done with the reflection deserializer. GameRoot parses that file in full again later in the boot.
+    - The map build now reads only the regions' keys and the hexes' regions, with the event reader
+      (`Localities.FillHexes(doc, string, ...)`); KitTests checks that it gives the same areas. The phase went from 221
+      to 172 ms.
+    - Main itself grew 75 ms since c2089b4 (#250's unit placement, #251's routes). The branch adds about 165 ms over
+      main at cpu 4, nearly all of it the localities file's YAML scan.
+    - **Open:** map_build is 25 ms over the 2720 ms budget at cpu 4, within run-to-run spread but over the gate. Getting
+      under it needs one of these:
+      - a smaller runtime form of the localities file (for example a baked compact file beside the sourced YAML);
+      - deferring the villages' kit build until after the first frame;
+      - an owner ruling to re-baseline the budget on today's main.
   - The growth is the localities file's parse: the `localities parsed` boot phase is 50 ms at cpu 1 and 220 ms at cpu 4.
     It is not the ground tint, which the player logs as `KITS ground_tint_ms=0.8`. My earlier attribution to the tint was
     checked with that timer and was wrong; the earlier "terrain heights set" growth was the parse that ran before it.

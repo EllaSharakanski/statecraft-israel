@@ -58,6 +58,47 @@ namespace Statecraft.Game.Map.Kits
             }
         }
 
+        /// <summary>As FillHexes, from the sub-district file's text, read with the event reader below (boot budget: the map
+        /// build reads only each region's key and style and the hexes' regions; GameRoot's Subdistricts1948.Parse validates
+        /// the whole file later in the same boot). KitTests checks both give the same hexes.</summary>
+        public static void FillHexes(Doc doc, string regionsYaml, HexFile hexes, string file = FileName)
+        {
+            const string regionsFile = Subdistricts1948.FileName;
+            YMap root;
+            try
+            {
+                var parser = new Parser(new StringReader(regionsYaml));
+                parser.Consume<StreamStart>(); parser.Consume<DocumentStart>();
+                root = Node(parser) as YMap ?? throw new InvalidDataException($"{regionsFile}: not a mapping");
+            }
+            catch (YamlException e) { throw new InvalidDataException($"{regionsFile}:{e.Start.Line}: {e.Message}", e); }
+            var keyOf = new Dictionary<int, string?>();   // region id -> key, null for style none (outside)
+            var keys = new HashSet<string>();
+            int Int(object? o, string what) => o is string s && int.TryParse(s, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var v)
+                ? v : throw new InvalidDataException($"{regionsFile}: {what} is not an integer");
+            foreach (var o in List(root, "regions", regionsFile))
+            {
+                var m = Map(o, $"{regionsFile}: a region");
+                string key = Str(m, "key"); keys.Add(key);
+                keyOf[Int(m.TryGetValue("id", out var id) ? id : null, "a region id")] = Str(m, "style") == "none" ? null : key;
+            }
+            var at = new Dictionary<(int, int), string>();
+            foreach (var o in List(root, "hexes", regionsFile))
+            {
+                if (!(o is List<object?> h) || h.Count != 3) throw new InvalidDataException($"{regionsFile}: a hex row is not [q, r, region]");
+                int region = Int(h[2], "a hex's region");
+                if (!keyOf.TryGetValue(region, out var key)) throw new InvalidDataException($"{regionsFile}: a hex is in region {region}, which is not listed");
+                if (key != null) at[(Int(h[0], "a hex's q"), Int(h[1], "a hex's r"))] = key;
+            }
+            foreach (var a in doc.Encampments)
+            {
+                a.Hexes.Clear();
+                if (!keys.Contains(a.Subdistrict)) throw new InvalidDataException($"{file}: encampments '{a.Subdistrict}' is not a sub-district of {regionsFile}");
+                foreach (var h in hexes.hexes)
+                    if (h.land && h.biome != "lake" && at.TryGetValue((h.q, h.r), out var k) && k == a.Subdistrict) a.Hexes.Add((h.q, h.r));
+            }
+        }
+
         /// <summary>The camps an area draws: one per <see cref="PeoplePerCamp"/> people, rounded half up, with no floor
         /// (Nablus's 220 draw none: review M4).</summary>
         public static int CampsOf(Area a) => (int)System.Math.Floor(a.Population / PeoplePerCamp + 0.5);

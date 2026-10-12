@@ -207,7 +207,7 @@ namespace Statecraft.Game.Map
                 // The camps' areas are the sub-districts as the region layer draws them (review I4: no copy in the
                 // localities file).
                 if (string.IsNullOrWhiteSpace(inputs.RegionsYaml)) { localities.Encampments.Clear(); Debug.LogWarning($"KITS map/{Subdistricts1948.FileName} is missing: no Bedouin camps"); }
-                else Kits.Localities.FillHexes(localities, Subdistricts1948.Parse(inputs.RegionsYaml), Hexes, "map/" + Kits.Localities.FileName);
+                else Kits.Localities.FillHexes(localities, inputs.RegionsYaml, Hexes, "map/" + Kits.Localities.FileName);
             }
             Kits.Localities.Use(localities.Places);   // on every build, so a map without the kits inherits nothing (review M13)
             if (kitsOn) DiagLog.BootPhase("localities parsed");

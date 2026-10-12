@@ -168,6 +168,12 @@ public class KitTests
         var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
         var doc = Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
         Localities.FillHexes(doc, Subdistricts1948.Parse(inputs.RegionsYaml), map.Hexes);
+        // The map build's light reader of the sub-district file (boot budget) gives the same areas as the full parse.
+        var light = Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+        Localities.FillHexes(light, inputs.RegionsYaml, map.Hexes);
+        for (int i = 0; i < doc.Encampments.Count; i++)
+            CollectionAssert.AreEqual(doc.Encampments[i].Hexes, light.Encampments[i].Hexes, doc.Encampments[i].Subdistrict);
+        Assert.IsTrue(doc.Encampments.All(a => a.Hexes.Count > 0));
         return doc;
     }
 
