@@ -1864,6 +1864,20 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - #319: the symbolic Old City has roads crossing inside its walls.
 - **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at
   79% (26 of 33).
+- **Perf, re-measured by the review:** frame time is headless WebGL `?vprofile`; boot is `headed.py boot --runs 3 --cpu
+  4`. Main `471c300` against the branch at `4a68d05`, each round under `machine_lock.py --exclusive --wait-unity`, in
+  interleaved order. A third round was cut short by a stop.
+
+  | | gameplay03 all (p95) | gameplay03 none | diorama02 all (p95) | diorama02 none | boot cpu 4: map_build / first_frame |
+  |---|---|---|---|---|---|
+  | main, round 1 (load 3.1) | 14.21 ms (16) | 10.72 ms | 19.47 ms (23) | 13.20 ms | 2584 / 8431 ms |
+  | branch, round 1 (load 7.5) | 15.40 ms (17) | 11.32 ms | 18.18 ms (21) | 13.06 ms | 2598 / 8369 ms |
+  | branch, round 2 (load 13.6) | 14.36 ms (16) | 11.01 ms | 17.80 ms (20) | 13.00 ms | 2619 / 8367 ms |
+  | main, round 2 (load 4.2) | 14.23 ms (16) | 11.03 ms | 17.81 ms (20) | 13.02 ms | 2595 / 8390 ms |
+
+  - Round 2 is equal within noise. In round 1, the branch's gameplay03 cost rises with its `none` row (+0.6 ms both),
+    that is, with the machine's load.
+  - Boot's map_build is 14-24 ms over main, within the runs' spread, under the 2720 ms budget at cpu 4.
 
 ### Sources (checked 2026-10-12)
 - Tel Aviv:
