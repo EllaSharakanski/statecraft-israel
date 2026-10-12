@@ -151,6 +151,12 @@ namespace Statecraft.Sim
         public double Base { get; set; }
         /// <summary>Display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+
     }
 
     public sealed class Policy
@@ -160,6 +166,12 @@ namespace Statecraft.Sim
         public string Office { get; set; } = "";
         /// <summary>Display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+
     }
 
     /// <summary>Additive effect: its contribution to Target moves toward K * source value over Inertia turns.</summary>
@@ -173,6 +185,12 @@ namespace Statecraft.Sim
         public string Office { get; set; } = "";
         /// <summary>Short display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+
     }
 
     /// <summary>Turns on past one threshold and off past another (hysteresis), so it does not flicker.</summary>
@@ -186,11 +204,56 @@ namespace Statecraft.Sim
         public double? OffBelow { get; set; }
         /// <summary>Display name shown to the player (Cause text); required.</summary>
         public string Name { get; set; } = "";
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+
     }
 
-    public sealed class VoterGroup { public string Id { get; set; } = ""; public Dictionary<string, double> Weights { get; set; } = new Dictionary<string, double>(); }
+    public sealed class VoterGroup
+    {
+        public string Id { get; set; } = ""; public Dictionary<string, double> Weights { get; set; } = new Dictionary<string, double>();
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+    }
 
-    public sealed class Actor { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public double Standing { get; set; } }
+    public sealed class Actor
+    {
+        public string Id { get; set; } = ""; public string Name { get; set; } = ""; public double Standing { get; set; }
+        /// <summary>First day the record exists (inclusive); null when it exists from the start (chapters design 3.2).</summary>
+        public DateTime? From { get; set; }
+        /// <summary>Day the record stops existing (exclusive); null while it still exists.</summary>
+        public DateTime? To { get; set; }
+        public bool ActiveOn(DateTime date) => Window.Active(From, To, date);
+    }
+
+    /// <summary>Half-open windows [from, to) with null for "no bound" (chapters design 3.2).</summary>
+    public static class Window
+    {
+        public static bool Active(DateTime? from, DateTime? to, DateTime date) => (!from.HasValue || date >= from.Value) && (!to.HasValue || date < to.Value);
+
+        /// <summary>True when a record with window [rFrom, rTo) exists on every day of [from, to): the window of whatever uses it.</summary>
+        public static bool Covers(DateTime? rFrom, DateTime? rTo, DateTime? from, DateTime? to) =>
+            (!rFrom.HasValue || (from.HasValue && rFrom.Value <= from.Value)) && (!rTo.HasValue || (to.HasValue && rTo.Value >= to.Value));
+    }
+
+    /// <summary>The model records that exist on one day (<see cref="Content.At"/>). Built once at load, never changed.</summary>
+    public sealed class ModelView
+    {
+        public IReadOnlyList<Indicator> Indicators { get; }
+        public IReadOnlyList<Policy> Policies { get; }
+        public IReadOnlyList<Effect> Effects { get; }
+        public IReadOnlyList<Situation> Situations { get; }
+        public IReadOnlyList<VoterGroup> VoterGroups { get; }
+        public IReadOnlyList<Actor> Actors { get; }
+        public ModelView(IReadOnlyList<Indicator> i, IReadOnlyList<Policy> p, IReadOnlyList<Effect> e, IReadOnlyList<Situation> s, IReadOnlyList<VoterGroup> v, IReadOnlyList<Actor> a)
+        { Indicators = i; Policies = p; Effects = e; Situations = s; VoterGroups = v; Actors = a; }
+    }
 
     public sealed class Rules
     {
@@ -369,6 +432,41 @@ namespace Statecraft.Sim
         public List<Situation> Situations = new List<Situation>();
         public List<VoterGroup> VoterGroups = new List<VoterGroup>();
         public List<Actor> Actors = new List<Actor>();
+        ModelView[] _views = new ModelView[0];
+        DateTime[] _cuts = new DateTime[0];
+        /// <summary>Computes the windows' segments (chapters design 3.2): a sorted array of the days a model record begins or ends, and
+        /// the records active in each segment. Called once by the loader; <see cref="At"/> then only does a binary search, so tests
+        /// that run in parallel share nothing mutable. With no window anywhere there is one segment, the full lists.</summary>
+        internal void BuildWindows()
+        {
+            var cuts = new SortedSet<DateTime>();
+            void Cut(DateTime? a, DateTime? b) { if (a.HasValue) cuts.Add(a.Value); if (b.HasValue) cuts.Add(b.Value); }
+            foreach (var x in Indicators) Cut(x.From, x.To);
+            foreach (var x in Policies) Cut(x.From, x.To);
+            foreach (var x in Effects) Cut(x.From, x.To);
+            foreach (var x in Situations) Cut(x.From, x.To);
+            foreach (var x in VoterGroups) Cut(x.From, x.To);
+            foreach (var x in Actors) Cut(x.From, x.To);
+            _cuts = cuts.ToArray();
+            if (_cuts.Length == 0) { _views = new[] { new ModelView(Indicators, Policies, Effects, Situations, VoterGroups, Actors) }; return; }
+            _views = new ModelView[_cuts.Length + 1];
+            for (int k = 0; k < _views.Length; k++)
+            {
+                var d = k == 0 ? DateTime.MinValue : _cuts[k - 1];
+                _views[k] = new ModelView(Indicators.Where(x => x.ActiveOn(d)).ToArray(), Policies.Where(x => x.ActiveOn(d)).ToArray(),
+                    Effects.Where(x => x.ActiveOn(d)).ToArray(), Situations.Where(x => x.ActiveOn(d)).ToArray(),
+                    VoterGroups.Where(x => x.ActiveOn(d)).ToArray(), Actors.Where(x => x.ActiveOn(d)).ToArray());
+            }
+        }
+
+        /// <summary>The model records that exist on <paramref name="date"/>. A record with no window is in every view.</summary>
+        public ModelView At(DateTime date)
+        {
+            int lo = 0, hi = _cuts.Length;   // the number of cuts on or before the date
+            while (lo < hi) { int mid = (lo + hi) / 2; if (_cuts[mid] <= date) lo = mid + 1; else hi = mid; }
+            return _views[lo];
+        }
+
         public Rules Rules = new Rules();
         /// <summary>The complete rules of each era that has an override file (content/rules/&lt;era&gt;.yaml): rules.yaml with that
         /// file's keys merged in. Built once at load and never changed. An era without a file is not in this map.</summary>
