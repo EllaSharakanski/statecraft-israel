@@ -213,8 +213,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Before a hex is chosen only the hint shows (InfoPanelPresenter sets info-empty). */
 .info-empty .gold-rule { display: none; }
 /* Narrow, as the country is: the frame hugs the tall map picture (MinimapPresenter fits it to the content box). */
-/* The border layer's label above the minimap: what the blue outlines are (Subdistricts1948.Label). */
-.map-layer { display: none; align-self: flex-end; max-width: 480px; margin-bottom: 6px; padding: 5px 8px; font-size: 15px; white-space: normal; -unity-text-align: middle-center; color: var(--ink); background-color: rgba(9, 14, 26, 0.9); border-radius: 3px; }
+/* The border layer's label, beside the minimap's lower left: what the outlines are (MapRegions.Label). Out of the column's
+   flex flow (absolute), so it takes no height from the event card at any HUD tier (armistice review I-4). */
+.map-layer { display: none; position: absolute; right: 168px; bottom: 0; max-width: 312px; padding: 5px 8px; font-size: 15px; white-space: normal; -unity-text-align: middle-center; color: var(--ink); background-color: rgba(9, 14, 26, 0.9); border-radius: 3px; }
 .minimap { align-self: flex-end; flex-shrink: 0; width: 160px; height: 340px; padding: 12px; background-color: rgba(9, 14, 26, 0.97); }
 .minimap-image { align-self: center; -unity-background-scale-mode: stretch-to-fill; }   /* the element is sized to the picture's aspect by MinimapPresenter */
 .minimap-view { position: absolute; border-color: var(--ink); border-width: 1.5px; }

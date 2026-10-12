@@ -540,8 +540,8 @@ MV_TEXT = {"cite": "S/1471 (17 March 1950), 'Modus vivendi to the Egyptian-Israe
            "sha256": "3d1807500b9b573d754da382d2be8e44c0e2469a5703894f16369234be2f9ff7", "licence": MV_SHEET1["licence"]}
 MV_DATE = "1950-02-22"
 MV_AGREEMENT = ("Modus vivendi to the Egypt-Israel General Armistice Agreement", MV_DATE, "El Auja", "S/1471")
-# The demarcation line as drawn (dash-dot) on the two signed sheets: waypoints (MR km) read off the georeferenced scans;
-# the route between them follows the drawn dashes. Points the text names on the line are exact (marked "text").
+# The demarcation line as drawn (dash-dot) on the two signed sheets: waypoints (MR km) read off the georeferenced scans,
+# snapped to the stroke and joined straight (no routing: review C-1). Points the text names on the line are exact (marked "text").
 MV_PIECES = [   # (sheet, MR km waypoints along the drawn dash-dot, read off gridded crops of the georeferenced scans)
     ("sheet1", [(102.25, 100.00), (102.52, 100.22), (103.31, 100.70), (103.86, 101.06), (104.89, 101.37), (105.52, 101.73),
                 (106.00, 102.05), (106.95, 102.40)]),

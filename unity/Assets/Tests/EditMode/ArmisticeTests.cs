@@ -241,15 +241,17 @@ public class ArmisticeTests
     }
 
     /// <summary>Review I-4: the longest label (from 22 Feb 1950: all four fronts, Jordan low-accuracy, the 1950 note) fits
-    /// on screen beside a real event card at every window shape the card is checked at: inside the right column, clear of
-    /// the card and the minimap, at most four lines.</summary>
+    /// on screen beside the minimap with the real HUD (HudPresenter: one, two and three-row bars) and the longest event card,
+    /// at the card's window shapes and main's narrow ones: on screen, clear of the card, the minimap and the info panel, its
+    /// text not cut, at most four lines.</summary>
     [UnityTest]
     public IEnumerator TheLongestMapLabelFitsBesideTheEventCard()
     {
         var c = Inputs.Content; var t = Text;
         var text = L(Regions(), new DateTime(1950, 3, 1));
         StringAssert.Contains("Jordan (low accuracy)", text);
-        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (1366, 657), (2560, 1080), (1920, 900), (1280, 1024) })
+        foreach (var (w, h) in new[] { (1920, 1080), (1280, 720), (1531, 784), (1366, 657), (2560, 1080), (1920, 900), (1280, 1024),
+                                         (960, 600), (1024, 768), (390, 844), (1600, 757) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -260,6 +262,7 @@ public class ArmisticeTests
             go.SetActive(true);
             var root = doc.rootVisualElement;
             var bridge = new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), t);
+            var hud = new HudPresenter(root, bridge, t);
             var card = new EventCardPresenter(root, bridge, t, null, null);
             try
             {
@@ -273,15 +276,20 @@ public class ArmisticeTests
                 Rect R(string n) => root.Q(n).worldBound;
                 var lb = label.worldBound;
                 Assert.LessOrEqual(lb.yMax, R("minimap").yMin + 0.5f, $"{w}x{h}: the label runs into the minimap");
-                Assert.GreaterOrEqual(lb.xMin + 0.5f, R("right-column").xMin, $"{w}x{h}: the label leaves the right column");
-                Assert.LessOrEqual(lb.xMax, R("right-column").xMax + 0.5f, $"{w}x{h}: the label leaves the right column");
-                Assert.LessOrEqual(R("event-card").yMax, lb.yMin + 0.5f, $"{w}x{h}: the event card overlaps the label");
+                var screen = root.worldBound;
+                Assert.IsTrue(lb.xMin >= screen.xMin - 0.5f && lb.xMax <= screen.xMax + 0.5f && lb.yMin >= screen.yMin - 0.5f && lb.yMax <= screen.yMax + 0.5f,
+                    $"{w}x{h}: the label {lb} leaves the screen {screen}");
+                Assert.LessOrEqual(lb.xMax, R("minimap").xMin + 0.5f, $"{w}x{h}: the label overlaps the minimap");
+                Assert.IsFalse(lb.Overlaps(R("event-card")), $"{w}x{h}: the event card {R("event-card")} overlaps the label {lb}");
+                if (root.Q("info-panel").resolvedStyle.display == DisplayStyle.Flex)
+                    Assert.IsFalse(lb.Overlaps(R("info-panel")), $"{w}x{h}: the info panel {R("info-panel")} overlaps the label {lb}");
+                Assert.IsFalse(lb.Overlaps(R("top-bar")), $"{w}x{h}: the top bar overlaps the label");
                 var size = label.MeasureTextSize(text, lb.width - label.resolvedStyle.paddingLeft - label.resolvedStyle.paddingRight,
                     VisualElement.MeasureMode.Exactly, 0, VisualElement.MeasureMode.Undefined);
                 Assert.LessOrEqual(size.y, lb.height + 1f, $"{w}x{h}: the label's text is cut off");
                 Assert.LessOrEqual(size.y, 4 * label.resolvedStyle.fontSize * 1.4f, $"{w}x{h}: the label takes more than four lines ({size.y} px)");
             }
-            finally { card.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+            finally { card.Dispose(); hud.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
         }
     }
 

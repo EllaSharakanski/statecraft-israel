@@ -262,7 +262,8 @@ def apply_places(cells: dict, places: list, hexes: dict, ids: dict) -> None:
 
 
 def front_ends(armistice: dict | None) -> list[tuple[str, str | None]]:
-    """(front, date the front's armistice line replaces this layer there, or None: no line data)."""
+    """(front, the date that front switches: its armistice features are drawn over this layer from then (MapRegions), or
+    None: no line data)."""
     if armistice is None:
         return []
     return [(f["key"], f["shown_from"] if f.get("data") else None) for f in armistice["statecraft"]["fronts"]]
@@ -280,7 +281,7 @@ def render(source: dict, regions: list[dict], cells: dict, armistice: dict | Non
              f"label: {json.dumps(LABEL)}   # shown on screen while the layer is drawn (owner ruling 2026-10-11)\n",
              f"shown_from: {SHOWN_FROM}   # the game's start\n",
              f"shown_until: {until or 'null'}   # the last front's end, once the armistice lines enclose each side's area; null until then (the base under them)\n",
-             "fronts:   # until: the date that front's 1949 armistice line replaces this layer there (null: no line data, the layer stays)\n"]
+             "fronts:   # until: the date that front switches, its 1949 armistice features drawn over this layer from then (null: no line data)\n"]
     lines += [f"  - {{ key: {k}, until: {d or 'null'} }}\n" for k, d in ends]
     lines += ["regions:\n"]
     for r in regions:

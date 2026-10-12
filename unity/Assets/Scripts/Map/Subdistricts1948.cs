@@ -34,8 +34,8 @@ namespace Statecraft.Game.Map
         public readonly DateTime ShownFrom;
         /// <summary>The first date the layer is no longer shown (null: until replaced, no end set yet).</summary>
         public readonly DateTime? ShownUntil;
-        /// <summary>Per front (key), the first date that front's armistice line replaces this layer there; null: never (no
-        /// line data). Empty when the file names no fronts.</summary>
+        /// <summary>Per front (key), the first date that front switches: from then MapRegions draws its armistice features over
+        /// this layer, which stays as the base; null: never (no line data). Empty when the file names no fronts.</summary>
         public readonly IReadOnlyDictionary<string, DateTime?> Fronts;
         readonly Dictionary<int, Region> regions;
 
