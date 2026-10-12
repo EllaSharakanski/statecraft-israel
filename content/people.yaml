@@ -575,9 +575,12 @@ people:
     offices:
       - { office: agriculture_minister, from: 1951-10-08, to: 1952-06-25, sources: [*third_en, *third_he, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250662.pdf", checked: 2026-10-11 }] }
       - { office: finance_minister, from: 1952-06-25, to: 1952-12-24, sources: *june_1952 }
-      # The Knesset records also list Eshkol as Minister of Development from 8 October 1951 to 24 December 1952. No
-      # other source read shows that portfolio before 15 June 1953 (he.wiki and en.wiki date the ministry from 1953), so
-      # the term is not authored.
+      # The Knesset records also list Eshkol as Minister of Development from 8 October 1951 to 24 December 1952, and
+      # he.wiki "לוי אשכול" (citing Goldstein's biography, p. 319) has him appointed to Agriculture and Development on 8
+      # October 1951, with Development moving under the Finance Ministry when he went there on 25 June 1952. Neither
+      # Wikipedia's Third Government table lists it, and he.wiki "משרד הפיתוח" and en.wiki "Development Minister of
+      # Israel" date the ministry from 15 June 1953. The office here is that ministry, so the 1951-52 title is not
+      # authored (checked 2026-10-12).
       - { office: finance_minister, from: 1952-12-24, to: 1954-01-26, sources: *gov4 }
       - { office: finance_minister, from: 1954-01-26, to: 1955-06-29, sources: *gov5 }
       - { office: finance_minister, from: 1955-06-29, to: 1955-11-03, sources: *gov6 }
@@ -725,10 +728,11 @@ people:
     biography_sources:
       name_he: &serlin_bio [{ url: "https://en.wikipedia.org/wiki/Yosef_Serlin", checked: 2026-10-12 }]
       born: [{ url: "https://he.wikipedia.org/wiki/יוסף_סרלין", checked: 2026-10-12 }, { url: "https://en.wikipedia.org/wiki/Yosef_Serlin", checked: 2026-10-12 }]
-      died: *serlin_bio
+      died: [{ url: "https://en.wikipedia.org/wiki/Yosef_Serlin", checked: 2026-10-12 }, { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=PersonID%20eq%202516%20and%20KnessetNum%20eq%207", checked: 2026-10-12 }]
     living: false
     # en.wiki's infobox gives 24 January 1906 for the birth; its lead, its death-date template and he.wiki give 24
-    # February.
+    # February. For the death, he.wiki gives 13 January 1974 (citing Maariv of 14 January 1974); en.wiki and the
+    # Knesset records, which end his Seventh Knesset seat on 15 January 1974, give 15 January, which is used.
     party: general_zionists
     competence: 5
     loyalty: 5

@@ -26,8 +26,8 @@ offices:
   # (Israel)", checked 2026-10-12).
   - { id: posts_minister, title: Minister of Postal Services, from: 1952-11-03 }
   # Set up on 15 June 1953 for Dov Yosef (he.wiki "משרד הפיתוח", en.wiki "Development Minister of Israel", Knesset
-  # records, checked 2026-10-12). The Knesset records also list Eshkol as Minister of Development in the Third
-  # Government; no other source read confirms that, so the office starts in 1953 (see Eshkol in people.yaml).
+  # records, checked 2026-10-12). The Knesset records and he.wiki "לוי אשכול" also give Eshkol a Development title in
+  # the Third Government, before the ministry existed; the office starts with the ministry (see Eshkol in people.yaml).
   - { id: development_minister, title: Minister of Development, from: 1953-06-15 }
   # The Provisional Government (14 May 1948 - 10 March 1949) had no education portfolio. The ministry dates from the First
   # Government; Zalman Shazar was its first minister, from 10 March 1949 (en.wiki "Provisional government of Israel" and
