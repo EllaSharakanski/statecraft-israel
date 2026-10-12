@@ -367,14 +367,18 @@ public class SaveGameTests
         var real = RealContentTests.ContentRoot();
         Assert.True(File.Exists(Path.Combine(real, "map", "localities_1948.yaml")));
         var copy = Path.Combine(Path.GetTempPath(), "statecraft-noloc-" + Guid.NewGuid().ToString("N"));
-        foreach (var f in Directory.GetFiles(real, "*", SearchOption.AllDirectories))
+        try
         {
-            var rel = Path.GetRelativePath(real, f);
-            if (rel.Replace('\\', '/') == "map/localities_1948.yaml") continue;
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(copy, rel))!);
-            File.Copy(f, Path.Combine(copy, rel));
+            foreach (var f in Directory.GetFiles(real, "*", SearchOption.AllDirectories))
+            {
+                var rel = Path.GetRelativePath(real, f);
+                if (rel.Replace('\\', '/') == "map/localities_1948.yaml") continue;
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(copy, rel))!);
+                File.Copy(f, Path.Combine(copy, rel));
+            }
+            Assert.Equal(ContentLoader.Load(real).Hash, ContentLoader.Load(copy).Hash);
         }
-        Assert.Equal(ContentLoader.Load(real).Hash, ContentLoader.Load(copy).Hash);
+        finally { if (Directory.Exists(copy)) Directory.Delete(copy, true); }   // review M13: no temp copy left behind
     }
 
     [Fact]

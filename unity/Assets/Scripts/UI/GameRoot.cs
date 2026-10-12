@@ -181,7 +181,9 @@ namespace Statecraft.Game.UI
             var camRig = rig = cameraController.GetComponent<CameraRig>();
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
-            labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>(), null, n => text.Format("map.today", n)));
+            bool hebrew = text["ui.lang"] == "he";   // today's name in the UI's language (review M6)
+            labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>(), null,
+                p => MapLabelsPresenter.TipOf(p, n => text.Format("map.today", hebrew && p.TodayHe != null ? p.TodayHe : n), text["map.mixed"])));
             mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); cameraController.Settle(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;

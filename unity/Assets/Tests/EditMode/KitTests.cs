@@ -91,9 +91,9 @@ public class KitTests
         int V(string id) => root.Find(id).GetComponent<MeshFilter>().sharedMesh.vertexCount;
         TestContext.WriteLine($"vertices tel_aviv {V("tel_aviv")} petah_tikva {V("petah_tikva")} jaffa {V("jaffa")} lod {V("lod")} hanita {V("hanita")}");
         Assert.Greater(V("tel_aviv"), V("petah_tikva")); Assert.Greater(V("jaffa"), V("lod")); 
-        // Petah Tikva (17,250) and Hanita (240) are both at TargetCount's floor of six houses at the 100x house scale, so a
-        // moshava's size shows in its footprint (R above), not its house count; a landmark lost to a route or a village's
-        // heart can make them equal.
+        // Petah Tikva (17,250) and Hanita (240) both draw TargetCount's floor of six houses at the 100x house scale plus their
+        // water towers (both kept: TheVillagesAreSeededAndTheGameTownsKeepTheirLandmarks), so their vertex counts can be equal;
+        // a moshava's size shows in its footprint (R above).
         Assert.GreaterOrEqual(V("petah_tikva"), V("hanita"));
         TestContext.WriteLine(map.KitStats);
     }
@@ -166,10 +166,21 @@ public class KitTests
     {
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
         var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
-        return Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+        var doc = Localities.Parse(inputs.LocalitiesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), map.Settlements.Select(s => s.Id).ToList());
+        Localities.FillHexes(doc, Subdistricts1948.Parse(inputs.RegionsYaml), map.Hexes);
+        return doc;
     }
 
-    /// <summary>Owner rulings 2026-10-11: the 272 places of 1,000+ people beside the 25 game settlements, as Arab village and
+    /// <summary>The railways' and roads' corridors as MapScene hands them to the kits.</summary>
+    static IReadOnlyList<(List<Vector2> line, float halfWidth)> Corridors(MapScene map)
+    {
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Statecraft.Game.Paths.Content, Statecraft.Game.Paths.StreamingMap);
+        var b = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap).meta;
+        var routes = Statecraft.Game.Map.Routes.RoutePaths.ReadOrNone(inputs.RoutesYaml, (b.lon0, b.lon1, b.lat0, b.lat1), _ => { });
+        return Statecraft.Game.Map.Routes.RouteLayer.Corridors(map.Frame, routes);
+    }
+
+    /// <summary>Owner rulings 2026-10-11 and 2026-10-12: the 271 places of 1,000+ people beside the 25 game settlements, as Arab village and
     /// Jewish settlement kits from content/map/localities_1948.yaml, merged into a few tile meshes; landmarks from the
     /// file (a church in Bethlehem, none in Druze Daliyat al-Karmel); Bedouin camps sized by the sourced totals.</summary>
     [Test]
@@ -177,10 +188,15 @@ public class KitTests
     {
         var map = OpenMap();
         var doc = LoadLocalities(map);
-        Assert.AreEqual(272, doc.Places.Count); Assert.AreEqual(272, map.Localities.Count);
+        Assert.AreEqual(271, doc.Places.Count); Assert.AreEqual(271, map.Localities.Count);
         Assert.AreEqual(8, doc.Encampments.Count);
+        Assert.IsTrue(doc.Encampments.All(a => a.Hexes.Count > 0), "every camp area has its sub-district's hexes (read at load)");
         var by = doc.Places.ToDictionary(p => p.Settlement.Id);
-        Assert.AreEqual("Beisan", by["beit_shean"].Settlement.Name); Assert.AreEqual("Beit She'an", by["beit_shean"].NameToday);
+        Assert.AreEqual("Beisan", by["beit_shean"].Settlement.Name); Assert.AreEqual("Beit She'an", by["beit_shean"].Today);
+        Assert.IsNull(by["isdud"].Today, "no today name for a place that did not carry on (owner ruling 2026-10-12)");
+        Assert.IsTrue(by["nesher"].Mixed); Assert.IsTrue(Localities.IsMixed("nesher"));
+        Assert.AreEqual(Landmark.Church, Localities.LandmarkOf("shefa_amr"), "Shafa 'Amr: the Urban row (review I1)");
+        Assert.AreEqual(Landmark.Mosque, Localities.LandmarkOf("dayr_al_qassi"), "review I2");
         Assert.AreEqual(Landmark.Church, Localities.LandmarkOf("bethlehem")); Assert.AreEqual(Landmark.None, Localities.LandmarkOf("daliyat_al_karmel"));
         Assert.AreEqual(Landmark.Mosque, Localities.LandmarkOf("nablus")); Assert.AreEqual(Landmark.WaterTower, Localities.LandmarkOf("kfar_saba"));
         Assert.IsNull(Localities.LandmarkOf("tel_aviv"), "a game settlement keeps its archetype's landmark");
@@ -189,23 +205,27 @@ public class KitTests
         Assert.AreEqual(Archetype.Moshava, SettlementKits.ArchetypeOf(by["ramat_gan"].Settlement));
         Assert.AreEqual(5180, KitPopulation.Of("beit_shean"), "the localities' populations size their kits");
         var st = map.KitStats; TestContext.WriteLine(st);
-        Assert.AreEqual(272, st.Localities);
-        Assert.Greater(st.LocalityBuildings, 272 * 4, "the localities have their houses (six wanted each; some lose room to a neighbour)");
-        int expected = doc.Encampments.Sum(a => Mathf.Max(1, Mathf.RoundToInt(a.Population / SettlementKits.PeoplePerCamp)));
-        Assert.AreEqual(67, expected);
+        Assert.AreEqual(271, st.Localities);
+        Assert.Greater(st.LocalityBuildings, 271 * 4, "the localities have their houses (six wanted each; some lose room to a neighbour)");
+        int expected = doc.Encampments.Sum(Localities.CampsOf);
+        Assert.AreEqual(65, expected, "one per 1,000 rounded half up, no floor: Nablus's 220 draw none (review M4)");
+        Assert.AreEqual(0, Localities.CampsOf(doc.Encampments.Single(a => a.Subdistrict == "nablus")));
         Assert.GreaterOrEqual(st.Camps, (int)(0.9f * expected), "nearly every camp found dry, free ground"); Assert.LessOrEqual(st.Camps, expected);
         Assert.Less(st.Draws, map.Settlements.Count + 50, "localities and camps are merged per tile, not one draw per place");
         var root = map.transform.Find(KitLayer.RootName);
         Assert.Greater(root.Cast<Transform>().Count(t => t.name.StartsWith("Localities ")), 5);
     }
 
-    /// <summary>The shared lot list over all 297 places and the camps: no two places' (or camps') lots overlap, every place
-    /// claimed ground, every lot and camp stands on dry land, and no tree grows through any of them.</summary>
+    /// <summary>The shared lot list over all 296 places and the camps, with the railways' and roads' corridors as the map
+    /// has them: no two places' (or camps') lots overlap, every place claimed ground, every lot stands on dry land, no tent
+    /// or house reaches a route (review M8), and no tree grows through any of them.</summary>
     [Test]
     public void NoLotsOverlapAndNoTreeGrowsThroughAVillageOrTent()
     {
         var map = OpenMap();
         var g = Ground(map);
+        foreach (var (line, half) in Corridors(map)) g.AddCorridor(line, half);
+        Assert.Greater(g.CorridorSegments, 100, "the routes are in");
         var doc = LoadLocalities(map);
         var locs = doc.Places.Select(p => p.Settlement).ToList();
         var built = SettlementKits.Build(map.Settlements, locs, doc.Encampments, g);
@@ -232,6 +252,9 @@ public class KitTests
         var owners = new HashSet<string>(lots.Select(l => l.id));
         var missing = map.Settlements.Concat(locs).Where(s => !owners.Contains(s.Id)).Select(s => s.Id).ToList();
         TestContext.WriteLine($"{lots.Count} lots over {owners.Count} owners; camps {built.Camps}, tents {built.Tents}; places with no lot: {string.Join(" ", missing)}");
+        int onRoute = lots.Count(l => (l.id.StartsWith("camp:") || locs.Any(x => x.Id == l.id)) && g.OnRoute(l.centre, l.radius));
+        TestContext.WriteLine($"{onRoute} locality or tent lots reaching a route");
+        Assert.AreEqual(0, onRoute, "a tent or village house on a railway or road");
         Assert.AreEqual(0, overlaps, "lots of different places overlap");
         Assert.AreEqual(0, wet, "a lot in the water");
         CollectionAssert.IsEmpty(missing, "every place claimed ground");
@@ -247,6 +270,48 @@ public class KitTests
         Assert.AreEqual(0, inside, "a tree grows through a building, landmark or tent");
     }
 
+    /// <summary>Review M8: the localities, camps and tile meshes are as deterministic as the towns (two builds, same tiles'
+    /// vertex counts and bounds, same camps and tents), and every game settlement whose archetype has a landmark keeps it
+    /// (the game towns' landmarks claim their spots before any locality's).</summary>
+    [Test]
+    public void TheVillagesAreSeededAndTheGameTownsKeepTheirLandmarks()
+    {
+        var map = OpenMap();
+        var doc = LoadLocalities(map);
+        var locs = doc.Places.Select(p => p.Settlement).ToList();
+        var corridors = Corridors(map);
+        SettlementKits.Result Once()
+        {
+            var g = Ground(map);
+            foreach (var (line, half) in corridors) g.AddCorridor(line, half);
+            return SettlementKits.Build(map.Settlements, locs, doc.Encampments, g);
+        }
+        var a = Once(); var b = Once();
+        try
+        {
+            Assert.AreEqual(a.Tiles.Count, b.Tiles.Count);
+            for (int i = 0; i < a.Tiles.Count; i++)
+            {
+                Assert.AreEqual(a.Tiles[i].name, b.Tiles[i].name);
+                Assert.AreEqual(a.Tiles[i].mesh.vertexCount, b.Tiles[i].mesh.vertexCount, a.Tiles[i].name);
+                Assert.AreEqual(a.Tiles[i].mesh.bounds, b.Tiles[i].mesh.bounds, a.Tiles[i].name);
+            }
+            Assert.AreEqual((a.Camps, a.Tents, a.LocalityBuildings), (b.Camps, b.Tents, b.LocalityBuildings));
+            var lost = map.Settlements.Where(s => SettlementKits.ArchetypeOf(s) != Archetype.WhiteCity && a.TownLandmarks[s.Id] == 0).Select(s => s.Id).ToList();
+            TestContext.WriteLine($"tiles {a.Tiles.Count}, camps {a.Camps}, tents {a.Tents}, locality buildings {a.LocalityBuildings}; town landmarks: "
+                + string.Join(" ", a.TownLandmarks.Select(kv => $"{kv.Key}={kv.Value}")));
+            CollectionAssert.IsEmpty(lost, "a game settlement lost its landmark");
+        }
+        finally
+        {
+            foreach (var r in new[] { a, b })
+            {
+                foreach (var k in r.Towns) Object.DestroyImmediate(k.mesh);
+                foreach (var t in r.Tiles) Object.DestroyImmediate(t.mesh);
+            }
+        }
+    }
+
     [Test]
     public void TheLocalitiesFileRejectsBadRows()
     {
@@ -254,7 +319,7 @@ public class KitTests
         var reserved = new[] { "tel_aviv" };
         const string src = "  checked: '2026-10-11'\n  status: draft\n  sources:\n  - url: https://example.org/x\n    checked: '2026-10-11'\n";
         string Place(string id, string extra = "") =>
-            $"- id: {id}\n  name: X\n  name_today: Y\n  lon: 35.0\n  lat: 32.0\n  type: village\n  landmark: mosque\n  population: 1200\n{extra}" + src;
+            $"- id: {id}\n  name: X\n  lon: 35.0\n  lat: 32.0\n  type: village\n  landmark: mosque\n  population: 1200\n{extra}" + src;
         Assert.AreEqual(1, Localities.Parse("places:\n" + Place("a"), b, reserved, "loc.yaml").Places.Count);
         void Bad(string yaml, string expect)
         {
@@ -269,8 +334,10 @@ public class KitTests
         Bad("places:\n" + Place("a").Replace("population: 1200", "population: 0"), "population");
         Bad("places:\n" + Place("a").Replace("status: draft", "status: guess"), "status");
         Bad("places:\n" + Place("a", "  fate: x\n"), "fate");
-        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  hexes: []\n" + src, "no hexes");
-        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  name: Camp\n  hexes: [[1, 2]]\n" + src, "name");
+        Bad("places:\n" + Place("a", "  today:\n    name: Y\n") , "today");
+        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 0\n" + src, "population");
+        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  name: Camp\n" + src, "name");
+        Bad("places:\n" + Place("a") + "encampments:\n- subdistrict: gaza\n  population: 500\n  hexes: [[1, 2]]\n" + src, "hexes");
     }
 
     /// <summary>Review M6: switching the kits off shows the marker boxes again, so a settlement is never left undrawn.</summary>

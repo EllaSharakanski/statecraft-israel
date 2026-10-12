@@ -79,7 +79,8 @@ namespace Statecraft.Game.Map.Kits
         {
             var p = new Vector2(x, z);
             if (crown > LotQueryM) { foreach (var (c, r, _) in Lots) { float d = r + crown; if ((p - c).sqrMagnitude < d * d) return true; } return false; }
-            foreach (var i in Lots.Near(p)) { var (c, r, _) = Lots[i]; float d = r + crown; if ((p - c).sqrMagnitude < d * d) return true; }
+            var near = Lots.Near(p);
+            for (int k = 0; k < near.Count; k++) { var (c, r, _) = Lots[near[k]]; float d = r + crown; if ((p - c).sqrMagnitude < d * d) return true; }
             return false;
         }
 
@@ -150,9 +151,10 @@ namespace Statecraft.Game.Map.Kits
                 foreach (var f in Footprints) { float r = f.radius * share; if ((p - f.centre).sqrMagnitude < r * r) return true; }
                 return false;
             }
-            foreach (var i in Footprints.Near(p))
+            var near = Footprints.Near(p);
+            for (int k = 0; k < near.Count; k++)
             {
-                var f = Footprints[i]; float r = f.radius * share;
+                var f = Footprints[near[k]]; float r = f.radius * share;
                 if ((p - f.centre).sqrMagnitude < r * r) return true;
             }
             return false;

@@ -339,10 +339,12 @@ public class MapLabelTests
         finally { labels.Dispose(); hd.Dispose(); }
     }
 
-    /// <summary>Owner ruling 2026-10-11: the 1948 localities are named by their 1948 names only at close zoom, with today's
-    /// name in a tooltip. At 30 km over Beisan its pill reads "Beisan" and, hovered, the tooltip "Today: Beit She'an" sits
-    /// under it; no two shown pills overlap; at the gameplay zoom (60 km) no locality pill is shown, and the game
-    /// settlements' pills there are the same as with no localities at all.</summary>
+    /// <summary>Owner rulings 2026-10-11 and 2026-10-12: the 1948 localities are named by their 1948 names only at close zoom,
+    /// with today's name in a tooltip only where a living place carries on. At 30 km over Beisan its pill reads "Beisan"
+    /// and, with the pointer over it (the hit test Hover runs, in the layer's coordinates), the tooltip "Today: Beit She'an"
+    /// sits under it; off every pill it hides; no two shown pills overlap; at the gameplay zoom (60 km) no locality pill is
+    /// shown. A place that did not carry on (Isdud), or whose name is today's (Nablus), has no tooltip; Nesher's says it was
+    /// a mixed locality.</summary>
     [UnityTest]
     public IEnumerator LocalitiesAreNamedOnlyCloseUpWithTodaysNameOnHover()
     {
@@ -361,14 +363,21 @@ public class MapLabelTests
             for (int i = 0; i < shown.Count; i++)
                 for (int j = i + 1; j < shown.Count; j++)
                     Assert.IsFalse(shown[i].rect.Overlaps(shown[j].rect), $"{shown[i].id} overlaps {shown[j].id}");
-            labels.HoverLocality("beit_shean"); yield return null;
-            Assert.AreEqual(Visibility.Visible, labels.Tooltip.style.visibility.value);
+            var container = hd.Root.Q<VisualElement>(MapLabelsPresenter.ContainerName).worldBound.position;
+            labels.HoverAt(beisan.Q<Label>().worldBound.center - container); yield return null;
+            Assert.AreEqual(Visibility.Visible, labels.Tooltip.style.visibility.value, "the pointer over Beisan's pill shows its tooltip");
             Assert.AreEqual("Today: Beit She'an", labels.Tooltip.text);
             var pill = beisan.Q<Label>().worldBound; var tip = labels.Tooltip.worldBound;
             Assert.AreEqual(pill.center.x, tip.center.x, 2f, "the tooltip is centred under its pill");
             Assert.Greater(tip.yMin, pill.yMax - 1f, "and below it");
-            labels.HoverLocality(null);
-            Assert.AreEqual(Visibility.Hidden, labels.Tooltip.style.visibility.value);
+            labels.HoverAt(new Vector2(-50f, -50f));
+            Assert.AreEqual(Visibility.Hidden, labels.Tooltip.style.visibility.value, "off every pill, no tooltip");
+            var by = map.Localities.ToDictionary(p => p.Settlement.Id);
+            Assert.IsNull(MapLabelsPresenter.DefaultTip(by["isdud"]), "no today name for a place that did not carry on");
+            Assert.IsNull(MapLabelsPresenter.DefaultTip(by["nablus"]), "Nablus is Nablus: nothing to say");
+            Assert.AreEqual("Mixed locality", MapLabelsPresenter.DefaultTip(by["nesher"]));
+            labels.HoverLocality("isdud");
+            Assert.AreEqual(Visibility.Hidden, labels.Tooltip.style.visibility.value, "Isdud's pill never shows a tooltip");
 
             Pose(PromoPose.Gameplay03.Lon, PromoPose.Gameplay03.Lat, PromoPose.Gameplay03.Distance);
             yield return Settle(labels);

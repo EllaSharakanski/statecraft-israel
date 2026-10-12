@@ -26,6 +26,11 @@ namespace Statecraft.Game.Map
         /// <summary>The 1948 localities the last Build drew with the kits (content/map/localities_1948.yaml; empty without the
         /// kits), for the map labels: 1948 name, today's name. Presentation only, never in the sim.</summary>
         public IReadOnlyList<Kits.Localities.Place> Localities { get; private set; } = new List<Kits.Localities.Place>();
+
+        /// <summary>Every kit's ground after the last Build (world x, z centre; radius; owner id): the 25 game settlements', the
+        /// 1948 localities' and the Bedouin camps' footprints (empty without the kits). Anything placed on the map "off the
+        /// towns" (unit tokens: review I5) keeps clear of these, not of the 25 settlements alone.</summary>
+        public IReadOnlyList<(Vector2 centre, float radius, string id)> KitFootprints => KitStats?.Footprints ?? (IReadOnlyList<(Vector2, float, string)>)System.Array.Empty<(Vector2, float, string)>();
         /// <summary>The game date the routes were last shown at (RouteLayer.ShowAt), so a rebuild draws them as at that date;
         /// null before the game has set one (the routes then show as at the game's start).</summary>
         public DateTime? RouteDate { get; set; }
@@ -176,14 +181,24 @@ namespace Statecraft.Game.Map
                 }
                 foreach (var p in localities.Places) table[p.Settlement.Id] = p.Population;
                 Kits.KitPopulation.Use(table);
-                Kits.Localities.Use(localities.Places);
+                // The camps' areas are the sub-districts as the region layer draws them (review I4: no copy in the
+                // localities file).
+                if (string.IsNullOrWhiteSpace(inputs.RegionsYaml)) { localities.Encampments.Clear(); Debug.LogWarning($"KITS map/{Subdistricts1948.FileName} is missing: no Bedouin camps"); }
+                else Kits.Localities.FillHexes(localities, Subdistricts1948.Parse(inputs.RegionsYaml), Hexes, "map/" + Kits.Localities.FileName);
             }
+            Kits.Localities.Use(localities.Places);   // on every build, so a map without the kits inherits nothing (review M13)
             Localities = localities.Places;
             var localitySettlements = localities.Places.ConvertAll(p => p.Settlement);
             var painted = new List<Settlement>(list); painted.AddRange(localitySettlements);
             float hexSizeM = Hexes.hex_size_km * 1000f;
             var terrainGo = MapBuilder.Build(meta, heights, Hexes, terrainMaterial,
-                kitsOn ? (px, res, frame) => Kits.SettlementKits.PaintGround(px, res, frame, painted, hexSizeM) : null);
+                kitsOn ? (px, res, frame) =>
+                {
+                    // The ground tint under every town and locality (review I6: timed, as the boot budget is tight).
+                    var tint = System.Diagnostics.Stopwatch.StartNew();
+                    Kits.SettlementKits.PaintGround(px, res, frame, painted, hexSizeM);
+                    Debug.Log(FormattableString.Invariant($"KITS ground_tint_ms={tint.Elapsed.TotalMilliseconds:0.0} places={painted.Count}"));
+                } : null);
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;

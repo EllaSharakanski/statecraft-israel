@@ -17,7 +17,7 @@ namespace Statecraft.Game.Map.Kits
         readonly float reachScale, reachPad;
         readonly List<(Vector2 centre, float radius, string id)> all = new List<(Vector2, float, string)>();
         readonly Dictionary<(int, int), List<int>> cells = new Dictionary<(int, int), List<int>>();
-        static readonly List<int> None = new List<int>();
+        static readonly int[] None = System.Array.Empty<int>();
 
         /// <param name="reachScale">A query finds a disc up to its radius times this from its centre ...</param>
         /// <param name="reachPad">... plus this many metres.</param>
@@ -45,7 +45,7 @@ namespace Statecraft.Game.Map.Kits
         public void Add((Vector2 centre, float radius) d) => Add((d.centre, d.radius, ""));
 
         /// <summary>Indices of the discs filed in <paramref name="p"/>'s cell, in insertion order.</summary>
-        public List<int> Near(Vector2 p) => cells.TryGetValue((Cell(p.x), Cell(p.y)), out var list) ? list : None;
+        public IReadOnlyList<int> Near(Vector2 p) => cells.TryGetValue((Cell(p.x), Cell(p.y)), out var list) ? list : (IReadOnlyList<int>)None;
 
         static int Cell(float v) => Mathf.FloorToInt(v / CellM);
 

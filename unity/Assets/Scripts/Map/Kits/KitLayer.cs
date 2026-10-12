@@ -19,6 +19,8 @@ namespace Statecraft.Game.Map.Kits
         public sealed class Stats
         {
             public int Buildings, Vertices, Triangles, Trees, CorridorSegments, Localities, LocalityBuildings, Camps, Tents, Draws; public float BuildMs, PlantMs;
+            /// <summary>Every footprint the build claimed (towns, localities, camps), in claim order (MapScene.KitFootprints).</summary>
+            public IReadOnlyList<(Vector2 centre, float radius, string id)> Footprints = System.Array.Empty<(Vector2, float, string)>();
             public override string ToString() =>
                 $"KITS buildings={Buildings} vertices={Vertices} triangles={Triangles} trees={Trees} route_segments={CorridorSegments} build_ms={BuildMs:0} plant_ms={PlantMs:0} " +
                 $"localities={Localities} locality_buildings={LocalityBuildings} camps={Camps} tents={Tents} draws={Draws}";
@@ -47,6 +49,7 @@ namespace Statecraft.Game.Map.Kits
             var clock = System.Diagnostics.Stopwatch.StartNew();
             var built = SettlementKits.Build(settlements, localities, camps, ground, columns);   // columns: the labels' kit footprints (issue #214)
             foreach (var l in built.Claimed) ground.Lots.Add((l.centre, l.radius));
+            stats.Footprints = new List<(Vector2, float, string)>(ground.Footprints);
             void Add(string name, Mesh mesh)
             {
                 assets.Own(mesh);

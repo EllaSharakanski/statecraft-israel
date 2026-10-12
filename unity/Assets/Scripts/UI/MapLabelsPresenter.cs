@@ -76,7 +76,7 @@ namespace Statecraft.Game.UI
         {
             public Settlement Settlement = null!; public Vector3 MarkerTop; public Bounds[] Kit = null!, Marker = null!; public VisualElement Slot = null!;
             public Label Label = null!; public Spot First; public bool IsCity, IsLocality, TopVisible, KitInFront, ShownLast = true;
-            public Vector2 TopPanel; public Rect KitPanel, Placed; public string Today = "";
+            public Vector2 TopPanel; public Rect KitPanel, Placed; public string? Tip;
         }
 
         readonly VisualElement container;
@@ -102,15 +102,35 @@ namespace Statecraft.Game.UI
         /// <summary>The 1948 localities' pills (smaller, named only within LocalityDistanceM), in localities_1948.yaml order.</summary>
         public IReadOnlyList<Label> LocalityLabels { get; }
         public IReadOnlyList<VisualElement> LocalitySlots { get; }
-        /// <summary>Today's name of the locality whose pill the pointer is over ("Today: Beit She'an" under "Beisan"); hidden
-        /// otherwise. Ignores the pointer, like the pills.</summary>
+        /// <summary>The tooltip of the locality whose pill the pointer is over: today's name where a living place carries on
+        /// ("Today: Beit She'an" under "Beisan"; owner ruling 2026-10-12: none for a place that did not), "Mixed locality" for
+        /// Nesher; hidden otherwise, and never for a pill with nothing to say. Ignores the pointer, like the pills.</summary>
         public Label Tooltip { get; }
-        readonly Func<string, string> todayText;
         Item? hovered;
 
-        public MapLabelsPresenter(VisualElement root, MapScene map, Camera camera, Func<float>? zoomDistance = null, Func<string, string>? todayText = null)
+        /// <summary>The default tooltip text (tests; GameRoot passes the UI strings): null when there is nothing to say.</summary>
+        public static string? DefaultTip(Statecraft.Game.Map.Kits.Localities.Place p) =>
+            TipOf(p, n => "Today: " + n, "Mixed locality");
+
+        /// <summary>A locality's tooltip: "Mixed locality" for a mixed one, then today's name where one carries on and it is not
+        /// the 1948 name itself (Nablus is Nablus); null when neither.</summary>
+        public static string? TipOf(Statecraft.Game.Map.Kits.Localities.Place p, Func<string, string> today, string mixed)
         {
-            this.todayText = todayText ?? (n => "Today: " + n);
+            var lines = new List<string>();
+            if (p.Mixed) lines.Add(mixed);
+            if (p.Today != null && !SameName(p.Today, p.Settlement.Name)) lines.Add(today(p.Today));
+            return lines.Count == 0 ? null : string.Join("\n", lines);
+        }
+
+        static bool SameName(string a, string b)
+        {
+            static string Norm(string x) { var sb = new System.Text.StringBuilder(); foreach (var c in x) if (char.IsLetterOrDigit(c)) sb.Append(char.ToLowerInvariant(c)); return sb.ToString(); }
+            return Norm(a) == Norm(b);
+        }
+
+        public MapLabelsPresenter(VisualElement root, MapScene map, Camera camera, Func<float>? zoomDistance = null, Func<Statecraft.Game.Map.Kits.Localities.Place, string?>? tipText = null)
+        {
+            var tip = tipText ?? DefaultTip;
             container = root.Q<VisualElement>(ContainerName) ?? throw new InvalidOperationException($"Game.uxml has no '{ContainerName}' element");
             this.camera = camera;
             this.map = map;
@@ -157,7 +177,7 @@ namespace Statecraft.Game.UI
                 var it = new Item
                 {
                     Settlement = s, MarkerTop = top, Kit = KitBounds(map, s, top), Marker = MarkerBox(s, top), Slot = slot, Label = label,
-                    First = Spot.AboveCentre, IsLocality = true, Today = place.NameToday,
+                    First = Spot.AboveCentre, IsLocality = true, Tip = tip(place),
                 };
                 settlementOrder.Add(it); items.Add(it);
             }
@@ -371,16 +391,20 @@ namespace Statecraft.Game.UI
         /// the hovered pill changes.</summary>
         public void Hover(Vector2? screenYUp)
         {
-            Item? over = null;
             var panel = container.panel;
-            if (screenYUp.HasValue && panel != null)
+            if (!screenYUp.HasValue || panel == null) { HoverItem(null); return; }
+            HoverAt(UiPointer.ToPanel(panel, screenYUp.Value, Screen.height) - container.worldBound.position);
+        }
+
+        /// <summary>The hit test under Hover, at a point in the labels layer's coordinates: the shown locality pill (with
+        /// something to say) that contains it, or none.</summary>
+        public void HoverAt(Vector2 layerPoint)
+        {
+            Item? over = null;
+            for (int i = 0; i < items.Count && over == null; i++)
             {
-                var p = UiPointer.ToPanel(panel, screenYUp.Value, Screen.height) - container.worldBound.position;
-                for (int i = 0; i < items.Count && over == null; i++)
-                {
-                    var it = items[i];
-                    if (it.IsLocality && it.ShownLast && it.Placed.Contains(p)) over = it;
-                }
+                var it = items[i];
+                if (it.IsLocality && it.Tip != null && it.ShownLast && it.Placed.Contains(layerPoint)) over = it;
             }
             HoverItem(over);
         }
@@ -389,14 +413,14 @@ namespace Statecraft.Game.UI
         public void HoverLocality(string? id)
         {
             Item? over = null;
-            foreach (var it in items) if (it.IsLocality && it.ShownLast && it.Settlement.Id == id) over = it;
+            foreach (var it in items) if (it.IsLocality && it.Tip != null && it.ShownLast && it.Settlement.Id == id) over = it;
             HoverItem(over);
         }
 
         void HoverItem(Item? over)
         {
             if (over == null) { if (hovered != null) { Tooltip.style.visibility = Visibility.Hidden; hovered = null; } return; }
-            if (over != hovered) { Tooltip.text = todayText(over.Today); hovered = over; }
+            if (over != hovered) { Tooltip.text = over.Tip; hovered = over; }
             // left/top, not an inline translate: that would replace the USS translate (-50%) that centres it under the pill.
             Tooltip.style.left = over.Placed.center.x; Tooltip.style.top = over.Placed.yMax + 2f;
             Tooltip.style.visibility = Visibility.Visible;
