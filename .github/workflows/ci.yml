@@ -82,6 +82,8 @@ jobs:
         run: uv run --with pytest==9.1.1 --with pyyaml==6.0.3 --with requests==2.32.5 pytest scripts/oss/tests -q
       - name: Licences, provenance, secrets and required files at the tip
         run: uv run scripts/oss/check_repo.py
+      - name: Rule IDs have tests and no dead citations
+        run: python3 scripts/oss/rule_ids.py
 
   changelog:
     name: Changelog
