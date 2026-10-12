@@ -189,6 +189,31 @@ public class CabinetScreenTests
         Assert.AreNotEqual("First Government", ui.Q<Label>("cabinet-government").text);
     }
 
+    /// <summary>#277: Minister without Portfolio had two holders from 24 December 1952 to 15 June 1953 (Yosef and Lavon).
+    /// The screen gives each a card, and selecting the office says once why nobody can be appointed to it.</summary>
+    [Test]
+    public void AnOfficeWithSeveralHoldersGetsACardForEach()
+    {
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        g.State.Date = new DateTime(1953, 3, 1);
+        using var ui = Shown();
+        var cabinet = new CabinetPresenter(ui.Root, new SimBridge(g, Text), Text, null);
+        Assert.AreEqual("Dov Yosef", ui.Q<Label>("seat-minister_without_portfolio-holder").text);
+        Assert.AreEqual("Pinhas Lavon", ui.Q<Label>("seat-minister_without_portfolio-2-holder").text);
+        Assert.AreEqual("Minister without Portfolio", ui.Q<Label>("seat-minister_without_portfolio-2-office").text);
+        UiTestKit.Press(ui.Q<Button>("seat-minister_without_portfolio-2"));
+        Assert.AreEqual("minister_without_portfolio", cabinet.Selected);
+        Assert.IsTrue(ui.Q<Button>("seat-minister_without_portfolio").ClassListContains("seat-selected"));
+        Assert.IsTrue(ui.Q<Button>("seat-minister_without_portfolio-2").ClassListContains("seat-selected"));
+        StringAssert.Contains("several holders", ui.Q<Label>("cabinet-pick-reason").text);
+        Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("cabinet-pick-reason").style.display.value);
+
+        g.State.Date = new DateTime(1953, 7, 1);   // Yosef has moved to Development: one holder, one card
+        cabinet.Render();
+        Assert.AreEqual("Pinhas Lavon", ui.Q<Label>("seat-minister_without_portfolio-holder").text);
+        Assert.IsNull(ui.Root.Q<Button>("seat-minister_without_portfolio-2"));
+    }
+
     [Test]
     public void AVacantSeatSaysSoAndHasNoPortrait()
     {
