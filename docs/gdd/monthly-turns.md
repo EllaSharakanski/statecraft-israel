@@ -2,14 +2,14 @@
 
 ## Player story
 
-As a player of the MVP, I want every turn to be one month, so that the War of Independence, the austerity period and the immigration of 1948–1951 play in about 44 turns, as the GDD sets [S1].
+As a player of the MVP, I want every turn to be one month, so that 15 May 1948 to January 1952 plays in about 44 turns (decision D-B1 [S2]; the GDD targets about 48 [S1]).
 
 ## Rules
 
 - The turn length on each security rung comes from `turn_lengths` in the rules of the era the turn starts in (R-TURN-001).
-- Without the key, rungs 1 to 3 have quarter turns, rung 4 month turns and rung 5 week turns (unitless).
+- Without the key, the first three rungs have quarter turns, the fourth month turns and the fifth week turns.
 - The MVP sets month on every rung. Turns from the start on 15 May 1948 then end on the 15th of each month [S2].
-- A turn that reaches an era boundary still ends on it, by the rule that already holds for weekly turns (`SimTime.AdvanceTo`).
+- A turn that reaches an era boundary ends on it, and a turn that would end fewer than 14 days before it is lengthened to it (`SimTime.AdvanceTo`, D-E5, unchanged).
 
 ## Data touched
 
