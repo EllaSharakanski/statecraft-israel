@@ -11,6 +11,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Writer preview: `dotnet run --project sim/Statecraft.Cli -- --preview --set key=value` plays the historical run with a
   rules.yaml change applied in memory and prints the changed state lines and a table of chosen values, without Unity and
   without touching `content/` (fixes #295).
+- An office can now have several holders at once (`several_holders: true` in offices.yaml): Minister without Portfolio
+  and the deputy ministers of Education. Adds Dov Yosef's term without portfolio (24 December 1952 to 15 June 1953)
+  and Ami Assaf as a second Deputy Minister of Education (from 11 June 1956). Event text, policies and effects cannot
+  name such an office, and the Cabinet refuses to appoint to it. The Cabinet screen shows a card for each holder. No
+  golden moves (#277).
 - Rules per era (#58, second piece): the attention, economy, population, security, map-action and cabinet systems read
   `RulesAt(date)` of the turn's starting date instead of `rules.yaml` directly, and the Defence and Info screens and the
   HUD follow. With no `content/rules/<era>.yaml` files yet, nothing changes: the goldens do not move. A test fails if a
