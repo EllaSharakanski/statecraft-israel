@@ -228,7 +228,7 @@ public class RealContentTests
         Assert.Equal("ben_gurion", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 23))!.Id);
         Assert.Equal("serlin", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 24))!.Id);
         Assert.Equal("yosef_sapir", Offices.Holder(C, "transportation_minister", new DateTime(1952, 12, 29))!.Id);
-        var term = C.People.Single(p => p.Id == "ben_gurion").Offices.Single(t => t.Office == "transportation_minister");
+        var term = C.People.Single(p => p.Id == "ben_gurion").Offices.Single(t => t.Office == "transportation_minister" && t.From < new DateTime(1953, 1, 1));   // the 1953 one is #314's gap
         Assert.Equal(new DateTime(1952, 12, 24), term.To);
         Assert.NotEmpty(term.Sources);
     }

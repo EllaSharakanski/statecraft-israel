@@ -223,6 +223,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
+  June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
+  Knesset's position records show no break; the plenum record of the resignation and of the new declarations of
+  allegiance is used. The goldens do not move (fixes #314).
 - The Unity idle test `PromoScreensTests.AnOpenScreenIsStillWhenIdle` no longer fails now and then (#242). It was not a
   font atlas and not a recurring layout. A batch-mode editor runs few frames, and now and then it tells
   `UIDocument` late that the test's GameObject exists. `UIDocument` then re-adds its root and the whole screen lays out
