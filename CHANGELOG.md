@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
+  hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
+  message to start a new game. The real game is unchanged and the goldens do not move; a new `mvp-slice` golden pins the
+  switch on with monthly turns (GDD Phase 1, refs #357).
 - The loader refuses an event whose window runs past the end of its era (chapters spec 9: an event may not span a boundary;
   split it). A `to` on the boundary is fine (it is exclusive); an open window (no `to`) is allowed only in the last era.
   No current event is affected (refs #65).

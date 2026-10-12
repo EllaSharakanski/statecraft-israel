@@ -264,17 +264,21 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
-        public static Content Load(string contentRoot)
+        public static Content Load(string contentRoot) => Load(contentRoot, read => read);
+
+        /// <summary>Loads content from a directory through <paramref name="wrap"/>, which may change the text of the files read
+        /// (MvpSlice.Overlay). The directory checks are the same as for <see cref="Load(string)"/>.</summary>
+        internal static Content Load(string contentRoot, Func<Func<string, string?>, Func<string, string?>> wrap)
         {
             var eventsDir = Path.Combine(contentRoot, "events");
             var eventFiles = Directory.Exists(eventsDir)
                 ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
                 : new List<string>();
-            var content = Load(rel =>
+            var content = Load(wrap(rel =>
             {
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
-            }, eventFiles);
+            }), eventFiles);
             // Only this overload can list the directory. The readFile overload (WebGL) cannot, so a misnamed file is caught
             // here and by RealContentTests before anything ships.
             var rulesDir = Path.Combine(contentRoot, "rules");
@@ -807,6 +811,10 @@ namespace Statecraft.Sim
                     if (!MapActions.Actions.Contains(a)) throw new ContentException("eras.yaml", at + ".systems.map_actions", $"unknown map action '{a}' (transit_camp or housing)");
                 if (e.Systems.MapActions.Distinct().Count() != e.Systems.MapActions.Count)
                     throw new ContentException("eras.yaml", at + ".systems.map_actions", "lists an action twice");
+                if (e.Systems.Loop != EraSystems.Legacy && e.Systems.Loop != EraSystems.Gdd)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "must be legacy or gdd");
+                if (e.Systems.Loop != c.Eras[0].Systems.Loop)
+                    throw new ContentException("eras.yaml", at + ".systems.loop", "every era runs the same loop (a save names one ruleset)");
                 if (i == 0)
                 {
                     if (c.Rules.Start != default && e.From != c.Rules.Start)   // a missing start is rules.yaml's own error
