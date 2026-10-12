@@ -24,6 +24,9 @@ namespace Statecraft.Game.Boot
         /// <summary>content/map/localities_1948.yaml (the 1948 localities and Bedouin camp areas the kits and labels draw; ""
         /// when absent). The sim never reads it.</summary>
         public string LocalitiesYaml = "";
+        /// <summary>content/map/armistice_hexes_1949.yaml: the 1949 armistice lines drawn over it from their dates (display
+        /// only; "" when absent: no armistice layer, like the other cosmetic map inputs).</summary>
+        public string ArmisticeYaml = "";
         /// <summary>heightmap.r16z as read: packed (HeightmapCodec); HeightmapLoader decodes it when the map is built.</summary>
         public byte[] HeightmapR16z = new byte[0];
     }
@@ -48,6 +51,7 @@ namespace Statecraft.Game.Boot
                 ? File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName)) : "",
             LocalitiesYaml = File.Exists(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.Localities.FileName))
                 ? File.ReadAllText(Path.Combine(contentDir, "map", Statecraft.Game.Map.Kits.Localities.FileName)) : "",
+            ArmisticeYaml = ReadIfExists(Path.Combine(contentDir, "map", Armistice1949.FileName)),
         };
 
         /// <summary>A map-only, cosmetic input: "" when the file is missing (the map then skips that layer with a warning).</summary>
@@ -72,6 +76,7 @@ namespace Statecraft.Game.Boot
                     RoutesYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Routes.RoutePaths.DefaultFileName, out var routes) ? routes : "",
                     PopulationYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Kits.KitPopulation.FileName, out var pop) ? pop : "",
                     LocalitiesYaml = texts.TryGetValue("map/" + Statecraft.Game.Map.Kits.Localities.FileName, out var loc) ? loc : "",
+                    ArmisticeYaml = texts.TryGetValue("map/" + Armistice1949.FileName, out var armistice) ? armistice : "",
                 },
             };
         }
