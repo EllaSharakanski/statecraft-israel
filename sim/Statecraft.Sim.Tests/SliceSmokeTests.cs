@@ -118,7 +118,7 @@ public class SliceSmokeTests
         // CabinetPresenter: every seat, its holder and why each person cannot take it.
         foreach (var seat in Cabinet.Lineup(c, s))
         {
-            yield return (seat.Office.Title + ": " + (seat.Holder?.Name ?? ""), false);
+            yield return (seat.Office.Title + ": " + string.Join(", ", seat.Holders.Select(p => p.Name)), false);
             foreach (var reason in Cabinet.Candidates(c, s, seat.Office.Id).Select(x => x.reason).Where(x => x != null).Distinct())
                 yield return (reason!, false);
         }
