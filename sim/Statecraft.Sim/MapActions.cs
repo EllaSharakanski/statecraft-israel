@@ -42,6 +42,8 @@ namespace Statecraft.Sim
             // No id in either reason: a command from an old save or a stale UI may name an action this content lacks; the
             // replay refuses it here, before anything is formatted, so a placement always has its rule (fix round 3, m-6).
             if (!Actions.Contains(action)) return "There is no such map action";
+            // eras.yaml systems.map_actions: the actions this era allows
+            if (!c.SystemsAt(s.Date).MapActions.Contains(action)) return "That map action is not available in this chapter";
             var rules = c.RulesAt(s.Date);   // the era the turn starts in
             var rule = rules.MapActions.TryGetValue(action, out var x) ? x : null;
             if (rule == null) return "That map action is not available in this game";

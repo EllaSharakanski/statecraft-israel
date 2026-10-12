@@ -11,6 +11,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Writer preview: `dotnet run --project sim/Statecraft.Cli -- --preview --set key=value` plays the historical run with a
   rules.yaml change applied in memory and prints the changed state lines and a table of chosen values, without Unity and
   without touching `content/` (fixes #295).
+- Era system switches in eras.yaml (`systems`): `legislature: state | assembly` (an assembly's vote against a policy or
+  the budget is held and reported, but does not bind) and `map_actions` (the actions the era allows). The Cabinet and
+  Budget screens say when the body's vote does not bind, and the hex panel shows only the era's map actions. With no
+  `systems` key an era behaves as before; goldens unchanged (fixes #58).
 - An office can now have several holders at once (`several_holders: true` in offices.yaml): Minister without Portfolio
   and the deputy ministers of Education. Adds Dov Yosef's term without portfolio (24 December 1952 to 15 June 1953)
   and Ami Assaf as a second Deputy Minister of Education (from 11 June 1956). Event text, policies and effects cannot
