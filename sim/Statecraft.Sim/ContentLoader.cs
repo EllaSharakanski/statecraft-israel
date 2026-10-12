@@ -746,6 +746,8 @@ namespace Statecraft.Sim
             ValidateRules(c, c.Rules, "rules.yaml", indicators, offices, historicalOffices);
             foreach (var kv in c.EraRules)
                 ValidateRules(c, kv.Value, "rules/" + kv.Key + ".yaml", indicators, offices, historicalOffices);
+            foreach (var g in c.Regions.Where(g => g.From.HasValue && g.To.HasValue && g.To.Value <= g.From.Value))
+                throw new ContentException("aliyah.yaml", $"regions[{g.Id}].to", FormattableString.Invariant($"must be after from ({g.From:yyyy-MM-dd})"));
             for (int i = 0; i < c.Aliyah.Count; i++)
             {
                 var a = c.Aliyah[i]; var path = FormattableString.Invariant($"series[{i}]");
@@ -754,6 +756,10 @@ namespace Statecraft.Sim
                 foreach (var kv in a.Origins)
                 {
                     if (c.Regions.All(g => g.Id != kv.Key)) throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"unknown region '{kv.Key}' (add it to regions with a name)");
+                    var region = c.Regions.First(g => g.Id == kv.Key);
+                    // A period's dates are inclusive, a region's window is [from, to): the period covers [a.From, a.To + 1 day).
+                    if (!Window.Covers(region.From, region.To, a.From, a.To.AddDays(1)))
+                        throw new ContentException("aliyah.yaml", $"{path}.origins.{kv.Key}", $"region '{kv.Key}' does not exist for the whole period (its window is {(region.From.HasValue ? region.From.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "the start")} to {(region.To.HasValue ? region.To.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "open")})");
                     Count("aliyah.yaml", $"{path}.origins.{kv.Key}", kv.Value);
                 }
             }
