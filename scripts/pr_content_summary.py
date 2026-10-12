@@ -6,9 +6,9 @@
 """Markdown summary of the game records a branch adds, removes or re-dates (#325):
 `uv run scripts/pr_content_summary.py [BASE]` (BASE defaults to origin/main; the branch is HEAD).
 
-Compares committed content only, like the changelog check. Covers content/events/*.yaml (by id) and the lists in
-content/model.yaml (indicators, policies, effects, situations, voter_groups, actors). A record is "re-dated" when its
-`from` or `to` changed. Prints nothing but "No content records changed." when there is no difference."""
+Compares committed content only, against the merge base (BASE...HEAD), like the changelog check. Covers
+content/events/*.yaml (by id) and the lists in content/model.yaml (indicators, policies, effects, situations, money,
+voter_groups, actors). A record is "re-dated" when its `from` or `to` changed. Prints nothing but "No content records changed." when there is no difference."""
 import argparse
 import subprocess
 import sys
@@ -17,7 +17,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-LISTS = ["indicators", "policies", "effects", "situations", "voter_groups", "actors"]
+LISTS = ["indicators", "policies", "effects", "situations", "money", "voter_groups", "actors"]
 
 
 def git(root: Path, *args: str) -> str:
@@ -71,7 +71,13 @@ def main(argv: list[str] | None = None) -> int:
     if not git(a.root, "rev-parse", "--verify", "--quiet", f"{a.base}^{{commit}}").strip():
         print(f"base ref not found: {a.base} (try: git fetch origin)", file=sys.stderr)
         return 2
-    print(summarize(records(a.root, a.base), records(a.root, "HEAD")))
+    # Against the merge base, as `git diff BASE...HEAD` and the changelog check do: what main gained since the branch
+    # started is not this branch's change.
+    fork = git(a.root, "merge-base", a.base, "HEAD").strip()
+    if not fork:
+        print(f"no merge base between {a.base} and HEAD", file=sys.stderr)
+        return 2
+    print(summarize(records(a.root, fork), records(a.root, "HEAD")))
     return 0
 
 

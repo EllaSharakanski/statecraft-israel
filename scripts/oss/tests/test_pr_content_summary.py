@@ -36,3 +36,18 @@ def test_no_change_and_bad_base(make_repo, capsys):
     assert m.main([base, "--root", str(root)]) == 0
     assert capsys.readouterr().out.strip() == "No content records changed."
     assert m.main(["nope", "--root", str(root)]) == 2
+
+
+def test_main_moving_on_is_not_this_branchs_change(make_repo, capsys):
+    root = make_repo({"content/model.yaml": MODEL, "content/events/a.yaml": "id: a\nfrom: 1948-06-01\n"})
+    commit_all(root, "base")
+    git(root, "checkout", "-q", "-b", "topic")
+    (root / "content/events/t.yaml").write_text("id: t\nfrom: 1949-01-01\n")
+    commit_all(root, "topic adds t")
+    git(root, "checkout", "-q", "main")
+    (root / "content/events/n.yaml").write_text("id: n\nfrom: 1950-01-01\n")
+    commit_all(root, "main adds n")
+    git(root, "checkout", "-q", "topic")
+    assert m.main(["main", "--root", str(root)]) == 0
+    out = capsys.readouterr().out
+    assert "**Added** (1)" in out and "`event:t`" in out and "event:n" not in out and "Removed" not in out
