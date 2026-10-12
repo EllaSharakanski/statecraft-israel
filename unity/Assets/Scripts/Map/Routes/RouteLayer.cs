@@ -206,23 +206,29 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>Samples per side when a cross-section looks for where it must stop.</summary>
         const int NarrowSamples = 8;
 
-        /// <summary>The half-width (m) a cross-section at <paramref name="q"/> (flat at <paramref name="y"/>) may span: the full
-        /// <paramref name="half"/>, cut back symmetrically (so the rails stay centred) to the last sample where the ground on
-        /// both sides is neither more than <see cref="RiseToleranceM"/> above the section nor more than <see cref="FallToleranceM"/> below it, but
-        /// never under <see cref="MinWidthShare"/> of the width. Railways only (RailHalfWidths smooths it along the line):
-        /// in the Sorek gorge the band keeps to the floor instead of riding up the walls (review B15); on the plains nothing
-        /// changes.</summary>
+        /// <summary>The half-width (m) a cross-section at <paramref name="q"/> (flat at <paramref name="y"/>) may span. A sample
+        /// leaves the tolerance where the ground is more than <see cref="RiseToleranceM"/> above the section or more than
+        /// <see cref="FallToleranceM"/> below it. Where the ground leaves it on both sides within the half-width (a gorge floor, a
+        /// gorge side, a ridge), the section is cut back symmetrically (so the rails stay centred) to the last sample before
+        /// the first one that leaves it, on either side, but never under <see cref="MinWidthShare"/> of the width. Where it leaves
+        /// it on one side only (one hill or one drop beside the line), the full <paramref name="half"/>: that edge reads as a
+        /// cutting or an embankment, and cutting both sides for it narrowed the foothill lines to about 70% (#252). Railways
+        /// only (RailHalfWidths smooths it along the line): in the Sorek gorge the band keeps to the floor instead of riding up
+        /// the walls (review B15); on the plains nothing changes.</summary>
         public static float FlatHalfWidth(TerrainData data, Vector3 origin, Vector2 q, Vector2 side, float y, float half)
         {
-            float allowed = half;
-            for (int k = 1; k <= NarrowSamples; k++)
+            int left = 0, right = 0;                                              // the first sample out of tolerance each side
+            for (int k = 1; k <= NarrowSamples && (left == 0 || right == 0); k++)
             {
                 float o = half * k / NarrowSamples;
-                float gl = Ground(data, origin, q - side * o), gr = Ground(data, origin, q + side * o);
-                if (gl > y + RiseToleranceM || gr > y + RiseToleranceM || gl < y - FallToleranceM || gr < y - FallToleranceM) { allowed = half * (k - 1) / NarrowSamples; break; }
+                if (left == 0 && OutOfTolerance(Ground(data, origin, q - side * o), y)) left = k;
+                if (right == 0 && OutOfTolerance(Ground(data, origin, q + side * o), y)) right = k;
             }
-            return Mathf.Max(allowed, half * MinWidthShare);
+            if (left == 0 || right == 0) return half;
+            return Mathf.Max(half * (Math.Min(left, right) - 1) / NarrowSamples, half * MinWidthShare);
         }
+
+        static bool OutOfTolerance(float ground, float y) => ground > y + RiseToleranceM || ground < y - FallToleranceM;
 
         /// <summary>The ground height (world y) under (x, z), clamped to the terrain.</summary>
         public static float Ground(TerrainData data, Vector3 origin, Vector2 p) =>

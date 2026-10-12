@@ -155,6 +155,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Government took office, not on 26 April 1949 (the day rationing was decided, which the austerity event keeps). The
   Knesset's 8 March 1949 First Government document names him. Agriculture is unchanged. The goldens do not move; the
   content hash does, so an older save loads with the "different game content" warning (#225).
+- Railways keep their width outside the gorges: a rail band narrows only where the ground leaves its tolerance on both
+  sides (a gorge floor, a gorge side, a ridge), not for one hill or one drop beside the line. The Jaffa–Jerusalem line
+  keeps 94.9% of its width outside the Sorek (87.4% before) and the Jezreel Valley line 92.1% outside its gorges (82.8%).
+  Map only; the goldens do not move (#252).
 - Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
   bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
   flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).

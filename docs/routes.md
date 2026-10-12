@@ -155,8 +155,16 @@ measurement in `docs/units.md`:
   - **The old rule.** Each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up
     both walls and its rails and sleepers warped.
   - **Width.** It narrows to the gorge floor and ramps: `RailHalfWidths`.
-    - Per section, `FlatHalfWidth` cuts the band back symmetrically to where the ground on both sides is neither more
-      than 40 m above it nor more than 60 m below it, down to 25% of the width.
+    - Per section, `FlatHalfWidth` looks for ground more than 40 m above the band or more than 60 m below it, out to
+      the band's edge on each side.
+      - Where it finds such ground on both sides (a gorge floor, a gorge side, a ridge), it cuts the band back
+        symmetrically to the last sample before the first one, down to 25% of the width.
+      - Where only one side has it (one hill or one drop beside the line), the band keeps its full width. That edge reads
+        as a cutting or an embankment (#252).
+        - Cutting both sides for it had narrowed the foothill lines: on main (f974c9f), 85% of the narrowed
+          Jaffa–Jerusalem sections and 93% of the Jezreel Valley ones failed on one side only. That covers the Latrun
+          foothills, the Carmel foot by Haifa and the Jordan terraces.
+        - The smoothing below cost only 5–7 points.
       - An edge under a little higher ground reads as a cutting.
       - A stricter rule (any rise over the clearance) also thinned the band on the rolling Shephelah foothills.
     - Then it takes the minimum over two sections each way.
@@ -174,6 +182,18 @@ measurement in `docs/units.md`:
     - `TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth`: on every railway, no ground over the rails, no width
       jump over 10%, and the edges' float bounded (p99 85 m, bound 100 m). It fails on 005e60e: 67 sections with ground
       over the rails, 819 width jumps and an edge float p99 of 107 m.
+    - `EveryRailwayKeepsItsWidthOutsideTheGorges` (#252): every line keeps at least 90% of its width, on average, outside
+      the gorges (sections where the ground leaves the tolerance on both sides), and its mean width stays at its pinned
+      floor. The edge float p99 stays 86 m; the Sorek numbers do not move.
+
+      | Line | Mean width, main (f974c9f) | Now | Outside the gorges, main | Now | Sections in gorges |
+      |---|---|---|---|---|---|
+      | Jaffa–Jerusalem | 70.7% | 76.2% | 87.4% | 94.9% | 178 of 665 (the Sorek) |
+      | Main line south | 98.9% | 100.0% | 98.9% | 100.0% | 0 of 856 |
+      | Eastern Railway | 99.3% | 100.0% | 99.3% | 100.0% | 0 of 525 |
+      | Hadera–Haifa | 92.0% | 97.4% | 93.5% | 99.0% | 9 of 419 |
+      | Haifa–Beirut | 95.1% | 95.5% | 97.0% | 97.4% | 9 of 326 |
+      | Jezreel Valley | 74.5% | 82.5% | 82.8% | 92.1% | 113 of 775 (the Beisan–Jordan descent, the Yarmuk, the Carmel foot) |
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
