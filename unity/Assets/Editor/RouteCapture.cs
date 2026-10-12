@@ -12,13 +12,16 @@ using UnityEngine;
 /// Writes routes-&lt;view&gt;.png (default captures/visual/routes, git-ignored).</summary>
 public static class RouteCapture
 {
-    /// <summary>(name, lon, lat, distance m, yaw): the still train east of Jaffa, Lydda junction, and Latrun to Bab al-Wad
-    /// with the Burma Road.</summary>
+    /// <summary>(name, lon, lat, distance m, yaw): the still train east of Jaffa, Lydda junction, Latrun to Bab al-Wad with
+    /// the Burma Road, the Atlit coast line, the Sorek gorge and the Jericho road.</summary>
     static readonly (string name, double lon, double lat, float distance, float yaw)[] Views =
     {
         ("train", 34.83, 32.01, 16000f, 10f),
         ("lydda", 34.875, 31.945, 14000f, 10f),
         ("latrun", 34.99, 31.82, 22000f, 0f),
+        ("atlit", 34.95, 32.70, 14000f, 0f),       // the Hadera–Haifa line along the Atlit coast (review B14)
+        ("sorek", 35.07, 31.755, 10000f, 0f),      // the Jaffa–Jerusalem line in the Sorek gorge (review B15)
+        ("jericho", 35.36, 31.80, 14000f, 0f),     // the Jerusalem–Jericho road's descent (review A-I1)
     };
 
     public static void Close()

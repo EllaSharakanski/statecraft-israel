@@ -154,6 +154,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Railways and roads on the map no longer zigzag on straight stretches (the traced lines are smoothed, keeping real
+  bends), and the Jaffa–Jerusalem railway no longer climbs the Sorek gorge's walls: the track keeps its own grade,
+  flat across, narrows smoothly to the gorge floor and stays clear of the ground under its rails (#212, #213).
 - Place names no longer cover the buildings of small settlements such as Degania Alef and Zikhron Ya'akov (#214). A name
   now sits above its town's buildings, or beside or below them when that space is taken, and covers at most a tenth of
   any town. With the "kits" visual toggle off, names keep clear of the marker boxes instead. Presentation only.
