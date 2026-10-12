@@ -22,6 +22,6 @@ Different parts of this repository are under different licences. Where a file is
 
 Historical facts are not owned by anyone. The text describing them paraphrases the cited sources. The research notes and reports quote short passages from their sources for commentary; those quotes remain © their authors.
 
-Still being checked by the owner: the ElevenLabs and Dreamina terms for the AI images, the data.gov.il terms for the rain-gauge data, and the US public-domain status of each portrait (decisions D5, D6 and D-P in [docs/oss/DECISIONS.md](docs/oss/DECISIONS.md); per-file status in [ASSETS.yaml](ASSETS.yaml)). These files were published before the checks. If a check fails, the file is removed from the current tree; git history keeps it. Attribution texts: [NOTICE](NOTICE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Still being checked by the owner: the ElevenLabs and Dreamina terms for the AI images, the data.gov.il terms for the rain-gauge data, and the US public-domain status of each portrait (decisions D5, D-D, D6 and D-P in [docs/oss/DECISIONS.md](docs/oss/DECISIONS.md); per-file status in [ASSETS.yaml](ASSETS.yaml)). These files were published before the checks. If a check fails, the file is removed from the current tree; git history keeps it. Attribution texts: [NOTICE](NOTICE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 "Civilization" is a trademark of Take-Two Interactive. It is mentioned only to describe the genre. This project is not affiliated with or endorsed by its owners.

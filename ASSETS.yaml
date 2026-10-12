@@ -44,9 +44,9 @@ rules:
   - glob: "promo/start-screen/declaration-hall-option-*.png"
     licence: CC0-1.0
     ai_generated: true
-    source: "Dreamina (dreamina.capcut.com), model GPT Image 2.5, 2026-10-12, 1536x864 as downloaded, with promo/final/03-gameplay-1936.png as the style reference; prompts in promo/start-screen/prompt-a.txt, -b.txt and -c.txt"
+    source: "Dreamina (dreamina.capcut.com), model GPT Image 2.5, 2026-10-12, 1536x864 as downloaded, with promo/final/03-gameplay-1936.png as the style reference; prompts in promo/start-screen/prompt-b.txt and -c.txt"
     status: owner-verify
-    note: "Decision D1: AI-only images CC0 / no rights claimed. The three options for the start screen; C is used. Option A's frame between the flags holds a blurred generic portrait of a man: not used in the game (docs/CONTENT_POLICY.md: no AI likenesses of real people in the game)."
+    note: "Decision D1: AI-only images CC0 / no rights claimed. Two options for the start screen; C is used."
   - glob: "docs/sources/declaration-1948/*.txt"
     licence: Public-Domain
     source: "The Declaration of the Establishment of the State of Israel: the Hebrew as published in Iton Rishmi (Official Gazette) No. 1, 14 May 1948, via https://he.wikisource.org/wiki/הכרזה_על_הקמת_מדינת_ישראל; the English translation via https://avalon.law.yale.edu/20th_century/israel.asp, checked against the Israel MFA's https://www.gov.il/en/pages/declaration-of-establishment-state-of-israel (all 2026-10-12)"
