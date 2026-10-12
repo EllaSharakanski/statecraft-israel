@@ -1783,7 +1783,7 @@ houses (review M8). "Main" is `a3202ad`, with the villages and before towns roun
 | Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
 | Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
 | Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
-| all 25 | 216 → 365 (367 after the review) | | | 27 → 55 |
+| all 25 | 216 → 365 (413 after the review: the small-town floor, #317) | | | 27 → 55 |
 
 Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
 blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
@@ -1858,8 +1858,20 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
   - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
   - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
+- **Small-town floor (#317, fixed on the branch):**
+  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots. The routes, the lake or
+    a neighbour's lots took them all: Tiberias drew 0 houses (main 3), Netanya 1 (main 2), Beersheba 3 (main 5).
+  - A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) now tries up to 240 random spots
+    over its footprint (`ScatterTries`), from its own stream (`KitRandom(id, 3)`). Each spot gets the quarter's building
+    and passes the same fit tests as a plot.
+  - Every town now draws at least main's count: Tiberias 3, Netanya 5, Beersheba 6, Rosh Pinna 3, Nahalal 6; the 25
+    towns draw 413.
+  - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`). With the
+    scatter off, it fails for Beersheba, Netanya, Tiberias and Rosh Pinna.
+  - The grid stays readable at 78% (69 of 89), and the beach reads as sand at 79%.
+  - The label refresh is unchanged: `MapLabelTests.RefreshWhileTheCameraMovesIsCheapAndAllocationFree` measured 162-163 µs
+    with the floor and 171-180 µs without it, interleaved. The single 238 µs (fail) came in a full run at load 24.
 - **Still open, filed as issues:**
-  - #317: small towns draw almost no houses on the 100x lattice (Tiberias 3 → 0, Rosh Pinna 0).
   - #318: Tel Aviv's cover is held down by the localities' landmark lots.
   - #319: the symbolic Old City has roads crossing inside its walls.
 - **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at

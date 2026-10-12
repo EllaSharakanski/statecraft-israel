@@ -182,7 +182,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
 - Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
-  of random spots: the 25 towns draw 367 buildings where main drew 216 (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
+  of random spots: the 25 towns draw 413 buildings where main drew 216, and no town draws fewer than on main (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
   70 to 110), with 55 landmarks instead of 27. Old Jaffa is packed small stone houses; Tel Aviv's white blocks are
   taller in the core (promo ruling, at most eight storeys); Haifa has its lower town by the port and Hadar on the slope; Jerusalem has its stone
   new city, its Arab quarters and a walled Old City; the large moshavot have a plastered centre. Sourced 1948 landmarks: Jerusalem's walls and gates, the

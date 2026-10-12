@@ -443,6 +443,30 @@ namespace Statecraft.Game.Map.Kits
             }
             plots.Sort((x, y) => x.d != y.d ? x.d.CompareTo(y.d) : x.order.CompareTo(y.order));
 
+            // Whether lattice L's building fits at p: the full building, else a smaller one on the plot or nudged within it,
+            // so a plot by a road or a neighbour's lot keeps a smaller building instead of standing empty. A nudged, shrunk
+            // building still stays inside its plot, so it never reaches a neighbouring plot's building. group -1 tests
+            // against every lot, this town's plots included (the scatter below).
+            bool Fit(Lattice L, Vector2 p, float yaw, float t, Spec spec, int group, out Spec b, out Vector2 q)
+            {
+                var g = Grid(L.Style);
+                float a = L.Yaw * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                bool hillTown = L.Style == Style.OldHouse || L.Style == Style.Village;
+                foreach (var (shrink, du, dv) in Fits)
+                {
+                    b = Shrink(spec, shrink);
+                    float u = du * g.pu * g.scale, v = dv * g.pv * g.scale;
+                    q = p + new Vector2(u * ca - v * sa, u * sa + v * ca);
+                    if ((du != 0f || dv != 0f) && (!ground.Inside(q.x, q.y) || !Mine(q) || !Allows(s, L, q, t, ground) || ground.Water(q.x, q.y))) continue;
+                    if (!lots.Free(q, b.lotR, s.Id, group) || ground.OnRoute(q, b.lotR)) continue;   // off the railways and roads too
+                    if (ground.Slope(q.x, q.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
+                    if (CornerInWater(q, yaw, b.w, b.d, ground)) continue;   // the whole footprint is dry
+                    if (shore && L.Style != Style.OldHouse && NearSea(q, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
+                    return true;
+                }
+                b = spec; q = p; return false;
+            }
+
             int placed = 0;
             foreach (var (d, _, p0, li) in plots)
             {
@@ -461,31 +485,48 @@ namespace Statecraft.Game.Map.Kits
                 var p = p0 + new Vector2(ju * ca - jv * sa, ju * sa + jv * ca);
                 // The cheap tests first (the boot budget): the cell and the quarter, then the terrain samples.
                 if (!ground.Inside(p.x, p.y) || !Mine(p) || !Allows(s, L, p, t, ground) || ground.Water(p.x, p.y)) continue;
-                bool hillTown = L.Style == Style.OldHouse || L.Style == Style.Village;
-                // The full building, else a smaller one on the plot or nudged within it: a plot by a road or a neighbour's
-                // lot keeps a smaller building instead of standing empty. A nudged, shrunk building still stays inside its
-                // plot, so it never reaches a neighbouring plot's building.
-                bool fitted = false; Spec b = spec; Vector2 q = p;
-                foreach (var (shrink, du, dv) in Fits)
-                {
-                    b = Shrink(spec, shrink);
-                    float u = du * g.pu * g.scale, v = dv * g.pv * g.scale;
-                    q = p + new Vector2(u * ca - v * sa, u * sa + v * ca);
-                    if ((du != 0f || dv != 0f) && (!ground.Inside(q.x, q.y) || !Mine(q) || !Allows(s, L, q, t, ground) || ground.Water(q.x, q.y))) continue;
-                    if (!lots.Free(q, b.lotR, s.Id, L.Group) || ground.OnRoute(q, b.lotR)) continue;   // off the railways and roads too
-                    if (ground.Slope(q.x, q.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
-                    if (CornerInWater(q, yaw, b.w, b.d, ground)) continue;   // the whole footprint is dry
-                    if (shore && L.Style != Style.OldHouse && NearSea(q, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
-                    fitted = true; break;
-                }
-                if (!fitted) continue;
+                if (!Fit(L, p, yaw, t, spec, L.Group, out var b, out var q)) continue;
                 lots.Add(new Lot { c = q, r = b.lotR, id = s.Id, group = L.Group });
                 var drnd = new KitRandom(detail);
                 Emit(s.Id, L.Style, q, yaw, b, t, ground, km, ref drnd);
                 placed++;
             }
+
+            // A small town's floor (#317): at the houses' 100x scale a plot is about 1 km, so a footprint of 1.3-2 km radius
+            // holds only some 7 plots, and the routes, the lake or a neighbour's lots can take them all (Tiberias drew none).
+            // Below SmallTownFloor houses, free spots over the footprint are tried at random, as round 1 placed every town,
+            // each with the quarter's building for that spot. Its own stream (KitRandom(id, 3)): the lattice above draws as
+            // before.
+            if (placed < SmallTownFloor)
+            {
+                var srnd = new KitRandom(s.Id, 3);
+                for (int tries = 0; tries < ScatterTries && placed < SmallTownFloor; tries++)
+                {
+                    float r = reach * Mathf.Sqrt(srnd.Value()), ang = srnd.Range(0f, 2f * Mathf.PI), t = r / R;
+                    ulong detail = srnd.Next(); float jitterYaw = srnd.Range(-4f, 4f);
+                    var p = centre + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * r;
+                    if (!ground.Inside(p.x, p.y) || !Mine(p) || ground.Water(p.x, p.y)) continue;
+                    int li = lattices.FindIndex(x => Allows(s, x, p, t, ground));
+                    if (li < 0) continue;
+                    var L = lattices[li]; var g = Grid(L.Style);
+                    var spec = Pick(L.Style, t, ref srnd, g.scale);
+                    float yaw = L.Yaw + (g.jitter > 0f ? jitterYaw : 0f);
+                    if (!Fit(L, p, yaw, t, spec, -1, out var b, out var q)) continue;
+                    lots.Add(new Lot { c = q, r = b.lotR, id = s.Id });
+                    var drnd = new KitRandom(detail);
+                    Emit(s.Id, L.Style, q, yaw, b, t, ground, km, ref drnd);
+                    placed++;
+                }
+            }
             return placed;
         }
+
+        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6), which every
+        /// town's lattice reaches except the small ones'.</summary>
+        const int SmallTownFloor = 6;
+        /// <summary>Random spots a small town tries before it settles for fewer than SmallTownFloor houses (round 1 tried
+        /// about 30 per building).</summary>
+        const int ScatterTries = 240;
 
         /// <summary>The fits a plot tries in turn: (size share, nudge along and across the street as a share of the pitch).</summary>
         static readonly (float shrink, float du, float dv)[] Fits =

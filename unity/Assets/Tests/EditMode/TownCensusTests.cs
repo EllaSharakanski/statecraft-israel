@@ -186,20 +186,34 @@ public class TownCensusTests
         CollectionAssert.IsEmpty(bad.Take(20), $"{bad.Count} placements on a route or in the sea");
     }
 
-    /// <summary>Review of towns round 2. The beach setback is the Mediterranean's: on the Sea of Galilee, Degania keeps its
-    /// house (main 1, 0 with the setback on the lake). Nahalal's ring reaches its lattice's first ring of plots (main 1, 0 with
-    /// the ring ending at 0.88 of the radius). No block stands taller than promo 03's tallest, eight storeys (60x: 1,584 m).</summary>
+    /// <summary>Every town's houses on main before towns round 2 (main a3202ad, with the 1948 localities: this census), the
+    /// floor no town may fall below (#317). Wings are not counted.</summary>
+    internal static readonly Dictionary<string, int> MainBuildings = new Dictionary<string, int>
+    {
+        ["acre"] = 2, ["beersheba"] = 5, ["degania_alef"] = 1, ["ein_harod"] = 1, ["gaza"] = 15, ["hadera"] = 1, ["haifa"] = 30,
+        ["hanita"] = 2, ["jaffa"] = 15, ["jerusalem"] = 70, ["lod"] = 5, ["nahalal"] = 1, ["nazareth"] = 5, ["netanya"] = 2,
+        ["petah_tikva"] = 2, ["ramla"] = 5, ["rehovot"] = 3, ["revivim"] = 3, ["rishon_lezion"] = 2, ["rosh_pinna"] = 0,
+        ["safed"] = 5, ["tel_aviv"] = 36, ["tiberias"] = 3, ["yad_mordechai"] = 0, ["zikhron_yaakov"] = 2,
+    };
+
+    /// <summary>Review of towns round 2. No town draws fewer houses than main did (#317: on the 100x lattice a small town
+    /// has some 7 plots; Tiberias drew 0 against main's 3, Netanya 1 against 2, Beersheba 3 against 5, until the small-town
+    /// floor). The beach setback is the Mediterranean's (Degania on the Sea of Galilee), and Nahalal's ring reaches its
+    /// lattice's first ring of plots. No block stands taller than promo 03's tallest, eight storeys (60x: 1,584 m).</summary>
     [Test]
     public void SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo()
     {
         var map = OpenMap();
         var rows = Census(map, out var placed).ToDictionary(r => r.Id);
         var bad = new List<string>();
-        foreach (var id in new[] { "degania_alef", "nahalal" })
+        CollectionAssert.AreEquivalent(MainBuildings.Keys, rows.Keys, "the floor lists every game town");
+        foreach (var kv in MainBuildings)
         {
-            TestContext.WriteLine(rows[id]);
-            if (rows[id].Buildings < 1) bad.Add(id + " builds no house");
+            TestContext.WriteLine(rows[kv.Key]);
+            if (rows[kv.Key].Buildings < kv.Value) bad.Add($"{kv.Key}: {rows[kv.Key].Buildings} houses, main {kv.Value}");
         }
+        foreach (var id in new[] { "tiberias", "rosh_pinna" })
+            if (rows[id].Buildings < 1) bad.Add(id + " builds no house");
         float tallest = placed.Where(p => p.Kind == "building").Max(p => p.H);
         if (tallest > 8f * 3.3f * KitScale.CityBlocks + 1f) bad.Add($"a block {tallest:0} m tall, over eight storeys");
         CollectionAssert.IsEmpty(bad);
