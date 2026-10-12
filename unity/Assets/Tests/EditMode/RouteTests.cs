@@ -225,7 +225,8 @@ public class RouteTests
         }
         finally { Object.DestroyImmediate(map.gameObject); }
     }
-    // Measured 2026-10-12 (3288a93): old warp median 315 m (p90 454 m); new lift median 10 m, p90 25 m, max 40 m.
+    // Measured 2026-10-12 (3288a93, unchanged at 6c1f964): old warp median 315 m (p90 454 m); new lift median 10 m, p90 25 m,
+    // max 40 m. 005e60e: median 11 m, p90 38 m, so the p90 bound fails there.
     const float LiftP90BoundM = 35f;
 
     /// <summary>Review A-I1 and A-I2, on every railway: the ground never rises above the band under its rails
@@ -273,7 +274,8 @@ public class RouteTests
         }
         finally { Object.DestroyImmediate(map.gameObject); }
     }
-    // Measured 2026-10-12 (3288a93): edge float p99 85 m, max 223 m (flat sections on hillsides; the floor is 25% width).
+    // Measured 2026-10-12 (3288a93, unchanged at 6c1f964): edge float p99 85 m, max 223 m (flat sections on hillsides; the floor
+    // is 25% width). 005e60e: 67 sections with ground over the rails, 819 width jumps, edge float p99 107 m.
     const float EdgeFloatP99BoundM = 100f;
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have

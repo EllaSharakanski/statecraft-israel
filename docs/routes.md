@@ -172,8 +172,8 @@ measurement in `docs/units.md`:
     - `TheRailwayKeepsItsGradeInTheSorekGorge`: every section is flat. Main's rule warped the band by a median 315 m
       across. The band now sits a median 10 m over the ground at the line (p90 25 m, max 40 m; bounds 12 m and 35 m).
     - `TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth`: on every railway, no ground over the rails, no width
-      jump over 10%, and the edges' float bounded (p99 85 m, bound 100 m). It fails on 005e60e: 235 sections with ground
-      over the rails and 819 width jumps.
+      jump over 10%, and the edges' float bounded (p99 85 m, bound 100 m). It fails on 005e60e: 67 sections with ground
+      over the rails, 819 width jumps and an edge float p99 of 107 m.
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
