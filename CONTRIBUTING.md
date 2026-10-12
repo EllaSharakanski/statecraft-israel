@@ -11,6 +11,8 @@ Thanks for helping. This file covers how to get set up, the rules every change f
 
 If you're unsure where to start, open an issue first and describe what you want to do.
 
+**Picking an issue.** Issues with the label `ready for a contributor` are the easiest to start. They come from the **Task** issue form: a goal, the files likely touched, the commands that must pass, the agreed sources, what needs the maintainer's sign-off, and whether Unity is needed. When every field is filled, you can finish the work without asking the maintainer. If a field is missing or unclear, ask in the issue before you start.
+
 ## Licence of your contribution
 
 There is no CLA and no sign-off. By opening a pull request you agree that your contribution is licensed under this repository's licences, as GitHub's Terms of Service (section D.6) also say:
@@ -96,4 +98,4 @@ Never commit keys, tokens or `.env` files. Secret scanning and push protection a
 
 ## Conduct
 
-Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated. The full [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies in every project space, including its section on historical and political discussion. The content rules, and how to dispute a fact, are in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).
+Be respectful. Argue about facts with sources, not with people. Political or personal attacks are not tolerated. The full [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies in every project space, including its section on historical and political discussion. The content rules, and how to dispute a fact, are in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md). A short sourcing checklist, including what to do when a source cannot be reached, is in [docs/SOURCING_FOR_CONTRIBUTORS.md](docs/SOURCING_FOR_CONTRIBUTORS.md).
