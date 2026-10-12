@@ -78,7 +78,7 @@ public class UnitsInPlayTests
             Assert.AreEqual("draft", u.Status, u.Id);
             Assert.AreEqual(UnitData.IsWikipediaOnly(u), u.WikipediaOnly, $"{u.Id}: wikipedia_only must say whether every source is Wikipedia or Wikidata");
             foreach (var s in u.AllSources())
-                Assert.LessOrEqual(UnitData.Day(s.Checked), new DateTime(2026, 10, 11), $"{u.Id}: {s.Url} checked in the future");
+                Assert.LessOrEqual(UnitData.Day(s.Checked), DateTime.Today, $"{u.Id}: {s.Url} checked in the future");
             foreach (var a in u.Anchors)
             {
                 var at = $"{u.Id} {a.Place}";

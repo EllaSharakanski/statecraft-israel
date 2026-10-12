@@ -71,7 +71,7 @@ def test_every_source_has_a_url_and_a_check_date_and_wikipedia_only_is_true():
         assert srcs, u['id']
         for s in srcs:
             assert s['url'].startswith('https://'), (u['id'], s)
-            assert day(s['checked']) <= date(2026, 10, 11), (u['id'], s)
+            assert day(s['checked']) <= date.today(), (u['id'], s)
         assert u['wikipedia_only'] == all(wiki(s) for s in srcs), f"{u['id']}: wikipedia_only must match its sources"
 
 
