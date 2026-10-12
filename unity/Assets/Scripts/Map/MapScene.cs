@@ -326,7 +326,7 @@ namespace Statecraft.Game.Map
 
         /// <summary>The water inside the map (issue #195): MapBuilder.BuildWaterMesh's copy of the terrain's surface over the
         /// water and its shore, drawn with a copy of Sea.mat in its terrain-water mode (Sea.shader _ScTerrainWater), which
-        /// adds the water's colour times its coverage on top of the terrain graph (black there) and discards the land. Drawn
+        /// adds the water's colour times its coverage on top of the terrain graph (black there); the land adds 0 (no discard: whole quads, #306). Drawn
         /// right after the terrain, before the other opaques (TerrainWaterQueue); no depth write, no shadow, no collider
         /// (clicks still pick only the terrain). The water's shading thus stays out of the terrain's fragment shader, whose
         /// size it had pushed past a WebGL cost cliff (about 3 ms a frame at gameplay03, even with the water toggled

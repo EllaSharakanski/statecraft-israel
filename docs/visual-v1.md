@@ -1690,7 +1690,7 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   (Lit adds 0 there). `MapBuilder.BuildWaterMesh` copies the terrain's surface wherever the water's coverage can be above
   0: wet heightmap samples (the sea within 0.5 m of 0 m, flat rift lakes) and two samples around them, at full resolution,
   with flat blocks as T-junction-free fans (129,882 vertices, 239,958 triangles). It is drawn with a copy of `Sea.mat` in
-  its `_ScTerrainWater` mode: additive, colour times coverage, the land discarded, no depth write, its depth pulled two
+  its `_ScTerrainWater` mode: additive, colour times coverage (the land adds 0: no per-pixel discard to split the shore's 2x2 quads, the lesson of #306), no depth write, its depth pulled two
   pixels' worth towards the camera (the terrain's LOD splits the surface its own way). The terrain draws one queue earlier
   (`Terrain.mat` 1998) and the water at 1999, before every other opaque, so boats and harbours cover it.
 - **Borders.** `MapBorders.Use` bakes, per hex, which of its six edges border another region (alpha: 192 plus a bit per
@@ -1700,15 +1700,15 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   bake met the target with no mesh, no boot or memory cost and no rebuild hitch, so no mesh was built.
 - **Exactness.** On the water and its shore the sum is what the terrain drew before, except where a border band meets the
   140 m coverage ramp at the shore, and the extra rounding of one blend.
-- **Measured** (WebGL, headless, 1920x1080, DPR 1; `PROFILE summary` medians over 3 interleaved rounds, main and fix
-  back to back under one exclusive machine lock per round, order rotated; [min-max] across rounds):
+- **Measured** (WebGL, headless, 1920x1080, DPR 1; `PROFILE summary` medians over 3 interleaved rounds, main 1cdb356 and
+  the fix back to back under one exclusive machine lock per round, order rotated; [min-max] across rounds):
 
-  | pose, toggles | main c2089b4 | fix |
+  | pose, toggles | main 1cdb356 | fix |
   |---|---|---|
-  | gameplay03, none | 10.13 [10.03-10.22] | 2.59 [2.51-2.60] |
-  | gameplay03, all | 14.19 [14.16-14.27] | 3.09 [3.09-3.21] |
-  | diorama02, none | 12.62 [12.27-12.66] | 7.97 [7.89-8.12] |
-  | diorama02, all | 17.97 [17.63-19.29] | 11.51 [11.18-11.91] |
+  | gameplay03, none | 10.48 [10.29-10.79] | 2.52 [2.44-2.55] |
+  | gameplay03, all | 13.94 [13.85-14.14] | 3.19 [3.16-3.19] |
+  | diorama02, none | 13.56 [12.40-13.78] | 8.18 [8.02-8.33] |
+  | diorama02, all | 18.72 [17.92-19.03] | 12.05 [11.93-12.35] |
 
 - **Baked.** The mesh's samples and triangles are baked into `Assets/Textures/Map/terrain_water.bytes` (3.4 MB;
   `Statecraft.Game.EditorTools.TerrainWaterBake.Bake`, re-run whenever `heightmap.r16z` changes), referenced by
@@ -1716,13 +1716,13 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   heightmap's resolution and a check of its heights; a stale or missing bake is refused (a warning) and the mesh derived at
   load as before (22 ms unthrottled, about 87 ms at `--cpu 4`). `SeaTests.TheBakedWaterMeshMatchesTheHeightmap` fails on
   a stale bake.
-- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock, against main a3202ad with
-  promo-villages): `map_build_ms` median main 2549 / 2553 ms, the fix 2567 / 2553 ms (budget 2720); `first_frame_ms`
-  main 8208 / 8238, the fix 8259 / 8162. `terrain water` takes 10-11 ms. The ~50 ms once seen in `terrain heights set`
-  (Unity's `TerrainData.SetHeights`, under CPU throttling only, against base c2089b4) does not reproduce on the merged
-  result: main 1283-1308 ms, the fix 1285-1302 ms; earlier, main plus each part of the fix alone (Terrain.mat's queue
-  and MapMaterials; the three shaders; the C# of MapBorders, MapBuilder and MapScene) measured 1318-1345 ms against main's
-  1324-1377. No part of the fix carries it; it went with the base.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock, against main 1cdb356, nine
+  runs each over three rounds): `map_build_ms` median main 2617 [2600-2718] ms, the fix 2626 [2590-2871] ms (budget
+  2720; the fix's 2871 run is one slow `terrain heights set`, 1508 ms). `terrain water` takes 10-11 ms, the fix's whole
+  share. A fourth round on a loaded machine (both over 3000 ms) was discarded. The ~50 ms once seen in `terrain heights
+  set` (Unity's `TerrainData.SetHeights`, under CPU throttling only, against base c2089b4) does not reproduce on the
+  merged result; main plus each part of the fix alone (Terrain.mat's queue and MapMaterials; the three shaders; the C#
+  of MapBorders, MapBuilder and MapScene) measured 1318-1345 ms against main's 1324-1377. No part of the fix carries it.
 - **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
   hitch.
 - **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing

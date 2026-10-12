@@ -4,7 +4,7 @@
 // in the depth prepass on tiers that make one.
 // It also shades the water inside the map (issue #195): MapScene's TerrainWater (MapBuilder.BuildWaterMesh, the terrain's
 // surface over the water and its shore) is drawn with a copy of Sea.mat that sets _ScTerrainWater, which adds the
-// water's colour times its coverage (ScWater) on top of the terrain (additive, no depth write) and discards the land. The
+// water's colour times its coverage (ScWater) on top of the terrain (additive, no depth write; the land adds 0). The
 // terrain graph (StatecraftTerrain.hlsl) outputs black on the water, so the sum is what it drew before; the water no
 // longer weighs on the terrain's own fragment shader, whose size cost about 3 ms a frame at gameplay03.
 Shader "Statecraft/Sea"
@@ -69,7 +69,7 @@ Shader "Statecraft/Sea"
             {
                 float2 mapM = input.positionWS.xz - _ScMapOrigin.xz;
                 float coast = SAMPLE_TEXTURE2D(_ScCoastTex, sampler_ScCoastTex, saturate(mapM / _ScMap.xy)).r;
-                // Every derivative first, in uniform control flow (before the terrain water's discard).
+                // Every derivative in uniform control flow (the derivatives below and ScWaterShade's).
                 float footprintM = max(length(ddx(mapM)), length(ddy(mapM)));
                 float2 breakers = ScBreakers(coast, mapM);
                 // The hex lattice runs on past the map's edge, exactly as on the terrain (review I3).
@@ -77,8 +77,10 @@ Shader "Statecraft/Sea"
                 bool onTerrain = _ScTerrainWater > 0.5;
                 // The terrain's coverage (0 on land, a ramp about 140 m wide at the shore) and the rift lakes' depth (salt,
                 // fresh); the skirt is all sea at sea level.
+                // No discard on the land: a per-pixel discard splits the 2x2 quads along the shore, where the derivatives
+                // the water needs come from (the lesson of #306); the land's fragments add colour times 0. The mesh holds
+                // only the water and two heightmap samples of shore, so few land fragments run.
                 float water = onTerrain ? ScWater(coast) : 1.0;
-                if (water <= 0.0) discard;
                 float elevM = onTerrain ? (input.positionWS.y - _ScMap.z) / _ScMap.w : 0.0;
                 float3 c = ScHazeWater(ScWaterShade(coast, elevM, input.positionWS, mapM, footprintM, breakers), input.positionWS);
                 c = lerp(c, SRGBToLinear(ScGridWaterSrgb), gridLine);
