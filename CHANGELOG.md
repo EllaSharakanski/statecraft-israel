@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Budget lines owned by office and date (`budget_owners` in `rules.yaml`, issue #108): the Immigration line (its id stays
+  `prime_minister`) belongs to the Minister of Immigration until 7 October 1951 and to the Prime Minister from 8 October
+  1951. A line scales effects through the owner of the day, and the Budget screen names that office. An office with
+  several holders cannot own a line. The goldens do not move.
 - Coalition changes inside a government's term (`coalition_changes` in governments.yaml, each with a date and sources).
   Seats, majority, the Cabinet's party rule and the causes use the coalition of the day. Adds Agudat Yisrael and Poalei
   Agudat Yisrael leaving the Third Government (18 September 1952, so 60 of 120 seats and no majority until 24 December),
