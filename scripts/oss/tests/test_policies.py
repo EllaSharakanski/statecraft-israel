@@ -209,3 +209,10 @@ def test_m3_release_records_the_completed_sensitivity_review():
         assert "sensitivity-reviewed" in section
     assert "only `fact-checked`" not in review
     assert "await the owner's sensitivity review" not in limits
+
+
+def test_release_gate_runs_the_tools_tests_exactly_as_ci_does():
+    # Without the same --with list (pyproj), the gate skipped 12 tools tests that CI runs.
+    ci = [l.strip() for l in read(".github/workflows/ci.yml").splitlines() if "pytest tools/tests" in l]
+    assert len(ci) == 1 and ci[0].startswith("run: ")
+    assert ci[0][len("run: "):] in read("scripts/oss/release_gate.sh")
