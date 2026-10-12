@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The records that only make sense in a state now carry dates (refs #80): three policies, three effects and nine actors from
+  15 May 1948, the United Nations from 24 October 1945, the state offices from 14 May 1948. Yaakov Dori's chief-of-staff
+  term is split at 14 May 1948 into a new `haganah_chief_of_staff` office and `chief_of_staff`. A Founding start holds the
+  same records and the goldens are unchanged. `rationing` and `rationing_feeds` stay windowless (their office begins in 1949).
 - Indicators, policies, effects, situations, voter groups and actors can carry `from`/`to` dates (chapters spec 3.2, refs
   #57). The sim reads the records active on the game date; the state gains a record at its start and drops it at its end,
   and a `set_policy` outside the window is refused. The loader refuses a reference to a record that is not active for the
