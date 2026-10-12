@@ -245,6 +245,7 @@ namespace Statecraft.Sim
                 c.Events.Add(e);
             }
             Validate(c, settlementIds);
+            c.BuildWindows();
             c.Hash = HashOf(read);
             return c;
         }
@@ -451,6 +452,64 @@ namespace Statecraft.Sim
                         throw new ContentException(file, $"budget_start.{b.line}", $"office '{a.office}' would own both '{a.line}' and '{b.line}' on the same day");
             // The same rule EconomySystem.Allocate applies to every later allocation.
             if (r.BudgetStart.Count > 0 && Math.Abs(r.BudgetStart.Values.Sum() - 1.0) > 1e-6) throw new ContentException(file, "budget_start", "shares must sum to 1");
+        }
+
+        /// <summary>Chapters design 3.2: a window must run forward, and nothing may reach a record that is not active for the
+        /// whole window of whatever uses it (effect sources and targets, situations, voter-group weights, policy and effect offices).</summary>
+        static void ValidateWindows(Content c)
+        {
+            void Order(string where, DateTime? from, DateTime? to)
+            {
+                if (from.HasValue && to.HasValue && from.Value >= to.Value) throw new ContentException("model.yaml", where, "from must be before to");
+            }
+            foreach (var x in c.Indicators) Order($"indicators[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Policies) Order($"policies[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Effects) Order($"effects[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Situations) Order($"situations[{x.Id}]", x.From, x.To);
+            foreach (var x in c.VoterGroups) Order($"voter_groups[{x.Id}]", x.From, x.To);
+            foreach (var x in c.Actors) Order($"actors[{x.Id}]", x.From, x.To);
+
+            void Reach(string where, DateTime? from, DateTime? to, string kind, string id, DateTime? rFrom, DateTime? rTo)
+            {
+                if (!Window.Covers(rFrom, rTo, from, to))
+                    throw new ContentException("model.yaml", where, $"{kind} '{id}' is not active for the whole window of this record (give both the same from/to, or a wider one on '{id}')");
+            }
+            // The reached record's window, or null when the id is a record kind with none: (null, null) means "always".
+            (DateTime?, DateTime?) Win(string id)
+            {
+                var ind = c.Indicators.FirstOrDefault(x => x.Id == id);
+                if (ind != null) return (ind.From, ind.To);
+                var pol = c.Policies.FirstOrDefault(x => x.Id == id);
+                return pol != null ? (pol.From, pol.To) : ((DateTime?)null, (DateTime?)null);
+            }
+            foreach (var e in c.Effects)
+            {
+                var s = Win(e.Source); var t = Win(e.Target);
+                Reach($"effects[{e.Id}].source", e.From, e.To, "source", e.Source, s.Item1, s.Item2);
+                Reach($"effects[{e.Id}].target", e.From, e.To, "target", e.Target, t.Item1, t.Item2);
+            }
+            foreach (var s in c.Situations)
+            {
+                var w = Win(s.Indicator);
+                Reach($"situations[{s.Id}].indicator", s.From, s.To, "indicator", s.Indicator, w.Item1, w.Item2);
+            }
+            foreach (var g in c.VoterGroups)
+                foreach (var k in g.Weights.Keys)
+                {
+                    var w = Win(k);
+                    Reach($"voter_groups[{g.Id}].weights.{k}", g.From, g.To, "indicator", k, w.Item1, w.Item2);
+                }
+            // A record with a window of its own must have its office for that whole window. Records with no window keep the
+            // existing rule (a policy may name an office that is created later: it has no holder until then).
+            void OfficeFor(string where, string office, DateTime? from, DateTime? to)
+            {
+                if (office == "" || (!from.HasValue && !to.HasValue)) return;
+                var o = c.Offices.FirstOrDefault(x => x.Id == office);
+                if (o != null && !Window.Covers(o.From, o.Until, from, to))
+                    throw new ContentException("model.yaml", where, $"office '{office}' does not exist for the whole window of this record");
+            }
+            foreach (var p in c.Policies) OfficeFor($"policies[{p.Id}].office", p.Office, p.From, p.To);
+            foreach (var e in c.Effects) OfficeFor($"effects[{e.Id}].office", e.Office, e.From, e.To);
         }
 
         static void Validate(Content c, List<string> settlementIds)
@@ -687,6 +746,7 @@ namespace Statecraft.Sim
                 Count("population.yaml", path + ".jews", a.Jews);
             }
             ValidateMap(c, settlementIds);
+            ValidateWindows(c);
             EventRules.Validate(c, offices, indicators);
         }
 

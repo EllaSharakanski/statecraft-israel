@@ -24,8 +24,9 @@ namespace Statecraft.Sim
             var eligible = c.Events
                 .Where(e => !s.FiredEvents.Contains(e.Id) && e.From <= s.Date && (e.To == null || start < e.To.Value))
                 .Where(e => e.Requires == null || (s.ChosenOptions.TryGetValue(e.Requires.Event, out var picked) && picked == e.Requires.Option))
-                .Where(e => e.Conditions.All(k => (!k.Min.HasValue || s.Indicators[k.Indicator] >= k.Min.Value)
-                                               && (!k.Max.HasValue || s.Indicators[k.Indicator] <= k.Max.Value)))
+                // A late fire can come after a dated indicator's window has ended (chapters design 3.2): a condition on it is not met.
+                .Where(e => e.Conditions.All(k => s.Indicators.TryGetValue(k.Indicator, out var v)
+                                               && (!k.Min.HasValue || v >= k.Min.Value) && (!k.Max.HasValue || v <= k.Max.Value)))
                 .OrderBy(e => e.From).ThenBy(e => e.Id, StringComparer.Ordinal)
                 .ToList();
             var hardCount = eligible.Count(e => e.Anchor == "hard");
@@ -60,7 +61,8 @@ namespace Statecraft.Sim
             var fillDate = FillDate(Get(c, eventId), s.Date);
             var title = Cabinet.Fill(c, s, Get(c, eventId).Title, fillDate);
             why.Add(new Cause("events", eventId, 0, $"{how}: {Cabinet.Fill(c, s, o.Text, fillDate)}"));
-            foreach (var fx in o.Effects)
+            // A late-fired event can be resolved after a dated record's window has ended (chapters design 3.2): nothing reaches it.
+            foreach (var fx in o.Effects.Where(fx => EventRules.SpecialTargets.Contains(fx.Target) || s.Indicators.ContainsKey(fx.Target)))
             {
                 var change = fx.Delta;
                 if (fx.Target == "treasury") s.Treasury += fx.Delta;
@@ -68,7 +70,7 @@ namespace Statecraft.Sim
                 else change = EffectsSystem.Shift(c, s, fx.Target, fx.Delta);
                 why.Add(new Cause("events", fx.Target, change, $"{PlayerText.Change(c, fx.Target, change)} ({title})"));
             }
-            foreach (var kv in o.SetPolicy.OrderBy(k => k.Key, StringComparer.Ordinal))
+            foreach (var kv in o.SetPolicy.Where(k => s.Policies.ContainsKey(k.Key)).OrderBy(k => k.Key, StringComparer.Ordinal))
             {
                 s.Policies[kv.Key] = kv.Value;
                 why.Add(new Cause("events", kv.Key, kv.Value, $"{PlayerText.Target(c, kv.Key)} set to {PlayerText.Percent(kv.Value)} ({title})"));
