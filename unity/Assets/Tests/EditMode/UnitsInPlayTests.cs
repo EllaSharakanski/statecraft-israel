@@ -596,6 +596,21 @@ public class UnitsInPlayTests
         {
             int blue = spit.uv.Count(uv => Mathf.Abs(uv.x - UnitPalette.U(UnitPalette.RoundelBlue)) < 1e-4f);
             Assert.AreEqual(6 * 2 * 3 * 2, blue, "six filled stars, no blue ring");
+            // The fuselage roundels face outwards: each star sits outside its white disc, not behind it.
+            foreach (var mesh in new[] { spit, UnitModels.AviaS199("a") })
+            {
+                var v = mesh.vertices; var uv = mesh.uv;
+                bool Is(int i, int slot) => Mathf.Abs(uv[i].x - UnitPalette.U(slot)) < 1e-4f;
+                bool Fuselage(Vector3 p) => p.z > -3.0f && p.z < -1.8f && Mathf.Abs(p.y) < 0.7f && Mathf.Abs(p.x) > 0.3f && Mathf.Abs(p.x) < 0.8f;
+                foreach (var side in new[] { 1f, -1f })
+                {
+                    var blueX = Enumerable.Range(0, v.Length).Where(i => Is(i, UnitPalette.RoundelBlue) && Fuselage(v[i]) && Mathf.Sign(v[i].x) == side).Select(i => Mathf.Abs(v[i].x)).ToList();
+                    var whiteX = Enumerable.Range(0, v.Length).Where(i => Is(i, UnitPalette.RoundelWhite) && Fuselage(v[i]) && Mathf.Sign(v[i].x) == side && Mathf.Abs(v[i].x) > 0.38f).Select(i => Mathf.Abs(v[i].x)).ToList();
+                    Assert.IsNotEmpty(blueX, $"{mesh.name}: a fuselage star on side {side}");
+                    Assert.Greater(blueX.Min(), whiteX.Max() - 1e-4f, $"{mesh.name}: the star on side {side} is outside its disc");
+                }
+                if (mesh != spit) UnityEngine.Object.DestroyImmediate(mesh);
+            }
         }
         finally { UnityEngine.Object.DestroyImmediate(spit); }
     }
