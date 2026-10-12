@@ -14,7 +14,9 @@ public class GoldenManifestTests
     public void TheManifestHoldsExactlyTheKnownGoldens()
     {
         var m = GoldenManifest.Read();
-        Assert.Equal(new[] { "hash1950", "hash1952", "smoke5" }, m.Keys.OrderBy(k => k).ToArray());
+        var scenarios = System.IO.Directory.GetFiles(Scenario.Dir(), "*.yaml").Select(f => "scenario-" + System.IO.Path.GetFileNameWithoutExtension(f));
+        var known = new[] { "hash1950", "hash1952", "smoke5" }.Concat(scenarios).OrderBy(k => k, StringComparer.Ordinal).ToArray();   // one line per scenario file (#296)
+        Assert.Equal(known, m.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
         Assert.All(m.Values, h => Assert.Matches("^[0-9a-f]{64}$", h));
     }
 
