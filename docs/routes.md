@@ -105,14 +105,14 @@ downloads the references into the git-ignored `tools/.cache/routes-accuracy/`.
 
 | Route | Reference | Median distance | Within 300 m |
 |---|---|---|---|
-| Jaffa–Jerusalem railway | OHM, 1890 ways | 68 m | 96% |
-| Eastern Railway | OSM rail, current and abandoned | 112 m | 87% |
-| Hadera–Haifa railway | OSM | 214 m | 84% |
-| Jezreel Valley railway | OSM | 152 m | 83% |
-| Haifa–Beirut railway | OSM | 242 m | 73% |
-| Main line south | OSM | 139 m | 58% |
-| Beersheba–Auja road | OHM roads valid in 1948 | 30 m | 100% |
-| Gaza–Beersheba road | OHM | 185 m | 93% |
+| Jaffa–Jerusalem railway | OHM, 1890 ways | 64 m | 96% |
+| Eastern Railway | OSM rail, current and abandoned | 108 m | 87% |
+| Hadera–Haifa railway | OSM | 217 m | 88% |
+| Jezreel Valley railway | OSM | 153 m | 83% |
+| Haifa–Beirut railway | OSM | 241 m | 75% |
+| Main line south | OSM | 145 m | 58% |
+| Beersheba–Auja road | OHM roads valid in 1948 | 39 m | 100% |
+| Gaza–Beersheba road | OHM | 187 m | 95% |
 
 - The misses on the railways are the reference's, not the trace's. Today's lines were rebuilt off the old alignment:
   near Rosh HaAyin the 1946 line runs past Rantiya and Wilhelma, and south of Ashkelon it differs too. OSM has almost
@@ -168,9 +168,10 @@ measurement in `docs/units.md`:
   - **The train** rides `GradeHeight`.
   - **Tests.**
     - `TheRailwayKeepsItsGradeInTheSorekGorge`: every section is flat. Main's rule warped the band by a median 315 m
-      across.
+      across. The band now sits a median 10 m over the ground at the line (p90 25 m, max 40 m; bounds 12 m and 35 m).
     - `TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth`: on every railway, no ground over the rails, no width
-      jump over 10%, and the edges' float bounded. It fails on 005e60e.
+      jump over 10%, and the edges' float bounded (p99 85 m, bound 100 m). It fails on 005e60e: 235 sections with ground
+      over the rails and 819 width jumps.
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.

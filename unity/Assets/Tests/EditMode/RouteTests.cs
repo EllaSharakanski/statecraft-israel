@@ -101,7 +101,7 @@ public class RouteTests
         using var sha = System.Security.Cryptography.SHA256.Create();
         return string.Concat(sha.ComputeHash(bytes.ToArray()).Select(b => b.ToString("x2")));
     }
-    const string RailMeshHash = "ba6f58c6cf5b78b321fdba9765d110982403e6445dbc56f72baedf1b5e5bb045";
+    const string RailMeshHash = "35b67eeb775ba6e8767a50d07346e039791bf682910b3ae9197aef639f8479e2";
 
     [Test]
     public void TheMapBuildsRibbonsOnTheGroundAndTheTogglesHideThem()
@@ -217,7 +217,7 @@ public class RouteTests
                     $"new lift over the ground at the line median {P(lifts, 0.5f):0} m, p90 {P(lifts, 0.9f):0} m, max {lifts[lifts.Count - 1]:0} m; {narrowed} narrowed");
                 Assert.Greater(lifts.Count, 50);
                 Assert.Greater(P(oldWarps, 0.5f), 50f, "the old rule warped the band across the gorge (the bug this guards)");
-                Assert.Less(P(lifts, 0.5f), 15f, "the band sits at the line's grade");
+                Assert.Less(P(lifts, 0.5f), 12f, "the band sits at the line's grade");
                 Assert.Less(P(lifts, 0.9f), LiftP90BoundM, "and stays near it where the trace runs on the canyon side");
                 Assert.Greater(narrowed, 0, "the band narrows where the gorge walls close in");
             }
@@ -225,8 +225,8 @@ public class RouteTests
         }
         finally { Object.DestroyImmediate(map.gameObject); }
     }
-    // Measured 2026-10-11: old warp median 315 m (p90 454 m); new lift median 11 m, p90 38 m, max 57 m.
-    const float LiftP90BoundM = 50f;
+    // Measured 2026-10-12 (3288a93): old warp median 315 m (p90 454 m); new lift median 10 m, p90 25 m, max 40 m.
+    const float LiftP90BoundM = 35f;
 
     /// <summary>Review A-I1 and A-I2, on every railway: the ground never rises above the band under its rails
     /// (main had none; 005e60e buried the rails by up to 32 m from Artuf to Battir and in 15 sections of the Jezreel line),
@@ -273,7 +273,8 @@ public class RouteTests
         }
         finally { Object.DestroyImmediate(map.gameObject); }
     }
-    const float EdgeFloatP99BoundM = 999f;
+    // Measured 2026-10-12 (3288a93): edge float p99 85 m, max 223 m (flat sections on hillsides; the floor is 25% width).
+    const float EdgeFloatP99BoundM = 100f;
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have
     /// it, every other route is there from the start.</summary>
