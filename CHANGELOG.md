@@ -223,6 +223,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The start screen's painting no longer shows sunbeams: on 14 May 1948 the hall's windows were darkened for fear of an
+  air raid, so the new painting shows them blacked out and the hall lamplit. It is a native 2048x1152 render, no longer
+  a 1536x864 upscale, and a window narrower than 16:9 now crops both sides of it alike (fixes #268).
 - The Unity idle test `PromoScreensTests.AnOpenScreenIsStillWhenIdle` no longer fails now and then (#242). It was not a
   font atlas and not a recurring layout. A batch-mode editor runs few frames, and now and then it tells
   `UIDocument` late that the test's GameObject exists. `UIDocument` then re-adds its root and the whole screen lays out

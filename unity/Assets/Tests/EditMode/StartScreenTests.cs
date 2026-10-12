@@ -327,11 +327,26 @@ public class StartScreenTests
 
     // --- Layout ------------------------------------------------------------------------------------------------------
 
+    /// <summary>The painting is a native render of at least 1920x1080 at 16:9 (StartScreenPresenter.ArtAspect), imported at
+    /// its own size, so a 1080p window never shows an upscale (#268).</summary>
+    [Test]
+    public void ThePaintingIsNativeAtLeast1080p()
+    {
+        const string path = "Assets/UI/StartScreen/declaration-hall.jpg";
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.GetSourceTextureWidthAndHeight(out var w, out var h);
+        Assert.GreaterOrEqual(w, 1920, "source width");
+        Assert.GreaterOrEqual(h, 1080, "source height");
+        Assert.AreEqual(StartScreenPresenter.ArtAspect, (float)w / h, 0.002f, "16:9");
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        Assert.AreEqual((w, h), (tex.width, tex.height), "imported at its own size (maxTextureSize does not shrink it)");
+    }
+
     /// <summary>At each window size the owner named (a 1080p and a 768p screen, a small 16:10 window, a phone held upright):
     /// the screen covers the window; the painting keeps its 16:9 (a full-width band below 16:9, so nothing is cropped) and
-    /// starts at the window's top (the AI badge in its top-left corner shows); the panel, its lines and both buttons are
-    /// inside the window and the panel; no line overlaps another or is squeezed below its font size; the panel leaves the
-    /// painting's upper half (the flags and the table) clear.</summary>
+    /// starts at the window's top, anchored at its top centre so a crop takes both sides alike; the panel, its lines and
+    /// both buttons are inside the window and the panel; no line overlaps another or is squeezed below its font size; the
+    /// panel leaves the painting's upper half (the flags and the table) clear.</summary>
     [UnityTest]
     public IEnumerator ItFitsEveryWindowSize()
     {
@@ -381,6 +396,8 @@ public class StartScreenTests
                 {
                     Assert.AreEqual(window.yMin, art.yMin, 0.5f, $"{at}: the painting starts at the top");
                     Assert.AreEqual(window.height, art.height, 0.5f, $"{at}: the painting fills the window");
+                    Assert.AreEqual(BackgroundPositionKeyword.Center, root.Q("start-art").resolvedStyle.backgroundPositionX.keyword, $"{at}: a crop takes both sides alike (the aisle stays in the middle)");
+                    Assert.AreEqual(BackgroundPositionKeyword.Top, root.Q("start-art").resolvedStyle.backgroundPositionY.keyword, $"{at}: a crop keeps the top (the flags and the table)");
                     // Cover, anchored top-left: the painting's upper half (the flags and the table) stays clear of the panel.
                     var painted = Mathf.Max(window.height, window.width / StartScreenPresenter.ArtAspect);
                     Assert.GreaterOrEqual(panel.yMin, window.yMin + painted * 0.5f - 0.5f, $"{at}: the panel {panel} covers the painting's upper half");
