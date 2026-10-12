@@ -92,41 +92,58 @@ namespace Statecraft.Sim
 
         string CanonicalText(bool readable)
         {
+            // Hash text: one line, ';'-separated, closing brackets. Readable text: a section label per line, each entry
+            // on its own indented line, no closing brackets. Both are written by the calls below, in the same order.
             var sb = new StringBuilder();
             void Nl() { if (readable) sb.Append('\n'); }
-            void Num(string k, double v)
+            void Entry() { if (readable) sb.Append("\n  "); }
+            void Close(char c) { if (!readable) sb.Append(c); }
+            void Num(string k, double v, bool inMap = false)
             {
                 var bits = BitConverter.DoubleToInt64Bits(v == 0.0 ? 0.0 : v).ToString("X16", CultureInfo.InvariantCulture);
-                if (readable) sb.Append("\n  ").Append(k).Append('=').Append((v == 0.0 ? 0.0 : v).ToString("R", CultureInfo.InvariantCulture)).Append(" [").Append(bits).Append(']');
+                if (readable) sb.Append(inMap ? "\n  " : "\n").Append(k).Append('=').Append((v == 0.0 ? 0.0 : v).ToString("R", CultureInfo.InvariantCulture)).Append(" [").Append(bits).Append(']');
                 else sb.Append(k).Append('=').Append(bits).Append(';');
             }
             void Map(string name, Dictionary<string, double> m)
             {
                 Nl(); sb.Append(name).Append('{');
-                foreach (var kv in m.OrderBy(k => k.Key, StringComparer.Ordinal)) Num(kv.Key, kv.Value);
-                sb.Append('}');
+                foreach (var kv in m.OrderBy(k => k.Key, StringComparer.Ordinal)) Num(kv.Key, kv.Value, true);
+                Close('}');
             }
+            void List(string name, IEnumerable<string> items)
+            {
+                Nl(); sb.Append(name).Append('[');
+                if (readable) foreach (var i in items) { Entry(); sb.Append(i); }
+                else sb.Append(string.Join(",", items));
+                Close(']');
+            }
+            void Sep() { if (!readable) sb.Append(';'); }
             sb.Append(Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';')
               .Append(RngState).Append(';').Append(Mode).Append(';').Append(Turn).Append(';');
             Map("ind", Indicators); Map("pol", Policies); Map("eff", EffectContributions); Map("shift", IndicatorShifts);
             Map("bud", Budget); Map("pop", Population);
-            Nl(); sb.Append("sit[").Append(string.Join(",", ActiveSituations)).Append(']');
+            List("sit", ActiveSituations);
             Num("treasury", Treasury); Num("debt", Debt); Num("fx", FxReserves);
             Nl(); sb.Append("rung=").Append(Rung).Append(";cf=").Append(CeasefireWeeksLeft).Append(';');
             Num("mob", Mobilization); Num("stab", CoalitionStability); Num("att", Attention);
-            Nl(); sb.Append("fired[").Append(string.Join(",", FiredEvents)).Append(']');
-            Nl(); sb.Append("pending[").Append(string.Join(",", PendingEvents)).Append(']');
+            List("fired", FiredEvents);
+            List("pending", PendingEvents);
             Nl(); sb.Append("chosen{");
-            foreach (var kv in ChosenOptions.OrderBy(k => k.Key, StringComparer.Ordinal)) sb.Append(kv.Key).Append('=').Append(kv.Value).Append(';');
-            sb.Append('}');
+            foreach (var kv in ChosenOptions.OrderBy(k => k.Key, StringComparer.Ordinal)) { Entry(); sb.Append(kv.Key).Append('=').Append(kv.Value); Sep(); }
+            Close('}');
             Nl(); sb.Append("appt{");
             foreach (var kv in Appointments.OrderBy(k => k.Key, StringComparer.Ordinal))
-                sb.Append(kv.Key).Append('=').Append(kv.Value.Person).Append('@').Append(kv.Value.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
-            sb.Append("}under=").Append(AppointedUnder).Append(';');
+            {
+                Entry(); sb.Append(kv.Key).Append('=').Append(kv.Value.Person).Append('@').Append(kv.Value.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)); Sep();
+            }
+            Close('}');
+            Nl(); sb.Append("under=").Append(AppointedUnder).Append(';');
             Nl(); sb.Append("map[");
             foreach (var p in Placements)
-                sb.Append(p.Action).Append('@').Append(p.Q).Append(',').Append(p.R).Append('@').Append(p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(';');
-            sb.Append(']');
+            {
+                Entry(); sb.Append(p.Action).Append('@').Append(p.Q).Append(',').Append(p.R).Append('@').Append(p.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)); Sep();
+            }
+            Close(']');
             Nl(); sb.Append("mapturn=").Append(MapActionsTurnDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(':').Append(MapActionsThisTurn).Append(';');
             Nl(); sb.Append("over=").Append(GameOver ?? "");
             return sb.ToString();

@@ -56,12 +56,12 @@ public static class GoldenSnapshot
             return res;
         }
         var a = Parse(before); var b = Parse(after);
-        var aSet = new HashSet<string>(a.Select(x => x.line)); var bSet = new HashSet<string>(b.Select(x => x.line));
+        var aSet = new HashSet<(string, string)>(a); var bSet = new HashSet<(string, string)>(b);
         var sb = new StringBuilder();
         foreach (var g in a.Concat(b).Select(x => x.section).Distinct())
         {
-            var removed = a.Where(x => x.section == g && !bSet.Contains(x.line)).Select(x => "  - " + x.line.TrimStart()).ToList();
-            var added = b.Where(x => x.section == g && !aSet.Contains(x.line)).Select(x => "  + " + x.line.TrimStart()).ToList();
+            var removed = a.Where(x => x.section == g && !bSet.Contains(x)).Select(x => "  - " + x.line.TrimStart()).ToList();
+            var added = b.Where(x => x.section == g && !aSet.Contains(x)).Select(x => "  + " + x.line.TrimStart()).ToList();
             if (removed.Count + added.Count == 0) continue;
             sb.AppendLine($"[{g}]");
             foreach (var l in removed.Take(40)) sb.AppendLine(l);

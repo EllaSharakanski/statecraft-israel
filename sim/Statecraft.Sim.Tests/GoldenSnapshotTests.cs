@@ -21,14 +21,30 @@ public class GoldenSnapshotTests
     }
 
     [Fact]
-    public void ChangingTheTreasuryAndAnAppointmentShowsBothSections()
+    public void ChangingTheTreasuryAndAFiredEventShowsEachOnItsOwnLine()
     {
         var a = Fresh(); var b = a.Clone();
         b.Treasury += 1;
         b.FiredEvents.Add("zzz_probe_event");
         var diff = GoldenSnapshot.Diff(a.Describe(), b.Describe());
-        Assert.Contains("treasury=", diff);
-        Assert.Contains("zzz_probe_event", diff);
+        Assert.Contains("[treasury]", diff);
+        Assert.Contains("[fired]\n  + zzz_probe_event\n", diff.Replace("\r\n", "\n"));
+        Assert.DoesNotContain("[sit]", diff);
+    }
+
+    [Fact]
+    public void ChangingOneChosenOptionOrAppointmentShowsOnlyThatEntry()
+    {
+        var a = Fresh();
+        a.ChosenOptions["aaa_event"] = "first"; a.ChosenOptions["zzz_event"] = "first";
+        a.Appointments["finance_minister"] = new Appointment("someone", new DateTime(1949, 3, 10));
+        var b = a.Clone();
+        b.ChosenOptions["aaa_event"] = "second";
+        b.Appointments["finance_minister"] = new Appointment("other", new DateTime(1949, 3, 10));
+        var diff = GoldenSnapshot.Diff(a.Describe(), b.Describe()).Replace("\r\n", "\n");
+        Assert.Contains("[chosen]\n  - aaa_event=first\n  + aaa_event=second\n", diff);
+        Assert.Contains("[appt]\n  - finance_minister=someone@1949-03-10\n  + finance_minister=other@1949-03-10\n", diff);
+        Assert.DoesNotContain("zzz_event", diff);
     }
 
     [Fact]
