@@ -54,7 +54,8 @@ them from a seed (default 1948) in Historical mode until `until:`, and `Scenario
 `scenario-<name>` and the snapshot `golden/scenario-<name>.txt`. The file's header comment lists the command kinds. A turn with no
 scripted command passes. A command the sim rejects fails the test with the date, the order and the reason, and a step that never runs
 fails too. To add one: write the file, run `STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln --filter ScenarioTests` (it adds the
-manifest line and the snapshot), then run the tests plain. Two ship: `cautious` and `reckless`. They stay in 1948, before any change a
+manifest line and the snapshot), then run the tests plain. A scenario that moves is re-pinned with the hash goldens by the same
+command; its snapshot diff in the PR shows what moved, and the commit message says why. Two ship: `cautious` and `reckless`. They stay in 1948, before any change a
 later era makes, so they move only when a 1948 rule or event does.
 
 **Invariants.** A hash says something changed; `sim/Statecraft.Sim.Tests/golden/invariants.yaml` says whether it is

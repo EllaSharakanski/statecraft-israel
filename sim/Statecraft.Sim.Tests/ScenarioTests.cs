@@ -26,12 +26,17 @@ public class ScenarioTests
     }
 
     [Fact]
-    public void TheScenariosTakeDifferentPathsFromHistory()
+    public void EachScenarioEndsElsewhereThanTheSameRunWithoutItsChoicesAndThanEveryOtherScenario()
     {
-        var hashes = Directory.GetFiles(Scenario.Dir(), "*.yaml").Select(f => Scenario.Parse(File.ReadAllText(f)).Play(C).Hash()).ToList();
-        Assert.True(hashes.Count >= 2);
+        var scenarios = Directory.GetFiles(Scenario.Dir(), "*.yaml").OrderBy(f => f, StringComparer.Ordinal).Select(f => Scenario.Parse(File.ReadAllText(f))).ToList();
+        Assert.True(scenarios.Count >= 2);
+        var hashes = scenarios.Select(sc => sc.Play(C).Hash()).ToList();
         Assert.Equal(hashes.Count, hashes.Distinct().Count());
-        Assert.DoesNotContain(GoldenRun.Hash1950, hashes);
+        foreach (var (sc, hash) in scenarios.Zip(hashes, (sc, h) => (sc, h)))
+        {
+            var bare = Scenario.Parse($"name: {sc.Name}\nuntil: {sc.Until}\n" + (sc.Seed.HasValue ? $"seed: {sc.Seed}\n" : ""));
+            Assert.True(bare.Play(C).Hash() != hash, $"scenario '{sc.Name}' ends where the same run with no scripted command ends: its choices change nothing");
+        }
     }
 
     const string Head = "name: t\nuntil: 1948-08-01\nsteps:\n  - on: 1948-05-15\n    commands:\n";

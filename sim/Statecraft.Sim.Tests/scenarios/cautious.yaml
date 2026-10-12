@@ -1,4 +1,5 @@
-# A cautious player: modest rationing from the start, accepts the First Truce, keeps the army's mobilisation low.
+# A cautious player: modest rationing from the start, and accepts the First Truce (the historical answer, written out so the
+# scenario does not lean on delegation).
 name: cautious
 until: 1949-01-01
 steps:
