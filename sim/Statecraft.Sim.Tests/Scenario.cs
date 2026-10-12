@@ -78,10 +78,18 @@ public sealed class Scenario
                 return new AllocateBudget(map.ToDictionary(kv => Convert.ToString(kv.Key, CultureInfo.InvariantCulture)!, kv => double.Parse(Convert.ToString(kv.Value, CultureInfo.InvariantCulture)!, CultureInfo.InvariantCulture)));
             case "choose_event_option": return new ChooseEventOption(Str(c, "event"), Str(c, "option"));
             case "set_mobilization": return new SetMobilization(Num(c, "level"));
-            case "security_order": return new SecurityOrder((int)Num(c, "delta"));
+            case "security_order": return new SecurityOrder(Whole(c, "delta"));
             case "appoint": return new Appoint(Str(c, "office"), Str(c, "person"));
-            default: return new MapAction(Str(c, "action"), (int)Num(c, "q"), (int)Num(c, "r"));
+            default: return new MapAction(Str(c, "action"), Whole(c, "q"), Whole(c, "r"));
         }
+    }
+
+    /// <summary>A whole number: 1.5 is refused instead of silently becoming 1.</summary>
+    static int Whole(Dictionary<string, object> c, string key)
+    {
+        var v = Num(c, key);
+        if (v != Math.Floor(v)) throw new InvalidDataException($"'{key}' must be a whole number, got {v.ToString(CultureInfo.InvariantCulture)}");
+        return (int)v;
     }
 
     /// <summary>Plays the scenario and returns the final state. Fails with the date, the order and the sim's reason when a command is rejected.</summary>
