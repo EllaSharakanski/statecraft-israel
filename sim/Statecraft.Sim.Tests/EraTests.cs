@@ -264,3 +264,28 @@ public class EraTests
         Assert.True(weeklyTurns > 0 && before > 0);
     }
 }
+
+public class EventSpanTests
+{
+    const string Event = "id: probe\ntitle: Probe\ntext: A probe.\nfrom: {1}\n{0}options:\n  - id: a\n    text: Do a\n    effects:\n      - {{ target: morale, delta: 0.01 }}\nsources:\n  - {{ url: \"https://example.com\", checked: 2026-10-13 }}\nstatus: fact-checked\n";
+
+    static Content Load(string? to, string from = "1948-06-01") => ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+    {
+        ["eras.yaml"] = "eras:\n  - { id: founding, name: The Founding, from: 1948-05-15, to: 1948-12-01 }\n  - { id: next, name: Next, from: 1948-12-01, to: 1949-06-01 }\n",
+    }, new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, to == null ? "" : "to: " + to + "\n", from) }));
+
+    [Fact] public void AnEventInsideOneEraLoads() => Assert.NotNull(Load("1948-12-01"));   // to is exclusive: it may end on the boundary
+
+    [Fact]
+    public void AnEventThatRunsPastTheEndOfItsEraIsRefused()
+    {
+        var e = Assert.Throws<ContentException>(() => Load("1948-12-02"));
+        Assert.Contains("events[probe].to", e.Message);
+        Assert.Contains("may not span a boundary", e.Message);
+    }
+
+    // EventSystem keeps an event with no `to` eligible to the end of the game, so an open window spans every later era.
+    [Fact] public void AnOpenWindowBeforeTheLastEraIsRefused() => Assert.Contains("may not span a boundary", Assert.Throws<ContentException>(() => Load(null)).Message);
+
+    [Fact] public void AnOpenWindowInTheLastEraLoads() => Assert.NotNull(Load(null, "1949-01-01"));
+}
