@@ -151,24 +151,25 @@ measurement in `docs/units.md`:
   - Their pale band has no rails or sleepers to warp.
   - Narrowing them made every hill road about 40% thinner and beaded its width (review A-I1).
 - **Railways keep their own grade** (review B15 / #213). Each section is flat across at `GradeHeight`: 20 m above the
-  highest ground at the line and half a step along it, with nothing sampled across.
+  highest ground at the line and 30 m along it either way, with nothing sampled across.
   - **The old rule.** Each vertex took the highest ground around itself, so in the Sorek gorge the 680 m band rode up
     both walls and its rails and sleepers warped.
   - **Width.** It narrows to the gorge floor and ramps: `RailHalfWidths`.
     - Per section, `FlatHalfWidth` cuts the band back symmetrically to where the ground on both sides is neither above
-      it nor more than 40 m below it, down to 35% of the width.
+      it nor more than 40 m below it, down to 25% of the width.
     - Then it takes the minimum over two sections each way.
     - Then it limits the change to 5% of the width per 120 m step, in forward and backward passes that only narrow.
     - So the width never jumps by more than a tenth between sections (review A-I1).
-  - **Lift.** A section is raised where needed, so the ground never rises within its sleeper span (±60% of the
-    half-width) and the sleepers clear it by 5 m (review A-I2). The narrowed gorge band had buried the rails by up to
-    32 m.
+  - **Lift.** A section is raised where needed, so the ground never rises under its rails (±30% of the half-width)
+    and the rails clear it by 3 m (review A-I2). The narrowed gorge band had buried the rails by up to 32 m.
+    - Clearing the whole sleeper span instead lifted the band a median 39 m off the gorge floor, so the sleepers' outer
+      ends may meet a wall, as in a cutting.
   - **Shading.** Every vertex takes the terrain's normal at the line.
   - **The train** rides `GradeHeight`.
   - **Tests.**
     - `TheRailwayKeepsItsGradeInTheSorekGorge`: every section is flat. Main's rule warped the band by a median 315 m
       across.
-    - `TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth`: on every railway, no ground over the sleepers, no width
+    - `TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth`: on every railway, no ground over the rails, no width
       jump over 10%, and the edges' float bounded. It fails on 005e60e.
 - u runs across the ribbon and v along it, in metres.
 

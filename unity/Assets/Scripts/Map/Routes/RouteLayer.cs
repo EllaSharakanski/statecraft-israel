@@ -186,19 +186,19 @@ namespace Statecraft.Game.Map.Routes
         }
 
         /// <summary>A ribbon's height (world y) at line point <paramref name="q"/>: <see cref="ClearanceM"/> above the highest
-        /// ground at q and half a step along the line either way (<paramref name="along"/>, unit). The line's own grade: no
+        /// ground at q and a quarter step (30 m) along the line either way (<paramref name="along"/>, unit). The line's own grade: no
         /// sample across it, so the gorge walls beside the line do not lift it (review B15). A railway cross-section takes
-        /// this height across (raised only where the ground would rise under its sleepers), and the train's wheels too
+        /// this height across (raised only where the ground would rise under its rails), and the train's wheels too
         /// (review M4).</summary>
         public static float GradeHeight(TerrainData data, Vector3 origin, Vector2 q, Vector2 along) =>
-            Mathf.Max(Ground(data, origin, q), Mathf.Max(Ground(data, origin, q + along * (StepM / 2)), Ground(data, origin, q - along * (StepM / 2))))
+            Mathf.Max(Ground(data, origin, q), Mathf.Max(Ground(data, origin, q + along * (StepM / 4)), Ground(data, origin, q - along * (StepM / 4))))
             + ClearanceM;
 
         /// <summary>How far ground may lie below a cross-section before the section narrows (m, world): a ribbon edge floating
         /// higher than this over a falling slope would read as a shelf.</summary>
         public const float FallToleranceM = 40f;
         /// <summary>The narrowest a cross-section gets, as a share of the ribbon's width (a gorge floor).</summary>
-        public const float MinWidthShare = 0.35f;
+        public const float MinWidthShare = 0.25f;
         /// <summary>Samples per side when a cross-section looks for where it must stop.</summary>
         const int NarrowSamples = 8;
 
@@ -241,11 +241,13 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>The largest step (m) of a rail band's half-width from one cross-section to the next: 5% of the full width,
         /// so its width changes by at most a tenth between sections and narrows in a ramp, never in beads (review A-I1).</summary>
         public const float HalfWidthStepShare = 0.05f;
-        /// <summary>The share of the half-width, either side of the line, the sleepers span (Route.shader's SleeperHalfSpan
-        /// 0.29 of the width, rounded up), which must stay clear of the ground (review A-I2).</summary>
-        public const float SleeperSpanShare = 0.6f;
-        /// <summary>Clearance (m, world) of the sleepers over the highest ground under them, where a section had to be lifted.</summary>
-        public const float SleeperClearanceM = 5f;
+        /// <summary>The share of the half-width, either side of the line, that must stay clear of the ground: the rails
+        /// (Route.shader's RailOffset 0.12 plus RailHalfWidth 0.018 of the width, so 0.276 of the half-width, rounded up;
+        /// review A-I2). Clearing the whole sleeper span (0.58) lifted the narrowed gorge band a median 39 m off the floor;
+        /// the sleepers' outer ends may meet a gorge wall, as a cutting's would.</summary>
+        public const float RailSpanShare = 0.3f;
+        /// <summary>Clearance (m, world) of the rails over the highest ground under them, where a section had to be lifted.</summary>
+        public const float RailClearanceM = 3f;
 
         /// <summary>The half-widths of a rail line's sections (centre points <paramref name="pts"/>, unit directions
         /// <paramref name="dirs"/>, heights <paramref name="ys"/>), smoothed along the line: FlatHalfWidth per section, then
@@ -277,8 +279,8 @@ namespace Statecraft.Game.Map.Routes
         /// normal at that vertex (main's rule).</item>
         /// <item>Railways (<paramref name="railGrade"/> true) are flat across at the line's own grade (<see cref="GradeHeight"/>,
         /// review B15), so the rails and sleepers never warp; their width follows <see cref="RailHalfWidths"/> (full on the
-        /// plains, ramping down to a gorge floor); and a section is lifted, if need be, so the ground never rises within the
-        /// sleeper span (<see cref="SleeperSpanShare"/>; review A-I2). Normal: the terrain's at the line.</item>
+        /// plains, ramping down to a gorge floor); and a section is lifted, if need be, so the ground never rises under the
+        /// rails (<see cref="RailSpanShare"/>; review A-I2). Normal: the terrain's at the line.</item>
         /// </list></summary>
         public static Mesh Ribbon(IEnumerable<(List<Vector2> line, float width)> lines, TerrainData data, Vector3 origin, string name,
             bool railGrade = false)
@@ -299,8 +301,8 @@ namespace Statecraft.Game.Map.Routes
                     for (int i = 0; i < n; i++)
                     {
                         var side = new Vector2(dirs[i].y, -dirs[i].x);                   // right of the direction of travel
-                        float y = ys[i], span = SleeperSpanShare * halves[i];
-                        for (int k = -4; k <= 4; k++) y = Mathf.Max(y, Ground(data, origin, pts[i] + side * (span * k / 4f)) + SleeperClearanceM);
+                        float y = ys[i], span = RailSpanShare * halves[i];
+                        for (int k = -4; k <= 4; k++) y = Mathf.Max(y, Ground(data, origin, pts[i] + side * (span * k / 4f)) + RailClearanceM);
                         var normal = data.GetInterpolatedNormal(Mathf.Clamp01((pts[i].x - origin.x) / data.size.x), Mathf.Clamp01((pts[i].y - origin.z) / data.size.z));
                         for (int j = 0; j < Across; j++)
                         {

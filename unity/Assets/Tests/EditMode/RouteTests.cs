@@ -135,7 +135,7 @@ public class RouteTests
                     Assert.That(v.x, Is.InRange(origin.x, origin.x + data.size.x)); Assert.That(v.z, Is.InRange(origin.z, origin.z + data.size.z));
                 }
                 // Roads keep main's drape: every vertex clears the ground under it by the clearance (the railways' clearance
-                // across their sleepers is TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth).
+                // under their rails is TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth).
                 var roadCheck = RouteLayer.Ribbon(routes.Where(r => r.Kind != RoutePaths.Rail).Select(r => (RouteLayer.World(map.Frame, r), RouteLayer.WidthOf(r.Kind))), data, origin, "roads");
                 Assert.AreEqual(roadVerts, roadCheck.vertexCount);
                 foreach (var v in roadCheck.vertices)
@@ -228,12 +228,12 @@ public class RouteTests
     // Measured 2026-10-11: old warp median 315 m (p90 454 m); new lift median 11 m, p90 38 m, max 57 m.
     const float LiftP90BoundM = 50f;
 
-    /// <summary>Review A-I1 and A-I2, on every railway: the ground never rises above the band within its sleeper span
+    /// <summary>Review A-I1 and A-I2, on every railway: the ground never rises above the band under its rails
     /// (main had none; 005e60e buried the rails by up to 32 m from Artuf to Battir and in 15 sections of the Jezreel line),
     /// the band's width never jumps by more than a tenth of the full width from one 120 m section to the next (005e60e
     /// beaded), and its edges never float far over the ground.</summary>
     [Test]
-    public void TheRailClearsTheGroundUnderItsSleepersAndRampsItsWidth()
+    public void TheRailClearsTheGroundUnderItsRailsAndRampsItsWidth()
     {
         var map = BuildMap();
         try
@@ -252,8 +252,8 @@ public class RouteTests
                         var c = v[i + mid]; var left = new Vector2(v[i].x, v[i].z); var right = new Vector2(v[i + n - 1].x, v[i + n - 1].z);
                         var cq = new Vector2(c.x, c.z); float width = (right - left).magnitude;
                         var side = (right - left) / Mathf.Max(width, 1e-3f);
-                        // The sleeper span: the shader's sleepers reach 0.29 of the band's width either side of the line.
-                        float span = 0.29f * width;
+                        // The rails: the shader's rails sit 0.12 of the band's width either side of the line, 0.018 wide.
+                        float span = 0.14f * width;
                         float highest = float.MinValue;
                         for (int k = -6; k <= 6; k++) highest = Mathf.Max(highest, RouteLayer.Ground(data, origin, cq + side * (span * k / 6f)));
                         if (highest > c.y + 0.5f) { buried++; worst = $"{r.Id} at {map.Frame.ToLonLat(c)} by {highest - c.y:0} m"; }
@@ -266,8 +266,8 @@ public class RouteTests
             }
             floats.Sort();
             float p99 = floats[(int)(0.99f * (floats.Count - 1))];
-            TestContext.WriteLine($"rail: {sections} sections, {buried} with ground over the sleepers (worst {worst}), {jumps} width jumps over 10%, edge float p99 {p99:0} m, max {floats[floats.Count - 1]:0} m");
-            Assert.AreEqual(0, buried, $"the ground rises above the sleepers: {worst}");
+            TestContext.WriteLine($"rail: {sections} sections, {buried} with ground over the rails (worst {worst}), {jumps} width jumps over 10%, edge float p99 {p99:0} m, max {floats[floats.Count - 1]:0} m");
+            Assert.AreEqual(0, buried, $"the ground rises above the rails: {worst}");
             Assert.AreEqual(0, jumps, "the band's width ramps, never jumps");
             Assert.Less(p99, EdgeFloatP99BoundM, "the band's edges stay near the ground");
         }
