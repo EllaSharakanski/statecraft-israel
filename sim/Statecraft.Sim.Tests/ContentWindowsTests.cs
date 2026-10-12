@@ -147,13 +147,32 @@ public class ContentWindowsTests
 
     // ---- the loader refuses a reference to a record that is not active for the whole window of the record using it
 
-    [Fact]
-    public void AWindowMustRunForward() =>
-        Refused(Model(m => Window(m, "  - id: maabarot\n    default: 0.0", "from: 1948-09-01\n    to: 1948-08-01")), "from must be before to");
+    [Theory]
+    [InlineData("  - id: maabarot\n    default: 0.0", "policies[maabarot]")]
+    [InlineData("  - id: housing\n    base: 0.3", "indicators[housing]")]
+    [InlineData("  - id: rationing_morale\n    source: rationing", "effects[rationing_morale]")]
+    [InlineData("  - id: hunger\n    indicator: food_supply", "situations[hunger]")]
+    [InlineData("  - id: everyone", "voter_groups[everyone]")]
+    [InlineData("  - id: usa", "actors[usa]")]
+    public void AWindowMustRunForward(string anchor, string field)
+    {
+        foreach (var window in new[] { "from: 1948-09-01\n    to: 1948-08-01", "from: 1948-09-01\n    to: 1948-09-01" })   // backwards, and empty
+        {
+            var e = Assert.Throws<ContentException>(() => Load(Model(m => Window(m, anchor, window))));
+            Assert.Equal("model.yaml", e.File);
+            Assert.Equal(field, e.Field);
+            Assert.Contains("from must be before to", e.Message);
+        }
+    }
 
     [Fact]
-    public void AnEffectSourceThatIsNotActiveThroughTheEffectIsRefused() =>
-        Refused(Model(m => Window(m, "  - id: rationing\n    default: 0.0", "from: 1948-08-01")), "source 'rationing' is not active");
+    public void AnEffectSourceThatIsNotActiveThroughTheEffectIsRefused()
+    {
+        var e = Assert.Throws<ContentException>(() => Load(Model(m => Window(m, "  - id: rationing\n    default: 0.0", "from: 1948-08-01"))));
+        Assert.Equal("model.yaml", e.File);                     // the error names the file and the key
+        Assert.Equal("effects[rationing_food].source", e.Field);
+        Assert.Contains("source 'rationing' is not active", e.Message);
+    }
 
     [Fact]
     public void AnEffectTargetThatIsNotActiveThroughTheEffectIsRefused() =>
@@ -176,6 +195,18 @@ public class ContentWindowsTests
         Assert.NotNull(Load(m));
     }
 
+    [Fact]
+    public void ARecordMayUseOneWithExactlyTheSameWindow()
+    {
+        // Both edges are inclusive for the check: the same from and the same to cover the user's whole window.
+        const string w = "from: 1948-07-01\n    to: 1949-01-01";
+        var m = Model(x => Window(x, "  - id: rationing\n    default: 0.0", w)
+            .Replace("  - id: rationing_food\n", "  - id: rationing_food\n    " + w + "\n").Replace("  - id: rationing_morale\n", "  - id: rationing_morale\n    " + w + "\n"));
+        Assert.NotNull(Load(m));
+        Refused(m.Replace("  - id: rationing_food\n    from: 1948-07-01", "  - id: rationing_food\n    from: 1948-06-30"), "source 'rationing' is not active");
+        Refused(m.Replace("  - id: rationing_food\n    from: 1948-07-01\n    to: 1949-01-01", "  - id: rationing_food\n    from: 1948-07-01\n    to: 1949-01-02"), "source 'rationing' is not active");
+    }
+
     const string Event = "id: probe\ntitle: Probe\ntext: A probe.\nanchor: soft\nfrom: 1948-06-01\nto: 1948-12-01\n{0}options:\n  - id: a\n    text: Do a\n{1}";
 
     [Fact]
@@ -193,6 +224,38 @@ public class ContentWindowsTests
             events: new Dictionary<string, string> { ["probe.yaml"] = string.Format(Event, "", "    effects: [{ target: housing, delta: 0.1 }]\n") });
     }
 
+    // ---- a late fire (EventSystem.Trigger) can come after the window of a record the event reaches has ended
+
+    // The event's window [20 June, 1 July) falls inside the fixture's quarterly turn 12 June to 12 September, so it fires late,
+    // on 12 September, after housing (and maabarot) have left the state on 1 July.
+    static Content LateFire(string conditions, string option) => Load(
+        Model(m => Window(Window(m, "  - id: housing\n    base: 0.3", "to: 1948-07-01"), "  - id: maabarot\n    default: 0.0", "to: 1948-07-01")),
+        events: new Dictionary<string, string> { ["probe.yaml"] = "id: probe\ntitle: Probe\ntext: A probe.\nanchor: soft\nfrom: 1948-06-20\nto: 1948-07-01\n" + conditions + "options:\n  - id: a\n    text: Do a\n" + option });
+
+    [Fact]
+    public void ALateFireDoesNotReadAnIndicatorWhoseWindowHasEnded()
+    {
+        var c = LateFire("conditions: [{ indicator: housing, min: 0.0 }]\n", "");
+        var s = Play(c, new DateTime(1948, 9, 1));
+        Assert.Equal(new DateTime(1948, 9, 12), s.Date);
+        Assert.DoesNotContain("probe", s.FiredEvents);   // its condition reads a record that no longer exists, so it is not met
+    }
+
+    [Fact]
+    public void ALateFiredEventResolvedAfterTheWindowLeavesEndedRecordsOut()
+    {
+        var c = LateFire("", "    effects: [{ target: housing, delta: 0.1 }, { target: treasury, delta: 5 }]\n    set_policy: { maabarot: 1.0 }\n");
+        var s = Play(c, new DateTime(1948, 9, 1));
+        Assert.Contains("probe", s.PendingEvents);
+        var r = Simulation.Step(c, s, new Command[] { new ChooseEventOption("probe", "a") });
+        Assert.Empty(r.Rejected);
+        Assert.DoesNotContain("housing", r.State.Indicators.Keys);
+        Assert.DoesNotContain("housing", r.State.IndicatorShifts.Keys);
+        Assert.DoesNotContain("maabarot", r.State.Policies.Keys);   // not added back by the option
+        Assert.Contains("probe", r.State.ChosenOptions.Keys);
+        Assert.Contains(r.Why, w => w.Target == "treasury" && w.Delta == 5);   // treasury is not a dated record: the option still pays it
+    }
+
     [Fact]
     public void ARecordWithAWindowNeedsItsOfficeForThatWholeWindow()
     {
@@ -200,5 +263,16 @@ public class ContentWindowsTests
         string OnTrade(string m) => m.Replace("  - id: maabarot\n    default: 0.0\n    office: finance_minister", "  - id: maabarot\n    default: 0.0\n    office: trade_minister");
         Refused(Window(OnTrade(Model()), "  - id: maabarot\n    default: 0.0", "from: 1948-07-01"), "office 'trade_minister' does not exist for the whole window", offices);
         Assert.NotNull(Load(OnTrade(Model()), offices));   // with no window the existing rule stands: the office may be created later
+    }
+
+    [Fact]
+    public void AnEffectWithAWindowNeedsItsOfficeForThatWholeWindow()
+    {
+        var offices = Offices(o => o + "  - id: trade_minister\n    title: Trade\n    from: 1948-09-01\n");
+        var m = Model(x => x.Replace("  - id: rationing_food\n    source: rationing", "  - id: rationing_food\n    from: 1948-07-01\n    source: rationing")
+            .Replace("    inertia: 2\n    office: finance_minister", "    inertia: 2\n    office: trade_minister"));
+        var e = Assert.Throws<ContentException>(() => Load(m, offices));
+        Assert.Equal("effects[rationing_food].office", e.Field);
+        Assert.Contains("office 'trade_minister' does not exist for the whole window", e.Message);
     }
 }
