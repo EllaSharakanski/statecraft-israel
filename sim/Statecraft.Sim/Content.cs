@@ -309,6 +309,16 @@ namespace Statecraft.Sim
         public List<VoterGroup> VoterGroups = new List<VoterGroup>();
         public List<Actor> Actors = new List<Actor>();
         public Rules Rules = new Rules();
+        /// <summary>The complete rules of each era that has an override file (content/rules/&lt;era&gt;.yaml): rules.yaml with that
+        /// file's keys merged in. Built once at load and never changed. An era without a file is not in this map.</summary>
+        public Dictionary<string, Rules> EraRules = new Dictionary<string, Rules>();
+        /// <summary>The rules in force on <paramref name="date"/>: the era's own rules when its override file exists, else
+        /// <see cref="Rules"/> (the founding era has no override, so its rules are rules.yaml itself).</summary>
+        public Rules RulesAt(DateTime date)
+        {
+            var era = EraAt(date);
+            return era != null && EraRules.TryGetValue(era.Id, out var r) ? r : Rules;
+        }
         public List<AliyahPeriod> Aliyah = new List<AliyahPeriod>();
         /// <summary>Origin groups of the aliyah series, with display names (aliyah.yaml regions).</summary>
         public List<Region> Regions = new List<Region>();
