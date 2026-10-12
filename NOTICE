@@ -33,6 +33,16 @@ Railways and roads of 1948 (content/map/route*_1948.yaml): traced on the Survey 
 (public domain in Israel and the UK; facts only are used, as for decision D-B in docs/oss/DECISIONS.md), using the scans
 and georeferencing published by Palestine Open Maps (https://palopenmaps.org).
 
+1949 armistice lines (content/map/armistice_lines_1949.geojson): digitised from the General Armistice Agreements of
+1949 and their annexed maps (United Nations Treaty Series vol. 42; UN documents S/1264/Corr.1, S/1296, S/1302/Rev.1,
+S/1353/Rev.1, and S/1471 with its signed 1950 map; UN documents are not copyrighted, ST/AI/189/Add.9/Rev.2), from the
+UN Official Document System, UNISPAL and the UN Treaty Collection; the Egypt line uses the Survey of Palestine
+1:100,000 sheet "Gaza" (Government of Palestine, decision D-B; National Library of Israel scan via Wikimedia Commons)
+and the Lebanon line the sub-district data's Mandate frontier; the Jordan map is drawn on the Survey of Palestine
+1:250,000 (1946, decision D-B) and S/1471's on Survey of Palestine 1:20,000 sheets reprinted by the Survey of Israel
+(only the agreements' line positions are taken); town coordinates for georeferencing from Wikidata (CC0)
+and Wikipedia. Decision D-A.
+
 Portraits: public-domain and CC0 photographs from Wikimedia Commons; per-file records in ASSETS.portraits.yaml.
 
 Event-card photographs (unity/Assets/UI/EventImages/; per-file records in ASSETS.yaml). Each is adapted: graded and

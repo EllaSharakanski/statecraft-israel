@@ -14,9 +14,11 @@ namespace Statecraft.Game.Map
     /// (content/map/subdistricts_1948.geojson; tools/borders_digitise.py). Each land hex is in one sub-district, or in the
     /// "outside" region (style none: the sub-districts' bands run along the Mandate frontier, nothing beyond it); sea and
     /// lake hexes are in none, so the coast is not outlined. Display only: the sim never reads the file. Owner ruling
-    /// (2026-10-11): it shows from the game's start (<see cref="ShownFrom"/>) until the 1949 armistice lines replace it, each
-    /// front on its agreement's date once that data exists (<see cref="ShownUntil"/> null until then), labelled on screen
-    /// with <see cref="Label"/> (GameRoot's "map-layer" label above the minimap, while the layer is drawn).</summary>
+    /// (2026-10-11): it shows from the game's start (<see cref="ShownFrom"/>), labelled on screen with <see cref="Label"/>
+    /// (GameRoot's "map-layer" label above the minimap, while the layer is drawn). <see cref="Fronts"/>: each front's switch
+    /// date, its agreement's, from which <see cref="MapRegions"/> draws that front's armistice features over this layer
+    /// (null: no line data, the front never switches); <see cref="ShownUntil"/> is the layer's end as a whole, null while
+    /// the armistice lines leave gaps (the layer stays as the base under them).</summary>
     public sealed class Subdistricts1948
     {
         public const string FileName = "subdistrict_hexes_1948.yaml";
@@ -32,10 +34,17 @@ namespace Statecraft.Game.Map
         public readonly DateTime ShownFrom;
         /// <summary>The first date the layer is no longer shown (null: until replaced, no end set yet).</summary>
         public readonly DateTime? ShownUntil;
+        /// <summary>Per front (key), the first date that front switches: from then MapRegions draws its armistice features over
+        /// this layer, which stays as the base; null: never (no line data). Empty when the file names no fronts.</summary>
+        public readonly IReadOnlyDictionary<string, DateTime?> Fronts;
         readonly Dictionary<int, Region> regions;
 
-        Subdistricts1948(RegionLayer layer, string title, string line, string label, DateTime from, DateTime? until, Dictionary<int, Region> regions)
-        { Layer = layer; Title = title; Line = line; Label = label; ShownFrom = from; ShownUntil = until; this.regions = regions; }
+        Subdistricts1948(RegionLayer layer, string title, string line, string label, DateTime from, DateTime? until, Dictionary<int, Region> regions,
+            Dictionary<string, DateTime?> fronts)
+        { Layer = layer; Title = title; Line = line; Label = label; ShownFrom = from; ShownUntil = until; this.regions = regions; Fronts = fronts; }
+
+        /// <summary>Whether the front's armistice line has replaced this layer there by <paramref name="date"/>.</summary>
+        public bool FrontReplaced(string front, DateTime date) => Fronts.TryGetValue(front, out var u) && u != null && date >= u.Value;
 
         /// <summary>Whether the map shows the layer on <paramref name="date"/> (the turn's date).</summary>
         public bool ShowsOn(DateTime date) => date >= ShownFrom && (ShownUntil == null || date < ShownUntil.Value);
@@ -47,7 +56,8 @@ namespace Statecraft.Game.Map
             regions.TryGetValue(Layer.RegionOf(q, r), out var x) && x.Style != BorderStyle.None ? x : null;
 
         sealed class FileRow { public int Id { get; set; } public string Key { get; set; } = ""; public string Name { get; set; } = ""; public string District { get; set; } = ""; public string Style { get; set; } = ""; }
-        sealed class FileDoc { public string Layer { get; set; } = ""; public string Title { get; set; } = ""; public string Line { get; set; } = ""; public string Label { get; set; } = ""; public string ShownFrom { get; set; } = ""; public string? ShownUntil { get; set; } public List<FileRow> Regions { get; set; } = new List<FileRow>(); public List<List<int>> Hexes { get; set; } = new List<List<int>>(); }
+        sealed class FrontRow { public string Key { get; set; } = ""; public string? Until { get; set; } }
+        sealed class FileDoc { public string Layer { get; set; } = ""; public string Title { get; set; } = ""; public string Line { get; set; } = ""; public string Label { get; set; } = ""; public string ShownFrom { get; set; } = ""; public string? ShownUntil { get; set; } public List<FrontRow> Fronts { get; set; } = new List<FrontRow>(); public List<FileRow> Regions { get; set; } = new List<FileRow>(); public List<List<int>> Hexes { get; set; } = new List<List<int>>(); }
 
         /// <summary>Parses the baked file. Every malformed input throws InvalidDataException naming the file and the entry.</summary>
         public static Subdistricts1948 Parse(string yaml)
@@ -62,6 +72,15 @@ namespace Statecraft.Game.Map
             var from = Date(doc.ShownFrom, "shown_from") ?? throw new InvalidDataException($"{FileName}: shown_from is required");
             var until = Date(doc.ShownUntil, "shown_until");
             if (until != null && until <= from) throw new InvalidDataException($"{FileName}: shown_until is not after shown_from");
+            var fronts = new Dictionary<string, DateTime?>();
+            foreach (var f in doc.Fronts)
+            {
+                if (string.IsNullOrWhiteSpace(f.Key)) throw new InvalidDataException($"{FileName}: a front has no key");
+                if (fronts.ContainsKey(f.Key)) throw new InvalidDataException($"{FileName}: front '{f.Key}' twice");
+                var u = Date(f.Until, $"front {f.Key} until");
+                if (u != null && u <= from) throw new InvalidDataException($"{FileName}: front {f.Key}: until is not after shown_from");
+                fronts[f.Key] = u;
+            }
             var regions = new Dictionary<int, Region>(); var styles = new Dictionary<int, BorderStyle>();
             foreach (var r in doc.Regions)
             {
@@ -87,7 +106,7 @@ namespace Statecraft.Game.Map
             // The label goes in the game's UI (GameRoot, the "map-layer" label), not the 3D banner, which the tilt-shift blurs.
             try { layer = new RegionLayer(doc.Layer, hexes, styles); }
             catch (ArgumentException e) { throw new InvalidDataException($"{FileName}: {e.Message}", e); }
-            return new Subdistricts1948(layer, doc.Title, doc.Line, doc.Label, from, until, regions);
+            return new Subdistricts1948(layer, doc.Title, doc.Line, doc.Label, from, until, regions, fronts);
         }
 
         static DateTime? Date(string? text, string key)
