@@ -22,10 +22,10 @@ namespace Statecraft.Sim
                 if (e.Anchor != "hard" && e.Anchor != "soft") throw new ContentException(e.File, F("anchor"), $"unknown anchor '{e.Anchor}' (must be hard or soft)");
                 ContentLoader.Status(e.File, F("status"), e.Status);
                 ContentLoader.Period(e.File, $"events[{e.Id}]", e.From, e.To);
-                // Chapters design 6: an event may not span a boundary; it is split. Its window lies inside one era (an open
-                // window runs to the end of that era).
+                // Chapters design 9: an event may not span a boundary; it is split. An open window (no `to`) is allowed only in
+                // the last era, since EventSystem keeps an open event eligible to the end of the game.
                 var era = c.Eras.FirstOrDefault(x => x.From <= e.From && e.From < x.To);
-                if (era != null && e.To.HasValue && e.To.Value > era.To)
+                if (era != null && (e.To.HasValue ? e.To.Value > era.To : era.To < c.Eras.Max(x => x.To)))
                     throw new ContentException(e.File, F("to"), FormattableString.Invariant($"the window runs past the end of era '{era.Id}' ({era.To:yyyy-MM-dd}); an event may not span a boundary, split it"));
                 if (e.Office != "" && !offices.Contains(e.Office)) throw new ContentException(e.File, F("office"), $"unknown office '{e.Office}'");
                 if (c.Offices.Any(o => o.Id == e.Office && o.HistoricalOnly))
