@@ -26,3 +26,12 @@ def test_clean_repo_returns_zero(make_repo):
 
 def test_this_repo_has_no_dead_relative_links():
     assert m.dead_links(ROOT) == []
+
+
+def test_title_badge_escape_and_case(make_repo):
+    root = make_repo({
+        'README.md': '[t](docs/a.md "title") [t2](docs/a.md \'x y\') [angle](<docs/a.md>) [esc](docs/b%20c.md) [dir](docs/)\n'
+                     '[![badge](img.svg)](LICENSING.md) [![b2](img.svg)](GONE.md) [case](Docs/a.md)\n',
+        'docs/a.md': 'x\n', 'docs/b c.md': 'x\n', 'img.svg': 'x\n', 'LICENSING.md': 'x\n',
+    })
+    assert m.dead_links(root) == [('README.md', 'GONE.md'), ('README.md', 'Docs/a.md')]
