@@ -291,7 +291,8 @@ public class RouteTests
             Assert.IsNotNull(map.KitStats, "Map.unity builds the kits");
             var routes = RoutePaths.Parse(CommittedYaml, Bounds);
             var corridors = RouteLayer.Corridors(map.Frame, routes);
-            Assert.AreEqual(corridors.Sum(c => c.line.Count - 1), map.KitStats.CorridorSegments, "the map hands every route to the kits");
+            // Plus one segment per unit clearing (a unit token in a town: docs/units.md, "Placement").
+            Assert.AreEqual(corridors.Sum(c => c.line.Count - 1) + map.UnitClearings.Count, map.KitStats.CorridorSegments, "the map hands every route to the kits");
             Assert.IsTrue(routes.Any(r => r.Id == "burma_road"), "the dated Burma Road keeps its corridor from the start");
 
             // The same placement the map runs, with the same corridors.
