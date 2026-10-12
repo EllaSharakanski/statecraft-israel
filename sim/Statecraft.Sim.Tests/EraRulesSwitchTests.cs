@@ -157,13 +157,14 @@ eras:
         var boundary = new DateTime(1948, 6, 5);
         var s = Simulation.NewGame(c, 1, Mode.Historical);
         Assert.Equal(c.Rules.AttentionPerTurn, s.Attention);
+        var lengths = new List<int>();
         while (s.Date < boundary.AddDays(7))   // through the first whole turn of the new era (the fixture's ceasefire ends the weekly turns after it)
         {
             var start = s.Date;
             var step = Simulation.Step(c, s, new List<Command>());
             var end = step.State.Date;
             var days = (end - start).Days;
-            Assert.True(days == 7 || end == boundary, $"{start:yyyy-MM-dd}: a turn is a week unless it was lengthened to the boundary");
+            lengths.Add(days);
             var tax = start < boundary ? c.Rules.TaxPerCapitaPerYear : 1.0;
             var expected = (tax - c.Rules.SpendingPerCapitaPerYear) * step.State.TotalPopulation * (days / 365.0)
                 - c.Rules.MobilizationCostPerYear * s.Mobilization * (days / 365.0);
@@ -172,6 +173,8 @@ eras:
             Assert.Equal(end < boundary ? c.Rules.AttentionPerTurn : 7.5, step.State.Attention);
             s = step.State;
         }
+        // 22 May + 7 would leave 7 days, under 14, so that turn runs 14 days to the boundary (spec 4.1); the rest are weeks.
+        Assert.Equal(new[] { 7, 14, 7 }, lengths);
     }
 
     /// <summary>The only places the sim reads the base rules directly are the values <c>NewGame</c> reads once (an era

@@ -193,16 +193,18 @@ public class EraTests
     {
         var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
         {
-            ["eras.yaml"] = Eras(Era("founding", "1948-05-15", "1948-07-01"), Era("next", "1948-07-01", "1948-12-01")),
+            ["eras.yaml"] = Eras(Era("founding", "1948-05-15", "1948-07-01"), Era("next", "1948-07-01", "1948-10-10"),
+                Era("last", "1948-10-10", "1948-12-01")),
         }));
-        var s = Simulation.NewGame(c, 1948, Mode.Historical);
-        var dates = new List<DateTime> { s.Date };
-        for (int i = 0; i < 12 && s.Date < new DateTime(1948, 8, 1); i++) { s = Simulation.Step(c, s, new Command[0]).State; dates.Add(s.Date); }
-        Assert.Contains(new DateTime(1948, 7, 1), dates);   // the boundary is a turn end, as in the single-era case
-        Assert.DoesNotContain(new DateTime(1948, 7, 3), dates);
-        Assert.Null(s.GameOver);   // a boundary inside the game does not end it
-        var upTo = dates.Take(dates.IndexOf(new DateTime(1948, 7, 1)) + 1).ToList();
-        Assert.All(upTo.Zip(upTo.Skip(1), (a, b) => (b - a).Days), d => Assert.InRange(d, 7, 21));
+        var s = PlayToTheEnd(c, out var dates);
+        // Weekly while the fixture's war lasts, then quarterly from 12 June (the ceasefire ends the weekly turns).
+        // 12 June: the quarter is cut at the nearest boundary, 1 July (not the later 10 October).
+        // 1 July: the quarter would end 1 October, 9 days short of 10 October, so it is lengthened to it.
+        // 10 October: the quarter is cut at the last era's end, which ends the game.
+        var expected = new[] { (5, 15), (5, 22), (5, 29), (6, 5), (6, 12), (7, 1), (10, 10), (12, 1) }
+            .Select(md => new DateTime(1948, md.Item1, md.Item2));
+        Assert.Equal(expected, dates);
+        Assert.Equal(GameOverCodes.EraEnded, s.GameOver);   // only the last era's end ends the game
     }
 
     [Fact]
