@@ -59,6 +59,15 @@ Before writing or editing content, review:
 - If you change `sim/`, `content/` or `unity/`, add a line under `## [Unreleased]` in `CHANGELOG.md`.
 - `scripts/check.sh` runs every check CI runs in one command: the changelog rule, the policy checker tests, `check_repo.py`, the sim build and tests, and the tools tests. It stops at the first failure.
 
+## Helpers (they write or report, they are not checks)
+
+- `uv run scripts/new_event.py <id> [--from YYYY-MM-DD] [--to YYYY-MM-DD]` writes a skeleton `content/events/<id>.yaml`. Fill every TODO and `sources` before you run the tests.
+- `uv run scripts/event_timeline.py [--status draft]` prints every event by date with its era, anchor and review status.
+- `uv run scripts/pr_content_summary.py [BASE]` prints, as markdown, the events and model records the branch adds, removes or re-dates. Paste it in the PR.
+- `uv run scripts/source_report.py [--older-than DAYS]` lists every content source with its check date and age.
+- `uv run scripts/id_references.py <id>` lists every place a record id is read in content, sim and unity (code reads some ids by name).
+- `uv run scripts/oss/md_links.py` lists relative Markdown links that point at a missing file (it also runs in the policy tests).
+
 ## Git
 
 - Never run `git commit` or `git push` unless the user asks for it in that message.
