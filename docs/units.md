@@ -51,7 +51,7 @@ it, and there are no level-of-detail switches yet.
 | Piece | Model | Where (PromoPose.Gameplay03) |
 |---|---|---|
 | Rifle trio | three 1948 IDF riflemen: bush hat with rifle held ready, Mk II steel helmet with rifle grounded, Palmach stocking cap with rifle slung | on the centre of the hex nearest 34.88 E, 32.01 N (east of Tel Aviv, clear of the settlement labels), inside a white selection ring that fits within the hex |
-| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, from October 1948: clipped wing, red spinner and diagonal red-and-white rudder stripes, filled Star of David roundels with no outer ring (Efrati pp. 13–14) | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
+| Aircraft | Supermarine Spitfire LF Mk IXe of 101 Squadron, from October 1948: clipped wing, red spinner and diagonal red-and-white rudder stripes, filled Star of David roundels with no outer ring (Efrati pp. 12 and 14) | a 16 km loop over Tel Aviv and the coast, 4.2 km above the highest ground under it, banked 28 degrees, its shadow cast on the ground by the sun |
 | Navy | modified Flower-class corvette INS Haganah (K-20), 1948, 63.4 m | off Jaffa (34.63 E, 32.02 N) |
 
 Not in the slice:
@@ -208,10 +208,10 @@ checks every anchor and logs each spot and its distance.
 **The Avia S-199** (`UnitModels.AviaS199`; type `avia-s199-101sqn-1948`):
 - The Bf 109G airframe, 8.94 m long with a 9.92 m span, with the Jumo 211F's wide three-blade paddle propeller and the
   MG 151 pods under the wings (Avia S-199 article).
-- One khaki green on all surfaces, about RAL 6013: Efrati p. 11, confirmed from an Avia fuel cap. Eduard Info
+- One khaki green on all surfaces, about RAL 6013: Efrati pp. 8 and 11, confirmed from an Avia fuel cap. Eduard Info
   11/2025, pp. 53–54, also has one green.
-- The identification band round the rear fuselage is white, blue, white (Efrati p. 11).
-- Filled Star of David roundels sit on both fuselage sides behind the cockpit and under the wings (Efrati pp. 6 and 11,
+- The identification band round the rear fuselage is white, blue, white (Efrati pp. 8 and 11).
+- Filled Star of David roundels sit on both fuselage sides behind the cockpit and under the wings (Efrati pp. 6, 8 and 11,
   and the 1948 photographs). None sit on top of the wings: over-wing roundels were "standard" on no IAF aircraft from May
   1948 to January 1949 (p. 6) and were adopted on the Avias only after the Velvetta Spitfires arrived (pp. 11 and 14).
 - The red spinner, the rudder stripes and the upper-wing roundels of Operation Ten Plagues (from 15 October 1948, Eduard
@@ -249,8 +249,8 @@ headless `?vprofile` on the WebGL build of 943184c, 1920x1080 at DPR 1, 2026-10-
 - Wedgwood's Israeli name and pennant number conflict between its two articles. The card shows "INS Wedgwood" and no
   number.
 - No source yet places any unit after the armistices.
-- The Spitfire's red spinner and striped rudder are attested on the Spitfires for January 1949. Eduard dates the
-  squadron's markings to October 1948, so the October–December 1948 Spitfire markings rest on that.
+- The Spitfire's red spinner and diagonal rudder stripes date from early October 1948 on the Spitfires themselves
+  (Efrati p. 12); IsraDecal attests them for January 1949.
 - In the historical playthrough the call-up stays at or above 0.4 until the armistices, so the tokens keep three
   figures.
 
@@ -316,7 +316,7 @@ Aircraft:
   (https://en.wikipedia.org/wiki/Supermarine_Spitfire). The model now has the clipped wing, not the promo's full
   elliptical one.
 - Variant **LF.IXe**, and 101 Squadron's **red spinner** and **red-and-white striped rudder**. On the Spitfires these are
-  attested for **January 1949** (IsraDecal); the slice is dated "late 1948 – January 1949".
+  attested for **January 1949** (IsraDecal), and from early October 1948 by Efrati (below).
   - IsraDecal Studio, "Spitfire Mk.IX, Israeli Air Force" (IAF-123, 1:24) marking instructions, May 2023. It lists
     "Spitfire LF.IXe 2011/26, 101 Squadron, January 1949", painted in RAF colours, with a red spinner and the rudder
     painted "in White. Paint Red stripes".
@@ -325,11 +325,11 @@ Aircraft:
     101 Tayeset fighters obtained high visibility markings consisting of red spinners and red and white stripes on the
     rudders". https://info.eduard.com/en/11-2025-1/strana-53
     The page shows the squadron's Avia S-199s ("Messers"), not its Spitfires. So it dates the squadron's markings to
-    October 1948, but **on the Spitfires the October 1948 date is unverified**.
+    October 1948. On the Spitfires, Efrati p. 12 confirms that date (below).
   - A Fundekals decal review also says 101 Squadron "had the white and red stripes on the rudder".
     https://mail.modelingmadness.com/scott/decals/fundekals/fd48idfspit.htm
   - **Diagonal (corrected 2026-10-12):** from early October 1948 the squadron painted "their spinners red and rudders
-    with diagonal red and white stripes" (Efrati p. 13; the photographs of Spitfires 14 and 17, pp. 12–13). This also
+    with diagonal red and white stripes" (Efrati p. 12, with the photographs of Spitfires 14 and 17). This also
     dates the Spitfires' markings to October 1948.
 - Roundel of 1948–49: a **filled** blue Star of David on a white disc, the star clear of the disc's edge, **with no outer
   blue ring**.
@@ -337,7 +337,7 @@ Aircraft:
     - Efrati, p. 6, on the Bonanzas after 15 May 1948: "Ground visibility of the open star was poor so he [Boris Senior]
       suggested that the Star of David be filled resulting in the IAF insignia as applied on IAF aircraft ever since."
     - Every 1948–49 photograph checked shows the star filled: the S-199s D-120 and D-123 and the Spitfires 14 and 17
-      (Efrati pp. 11–13), and the public-domain S-199 photographs on Commons (below).
+      (Efrati pp. 11–12), and the public-domain S-199 photographs on Commons (below).
     - An open, outline star was used only briefly before that change. The model draws the filled star, and
       `UnitsInPlayTests.TheRoundelIsAFilledStarOfDavidOnAWhiteDiscWithNoRing` pins it.
   - Where the roundels sit:

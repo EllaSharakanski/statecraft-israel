@@ -5,9 +5,9 @@ namespace Statecraft.Game.Map.Units
 {
     /// <summary>The paint pots of the unit miniatures: one column per slot, one row per shade. Sources are in docs/units.md:
     /// 1948 IDF khaki drill and British 37-pattern webbing (photographs); the IAF roundel (a blue star on a white disc);
-    /// 101 Squadron's red spinner and red-and-white rudder (on its Spitfires, January 1949: IsraDecal). The Spitfire's RAF day-fighter colours
-    /// (ocean grey and dark green over medium sea grey) have a single hobby source and are unverified; a forum report of a
-    /// brown overpaint in theatre is an open question. The corvette's light grey follows its 1948 photograph. Colours are
+    /// 101 Squadron's red spinner and red-and-white rudder (from early October 1948: Efrati, Colors &amp; Markings of the Israeli
+    /// Air Force, p. 12). The Spitfire's RAF day-fighter colours (Ocean Grey and Dark Green over Medium Sea Grey) are
+    /// Efrati's p. 14. The S-199's khaki green is about RAL 6013 (Efrati pp. 8 and 11). The corvette's light grey follows its 1948 photograph. Colours are
     /// pushed a little warmer and lighter than the photographs so they read at map scale under the warm grade, as the
     /// promo's painted figures do. The texture is made at runtime (no file ships), owned by the showcase.</summary>
     public static class UnitPalette
@@ -46,7 +46,7 @@ namespace Statecraft.Game.Map.Units
             new Color(0.12f, 0.12f, 0.13f),   // Waterline
             new Color(0.30f, 0.31f, 0.32f),   // Funnel top
             new Color(0.72f, 0.12f, 0.10f),   // MarkingRed: 101 Squadron's spinner and rudder stripes
-            new Color(0.47f, 0.45f, 0.32f),   // AviaGreen: the S-199's one khaki green on all surfaces, about RAL 6013 (Efrati p. 11: confirmed from an Avia fuel cap; Eduard Info 11/2025 pp. 53-54)
+            new Color(0.47f, 0.45f, 0.32f),   // AviaGreen: the S-199's one khaki green on all surfaces, about RAL 6013 (Efrati pp. 8 and 11: confirmed from an Avia fuel cap; Eduard Info 11/2025 pp. 53-54)
         };
 
         /// <summary>u of a slot's column centre.</summary>

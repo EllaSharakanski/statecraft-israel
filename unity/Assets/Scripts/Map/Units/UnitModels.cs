@@ -110,7 +110,7 @@ namespace Statecraft.Game.Map.Units
         /// Markings of the Israeli Air Force, IAF, 2005, pp. 12-14):
         /// - the clipped wing every Spitfire flown to Israel in the war had (p. 14), about 10.2 m span;
         /// - RAF Ocean Grey and Dark Green over Medium Sea Grey (p. 14);
-        /// - from early October 1948 the squadron's red spinner and diagonal red and white rudder stripes (p. 13);
+        /// - from early October 1948 the squadron's red spinner and diagonal red and white rudder stripes (p. 12);
         /// - filled Star of David roundels with no ring on the fuselage sides and on both wing surfaces; the Velvetta
         ///   Spitfires arrived with over-wing roundels (p. 14).
         /// The squadron badge on the left cowling is too small to read at map scale and is left out. The propeller is a
@@ -125,7 +125,7 @@ namespace Statecraft.Game.Map.Units
             m.Lathe(TRS(Vector3.zero, V(90f, 0, 0), V(0.78f, 1f, 1.05f)), body, P.CamoGreen, 12);
             m.Lathe(TRS(V(0, -0.22f, 0), V(90f, 0, 0), V(0.62f, 1f, 0.72f)), new List<Vector2> { new Vector2(-2.6f, 0.2f), new Vector2(-1.0f, 0.62f),
                 new Vector2(1.6f, 0.62f), new Vector2(2.6f, 0.42f) }, P.Underside, 12);
-            // Spinner: 101 Squadron red, from early October 1948 (Efrati p. 13).
+            // Spinner: 101 Squadron red, from early October 1948 (Efrati p. 12).
             m.Lathe(TRS(V(0, 0.02f, 3.0f), V(90f, 0, 0), Vector3.one), new List<Vector2> { new Vector2(0f, 0.36f), new Vector2(0.45f, 0.26f), new Vector2(0.75f, 0f) }, P.MarkingRed, 10);
             // Canopy.
             m.Ellipsoid(TRS(V(0, 0.68f, -0.4f), Vector3.zero, V(0.34f, 0.32f, 1.0f)), P.Glass);
@@ -156,8 +156,8 @@ namespace Statecraft.Game.Map.Units
                 m.Box(TRS(V(side * 1.7f, -0.62f, 0.0f), Vector3.zero, V(0.42f, 0.28f, 1.3f)), P.Underside);
             }
             // Fin and rudder: the elliptic Spitfire fin, a vertical surface; the rear half (the rudder) in DIAGONAL red and white
-            // stripes on both sides, as 101 Squadron painted them from early October 1948 (Efrati p. 13: "rudders with diagonal
-            // red and white stripes"; the photographs of Spitfires 14 and 17, pp. 12-13).
+            // stripes on both sides, as 101 Squadron painted them from early October 1948 (Efrati p. 12: "rudders with diagonal
+            // red and white stripes"; the photographs of Spitfires 14 and 17, p. 12).
             System.Func<int, int, int> fin = (i, j) => j < 2 ? (i % 2 == 0 ? P.CamoGreen : P.CamoGrey) : ((i + j) / 2 % 2 == 0 ? P.MarkingRed : P.RoundelWhite);
             m.Wing(TRS(V(0, 0.4f, -5.5f), V(0, 0, 90f), Vector3.one), s => 0.55f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.05f,
                 s => 0.75f * Mathf.Sqrt(Mathf.Max(0f, 1f - s * s)) + 0.05f, 1.55f, 0.05f, fin, fin, spanSteps: 10, chordSteps: 4);
@@ -166,9 +166,9 @@ namespace Statecraft.Game.Map.Units
 
         /// <summary>An Avia S-199 of 101 Squadron, IAF, 1948 (sources in docs/units.md): the Bf 109G airframe with the Jumo 211F
         /// and its wide paddle-bladed propeller (Avia S-199 article), 8.94 m long with a 9.92 m span, one khaki green on all
-        /// surfaces (about RAL 6013: Efrati, Colors &amp; Markings of the Israeli Air Force, 2005, p. 11; Eduard Info 11/2025,
+        /// surfaces (about RAL 6013: Efrati, Colors &amp; Markings of the Israeli Air Force, 2005, pp. 8 and 11; Eduard Info 11/2025,
         /// pp. 53-54), the white-blue-white identification band round the rear fuselage, filled Star of David roundels on the
-        /// fuselage sides and under the wings, none on top (Efrati pp. 6, 11, 14: over-wing roundels came only with the
+        /// fuselage sides and under the wings, none on top (Efrati pp. 6, 8, 11, 14: over-wing roundels came only with the
         /// Velvetta Spitfires in October 1948), and the MG 151 cannon pods under the wings: its
         /// scheme until mid-October 1948. The red spinner, rudder stripes and upper-wing roundels the squadron's fighters got
         /// for Operation Ten Plagues (from 15 October, Eduard p. 53) are not drawn: the map shows the Spitfire from that day
