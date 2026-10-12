@@ -41,6 +41,9 @@ namespace Statecraft.Game.UI
         /// <summary>Everything Begin created that must be undone, disposed in reverse order.</summary>
         readonly List<IDisposable> owned = new List<IDisposable>();
         MinimapPresenter? minimap;
+        Statecraft.Game.Map.Units.UnitLayer? units;
+        /// <summary>The units in play (null before Begin).</summary>
+        internal Statecraft.Game.Map.Units.UnitLayer? Units => units;
         MapLabelsPresenter? labels;
         ScreenNav? nav;
         StartScreenPresenter? start;
@@ -162,7 +165,24 @@ namespace Statecraft.Game.UI
             onDate();
             bridge.Changed += onDate;
             owned.Add(new Undo(() => bridge.Changed -= onDate));
-            var info = Own(new InfoPanelPresenter(root, bridge, text, names, regions));
+            // The units in play (docs/units.md): drawn from the state and the sourced unit data, before the info panel so
+            // the layer has followed a change before the panel renders the selected unit's card.
+            var unitLayer = units = Statecraft.Game.Map.Units.UnitLayer.Create(map,
+                Statecraft.Game.Map.Units.UnitData.ReadOrNone(inputs.Map.UnitsYaml, Debug.LogWarning), inputs.Content.Hexes,
+                Statecraft.Game.Map.Units.UnitShowcase.StillRequested(Application.absoluteURL, Environment.GetCommandLineArgs(),
+                    Application.platform == RuntimePlatform.WebGLPlayer));
+            // A screenshot run (?shot) leaves the units out unless it also asks for them (&units), so the art log's plain
+            // checkpoints stay comparable across tracks (review I5; tools/art_checkpoint.sh --units).
+            if (Statecraft.Game.Map.Units.UnitLayer.HiddenInCaptures(Application.absoluteURL, Environment.GetCommandLineArgs(),
+                    Application.platform == RuntimePlatform.WebGLPlayer))
+                VisualToggles.Set(Statecraft.Game.Map.Units.UnitLayer.ToggleName, false);
+            Action showUnits = () => unitLayer.Show(bridge.Content, bridge.State);
+            bridge.Changed += showUnits;
+            owned.Add(new Undo(() => bridge.Changed -= showUnits));
+            showUnits();
+            var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav: nav,
+                selectedUnit: () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null,
+                regions: regions));
             // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
             // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
             // right on every platform, and the scripted run never presses it.
@@ -184,7 +204,7 @@ namespace Statecraft.Game.UI
             cameraController.GroundTop = CameraController.GroundTopOf(terrain);
             pointer.Map = map;
             pointer.IsOverUi = overUi;
-            Action<int, int> onHex = info.Show;
+            Action<int, int> onHex = (q, r) => OnHexClicked(map, unitLayer, info, q, r);
             pointer.HexClicked += onHex;
             var camRig = rig = cameraController.GetComponent<CameraRig>();
             Own(new TopBarInset(root, camRig));                            // the map is framed below the top bar
@@ -233,7 +253,7 @@ namespace Statecraft.Game.UI
             }
             if (Application.isPlaying && PixelErrorProfile.Requested()) StartCoroutine(PixelErrorProfile.Run(map.Terrain));
             // The unit art slice at gameplay03 (a showcase, never in normal play; war mode's units are issue #104). Before the
-            // instruments, so the frame profile lists its "units" toggle (the profile reads the toggles when it starts).
+            // instruments, so the frame profile lists its "unitshowcase" toggle (the profile reads the toggles when it starts).
             if (Application.isPlaying && Statecraft.Game.Map.Units.UnitShowcase.Requested())
                 Statecraft.Game.Map.Units.UnitShowcase.Spawn(map, Statecraft.Game.Map.Units.UnitShowcase.StillRequested(
                     Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer));
@@ -247,13 +267,31 @@ namespace Statecraft.Game.UI
 
         T Own<T>(T d) where T : IDisposable { owned.Add(d); return d; }
 
+        /// <summary>A map click: on a unit's hex it selects the unit (the ring and its card; the hex outline is cleared, so
+        /// the unit has the promo's one highlight); a second click on it, or a click anywhere else, shows the hex (so a token
+        /// never hides the hex's map actions).</summary>
+        internal static void OnHexClicked(MapScene map, Statecraft.Game.Map.Units.UnitLayer units, InfoPanelPresenter info, int q, int r)
+        {
+            if (info.Covered)
+            {
+                // A screen covers the panel: the click moves neither the ring nor the card (#210), and MapPointer's outline
+                // goes back to the hex the panel shows (or away, while it shows a unit).
+                if (info.Selected is (int sq, int sr) && !info.ShowsUnit) map.Select(sq, sr); else map.ClearSelection();
+                return;
+            }
+            var id = units.UnitToSelectAt(q, r);
+            units.Select(id);
+            if (id != null) { map.ClearSelection(); info.ShowUnit(); }
+            else info.Show(q, r);
+        }
+
         /// <summary>Disposes every presenter, the autosave and the camera/pointer hooks (newest first). Safe to call twice.</summary>
         void Shutdown()
         {
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; nav = null; start = null; rig = null; drawn = null; logCamera = false;
+            minimap = null; labels = null; nav = null; start = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;

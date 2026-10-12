@@ -13,6 +13,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   English under each, and Continue (only with a save) and New Game (with the top bar's two-press confirmation). Automated
   runs skip it (golden, smoke, shot, the profiles, units, borderproof), as does `?nostart`. The Hebrew is set in Frank Ruhl
   Libre (OFL) and laid out right to left by UI Toolkit's advanced text generator (#193).
+- Units in play: the map draws the 1948 brigades, 101 Squadron and the first navy ships as Civ-style tokens at their
+  dated, sourced positions (`content/map/units_1948.yaml`, map-only, outside the content hash). The figures follow the
+  reserve call-up, the squadron flies at security level 4 or 5 (an Avia S-199, then the Spitfire from its first sourced
+  sortie, 15 October 1948), a badge marks each token, and selecting one shows the promo's ring and a read-only card with
+  a link to the Defence screen. Every position ends on a sourced date or on its front's armistice. Screenshot runs show
+  units only with `&units`. The goldens do not move.
 - `content/eras.yaml` with the `founding` era (15 May 1948 to 1 January 1957), a `Content.EraAt(date)` lookup, and the end
   of the last era: the turn that reaches it ends on it (a turn that would leave under 14 days is lengthened to it), the
   game ends with the stable code `era_ended` and the text "The chapter has ended", and later orders are refused. The
