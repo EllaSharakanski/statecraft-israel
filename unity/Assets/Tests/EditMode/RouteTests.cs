@@ -101,7 +101,7 @@ public class RouteTests
         using var sha = System.Security.Cryptography.SHA256.Create();
         return string.Concat(sha.ComputeHash(bytes.ToArray()).Select(b => b.ToString("x2")));
     }
-    const string RailMeshHash = "f54a7a63ead7bed5db05f09aa2284ba7251573fb95b8a6e1e701e3cc736061b1";
+    const string RailMeshHash = "5363889121beb4aae19525a062cb108ff35394ba04e397b42f75a03a8e82439d";   // #252: full width where only one side leaves the tolerance
 
     [Test]
     public void TheMapBuildsRibbonsOnTheGroundAndTheTogglesHideThem()
@@ -277,6 +277,66 @@ public class RouteTests
     // Measured 2026-10-12 (3288a93, unchanged at 6c1f964): edge float p99 85 m, max 223 m (flat sections on hillsides; the floor
     // is 25% width). 005e60e: 67 sections with ground over the rails, 819 width jumps, edge float p99 107 m.
     const float EdgeFloatP99BoundM = 100f;
+
+    /// <summary>#252: a railway keeps its width outside the gorges. A section is in a gorge where, within the band's
+    /// half-width, the ground leaves the tolerance on both sides (a wall or a drop each side: a gorge floor, a gorge side,
+    /// a ridge); one hill or one drop beside the line is not a gorge. Every line keeps at least 90% of its width, on
+    /// average, outside the gorges, and its mean width over all its sections stays at or above the pinned floor.</summary>
+    [Test]
+    public void EveryRailwayKeepsItsWidthOutsideTheGorges()
+    {
+        var map = BuildMap();
+        try
+        {
+            var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+            var failures = new List<string>();
+            foreach (var r in RoutePaths.Parse(CommittedYaml, Bounds).Where(r => r.Kind == RoutePaths.Rail))
+            {
+                var mesh = RouteLayer.Ribbon(new[] { (RouteLayer.World(map.Frame, r), RouteLayer.RailWidthM) }, data, origin, r.Id, railGrade: true);
+                try
+                {
+                    var v = mesh.vertices; int n = RouteLayer.Across; float half = RouteLayer.RailWidthM / 2f;
+                    var all = new List<float>(); var open = new List<float>(); int gorge = 0;
+                    for (int i = 0; i + n <= v.Length; i += n)
+                    {
+                        var left = new Vector2(v[i].x, v[i].z); var right = new Vector2(v[i + n - 1].x, v[i + n - 1].z);
+                        var cq = (left + right) / 2f; float share = (right - left).magnitude / RouteLayer.RailWidthM;
+                        var side = (right - left).normalized; var t = new Vector2(-side.y, side.x);
+                        float y = RouteLayer.GradeHeight(data, origin, cq, t);
+                        bool Leaves(float s)
+                        {
+                            for (int k = 1; k <= 8; k++)
+                            {
+                                float g = RouteLayer.Ground(data, origin, cq + side * (s * half * k / 8f));
+                                if (g > y + RouteLayer.RiseToleranceM || g < y - RouteLayer.FallToleranceM) return true;
+                            }
+                            return false;
+                        }
+                        all.Add(share);
+                        if (Leaves(-1f) && Leaves(1f)) gorge++; else open.Add(share);
+                    }
+                    float mean = all.Average(), outside = open.Count > 0 ? open.Average() : 1f;
+                    float floor = MeanWidthFloor.TryGetValue(r.Id, out var f) ? f : 0.9f;
+                    TestContext.WriteLine($"{r.Id}: {all.Count} sections, {gorge} in gorges; mean width {mean:P1} (floor {floor:P0}), outside the gorges {outside:P1}");
+                    if (outside < 0.9f) failures.Add($"{r.Id} keeps {outside:P1} of its width outside the gorges");
+                    if (mean < floor) failures.Add($"{r.Id} keeps {mean:P1} of its width, under its floor {floor:P0}");
+                }
+                finally { Object.DestroyImmediate(mesh); }
+            }
+            Assert.IsEmpty(failures, string.Join("; ", failures));
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+    /// <summary>Each line's pinned mean width (share of the full width, all sections, gorges included). Lines without an
+    /// entry need 90%. Measured 2026-10-12 (#252), main (f974c9f) in brackets: Jaffa–Jerusalem 76.2% (70.7%; 178 of 665
+    /// sections in gorges: the Sorek), main line south 100.0% (98.9%), Eastern Railway 100.0% (99.3%), Hadera–Haifa 97.4%
+    /// (92.0%), Haifa–Beirut 95.5% (95.1%), Jezreel Valley 82.5% (74.5%; 113 of 775 in gorges: chiefly the Beisan–Jordan
+    /// descent and the Yarmuk, and about 20 under the Carmel by Haifa). Outside the gorges main kept 87.4% on Jaffa–Jerusalem and 82.8% on the Jezreel line, so this fails there.</summary>
+    static readonly Dictionary<string, float> MeanWidthFloor = new Dictionary<string, float>
+    {
+        ["jaffa_jerusalem_railway"] = 0.76f, ["kantara_main_line_south"] = 0.99f, ["eastern_railway"] = 0.99f,
+        ["hadera_haifa_railway"] = 0.97f, ["haifa_beirut_railway"] = 0.95f, ["jezreel_valley_railway"] = 0.82f,
+    };
 
     /// <summary>C1: the Burma Road shows only from its completion on 14 June 1948; the start (15 May 1948) does not have
     /// it, every other route is there from the start.</summary>
