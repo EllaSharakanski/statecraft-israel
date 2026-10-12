@@ -421,6 +421,8 @@ namespace Statecraft.Game.Map.Kits
                 return true;
             }
 
+            // Only a town with water near its footprint tests the beach setback per plot (eight samples each: the boot budget).
+            bool shore = WaterWithin(centre, reach + BeachSetbackM + 1000f, ground);
             var plots = new List<(float d, int order, Vector2 p, int lattice)>();
             for (int li = 0; li < lattices.Count; li++)
             {
@@ -455,7 +457,8 @@ namespace Statecraft.Game.Map.Kits
                 if (!build) continue;
                 float a = L.Yaw * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
                 var p = p0 + new Vector2(ju * ca - jv * sa, ju * sa + jv * ca);
-                if (!ground.Inside(p.x, p.y) || ground.Water(p.x, p.y) || !Mine(p) || !Allows(s, L, p, t, ground)) continue;
+                // The cheap tests first (the boot budget): the cell and the quarter, then the terrain samples.
+                if (!ground.Inside(p.x, p.y) || !Mine(p) || !Allows(s, L, p, t, ground) || ground.Water(p.x, p.y)) continue;
                 bool hillTown = L.Style == Style.OldHouse || L.Style == Style.Village;
                 // The full building, else a smaller one on the plot or nudged within it: a plot by a road or a neighbour's
                 // lot keeps a smaller building instead of standing empty. A nudged, shrunk building still stays inside its
@@ -466,11 +469,11 @@ namespace Statecraft.Game.Map.Kits
                     b = Shrink(spec, shrink);
                     float u = du * g.pu * g.scale, v = dv * g.pv * g.scale;
                     q = p + new Vector2(u * ca - v * sa, u * sa + v * ca);
-                    if ((du != 0f || dv != 0f) && (!ground.Inside(q.x, q.y) || ground.Water(q.x, q.y) || !Mine(q) || !Allows(s, L, q, t, ground))) continue;
+                    if ((du != 0f || dv != 0f) && (!ground.Inside(q.x, q.y) || !Mine(q) || !Allows(s, L, q, t, ground) || ground.Water(q.x, q.y))) continue;
                     if (!lots.Free(q, b.lotR, s.Id, L.Group) || ground.OnRoute(q, b.lotR)) continue;   // off the railways and roads too
                     if (ground.Slope(q.x, q.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
                     if (CornerInWater(q, yaw, b.w, b.d, ground)) continue;   // the whole footprint is dry
-                    if (L.Style != Style.OldHouse && NearSea(q, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
+                    if (shore && L.Style != Style.OldHouse && NearSea(q, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
                     fitted = true; break;
                 }
                 if (!fitted) continue;
@@ -495,6 +498,23 @@ namespace Statecraft.Game.Map.Kits
         /// average) stays sand, with its palms, as in promo 03's Tel Aviv. The old towns (Jaffa, Acre, Gaza, Haifa's lower
         /// town by the port) meet the water.</summary>
         const float BeachSetbackM = 700f;
+
+        /// <summary>Any water on 24 rays from <paramref name="c"/>, sampled every kilometre out to <paramref name="radius"/>: whether a
+        /// town's plots need the beach setback test at all.</summary>
+        static bool WaterWithin(Vector2 c, float radius, KitGround ground)
+        {
+            for (int i = 0; i < 24; i++)
+            {
+                float a = i * Mathf.PI / 12f;
+                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                for (float d = 1000f; d <= radius; d += 1000f)
+                {
+                    var p = c + dir * d;
+                    if (ground.Water(p.x, p.y)) return true;
+                }
+            }
+            return false;
+        }
 
         /// <summary>Any water at the corners or edge midpoints of a w x d rectangle at <paramref name="p"/>.</summary>
         static bool NearSea(Vector2 p, float yawDeg, float w, float d, KitGround ground)

@@ -186,12 +186,14 @@ public class TownCensusTests
         CollectionAssert.IsEmpty(bad.Take(20), $"{bad.Count} placements on a route or in the sea");
     }
 
-    /// <summary>The floors of the four cities' built cover (share of the town's own land under a building or landmark,
-    /// whole footprint and inner half radius): towns round 2 measured them (docs/visual-v1.md, "Towns round 2"); a change
-    /// that thins a city back towards round 1's sparse handful fails here.</summary>
-    internal static readonly Dictionary<string, (float all, float core)> CoverageFloor = new Dictionary<string, (float, float)>
+    /// <summary>The floors of the four cities' buildings and built cover (share of the town's own land under a building or
+    /// landmark, whole footprint and inner half radius). Towns round 2 measured them with the 1948 localities (docs/visual-v1.md,
+    /// "Towns round 2"): Tel Aviv 43 / 17.4% / 18.5%, Jaffa 33 / 32.6% / 31.9%, Haifa 45 / 21.0% / 20.6%, Jerusalem 110 /
+    /// 22.7% / 24.9%; main before it had 36, 15, 30 and 70 buildings. The building floors sit above main's counts, so a change
+    /// that thins a city back to round 1's sparse handful fails here; the cover floors are about 10% under the measure.</summary>
+    internal static readonly Dictionary<string, (int buildings, float all, float core)> Floors = new Dictionary<string, (int, float, float)>
     {
-        ["tel_aviv"] = (0f, 0f), ["jaffa"] = (0f, 0f), ["haifa"] = (0f, 0f), ["jerusalem"] = (0f, 0f),
+        ["tel_aviv"] = (40, 0.155f, 0.165f), ["jaffa"] = (28, 0.29f, 0.285f), ["haifa"] = (40, 0.19f, 0.185f), ["jerusalem"] = (95, 0.20f, 0.22f),
     };
 
     [Test]
@@ -199,10 +201,11 @@ public class TownCensusTests
     {
         var map = OpenMap();
         var rows = Census(map, out _).ToDictionary(r => r.Id);
-        foreach (var kv in CoverageFloor)
+        foreach (var kv in Floors)
         {
             var r = rows[kv.Key];
             TestContext.WriteLine(r);
+            Assert.GreaterOrEqual(r.Buildings, kv.Value.buildings, kv.Key + ": buildings");
             Assert.GreaterOrEqual(r.Coverage, kv.Value.all, kv.Key + ": built cover of the footprint");
             Assert.GreaterOrEqual(r.CoreCoverage, kv.Value.core, kv.Key + ": built cover of the inner half");
         }
