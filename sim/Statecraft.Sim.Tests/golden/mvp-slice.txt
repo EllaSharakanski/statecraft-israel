@@ -1,0 +1,81 @@
+1949-01-15;1948;Historical;8;
+ind{
+  food_supply=0.4 [3FD999999999999A]
+  housing=0.42228343009948727 [3FDB06B1147AE147]
+  intl_standing=0.53 [3FE0F5C28F5C28F6]
+  morale=0.6085614645767212 [3FE37955E47ECFEA]
+  security=0.48869177246093765 [3FDF46B9DB22D0E8]
+pol{
+  border_settlement=0.2 [3FC999999999999A]
+  housing_construction=0.3 [3FD3333333333333]
+  maabarot=0 [0000000000000000]
+  rationing=0 [0000000000000000]
+eff{
+  border_villages_secure=0.033691772460937505 [3FA1400C49BA5E36]
+  building_houses=0.0722834300994873 [3FB2812AB851EB85]
+  homes_lift_morale=0.06197826633453369 [3FAFBB9D85F06F69]
+  rationing_feeds=0 [0000000000000000]
+  rationing_grates=0 [0000000000000000]
+  safety_lifts_morale=0.04658319824218751 [3FA7D9C0C1FC8F34]
+shift{
+  food_supply=0 [0000000000000000]
+  housing=0 [0000000000000000]
+  intl_standing=0.030000000000000027 [3F9EB851EB851EC0]
+  morale=-0.050000000000000044 [BFA99999999999A0]
+  security=0.15500000000000014 [3FC3D70A3D70A3DC]
+bud{
+  agriculture_minister=0.07 [3FB1EB851EB851EC]
+  defense_minister=0.45 [3FDCCCCCCCCCCCCD]
+  education_minister=0.06 [3FAEB851EB851EB8]
+  finance_minister=0.05 [3FA999999999999A]
+  health_minister=0.07 [3FB1EB851EB851EC]
+  interior_minister=0.05 [3FA999999999999A]
+  labour_minister=0.1 [3FB999999999999A]
+  prime_minister=0.15 [3FC3333333333333]
+pop{
+  africa=9739.110001692712 [40C3058E1489145A]
+  america_oceania=535.0499244151753 [4080B8663EC59399]
+  asia=7512.155402122331 [40BD5827C86EF924]
+  europe=81633.61444656934 [40F3EE19D4C5ED07]
+  unknown=12145.947428858311 [40C7B8F945594CDE]
+  veterans=656752.739703733 [41240AE17ABA729C]
+sit[
+treasury=0 [0000000000000000]
+debt=26.348732976636185 [403A59469079B06C]
+fx=80.85238326859616 [4054368D728D91CC]
+rung=5;cf=40;
+mob=0.8 [3FE999999999999A]
+stab=0.6151384263401847 [3FE3AF36C7F49BA2]
+att=4 [4010000000000000]
+fired[
+  altalena
+  bernadotte_assassination
+  first_truce
+  idf_founding
+  jerusalem_ceasefire
+  jerusalem_military_government
+  latrun_proposal
+  operation_hiram
+  operation_horev
+  operation_yoav
+  second_truce
+  ten_days
+pending[
+  operation_horev
+chosen{
+  altalena=enforce
+  bernadotte_assassination=outlaw
+  first_truce=accept
+  idf_founding=one_army
+  jerusalem_ceasefire=sign
+  jerusalem_military_government=military_government
+  latrun_proposal=accept_vote
+  operation_hiram=launch
+  operation_yoav=stop_at_ceasefire
+  second_truce=comply
+  ten_days=central_front
+appt{
+under=;
+map[
+mapturn=0001-01-01:0;
+over=
