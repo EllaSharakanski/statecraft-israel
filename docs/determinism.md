@@ -48,6 +48,14 @@ never take a hash from the run without the variable, so a second plain run is th
 hash), add a row to the rebaseline history, and say why in the commit message. The snapshot test also fails if a snapshot is
 stale while the hash is unchanged.
 
+**Adding an era golden.** In a test, call `EraGolden.Check("hash_<era>_<year>", content, "<era id>", new DateTime(<year>, 1, 1))`. It plays a fresh
+start of that era (golden seed, Historical mode, `HistoricalAI`, the same loop as `GoldenRun.Play`) and checks the hash against the manifest
+line of that name and the snapshot `golden/<name>.txt`. Bless it with `STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln`, which adds the
+manifest line and the snapshot; list the name in `GoldenManifestTests.TheManifestHoldsExactlyTheKnownGoldens`. Today only the first era can
+be started fresh, because `NewGame` reads the base rules' start; a later era fails with a message saying its start values are not read yet.
+The carry-over check (play era N into N+1 and compare with a fresh N+1 on each carried quantity, chapters design section 6) waits on that
+and on `EraSystem.Cross`.
+
 **Invariants.** A hash says something changed; `sim/Statecraft.Sim.Tests/golden/invariants.yaml` says whether it is
 still plausible. Each entry names a golden run (`1950` or `1952`), a value (an indicator id, or `treasury`, `debt`,
 `fx`, `population`, `stability`), when it is read (`end`, `always`, or a date: the first state on or after it), a `min`
