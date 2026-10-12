@@ -50,10 +50,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   stone Jaffa with its harbour, Arab towns, moshavot and kibbutzim sized by their 1945 population
   (`content/map/settlement_population_1945.yaml`), with citrus groves, olives, palms and cypresses, at the owner's
   symbolic scale (about 60x real size for city blocks, 100x for houses and trees). Presentation only (#31, #32, #34).
-- Map: the 272 other places of 1,000 or more people on 15 May 1948 (Village Statistics, 1945) as Arab village and Jewish
-  settlement kits beside the 25 game settlements, named by their 1948 names at close zoom with today's name in a
-  tooltip, and a light scatter of Bedouin camps sized by each sub-district's listed tribal total
-  (`content/map/localities_1948.yaml`, draft). Presentation only: the sim never reads the file.
+- Map: the 271 other places of 1,000 or more people on 15 May 1948 (Village Statistics, 1945) as Arab village and Jewish
+  settlement kits beside the 25 game settlements (Nesher as a mixed locality), named by their 1948 names at close zoom,
+  with today's name in a tooltip only where a living place carries on, and a light scatter of Bedouin camps sized by
+  each sub-district's listed tribal total (`content/map/localities_1948.yaml`, draft). Presentation only: the sim never
+  reads the file.
 - The sea and coast in the promo look: turquoise shallows that deepen to a muted blue offshore, rolling surf filtered
   so it does not shimmer, a fine chop, and a sand strip with wet sand along every sea-level coast (salt flats at the
   Dead Sea). Presentation only.

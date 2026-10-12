@@ -1595,8 +1595,8 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
 
     Before this review round, cpu 4 map_build was 2712 against 2720.
   - The growth is the localities file's parse: the `localities parsed` boot phase is 50 ms at cpu 1 and 220 ms at cpu 4.
-    It is not the ground tint, which the player logs as `KITS ground_tint_ms=0.8`. The review's attribution to the tint
-    was checked with that timer and was wrong; the earlier "terrain heights set" growth was the parse that ran before it.
+    It is not the ground tint, which the player logs as `KITS ground_tint_ms=0.8`. My earlier attribution to the tint was
+    checked with that timer and was wrong; the earlier "terrain heights set" growth was the parse that ran before it.
   - Two changes cut the parse:
     - An event-based reader (`Localities.Read`) replaces YamlDotNet's reflection deserializer.
     - Each row's sources are written as a plain URL list, so the file went from 266k to 176k characters. Raw scanning is
