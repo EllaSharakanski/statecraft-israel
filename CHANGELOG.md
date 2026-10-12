@@ -273,6 +273,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Tiberias, Afula and the Hula valley margin. The map colours, the info panel text (English and Hebrew) and the land
   tools know the new name. The change moves the content hash, so an old save shows the content-changed warning once. The
   golden hashes do not move, because the sim does not read `biome`.
+- Replace the Bash-only Unity sim build helper with `uv run tools/build_sim_for_unity.py`, usable on Windows, macOS
+  and Linux without a shell. It preserves the Release publish and required DLL checks.
 - Rationing no longer has a vacant minister from 24 December 1952. The Knesset records show no Ministry of Rationing and
   Supply in the Fourth Government, and on 4 May 1953 the Minister of Trade and Industry, Peretz Bernstein, told the
   Knesset that his ministry held the supply tasks and, to some extent, rationing. He answers for rationing until

@@ -91,7 +91,7 @@ It is an early, honest prototype.
 There is no hosted build yet; one is planned for M4. To run it locally:
 
 1. Install the tools in [docs/dev-setup.md](docs/dev-setup.md): .NET 10, Unity 6000.3.25f1 with Web Build Support, and `uv`.
-2. Run `tools/build_sim_for_unity.sh`.
+2. Run `uv run tools/build_sim_for_unity.py`.
 3. Build the web version. The command is in [docs/dev-setup.md](docs/dev-setup.md).
 4. Run `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`, then open http://localhost:8000/.
 
@@ -132,7 +132,7 @@ Looking for a first task? Browse the [good first issue](https://github.com/eyalg
 
 ## Build from source
 
-You need Unity **6000.3.25f1 (6.3 LTS)** with Web Build Support; the exact version is in [`unity/ProjectSettings/ProjectVersion.txt`](unity/ProjectSettings/ProjectVersion.txt). Clone, run `tools/build_sim_for_unity.sh`, add `unity/` in Unity Hub and open `Assets/Map.unity`. The batch build, the tests and the browser check are in [BUILDING.md](BUILDING.md).
+You need Unity **6000.3.25f1 (6.3 LTS)** with Web Build Support; the exact version is in [`unity/ProjectSettings/ProjectVersion.txt`](unity/ProjectSettings/ProjectVersion.txt). Clone, run `uv run tools/build_sim_for_unity.py`, add `unity/` in Unity Hub and open `Assets/Map.unity`. The batch build, the tests and the browser check are in [BUILDING.md](BUILDING.md).
 
 ## AI use
 

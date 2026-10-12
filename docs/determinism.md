@@ -116,7 +116,7 @@ compare against it. These places must agree with it, and `GoldenManifestTests` f
 `tools/art_checkpoint.sh` reads its expected hashes from the manifest, so it needs no edit.
 
 `unity/Assets/Tests/EditMode/SimSmokeTests.cs` runs the same playthroughs inside Unity against `GoldenRun`'s constants
-(run `tools/build_sim_for_unity.sh` first so Unity has the current DLLs).
+(run `uv run tools/build_sim_for_unity.py` first so Unity has the current DLLs).
 
 Verified on .NET, Unity editor Mono, a macOS IL2CPP player (Apple clang, no `-ffp-contract=off` needed) and a WebGL
 IL2CPP player in Chrome (M3 Task 22). The platform checks below used the prior `73590e32` 1952 baseline. The issue #2
