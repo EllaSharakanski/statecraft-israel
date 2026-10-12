@@ -11,3 +11,5 @@ R-TURN-001: The turn length on each security rung (1 to 5) is read from the rule
 ## The loop switch
 
 R-LOOP-001: `systems.loop` in eras.yaml is `legacy` (the default) or `gdd`, and every era has the same value. Its ruleset id, which a save records, is `legacy` or `gdd-0.1`.
+
+R-LOOP-003: `MvpSlice.Overlay` loads the real content with `systems.loop: gdd` in every era and `turn_lengths` all month, and changes nothing else. Tests, the MVP goldens and the dev flag use it until cutover.
