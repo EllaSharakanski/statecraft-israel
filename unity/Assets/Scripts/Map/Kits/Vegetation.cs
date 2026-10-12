@@ -96,15 +96,18 @@ namespace Statecraft.Game.Map.Kits
             float ks = s / KitScale.CountReference;
             void Add(TreeKind k, float x, float z, ref KitRandom rnd, float size = 1f, float yawDeg = float.NaN)
             {
+                // The tree's own numbers first, whether it stands or not: a tree left out for a lot or a route then never
+                // shifts the trees drawn after it (towns round 2: a town's new lots no longer reshuffle every grove).
+                var scale = s * size * rnd.Range(0.85f, 1.15f);
+                float spin = rnd.Range(0f, 360f), stretch = rnd.Range(0.9f, 1.1f);
                 // No crown reaches into a building's or landmark's lot (integration bug B9: palms through Tel Aviv's roofs,
                 // grove rows through blocks).
                 // Nor into a railway's or road's corridor (the routes run through the groves otherwise).
                 float crown = CrownRadiusM(k) * s * size * 1.15f;
                 if (ground.OnLot(x, z, crown) || ground.OnRoute(new Vector2(x, z), crown)) return;
                 float y = ground.Y(x, z);
-                var scale = s * size * rnd.Range(0.85f, 1.15f);
-                float yaw = float.IsNaN(yawDeg) ? rnd.Range(0f, 360f) : yawDeg;
-                trees.Add((k, Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0, yaw, 0), new Vector3(scale, scale * rnd.Range(0.9f, 1.1f), scale))));
+                float yaw = float.IsNaN(yawDeg) ? spin : yawDeg;
+                trees.Add((k, Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0, yaw, 0), new Vector3(scale, scale * stretch, scale))));
             }
 
             // Citrus groves round the coastal-plain towns: rectangular blocks of rows, each grove on its own angle.

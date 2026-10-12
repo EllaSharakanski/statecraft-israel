@@ -104,6 +104,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
+  of random spots (235 buildings on main, now several times more; Tel Aviv, Jaffa and the small towns read as dense
+  miniatures). Old Jaffa is packed small stone houses; Tel Aviv's white blocks are taller in the core (promo ruling);
+  Haifa has its lower town by the port and Hadar on the slope; Jerusalem has its stone new city, its Arab quarters and a
+  walled Old City; the large moshavot have a plastered centre. Sourced 1948 landmarks: Jerusalem's walls and gates, the
+  citadel, the Haram with the Dome of the Rock (lead dome, as before 1959) and Al-Aqsa; Haifa's port and German Colony;
+  Tel Aviv's port; Ramla's White Tower; Jaffa's lighthouse moved to the hill above the port. Map only: the goldens do not
+  move.
 - Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
 - Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
   reworded attention and full-war labels (#193).
