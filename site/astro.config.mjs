@@ -13,7 +13,7 @@ export default defineConfig({
   base,
   trailingSlash: 'always',
   output: 'static',
-  build: { format: 'directory', inlineStylesheets: 'auto' },
+  build: { format: 'directory', inlineStylesheets: 'always' },
   devToolbar: { enabled: false },
   image: { responsiveStyles: false },
   vite: {

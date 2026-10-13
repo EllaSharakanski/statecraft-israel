@@ -119,6 +119,9 @@ th { color: var(--gold); font-weight: 600; }
 .header-actions .btn { min-block-size: 2.4rem; padding-block: 0.35em; }
 .lang-link { color: var(--ink); font-size: 1rem; text-decoration: none; padding: 0.4rem 0.5rem; border: 1px solid transparent; }
 .lang-link:hover { border-color: var(--gold-dim); }
+/* On English pages the one Hebrew word is the language link: the system Hebrew face, so an English page never downloads
+   the Hebrew web font (it costs 30 KB on a phone for one word). */
+:root:lang(en) :is(.lang-link, .menu-panel a, .site-footer a)[lang='he'] { font-family: 'Arial Hebrew', 'Noto Sans Hebrew', 'Segoe UI', system-ui, sans-serif; }
 .menu { display: none; margin-inline-start: auto; }
 .menu summary { list-style: none; cursor: pointer; padding: 0.45rem 0.8rem; border: 1px solid var(--gold-dim); border-radius: 2px; }
 .menu summary::-webkit-details-marker { display: none; }

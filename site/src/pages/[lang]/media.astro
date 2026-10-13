@@ -1,5 +1,6 @@
 ---
 // Three galleries, kept apart and labelled: in-engine captures first, then AI concept art, then the AI cinematic promo.
+import { getImage } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import Figure from '../../components/Figure.astro';
 import VideoFacade from '../../components/VideoFacade.astro';
@@ -9,8 +10,13 @@ import { engine, concept, flythrough, trailer, gameplayVideo } from '../../lib/m
 export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
 const lang = Astro.params.lang as Lang;
 const he = lang === 'he';
+// The first in-engine picture is the page's LCP image on phones: preload the same AVIF set the Figure renders.
+const first = engine[0];
+const firstAvif = await getImage({ src: first.src, widths: [480, 800, 1200, 1600].filter((w) => w <= first.src.width), format: 'avif', quality: 68 });
+const firstSizes = '(min-width: 76rem) 36rem, (min-width: 48rem) 50vw, 100vw';
 ---
 <Layout lang={lang} page="media" title={t(lang, 'nav.media')}
+  preload={[{ srcset: firstAvif.srcSet.attribute, sizes: firstSizes, type: 'image/avif' }]}
   description={he ? 'צילומים מתוך המשחק, אמנות קונספט שנוצרה בבינה מלאכותית, והטריילר הקולנועי, כל אחד עם התווית שלו.' : 'In-engine captures, AI-generated concept art and the cinematic trailer, each with its label.'}>
   <div class="wrap page">
     <header class="page-head">
