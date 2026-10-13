@@ -2136,3 +2136,33 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
   strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
   build-to-build noise, within the tilt-shift's 1.5 ms budget.
+
+## HUD round 1: the info panel and the gilt trim (#398, #397)
+
+Art-track gap 4, first step. The gap list and the later steps (the minimap and settlement badges; the top bar and card
+head, which wait for owner rulings) are in the issue.
+- The info panel: before a hex is chosen it is a one-line hint (promo 03 shows no panel until a tile is chosen). The
+  hex's facts are icon rows with gold signs (`UiIcon` region, house, village, flag): the region, the settlements, the 1948
+  localities and the placement. There are no yields (owner ruling) and no land-use name, because the land-use bake is
+  modelled, not a sourced record. The region line wraps (#397). One refusal shared by both map actions is said once,
+  without buttons, which takes the 1948 panel from about 385 to 300 px tall.
+- `UiFrame.Filigree`: a second inset rule and a scroll at each corner (on a panel at least 120 px tall the scrolls also
+  run down the sides). It is drawn with Painter2D on the date plate, the event card, the info panel and the minimap, and
+  takes no clicks.
+
+Allocations: GC.Alloc samples over 200 renders (`Recorder("GC.Alloc")`, a temporary probe run on both trees) were the
+same on main e5bbf0f and on the branch: the info panel 15,600 and the top bar 12,800. No per-frame work is added.
+
+Frame time, `?vprofile`, WebGL headless 1920x1080, DPR 1, `machine_lock.py --exclusive`. Two interleaved rounds per
+build, main e5bbf0f against the branch on it (median avg ms, spread in brackets):
+
+| Pose | main all | branch all | main none | branch none |
+|---|---|---|---|---|
+| gameplay03 | 8.09 (0.03), 8.03 (0.07) | 7.96 (0.16), 8.06 (0.06) | 5.25 (0.10), 5.32 (0.23) | 5.32 (0.04), 5.27 (0.10) |
+| diorama02 | 18.87 (0.72), 19.10 (0.61) | 18.88 (0.61), 18.99 (0.59) | 12.23 (0.02), 12.33 (0.19) | 11.66 (0.32), 11.57 (0.16) |
+
+Headed at DPR 2 (`headed.py profile --dpr 2`, one run each, main first): gameplay03 all 14.61 against 14.62, none 8.66 against 8.64;
+diorama02 all 30.77 against 31.03 (spread 0.69), none 20.46 against 20.46. The averages are within the spread
+everywhere. diorama02 has no hex chosen, so the branch draws a smaller panel there, and `none` is about 0.6 ms lower.
+The p95 values are whole milliseconds and noisy at diorama02 (main first): headless `none` 14 against 16 in both rounds, DPR-2 `all`
+36 against 40, DPR-2 `none` 23 against 22.
