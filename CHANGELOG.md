@@ -304,6 +304,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
+  `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
+  The pixels are unchanged.
 - "Operation Yoav" now dates the attack on the supply convoy to 15 October 1948, not 14 October, as Israel's own reply in
   the Acting Mediator's report S/1042 and the IDF account of the operation both give it. The rest of the card is
   unchanged (refs #442).
