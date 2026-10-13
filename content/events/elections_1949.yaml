@@ -23,6 +23,10 @@ options:
       - { target: morale, delta: 0.03 }
       - { target: intl_standing, delta: 0.03 }
 sources:
-  - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-10 }
-  - { url: "https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת", checked: 2026-10-10 }
+  - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-14 }
+  - { url: "https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת", checked: 2026-10-14 }
+  - { url: "https://dacenter.tau.ac.il/sites/abraham.tau.ac.il/files/media_server/daniel%20abraham/kesher/61/08_Kesher61_Harpaz.pdf", checked: 2026-10-14 }
+  - { url: "https://www.cbs.gov.il/he/publications/doclib/2023/2.shnatonpopulation/st02_01.pdf", checked: 2026-10-14 }
+  - { url: "https://en.idi.org.il/israeli-elections-and-parties/elections/1949/", checked: 2026-10-14 }
+  - { url: "https://www.gov.il/BlobFolder/guide/election-committee-history/en/history_election-dates_knesset1-results.pdf", checked: 2026-10-14 }
 status: fact-checked
