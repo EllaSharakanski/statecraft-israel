@@ -1378,6 +1378,117 @@ Water and shore together (the toggle now covers both):
   unmeasured.
 - diorama02: 0.13 ms, below the noise (spread 0.18 ms).
 - p95 is at or under 16.7 ms at both poses.
+
+### Sea round 2 (branch `sea-round2`, refs #388)
+At the gameplay and overview zooms the sea had faded to a smooth surface. The chop is gone by a 170 m pixel, and the
+wave tilt and glint fade out by 120 m (Task 7, sea-fix), so gameplay03's 46 m pixels and diorama02's 190-300 m pixels saw
+a flat gradient. Sea detail on main measured 0.013 against promo 03's 0.060, and 0.019 against promo 02's 0.063. Every
+change is in `ScWaterShade` and `ScHazeWater` (`StatecraftMap.hlsl`), which only the water's own pass runs since #195,
+plus `ScShore`'s two constants. `Sea.shader` is unchanged.
+- **The far sea's texture**, all behind a new `seatexture` visual toggle (`_ScSeaTexture`), so the profile prices it as
+  one feature:
+  - wind streaks: a gradient-noise brightness variation (`ScMottleCellM` 2.5 km, 3x narrower across the wind, so 833 m
+    there, with a finer octave of about 309 m, +-`ScMottleGain` 0.32) on the open Mediterranean, past the shallows, not on
+    the rift lakes. Neither octave is faded by the footprint;
+  - a ripple: the waves' slope towards or away from the camera, read as their sky reflection. Under a 50 m pixel it is
+    +-0.54 (the tilted normal: swell and chop), faded out over 50-90 m; the 170 m chop's limit is 85 m. From 90 m it is
+    +-0.28 (the 700 m swell's own slope), faded over 250-450 m. That leaves it at half strength at the swell's 350 m limit,
+    and at 84-100% at diorama02's 190-300 m pixels (2.3-3.7 px a swell cell). It runs at 40% in the turquoise shallows,
+    so they keep their pale band;
+  - whitecaps: a fleck in some 120 m cells on the streaks' bright side, its brightness the share of the pixel it covers,
+    gone by an 80 m pixel.
+- **Glint:** 0.12 under a 40 m pixel, easing to Task 7's 0.06 by 60 m, so nothing changes from 60 m out.
+- **Surf line:** the swash is never under 1.5 pixels wide (`max(ScSwashM, 1.5 x footprint)`). The breakers and their box
+  filter are unchanged; at the breaker test's zoom the swash is still its own 180 m.
+- **Beach:** `ScBeachM` from 650 to 900 m; `ScSandSrgb` (0.88, 0.76, 0.56) to (0.90, 0.80, 0.62), drier and paler.
+- **Water haze:** the water's haze starts `ScWaterHazeLeadM` (80 km) nearer than the land's, at 120 km, so the
+  overview's sea pales towards the horizon as promo 02's does. The gameplay zoom, under 100 km, has none.
+- **The seam test** (reviewer-agreed option A). A 2.5 km streak pattern varies by itself between the seam test's points
+  5 km apart, so `TheSeaBeyondTheEdgeMatchesTheTerrainSea` pins `seatexture` off and keeps its bounds and cases. The new
+  `SeaTests.TheFarSeaTextureHasNoStepAtTheMapEdge` checks the edge with the texture on. It renders the west edge straight
+  down at the seam test's 110 m a pixel, over a 40 km strip, with the water's clock pinned, and runs two checks:
+  - per row, the change between the two pixel columns either side of x = 0 against neighbouring columns elsewhere. The
+    RMS excess at the edge must stay under 0.012;
+  - the mean signed change across the edge, summed over r, g and b, must stay under 0.012.
+
+  | run | RMS excess | mean change |
+  |---|---|---|
+  | green (final values) | -0.0032 | 0.0008 |
+  | red: the skirt's map coordinates offset by one streak cell (a texture that does not continue; streaks at 0.25) | 0.101 | |
+  | red: the skirt 4% brighter (an input step; streaks at 0.25) | | 0.0195 |
+
+  Both red runs fail. Fitting a line to each side and extrapolating was tried first. Over the whole strip, a mismatched
+  texture's steps cancel; per 880 m segment, the texture's own variation swamped the fit (0.049 with no seam, 0.059 with
+  one).
+
+- **`MapEdgeTests.PanningIntoACornerShowsNoSkirtSeamOrFlatFill` pins the water's clock.** It compares a render with the
+  skirt against one without, and the water moved between the two. A few pixels of the north-west corner's coast changed at
+  random: 0-14 a run, with the texture on or off, and main has the same exposure. The far sea's ripple made a failure
+  likelier (5 and 1 pixels in two branch runs). Pinned, it passed 3 of 3 runs with 0 pixels at every corner.
+
+Measured: WebGL `?shot` at main `db99f3a` (with towns round 2, land round 2 and #399's lighter far tilt-shift), then the
+branch on it (art-log rows `main-db99f3a` and `sea-round2-r`). The sea crops are those of #388, plus gameplay03's focus
+band (outside the tilt-shift's bands). Detail is the std of luma minus a 4 px blur, with the crop resized to 480 wide.
+Spread is luma p90 - p10.
+
+| | main | round 2 | promo | target |
+|---|---|---|---|---|
+| gameplay03 sea, #388 crop: detail / spread | 0.014 / 0.089 | **0.045** / **0.160** | 0.060 / 0.20 | >= 0.035 / >= 0.15 |
+| gameplay03 sea, focus band: detail / spread | 0.017 / 0.088 | **0.055** / **0.185** | 0.075 / 0.32 | >= 0.035 / >= 0.15 |
+| diorama02 sea: detail / spread | 0.019 / 0.038 | 0.026 / 0.069 | 0.063 / 0.11 | - / >= 0.07 |
+| gameplay03 palette distance | 0.361 | **0.347** | - | no worse |
+| diorama02 palette distance | 0.563 | **0.534** | - | no worse |
+| diorama02 warmth / saturation | 0.109 / 0.406 | 0.111 / 0.400 | 0.145 / 0.43 | [0.087, 0.145] / <= 0.48 |
+
+diorama02's spread misses its target by 0.001. Strengthening the streaks barely moves it (0.25 to 0.32 added 0.003). A
+stronger far ripple could close it, but the far ripple already runs at 84-100% at diorama02, at 2.3-3.7 px a swell cell.
+More contrast at that sampling would push it towards aliasing, so it was not raised. In the editor (web tier) the same
+spread is 0.079. The sea's faint hex lines (`GridWaterOpacity` 0.10, a measured grid ruling) are harder to see against
+the textured sea; that belongs to the grid, not here.
+
+**In motion** (review of #402: the far ripple and the streaks' fine octave sit near or under their sampling limit at
+diorama02). A temporary editor probe rendered diorama02 (web tier, tilt-shift on) during a slow pan (60 m east and 30 m
+north a frame, about 0.25 px) and a slow zoom (0.25% a frame), 24 frames each, with the water's clock at 1/60 s a frame.
+It was run for main `b10e95e`, the branch, and the branch with the far ripple faded over 175-350 m. For each 64 px
+open-sea patch and each pair of consecutive frames, the patch's sub-pixel shift was found by phase correlation and taken
+out. What remained was compared with the patch's fine texture (luma minus a 3 px blur):
+
+| sea band | main: fine texture / residual | branch | branch, far ripple at 175-350 m |
+|---|---|---|---|
+| in focus (y 30-60%), pan / zoom | residual 38% / 38% of 1.0 level | 19% / 19% of 4.7 levels | 20% / 18% |
+| far (y 13-30%, in the tilt-shift's band), pan / zoom | 0.35 level, residual 0.24 / 0.35 level | 0.60 level, residual 0.44 / 0.57 level | - |
+
+In focus the texture moves coherently: its residual is half main's share, at far more texture. In the far band, which is
+already blurred by the tilt-shift, what is left is under one 8-bit level, and so is its frame-to-frame change. Moving the
+far ripple's fade to 175-350 m changes neither. No shimmer or crawl was found, so the tuning stays.
+
+
+Frame time on the rebased head, against main `db99f3a`: one interleaved round, headless, under the exclusive lock (load
+about 5); three earlier rounds, before the rebase, agree:
+
+| pose | `all` main / branch | `-water` main / branch | `-seatexture` (branch) | `none` main / branch | p95 `all` main / branch |
+|---|---|---|---|---|---|
+| gameplay03 | 8.04 / 8.23 | 7.86 / 7.99 | 8.17 | 5.27 / 5.48 | 13 / 13 |
+| diorama02 | 19.94 / 18.72 | 19.41 / 18.94 | 18.73 | 12.66 / 12.35 | 22 / 21 |
+
+The texture costs 0.06 ms at gameplay03 and nothing measurable at diorama02. gameplay03's `all` rises 0.19 ms, as does its
+`none` (0.21 ms) with every feature off: build-to-build noise, not the water.
+
+Boot (against `4abb64f`, before the rebase; the change adds no boot work): `headed.py boot --runs 3 --cpu 4`, 3 rounds
+interleaved, 9 cold loads each, medians. Every phase but one equals main's (`biome texture baked` 433 / 436 ms, `kits built` 696 / 690, `terrain water` 20 / 20). `terrain heights set` is
+1395 / 1471 ms: the wasm build's own tier-up draw (see "Issue #195": every build lands near 1390 or 1490 ms). That gives
+`map_build_ms` 3063 / 3131 and `first_frame_ms` 10958 / 11010. The change adds no boot work beyond one shader global and
+a toggle registration.
+The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLDEN OK 1952 62f8ec61...` and
+`SMOKE OK 5 turns 1948-06-19 d3fdd459...`. EditMode 747/747 on the merged head, with 0 `warning CS`.
+
+Still different from the promo:
+- promo 03's sea has boats and building shadows in its dark tail (out of scope: no civilian boats);
+- promo 02's sea sparkles finely at the overview, where ours is held back from aliasing;
+- the open sea's turquoise near the coast reads a little paler against the brighter, textured open sea at diorama02. The
+  shallow-to-open gradient is unchanged (19 levels on both), and the turquoise thins slightly (g - r 43 to 40, 12-24 px
+  from the coast).
+
 ## Promo track: land use (issue #33, branch promo-land)
 The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 20 s, deterministic:
 `test_the_committed_textures_are_the_bake` checks the committed PNGs against a fresh bake) decides where from real data
