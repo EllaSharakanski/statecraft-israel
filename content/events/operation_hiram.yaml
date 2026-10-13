@@ -33,4 +33,7 @@ options:
       - { target: security, delta: -0.02 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Hiram", checked: 2026-10-10 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-211203/", checked: 2026-10-14 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d728", checked: 2026-10-14 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-193573/", checked: 2026-10-14 }
 status: sensitivity-reviewed

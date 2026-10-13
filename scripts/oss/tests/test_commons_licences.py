@@ -21,7 +21,7 @@ def test_cc0_is_verified():
 def test_share_alike_is_recorded_as_unknown_licence():
     r = cl.rule_for("p/a.jpg", "s", "CC BY-SA 4.0", ["Template:Cc-by-sa-4.0"], "")
     assert r["licence"] == "unknown" and r["status"] == "owner-verify"
-    assert "not public domain or CC0" in r["note"]
+    assert "not public domain, CC0 or CC BY 4.0" in r["note"]
 
 
 def test_explicit_us_restoration_warning_cannot_be_verified_by_nested_pd_text():
@@ -89,3 +89,33 @@ def test_plain_old_tag_and_composite_helpers_are_not_us_status():
 def test_primary_us_tags_still_verify():
     for tag in ("PD-US-expired", "PD-USGov", "PD-USGov-NARA", "PD-US-no notice"):
         assert cl.rule_for("p/a.jpg", "s", "Public domain", ["Template:" + tag], "")["status"] == "verified"
+
+
+CC_BY = ["Template:Cc-by-4.0", "Template:Cc-by-layout"]
+
+
+def test_cc_by_with_artist_and_notice_entry_is_verified():
+    r = cl.rule_for("p/a.jpg", "s", "CC BY 4.0", CC_BY, "<a href='x'>Boris Carmi</a>", attributed=True)
+    assert r["licence"] == "CC-BY-4.0" and r["status"] == "verified" and r["artist"] == "Boris Carmi"
+    assert "note" not in r
+
+
+def test_cc_by_without_notice_entry_needs_the_owner():
+    r = cl.rule_for("p/a.jpg", "s", "CC BY 4.0", CC_BY, "Boris Carmi")
+    assert r["licence"] == "CC-BY-4.0" and r["status"] == "owner-verify" and "NOTICE" in r["note"]
+
+
+def test_cc_by_without_artist_needs_the_owner():
+    r = cl.rule_for("p/a.jpg", "s", "CC BY 4.0", CC_BY, "", attributed=True)
+    assert r["status"] == "owner-verify" and "artist" in r["note"]
+
+
+def test_cc_by_text_without_the_template_is_unknown():
+    r = cl.rule_for("p/a.jpg", "s", "CC BY 4.0", [], "Boris Carmi", attributed=True)
+    assert r["licence"] == "unknown" and r["status"] == "owner-verify"
+
+
+def test_cc_by_4_0_is_not_an_older_or_share_alike_version():
+    for short in ("CC BY 3.0", "CC BY-SA 4.0"):
+        r = cl.rule_for("p/a.jpg", "s", short, CC_BY, "Boris Carmi", attributed=True)
+        assert r["licence"] == "unknown"

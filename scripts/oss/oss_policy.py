@@ -37,6 +37,13 @@ ALLOWED_EMAILS = frozenset({"noreply@anthropic.com", "noreply@github.com"})  # e
 HOME_PATH = re.compile(
     r"(?:/Users/(?!Shared\b)|/home/)[A-Za-z][\w.\-]*(?:/|\b)|[A-Za-z]:\\Users\\[A-Za-z]|-Users-[a-z][\w.]*-")
 
+# A committed merge conflict (check "conflict-markers"). Git writes the opening, diff3 base and closing markers as
+# exactly seven characters, one space and a label ("HEAD", a branch, a file), always at the start of a line; only that
+# shape is matched. The "=======" separator is never matched: the same line underlines Markdown and reStructuredText
+# headings (the CC licence texts in LICENSES/ carry such rules), and a real conflict is already reported by the
+# labelled lines around it. Seven characters with no label, or eight and more, are not what git writes.
+CONFLICT_MARKER = re.compile(r"^(<{7}|\|{7}|>{7}) ")
+
 MAX_FILE_BYTES = 10 * 1024 * 1024
 
 REQUIRED_FILES: tuple[str, ...] = (
@@ -80,3 +87,8 @@ def email_kinds(line: str) -> list[str]:
 
 def home_path_kinds(line: str) -> list[str]:
     return ["home-path"] if HOME_PATH.search(line) else []
+
+
+def conflict_marker_kinds(line: str) -> list[str]:
+    m = CONFLICT_MARKER.match(line)
+    return [f"conflict-marker {m.group(1)}"] if m else []

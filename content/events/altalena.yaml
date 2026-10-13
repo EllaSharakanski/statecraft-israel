@@ -30,4 +30,7 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Altalena_Affair", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+  # The Irgun's own account (Etzel history): Begin's two requests, the fifth for Jerusalem and the rest for the IDF battalions.
+  - { url: "https://daat.ac.il/etzel/english/ac20.htm", checked: 2026-10-14 }
+  - { url: "https://www.jta.org/archive/hull-of-altalena-sunk-vessel-destroyed-in-1948-when-irgun-tried-to-land-munitions", checked: 2026-10-14 }
 status: sensitivity-reviewed

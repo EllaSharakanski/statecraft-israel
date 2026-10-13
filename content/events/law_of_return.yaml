@@ -20,5 +20,6 @@ options:
     effects:
       - { target: morale, delta: -0.06 }
 sources:
-  - { url: "https://en.wikipedia.org/wiki/Law_of_Return", checked: 2026-10-10 }
+  - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250144.pdf", checked: 2026-10-14 }
+  - { url: "https://fs.knesset.gov.il/1/law/1_lsr_209667.PDF", checked: 2026-10-14 }
 status: fact-checked
