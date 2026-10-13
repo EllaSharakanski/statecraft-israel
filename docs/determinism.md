@@ -59,7 +59,7 @@ The carry-over check (play era N into N+1 and compare with a fresh N+1 on each c
 and on `EraSystem.Cross`.
 
 **Scenario goldens.** The two hash goldens follow `HistoricalAI`, the path history took. A scenario is a path a player might take
-instead: `sim/Statecraft.Sim.Tests/scenarios/<name>.yaml` lists commands by date (`on:`), the runner (`Scenario`, in the tests) plays
+instead: `sim/Statecraft.Sim.Tests/scenarios/<name>.yaml` lists commands by date (`on:`), the runner (`Scenario`, in the sim library) plays
 them from a seed (default 1948) in Historical mode until `until:`, and `ScenarioTests` checks the final hash against the manifest line
 `scenario-<name>` and the snapshot `golden/scenario-<name>.txt`. The file's header comment lists the command kinds. A turn with no
 scripted command passes. A command the sim rejects fails the test with the date, the order and the reason, and a step that never runs
@@ -74,6 +74,10 @@ monthly turns (spec 2026-10-12 section 2.1, R-LOOP-003), from the golden seed in
 snapshot `golden/mvp-slice.txt`, and the update command re-pins it like the others. It is not shown in this file's table or in
 `tools/web_check.py`, because the players run only the legacy goldens until cutover. A Phase 1 PR that adds a GDD rule the slice
 exercises moves it, re-pins it and says why; the legacy goldens never move for it.
+
+`Scenario` and `MvpGolden` live in `Statecraft.Sim` next to `GoldenRun`, so Unity, which gets only `Statecraft.Sim.dll` and
+`YamlDotNet.dll` from `tools/build_sim_for_unity.sh`, can play the same runs (#394). The scenario files, the manifest and the
+snapshots stay with the tests and are not shipped to the player.
 
 **Invariants.** A hash says something changed; `sim/Statecraft.Sim.Tests/golden/invariants.yaml` says whether it is
 still plausible. Each entry names a golden run (`1950` or `1952`), a value (an indicator id, or `treasury`, `debt`,

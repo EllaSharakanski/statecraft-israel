@@ -195,6 +195,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
+  next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
   surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a
   wave's size), and sparse whitecaps on the streaks' bright side, close up only. All three sit behind a new `seatexture`

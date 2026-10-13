@@ -9,14 +9,18 @@ public class ScenarioTests
 {
     static readonly Content C = ContentLoader.Load(RealContentTests.ContentRoot());
 
+    /// <summary>sim/Statecraft.Sim.Tests/scenarios, where the scenario files live (the runner, Scenario, is in the sim library).</summary>
+    public static string Dir() =>
+        Path.Combine(Directory.GetParent(RealContentTests.ContentRoot())!.FullName, "sim", "Statecraft.Sim.Tests", "scenarios");
+
     public static System.Collections.Generic.IEnumerable<object[]> Files() =>
-        Directory.GetFiles(Scenario.Dir(), "*.yaml").OrderBy(f => f, StringComparer.Ordinal).Select(f => new object[] { Path.GetFileNameWithoutExtension(f) });
+        Directory.GetFiles(Dir(), "*.yaml").OrderBy(f => f, StringComparer.Ordinal).Select(f => new object[] { Path.GetFileNameWithoutExtension(f) });
 
     [Theory]
     [MemberData(nameof(Files))]
     public void ScenarioMatchesItsGolden(string file)
     {
-        var sc = Scenario.Parse(File.ReadAllText(Path.Combine(Scenario.Dir(), file + ".yaml")));
+        var sc = Scenario.Parse(File.ReadAllText(Path.Combine(Dir(), file + ".yaml")));
         Assert.Equal(file, sc.Name);
         var s = sc.Play(C);
         var name = "scenario-" + sc.Name;
@@ -28,7 +32,7 @@ public class ScenarioTests
     [Fact]
     public void EachScenarioEndsElsewhereThanTheSameRunWithoutItsChoicesAndThanEveryOtherScenario()
     {
-        var scenarios = Directory.GetFiles(Scenario.Dir(), "*.yaml").OrderBy(f => f, StringComparer.Ordinal).Select(f => Scenario.Parse(File.ReadAllText(f))).ToList();
+        var scenarios = Directory.GetFiles(Dir(), "*.yaml").OrderBy(f => f, StringComparer.Ordinal).Select(f => Scenario.Parse(File.ReadAllText(f))).ToList();
         Assert.True(scenarios.Count >= 2);
         var hashes = scenarios.Select(sc => sc.Play(C).Hash()).ToList();
         Assert.Equal(hashes.Count, hashes.Distinct().Count());
