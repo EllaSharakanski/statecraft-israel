@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: operation_yoav
 title: Operation Yoav
-text: 'An Israeli supply convoy was fired on as it passed the Egyptian positions on 14 October, and the offensive the cabinet approved on 6 October is under way under Yigal Allon. {defense_minister} must decide how far it goes.'
+text: 'An Israeli supply convoy was fired on as it passed the Egyptian positions on 15 October, and the offensive the cabinet approved on 6 October is under way under Yigal Allon. {defense_minister} must decide how far it goes.'
 anchor: hard
 tags: [security, war-casualties]
 office: defense_minister
@@ -33,4 +33,5 @@ sources:
   - { url: "https://documents.un.org/api/symbol/access?s=S/1042&l=en&t=pdf", checked: 2026-10-14 }
   - { url: "https://www.un.org/unispal/document/auto-insert-210876/", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d705", checked: 2026-10-14 }
+  - { url: "https://jewishvirtuallibrary.org/jsource/History/Yoav.html", checked: 2026-10-14 }
 status: sensitivity-reviewed
