@@ -306,6 +306,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
   published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
   Text, dates and effects are unchanged (refs #442).
+- The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
+  Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
+  study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
+  "Education in the Immigrant Camps" cites the Knesset debates of 31 January and 28 February 1950 and keeps only the
+  Hebrew Wikipedia article, for the commission's first session and report dates. Text, dates and effects are unchanged
+  (refs #442).
 - The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
   (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
