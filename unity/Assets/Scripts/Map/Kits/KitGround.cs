@@ -28,7 +28,11 @@ namespace Statecraft.Game.Map.Kits
             seaLevelY = terrainY + (0f - elevMinM) * exaggeration;
             bounds = hexes.bounds; hexSizeKm = hexes.hex_size_km; HexSizeM = hexes.hex_size_km * 1000f;
             foreach (var h in hexes.hexes) biome[(h.q, h.r)] = h.biome;
+            int res = Mathf.Max(2, terrain.terrainData.heightmapResolution);
+            sampleX = frame.WidthM / (res - 1); sampleZ = frame.LengthM / (res - 1);
         }
+
+        readonly float sampleX, sampleZ;   // the heightmap's sample spacing (m): the lake test's 3 x 3 window
 
         /// <summary>The terrain's world position (the hex grid's origin: HexGrid.ToWorld).</summary>
         public Vector3 TerrainOrigin => terrain.transform.position;
@@ -49,13 +53,38 @@ namespace Statecraft.Game.Map.Kits
             return biome.TryGetValue(HexPicker.FromLonLat(lon, lat, bounds, hexSizeKm), out var b) ? b : "sea";
         }
 
-        /// <summary>Open sea (the heightmap writes it as exactly 0 m: MapBuilder.SeaToleranceM), a lake hex, or off the map.</summary>
+        /// <summary>Open sea (the heightmap writes it as exactly 0 m: MapBuilder.SeaToleranceM), a lake's water surface, or
+        /// off the map. In a lake hex only the water counts, not the whole hex: a lake hex also holds its shore (Tiberias stands
+        /// in one, 60-160 m above the Sea of Galilee), and counting all of it as water left Tiberias no ground to build on
+        /// (#317). The surface is told as tools/terrain_bake.py tells it for the drawn water (coast.png):
+        /// <see cref="LakeBelowM"/> and flat within <see cref="LakeFlatM"/> over the heightmap's 3 x 3 window.</summary>
         public bool Water(float x, float z)
         {
             if (!Inside(x, z)) return true;
-            if (Mathf.Abs(ElevM(x, z)) <= MapBuilder.SeaToleranceM + 0.5f) return true;
+            float e = ElevM(x, z);
+            if (Mathf.Abs(e) <= MapBuilder.SeaToleranceM + 0.5f) return true;
             var b = Biome(x, z);
-            return b == "lake" || (b == "sea" && ElevM(x, z) < 2f);
+            if (b == "lake") return e < LakeBelowM && LakeFlat(x, z);
+            return b == "sea" && e < 2f;
+        }
+
+        /// <summary>A lake's water lies below this (tools/terrain_bake.py LAKE_BELOW_M; the Sea of Galilee is at about -214 m and
+        /// the Dead Sea's pans lower still).</summary>
+        public const float LakeBelowM = -150f;
+        /// <summary>The largest height range (m) over a heightmap 3 x 3 window that is still a water surface
+        /// (tools/terrain_bake.py LAKE_FLAT_M).</summary>
+        public const float LakeFlatM = 0.25f;
+
+        bool LakeFlat(float x, float z)
+        {
+            float lo = float.MaxValue, hi = float.MinValue;
+            for (int j = -1; j <= 1; j++)
+                for (int i = -1; i <= 1; i++)
+                {
+                    float e = ElevM(x + i * sampleX, z + j * sampleZ);
+                    lo = Mathf.Min(lo, e); hi = Mathf.Max(hi, e);
+                }
+            return hi - lo <= LakeFlatM;
         }
 
         /// <summary>The steepest rise (real metres per real metre) between the four points of a w-wide square around (x, z).</summary>

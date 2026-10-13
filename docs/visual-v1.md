@@ -1858,17 +1858,38 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
   - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
   - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
-- **Small-town floor (#317, fixed on the branch):**
-  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots. The routes, the lake or
-    a neighbour's lots took them all: Tiberias drew 0 houses (main 3), Netanya 1 (main 2), Beersheba 3 (main 5).
-  - A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) now tries up to 240 random spots
-    over its footprint (`ScatterTries`), from its own stream (`KitRandom(id, 3)`). Each spot gets the quarter's building
-    and passes the same fit tests as a plot.
-  - Every town now draws at least main's count: Tiberias 3, Netanya 5, Beersheba 6, Rosh Pinna 3, Nahalal 6; the 25
-    towns draw 413.
-  - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`). With the
-    scatter off, it fails for Beersheba, Netanya, Tiberias and Rosh Pinna.
-  - The grid stays readable at 78% (69 of 89), and the beach reads as sand at 79%.
+- **Small-town floor (#317, fixed on the branch; reworked after the review of #339):**
+  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots, and the routes, the sea or
+    a neighbour's lots take most of them. On the first lattice Tiberias drew 0 houses (main 3), Netanya 1 (main 2) and
+    Beersheba 3 (main 5).
+  - **The lake was half the cause.** The kits' `KitGround.Water` counted every lake hex as water, and a lake hex also holds
+    its shore. Tiberias stands in one, 60-160 m above the Sea of Galilee (about -214 m), so it had no ground left.
+    - In a lake hex, a point is now water only at the lake's surface, by the rule tools/terrain_bake.py uses for the drawn
+      water (coast.png): below -150 m and flat within 0.25 m over the heightmap's 3 x 3 window.
+    - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
+      level), on main or here.
+    - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
+      is land and that the lake at 35.58 E, 32.80 N (-214.5 m) is water. Each half fails when the lake branch is made
+      always water, or never water.
+    - Tiberias's own lattice now draws 6 houses on its shore.
+  - **The fallback.** A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) is filled up
+    the way round 1 drew it.
+    - Each house is the archetype's full-size building, the size main drew, and keeps its whole footprint as its lot.
+    - It tries 720 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
+      first. Every spot is tried at full size before any at 0.72; the half-size fit is never used. Every house keeps the
+      beach setback.
+    - `Build` runs the fallback after every place's own houses (towns, the 1948 localities) and the camps, so it takes
+      only ground no other place uses. `KitTests.TheSmallTownFloorMovesNoOtherPlace` checks this: every lot of every
+      place is the same, in the same order, with the fallback off and on.
+    - It fires in 14 towns (the moshavot and kibbutzim, Netanya, Beersheba and Acre) and adds 30 houses in 12 of them.
+      Acre and Yad Mordechai have no free ground left.
+  - Every town now draws at least main's count: Tiberias 6, Netanya 4, Beersheba 6, Rosh Pinna 2, Nahalal 4. The 25
+    towns draw 404.
+  - **Tests:**
+    - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`).
+    - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
+      fallback skips its own lattice's lots.
+  - The grid stays readable at 80% (71 of 89).
   - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
     other sessions to load 15, so every number is high):
     - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.

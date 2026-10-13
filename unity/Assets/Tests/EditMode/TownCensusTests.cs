@@ -219,6 +219,38 @@ public class TownCensusTests
         CollectionAssert.IsEmpty(bad);
     }
 
+    /// <summary>No two buildings of one town overlap (review of #339, F1: the small-town fallback tests every lot, #317).
+    /// Separating axes on the footprints, 1 m tolerance. Wings are left out: a wing shares its block's plot.</summary>
+    [Test]
+    public void NoTwoHousesOfATownOverlap()
+    {
+        var map = OpenMap();
+        Census(map, out var placed);
+        var b = placed.Where(p => p.Kind == "building").ToList();
+        var bad = new List<string>();
+        for (int i = 0; i < b.Count; i++)
+            for (int j = i + 1; j < b.Count; j++)
+                if (b[i].Id == b[j].Id && Overlap(b[i], b[j])) bad.Add($"{b[i].Id} at {b[i].C} and {b[j].C}");
+        TestContext.WriteLine($"{b.Count} buildings checked");
+        CollectionAssert.IsEmpty(bad.Take(20), $"{bad.Count} overlapping pairs");
+    }
+
+    static bool Overlap(SettlementKits.Placed a, SettlementKits.Placed b)
+    {
+        foreach (var yaw in new[] { a.Yaw, b.Yaw })
+            foreach (var ax in new[] { 0f, 90f })
+            {
+                float t = (yaw + ax) * Mathf.Deg2Rad; var n = new Vector2(Mathf.Cos(t), Mathf.Sin(t));
+                float Half(SettlementKits.Placed p)
+                {
+                    float r = (p.Yaw - yaw - ax) * Mathf.Deg2Rad;
+                    return 0.5f * (p.W * Mathf.Abs(Mathf.Cos(r)) + p.D * Mathf.Abs(Mathf.Sin(r)));
+                }
+                if (Mathf.Abs(Vector2.Dot(a.C - b.C, n)) >= Half(a) + Half(b) - 1f) return false;
+            }
+        return true;
+    }
+
     /// <summary>The floors of the four cities' buildings and built cover (share of the town's own land under a building or
     /// landmark, whole footprint and inner half radius). Towns round 2 measured them with the 1948 localities (docs/visual-v1.md,
     /// "Towns round 2"): Tel Aviv 43 / 17.4% / 18.5%, Jaffa 33 / 32.6% / 31.9%, Haifa 45 / 21.0% / 20.6%, Jerusalem 110 /

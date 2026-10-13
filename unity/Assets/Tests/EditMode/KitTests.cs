@@ -321,6 +321,58 @@ public class KitTests
         }
     }
 
+    /// <summary>#317: a lake hex is not all water. Tiberias's shore (35.530 E, 32.7944 N, about 114 m below sea level) lies in
+    /// a lake hex but 100 m above the Sea of Galilee's surface (about -214 m), and it is land; the open lake (35.58 E, 32.80
+    /// N) is water. The lake's water is told as tools/terrain_bake.py tells it for the drawn water.</summary>
+    [Test]
+    public void TheLakeIsItsWaterNotItsWholeHex()
+    {
+        var map = OpenMap();
+        var g = Ground(map);
+        var shore = map.Frame.ToWorld(35.530, 32.7944, 0); var lake = map.Frame.ToWorld(35.58, 32.80, 0);
+        TestContext.WriteLine($"shore: {g.Biome(shore.x, shore.z)} {g.ElevM(shore.x, shore.z):0.0} m; lake: {g.Biome(lake.x, lake.z)} {g.ElevM(lake.x, lake.z):0.0} m");
+        Assert.AreEqual("lake", g.Biome(shore.x, shore.z), "the shore point lies in a lake hex");
+        Assert.Greater(g.ElevM(shore.x, shore.z), g.ElevM(lake.x, lake.z) + 50f, "the shore point stands well above the lake");
+        Assert.IsFalse(g.Water(shore.x, shore.z), "Tiberias's shore in the lake hex is land");
+        Assert.AreEqual("lake", g.Biome(lake.x, lake.z));
+        Assert.IsTrue(g.Water(lake.x, lake.z), "the Sea of Galilee is water");
+    }
+
+    /// <summary>#317, review of #339 (F2): the small towns' fallback houses take only ground no other place builds on. With
+    /// the fallback on, every lot every place claims (the towns', the 1948 localities' and the camps') is the same, in the
+    /// same order, as with it off; the fallback's lots only follow them, and each belongs to a game town.</summary>
+    [Test]
+    public void TheSmallTownFloorMovesNoOtherPlace()
+    {
+        var map = OpenMap();
+        var doc = LoadLocalities(map);
+        var locs = doc.Places.Select(p => p.Settlement).ToList();
+        var corridors = Corridors(map);
+        SettlementKits.Result Once(bool scatter)
+        {
+            SettlementKits.SmallTownScatter = scatter;
+            try
+            {
+                var g = Ground(map);
+                foreach (var (line, half) in corridors) g.AddCorridor(line, half);
+                var r = SettlementKits.Build(map.Settlements, locs, doc.Encampments, g);
+                foreach (var k in r.Towns) Object.DestroyImmediate(k.mesh);
+                foreach (var t in r.Tiles) Object.DestroyImmediate(t.mesh);
+                return r;
+            }
+            finally { SettlementKits.SmallTownScatter = true; }
+        }
+        var off = Once(false); var on = Once(true);
+        Assert.Greater(on.Claimed.Count, off.Claimed.Count, "the fallback placed houses");
+        for (int i = 0; i < off.Claimed.Count; i++)
+            Assert.AreEqual(off.Claimed[i], on.Claimed[i], $"lot #{i} ({off.Claimed[i].id}) moved with the fallback on");
+        var towns = new HashSet<string>(map.Settlements.Select(s => s.Id));
+        var extra = on.Claimed.Skip(off.Claimed.Count).Select(l => l.id).ToList();
+        CollectionAssert.IsEmpty(extra.Where(id => !towns.Contains(id)).ToList(), "a fallback lot owned by a place that is not a game town");
+        Assert.AreEqual((off.Camps, off.Tents, off.LocalityBuildings), (on.Camps, on.Tents, on.LocalityBuildings));
+        TestContext.WriteLine($"{extra.Count} fallback houses in {extra.Distinct().Count()} towns: {string.Join(" ", extra.Distinct())}");
+    }
+
     /// <summary>The boot reads the baked runtime form (tools/localities_bake.py; pytest fails a stale bake). It yields the same
     /// rows as the sourced YAML: ids, 1948 and today's names (English and Hebrew), coordinates, type, landmark, the mixed
     /// flag, population and how many sources each row cites; and the same camp areas.</summary>

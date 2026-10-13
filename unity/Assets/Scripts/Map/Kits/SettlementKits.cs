@@ -142,6 +142,7 @@ namespace Statecraft.Game.Map.Kits
             var streams = new Dictionary<string, KitRandom>(); var landmarks = new Dictionary<string, int>();
             var spans = new Dictionary<string, List<(KitMesh km, int from, int to)>>();   // each locality's vertices in its tile
             var townMeshes = new Dictionary<string, KitMesh>();
+            var gameTowns = new List<(Settlement s, KitMesh km, int n, System.Func<int>? scatter)>();
             // Landmarks first: every game settlement's (largest first), then every locality's, each at its heart, before any
             // houses. A village at a city's edge (Jammasin by Tel Aviv) keeps its heart, and no village takes a game town's
             // landmark spot (review M8).
@@ -173,14 +174,21 @@ namespace Statecraft.Game.Map.Kits
                     continue;
                 }
                 var km = townMeshes[s.Id];
-                int n = landmarks[s.Id] + PlaceHouses(s, centres[s.Id], ground, km, lots, ref rnd, merged);   // towns round 2: plot lattices
-                if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
-                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
+                int n = landmarks[s.Id] + PlaceHouses(s, centres[s.Id], ground, km, lots, ref rnd, merged, out var scatter);   // towns round 2: plot lattices
+                gameTowns.Add((s, km, n, scatter));
             }
             foreach (var area in camps)
             {
                 var (c, t) = Encampments(area, ground, lots, Tile);
                 result.Camps += c; result.Tents += t;
+            }
+            // Last, the small towns' fallback houses (#317), largest place first: after every place's own houses and the camps,
+            // so they take only ground no other place builds on, and every other place draws as it would without them.
+            foreach (var (s, km, n, scatter) in gameTowns)
+            {
+                int total = n + (scatter?.Invoke() ?? 0);
+                if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
+                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), total));
             }
             // A locality's columns, from its own vertices in its tile (read before ToMesh drops the CPU copy).
             if (columns != null)
@@ -399,8 +407,11 @@ namespace Statecraft.Game.Map.Kits
             return true;
         }
 
-        /// <summary>Places a town's houses on its lattices, nearest the centre first; returns how many.</summary>
-        static int PlaceHouses(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, HashSet<string>? ignoreCellsOf)
+        /// <summary>Places a town's houses on its lattices, nearest the centre first; returns how many. When the lattice
+        /// places fewer than <see cref="SmallTownFloor"/>, <paramref name="scatter"/> is the town's fallback (#317), which
+        /// Build runs after every other place's houses; else null.</summary>
+        static int PlaceHouses(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, HashSet<string>? ignoreCellsOf,
+            out System.Func<int>? scatter)
         {
             var arch = ArchetypeOf(s);
             float R = FootprintRadiusM(s, ground.HexSizeM), reach = R * PlotReach;
@@ -493,40 +504,66 @@ namespace Statecraft.Game.Map.Kits
             }
 
             // A small town's floor (#317): at the houses' 100x scale a plot is about 1 km, so a footprint of 1.3-2 km radius
-            // holds only some 7 plots, and the routes, the lake or a neighbour's lots can take them all (Tiberias drew none).
-            // Below SmallTownFloor houses, free spots over the footprint are tried at random, as round 1 placed every town,
-            // each with the quarter's building for that spot. Its own stream (KitRandom(id, 3)): the lattice above draws as
-            // before.
-            if (placed < SmallTownFloor)
+            // holds only some 7 plots, and the routes, the sea or a neighbour's lots can take most of them.
+            // Below SmallTownFloor houses the town is filled up as round 1 drew it: its archetype's full-size building (the
+            // size main drew, never shrunk), on random spots over the footprint tried nearest the heart first, from its own
+            // stream (KitRandom(id, 3)). Build runs it after every place's own houses and the camps, so it takes only ground
+            // no other place builds on.
+            scatter = null;
+            if (placed < SmallTownFloor && SmallTownScatter)
             {
-                var srnd = new KitRandom(s.Id, 3);
-                for (int tries = 0; tries < ScatterTries && placed < SmallTownFloor; tries++)
+                int want = SmallTownFloor - placed;
+                scatter = () =>
                 {
-                    float r = reach * Mathf.Sqrt(srnd.Value()), ang = srnd.Range(0f, 2f * Mathf.PI), t = r / R;
-                    ulong detail = srnd.Next(); float jitterYaw = srnd.Range(-4f, 4f);
-                    var p = centre + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * r;
-                    if (!ground.Inside(p.x, p.y) || !Mine(p) || ground.Water(p.x, p.y)) continue;
-                    int li = lattices.FindIndex(x => Allows(s, x, p, t, ground));
-                    if (li < 0) continue;
-                    var L = lattices[li]; var g = Grid(L.Style);
-                    var spec = Pick(L.Style, t, ref srnd, g.scale);
-                    float yaw = L.Yaw + (g.jitter > 0f ? jitterYaw : 0f);
-                    if (!Fit(L, p, yaw, t, spec, -1, out var b, out var q)) continue;
-                    lots.Add(new Lot { c = q, r = b.lotR, id = s.Id });
-                    var drnd = new KitRandom(detail);
-                    Emit(s.Id, L.Style, q, yaw, b, t, ground, km, ref drnd);
-                    placed++;
-                }
+                    var srnd = new KitRandom(s.Id, 3);
+                    float m = KitScale.For(arch);
+                    var spots = new List<(float r, int i, Vector2 p, float yaw, Spec b, ulong detail)>();
+                    for (int i = 0; i < ScatterTries; i++)
+                    {
+                        float r = reach * Mathf.Sqrt(srnd.Value()), ang = srnd.Range(0f, 2f * Mathf.PI);
+                        var b = Pick(arch, r / R, ref srnd, m);
+                        b.lotR = 0.5f * Mathf.Sqrt(b.w * b.w + b.d * b.d);   // the whole footprint, as a plot's (round 1's lot let a corner reach a road)
+                        float yaw = arch == Archetype.Moshava || arch == Archetype.WhiteCity ? GridYaw(s.Id) + srnd.Range(-4f, 4f) : srnd.Range(0f, 90f);
+                        spots.Add((r, i, centre + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * r, yaw, b, srnd.Next()));
+                    }
+                    spots.Sort((x, y) => x.r != y.r ? x.r.CompareTo(y.r) : x.i.CompareTo(y.i));
+                    int added = 0;
+                    bool hillTown = arch == Archetype.ArabTown || arch == Archetype.OldTown;
+                    // Full size first over every spot; only then 0.72 size (never the half-size fit: Acre's stray beach house).
+                    foreach (var shrink in new[] { 1f, 0.72f })
+                    foreach (var (r, _, p, yaw, full, detail) in spots)
+                    {
+                        if (added >= want) break;
+                        var b = Shrink(full, shrink);
+                        float t = r / R;
+                        if (!ground.Inside(p.x, p.y) || !Mine(p) || ground.Water(p.x, p.y)) continue;
+                        if (!lattices.Exists(x => Allows(s, x, p, t, ground))) continue;   // the quarter's rule (Nahalal's ring)
+                        if (!lots.Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;
+                        if (ground.Slope(p.x, p.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
+                        if (CornerInWater(p, yaw, b.w, b.d, ground)) continue;
+                        // Every fallback house keeps off the beach strip, an old town's too (Acre's stood alone on the sand).
+                        if (shore && NearSea(p, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
+                        lots.Add(new Lot { c = p, r = b.lotR, id = s.Id });
+                        var drnd = new KitRandom(detail);
+                        var wall = Emit(arch, p, yaw, b, ground, km, ref drnd);
+                        Record(s.Id, "building", p, yaw, b.w, b.d, b.h, wall);
+                        added++;
+                    }
+                    return added;
+                };
             }
             return placed;
         }
 
-        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6), which every
-        /// town's lattice reaches except the small ones'.</summary>
+        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6). Fourteen of the
+        /// 25 towns' lattices fall short of it (the moshavot and kibbutzim, Netanya, Beersheba and Acre); their fallback houses
+        /// join the lattice's where free ground is left (12 of them).</summary>
         const int SmallTownFloor = 6;
-        /// <summary>Random spots a small town tries before it settles for fewer than SmallTownFloor houses (round 1 tried
-        /// about 30 per building).</summary>
-        const int ScatterTries = 240;
+        /// <summary>Random spots a small town's fallback tries before it settles for fewer than SmallTownFloor houses (round 1
+        /// tried about 30 per building).</summary>
+        const int ScatterTries = 720;
+        /// <summary>Whether the small towns' fallback runs (on; tests switch it off to show it moves no other place).</summary>
+        public static bool SmallTownScatter = true;
 
         /// <summary>The fits a plot tries in turn: (size share, nudge along and across the street as a share of the pitch).</summary>
         static readonly (float shrink, float du, float dv)[] Fits =
@@ -536,6 +573,7 @@ namespace Statecraft.Game.Map.Kits
 
         static Spec Shrink(Spec b, float k) =>
             k >= 1f ? b : new Spec { w = b.w * k, d = b.d * k, h = b.h, storeys = b.storeys, lotR = b.lotR * k };
+
 
         /// <summary>How far (m) a new town's buildings keep back from the sea: the beach strip (promo-sea's ScBeachM, 650 m on
         /// average) stays sand, with its palms, as in promo 03's Tel Aviv. The old towns (Jaffa, Acre, Gaza, Haifa's lower
@@ -912,7 +950,8 @@ namespace Statecraft.Game.Map.Kits
         }
 
         /// <summary>Draws a locality's building (promo-villages).</summary>
-        static void Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
+        /// <returns>The wall colour (the census records it for a town's fallback houses, #317).</returns>
+        static Color32 Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
         {
             float m = KitScale.For(arch);
             var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground, m);
@@ -939,7 +978,7 @@ namespace Statecraft.Game.Map.Kits
                         float rw = b.w * rnd.Range(0.25f, 0.4f), rd = b.d * rnd.Range(0.3f, 0.45f);
                         km.Box(p.x + b.w * rnd.Range(-0.2f, 0.2f), p.y + b.d * rnd.Range(-0.15f, 0.15f), yaw, rw, rd, top + b.h - 2f, top + b.h, 2.8f * m, wall, roof, Facade.Plain, m);
                     }
-                    break;
+                    return wall;
                 }
                 case Archetype.OldTown:
                 {
@@ -948,7 +987,7 @@ namespace Statecraft.Game.Map.Kits
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m);
                     if (rnd.Chance(0.22f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.33f, Jitter(C(0.88f, 0.84f, 0.76f), ref rnd, 0.05f));
                     else if (rnd.Chance(0.03f)) km.Pyramid(p.x, p.y, yaw, b.w * 1.04f, b.d * 1.04f, top + b.h, 2.2f * m, Jitter(C(0.70f, 0.33f, 0.22f), ref rnd, 0.06f));
-                    break;
+                    return wall;
                 }
                 case Archetype.ArabTown:
                 {
@@ -956,7 +995,7 @@ namespace Statecraft.Game.Map.Kits
                     var roof = Jitter(C(0.84f, 0.75f, 0.59f), ref rnd, 0.06f);
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m);
                     if (rnd.Chance(0.10f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.3f, roof);
-                    break;
+                    return wall;
                 }
                 default:
                 {
@@ -964,7 +1003,7 @@ namespace Statecraft.Game.Map.Kits
                     var roof = Jitter(C(0.74f, 0.31f, 0.20f), ref rnd, 0.08f);
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m, roofed: true);
                     km.Gable(p.x, p.y, yaw, b.w, b.d, top + b.h, Mathf.Min(b.w, b.d) * 0.42f, roof, wall);
-                    break;
+                    return wall;
                 }
             }
         }
