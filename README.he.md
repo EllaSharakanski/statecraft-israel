@@ -22,6 +22,10 @@ https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
 <div align="center">
 
+<img src="docs/images/build-gameplay.webp" width="820" alt="משחק אמיתי, 22 עד 29 במאי 1948: מעבר על תל אביב, יפו ומישור החוף, לחיצה על משושה שפותחת את הלוח שלו, ההחלטה על צבא אחד, וסיום תור שמקדם את התאריך ל־29 במאי.">
+
+<p dir="rtl" align="center"><em>משחק אמיתי, גרסה 0.1.0, 2026-10-13, קומיט <span dir="ltr">f93fd5e</span>.</em></p>
+
 <img src="docs/images/build-m3-map.jpg" width="820" alt="הגרסה הנוכחית 0.1.0 (M3): מפת השטח עם עיירות וכפרים, מסילות ויחידות, הסרגל העליון וכרטיס אירוע עם צילום ארכיון.">
 <br>
 <img src="docs/images/build-m3-start.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): מסך הפתיחה עם שתי שורות ממגילת העצמאות, על רקע ציור שנוצר בבינה מלאכותית.">
@@ -34,7 +38,7 @@ https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
 <div dir="rtl">
 
-<p align="center"><em>צילומי מסך אמיתיים מגרסה 0.1.0 (M3), 2026-10-13, בקומיט <span dir="ltr">47eac52</span>. הציור במסך הפתיחה נוצר בבינה מלאכותית.</em></p>
+<p align="center"><em>צילומי מסך אמיתיים מגרסה 0.1.0 (M3), 2026-10-13, בקומיט <span dir="ltr">f93fd5e</span>. הציור במסך הפתיחה נוצר בבינה מלאכותית.</em></p>
 
 </div>
 
