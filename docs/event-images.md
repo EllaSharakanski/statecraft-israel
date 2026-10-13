@@ -41,12 +41,11 @@ height. The minister's portrait is hidden, and the office line still names the m
 The header is 16:9 whenever the card has the height for it. The photograph needs a band at least as tall as its credit line plus 48 px of picture
 (`EventCardPresenter.MinPhotoHeight`). The credit strip never shrinks (`flex-shrink: 0`), so the credit that CC BY 4.0
 requires is never cut.
-- On a window at least 990 px tall (logically; `EventCardPresenter.ScrollFallbackHeight`, the playtest rule that the
-  body never scrolls there) the picture gives way first. If the band would fall below that height, the whole
-  photograph is dropped: picture, credit and tooltip.
-- On a shorter window, the body text may scroll, as it already could. The band keeps the height it needs and the
-  body scrolls for the rest. Without this, an ultrawide 2560x1080 window never showed a photograph. The photograph is
-  dropped only when the options would otherwise be cut.
+- On every window the picture gives way first when the card is taller than the room under the bar: the header gets
+  shorter (the picture is cropped, never squeezed), so the text and the options always show whole. If the band would
+  fall below that height, the whole photograph is dropped: picture, credit and tooltip, and only then may the body
+  scroll. (The old 200 px band in the right-hand column had to let the body scroll first on short windows, or an
+  ultrawide 2560x1080 window never showed a photograph; the 16:9 header has the room to give.)
 - When the window grows again, a dropped photograph comes back without waiting for the next event.
 - A dropped photograph does not bring back the minister's portrait, which is taller still. The office line still names
   the minister.

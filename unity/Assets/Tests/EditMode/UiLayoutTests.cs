@@ -512,7 +512,8 @@ public class UiLayoutTests
     }
 
     /// <summary>The decision card's place: in the decision layer, centred across it, at most CardMaxWidth logical px wide and
-    /// below the top bar; a shown media header is 16:9 unless the card is as tall as the layer (then it gave way first).</summary>
+    /// below the top bar, Hide inside it; a shown media header is 16:9 unless the card is as tall as the layer (then it gave
+    /// way first), and while it shows the body does not scroll.</summary>
     // Tolerances: whole pixels at the panel's scale (2/3 at 1280x720; about 2 logical px per pixel at 390x844).
     static void CheckCard(string where, VisualElement root, List<string> problems)
     {
@@ -524,6 +525,10 @@ public class UiLayoutTests
         if (c.yMin < bar.worldBound.yMax - 0.5f) problems.Add($"{where}: the card {c} starts over the top bar {bar.worldBound}");
         var hide = root.Q("event-hide").worldBound;
         if (!Inside(hide, c)) problems.Add($"{where}: Hide {hide} is cut off by the card {c}");
+        // The header gives way before the text on every window: while a photograph shows, the body never scrolls.
+        var scroll = root.Q<ScrollView>("event-scroll");
+        if (root.Q("event-photo").resolvedStyle.display == DisplayStyle.Flex && scroll.contentContainer.layout.height > scroll.contentViewport.layout.height + 1f)
+            problems.Add($"{where}: the body scrolls ({scroll.contentContainer.layout.height:0} px of text in {scroll.contentViewport.layout.height:0} px) while the photograph shows");
         var band = root.Q("event-photo");
         if (band.resolvedStyle.display == DisplayStyle.Flex && c.height < l.height - 1f)
         {

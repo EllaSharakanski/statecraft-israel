@@ -30,7 +30,7 @@ namespace Statecraft.Game.UI
 
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly EventImageCatalog? photos;
-        readonly VisualElement band, head, scroll, options, foot, layer, hudRoot; readonly Label credit;
+        readonly VisualElement band, head, scroll, options, layer, hudRoot; readonly Label credit;
         readonly Button hide, reopen;
         readonly System.Action onHide, onReopen;
         /// <summary>The event the player collapsed the card on (Hide), or null; a different event opens the card again.</summary>
@@ -47,14 +47,14 @@ namespace Statecraft.Game.UI
             // photograph back when the window grows. A hidden element keeps its old layout, so a band shown again at the
             // size it was dropped at gets no geometry event of its own; the head below it always moves, so it checks too.
             head = card.Q<VisualElement>(className: "event-head");
-            scroll = card.Q<VisualElement>("event-scroll"); options = card.Q<VisualElement>("event-options"); foot = card.Q<VisualElement>("event-foot");
+            scroll = card.Q<VisualElement>("event-scroll"); options = card.Q<VisualElement>("event-options");
             layer = card.parent; hudRoot = root.Q("root") ?? root;
             hide = card.Q<Button>("event-hide"); reopen = layer.Q<Button>("event-reopen");
             hide.text = text["event.hide"]; reopen.text = text["event.reopen"];
             onHide = Collapse; onReopen = Reopen;
             hide.clicked += onHide; reopen.clicked += onReopen;
             card.focusable = true; card.tabIndex = 0;   // the card takes the focus itself (FocusCard); it has no :focus style
-            foreach (var e in new[] { band, credit, head, scroll, options, foot }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            foreach (var e in new[] { band, credit, head, scroll, options }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.RegisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.RegisterCallback<GeometryChangedEvent>(OnCardGeometry);
             bridge.Changed += Render;
@@ -66,7 +66,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render;
             hide.clicked -= onHide; reopen.clicked -= onReopen;
-            foreach (var e in new[] { band, credit, head, scroll, options, foot }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            foreach (var e in new[] { band, credit, head, scroll, options }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.UnregisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.UnregisterCallback<GeometryChangedEvent>(OnCardGeometry);
             card.Q<VisualElement>("event-options")?.Clear(); card.style.display = DisplayStyle.None;
@@ -175,33 +175,21 @@ namespace Statecraft.Game.UI
             band.style.backgroundImage = photo == null ? (StyleBackground)StyleKeyword.None : new StyleBackground(photo.Value.image);
             band.tooltip = photo?.alt ?? "";
             PhotoAlt = photo?.alt;
-            ApplyPhotoFloor();
+            ApplyMediaHeight();
         }
 
         /// <summary>The logical window height below which the event body may scroll (UiLayoutTests, playtest 2 P2-3: from
         /// 990 up, the body and the options fit without scrolling).</summary>
         public const float ScrollFallbackHeight = 990f;
 
-        /// <summary>True on a window shorter than <see cref="ScrollFallbackHeight"/> (logically), where the body may scroll.</summary>
-        bool ShortWindow
+        /// <summary>The media header's height: 16:9 of the card's content width (the stylesheet's 540 px until the card is laid
+        /// out). On every window the header gives way first when the card is taller than the layer (Statecraft.uss
+        /// flex-shrink 1000; the picture is cropped, background-size cover), so the text and the options show whole; below
+        /// PhotoNeeds it is dropped (FitPhoto), and only then may the body scroll. The 200 px band of the old right-hand
+        /// column needed the body to scroll first on short windows, or 21:9 never showed a photograph; a 16:9 header has
+        /// the room to give.</summary>
+        void ApplyMediaHeight()
         {
-            get
-            {
-                var h = card.panel?.visualTree.layout.height ?? float.NaN;
-                return !float.IsNaN(h) && h > 0 && h < ScrollFallbackHeight;
-            }
-        }
-
-        /// <summary>On a short window (an ultrawide 2560x1080 is one) the body gives way before the band: it scrolls, as it
-        /// may there, down to its minimum, and only then does the band shrink (and drop below PhotoNeeds). Before this the
-        /// band always gave way first, fell below that height and no photograph ever showed at 21:9. On taller windows the
-        /// band still gives way first (Statecraft.uss flex-shrink 1000), so the body never scrolls for it. The options keep
-        /// flex-shrink 0 either way, so they are never cut.</summary>
-        void ApplyPhotoFloor()
-        {
-            band.style.flexShrink = PhotoAlt != null && ShortWindow ? new StyleFloat(0.001f) : new StyleFloat(StyleKeyword.Null);
-            // Back to 16:9 of the card's content width (the stylesheet's 540 px until the card is laid out); FitPhoto trims it
-            // again if it must.
             var w = card.contentRect.width;
             appliedWidth = w;
             band.style.height = float.IsNaN(w) || w <= 0 ? (StyleLength)StyleKeyword.Null : new StyleLength(UnityEngine.Mathf.Round(w / MediaAspect));
@@ -213,7 +201,7 @@ namespace Statecraft.Game.UI
         {
             var w = card.contentRect.width;
             if (float.IsNaN(w) || w <= 0 || UnityEngine.Mathf.Abs(w - appliedWidth) < 0.5f) return;
-            ApplyPhotoFloor(); FitPhoto();
+            ApplyMediaHeight(); FitPhoto();
         }
 
         /// <summary>The smallest height of the picture left visible above its credit strip (Statecraft.uss .event-photo
@@ -245,18 +233,7 @@ namespace Statecraft.Game.UI
             if (PhotoAlt == null) return;
             var h = band.layout.height; var needs = PhotoNeeds;
             if (float.IsNaN(h) || float.IsNaN(needs)) return;
-            if (h < needs - 0.5f) { SetPhotoShown(false); return; }
-            // On a short window the band hardly shrinks (ApplyPhotoFloor), and Yoga does not hand the body's leftover
-            // shortfall back to it once the body is at its minimum. So when the options or the foot under them (the count
-            // and Hide) would be cut, the band is trimmed by that much, and dropped if that leaves it short of PhotoNeeds. It
-            // only ever shrinks, so this converges.
-            if (!ShortWindow) return;
-            var cs = card.resolvedStyle;
-            var over = foot.worldBound.yMax - (card.worldBound.yMax - cs.paddingBottom - cs.borderBottomWidth);
-            if (float.IsNaN(over) || over <= 0.5f) return;
-            var target = h - over - 1f;
-            if (target < needs) SetPhotoShown(false);
-            else band.style.height = target;
+            if (h < needs - 0.5f) SetPhotoShown(false);
         }
 
         void OnPhotoGeometry(GeometryChangedEvent evt) => FitPhoto();
@@ -268,7 +245,7 @@ namespace Statecraft.Game.UI
         void OnColumnGeometry(GeometryChangedEvent evt)
         {
             if (current != null && PhotoAlt == null) { if (RoomForDroppedPhoto() >= PhotoNeeds) SetPhotoShown(true); }
-            else { ApplyPhotoFloor(); FitPhoto(); }
+            else { ApplyMediaHeight(); FitPhoto(); }
         }
 
         /// <summary>The band height a dropped photograph would get now (at most; the band itself stops at 16:9): the layer's
@@ -278,8 +255,6 @@ namespace Statecraft.Game.UI
             var room = layer.contentRect.height;
             if (float.IsNaN(room) || float.IsNaN(card.layout.height)) return 0;
             var slack = room - card.layout.height;
-            // On a short window the body may scroll, so the room it would give up (down to its own minimum) counts too.
-            if (ShortWindow && !float.IsNaN(scroll.layout.height)) slack += System.Math.Max(0f, scroll.layout.height - scroll.resolvedStyle.minHeight.value);
             return slack - band.resolvedStyle.marginTop - band.resolvedStyle.marginBottom;
         }
 
