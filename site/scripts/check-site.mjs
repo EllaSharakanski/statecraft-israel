@@ -11,13 +11,14 @@
 //     reviewers, past contributors, with years), and leaves out a group with no one in it. SITE_CONTRIBUTORS, as in
 //     the build, points at a fixture instead (site/scripts/fixtures/contributors.yaml has one of each).
 //  8. the Press page's two zips (scripts/press-kit.mjs) exist, hold exactly the expected files and a README that names
-//     each of them, keep concept art out of the screenshots, carry "AI concept art" in every concept file name, and
+//     each of them, keep concept art out of the screenshots, carry "AI concept art" in every concept file name
+//     (and "AI likeness, not a photograph" in 04 and 08, which the README's first line names), and
 //     are linked from the Press page in both languages.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { plan, zipEntries, zipRead, CONCEPT_TAG } from './press-kit.mjs';
+import { plan, zipEntries, zipRead, CONCEPT_TAG, LIKENESS_TAG } from './press-kit.mjs';
 
 const dist = path.resolve(process.argv[2] ?? 'dist');
 const problems = [];
@@ -186,6 +187,14 @@ for (const z of [shotsZip, artZip]) {
   if (z === artZip) {
     if (!text.includes('AI-generated concept art')) problems.push(`downloads/${z.zip}: README.txt does not say the images are AI-generated concept art`);
     for (const e of z.entries) if (!e.name.includes(CONCEPT_TAG)) problems.push(`downloads/${z.zip}: ${e.name} lacks "${CONCEPT_TAG}" in its name`);
+    // The two images with AI likenesses of real ministers say so in the README's first line and in their file names.
+    const first = text.split('\n')[0];
+    for (const stem of ['04-cabinet-1948', '08-defense-1955']) {
+      const e = z.entries.find((x) => x.name.includes(stem));
+      if (!e || !e.name.includes(LIKENESS_TAG)) problems.push(`downloads/${z.zip}: ${stem} lacks "${LIKENESS_TAG}" in its name`);
+      if (!first.includes(stem)) problems.push(`downloads/${z.zip}: README.txt's first line does not name ${stem}`);
+    }
+    if (!/AI likeness/.test(first) || !/not photographs?/.test(first)) problems.push(`downloads/${z.zip}: README.txt's first line does not say the likenesses are not photographs`);
   } else {
     if (!text.includes('In-engine capture') || !text.includes('CC BY 4.0')) problems.push(`downloads/${z.zip}: README.txt lacks the label or the licence`);
     for (const n of names) if (/concept|hero|social|trailer|cinematic|\.(mp4|webm|png)$/i.test(n)) problems.push(`downloads/${z.zip}: ${n} is not an in-engine screenshot`);

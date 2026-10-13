@@ -7,11 +7,11 @@ import { plan } from '../../../scripts/press-kit.mjs';
 export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
 const lang = Astro.params.lang as Lang;
 const he = lang === 'he';
-// The zips are written after astro build by scripts/press-kit.mjs; the sizes shown are those of the files they hold.
-// The build runs in site/, so the repository root is its parent.
+// scripts/press-kit.mjs writes the zips into public/downloads/ before astro build (npm run build); the build runs in
+// site/, so the repository root is its parent.
 const [shots, art] = plan(path.resolve(process.cwd(), '..'));
 const mb = (z: ReturnType<typeof plan>[number]) =>
-  `${Math.max(1, Math.round(z.entries.reduce((n, e) => n + fs.statSync(e.file).size, 0) / 1e6))} MB`;
+  `${Math.max(1, Math.round(fs.statSync(path.resolve('public/downloads', z.zip)).size / 1e6))} MB`;
 ---
 <ProsePage lang={lang} page="press" name="press" navKey="nav.press"
   heading={he ? 'לעיתונות' : 'Press'}

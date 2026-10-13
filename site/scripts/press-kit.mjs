@@ -1,12 +1,13 @@
-// Builds the Press page's two downloads into dist/downloads/ (issue #417). Nothing here is committed: the zips are
-// made at every build from files already in the repository.
+// Builds the Press page's two downloads into public/downloads/ (git-ignored; issue #417), which astro build then copies
+// into dist/downloads/. Nothing here is committed: the zips are made at every build from files already in the repository.
 //  - statecraft-israel-screenshots.zip: the in-engine screenshots listed in docs/images/captures.yaml, never concept
 //    art or the trailer;
 //  - statecraft-israel-ai-concept-art.zip: the AI-generated images in promo/final/ (the ASSETS.yaml rows marked
-//    ai_generated), each renamed to carry "AI concept art" in its file name.
+//    ai_generated), as JPEG at quality 90 and full size, each renamed to carry "AI concept art" in its file name, and
+//    "AI likeness, not a photograph" too for the images src/lib/media.ts marks as likenesses.
 // Each zip holds a README.txt with the label, licence and provenance of every file, taken from ASSETS.yaml. The zips
-// are deterministic: sorted entries, a fixed timestamp, no extra fields. Images are stored as they are (they are
-// already compressed); the README is deflated. Run after `astro build` (npm run build does it).
+// are deterministic: sorted entries, a fixed timestamp, no extra fields. Images are stored (JPEG does not deflate
+// further); the README is deflated. Run before `astro build` (npm run build does it).
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -18,6 +19,7 @@ const here = fileURLToPath(new URL('../../', import.meta.url));
 export const SCREENSHOTS = 'statecraft-israel-screenshots';
 export const CONCEPT = 'statecraft-israel-ai-concept-art';
 export const CONCEPT_TAG = 'AI concept art';
+export const LIKENESS_TAG = 'AI likeness, not a photograph';
 
 // ASSETS.yaml globs use fnmatch: '*' also matches '/'.
 function fnmatch(glob) {
@@ -97,19 +99,28 @@ export function plan(repo = here) {
   const finals = fs.readdirSync(path.join(repo, 'promo/final')).sort()
     .map((n) => `promo/final/${n}`)
     .filter((f) => /\.(png|jpe?g|webp)$/i.test(f) && assetRow(rules, f).ai_generated);
+  // The images with AI likenesses of real people are the ones src/lib/media.ts marks `likeness: true`.
+  const mediaTs = read('site/src/lib/media.ts').toString('utf8');
+  const likeness = new Set([...mediaTs.matchAll(/likeness: true[^\n]*file: '([^']+)'/g)].map((m) => m[1]));
   const conceptRows = new Map();
   const art = finals.map((file) => {
     const row = assetRow(rules, file);
     conceptRows.set(row.glob, row);
-    const base = path.basename(file);
-    return { file, name: `${CONCEPT_TAG} - ${base}`, row };
+    const stem = path.basename(file).replace(/\.\w+$/, '');
+    const l = likeness.has(file);
+    return { file, stem, likeness: l, name: `${CONCEPT_TAG} - ${stem}${l ? ` - ${LIKENESS_TAG}` : ''}.jpg`, row };
   });
-  const artLines = art.map(({ name, row }) => `${name}\n  Concept art — AI-generated. Licence: ${row.licence} (no rights claimed).`);
+  const likenesses = art.filter((a) => a.likeness).map((a) => a.stem);
+  if (likenesses.length === 0) throw new Error('press-kit: media.ts marks no concept image as a likeness; the README would say nothing about them');
+  const likenessLine = `${likenesses.length > 1 ? `${likenesses.slice(0, -1).join(', ')} and ${likenesses.at(-1)} are AI likenesses` : `${likenesses[0]} is an AI likeness`} of real people, not photographs.`;
+  const artLines = art.map(({ name, row, likeness: l }) => `${name}\n  Concept art — AI-generated.${l ? ' Shows AI likenesses of real people, not photographs.' : ''} Licence: ${row.licence} (no rights claimed).`);
   const conceptReadme = [
+    likenessLine,
+    '',
     'Statecraft: Israel: AI concept art',
     '',
     'Every image in this zip is AI-generated concept art. None of it is a screenshot of the game, and it shows things',
-    'the current build does not have. Some images show AI likenesses of real people; they are not photographs.',
+    'the current build does not have. The images are JPEG copies (quality 90, full size) of the PNGs in promo/final/.',
     '',
     'If you publish any of these images, label them as AI-generated concept art. For screenshots of the game,',
     'use the in-engine screenshots zip instead.',
@@ -133,7 +144,7 @@ export function plan(repo = here) {
     { zip: `${SCREENSHOTS}.zip`, dir: SCREENSHOTS, readme: shotsReadme,
       entries: shots.map(({ file }) => ({ name: path.basename(file), file: path.join(repo, file) })) },
     { zip: `${CONCEPT}.zip`, dir: CONCEPT, readme: conceptReadme,
-      entries: art.map(({ name, file }) => ({ name, file: path.join(repo, file) })) },
+      entries: art.map(({ name, file }) => ({ name, file: path.join(repo, file), jpeg: true })), likenessLine },
   ];
 }
 
@@ -195,13 +206,19 @@ export function zipEntries(buf) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const dist = path.resolve(process.argv[2] ?? 'dist');
-  const out = path.join(dist, 'downloads');
+  // Written into public/downloads/ (git-ignored) before astro build, so the Press page can show the real sizes and
+  // Astro copies the zips into dist/downloads/.
+  const out = path.resolve(process.argv[2] ?? 'public/downloads');
   fs.mkdirSync(out, { recursive: true });
+  const { default: sharp } = await import('sharp');
+  // Concept art as JPEG at quality 90 and native size; sharp drops the metadata, so the bytes depend only on the
+  // source PNG and the sharp/libjpeg version.
+  const jpeg = (file) => sharp(file).flatten({ background: '#ffffff' })
+    .jpeg({ quality: 90, chromaSubsampling: '4:4:4', mozjpeg: false, progressive: false }).toBuffer();
   for (const z of plan()) {
     const files = [
       { name: `${z.dir}/README.txt`, data: Buffer.from(z.readme, 'utf8') },
-      ...z.entries.map((e) => ({ name: `${z.dir}/${e.name}`, data: fs.readFileSync(e.file) })),
+      ...await Promise.all(z.entries.map(async (e) => ({ name: `${z.dir}/${e.name}`, data: e.jpeg ? await jpeg(e.file) : fs.readFileSync(e.file) }))),
     ];
     const buf = zip(files);
     fs.writeFileSync(path.join(out, z.zip), buf);

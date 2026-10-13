@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/prune-dist.mjs && node scripts/press-kit.mjs && node scripts/check-site.mjs",
+    "build": "node scripts/press-kit.mjs && astro build && node scripts/prune-dist.mjs && node scripts/check-site.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
