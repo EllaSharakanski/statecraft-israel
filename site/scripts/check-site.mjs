@@ -14,6 +14,7 @@
 //     each of them, keep concept art out of the screenshots, carry "AI concept art" in every concept file name
 //     (and "AI likeness, not a photograph" in 04 and 08, which the README's first line names), and
 //     are linked from the Press page in both languages.
+//  9. the history approach page exists in both languages, links to the two documents it restates, and History links to it.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -207,9 +208,20 @@ for (const z of [shotsZip, artZip]) {
   }
 }
 
+// 9. The history approach page (#414) exists in both languages, the History page links to it, and it links to the two
+// documents it restates.
+for (const lang of ['en', 'he']) {
+  const page = path.join(dist, lang, 'history', 'approach', 'index.html');
+  if (!fs.existsSync(page)) { problems.push(`${lang}/history/approach/: missing`); continue; }
+  const html = fs.readFileSync(page, 'utf8');
+  for (const doc of ['docs/CONTENT_POLICY.md', 'docs/GDD.md']) if (!html.includes(doc)) fail(page, `no link to ${doc}`);
+  const index = path.join(dist, lang, 'history', 'index.html');
+  if (!fs.existsSync(index) || !fs.readFileSync(index, 'utf8').includes(`/${lang}/history/approach/"`)) fail(index, 'no link to history/approach/');
+}
+
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`check-site: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips)`);
+console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips, history approach page)`);
