@@ -8,6 +8,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The website (`site/`, refs #393): a static Astro site in English (`/en/`) and Hebrew (`/he/`, right to left) with Home, Play, History, Sources, Media, Devlog, Contributors, How we make it, Press, Contribute and Privacy. Every image and video carries a visible label (in-engine capture with build and date, AI-generated concept art, or AI cinematic promo, not gameplay); the History and Sources pages show the events and sources from `content/` as they are. The in-engine images are the README's screenshots, read from `docs/images/build-*.jpg` and described in `docs/images/captures.yaml`, so retaking them updates the site. The cinematic trailer is hosted as one 720p H.264 encode, shown behind a click with captions in its own labelled section after the gameplay; a real gameplay clip listed in `captures.yaml` becomes the home page's muted hero loop, with a pause button. Self-hosted fonts and images, no analytics, no cookies and nothing loaded from another site. A `Site` workflow builds and checks it on pull requests; deploying to GitHub Pages waits for the owner.
 - The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
   hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
   message to start a new game. The real game is unchanged and the goldens do not move; a new `mvp-slice` golden pins the
