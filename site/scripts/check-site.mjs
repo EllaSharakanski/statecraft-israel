@@ -5,7 +5,8 @@
 //     (In-engine capture, Concept art — AI-generated, Cinematic promo — AI-generated, not gameplay, or Archival
 //     photograph), except contributor photos, which are portraits supplied by the owner;
 //  4. nothing loads from another origin: no external script, stylesheet, font, image, video or frame;
-//  5. every file under _astro/ that a page names exists.
+//  5. every file under _astro/ that a page names exists;
+//  6. both devlog RSS feeds exist, are well-formed, list every post, and the devlog page links to them.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -102,9 +103,42 @@ for (const lang of ['en', 'he']) {
   }
 }
 
+// 6. Each devlog has an RSS feed that is well-formed, lists every post, and is linked from the devlog page and its <head>.
+function xmlProblem(xml) {
+  const stack = [];
+  const body = xml.replace(/^<\?xml[^?]*\?>/, '').replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+  if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/i.test(body)) return 'a bare &';
+  for (const m of body.matchAll(/<(\/?)([A-Za-z][\w:.-]*)((?:"[^"]*"|'[^']*'|[^'">])*?)(\/?)>|<|>/g)) {
+    if (m[0] === '<') return 'a stray <';
+    if (m[0] === '>') continue;
+    if (m[4]) continue;
+    if (!m[1]) stack.push(m[2]);
+    else if (stack.pop() !== m[2]) return `</${m[2]}> closes the wrong element`;
+  }
+  return stack.length ? `<${stack.at(-1)}> is not closed` : (/^\s*<rss[\s>]/.test(body) ? null : 'no <rss> root');
+}
+for (const lang of ['en', 'he']) {
+  const feed = path.join(dist, lang, 'devlog', 'rss.xml');
+  if (!fs.existsSync(feed)) { problems.push(`${lang}/devlog/rss.xml: missing`); continue; }
+  const xml = fs.readFileSync(feed, 'utf8');
+  const bad = xmlProblem(xml);
+  if (bad) fail(feed, `not well-formed: ${bad}`);
+  if (!xml.includes(`<language>${lang}</language>`)) fail(feed, `no <language>${lang}</language>`);
+  const links = [...xml.matchAll(/<item>[\s\S]*?<link>([^<]+)<\/link>/g)].map((m) => m[1]);
+  if (links.some((u) => !/^https?:\/\//.test(u))) fail(feed, 'an item link is not absolute');
+  const src = path.resolve(dist, '..', 'src', 'content', 'devlog', lang);
+  for (const md of fs.readdirSync(src).filter((n) => n.endsWith('.md'))) {
+    if (!links.some((u) => u.endsWith(`#${md.slice(0, -3)}`))) fail(feed, `does not list ${md}`);
+  }
+  const page = path.join(dist, lang, 'devlog', 'index.html');
+  const html = fs.existsSync(page) ? fs.readFileSync(page, 'utf8') : '';
+  if (!/<link rel="alternate" type="application\/rss\+xml"[^>]*href="https?:\/\/[^"]*\/devlog\/rss\.xml"/.test(html)) fail(page, 'no RSS <link> in <head>');
+  if (!/<main[\s\S]*<a href="[^"]*\/devlog\/rss\.xml"[\s\S]*<\/main>/.test(html)) fail(page, 'no link to the RSS feed');
+}
+
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`check-site: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins)`);
+console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds)`);

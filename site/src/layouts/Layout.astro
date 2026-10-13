@@ -16,9 +16,11 @@ interface Props {
   /** Images to preload (the LCP image), as from getImage. */
   preload?: { srcset: string; sizes: string; type: string }[];
   noindex?: boolean;
+  /** An RSS feed for this page, announced in <head>. */
+  feed?: { title: string; href: string };
 }
 
-const { lang, page, title, description = t(lang, 'site.tagline'), jsonLd, preload = [], noindex = false } = Astro.props;
+const { lang, page, title, description = t(lang, 'site.tagline'), jsonLd, preload = [], noindex = false, feed } = Astro.props;
 const fullTitle = title ? `${title} — ${t(lang, 'site.name')}` : t(lang, 'site.name');
 const abs = (p: string) => new URL(p, Astro.site).href;
 const canonical = abs(href(lang, page));
@@ -49,6 +51,7 @@ const bodyFont = lang === 'he' ? 'fonts/FrankRuhlLibre-Regular.woff2' : 'fonts/E
     <meta name="description" content={description} />
     {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
     {alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.url} />)}
+    {feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={abs(feed.href)} />}
     <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
     <meta name="theme-color" content="#090e1a" />
     <link rel="preload" href={asset(bodyFont)} as="font" type="font/woff2" crossorigin />
