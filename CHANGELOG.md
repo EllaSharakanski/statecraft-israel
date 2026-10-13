@@ -287,6 +287,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
+  are left out at draw time and come back when the figure goes (a later date, or the "units" toggle off, so plain
+  screenshot checkpoints keep every tree); the kits' layout does not change (fixes #249).
 - "The Jews of Iraq" cites two primary sources for its asset freeze and its count of those waiting to fly: the Israeli
   letter to the Palestine Conciliation Commission of 19 March 1951 and FRUS 1951, vol. V, doc. 340. Its English Wikipedia
   source puts the first flights a year late (#135) but stays, because it alone covers the transit camps' crowding. Text,

@@ -433,6 +433,95 @@ public class UnitsInPlayTests
         finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
     }
 
+    static readonly DateTime[] OrchardDates = { new DateTime(1948, 5, 29), new DateTime(1948, 6, 5), new DateTime(1948, 7, 12), new DateTime(1948, 12, 4) };
+
+    /// <summary>The game's map scene with its kits and trees on (BuildMap configures no kit materials).</summary>
+    static MapScene BuildMapWithTrees()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = UnityEngine.Object.FindFirstObjectByType<MapScene>();
+        Statecraft.Game.Map.Kits.KitPopulation.Use(Statecraft.Game.Map.Kits.KitPopulation.Parse(
+            File.ReadAllText(Path.Combine(Paths.Content, "map", Statecraft.Game.Map.Kits.KitPopulation.FileName))));
+        map.Build();
+        return map;
+    }
+
+    static List<Vector2> FigureFeet(MapScene map) =>
+        map.Terrain.transform.Find(UnitLayer.RootName).Find("Tokens").GetComponentsInChildren<Transform>()
+            .Where(t => t.name.StartsWith("Rifleman")).Select(t => new Vector2(t.position.x, t.position.z)).ToList();
+
+    static bool UnderAFigure(Statecraft.Game.Map.Kits.TreeKind kind, Matrix4x4 m, List<Vector2> feet)
+    {
+        var p = m.GetColumn(3); var at = new Vector2(p.x, p.z);
+        float reach = UnitShowcase.FootRadiusM + Statecraft.Game.Map.Kits.VegetationLayer.CrownRadius(kind, m);
+        return feet.Any(f => (f - at).sqrMagnitude < reach * reach);
+    }
+
+    /// <summary>Issue #249: on every date the units are checked on, no kit tree that is drawn has its crown within a shown
+    /// figure's boots (the boot radius plus the tree's crown radius), and some trees were in the way, so the check bites.</summary>
+    [Test]
+    public void NoKitTreeGrowsThroughAShownFiguresFeet()
+    {
+        var map = BuildMapWithTrees();
+        try
+        {
+            var veg = map.GetComponentInChildren<Statecraft.Game.Map.Kits.VegetationLayer>(true);
+            Assert.IsNotNull(veg, "the kits and their trees are on");
+            var layer = UnitLayer.Create(map, Units, C.Hexes, still: true);
+            int figures = 0, hidden = 0;
+            foreach (var d in OrchardDates)
+            {
+                layer.Show(C, StateAt(d, 5, 0.8));
+                var feet = FigureFeet(map);
+                Assert.Greater(feet.Count, 0, $"{d:yyyy-MM-dd}: figures are drawn");
+                var through = veg.Drawable().Where(t => UnderAFigure(t.kind, t.m, feet)).ToList();
+                Assert.IsEmpty(through, $"{d:yyyy-MM-dd}: {through.Count} drawn trees reach a figure's boots, the first at {(through.Count > 0 ? (Vector3)through[0].m.GetColumn(3) : Vector3.zero)}");
+                figures += feet.Count; hidden += veg.Hidden;
+                TestContext.WriteLine($"{d:yyyy-MM-dd}: {feet.Count} figures, {veg.Hidden} trees left out");
+            }
+            Assert.Greater(hidden, 0, "some figure stands where trees grow, so this test can fail");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Issue #249: only the trees under the figures drawn that day are left out (a token not shown that day leaves
+    /// its trees alone, so Lydda's come back after Yiftach's window); the planting never changes; and with the "units"
+    /// toggle off (a plain screenshot run) every tree is drawn, so plain checkpoints stay comparable (review I5).</summary>
+    [Test]
+    public void OnlyTheShownFiguresTreesGoAndTheToggleBringsThemBack()
+    {
+        var map = BuildMapWithTrees();
+        try
+        {
+            var veg = map.GetComponentInChildren<Statecraft.Game.Map.Kits.VegetationLayer>(true);
+            var planted = veg.Planted().Select(t => t.m).ToList();
+            var layer = UnitLayer.Create(map, Units, C.Hexes, still: true);
+            foreach (var d in OrchardDates.Concat(new[] { new DateTime(1948, 7, 25) }))
+            {
+                layer.Show(C, StateAt(d, 5, 0.8));
+                var feet = FigureFeet(map);
+                int expected = veg.Planted().Count(t => UnderAFigure(t.kind, t.m, feet));
+                Assert.AreEqual(expected, veg.Hidden, $"{d:yyyy-MM-dd}: exactly the trees under the shown figures are left out");
+                Assert.AreEqual(veg.Count - expected, veg.Drawable().Count(), $"{d:yyyy-MM-dd}: every other tree is drawn");
+            }
+            CollectionAssert.AreEqual(planted, veg.Planted().Select(t => t.m).ToList(), "the planting (the kits' layout) never changes");
+
+            Assert.Greater(veg.Hidden, 0);
+            VisualToggles.Set(UnitLayer.ToggleName, false);
+            Assert.AreEqual(0, veg.Hidden, "the layer off gives every tree back");
+            Assert.AreEqual(veg.Count, veg.Drawable().Count());
+            VisualToggles.Set(UnitLayer.ToggleName, true);
+            Assert.Greater(veg.Hidden, 0, "and on again leaves them out again");
+
+            // A screenshot run that does not ask for the units: the toggle is off before the first draw.
+            var shot = UnitLayer.Create(map, Units, C.Hexes, still: true);
+            VisualToggles.Set(UnitLayer.ToggleName, false);
+            shot.Show(C, StateAt(OrchardDates[0], 5, 0.8));
+            Assert.AreEqual(0, veg.Hidden, "a plain checkpoint draws every tree");
+        }
+        finally { if (VisualToggles.Names.Contains(UnitLayer.ToggleName)) VisualToggles.Set(UnitLayer.ToggleName, true); UnityEngine.Object.DestroyImmediate(map.gameObject); }
+    }
+
     [Test]
     public void TheTrioIsSpreadSoEachFigureReadsOnItsOwn()
     {
