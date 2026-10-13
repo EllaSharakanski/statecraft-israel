@@ -28,9 +28,6 @@ namespace Statecraft.Game.UI
         public const float ArtAspect = 16f / 9f;
         /// <summary>The URL flag (WebGL) or command-line flag (desktop, "-nostart") that skips the screen by hand.</summary>
         public const string NoStartFlag = "nostart";
-        /// <summary>The HUD regions under the screen: hidden by the stylesheet and disabled while it shows, so no key reaches
-        /// them (a hidden button can still report that it takes focus until the next layout pass).</summary>
-        public static readonly string[] Hud = { "top-bar", "right-column", "info-panel" };
 
         /// <summary>Whether the screen is skipped: the automated runs (the golden check, the smoke run, the shot, frame and
         /// pixel-error profiles, the unit showcase and the border proof, all of which drive or measure the map straight away),
@@ -88,7 +85,7 @@ namespace Statecraft.Game.UI
         {
             continueButton.style.display = Resumed ? DisplayStyle.Flex : DisplayStyle.None;
             hudRoot.AddToClassList(OpenClass);
-            foreach (var name in Hud) hudRoot.Q(name)?.SetEnabled(false);
+            ScreenNav.DisableCovered(hudRoot);   // the HUD under it: hidden by the stylesheet, disabled so no key reaches it
             Fit();
             // Focus once the styles have resolved (a button still hidden by the stylesheet cannot take it).
             var first = Resumed ? continueButton : newGameButton;
@@ -103,7 +100,7 @@ namespace Statecraft.Game.UI
         {
             if (!IsOpen) return;
             hudRoot.RemoveFromClassList(OpenClass);
-            foreach (var name in Hud) hudRoot.Q(name)?.SetEnabled(true);
+            ScreenNav.DisableCovered(hudRoot);
             var focused = screen.focusController?.focusedElement as VisualElement;
             if (focused != null && screen.Contains(focused)) focused.Blur();
             shownChanged?.Invoke(false);

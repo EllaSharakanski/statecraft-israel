@@ -165,6 +165,7 @@ public class StartScreenTests
         }
 
         public void Press(string name) => UiTestKit.Press(Q<Button>(name));
+
         public void Dispose() { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
     }
 
@@ -323,6 +324,56 @@ public class StartScreenTests
         Assert.AreEqual(DisplayStyle.Flex, rig.Ui.Root.Q("top-bar").resolvedStyle.display);
         Assert.AreEqual(DisplayStyle.None, rig.Ui.Root.Q("start-screen").resolvedStyle.display);
         Assert.IsTrue(rig.Ui.Q<Button>("end-turn").canGrabFocus, "the HUD is back");
+    }
+
+    /// <summary>#400: a turn-1 save keeps the build buttons disabled anyway, so the test above cannot see them. With a save
+    /// from after August 1950, a selected hex and an event waiting, the build buttons and the event's options are live, and
+    /// still none of them takes the focus under the start screen.
+    /// Built in GameRoot's order: the HUD, ScreenNav, the info panel and the event card, then the screen.</summary>
+    [UnityTest]
+    public IEnumerator ASaveFrom1950KeepsTheLiveHudOutOfReach()
+    {
+        var g = GameSession.New(C, 9, Mode.Historical);
+        while (g.State.Date < new DateTime(1950, 8, 1) || g.State.PendingEvents.Count == 0) g.Step(HistoricalAI.Commands(C, g.State));
+        var store = TempStore();
+        store.WriteAutosave(g.Save.Write());
+        using var ui = new RenderedUi();
+        var bridge = new SimBridge(GameStart.Begin(C, store, () => 4UL, new List<string>(), Text, out var resumed), Text);
+        var owned = new List<IDisposable>();
+        try
+        {
+            ui.Root.Q("root").RemoveFromClassList("loading");
+            owned.Add(new HudPresenter(ui.Root, bridge, Text));
+            owned.Add(new ScreenNav(ui.Root));
+            var info = new InfoPanelPresenter(ui.Root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id)); owned.Add(info);
+            owned.Add(new EventCardPresenter(ui.Root, bridge, Text, null));
+            var toast = new ToastPresenter(ui.Root, bridge, Text); owned.Add(toast);
+            var newGame = new NewGamePresenter(ui.Root, bridge, store, toast, Text, () => 5UL); owned.Add(newGame);
+            var tlv = C.SettlementHexes.Single(x => x.Id == "tel_aviv");
+            info.Show(tlv.Q, tlv.R);
+            var start = new StartScreenPresenter(ui.Root, newGame, resumed); owned.Add(start);
+            start.Show();
+            for (int i = 0; i < 4; i++) yield return null;
+            Assert.IsTrue(resumed, "precondition: the 1950 save is continued");
+            var build = ui.Q<Button>("build-camp");
+            Assert.IsTrue(build.enabledSelf && build.style.display.value == DisplayStyle.Flex, "precondition: build-camp is live: " + ui.Q<Label>("info-reason").text);
+            Assert.IsNotNull(ui.Root.Q("event-options").Q<Button>(), "precondition: an event's options are shown");
+            void NoneReachable(string where)
+            {
+                foreach (var region in new[] { "top-bar", "right-column", "info-panel" })
+                    foreach (var b in ui.Root.Q(region).Query<Button>().ToList())
+                    {
+                        Assert.IsFalse(b.canGrabFocus, $"{where}: {region} {b.name} cannot take the focus under the start screen");
+                        b.Focus();
+                        Assert.AreNotSame(b, ui.Root.focusController?.focusedElement, $"{where}: {region} {b.name} is not focused");
+                    }
+            }
+            NoneReachable("under the start screen");
+            ui.Press("start-continue");
+            yield return null; yield return null;
+            Assert.IsTrue(build.canGrabFocus, "the build button is back once the screen closes");
+        }
+        finally { for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose(); }
     }
 
     // --- Layout ------------------------------------------------------------------------------------------------------

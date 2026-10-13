@@ -77,6 +77,7 @@ namespace Statecraft.Game.UI
             foreach (var m in meters) m.UnregisterCallback<GeometryChangedEvent>(OnMeterGeometry);
             bar.RemoveFromClassList(RoomyClass);
             bar.RemoveFromClassList(CompactClass); hudRoot.RemoveFromClassList(NarrowClass); hudRoot.RemoveFromClassList(TwoRowClass); hudRoot.RemoveFromClassList(ThreeRowClass);
+            ScreenNav.DisableCovered(hudRoot);
         }
 
         // The bar's width does not depend on the class, so this settles in one pass.
@@ -118,6 +119,7 @@ namespace Statecraft.Game.UI
             hudRoot.EnableInClassList(NarrowClass, width < NarrowBelowPx);
             hudRoot.EnableInClassList(TwoRowClass, width < TwoRowBelowPx);
             hudRoot.EnableInClassList(ThreeRowClass, width < ThreeRowBelowPx);
+            ScreenNav.DisableCovered(hudRoot);   // two rows or one: what an open screen covers changes with it (#400)
         }
 
         /// <summary>End Turn's hourglass, in the button's left padding (Statecraft.uss .end-turn), painted into the button so it

@@ -20,6 +20,22 @@ namespace Statecraft.Game.UI
         /// the full width, so Statecraft.uss hides the event column and the info panel under it (#210).</summary>
         public const string ScreenOpenClass = "screen-open";
 
+        /// <summary>Disables each HUD panel that a class on the "root" element hides, and enables it again when none does: a
+        /// child of an undisplayed element can still take the keyboard focus, so hiding alone leaves its buttons in Tab's
+        /// reach (#400). The start screen covers the top bar, the event column and the info panel; in the two-row HUD any
+        /// open screen covers the event column and the info panel; a wide screen covers the info panel. Called wherever
+        /// one of those classes changes (StartScreenPresenter, Open, HudPresenter's tier), so no caller re-enables a panel
+        /// another still covers.</summary>
+        public static void DisableCovered(VisualElement root)
+        {
+            var r = root.Q("root") ?? root;
+            bool start = r.ClassListContains(StartScreenPresenter.OpenClass);
+            bool full = r.ClassListContains(ScreenOpenClass) && r.ClassListContains(HudPresenter.TwoRowClass);
+            r.Q("top-bar")?.SetEnabled(!start);
+            r.Q("right-column")?.SetEnabled(!(start || full));
+            r.Q("info-panel")?.SetEnabled(!(start || full || r.ClassListContains(WideOpenClass)));
+        }
+
         /// <summary>Asks to be told, synchronously, whenever <paramref name="screen"/> is opened (a presenter that skips
         /// rendering while its screen is hidden catches up then).</summary>
         public static void OnOpened(VisualElement screen, System.Action action) => screen.userData = action;
@@ -57,6 +73,7 @@ namespace Statecraft.Game.UI
             root.UnregisterCallback(onCancel, TrickleDown.TrickleDown);
             var r = root.Q("root") ?? root;
             r.RemoveFromClassList(WideOpenClass); r.RemoveFromClassList(ScreenOpenClass);
+            DisableCovered(root);
         }
 
         /// <summary>Closes the open screen (Escape); false when none was open.</summary>
@@ -89,6 +106,7 @@ namespace Statecraft.Game.UI
             }
             (root.Q("root") ?? root).EnableInClassList(WideOpenClass, wide);
             (root.Q("root") ?? root).EnableInClassList(ScreenOpenClass, screen != null);
+            DisableCovered(root);
             if (screen != null) (root.Q<VisualElement>("screen-" + screen).userData as System.Action)?.Invoke();
         }
     }

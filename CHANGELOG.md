@@ -284,6 +284,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- In the two-row HUD (a window narrower than about square), a button in the event column or the info panel hidden under an
+  open screen could still take the keyboard focus once the 1950 build buttons were live. The covered panels are now
+  disabled as well as hidden, also when the window narrows under an open screen, and a panel hidden by the start screen
+  or a wide screen is not re-enabled by a tier change or a screen closing under it (#400).
 - The map's far tilt-shift band no longer blurs the far towns into a smear at the play zoom (#390). Since the map drew
   faster (#320), the quality fallback no longer turns the tilt-shift off, and the far band showed in full. On the owner's
   ruling it is now gently soft at the gameplay zoom, as on promo 03, and in full only at the overview. Presentation only.
