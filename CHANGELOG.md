@@ -196,6 +196,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The decision card opens in the middle of the screen (decision cards, 2026-10-13): up to 1040 px wide, with a 16:9 media
+  header that shows the event's archival photograph at up to 960x540 (the 24 photographs re-cropped from the same originals
+  to 16:9). While it is open a dim backdrop covers the map and the panels under it; Hide collapses it to a "Decision
+  waiting" button that brings it back, and a new event opens it again with the keyboard focus on the card (Tab reaches the
+  options; none is lit before the player picks). Any open screen hides it until it closes. Presentation only: no golden moves.
 - The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
