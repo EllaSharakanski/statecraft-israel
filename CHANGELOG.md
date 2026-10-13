@@ -196,6 +196,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
+  hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
+  with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
+  without buttons. The date plate, the event card, the info panel and the minimap carry the promo's filigree trim, drawn
+  in code, which takes no clicks.
 - Map: the unit figures' uniforms are darker and warmer, so a trio stands out against the sunlit ground as promo 03's
   does instead of khaki on khaki; a figure's slope base is painted trodden earth instead of a dark grey disc. A
   readability choice at map scale; the sourced kit is unchanged (refs #197).
@@ -290,6 +295,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
+  (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
   are left out at draw time and come back when the figure goes (a later date, or the "units" toggle off, so plain
   screenshot checkpoints keep every tree); the kits' layout does not change (fixes #249).

@@ -15,6 +15,12 @@ namespace Statecraft.Game.UI
     /// Defence screen (owner ruling, 2026-10-11).</summary>
     public sealed class InfoPanelPresenter : System.IDisposable
     {
+        /// <summary>The class of a fact row (Game.uxml): a sign, then the fact's line; hidden while the line is empty.</summary>
+        public const string RowClass = "info-row";
+        /// <summary>On the panel while it shows a unit's card: the rows keep their lines but drop the hex signs (Statecraft.uss).</summary>
+        public const string UnitClass = "info-unit";
+        readonly List<(VisualElement row, Label line)> rows = new List<(VisualElement, Label)>();
+
         readonly VisualElement panel; readonly SimBridge bridge; readonly UiText text;
         readonly Button campButton, housingButton, defenceButton; readonly System.Action onCamp, onHousing, onDefence;
         readonly System.Func<PlacedToken?> selectedUnit;
@@ -43,6 +49,7 @@ namespace Statecraft.Game.UI
             localitiesLabel = panel.Q<Label>("info-localities");
             placement = panel.Q<Label>("info-placement"); reason = panel.Q<Label>("info-reason");
             thumb = panel.Q<UiIcon>("info-thumb");
+            foreach (var row in panel.Query(className: RowClass).ToList()) rows.Add((row, row.Q<Label>()));
             campButton = panel.Q<Button>("build-camp"); housingButton = panel.Q<Button>("build-housing");
             onCamp = () => Build(MapActions.TransitCamp); onHousing = () => Build(MapActions.Housing);
             campButton.clicked += onCamp; housingButton.clicked += onHousing;
@@ -140,10 +147,19 @@ namespace Statecraft.Game.UI
 
         public void Render()
         {
+            RenderLines();
+            // A fact row shows only when its line has something to say (an empty row would leave a lone sign).
+            foreach (var (row, line) in rows)
+                row.style.display = string.IsNullOrEmpty(line.text) ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        void RenderLines()
+        {
             var c = bridge.Content; var s = bridge.State;
             var camp = campButton; var housing = housingButton;
             var unit = unitMode ? selectedUnit() : null;
             defenceButton.style.display = unit != null ? DisplayStyle.Flex : DisplayStyle.None;
+            panel.EnableInClassList(UnitClass, unit != null);
             if (unit != null)
             {
                 var card = UnitCard.For(unit.Value, s, text);
@@ -186,8 +202,11 @@ namespace Statecraft.Game.UI
             // eras.yaml systems.map_actions (#58): an action the era does not allow has no button and no reason
             var allowed = c.SystemsAt(s.Date).MapActions;
             bool campOn = allowed.Contains(MapActions.TransitCamp), housingOn = allowed.Contains(MapActions.Housing);
-            camp.style.display = campOn ? DisplayStyle.Flex : DisplayStyle.None;
-            housing.style.display = housingOn ? DisplayStyle.Flex : DisplayStyle.None;
+            // Both refused for the same reason (in 1948: "...can be placed from 1 January 1950"; or not land, too far, the
+            // turn's cap): neither can be ordered on this hex now, so the reason is said once and no button shows (#398).
+            bool shared = campOn && housingOn && campWhy != null && campWhy == housingWhy;
+            camp.style.display = campOn && !shared ? DisplayStyle.Flex : DisplayStyle.None;
+            housing.style.display = housingOn && !shared ? DisplayStyle.Flex : DisplayStyle.None;
             camp.SetEnabled(campOn && campWhy == null); housing.SetEnabled(housingOn && housingWhy == null);
             if (!campOn) campWhy = null;
             if (!housingOn) housingWhy = null;

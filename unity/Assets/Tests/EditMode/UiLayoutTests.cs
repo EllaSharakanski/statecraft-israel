@@ -91,7 +91,11 @@ public class UiLayoutTests
         doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
         go.SetActive(true);
         var root = doc.rootVisualElement;
-        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        // August 1950, when the map actions are open (in 1948 one shared refusal hides both build buttons, #398), so the
+        // build button below is really on the panel before a screen covers it.
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (g.State.Date < new System.DateTime(1950, 8, 1)) g.Step(HistoricalAI.Commands(C, g.State));
+        var bridge = new SimBridge(g, Text);
         var info = new InfoPanelPresenter(root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id));
         var nav = new ScreenNav(root);
         try
@@ -103,6 +107,8 @@ public class UiLayoutTests
             var panel = root.Q("info-panel");
             var build = root.Q<Button>("build-camp");
             Assert.AreEqual(DisplayStyle.Flex, panel.resolvedStyle.display, "precondition: the panel shows");
+            Assert.AreEqual(DisplayStyle.Flex, build.resolvedStyle.display, "precondition: the build button shows");
+            Assert.IsTrue(build.canGrabFocus, "precondition: the build button can take the focus before a screen covers it");
             foreach (var s in new[] { "cabinet", "defence" })
             {
                 nav.Open(s);
