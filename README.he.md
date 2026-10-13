@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 <img src="docs/images/build-m3-map.jpg" width="820" alt="הגרסה הנוכחית 0.1.0 (M3): מפת השטח עם עיירות וכפרים, מסילות ויחידות, הסרגל העליון וכרטיס אירוע עם צילום ארכיון.">
 <br>
 <img src="docs/images/build-m3-start.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): מסך הפתיחה עם שתי שורות ממגילת העצמאות, על רקע ציור שנוצר בבינה מלאכותית.">
-<img src="docs/images/build-m3-city.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): תקריב של תל אביב ויפו.">
+<img src="docs/images/build-m3-city.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): תקריב של הבתים הלבנים של תל אביב ושל יפו ונמלה.">
 <br>
 <img src="docs/images/build-m3-cabinet.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): מסך הקבינט.">
 <img src="docs/images/build-m3-why.jpg" width="405" alt="הגרסה הנוכחית 0.1.0 (M3): לוח 'למה זה קרה?'.">
@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
 <div dir="rtl">
 
-<p align="center"><em>צילומי מסך אמיתיים מגרסה 0.1.0 (M3), 2026-10-13. הציור במסך הפתיחה נוצר בבינה מלאכותית.</em></p>
+<p align="center"><em>צילומי מסך אמיתיים מגרסה 0.1.0 (M3), 2026-10-13, בקומיט <span dir="ltr">47eac52</span>. הציור במסך הפתיחה נוצר בבינה מלאכותית.</em></p>
 
 </div>
 
