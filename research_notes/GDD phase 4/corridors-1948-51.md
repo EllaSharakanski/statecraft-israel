@@ -1,6 +1,7 @@
 # Road and rail corridors, 1948-51 (research note, 2026-10-13)
 
-Status: research only, for issue #384 (GDD Phase 4, D-D7 and D-B3). Nothing here is in `content/` yet. The corridor
+Status: research only, for issue #384 (GDD Phase 4, D-D7 and D-B3). Second pass the same day: the load-bearing dates
+checked against non-Wikipedia sources ([Corroboration](#corroboration-outside-wikipedia)). Nothing here is in `content/` yet. The corridor
 list and the railway objective are the owner's calls; this note gives the sourced facts and the gaps.
 
 What the GDD needs (`docs/GDD.md`, lines 11, 17, 121-122, 164): a list of designated corridors, each with route
@@ -13,6 +14,10 @@ date.
   revision given in the source list. Where an article cites a contemporary newspaper or book for a claim, the citation
   is given as "(cited: ...)". Those newspapers were **not** read for this note; they are where a fact-checker should go
   next (most are on the National Library's Historical Jewish Press site).
+- **Corroboration.** Wikipedia is a pointer, not the source. The load-bearing dates were checked against period
+  newspapers and books on the Internet Archive; the table under [Corroboration](#corroboration-outside-wikipedia) says
+  which dates a non-Wikipedia source confirms and which are still Wikipedia only. Claims not in that table are
+  Wikipedia only.
 - **[C]** marks a conflict between sources. **[U]** marks a claim that rests on one secondary source, or one that
   could not be checked. Nothing is invented: where no source gives a date or a route, the note says so.
 - **Coordinates** are approximate: the point the place's Wikipedia article gives (API `prop=coordinates`, read
@@ -34,8 +39,8 @@ date.
 2. **The Jerusalem railway reopened on 7 August 1949** (a ceremonial first train); regular passenger trains started on
    2 March 1950. `routes_1948.yaml` gives only the March 1950 date.
 3. **Routes the game would plausibly offer that `routes_1948.yaml` does not have:** the Road of Valour (built 4
-   September to 30 October 1948, opened 7 December 1948), its Nahshon-Ramla link (opened September 1950), the Tulkarm
-   rail bypass, the Rosh HaAyin-Tel Aviv North rail link, the coastal railway, the Tel Aviv-Netanya road (opened July
+   September to 30 October 1948, opened 7 or 12 December 1948 [C]), its Nahshon-Ramla link (opened September 1950), the Tulkarm
+   rail bypass, the Rosh HaAyin-Tel Aviv North rail link, the coastal railway, the Tel Aviv-Netanya road (opened 28 July
    1950), the Wadi Ara road (reopened May 1949), the Acre-Safed road (reopened early 1949), the Gesher-Menahamia bypass
    (opened November 1950), the Malachi-Kama road to Beersheba (July 1949 to June or July 1951), the Beersheba-Kurnub-Ma'ale
    Akrabim-Arava track to Eilat (taken November 1948 and March 1949, improved by the Engineering Corps in 1950), and
@@ -44,6 +49,52 @@ date.
    Latrun was closed to Israeli traffic from 18 May 1948 and never reopened before 1967; the Eastern Railway as drawn
    runs through Tulkarm, which stayed on the Jordanian side; the Haifa-Nahariya line was cut at the Na'aman bridge
    until 1950 [C].
+
+## Corroboration outside Wikipedia
+
+Checked on 2026-10-13. Sources found through the Internet Archive's full-text search and read as OCR text (scans of
+period newspapers and of an Israeli government publication). The National Library's Historical Jewish Press site, where
+the Hebrew papers cited by Wikipedia are, blocked scripted access (a browser check), and Google Books' API refused the
+request (quota), so the Hebrew newspapers and Cotterell 1984 were **not** read. Where a book could only be seen as a
+search snippet, the note says "snippet". OCR text is quoted only where it reads cleanly.
+
+Non-Wikipedia sources used:
+- **IOI 1954:** Israel Office of Information (New York), *Israel, 1954* (communications pamphlet), 1954. Columbia
+  University Libraries scan, https://archive.org/details/ldpd_11138654_003, sections "Road Construction" and "Railways" (printed pages
+  about 6-11; accessed 2026-10-13).
+- **JP:** *The Jerusalem Post*, issues of 28 and 30 July 1950, 3 September 1950, 29 March 1953, 26 April 1953 and 14
+  May 1953, https://archive.org/details/per_jerusalem-post_the-jerusalem-post_1953-04-26_29_7549 and the matching
+  identifiers for the other dates (accessed 2026-10-13). The archive's run starts on 23 April 1950; earlier issues (as
+  *The Palestine Post*) were not found there, except 14 December 1948, which has nothing on the Road of Valour.
+- **JC:** *The Jewish Chronicle* (London), 12 August 1949 (p. 1), 3 April 1953 and 22 May 1953,
+  https://archive.org/details/sim_jewish-chronicle_the-jewish-chronicle_1949-08-12_4190 and matching identifiers
+  (accessed 2026-10-13).
+- **China Mail:** *China Mail* (Hong Kong), 9 August 1949, a Reuter item datelined "Jerusalem, August 7",
+  https://archive.org/details/NPCM19490809 (accessed 2026-10-13).
+- **Railway World,** May 1973, https://archive.org/details/railwayworld34gmki_3 (snippet; the article itself was not
+  readable, accessed 2026-10-13).
+- **Schubert and Vogel 1957:** Kurt Schubert and Rolf Vogel, *Israel - State of Hope*, Stuttgart: Schwanverlag, 1957,
+  https://archive.org/details/bwb_P9-CTI-773 (snippet, accessed 2026-10-13).
+- **50 Speeches 2017:** *50 Speeches that Made the Modern World*, London: Chambers Harrap, 2017, ISBN 9781786842329,
+  https://archive.org/details/50speechesthatma0000unse (snippet, accessed 2026-10-13).
+- **Expresszüge 1989:** *Expresszüge im Vorderen Orient*, 1989, https://archive.org/details/expresszugeimvor0000unse
+  (snippet, accessed 2026-10-13).
+
+| # | Date or claim (Wikipedia) | What the non-Wikipedia source says | Verdict |
+|---|---|---|---|
+| 1 | Coastal railway: unofficial opening April 1953 (or ceremony 15 April 1953); official opening 14 May 1953 | JP, 26 April 1953: regular passenger service between Tel Aviv and Haifa "along the new coastal track would commence on May 14", said the Director General of the Ministry of Transport. JP, 14 May 1953: a summer 1953 passenger timetable "from Friday, May 15", with Haifa trains "via Netanya" from Tel Aviv (North). JC, 22 May 1953 (a JTA item): the new Tel Aviv-Hadera railway line "was officially declared open last week"; 95 minutes Tel Aviv-Haifa against 150 on the old line, which passed near Jordanian-held territory; about 200 Americans at the ceremony as US bond investors. IOI 1954 ("Railways"): the coastal line Hadera-Tel Aviv North "was brought into operation in 1953" | **14 May 1953 corroborated** (announced for that date, official opening in the week before 22 May, timetable from 15 May). The April date (unofficial running, or a 15 April ceremony) is **Wikipedia only**; no non-Wikipedia source found for it |
+| 2 | First Haifa-Tel Aviv passenger line by Rosh HaAyin, 20 September 1949 | IOI 1954 ("Railways"): in 1949 "the Haifa-Tel Aviv line reopened for passenger services", shortened by new sections "including one skirting a salient on the Jordan frontier" | **Year corroborated; the day (20 September 1949) is Wikipedia only** |
+| 3a | Jerusalem line reopened 7 August 1949 | China Mail, 9 August 1949 (Reuter, "Jerusalem, August 7"): the first train from Tel Aviv since the war, with a symbolic load of flour, arrived "today" on a single track now wholly in Israeli hands; Transport Minister Remez on board, greeted by Ben-Gurion on arrival. JC, 12 August 1949, p. 1: the line reopened "on Sunday" (7 August 1949 was a Sunday); the train, the first for 18 months, brought flour, cement and 60,000 books from Poland for the Hebrew University, with the Prime Minister and Remez among the guests. IOI 1954 ("Railways"): "In August, 1949, the first train reached Jerusalem from Tel Aviv". Expresszüge 1989 (snippet): "Am 7. August 1949 reiste Premierminister ..." | **Corroborated.** [C, minor] whether Ben-Gurion rode the train (JC) or met it in Jerusalem (Reuter) |
+| 3b | Regular passenger service to Jerusalem, 2 March 1950 | Not found. De Gaury, *The New State of Israel* (1952, p. 226) gives passenger figures "between 1st March, 1950, and the end of February 1951", a statistical year, not an opening date | **Wikipedia only** (and Cotterell p. 88 through EN PR, not read) |
+| 4a | Road of Valour built 4 September - 30 October 1948 | Not found. IOI 1954 ("Road Construction") lists the Road of Valour among roads completed since 1948, without dates | **Wikipedia only** |
+| 4b | Road of Valour opened 7 December 1948 | Schubert and Vogel 1957 (snippet): "On 12th December 1948, the 'Road of Valour', which connects Jerusalem with the coast, was opened". 50 Speeches 2017 (snippet) dates Ben-Gurion's dedication speech, "We dedicate today this Road of Valour", to 12 December 1948, at Ayalon. JC, 19 August 1949 mentions Herzl's cortege going up the Road of Valour, so it was in use by then | **[C] Not corroborated: two books give 12 December 1948, against 7 December 1948 in HE Gvura** (whose cited papers, HaTzofe and Ma'ariv of 7 December 1948, were not read) |
+| 4c | Ramla - Nahshon link opened September 1950 | JP, 3 September 1950 (OCR partly garbled): a new road that cuts the Jerusalem-Tel Aviv journey by about 20 minutes, starting at the junction of the Road of Valour and the Masmiya road, 12 km long, built in about 80,000 working days, opened at a ceremony with Golda Myerson; the Mayor of Ramle spoke | **Corroborated** (September 1950; the day, likely Friday 1 September, is not legible) |
+| 5 | Tulkarm bypass: August 1948 (Cotterell p. 86, through EN PR) or 1949 | Railway World, May 1973 (snippet): "In 1949 a line was built bypassing Tulkarm, as this town was by then just inside the Jordanian ...". IOI 1954 ("Railways"), in its account of 1949: a new section "skirting a salient on the Jordan frontier, by-passing a section which previously passed through enemy-held territory" | **1949 corroborated by two non-Wikipedia sources.** Cotterell p. 86 not read; August 1948 stands only on the EN PR citation of it |
+| 6a | Tel Aviv - Netanya coast road opened July 1950 | JP, 28 July 1950: the road "will be officially opened by Mrs. Golda Myerson ... at 11 o'clock tomorrow morning", open to regular traffic from 2 p.m. JP, 30 July 1950: the 26-km road "was officially declared open to traffic yesterday" (the report is datelined Saturday), with Golda Myerson cutting a tape just north of the Yarkon bridge. IOI 1954 ("Road Construction") lists it | **Corroborated, and narrowed: Friday 28 July 1950** |
+| 6b | Sodom road opened 26 March 1953 | JC, 3 April 1953: the Beersheba-Sodom road "was officially opened last week" at a ceremony with the Prime Minister, ministers, members of the Knesset and 1,500 others; it took two years to build. JP, 29 March 1953: last Friday's paper (27 March) carried a page on "the official opening of the new road by the Prime Minister". IOI 1954 ("Road Construction"): "Beersheba-Sdom road, opened in March, 1953" | **Corroborated: opened in the week of 26 March 1953**; the exact day is Wikipedia only |
+| 6c | Malachi - Kama (Faluja - Beersheba) road, July 1949 - June/July 1951 | IOI 1954 ("Road Construction") lists the "Faluja-Beersheba road" as completed, bringing Beersheba within two hours of Tel Aviv. No date | **Road corroborated; dates Wikipedia only** |
+| 6d | Road to Eilat by the Ramon crater, opened February 1954 | IOI 1954 ("Road Construction"), lists the Beersheba - Yeruham - Sde Boker - Wadi Ramon - Elat road as under construction and says it "will be opened to general use in May, 1954"; it describes the old road as "the old Wadi-Araba road to Elat" along the border | **[C] Not corroborated:** the government pamphlet, written in early 1954, expected May 1954. The February 1954 date (HE R204, HE R40) is Wikipedia only |
+| 6e | Ma'ale Akrabim road paved 1950; Operation Lot and Uvda route dates | Not found in the sources searched | **Wikipedia only** |
 
 ## Railways
 
@@ -59,9 +110,9 @@ to Petah Tikva (HE TA North).
 | rest of 1948 | Service confined to the Haifa area: south to Hadera, north to Kiryat Motzkin and later Nahariya | EN PR, citing Cotterell 1984, p. 84 |
 | 4 January 1949 | Regular rail-bus service Haifa-Tel Aviv: train Haifa-Hadera, bus Hadera-Tel Aviv; two trains a day each way; Transport Minister David Remez at the opening | HE IR (cited: Al HaMishmar, 16 January 1949) |
 | 3 April 1949 | Armistice with Jordan; the Triangle passes to Israel and almost all of the Eastern Railway with it, running tens to hundreds of metres from the new line near Qalqilya and Tulkarm | HE IR (cited: Davar, 21 September 1949) |
-| August 1948 or 1949 | Bypass of Tulkarm, "a short stretch of new track just west of what was to become the Armistice Line" | **[C]** EN PR says August 1948 (citing Cotterell 1984, p. 86); EN Eastern says 1949; HE Coastal cites Haaretz, 4 August 1949: "Train traffic to Haifa in September - the section bypassing Tulkarm completed". The 1949 date fits the armistice; Cotterell's page should be checked. |
+| August 1948 or 1949 | Bypass of Tulkarm, "a short stretch of new track just west of what was to become the Armistice Line" | **[C]** EN PR says August 1948 (citing Cotterell 1984, p. 86); EN Eastern says 1949; HE Coastal cites Haaretz, 4 August 1949: "Train traffic to Haifa in September - the section bypassing Tulkarm completed". The 1949 date fits the armistice. **Outside Wikipedia:** Railway World (May 1973) and IOI 1954 both put it in 1949 (Corroboration, row 5); Cotterell's page still to check. |
 | 1949 | Yarkon branch extended about 7 km west along the Yarkon to a new Tel Aviv North station (later Bnei Brak station) | HE TA North |
-| 20 September 1949 | Haifa-Tel Aviv passenger line inaugurated with Tel Aviv North station. Trains ran to Rosh HaAyin South and reversed there towards Hadera and Haifa | HE TA North (cited: Ma'ariv, 20 September 1949); HE Yarkon |
+| 20 September 1949 | Haifa-Tel Aviv passenger line inaugurated with Tel Aviv North station. Trains ran to Rosh HaAyin South and reversed there towards Hadera and Haifa | HE TA North (cited: Ma'ariv, 20 September 1949); HE Yarkon. IOI 1954 confirms the year only (row 2) |
 | 14 May 1953 | Replaced as the main line by the coastal railway (R2); the Eastern Railway kept some passenger and freight service | HE Coastal; EN Eastern |
 
 Waypoints (approximate): Haifa East station (32.8119, 35.0047, from `routes_1948.yaml`); Hadera East station (32.4461,
@@ -78,7 +129,7 @@ Waypoints (approximate): Haifa East station (32.8119, 35.0047, from `routes_1948
 | end of 1951 | Track laid "from Remez Junction to Hadera" | HE Coastal (cited: Davar, 29 November 1951) **[U]**: the cited headline is about the Tel Aviv-Herzliya line, so what was laid by the end of 1951 needs the article itself |
 | early 1953 | Tracklaying complete; more work needed before trains could run | HE Coastal (cited: Davar, 25 January 1953) |
 | April 1953 | Opened unofficially | **[C]** HE Coastal: April 1953 (cited: Al HaMishmar, 20 April 1953; Herut, 26 April 1953). HE IR: a ceremony marked completion on 15 April 1953 (cited: Israel Hayom, 20 September 2019) |
-| 14 May 1953 | Official opening, ceremony at Kfar Vitkin; 47 km from Remez Junction to Tel Aviv North | HE Coastal (cited: Haaretz, 14 May 1953); HE Remez; HE IR (47 km). EN Eastern gives only "1953" |
+| 14 May 1953 | Official opening, ceremony at Kfar Vitkin; 47 km from Remez Junction to Tel Aviv North | HE Coastal (cited: Haaretz, 14 May 1953); HE Remez; HE IR (47 km). EN Eastern gives only "1953". **Outside Wikipedia:** JP 26 April 1953, JP 14 May 1953, JC 22 May 1953 (Corroboration, row 1) |
 | 4 November 1954 | Extended about 4 km to Tel Aviv Central station | HE IR; HE Coastal gives "1954" |
 
 Builder: Solel Boneh (HE Coastal, cited: HaTzofe, 21 November 1949). Built with American aid (HE IR) [U: no citation
@@ -88,7 +139,7 @@ Waypoints (approximate): Remez Junction (32.4656, 34.9442); Kfar Vitkin (32.3817
 34.8567); Herzliya (32.1653, 34.8458); Tel Aviv North / Bnei Brak station (32.1029, 34.831). The places are those the
 cited headlines and the ceremony name; the line between them is not traced from any source [U].
 
-**For D-B3.** The historical completion date (14 May 1953, or April 1953) is after the MVP window whatever the starting
+**For D-B3.** The historical completion date (14 May 1953, corroborated; April 1953 is Wikipedia only) is after the MVP window whatever the starting
 month. Options, all sourced above: (a) 20 September 1949, the first Haifa-Tel Aviv passenger line (R1), which is a
 reopening of an existing line rather than a new build; (b) the coastal line as the build, with its historical date
 shown as after the game's end; (c) 4 January 1949, the rail-bus link. Which one the card uses is the owner's call.
@@ -102,8 +153,8 @@ Route: the existing `jaffa_jerusalem_railway` line, Jaffa - Lod - Ramla - Artuf 
 | 1948 | Service stopped during the war; sections of the line (Battir) ended up under the Arab Legion | EN JJR; HE JLM rail |
 | 1948 | Jaffa station abandoned; the coastal terminus is Tel Aviv South (by Beit Hadar) from 1949 | HE JLM rail |
 | 3 April 1949 | Armistice with Jordan returns the whole route to Israel | EN JJR; HE JLM rail |
-| 7 August 1949 | Reopened: first Israeli train to Jerusalem, with a symbolic load of flour, cement and Torah scrolls; it left Tel Aviv South at 08:00 with Ben-Gurion and Remez on board | EN JJR; HE JLM rail; HE IR |
-| 2 March 1950 | Regular passenger service, Haifa (and Tel Aviv North) - Rosh HaAyin - Lod - Jerusalem, with a connection at Lod from Tel Aviv South | EN JJR; HE IR (cited: Al HaMishmar, 1 March 1950; Israel Railways, "50 Years of Israel Railways", September 1998); EN PR, citing Cotterell 1984, p. 88, "March 1950" |
+| 7 August 1949 (corroborated, row 3a) | Reopened: first Israeli train to Jerusalem, with a symbolic load of flour, cement and Torah scrolls; it left Tel Aviv South at 08:00 with Ben-Gurion and Remez on board | EN JJR; HE JLM rail; HE IR |
+| 2 March 1950 (Wikipedia only) | Regular passenger service, Haifa (and Tel Aviv North) - Rosh HaAyin - Lod - Jerusalem, with a connection at Lod from Tel Aviv South | EN JJR; HE IR (cited: Al HaMishmar, 1 March 1950; Israel Railways, "50 Years of Israel Railways", September 1998); EN PR, citing Cotterell 1984, p. 88, "March 1950" |
 
 [C, minor] HE IR's external links list a Carmel newsreel titled "Israel Railways travels to Jerusalem for the first
 time", dated February 1949. That date does not fit the armistice; it may be a mislabelled release date. Not used.
@@ -187,7 +238,7 @@ The permanent Latrun bypass, south of and parallel to the Burma Road.
 |---|---|---|
 | 12 August 1948 | First attempt at a civilian convoy through Latrun fails; a permanent road on a southern line is announced | HE Gvura |
 | 4 September - 30 October 1948 | Built by the Engineering Corps in about eight weeks; 40.5 km, about 5 km a week, mostly 5 m wide | HE Gvura (cited: Ma'ariv, 7 December 1948, p. 10; HaTzofe, 7 December 1948) |
-| 7 December 1948 | Official opening and cornerstone of the memorial, with Ben-Gurion and Chief of Staff Ya'akov Dori. The name "Road of Valour" was given here | HE Gvura (cited: Yehuda Ziv, "Derekh Burma", yad-leyuval.org.il) |
+| 7 or 12 December 1948 [C] | Official opening and cornerstone of the memorial, with Ben-Gurion and Chief of Staff Ya'akov Dori. The name "Road of Valour" was given here | HE Gvura gives 7 December (cited: Yehuda Ziv, "Derekh Burma", yad-leyuval.org.il). Schubert and Vogel 1957 and 50 Speeches 2017 give 12 December 1948 (Corroboration, row 4b) |
 | winter 1948-49 | Much of it damaged by rain (no drainage) | HE Gvura |
 | summer 1949 | Re-laid with drainage ditches | HE Gvura (cited: HaTzofe, 20 October 1949) |
 
@@ -210,7 +261,7 @@ the memorial is near it); Nahshon Junction (no point); Shimshon Junction (no poi
 | Date | Status | Source |
 |---|---|---|
 | mid-1949 or October 1949 | Construction begins | **[C]** HE Gvura: "mid-1949" (cited: Al HaMishmar, 20 October 1949). HE R44: "from October 1949" |
-| September 1950 | Opened to traffic; 12.5 km, 6.5 m wide, 5 m of it asphalt. Saves the detour through Hulda and Rehovot | HE Gvura (cited: Davar, 30 August 1950, "The Ramla-Gvura road will open on Friday"); HE R44 |
+| September 1950 | Opened to traffic; 12.5 km, 6.5 m wide, 5 m of it asphalt. Saves the detour through Hulda and Rehovot | HE Gvura (cited: Davar, 30 August 1950, "The Ramla-Gvura road will open on Friday"); HE R44. JP, 3 September 1950 reports the opening (Corroboration, row 4c) |
 
 Waypoints: Ramla (31.9275, 34.8625, `routes_1948.yaml` line 195); Nahshon Junction (no point).
 
@@ -219,7 +270,7 @@ Waypoints: Ramla (31.9275, 34.8625, `routes_1948.yaml` line 195); Nahshon Juncti
 Already in `routes_1948.yaml` (lines 227-251). No source read for this note gives a 1948-51 cut or closure. Related
 builds:
 - **Coastal road, Tel Aviv - Netanya (Route 2).** Announced August 1949; work from November 1949 at both ends; about
-  half paved by February 1950; opened to traffic July 1950 (HE R2, cited: Davar, 17 February 1950; Ma'ariv, 27 March
+  half paved by February 1950; opened to traffic on 28 July 1950 (JP, 28 and 30 July 1950; Corroboration, row 6a; HE R2, cited: Davar, 17 February 1950; Ma'ariv, 27 March
   1950; Al HaMishmar, 30 July 1950). A Carmel newsreel of August 1950 shows Golda Meir cutting the ribbon (HE R2). EN
   R2 says only "early 1950s". The Netanya - Hadera section: tender May 1951, opened January 1959 (HE R2): out of the
   window.
@@ -297,11 +348,13 @@ Eilat route (HE Eilat). Neither is a corridor, but both bear on how cut off the 
 
 **After the window:** the road to Eilat by Yeruham and the Ramon crater (Route 40 south and Route 204) was cut by the
 IDF from 1951 and opened officially in February 1954, 245 km (HE R204, cited: Al HaMishmar, 21 February 1954; HE R40,
-cited: Davar, 21 February 1954). **[C]** HE Eilat says "early 1953".
+cited: Davar, 21 February 1954). **[C]** HE Eilat says "early 1953"; IOI 1954 expected it to open to general use in
+May 1954 (Corroboration, row 6d).
 
 ### D11. Kurnub (Dimona) - Sodom road, and the Yeruham link
 
 The "Sodom road" from Sodom up to the Dimona area: built from January 1951, opened with a ceremony on 26 March 1953
+(the week is corroborated by JC, 3 April 1953, JP, 29 March 1953 and IOI 1954; Corroboration, row 6b)
 after 28 months, climbing about 800 m (HE R25, cited: Davar, 24 November 1952; Davar, 27 March 1953). The Yeruham link
 (Route 204 north) was built in 1952 and opened in February 1953 as a cheap connection from the Sodom road to "the oil
 road" (HE R204). Beersheba - Dimona opened at the end of 1955 (HE R25). Only the start of work (January 1951) falls in
@@ -327,7 +380,7 @@ sim reads either file (impact plan §1.5). No `corridors.yaml` exists yet.
 |---|---|---|---|---|
 | 1 | Jaffa-Jerusalem railway reopening | `routes_1948.yaml:42-46`: "regular trains between Ramla and Jerusalem resumed in March 1950"; `from: '1920-10-05'` (line 40), no `to` | The line was out of use from 1948; the ceremonial reopening was 7 August 1949; regular passengers 2 March 1950 (R3). The map draws the line as running throughout | Missing date; no cut state |
 | 2 | Jaffa terminus | `routes_1948.yaml:47-48` to_verify: closing date of Jaffa station not in the cited text | HE JLM rail: Jaffa station abandoned in 1948, Tel Aviv South the terminus from 1949. Month still not found | Partly answered |
-| 3 | Tulkarm bypass | `routes_1948.yaml:96-101`: bypass "not drawn"; to_verify gives August 1948 vs 1949 | Haaretz, 4 August 1949 (cited by HE Coastal) reports the bypass section finished; trains to Haifa from September 1949 (R1). Favours 1949; Cotterell p. 86 still to check | Conflict narrowed; route missing |
+| 3 | Tulkarm bypass | `routes_1948.yaml:96-101`: bypass "not drawn"; to_verify gives August 1948 vs 1949 | Haaretz, 4 August 1949 (cited by HE Coastal) reports the bypass section finished; trains to Haifa from September 1949 (R1). Railway World (May 1973) and IOI 1954 put the bypass in 1949; Cotterell p. 86 still to check | Conflict narrowed; route missing |
 | 4 | Eastern Railway as drawn | `routes_1948.yaml:90-113`, via Qalqilya and Tulkarm (lines 105-106), `from: '1915'`, no `to` | The stretch through Tulkarm stayed Jordanian; from 1949 Israel's trains used the bypass. The drawn line through Tulkarm needs a `to` and the bypass its own entry | Wrong route after 1949 |
 | 5 | Rosh HaAyin - Tel Aviv North link | not present | Yarkon branch extended about 7 km to Tel Aviv North, opened with the Haifa-Tel Aviv line on 20 September 1949 (R1) | Missing corridor |
 | 6 | Coastal railway Remez Jct - Tel Aviv North | not present | Built about January 1949 to 1953; opened 14 May 1953 [C April] (R2). This is the GDD's railway; it was not in service before 1953 | Missing corridor (needed for D-B3) |
@@ -335,9 +388,9 @@ sim reads either file (impact plan §1.5). No `corridors.yaml` exists yet.
 | 8 | Jezreel Valley railway end | `routes_1948.yaml:170-171`: service ended 1949, occasional use to September 1951 | HE IR: shut at the start of summer 1951 (R5) | Minor conflict |
 | 9 | Jaffa-Jerusalem road through Latrun | `routes_1948.yaml:185-204`, `from: '1946'`, no `to`; note (190-191) says the Legion held Latrun from 18 May 1948 | Closed to Israeli traffic from 18 May 1948 to 1967; the armistice clause to open it was never carried out (D1). Needs a cut state or a `to` for the Latrun stretch | Missing cut |
 | 10 | Burma Road | `routes_1948.yaml:205-226`, `from: '1948-06-14'` | Matches EN Burma. Could start at 10 June 1948 (first vehicle passage) or 1 June (first jeeps) if the game wants "usable" rather than "complete"; 14 June is the sourced completion | Correct |
-| 11 | Road of Valour | not present | Built 4 September - 30 October 1948 [C on start], opened 7 December 1948; Nahshon Jct - Shimshon Jct - Sha'ar HaGai (D3) | Missing corridor |
+| 11 | Road of Valour | not present | Built 4 September - 30 October 1948 [C on start; Wikipedia only], opened 7 or 12 December 1948 [C]; Nahshon Jct - Shimshon Jct - Sha'ar HaGai (D3) | Missing corridor |
 | 12 | Ramla - Nahshon Jct link | not present | Opened September 1950 (D4) | Missing corridor |
-| 13 | Tel Aviv - Haifa road | `routes_1948.yaml:227-251`, `from: '1937'` | No change found. The Tel Aviv-Netanya coastal road (opened July 1950) is missing (D5) | Missing corridor (Route 2) |
+| 13 | Tel Aviv - Haifa road | `routes_1948.yaml:227-251`, `from: '1937'` | No change found. The Tel Aviv-Netanya coastal road (opened 28 July 1950) is missing (D5) | Missing corridor (Route 2) |
 | 14 | Wadi Ara road | not present | Iraqi-held to the armistice; reopened May 1949 (D6) | Missing corridor |
 | 15 | Acre - Safed road | not present | Reopened early 1949 (D7) | Missing corridor |
 | 16 | Tiberias - Beit She'an road and Gesher - Menahamia bypass | not present | Road cut at Naharayim; bypass opened November 1950 (D8) | Missing corridors |
