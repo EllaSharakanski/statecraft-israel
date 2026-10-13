@@ -230,6 +230,7 @@ Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on
 - the blur is a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv`;
 - the focus sits at the middle of the map area below the top bar;
 - the blur weakens to 35% between 60 km and the 250 km overview.
+- since issue #390, the far (top) band is lighter at the gameplay zoom (see "Issue #390" below).
 
 URP's far-only Gaussian DoF is retired. Toggle: `tiltshift`; the URL flag `notiltshift` (desktop: `-notiltshift`) boots with
 it off.
@@ -720,7 +721,7 @@ beyond budget + the larger spread.
 | Boot | `BOOT map_build_ms median=432 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3563 runs=3 cpu=1`<br>`BOOT map_build_ms median=1751 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6797 runs=3 cpu=4`<br>`BOOT map_build_ms median=426 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3477 runs=3 cpu=1`<br>`BOOT map_build_ms median=1746 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6696 runs=3 cpu=4` (Step 1, then final) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms); both runs exit 0 |
 | Shadows | 1 cascade, 2048, hard | 4 cascades, 2048, soft | `-shadows` at diorama02: Step 1 headless 10.32 - 7.36 = **2.96 ms** (spread 0.32: over 2.82), headed 2.90 (0.41: within), DPR 2 4.99 (0.23); final headless 2.89 (0.41: within 2.91), headed 2.92 (0.29: **over** 2.79), DPR 2 4.80. A 1024 build measured 2.84 (headless, spread 0.09), 2.94 (headed) and 5.03 (DPR 2): (1024 lines, headless: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.08 spread_ms=0.09 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.24 spread_ms=0.03 median_p95_ms=9.00`<br>headed: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.20 spread_ms=0.28 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.26 spread_ms=0.13 median_p95_ms=9.00`<br>DPR 2: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.34 spread_ms=0.21 median_p95_ms=19.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.31 spread_ms=0.10 median_p95_ms=14.00`): the map's resolution is not the cost (the caster pass redraws the whole map's geometry at the overview), so 1024 would blur the relief for nothing. **2048 kept; the overrun (about 0.1-0.4 ms beyond budget + spread at the 250 km overview only) is named here.** gameplay03: 0.33 ms final |
 | Tilt-shift | downsample 2 | downsample 2 | `-tiltshift` cost: Step 1 headless 0.09 / 0.09 ms (gameplay03 / diorama02), final headless 0.03 / -0.04, DPR 2 0.29 / -0.04: far under 1.5 ms |
-| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19); no owner verdict yet, so not changed |
+| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19). Owner's ruling (2026-10-13, issue #390): the bands stay as they are, except that the far band is lighter at the gameplay zoom ("Issue #390"); the bottom band is not changed |
 | Bloom | off (was the URP template's 0.25 above 1) | off | rendered on both tiers at both poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003, measured with a temporary `bloom` toggle, commit `8d45a93`, removed in fix round 1 once bloom shipped off); `-bloom` cost Step 1 headless 0.37 ms (diorama02), headed 0.18, macOS 0.17 / 0.13. Off in the pipeline profile (`Settings/SampleSceneProfile`), which keeps its Neutral tonemapper (the stripping guarantee, GradeTests) |
 | SSAO | none | off (was on) | metre radius cannot reach km relief; baked AO replaces it (Tasks 5-6) |
 | Grade, vignette, haze, grid, water, labels | on | on | Step 1 headless costs (gameplay03 / diorama02, ms): grade -0.02 / 0.27, haze 0.08 / 0.11, grid 0.07 / -0.14, water 0.04 / 0.14, labels -0.14 / -0.02; final headless: grade 0.00 / -0.03, haze -0.03 / -0.10, grid 0.00 / -0.01, water -0.05 / -0.06, labels -0.01 / 0.01; all within budget. The grid, unmeasured on a quiet machine since Task 8, costs nothing measurable |
@@ -1430,6 +1431,71 @@ Still different from the promo: soft at close zoom (rows, hedges and bushes read
 and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
 its grade.
 
+### Land round 2 (branch `land-round2`, refs #33)
+Round 1's land read as yellow-olive. It also lost most of its field lines, because the bake's 2 x 2 supersampling averages
+an 18 m hedge or a 30 m track away inside a 79 x 105 m texel. Round 2 changes only the colours and the bake; the shader,
+the texture's size and format, the trees and the sea are untouched.
+- **Ground colour.** The land's colours in `tools/land_bake.py` (`SRGB`) and the plain, valley, lowland, hill and mountain
+  colours in `MapPalette.Ground` move toward promo 03's ground, (177, 144, 114) in the ground crop below: less green, more
+  blue, at its hue (28.6 degrees). The hill colours (soil, hillgrass, stone, and MapPalette's hills and mountains) are an
+  orange brown at 22-25 degrees, saturation 0.24-0.34. With round 2's first values (soil at 8 degrees and saturation 0.26;
+  stone, dust and fallow at about 18) the Judean hills read rose (review of #392): a red hue at low saturation. At 28.6
+  degrees they rendered at 34, yellower than promo 03's hills (26) and the video's (28), and diorama02 lost promo 02's
+  browns, about (208, 144, 112) and (176, 112, 80). The brightness (luma) of each colour is kept. The desert is unchanged.
+- **Fields.** Hedges and tree lines are `HEDGE_HALF_M` 75 m either side of a parcel edge. Farm tracks are `TRACK_HALF_M`
+  70 m either side of a block edge. Each line is chosen once per edge, so the parcels on both sides draw it. The crops are
+  further apart in luma: a darker green, darker ploughland, paler stubble and fallow.
+  `test_field_lines_are_wide_enough_for_the_texture` holds both lines to at least 1.5 texels across. It fails at round 1's
+  widths, measuring 15 m and 28 m.
+- **Hills.** Round bushes about 200 m across, at most one per 300 m cell. A 1.5 km noise sets the share of cells with one
+  (20-80%), so they clump. Each sample takes its dot from the 2 x 2 cells round it, so no dot is cut. Each bush has a
+  softer shadow offset east-south-east, away from the sun (`MapLighting.SunAzimuth` 285 degrees). The garrigue's weight
+  rises from 0.7 to 0.9. Terraces cover more of the slopes, with stronger stone lines.
+- **Bake.** About 30 s. Two runs give byte-identical PNGs. `test_the_committed_texture_is_the_bake` passes. The land weight
+  mean is 0.192 (round 1: 0.171), because the garrigue's weight rose.
+
+Measured: WebGL `?shot` at main `4abb64f`, then the branch on it, art-log rows `lc-r2-main` and `land-round2-fix5`. The
+ground crop is gameplay03's land (x 0.36-0.88, y 0.30-0.82), pixels at luma >= 0.4. The towns' tan walls and their ground
+tint are in it and unchanged, so it moves less than the ground does. The Judean hills are `-extraPose
+judea30:35.10:31.85:30000:10` (editor, web tier): the median hue of their pixels at luma >= 0.25.
+
+| | main | round 2 | promo |
+|---|---|---|---|
+| gameplay03 saturation / contrast / warmth | 0.447 / 0.181 / 0.070 | 0.429 / 0.178 / 0.062 | 0.38 / 0.203 / 0.064 |
+| gameplay03 palette distance | 0.435 | **0.378** | - |
+| diorama02 saturation / contrast / warmth | 0.414 / 0.184 / 0.113 | 0.406 / 0.183 / 0.109 | 0.43 / 0.200 / 0.145 |
+| diorama02 palette distance | 0.5633 | 0.5643 | - |
+| gameplay03 ground crop (sRGB) | (166, 148, 99) | (169, 143, 106) | (177, 144, 114) |
+| judea30 hill hue (degrees) | 39.8 | 30.5 | 26 (promo 03), 28 (video 0:21) |
+
+The bars hold: diorama02 warmth 0.109 is inside [0.087, 0.145], and its saturation is under 0.48. diorama02's palette
+distance is 0.001 above main's; promo 02's browns (about (208, 144, 112)) are what the hills' hue trades against.
+Every ground channel is within 8 levels of the promo's (it was within 15).
+
+Frame time: headless, main and the branch back to back under one exclusive lock, 3 rounds, rotated. The load average was
+about 6 from other sessions, so the absolute times are inflated. The table gives medians over the rounds, in ms:
+
+| pose | `all` main / branch | `-land` | `none` |
+|---|---|---|---|
+| gameplay03 | 8.13 / 8.05 | 8.05 / 7.81 | 5.09 / 4.97 |
+| diorama02 | 19.49 / 19.71 | 19.08 / 19.45 | 12.36 / 12.72 |
+
+Every difference is within about 0.4 ms, which is also how far `none` moves between the two builds. The review fix (the hill hues) changes only colours: the same texture size and format, no shader, so these numbers and the boot below stand. The shader and the
+texture's size are the same. diorama02's p95 is 21-22 ms on main and on the branch alike, under that load.
+
+Boot: `headed.py boot --runs 3 --cpu 4`, 3 rounds interleaved, 9 cold loads each, medians:
+- `map_build_ms`: main 3032, branch 3039;
+- `first_frame_ms`: main 10842, branch 10819;
+- `biome texture baked` (MapPalette's colours): main 437, branch 431;
+- `downloaded 53 files`: main 1048, branch 1040.
+
+Both builds' map build is over #321's budget at this load; that is main's, not this change's.
+The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLDEN OK 1952 62f8ec61...` and
+`SMOKE OK 5 turns 1948-06-19 d3fdd459...`. The tree count is unchanged (7,814).
+
+Still different from the promo: the trees and bushes, so far only painted in the bake (promo 03's land is 27% dark trees
+and shadow; ours is 10%). The grade's shadows are cool, where the promo's are warm brown (#391).
+
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
 
@@ -1679,6 +1745,296 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   - History: a first version scanned every lot and footprint linearly, taking 350 ms (kits) and 330 ms (trees) in the
     editor. `DiscIndex` (a 4 km grid) brought that to about 30 ms each.
   - Build: wasm +111,913 bytes and data +14,441, plus the localities file fetched at boot.
+## Towns round 2: dense, era-correct towns (branch `promo-towns-2`, issue #31)
+Question: why do Tel Aviv, Jaffa, Lod, Ramla, Rishon and Petah Tikva read as a sparse handful of boxes at gameplay03
+when promo 03 shows dense miniature towns, and what closes the gap within the frame-time and boot budgets?
+
+### Diagnosis (main `bdb5cd2`, measured before any change)
+Measured with `TownCensusTests.TheCensusIsLogged`. It builds the kits as `MapScene.Build` does, with the routes' and the
+units' clearings as corridors, and logs one `CENSUS` line per town. It reports:
+- **Buildings:** counted per town. Wings are a block's lower part.
+- **Cover:** the share of the town's own land under a building or landmark footprint. "Own land" is its footprint disc,
+  on land, in its cell. It is sampled every 100 m, over the whole disc and over its inner half radius ("core").
+- **Wall heights:** symbolic metres; one storey is 198 m at 60x and 330 m at 100x.
+- **Wall colours:** distinct sRGB colours at 4 bits per channel.
+
+The player logged `KITS buildings=261 vertices=10244 triangles=6892 trees=7283`.
+
+| town | footprint R | buildings (+wings) | landmarks | cover: all / core | wall height min / median / max | wall colours |
+|---|---|---|---|---|---|---|
+| Tel Aviv | 7.6 km | 43 (+11) | none | 24.7% / 24.9% | 396 / 594 / 1188 m | 7 |
+| Jaffa | 5.7 km | 16 | mosque, clock tower, church, lighthouse, breakwater | 42.6% / 14.6% | 330 / 660 / 990 m | 4 |
+| Haifa | 6.9 km | 34 (+10) | none | 17.8% / 23.7% | 396 / 594 / 990 m | 8 |
+| Jerusalem | 7.4 km | 70 | a generic mosque | 32.2% / 16.2% | 330 / 660 / 990 m | 8 |
+| Lod | 2.4 km | 5 | mosque | 13.6% / 11.8% | 330 / 330 / 660 m | 4 |
+| Ramla | 2.3 km | 5 | mosque | 19.5% / 27.6% | 330 m only | 3 |
+| Petah Tikva | 2.4 km | 3 | water tower | 10.5% / 7.0% | 330 / 330 / 660 m | 3 |
+| Rishon LeZion | 1.7 km | 2 | water tower | 9.5% / 2.7% | 330 m only | 2 |
+| all 25 | | 235 (+21) | 26 | | | |
+
+Jaffa's whole-disc cover is above its core cover because its cell is small (Tel Aviv's footprint takes its north) and
+four landmarks of up to 1 km sit in it.
+
+Causes, in order of weight:
+1. **Counts.** `TargetCount` was tuned at 25x and falls with the square of the scale. At the 60x / 100x ruling, every
+   town under about 30,000 people gets its floor of 6 buildings, and then places fewer: 1 to 5 in the moshavot, and 5 in
+   Lod and Ramla.
+2. **Placement.** Buildings went to random spots over the whole footprint (radius drawn as u^0.62), tried against
+   every lot. Each town had about 30 tries per building, and the footprint could stretch to 1.6 R.
+   - That spreads a town evenly at low cover, with no dense core and no street rows. Promo 03's towns are a solid core
+     with streets as the only gaps.
+   - The routes' corridors (300-680 m ribbons plus a 100 m margin) and the units' clearings then cut each disc further.
+3. **Old-town houses too big.** Old towns drew 7-14 m houses at 100x, so each was 0.7-1.4 km wide. Jaffa came out as 16
+   large blocks, not a packed old city.
+4. **Heights.** Tel Aviv's median block was 3 storeys and its tallest 6. Promo 03 shows 5-8. The owner's "promo over
+   era" ruling covers this.
+5. **Landmarks.** Only Jaffa had its own. Jerusalem had a generic mosque, and Haifa and Tel Aviv had none. Jaffa's
+   lighthouse stood at the breakwater's head; the real one (1865) stands on the hilltop above the old port.
+6. **Palette.** It is not the gap: each archetype's colours already match promo 03 (white and cream city, honey stone,
+   tan villages, terracotta roofs). Variety is limited by the counts.
+
+### Plan
+- **Plot lattices** replace the random tries (`SettlementKits.PlaceHouses`).
+  - Each town is laid out in rows of plots at its street grid's angle. Old towns and villages stagger alternate rows
+    and jitter each plot.
+  - Each plot is built with a probability that is near 1 in the core and falls towards the edge, to none at 1.1 R. That
+    is `UnitGround.FootprintMargin`: the units assume no building past it, and `PaintGround` tints the same disc.
+  - A plot by a road, or by another town's lot, tries a smaller building, then a small nudge within the plot, before it
+    stays empty.
+  - Plots are visited nearest the centre first. Each plot draws its random numbers whether or not it is built, so one
+    plot's fate never shifts another's.
+- **Building styles per quarter, at the ruled scales** (city blocks 60x, houses 100x).
+  - **Tel Aviv:** white International Style blocks with flat roofs (the White City, 1930s, Geddes plan 1925-29), some
+    stepped. Taller in the core under the promo ruling.
+  - **Jaffa and the old towns:** small stone houses (4.6-6.6 m real), packed, with domes and roof rooms. Some red tiled
+    roofs outside the core.
+  - **Haifa:** the lower town by the port in stone houses (below about 35 m elevation). Hadar HaCarmel up the slope in
+    white blocks.
+  - **Jerusalem:** stone-faced blocks in the new city to the west (Storrs' 1918 stone ordinance), a few with red roofs.
+    Arab-quarter houses round the other sides. Old-town houses within the walls.
+  - **Large moshavot** (Petah Tikva, Rehovot, Rishon LeZion, Hadera; 7,500+ people in 1945): a plastered two- and
+    three-storey centre inside red-roofed houses.
+  - **Arab towns and villages:** smaller stone houses (4.4-6.6 m) on a staggered lattice.
+- **Landmarks**, placed before any town's houses. Positions keep the real bearing from the settlement's point to the
+  landmark's sourced coordinate; distances and sizes are symbolic.
+  - **Jaffa:** the Mahmoudiya Mosque, the clock tower on the plaza east of it, St Peter's Church, the lighthouse on the
+    hill above the port (red and white bands), and the breakwater and boats.
+  - **Jerusalem:** Suleiman's walls round a symbolic square Old City with five gates, the citadel, the Haram platform,
+    the Dome of the Rock and Al-Aqsa.
+    - The Dome of the Rock is blue and white tiles with a dark lead dome: the gilded dome dates from the 1959-64
+      restoration, so it would be an anachronism in 1948.
+    - Al-Aqsa's dome is lead.
+  - **Haifa:** the 1933 port (main and lee breakwaters, quay sheds) and the German Colony: the Templer houses of 1868 in
+    stone with red roofs, in two rows along its north-south main street.
+  - **Tel Aviv:** its port (1936/1938) at its sourced coordinate.
+  - **Ramla:** the White Tower east of the town's heart.
+- **No anachronisms:**
+  - The Shrine of the Báb's dome (1953) is not drawn.
+  - Neither is the Dagon silo (1955), the gold Dome of the Rock, or any post-1948 tower.
+- **Performance:** one merged mesh per town as before, so the draw calls do not change. The lot index is promo-villages'
+  `DiscIndex`, ported byte for byte with its `KitGround` hunks so the two branches merge cleanly there. It also takes the
+  trees' lot test off its linear scan.
+- **Tests** (`TownCensusTests`):
+  - The towns are deterministic.
+  - Each city's landmarks are present.
+  - No building stands on a route or in the sea.
+  - Each of the four cities has a floor on its built cover.
+
+### Result (after merging the villages, #291)
+The census as the map now builds it: with the 1948 localities, whose landmarks claim their hearts before any town's
+houses (review M8). "Main" is `a3202ad`, with the villages and before towns round 2; same census, same corridors.
+
+| town | buildings, main → round 2 | cover all / core, main → round 2 | median wall height | landmarks, round 2 |
+|---|---|---|---|---|
+| Tel Aviv | 36 (+12 wings) → 43 (+11) | 18.4 / 19.7% → 17.4 / 18.5% | 396 → 792 m (2 → 4 storeys) | port, 3 hangar sheds |
+| Jaffa | 15 → 33 | 29.0 / 21.8% → 32.6 / 31.9% | 660 m | Mahmoudiya Mosque, clock tower, St Peter's, lighthouse on the hill, breakwater |
+| Haifa | 30 (+10) → 45 (+5) | 16.4 / 19.4% → 21.0 / 20.6% | 594 → 660 m | port (main and lee breakwaters, 4 quay sheds), German Colony (Templer houses in two rows) |
+| Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
+| Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
+| Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
+| all 25 | 216 → 365 (413 after the review: the small-town floor, #317) | | | 27 → 55 |
+
+Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
+blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
+
+- **Tel Aviv's cover did not rise.** Before the merge, round 2 had 62 blocks and 30.0% / 25.6%.
+  - The villages' landmarks inside its 7.6 km disc (Sheikh Muwannis, Summeil, Jammasin, Ramat Gan, Bnei Brak and
+    others) now claim their spots first. The lattice loses every plot their mosque or water-tower lots reach.
+  - What changed there is the form: narrower (12-16 m real), taller blocks in rows on the Geddes grid, with a 700 m beach
+    strip in front. The close-up crops show the difference better than the cover does.
+  - Taking the villages' spots back would break the villages' rule that a village keeps its heart, so it is left for the
+    owner.
+- **Jerusalem's Old City is symbolic and squeezed by the roads.**
+  - It is 4 km across, about 4 times the real one. The drawn 1948 roads (300 m ribbons) meet by Jaffa Gate and loop
+    round the north and east, so at any readable size they cross inside the square, through gaps in the walls.
+  - Only one place in its south-east quadrant fits a platform clear of every route: 1.3 x 1.1 km, wider than long. Al-Aqsa
+    therefore stands in its south-east corner, not across its south end.
+  - The citadel is moved east off the drawn Hebron road.
+  - The houses inside the walls are capped at two storeys, and the Dome's walls and drum are 30x high, so the walls and
+    the Dome stand above the roofs.
+- **Readability and colour:**
+  - The grid stays readable: 78% of edge midpoints (69 of 89), against the 75% floor and main's 79%.
+  - The beach beside Tel Aviv reads as sand at 26 of 33 samples (79%, floor 75%).
+  - At gameplay03 (WebGL), the palette distance to promo 03 is 0.43 (main 0.44), warmth 0.068 (0.070) and saturation
+    0.45 (0.45).
+- **Trees:** `Vegetation.Plant` now draws each tree's random numbers before its lot and route test. A town's new lots
+  remove only the trees they touch, instead of reshuffling every later grove.
+  - Two grade tests sample the selection ring against the land and could land on a crown. They now measure with the
+    trees off: the ring against the ground's graded colour, which is what they test.
+- **Frame time** (headless WebGL `?vprofile`, `machine_lock.py --exclusive --wait-unity`, main `a3202ad` against
+  `49bc88e`, two interleaved rounds each, 2026-10-12, load 3.6 at the start and 7.3 at the end):
+
+  | | gameplay03 all (p95) | gameplay03 all − none | diorama02 all (p95) | diorama02 all − none |
+  |---|---|---|---|---|
+  | main | 13.70 / 14.22 ms (15 / 16) | 3.00 / 3.45 ms | 18.07 / 18.71 ms (20 / 20) | 4.84 / 5.60 ms |
+  | round 2 | 14.15 / 13.97 ms (16 / 15) | 3.59 / 3.15 ms | 18.06 / 18.70 ms (21 / 21) | 5.54 / 5.53 ms |
+
+  - The kits stay one merged mesh per town: 63 draws, as on main. The triangles grow from 61,054 to 65,684.
+  - "-kits" draws the marker boxes instead, so the kits' own cost is within the noise (all − (-kits) is −0.6 / −1.1 ms
+    at gameplay03).
+  - Every budget holds: all − none is under 8 ms, and the p95 at gameplay03 is under 16.7 ms. The diorama02 p95 of 20-21
+    ms is main's too (the villages section).
+
+- **Boot** (`headed.py boot --runs 3`, three interleaved rounds per side, so 9 runs each; main `2b7212e` against this
+  branch's final head; `machine_lock.py --exclusive --wait-unity`, 2026-10-12).
+  - Other sessions loaded the machine (load average 6.5 rising to 25), so single runs reach 3.3 s at cpu 4. The medians
+    and the "kits built" phase are the fair comparison.
+
+  | | map_build median | `kits built` phase median | first_frame median |
+  |---|---|---|---|
+  | cpu 4, main | 2739 ms | 570 ms | 9494 ms |
+  | cpu 4, round 2 | 2679 ms | 563 ms | 8750 ms |
+  | cpu 1, main | 659 ms | 132 ms | 4029 ms |
+  | cpu 1, round 2 | 662 ms | 138 ms | 4020 ms |
+
+  - The towns add about nothing to the boot: the kit phase is 7 ms lighter at cpu 4 and 6 ms heavier at cpu 1.
+  - The lattice checks are cheap first, and only towns with water near them run the beach test.
+  - The earlier session on a quieter machine (main `a3202ad`, before those cuts) measured map_build 2668 → 2683 ms at
+    cpu 4 (6 runs each), with the cpu 1 kit phase 129 → 137 ms.
+  - The budget at cpu 4 is 2720 ms; #195 needs about 100 ms of it. Towns round 2 takes none.
+
+### Review (2026-10-12, on the merge with main `471c300`)
+- **Fixed on the branch:**
+  - The beach setback tested any water, so it also applied on the Sea of Galilee. It now tests the sea only (`Sea`: water
+    that is not a lake hex). Degania goes from 0 houses back to main's 1.
+  - Nahalal's ring ended at 0.88 of the radius, but its lattice's first ring of plots stands at 0.76 and 0.89, so it drew
+    no houses. The ring now runs out to the radius: 0 → 1 (main 1).
+  - Tel Aviv's blocks are capped at eight storeys, promo 03's tallest: the cap was ten. The tallest block is now 7
+    storeys (1,386 m) and the median is still 4.
+  - `TownCensusTests.SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` covers all three.
+- **Each test fails under a mutation:**
+  - Reverting the lake test, the ring and the cap fails the new test on all three counts.
+  - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
+  - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
+  - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
+- **Small-town floor (#317, fixed on the branch; reworked after the review of #339):**
+  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots, and the routes, the sea or
+    a neighbour's lots take most of them. On the first lattice Tiberias drew 0 houses (main 3), Netanya 1 (main 2) and
+    Beersheba 3 (main 5).
+  - **The lake was half the cause.** The kits' `KitGround.Water` counted every lake hex as water, and a lake hex also holds
+    its shore. Tiberias stands in one, 60-160 m above the Sea of Galilee (about -214 m), so it had no ground left.
+    - A point is now lake water only at or next to the lake's surface, in any hex that is not sea (a shore hex of another
+      biome holds some of the lake too). It uses the rule the drawn water uses
+      (`MapBuilder.LakeBelowM` and `LakeFlatM`, tools/terrain_bake.py): below -150 m and flat within 0.25 m over the
+      heightmap's 3 x 3 window, at the point or within one heightmap sample of it.
+    - The drawn shore (coast.png's distance, interpolated between texel centres) runs up to about a sample past the last
+      flat sample. A first version without that sample's margin put a cypress in the drawn Kinneret, and one that looked
+      only in lake hexes put a palm and a citrus tree in it by Ghuweir Abu Shusha.
+    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached: the rift's floor
+      is asked about thousands of times while the kits are built.
+    - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
+      level), on main or here.
+    - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
+      is land and that the lake at 35.58 E, 32.80 N (-214.5 m) is water. Each half fails when the lake branch is made
+      always water, or never water.
+    - `KitTests.NothingStandsInALakesDrawnWater` decodes coast.png itself, the file the water shader samples. It checks
+      that no lot centre and no tree trunk in the rift (a lake hex, or ground below -150 m; 129 of them) lies under the
+      drawn water. It fails on the cypress without the sample's margin, and on the palm and the citrus tree with lake
+      hexes only.
+    - Tiberias's lattice now draws 4 houses on its shore, and the fallback a fifth, full-size, beside them.
+  - **The fallback.** A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) is filled up
+    the way round 1 drew it.
+    - Each house is the archetype's full-size building, the size main drew, and keeps its whole footprint as its lot.
+    - It tries 240 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
+      first. Every spot is tried at full size before any at 0.72; the half-size fit is never used. Every house keeps the
+      beach setback.
+    - `Build` runs the fallback after every place's own houses (towns, the 1948 localities) and the camps, so it takes
+      only ground no other place uses. `KitTests.TheSmallTownFloorMovesNoOtherPlace` checks this: every lot of every
+      place is the same, in the same order, with the fallback off and on.
+    - It fires in 15 towns (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre) and adds 27 houses in 13
+      of them.
+      Acre and Yad Mordechai have no free ground left.
+  - Every town now draws at least main's count: Tiberias 5, Netanya 4, Beersheba 5, Rosh Pinna 2, Nahalal 3. The 25
+    towns draw 397.
+  - **Tests:**
+    - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`).
+    - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
+      fallback skips its own lattice's lots.
+  - The grid stays readable at 80% (71 of 89).
+  - **Perf, after the review's fixes** (WebGL, main `4abb64f` against the branch, `machine_lock.py --exclusive
+    --wait-unity`, two interleaved rounds, load 5-9, 2026-10-13):
+    - Frame time is equal. At gameplay03 `all` is 8.08 / 7.73 ms on main against 8.14 / 8.02 ms on the branch, and at
+      diorama02 19.43 / 19.50 against 18.90 / 19.42 ms. The p95s are equal, and there are 63 draws on both.
+    - Boot at cpu 4: the "kits built" phase is about 45 ms heavier, 691 / 709 ms on main against 743 / 750 ms.
+    - An attribution round (main, the branch, the branch with the fallback off, and the branch with the old whole-hex
+      lake rule) put about 10 ms of that on the fallback: 689 / 738 / 729 ms in the quieter round. The lake rule costs
+      nothing measurable. The rest is round 2's own placement against this main.
+    - The author's boot against `2b7212e` measured the kit phase within noise. The ~35 ms not explained here is not
+      attributed further.
+  - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
+    other sessions to load 15, so every number is high):
+    - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.
+    - Boot map_build median is 2982 against 3075 ms. The "kits built" phase is 746 against 686 ms.
+    - The editor's kit build_ms is 85-89 ms, with or without the floor.
+    - The floor adds no measurable cost; the boot difference is load. Still 63 draws.
+  - The label refresh is unchanged: `MapLabelTests.RefreshWhileTheCameraMovesIsCheapAndAllocationFree` measured 162-163 µs
+    with the floor and 171-180 µs without it, interleaved. The single 238 µs (fail) came in a full run at load 24.
+- **Still open, filed as issues:**
+  - #318: Tel Aviv's cover is held down by the localities' landmark lots.
+  - #319: the symbolic Old City has roads crossing inside its walls.
+- **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at
+  79% (26 of 33).
+- **Perf, re-measured by the review:** frame time is headless WebGL `?vprofile`; boot is `headed.py boot --runs 3 --cpu
+  4`. Main `471c300` against the branch at `4a68d05`, each round under `machine_lock.py --exclusive --wait-unity`, in
+  interleaved order. A third round was cut short by a stop.
+
+  | | gameplay03 all (p95) | gameplay03 none | diorama02 all (p95) | diorama02 none | boot cpu 4: map_build / first_frame |
+  |---|---|---|---|---|---|
+  | main, round 1 (load 3.1) | 14.21 ms (16) | 10.72 ms | 19.47 ms (23) | 13.20 ms | 2584 / 8431 ms |
+  | branch, round 1 (load 7.5) | 15.40 ms (17) | 11.32 ms | 18.18 ms (21) | 13.06 ms | 2598 / 8369 ms |
+  | branch, round 2 (load 13.6) | 14.36 ms (16) | 11.01 ms | 17.80 ms (20) | 13.00 ms | 2619 / 8367 ms |
+  | main, round 2 (load 4.2) | 14.23 ms (16) | 11.03 ms | 17.81 ms (20) | 13.02 ms | 2595 / 8390 ms |
+
+  - Round 2 is equal within noise. In round 1, the branch's gameplay03 cost rises with its `none` row (+0.6 ms both),
+    that is, with the machine's load.
+  - Boot's map_build is 14-24 ms over main, within the runs' spread, under the 2720 ms budget at cpu 4.
+
+### Sources (checked 2026-10-12)
+- Tel Aviv:
+  - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
+  - Port of Tel Aviv (opened 1936, completed 1938, closed 1965; 32.0965 N, 34.7733 E): https://en.wikipedia.org/wiki/Port_of_Tel_Aviv
+- Jaffa:
+  - Clock Tower (1900-03, limestone, at the north end of Yefet Street): https://en.wikipedia.org/wiki/Jaffa_Clock_Tower
+  - Mahmoudiya Mosque (mostly 1812, the old town's north-east corner, its east gate on the clock-tower plaza; 32.0549 N,
+    34.7555 E): https://en.wikipedia.org/wiki/Mahmoudiya_Mosque
+  - St Peter's Church (1888-94, on a hill near the shore, bell tower; 32.0548 N, 34.7521 E): https://en.wikipedia.org/wiki/St._Peter%27s_Church,_Jaffa
+  - Jaffa Light (1865, 10 m, red and white bands, on the hilltop above the old port; 32.0535 N, 34.7505 E): https://en.wikipedia.org/wiki/Jaffa_Light
+- Haifa:
+  - Port of Haifa (opened 31 October 1933; 32.8201 N, 35.0045 E): https://en.wikipedia.org/wiki/Port_of_Haifa
+  - German Colony (Templer colony of 1868; main street north-south down to the harbour; 32.8200 N, 34.9906 E): https://en.wikipedia.org/wiki/German_Colony,_Haifa
+  - Templer houses (stone, red roofs): https://en.wikipedia.org/wiki/Templers_(religious_believers)
+  - Shrine of the Báb (superstructure and dome completed 1953): https://en.wikipedia.org/wiki/Shrine_of_the_B%C3%A1b
+- Jerusalem:
+  - Walls (1537-41, 4,018 m, about 12 m high): https://en.wikipedia.org/wiki/Walls_of_Jerusalem
+  - Old City (0.9 km^2; 31.7767 N, 35.2342 E; the gates' sides): https://en.wikipedia.org/wiki/Old_City_of_Jerusalem
+  - Damascus Gate (the wall's north-west side): https://en.wikipedia.org/wiki/Damascus_Gate
+  - Tower of David (near Jaffa Gate; 31.7761 N, 35.2278 E): https://en.wikipedia.org/wiki/Tower_of_David
+  - Temple Mount (the Old City's eastern section, platform about 488 x 315 m; Al-Aqsa at its south end): https://en.wikipedia.org/wiki/Temple_Mount
+  - Dome of the Rock (blackened lead before 1959; Ottoman blue and white tiles): https://en.wikipedia.org/wiki/Dome_of_the_Rock
+  - Al-Aqsa Mosque (lead dome before 1969): https://en.wikipedia.org/wiki/Al-Aqsa_Mosque
+  - Jerusalem stone (Storrs' ordinance, 1918): https://en.wikipedia.org/wiki/Jerusalem_stone
+- Ramla:
+  - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
 
 ## Issue #195: the water and the border lookups out of the terrain's fragment shader
 - **Why.** promo-sea (#138) put the water shading (`ScWaterShade`, the breakers' `fwidth`, the footprint) in the terrain
@@ -1741,3 +2097,42 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   hitch.
 - **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
   it from the bake allocates its 3.4 MB of bytes and about 1.5 MB of vertices, short-lived. The borders add nothing (the edge bits ride in the existing texel).
+
+## Issue #390: a lighter far tilt-shift band at the gameplay zoom
+- **What happened.** #320 did not change the tilt-shift. Before it, normal play on the development machine was slow enough
+  that the runtime quality fallback stepped down to level 3 and turned the tilt-shift off (headed Chrome, 1920x1080, New
+  Game then End Turn: `QUALITY level=1` p95 51 ms, `level=2` 45, `level=3 ... tiltshift=off` 42). #320 made the frame
+  about 3.7x faster, so the fallback stays at level 0 and the far band drew in full: Tel Aviv, Hadera and the brigade
+  token were a smear. Main before #320 with `?nofallback` draws the same frame as 4abb64f (0.109% of pixels more than 24
+  levels apart, identical gradient energy per tenth of the rows). `?shot` and `?vprofile` turn the fallback off, so the
+  gameplay03 pixel A/B never showed it.
+- **Owner's ruling (2026-10-13).** Keep a soft tilt-shift, so the game still reads like promo 03, but keep the far towns
+  readable at the play zoom; the wide views (diorama02) keep the full effect. This also settles the open bottom-band note
+  above: the bottom band is not changed.
+- **What changed.** `TiltShift.FarStrength(distance)` scales the far (top) band's radius and its blend: 0.35
+  (`FarGameplayStrength`) up to 150 km, rising to 1 at the 250 km overview. The near band is unchanged. It is one global,
+  `_ScTiltShiftFar`, set with `_ScTiltShift` in `TiltShift.Apply`: no new keyword or variant.
+- **Readability bound.** Promo 03's far band (rows 10-18% from the top, columns 30-80%) has 0.34 of the gradient energy of
+  its focus band (rows 45-60%); a sharp frame of ours (`?notiltshift`, normal play) has 0.93 there, so the promo keeps about
+  37% of the far detail. `TiltShiftTests.TheFarBandStaysReadableAtTheGameplayZoom` asks for at least 60% (shifted / sharp,
+  rows 0.78-0.90 from the bottom, under the web bar) at 60 km and at the 120 km starting zoom. The fix keeps 0.72 and 0.69;
+  4abb64f kept 0.17 and 0.14. `TheDioramaKeepsBothBands` asks for at most 0.30 far and 0.45 near at diorama02 (0.20 and
+  0.33, unchanged). Mutants killed: the far strength at 1 at the gameplay zoom (4abb64f's look), a shader that ignores
+  `_ScTiltShiftFar`, a far strength stuck at 0.35 at the overview, and the far strength applied to both bands.
+- **WebGL captures**, 4abb64f against the fix. Gradient energy per tenth of the rows from the top, columns 30-80%:
+
+  | frame | build | 0-10% | 10-20% | 20-30% | 30-40% | 40-70% | 70-100% |
+  |---|---|---|---|---|---|---|---|
+  | normal play, 22 May 1948 (fallback on) | 4abb64f | 13.4 | 5.2 | 6.6 | 18.3 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | fix | 14.6 | 17.7 | 17.4 | 23.4 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | `?notiltshift` | 15.3 | 24.7 | 23.1 | 25.8 | 29.4 26.3 23.4 | 21.6 20.5 16.7 |
+  | gameplay03 (`?shot`) | 4abb64f | 12.4 | 3.4 | 4.4 | 12.1 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+  | | fix | 13.2 | 12.7 | 13.6 | 15.0 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+
+  diorama02 is pixel-identical (0 pixels more than 24 levels apart). The near band and the focus band do not move.
+- **Frame time** (WebGL headless `?vprofile`, 1920x1080, 2 interleaved rounds under the exclusive lock, medians): gameplay03
+  none 5.02 / 5.06 ms against 4abb64f's 5.07 / 5.20, all 7.90 / 7.99 against 7.89 / 7.87; diorama02 none 12.63 / 12.62
+  against 12.20 / 12.21, all 19.51 / 19.49 against 19.08 / 18.94. Main before #320 measured 20.98 ms at gameplay03 none
+  in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
+  strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
+  build-to-build noise, within the tilt-shift's 1.5 ms budget.

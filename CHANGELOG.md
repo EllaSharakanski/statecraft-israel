@@ -195,6 +195,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
+  biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
+  at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
+  re-bake of `landuse.png` (same size and format) and a palette change, so the frame time and boot are unchanged.
 - Inland lowlands are no longer labelled "Coastal plain" (refs #204). `tools/hexgrid.py` now measures the distance from
   each hex centre to the shore and keeps `coastal_plain` for 0 to 200 m land within 25 km of it. Further inland the new
   biome `lowland` ("Inland lowland") applies: 30 of the 109 coastal plain hexes change, among them the hex that holds
@@ -209,6 +213,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The game settlements Lod and Ramla show their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
+- Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
+  of random spots: the 25 towns draw 397 buildings where main drew 216, and no town draws fewer than on main (fixes #317: a small town
+  whose lattice places fewer than 6 houses is filled up with round 1's full-size houses on ground no other place uses;
+  the kits' water test counts a lake hex as water only at the lake's surface, so Tiberias builds on its shore again) (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
+  70 to 110), with 55 landmarks instead of 27. Old Jaffa is packed small stone houses; Tel Aviv's white blocks are
+  taller in the core (promo ruling, at most eight storeys); Haifa has its lower town by the port and Hadar on the slope; Jerusalem has its stone
+  new city, its Arab quarters and a walled Old City; the large moshavot have a plastered centre. Sourced 1948 landmarks: Jerusalem's walls and gates, the
+  citadel, the Haram with the Dome of the Rock (lead dome, as before 1959) and Al-Aqsa; Haifa's port and German Colony;
+  Tel Aviv's port; Ramla's White Tower; Jaffa's lighthouse moved to the hill above the port. Map only: the goldens do not
+  move.
 - Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
 - Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
   reworded attention and full-war labels (#193).
@@ -256,6 +270,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The map's far tilt-shift band no longer blurs the far towns into a smear at the play zoom (#390). Since the map drew
+  faster (#320), the quality fallback no longer turns the tilt-shift off, and the far band showed in full. On the owner's
+  ruling it is now gently soft at the gameplay zoom, as on promo 03, and in full only at the overview. Presentation only.
 - The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
   into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
   Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
