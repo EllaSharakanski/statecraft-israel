@@ -196,6 +196,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
+  crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
   hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
   with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
