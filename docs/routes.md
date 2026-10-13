@@ -197,10 +197,23 @@ measurement in `docs/units.md`:
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
-- The road is pale dirt with faint wheel ruts. At the country-wide pose (a pixel over 60–150 m), it darkens to a
-  grey-brown line, so it reads as the promo diorama's roads do instead of vanishing on pale ground.
-- The railway is a grey-brown ballast bed with darker shoulders, dark sleepers and two light steel rails, after the
-  promo video's 0:21 close-up.
+- The road is pale dirt with faint wheel ruts and darker worn verges (0.32 of the width either side of the line, about
+  1 px each at gameplay03), so it reads on pale sand and dry grass by its edges, as promo 03's tracks do. At the
+  country-wide pose (a pixel over 60–150 m), it darkens to a grey-brown line, so it reads as the promo diorama's roads
+  do instead of vanishing on pale ground.
+- The railway is a cool grey stone ballast bed with darker shoulders, dark sleepers every 100 m and two bright steel
+  rails, after promo 03 and the video's 0:21 close-up (refs #35, `.superpowers/borders-routes-r1/PLAN.md` R1 and R2).
+  - A rail is 0.036 of the 680 m bed, about 0.7 px at gameplay03, so its box filter left it faint: averaged along the
+    line (`TheRailsReadAsTwoBrightLinesAtGameplay03`, two railways, 30 points each), a rail stood 0.10–0.11 luma above
+    the bed beside it. It is now drawn at least 0.8 px wide (`RailMinPx`) and brighter, and stands 0.18–0.21 above it
+    (bound 0.15). The two fade out where they would merge, under 3 px apart (the overview).
+  - Roads: on the eight palest-ground road crossings in the gameplay03 frame (`RoadsReadOnPaleGroundByTheirVerges`),
+    the verges are darker than the core by at least 0.04 and darker than the ground beside them on 6 of 8 (bound 5);
+    with main's shader on 0 of 8.
+  - The sleepers were every 150 m at a duty of 0.4: a dark bar of about 1.7 px every 4.3 px, a coarse ladder. At 100 m
+    and 0.35 they are a fine texture, as the promo's.
+  - The ballast was a grey-brown (0.50, 0.46, 0.41) close to the land's ochre; it is now a stone grey (0.56, 0.54, 0.50),
+    with shoulders (0.44, 0.42, 0.39).
 - Every pattern is box-filtered to the pixel, so it fades to its mean at the overview instead of shimmering.
 - It is lit like the ground: the sun with its shadows and the ambient probe. Then come the hex grid and the land haze
   from `StatecraftMap.hlsl`.

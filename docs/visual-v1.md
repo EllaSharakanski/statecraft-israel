@@ -1108,6 +1108,25 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   while the lines leave gaps. A line is visible as a band only where it bounds a zone or is the Mandate frontier; at
   5-km hexes two of the three Syrian DMZ parts take no hex (true-polyline overlay: #237).
 
+**Shared edges and the far line (refs #196, `.superpowers/borders-routes-r1/PLAN.md` B1 and B3).** Every sub-district
+is Primary, so where two meet both drew their full band: blue, white, white, blue, about 11-13 px across at gameplay03
+against promo 03's one band of about 8 px, on every internal boundary. Promo 03 never shows two same-colour regions side
+by side. `MapBorders.Use` now also bakes, per hex, which border edges the neighbour draws in the same style (b's upper six
+bits; the style keeps the low two), and `ScBorderApply` draws 0.6 of the band and of the wash each side of such a shared
+edge (`ScSharedBand`), so the two make one band of the promo's width centred on the edge, with no jog where the drawing
+side would change. At exactly half, each half lost its partly covered outer pixel and the pair measured 6 px at
+gameplay03 against a full band's 8; at 0.6 the pair measures as one full band.
+The nearest edge is chosen in units of its own band, so where a shared edge meets the frontier at a corner each keeps
+its own width. Edges against a region of style none (the Mandate frontier against "outside") and primary-secondary edges
+(the double band promo 03 draws near Tel Aviv) keep the full band. Still one texel a pixel (`TheBordersReadOneTexelAPixel`).
+Far off, where the band is under about 4 px (diorama02), the 2 px floor band was mostly its light stripe and read as a
+white line; the light stripe now turns into the colour between 4.5 and 2.5 px and the wash fades with it, so a far band
+is a thin line of its colour. At gameplay03 (about 8 px) nothing changes. Tests:
+`ASharedEdgeDrawsOneCentredBandAndTheFrontierKeepsTheFullBand` (the proof's blocks, all primary and then primary
+against none), `AtTheOverviewTheBandsAreThin` (now also: few near-white pixels, a blueness gain), and
+`UseBakesWhichEdgesBorderAnotherRegion` (the shared bits). The proof pattern alternates styles, so the proof's
+measurements and `ColourBlindPlayersTellTheBorderStylesApart` are unchanged.
+
 **Research item: region data (to source, then the owner's sensitivity review).**
 - *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:
   Galilee, Haifa, Samaria, Jerusalem, Lydda, Gaza; sixteen sub-districts: Acre, Beisan, Nazareth, Safad, Tiberias, Haifa,
@@ -1131,7 +1150,7 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   shareable build (chapters design §13).
 - *Limits of the renderer's data seam (review M8), for the data work to plan around:*
   1. Two drawn styles (Primary, Secondary) plus None. The 1949 lines set Israel against four neighbours; with two styles
-     the four share the red-orange band (the texel's style byte allows 255, but each new style needs colours that stay
+     the four share the red-orange band (the texel's style takes b's low two bits since the shared edges, so one more style fits; each new style needs colours that stay
      apart for colour-blind players, so it is a design task, not a constant). Districts may want a neutral third style.
   2. One layer at a time: districts and armistice lines cannot show together.
   3. Styles are per region, not per edge: an edge's look comes from the regions on its two sides.
