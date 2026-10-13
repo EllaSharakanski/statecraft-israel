@@ -59,12 +59,11 @@ namespace Statecraft.Game.UI
                 p.strokeColor = new Color(Gold.r, Gold.g, Gold.b, 0.30f);
                 p.lineWidth = 1f;
                 StrokeRect(p, new Rect(r.x + inset, r.y + inset, r.width - 2 * inset, r.height - 2 * inset));
-                // The promo's double rule: a fainter second line just inside the first.
+                // The promo's double rule: a fainter second line just inside the first, as four plain quads.
                 if (filigree)
                 {
                     const float inner = inset + FiligreeGap;
-                    p.strokeColor = new Color(Gold.r, Gold.g, Gold.b, 0.16f);
-                    StrokeRect(p, new Rect(r.x + inner, r.y + inner, r.width - 2 * inner, r.height - 2 * inner));
+                    InnerRule(mgc, new Rect(r.x + inner, r.y + inner, r.width - 2 * inner, r.height - 2 * inner), new Color(Gold.r, Gold.g, Gold.b, 0.16f));
                 }
             }
             if (!corners) return;
@@ -78,8 +77,30 @@ namespace Statecraft.Game.UI
                 p.BeginPath(); p.MoveTo(new Vector2(cx + sx * 4f, cy + sy * 2.4f)); p.LineTo(new Vector2(cx + sx * 9f, cy + sy * 2.4f)); p.Stroke();
                 p.BeginPath(); p.MoveTo(new Vector2(cx + sx * 2.4f, cy + sy * 4f)); p.LineTo(new Vector2(cx + sx * 2.4f, cy + sy * 9f)); p.Stroke();
                 p.BeginPath(); p.MoveTo(new Vector2(cx, cy - d)); p.LineTo(new Vector2(cx + d, cy)); p.LineTo(new Vector2(cx, cy + d)); p.LineTo(new Vector2(cx - d, cy)); p.ClosePath(); p.Fill();
-                if (filigree) Scroll(p, cx, cy, sx, sy, leg, r.height >= TallPanel);
             }
+            if (filigree)
+            {
+                var ornament = Ornament.Get(r.height >= TallPanel);
+                float size = Ornament.Units * leg / 16f;
+                foreach (var (cx, cy, sx, sy) in new[] { (r.xMin + inset, r.yMin + inset, 1f, 1f), (r.xMax - inset, r.yMin + inset, -1f, 1f),
+                                                         (r.xMin + inset, r.yMax - inset, 1f, -1f), (r.xMax - inset, r.yMax - inset, -1f, -1f) })
+                    Ornament.Quad(mgc, ornament, cx, cy, sx, sy, size, Gold);
+            }
+        }
+
+        static void InnerRule(MeshGenerationContext mgc, Rect r, Color colour)
+        {
+            const float w = 1f;
+            Solid(mgc, new Rect(r.xMin, r.yMin, r.width, w), colour); Solid(mgc, new Rect(r.xMin, r.yMax - w, r.width, w), colour);
+            Solid(mgc, new Rect(r.xMin, r.yMin + w, w, r.height - 2 * w), colour); Solid(mgc, new Rect(r.xMax - w, r.yMin + w, w, r.height - 2 * w), colour);
+        }
+
+        static void Solid(MeshGenerationContext mgc, Rect r, Color colour)
+        {
+            var m = mgc.Allocate(4, 6);
+            foreach (var v in new[] { new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax) })
+                m.SetNextVertex(new Vertex { position = new Vector3(v.x, v.y, Vertex.nearZ), tint = colour });
+            m.SetNextIndex(0); m.SetNextIndex(1); m.SetNextIndex(2); m.SetNextIndex(0); m.SetNextIndex(2); m.SetNextIndex(3);
         }
 
         /// <summary>Below this height a panel (the date plate) gets no scroll down its sides: there the side scrolls would
@@ -89,26 +110,111 @@ namespace Statecraft.Game.UI
         public const float FiligreeGap = 3f;
 
         /// <summary>The promo's corner filigree (promo/final/03): from the end of each bracket leg a scroll curls back
-        /// towards the panel's inside (down the sides only when <paramref name="down"/>), and a leaf lies on the corner's
-        /// diagonal. Drawn in the corner's own frame (sx, sy point inwards) and scaled with the bracket's leg, so a small
-        /// panel gets a small scroll. Painter2D only: no texture, and the mesh is rebuilt only when the frame repaints (a
-        /// layout change), never per frame.</summary>
-        static void Scroll(Painter2D p, float cx, float cy, float sx, float sy, float leg, bool down)
+        /// towards the panel's inside (down the sides only on a panel at least TallPanel high), and a leaf lies on the
+        /// corner's diagonal. Rasterised once, in code, into a small alpha texture (no asset) and drawn as one textured quad
+        /// per corner, mirrored, tinted gold and scaled with the bracket's leg. Drawn as Painter2D curves instead, the
+        /// filigree cost 3-5 ms of p95 at DPR 2 on the heavy diorama02 frame (#401, bisected to the filigree); a textured
+        /// quad is the cheapest thing UI Toolkit draws.</summary>
+        public static class Ornament
         {
-            float f = leg / 16f;
-            Vector2 P(float x, float y) => new Vector2(cx + sx * x * f, cy + sy * y * f);
-            p.strokeColor = Gold; p.lineWidth = 1.1f; p.fillColor = Gold;
-            // along the horizontal leg, then the same mirrored along the vertical one
-            p.BeginPath(); p.MoveTo(P(16, 0)); p.BezierCurveTo(P(22, 0), P(26, 3.6f), P(23, 6.4f));
-            p.BezierCurveTo(P(21, 8.2f), P(18.6f, 6.6f), P(20.2f, 4.6f)); p.Stroke();
-            if (down)
+            /// <summary>The corner's extent in design units (a bracket leg is 16).</summary>
+            public const float Units = 27f;
+            /// <summary>The texture's side in pixels: about 2.4 pixels a unit, enough for DPR 2 at the full 16-unit leg.</summary>
+            public const int Size = 64;
+            static Texture2D? withSides, topOnly;
+
+            /// <summary>The ornament texture (made on first use and kept): with the scroll down the side, or without it.</summary>
+            public static Texture2D Get(bool sides)
             {
-                p.BeginPath(); p.MoveTo(P(0, 16)); p.BezierCurveTo(P(0, 22), P(3.6f, 26), P(6.4f, 23));
-                p.BezierCurveTo(P(8.2f, 21), P(6.6f, 18.6f), P(4.6f, 20.2f)); p.Stroke();
+                ref var t = ref sides ? ref withSides : ref topOnly;
+                if (t == null) t = Make(sides);
+                return t;
             }
-            // the leaf on the diagonal, inside the bracket's ticks
-            p.BeginPath(); p.MoveTo(P(5.2f, 5.2f)); p.BezierCurveTo(P(8.8f, 5.8f), P(10.6f, 7.6f), P(11.2f, 11.2f));
-            p.BezierCurveTo(P(7.6f, 10.6f), P(5.8f, 8.8f), P(5.2f, 5.2f)); p.ClosePath(); p.Fill();
+
+            /// <summary>One quad from the corner (cx, cy) inwards (sx, sy), size x size, tinted.</summary>
+            public static void Quad(MeshGenerationContext mgc, Texture2D texture, float cx, float cy, float sx, float sy, float size, Color tint)
+            {
+                var m = mgc.Allocate(4, 6, texture);
+                var uv = m.uvRegion;
+                (float u, float v)[] corners = { (0, 0), (1, 0), (1, 1), (0, 1) };
+                foreach (var (u, v) in corners)
+                    m.SetNextVertex(new Vertex
+                    {
+                        position = new Vector3(cx + sx * u * size, cy + sy * v * size, Vertex.nearZ),
+                        tint = tint,
+                        // texture row 0 is the bottom, design y grows downwards
+                        uv = new Vector2(uv.xMin + u * uv.width, uv.yMin + (1f - v) * uv.height),
+                    });
+                // UI Toolkit wants clockwise triangles on screen; a quad mirrored on one axis reverses the order
+                if (sx * sy > 0) { m.SetNextIndex(0); m.SetNextIndex(1); m.SetNextIndex(2); m.SetNextIndex(0); m.SetNextIndex(2); m.SetNextIndex(3); }
+                else { m.SetNextIndex(0); m.SetNextIndex(2); m.SetNextIndex(1); m.SetNextIndex(0); m.SetNextIndex(3); m.SetNextIndex(2); }
+            }
+
+            /// <summary>Coverage, 2x2 supersampled, of the scroll strokes (half width 0.55 units) and the filled leaf.</summary>
+            static Texture2D Make(bool sides)
+            {
+                var strokes = new System.Collections.Generic.List<Vector2[]>
+                {
+                    Curve(new Vector2(16, 0), new Vector2(22, 0), new Vector2(26, 3.6f), new Vector2(23, 6.4f), new Vector2(21, 8.2f), new Vector2(18.6f, 6.6f), new Vector2(20.2f, 4.6f)),
+                };
+                if (sides) strokes.Add(Curve(new Vector2(0, 16), new Vector2(0, 22), new Vector2(3.6f, 26), new Vector2(6.4f, 23), new Vector2(8.2f, 21), new Vector2(6.6f, 18.6f), new Vector2(4.6f, 20.2f)));
+                var leaf = Curve(new Vector2(5.2f, 5.2f), new Vector2(8.8f, 5.8f), new Vector2(10.6f, 7.6f), new Vector2(11.2f, 11.2f), new Vector2(7.6f, 10.6f), new Vector2(5.8f, 8.8f), new Vector2(5.2f, 5.2f));
+                const float half = 0.55f, unitsPerPixel = Units / Size;
+                var pixels = new Color32[Size * Size];
+                for (int py = 0; py < Size; py++)
+                    for (int px = 0; px < Size; px++)
+                    {
+                        float a = 0f;
+                        for (int sy = 0; sy < 2; sy++)
+                            for (int sx = 0; sx < 2; sx++)
+                            {
+                                var q = new Vector2((px + 0.25f + 0.5f * sx) * unitsPerPixel, (py + 0.25f + 0.5f * sy) * unitsPerPixel);
+                                float d = float.MaxValue;
+                                foreach (var line in strokes) d = Mathf.Min(d, Distance(line, q));
+                                bool hit = d <= half || Inside(leaf, q);
+                                if (hit) a += 0.25f;
+                            }
+                        // design y grows downwards; texture row 0 is the bottom
+                        pixels[(Size - 1 - py) * Size + px] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+                    }
+                var t = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { name = sides ? "UiFrameOrnament" : "UiFrameOrnamentTop", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+                t.SetPixels32(pixels); t.Apply(false, false);
+                return t;
+            }
+
+            /// <summary>Two cubic Bezier segments (p0, c1, c2, p3, c4, c5, p6), flattened to 32 points.</summary>
+            static Vector2[] Curve(params Vector2[] k)
+            {
+                var pts = new Vector2[33];
+                for (int i = 0; i <= 32; i++)
+                {
+                    int seg = i < 16 ? 0 : 1; float t = (i - seg * 16) / 16f; int o = seg * 3;
+                    float u = 1 - t;
+                    pts[i] = u * u * u * k[o] + 3 * u * u * t * k[o + 1] + 3 * u * t * t * k[o + 2] + t * t * t * k[o + 3];
+                }
+                return pts;
+            }
+
+            static float Distance(Vector2[] line, Vector2 q)
+            {
+                float best = float.MaxValue;
+                for (int i = 0; i + 1 < line.Length; i++)
+                {
+                    var a = line[i]; var ab = line[i + 1] - a;
+                    float t = Mathf.Clamp01(Vector2.Dot(q - a, ab) / Mathf.Max(ab.sqrMagnitude, 1e-6f));
+                    best = Mathf.Min(best, (a + t * ab - q).magnitude);
+                }
+                return best;
+            }
+
+            static bool Inside(Vector2[] poly, Vector2 q)
+            {
+                bool inside = false;
+                for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+                    if ((poly[i].y > q.y) != (poly[j].y > q.y) && q.x < (poly[j].x - poly[i].x) * (q.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)
+                        inside = !inside;
+                return inside;
+            }
         }
 
         static void StrokeRect(Painter2D p, Rect r)

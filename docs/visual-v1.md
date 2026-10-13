@@ -2171,10 +2171,37 @@ interleaved rounds compared main db99f3a with the branch merged with it. Median 
 | diorama02 all | 30.77 / 31.03, p95 36 / 40 | 30.95 / 31.26, p95 34 / 39 | 31.90 / 30.99, p95 36 / 39 |
 | diorama02 none | 20.46 / 20.46, p95 23 / 22 | 21.32 / 20.69, p95 24 / 23 | 21.17 / 20.63, p95 23 / 23 |
 
-The averages are within the spread everywhere; diorama02 has no hex chosen, so the branch draws a smaller panel. **The
-p95 at diorama02 `all` at DPR 2 is 3 to 5 ms higher on the branch in all three runs, so it is not noise.** In run 1
-almost every config at diorama02 shows it: `-labels` has p95 36 / 40, so it is not the labels, and `-shadows` has 24 /
-24. `none` (the HUD with every map feature off) does not show it, nor does gameplay03, nor headless DPR 1 at either
-pose. The cause is not found. The suspects are a UI repaint that lands on an already heavy (~31 ms) frame, or the
-filigree's extra Painter2D geometry at DPR 2. A development build with the UI Toolkit profiler markers would settle it.
-Main's own DPR-2 diorama02 p95 (34-36 ms) is already over the 33 ms floor.
+The averages are within the spread everywhere; diorama02 has no hex chosen, so the branch draws a smaller panel. The
+p95 at diorama02 `all` at DPR 2 was 3 to 5 ms higher on the branch in all three runs, so it was not noise.
+
+**Bisect (DPR 2, diorama02 `all` p95, two interleaved rounds, main db99f3a first).** At the shot poses the event card is
+closed, so variant (c) draws no visible filigree:
+
+| Build | round 1 | round 2 |
+|---|---|---|
+| main | 36 | 35 |
+| (a) the branch without the filigree | 36 | 36 |
+| (b) only the info panel and refusal changes | 35 | 36 |
+| (c) the filigree on the event card only | 35 | 36 |
+| the branch (filigree on the date plate, info panel, minimap, card) | 39 | 39 |
+
+**Cause.** The filigree drawn as Painter2D curves. An EditMode probe found no regeneration: over 120 idle frames, and
+with the minimap's view box set every frame (still or moving), no `UiFrame` regenerated its mesh and no element got a
+`GeometryChangedEvent`. So the cost is in drawing the curves' tessellated, antialiased geometry each frame, not in
+rebuilding it.
+
+**Fix.** `UiFrame.Ornament` rasterises the scrolls and the leaf once, in code, into a 64x64 alpha texture (two variants,
+with and without the side scroll; no asset). Each corner draws one tinted, mirrored, textured quad, and the second rule
+is four plain quads. The look is unchanged at 1920x1080. Re-run, DPR 2, interleaved, main db99f3a, the fix, then the old
+branch (avg ms, then p95):
+
+| Pose, config | round 1 | round 2 |
+|---|---|---|
+| diorama02 all | 30.78 / 30.61 / 31.29, p95 35 / 33 / 39 | 31.57 / 30.53 / 31.93, p95 36 / 34 / 38 |
+| diorama02 none | 20.49 / 20.77 / 20.82, p95 23 / 24 / 23 | 21.35 / 20.35 / 21.09, p95 24 / 23 / 23 |
+| gameplay03 all | 14.64 / 14.99 / 16.10, p95 18 / 23 / 23 | 14.51 / 14.53 / 14.45, p95 18 / 18 / 18 |
+| gameplay03 none | 8.74 / 8.77 / 9.66, p95 14 / 14 / 17 | 8.64 / 8.67 / 8.37, p95 14 / 14 / 14 |
+
+The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In round 1, gameplay03 `all` was disturbed
+for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
+up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.

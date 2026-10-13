@@ -200,6 +200,22 @@ public class InfoPanelLayoutTests
         info.Dispose();
     }
 
+    /// <summary>#401's DPR-2 p95 rise was the filigree drawn as Painter2D curves. It is now one small code-made texture per
+    /// variant, made once and shared by every frame and every corner: the same instance on every call, with the scroll
+    /// and leaf in it (some pixels covered, most clear), and the side scroll only in the tall variant.</summary>
+    [Test]
+    public void TheFiligreeIsOneSharedTexturePerVariant()
+    {
+        var tall = UiFrame.Ornament.Get(true);
+        Assert.AreSame(tall, UiFrame.Ornament.Get(true), "made once");
+        var low = UiFrame.Ornament.Get(false);
+        Assert.AreNotSame(tall, low);
+        float Covered(Texture2D t) => t.GetPixels32().Count(p => p.a > 127) / (float)(t.width * t.height);
+        Assert.Greater(Covered(low), 0.01f, "the scroll and the leaf are drawn");
+        Assert.Less(Covered(tall), 0.2f, "an ornament, not a block");
+        Assert.Greater(Covered(tall), Covered(low), "the tall variant adds the scroll down the side");
+    }
+
     /// <summary>The filigree trim (promo/final/03's frames): the date plate, the event card, the info panel and the minimap carry
     /// it; it takes no clicks, so a press on a panel's corner reaches the panel, never the trim.</summary>
     [UnityTest]
