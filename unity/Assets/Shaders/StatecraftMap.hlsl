@@ -59,17 +59,20 @@ static const float ScRiftHazeBoost = 0.6;
 // Aerial perspective, 0..1 before each surface's strength: none within the start distance, then 1 - exp(-(d - start) /
 // scale), and up to 1.6x low in the rift. It is applied after lighting on both surfaces (review I2): land outputs BaseColor x (1 - h) plus Emission =
 // haze colour x h, so Lit's result is lerp(lit ground, haze, h); water lerps its final colour (ScHazeWater).
-float ScHazeAmount(float3 positionWS)
+float ScHazeAmount(float3 positionWS, float lead = 0.0)
 {
     float dist = length(_WorldSpaceCameraPos - positionWS);
-    float aerial = 1.0 - exp(-max(dist - _ScHazeRange.w, 0.0) / max(_ScHazeRange.z, 1.0));
+    float aerial = 1.0 - exp(-max(dist - (_ScHazeRange.w - lead), 0.0) / max(_ScHazeRange.z, 1.0));
     float low = saturate((_ScHazeRange.x - positionWS.y) / max(_ScHazeRange.x - _ScHazeRange.y, 1.0));
     return saturate(aerial * (1.0 + ScRiftHazeBoost * low));
 }
 
+// Sea round 2 (#388, S4): the water's haze starts ScWaterHazeLeadM nearer than the land's (from 120 km, not 200 km), so
+// the overview's sea pales towards the horizon as promo 02's does; the gameplay zoom (under 100 km) still has none.
+static const float ScWaterHazeLeadM = 80000.0;
 float3 ScHazeWater(float3 colour, float3 positionWS)
 {
-    return lerp(colour, _ScHazeWater.rgb, _ScHazeWater.a * ScHazeAmount(positionWS));
+    return lerp(colour, _ScHazeWater.rgb, _ScHazeWater.a * ScHazeAmount(positionWS, ScWaterHazeLeadM));
 }
 
 // 1 in water, 0 on land; coast is the signed distance texture (0.5 at the shore, tools/terrain_bake.py).
@@ -103,6 +106,23 @@ static const float ScWaveTilt = 0.6;                             // wave normal 
 // frame at the gameplay pose's ~45 m pixels and 60 fps). coast.png's 94 m levels are interpolated linearly between
 // texels, so a crest can sit up to ~47 m off its true place: about one gameplay pixel, under the phase noise.
 static const float ScSwashM = 180.0, ScSurfM = 900.0, ScBreakerSpacingM = 300.0, ScBreakerRate = 0.05;
+// Sea round 2 (#388): the far sea's texture, which promo 02 and 03 show at the gameplay and overview zooms where the waves
+// above have faded to a smooth surface (sea detail 0.013 against promo 03's 0.060 at gameplay03, 0.019 against 0.063 at
+// diorama02). Three terms, all behind the "seatexture" toggle (_ScSeaTexture), so the profile prices them together and
+// the seam test (SettlementTests.TheSeaBeyondTheEdgeMatchesTheTerrainSea) pins them off; its step test
+// (TheFarSeaTextureHasNoStepAtTheMapEdge) checks the edge with them on.
+// - The mottle: wind streaks, a slow gradient-noise brightness variation, ScMottleCellM cells stretched ScMottleStretch
+//   times along the wind, with a finer octave, +-ScMottleGain, on the open Mediterranean (not the shallows, the surf or
+//   the rift lakes). It is what the overview sees.
+// - The ripple: the waves' slope towards or away from the camera, as their sky reflection, +-ScRippleGain under a 50 m
+//   pixel (the tilted normal: swell and chop); from 90 m the swell's own slope, +-ScRippleFarGain, gone by 450 m before it
+//   could alias (the overview's fine sparkle).
+// - Whitecaps: a fleck in some ScFleckCellM cells on the streaks' bright side (none in the troughs), its brightness the
+//   share of the pixel it covers; gone by an 80 m pixel.
+float _ScSeaTexture;                                             // 1 = on, 0 = off (the "seatexture" toggle)
+static const float ScMottleCellM = 2500.0, ScMottleGain = 0.32, ScMottleStretch = 3.0;
+static const float ScRippleGain = 0.54, ScRippleScale = 5.0, ScRippleFarGain = 0.28, ScRippleFarScale = 4.0;
+static const float ScFleckCellM = 120.0, ScFleckM = 18.0, ScFleckShare = 0.22;
 
 // Antiderivative of tri(x)^2, tri(x) = 1 - |2 frac(x) - 1| (period 1, mean 1/3).
 float ScTriSqIntegral(float x)
@@ -159,6 +179,7 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     // (on an axis-aligned lattice), whose slope jumped at every cell edge; ScWaveSlopeGain scales the smooth slope to the
     // old layers' strength.
     float2 g = ScWaveSlopeGain * ScWaveSlope(mapM, 700.0, 0.6, float2(0.05, 0.02), time);
+    float2 swellSlope = g;   // the far ripple's (sea round 2)
     // The chop: a 170 m layer turned -0.9 rad and moving the other way, full while a pixel covers under 40 m, gone by
     // 170 m (the gameplay pose sees it, the overview averages it away).
     float chop = 1.0 - smoothstep(40.0, 170.0, footprintM);
@@ -184,19 +205,45 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     // view-dependent gradient that read as a seam between samples 5 km apart either side of the map's edge. The glint is
     // the near zoom's sparkle: it fades out between 60 and 120 m pixels, where the calmer far sea turned it back into that
     // smooth warm gradient (sea-fix: up to 0.016 between the seam test's +-2.5 km patches with the gradient-noise waves).
-    float glint = 0.06 * (1.0 - smoothstep(60.0, 120.0, footprintM));
+    // Sea round 2: 0.12 under a 40 m pixel (the gameplay zoom's sparkle), easing to Task 7's 0.06 by 60 m, so nothing
+    // changes from 60 m out (the seam test's 120 km view).
+    float glint = lerp(0.12, 0.06, smoothstep(40.0, 60.0, footprintM)) * (1.0 - smoothstep(60.0, 120.0, footprintM));
     lit += pow(saturate(dot(reflect(-l, n), v)), 80.0) * glint * lc * shadow;
+
+    // The far sea's texture (sea round 2, above): on open sea water only.
+    float open = _ScSeaTexture * (1.0 - salt) * (1.0 - fresh);
+    float2 viewXZ = normalize(v.xz + 1e-5);
+    float nearRipple = 1.0 - smoothstep(50.0, 90.0, footprintM);
+    float ripple = ScRippleGain * nearRipple * clamp(dot(n.xz, viewXZ) * ScRippleScale, -1.0, 1.0)
+        + ScRippleFarGain * (1.0 - nearRipple) * (1.0 - smoothstep(250.0, 450.0, footprintM)) * clamp(dot(swellSlope, viewXZ) * ScRippleFarScale, -1.0, 1.0);
+    float ms, mc; sincos(0.3, ms, mc);
+    float2 mp = mapM / ScMottleCellM;
+    mp = float2(mc * mp.x - ms * mp.y, (ms * mp.x + mc * mp.y) * ScMottleStretch);   // streaks along the wind
+    float mottle = ScGradientNoiseD(mp + float2(0.002, 0.001) * time).x + 0.8 * ScGradientNoiseD(mp * 2.7 + float2(5.3, 1.7)).x;
+    mottle = clamp(mottle / 1.1, -1.0, 1.0);
+    float offshore = smoothstep(0.0, shallowEdge, offshoreM);   // 0 in the turquoise shallows, 1 past them
+    mottle *= offshore;
+    // The shallows keep promo 03's pale turquoise: the ripple runs at 40% there (at full it darkened the band at 25 km).
+    lit *= 1.0 + open * (ripple * lerp(0.4, 1.0, offshore) + ScMottleGain * mottle);
+    float2 cell = floor(mapM / ScFleckCellM);
+    float2 at = (cell + 0.35 + 0.3 * float2(ScHash(cell + 3.7), ScHash(cell + 9.1))) * ScFleckCellM;
+    float reach = max(ScFleckM, 0.6 * footprintM);
+    float fleck = step(ScHash(cell + 17.1), ScFleckShare * saturate(mottle * 1.5)) * (ScFleckM * ScFleckM) / (reach * reach)
+        * (1.0 - smoothstep(0.5 * reach, reach, length(mapM - at)))
+        * (1.0 - smoothstep(40.0, 80.0, footprintM)) * smoothstep(300.0, 900.0, offshoreM) * open;
 
     // Surf: the swash line, then breakers (crests every ScBreakerSpacingM, rolling in: the phase grows with time towards
     // the shore; box-filtered over ScBreakers' width) whose crests break up along the coast (a 300 m noise, faded to its mean once a
     // pixel covers 75-150 m). Neither on the Dead Sea, which keeps its salt rim.
-    float swash = 1.0 - smoothstep(ScSwashM, ScSwashM * 1.8, offshoreM);
+    // Sea round 2: the swash line is never under 1.5 pixels wide, so the white rim reads at the overview as well.
+    float swashM = max(ScSwashM, 1.5 * footprintM);
+    float swash = 1.0 - smoothstep(swashM, swashM * 1.8, offshoreM);
     float zone = 1.0 - smoothstep(ScSwashM, ScSurfM, offshoreM);
     float crest = ScTriSqBox(breakers.x, breakers.y);
     float broken = smoothstep(0.3, 0.7, ScNoise(mapM / 300.0 + float2(0.0, time * 0.02)));
     broken = lerp(0.5, broken, 1.0 - smoothstep(75.0, 150.0, footprintM));
     float rim = salt * (1.0 - smoothstep(0.0, 900.0, offshoreM));
-    float foam = saturate((swash * (0.8 + 0.2 * broken) + zone * crest * broken) * (1.0 - salt) + rim);
+    float foam = saturate((swash * (0.8 + 0.2 * broken) + zone * crest * broken) * (1.0 - salt) + rim + fleck);
     return lerp(lit, SRGBToLinear(float3(0.93, 0.95, 0.94)), foam * 0.85);
 }
 
@@ -206,8 +253,8 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
 // Dead Sea (below -300 m). Both thresholds are 20 m ramps, so a shore slope crossing one leaves no hard contour. Steep
 // faces (the Carmel's and the kurkar cliffs) keep their rock. Off with the "water" toggle (so its cost is in the
 // toggle's).
-static const float ScBeachM = 650.0;
-static const float3 ScSandSrgb = float3(0.88, 0.76, 0.56), ScSaltSrgb = float3(0.92, 0.90, 0.85);
+static const float ScBeachM = 900.0;   // sea round 2 (#388): 650 m in promo-sea; promo 03's beach reads wider
+static const float3 ScSandSrgb = float3(0.90, 0.80, 0.62), ScSaltSrgb = float3(0.92, 0.90, 0.85);   // sea round 2: drier, paler
 float3 ScShore(float3 ground, float coast, float elevM, float3 n, float2 mapM)
 {
     if (_ScWaterOn < 0.5) return ground;

@@ -195,6 +195,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
+  surface: slow wind streaks, ripples from the waves' slope towards the camera, and sparse whitecaps on the streaks'
+  bright side. All three sit behind a new `seatexture` visual toggle. The glint is stronger close up, the white surf line
+  is at least 1.5 pixels wide at every zoom, the beach is wider (900 m) and paler, and the water's haze starts at 120 km
+  so the overview's sea pales towards the horizon. The water shader is the only shader changed.
 - Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
   biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
   at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
