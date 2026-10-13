@@ -825,4 +825,105 @@ public class RouteTests
 
     /// <summary>Bounds for the road test, set from its log.</summary>
     const float VergeStep = 0.04f, VergeBelowGround = 0.01f, PaleReadShare = 0.6f;
+
+    /// <summary>Issue #321: the baked ribbons (RouteRibbonFile.AssetPath, Editor RouteRibbonBake.Bake) are what the shipped
+    /// heightmap and route file give now, byte for byte; the map scene places them without deriving; and what it places
+    /// equals what the map's own terrain derives, vertex for vertex, with each route's range in the index.</summary>
+    [Test]
+    public void TheBakedRibbonsMatchTheRoutes()
+    {
+        var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap);
+        var baked = AssetDatabase.LoadAssetAtPath<TextAsset>(RouteRibbonFile.AssetPath);
+        Assert.IsNotNull(baked, $"{RouteRibbonFile.AssetPath} is missing: run Statecraft.Game.EditorTools.RouteRibbonBake.Bake");
+        CollectionAssert.AreEqual(RouteRibbonFile.Bake(inputs), baked.bytes, "stale: re-run Statecraft.Game.EditorTools.RouteRibbonBake.Bake");
+
+        var derivedAtLoad = new List<string>();
+        void Watch(string message, string stack, LogType type) { if (message.Contains("deriving the route ribbons")) derivedAtLoad.Add(message); }
+        Application.logMessageReceived += Watch;
+        MapScene map;
+        try { map = BuildMap(); }
+        finally { Application.logMessageReceived -= Watch; }
+        try
+        {
+            CollectionAssert.IsEmpty(derivedAtLoad, "the map places the bake");
+            var (_, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16z);
+            var source = RouteRibbonFile.Source.Of(heights, inputs.HeightmapJson, inputs.RoutesYaml);
+            var plans = RouteLayer.Plan(RoutePaths.Parse(inputs.RoutesYaml, Bounds));
+            var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+            Assert.IsTrue(RouteRibbonFile.TryRead(baked.bytes, source, data.size, origin, plans, out var read, out var why), why);
+            var placed = Ribbons(RoutesRoot(map), "Rail").Concat(Ribbons(RoutesRoot(map), "Roads"))
+                .Select(f => f.sharedMesh).ToDictionary(m => m.name);
+            Assert.AreEqual(plans.Count, placed.Count);
+            for (int i = 0; i < plans.Count; i++)
+            {
+                var derived = RouteLayer.Derive(plans[i], map.Frame, data, origin);
+                var name = plans[i].MeshName;
+                CollectionAssert.AreEqual(derived.Vertices, read[i].Vertices, name);
+                CollectionAssert.AreEqual(derived.Normals, read[i].Normals, name);
+                CollectionAssert.AreEqual(derived.Uvs, read[i].Uvs, name);
+                CollectionAssert.AreEqual(derived.Indices, read[i].Indices, name);
+                CollectionAssert.AreEqual(derived.Routes, read[i].Routes, name);
+                CollectionAssert.AreEqual(plans[i].Routes.Select(r => r.Id), read[i].Routes.Select(s => s.Id), name);
+                Assert.AreEqual(derived.Vertices.Length, placed[name].vertexCount, name);
+                Assert.AreEqual((uint)derived.Indices.Length, placed[name].GetIndexCount(0), name);
+            }
+            // Every route is in the index once, and its ranges tile its mesh.
+            CollectionAssert.AreEquivalent(plans.SelectMany(p => p.Routes).Select(r => r.Id), read.SelectMany(g => g.Routes).Select(s => s.Id));
+            foreach (var g in read)
+                for (int k = 0; k < g.Routes.Length; k++)
+                {
+                    var s = g.Routes[k];
+                    Assert.AreEqual(k == 0 ? 0 : g.Routes[k - 1].FirstVertex + g.Routes[k - 1].VertexCount, s.FirstVertex, s.Id);
+                    Assert.AreEqual(k == 0 ? 0 : g.Routes[k - 1].FirstIndex + g.Routes[k - 1].IndexCount, s.FirstIndex, s.Id);
+                    for (int i = s.FirstIndex; i < s.FirstIndex + s.IndexCount; i++)
+                        Assert.That(g.Indices[i], Is.InRange(s.FirstVertex, s.FirstVertex + s.VertexCount - 1), s.Id);
+                }
+
+            // A bake made from other inputs is refused.
+            var other = new[]
+            {
+                new RouteRibbonFile.Source(source.Resolution, source.HeightsCheck + 1, source.MapCheck, source.RoutesCheck),
+                new RouteRibbonFile.Source(source.Resolution, source.HeightsCheck, source.MapCheck + 1, source.RoutesCheck),
+                new RouteRibbonFile.Source(source.Resolution, source.HeightsCheck, source.MapCheck, source.RoutesCheck + 1),
+            };
+            foreach (var s in other) Assert.IsFalse(RouteRibbonFile.TryRead(baked.bytes, s, data.size, origin, plans, out _, out _));
+            Assert.IsFalse(RouteRibbonFile.TryRead(baked.bytes, source, data.size + Vector3.up, origin, plans, out _, out _), "another terrain size");
+            Assert.IsFalse(RouteRibbonFile.TryRead(baked.bytes.Take(baked.bytes.Length - 1).ToArray(), source, data.size, origin, plans, out _, out why));
+            Assert.AreEqual("truncated", why);
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Issue #321: a stale bake is refused with a warning and the ribbons are derived at load, the same meshes as
+    /// a build without the bake.</summary>
+    [Test]
+    public void AStaleRibbonBakeIsDerivedAtLoad()
+    {
+        var map = BuildMap();
+        try
+        {
+            var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap);
+            var (_, heights) = HeightmapLoader.Load(inputs.HeightmapJson, inputs.HeightmapR16z);
+            var routes = RoutePaths.Parse(inputs.RoutesYaml, Bounds);
+            var stale = RouteRibbonFile.Source.Of(heights, inputs.HeightmapJson, inputs.RoutesYaml + "\n# edited");
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("deriving the route ribbons at load"));
+            var root = RouteLayer.Build(map.Terrain, map.Frame, routes, RouteLayer.TrainMode.None, RouteLayer.DefaultDate, stale);
+            try
+            {
+                var plans = RouteLayer.Plan(routes);
+                var meshes = root.transform.Find(RouteLayer.RibbonsName).GetComponentsInChildren<MeshFilter>(true).Select(f => f.sharedMesh).ToList();
+                Assert.AreEqual(plans.Count, meshes.Count);
+                var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+                for (int i = 0; i < plans.Count; i++)
+                {
+                    var derived = RouteLayer.Derive(plans[i], map.Frame, data, origin);
+                    Assert.AreEqual(plans[i].MeshName, meshes[i].name);
+                    Assert.AreEqual(derived.Vertices.Length, meshes[i].vertexCount, plans[i].MeshName);
+                    Assert.AreEqual((uint)derived.Indices.Length, meshes[i].GetIndexCount(0), plans[i].MeshName);
+                }
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+        finally { Object.DestroyImmediate(map.gameObject); }
+    }
 }

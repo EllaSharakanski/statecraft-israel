@@ -201,6 +201,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   readability choice at map scale; the sourced kit is unchanged (refs #197).
 - The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
+- The map's railways and roads are placed from a bake at boot instead of being built (refs #321), as the water's
+  mesh is since #195. The routes look the same: the bake holds the same meshes, and a stale or missing bake is refused
+  with a warning and the routes are built at load as before. `routes built` takes TODO(measure) ms at `--cpu 4`, from
+  TODO(measure). The bake also lists where each route lies in its mesh, for the corridors of GDD Phase 4 (#384).
+  Presentation only.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
   surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a
   wave's size), and sparse whitecaps on the streaks' bright side, close up only. All three sit behind a new `seatexture`
