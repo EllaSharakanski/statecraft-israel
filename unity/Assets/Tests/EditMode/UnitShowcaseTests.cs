@@ -161,6 +161,32 @@ public class UnitShowcaseTests
         return list;
     }
 
+    /// <summary>Issue #249: the showcase trio leaves out the kit trees under its boots, and its toggle gives them back.</summary>
+    [Test]
+    public void TheShowcaseTrioStandsClearOfTheTrees()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        try
+        {
+            var veg = map.GetComponentInChildren<Statecraft.Game.Map.Kits.VegetationLayer>(true);
+            Assert.IsNotNull(veg, "the kits and their trees are on");
+            var root = UnitShowcase.Spawn(map, still: true);
+            var feet = Enumerable.Range(0, 3).Select(i => root.transform.Find("Rifleman" + i).position).Select(p => new Vector2(p.x, p.z)).ToList();
+            bool Under(Statecraft.Game.Map.Kits.TreeKind k, Matrix4x4 m)
+            {
+                var p = m.GetColumn(3); float reach = UnitShowcase.FootRadiusM + Statecraft.Game.Map.Kits.VegetationLayer.CrownRadius(k, m);
+                return feet.Any(f => (f - new Vector2(p.x, p.z)).sqrMagnitude < reach * reach);
+            }
+            Assert.IsFalse(veg.Drawable().Any(t => Under(t.kind, t.m)), "no drawn tree reaches the trio's boots");
+            Assert.AreEqual(veg.Planted().Count(t => Under(t.kind, t.m)), veg.Hidden, "only the trio's trees are left out");
+            VisualToggles.Set(UnitShowcase.ToggleName, false);
+            Assert.AreEqual(0, veg.Hidden, "the showcase off gives them back");
+        }
+        finally { if (VisualToggles.Names.Contains(UnitShowcase.ToggleName)) VisualToggles.Set(UnitShowcase.ToggleName, true); Object.DestroyImmediate(map.gameObject); }
+    }
+
     [Test]
     public void SpawnBuildsTheSliceAtGameplay03AndTheToggleHidesIt()
     {

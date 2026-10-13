@@ -35,6 +35,7 @@ namespace Statecraft.Game.Map.Units
         List<PlacedToken> placed = new List<PlacedToken>();
         Transform tokensRoot = null!;
         readonly List<Transform> badges = new List<Transform>();
+        readonly List<(Vector2 centre, float radius)> treeHoles = new List<(Vector2, float)>();
         GameObject? ring;
         bool still;
 
@@ -82,7 +83,14 @@ namespace Statecraft.Game.Map.Units
             layer.badgeGlyph = layer.assets.Own(new Material(ringTemplate) { name = "UnitBadge (glyph)", color = UnitBadge.GlyphColour });
             layer.tokensRoot = new GameObject("Tokens").transform;
             layer.tokensRoot.SetParent(root.transform, false);
-            layer.assets.OnTeardown(VisualToggles.Register(ToggleName, on => { if (root != null) root.SetActive(on); }));
+            // The kit trees under the figures are left out while the layer shows (issue #249), and come back with the layer
+            // off: a plain screenshot run (HiddenInCaptures) keeps every tree, so its checkpoints stay comparable.
+            layer.assets.OnTeardown(() => UnitShowcase.HideTrees(map, ToggleName, Array.Empty<(Vector2, float)>()));
+            layer.assets.OnTeardown(VisualToggles.Register(ToggleName, on =>
+            {
+                if (root != null) root.SetActive(on);
+                if (layer != null) layer.HideTrees();
+            }));
             return layer;
         }
 
@@ -93,6 +101,11 @@ namespace Statecraft.Game.Map.Units
 
         void OnEnable() => RenderPipelineManager.beginCameraRendering += FaceBadges;
         void OnDisable() => RenderPipelineManager.beginCameraRendering -= FaceBadges;
+
+        /// <summary>The kit trees under the drawn figures, left out while the layer shows (issue #249).</summary>
+        public IReadOnlyList<(Vector2 centre, float radius)> TreeHoles => treeHoles;
+
+        void HideTrees() => UnitShowcase.HideTrees(map, ToggleName, gameObject.activeSelf ? treeHoles : (IReadOnlyList<(Vector2, float)>)Array.Empty<(Vector2, float)>());
 
         /// <summary>Turns every badge to face the camera about to render (game, editor capture or scene view alike).</summary>
         void FaceBadges(ScriptableRenderContext _, Camera cam)
@@ -181,6 +194,7 @@ namespace Statecraft.Game.Map.Units
                 if (Application.isPlaying) Destroy(old); else DestroyImmediate(old);
             }
             badges.Clear();
+            treeHoles.Clear();
             float hex = map.Hexes.hex_size_km * 1000f;
             foreach (var p in placed)
             {
@@ -204,6 +218,7 @@ namespace Statecraft.Game.Map.Units
                             var figure = UnitShowcase.Piece(go.transform, $"Rifleman{i}", type, () => MeshFor($"{type}/{pose}", () => UnitModels.Rifleman(hat, pose, faded, type)),
                                 paint, at, Quaternion.Euler(0, heading, 0), UnitShowcase.FigureScale, out _);
                             UnitShowcase.AddBase(map, figure.transform, at, MeshFor("figure-base", () => UnitShowcase.BaseMesh("UnitFigureBase")), paint);
+                            treeHoles.Add(UnitShowcase.TreeHole(at));
                         }
                         top = UnitBadge.FigureHeightM * UnitShowcase.FigureScale;
                         break;
@@ -228,6 +243,7 @@ namespace Statecraft.Game.Map.Units
                 AddRenderer(badge.transform, "Plate", MeshFor("badge-plate", UnitBadge.PlateMesh), badgePlate, 0f);
                 AddRenderer(badge.transform, "Glyph", MeshFor("badge-" + t.Unit.Service, () => UnitBadge.GlyphMesh(t.Unit.Service)), badgeGlyph, -UnitBadge.GlyphLift);
             }
+            HideTrees();
         }
 
         static void AddRenderer(Transform parent, string name, Mesh mesh, Material mat, float z)

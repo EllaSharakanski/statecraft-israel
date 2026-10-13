@@ -195,6 +195,11 @@ checks every anchor and logs each spot and its distance.
     hills.
   - **Tests:** `AFigureStandsOnASteepSlopeWithoutSinking` and `NoRiflemanSinksIntoTheHillsOfTheMap`.
   - **Close-ups** (`MapCapture.Promo -units -extraPose …`, at 12 and 20 km): at 6 km the camera sees only boots.
+- **Trees (#249).** The kit trees whose crowns reach a drawn figure's boots (its 400 m foot radius, which is also its
+  base's) are left out at draw time (`VegetationLayer.Hide`), so no orchard grows through a figure. Only the figures drawn
+  that day clear trees, and they come back when the figure goes. With the `units` toggle off, as in a plain `?shot` run,
+  every tree is drawn. The planting, and so the kits' layout, never changes. Tests:
+  `NoKitTreeGrowsThroughAShownFiguresFeet` and `OnlyTheShownFiguresTreesGoAndTheToggleBringsThemBack`.
 
 **Selection and the card.**
 - Clicking a token's hex selects it. The ring goes round it and the hex outline is cleared, so it has one highlight.
