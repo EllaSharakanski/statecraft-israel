@@ -1775,3 +1775,9 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   | | fix | 13.2 | 12.7 | 13.6 | 15.0 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
 
   diorama02 is pixel-identical (0 pixels more than 24 levels apart). The near band and the focus band do not move.
+- **Frame time** (WebGL headless `?vprofile`, 1920x1080, 2 interleaved rounds under the exclusive lock, medians): gameplay03
+  none 5.02 / 5.06 ms against 4abb64f's 5.07 / 5.20, all 7.90 / 7.99 against 7.89 / 7.87; diorama02 none 12.63 / 12.62
+  against 12.20 / 12.21, all 19.51 / 19.49 against 19.08 / 18.94. Main before #320 measured 20.98 ms at gameplay03 none
+  in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
+  strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
+  build-to-build noise, within the tilt-shift's 1.5 ms budget.
