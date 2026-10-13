@@ -55,6 +55,11 @@ CC0: "Moshe Dayan met mgr. A.C. Ramselaar (cropped).jpg" (1962).
   Identity: NLI record 997008137163805171, «יצחק מאיר לוין עובר על מסמכים במשרדו». The bearded man at the desk on the
   right of a two-person photograph; he looks down at papers. Replaces the earlier Government Press Office photograph.
   Likeness check by the maintainer still needed.
+- Dov Yosef: crop of Benno Rothenberg / Meitar Collection / National Library of Israel, 1949, CC BY 4.0
+  (attribution in NOTICE):
+  https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg
+  Identity: NLI record 997008137381905171, «דב יוסף, שר האספקה והקיצוב». Single-subject photograph. Likeness check by
+  the maintainer still needed.
 
 ## Facts shown (verified 2026-10-09)
 - Provisional Government (May 1948): 13 ministers and portfolios; Provisional State Council 37 members,
