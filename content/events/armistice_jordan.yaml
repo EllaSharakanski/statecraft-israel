@@ -22,6 +22,6 @@ options:
     effects:
       - { target: intl_standing, delta: -0.10 }
 sources:
-  - { url: "https://avalon.law.yale.edu/20th_century/arm03.asp", checked: 2026-10-13 }
-  - { url: "https://unispal.un.org/pdfs/E450A4C18F4EE4D085256D96006272BF.pdf", checked: 2026-10-13 }
+  - { url: "https://avalon.law.yale.edu/20th_century/arm03.asp", checked: 2026-10-14 }
+  - { url: "https://unispal.un.org/pdfs/E450A4C18F4EE4D085256D96006272BF.pdf", checked: 2026-10-14 }
 status: fact-checked
