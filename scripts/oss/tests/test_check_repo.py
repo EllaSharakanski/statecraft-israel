@@ -173,3 +173,50 @@ def test_email_allowlist_is_exact_addresses_not_whole_domains(make_repo, capsys)
 def test_outside_a_checkout_is_a_readable_error_not_a_traceback(tmp_path, capsys):
     assert run(tmp_path) == 2
     assert "not a git checkout" in capsys.readouterr().err
+
+
+# Conflict markers are assembled at run time so that this file never holds a line that starts with one.
+OURS, BASE, SEP, THEIRS = "<" * 7, "|" * 7, "=" * 7, ">" * 7
+
+
+def test_committed_conflict_block_is_reported_at_each_marker_line(make_repo, capsys):
+    block = f"# Changelog\n{OURS} HEAD\n- ours\n{SEP}\n- theirs\n{THEIRS} origin/main\n"
+    root = make_repo({"CHANGELOG.md": block})
+    assert run(root, "--only", "conflict-markers") == 1
+    out = capsys.readouterr().out
+    assert f"conflict-markers: CHANGELOG.md:2: conflict-marker {OURS}" in out
+    assert f"conflict-markers: CHANGELOG.md:6: conflict-marker {THEIRS}" in out
+    assert "CHANGELOG.md:4:" not in out
+
+
+def test_diff3_base_marker_is_reported(make_repo, capsys):
+    block = f"{OURS} ours\na\n{BASE} base\nb\n{SEP}\nc\n{THEIRS} theirs\n"
+    root = make_repo({"docs/oss/DECISIONS.md": block})
+    assert run(root, "--only", "conflict-markers") == 1
+    assert f"conflict-markers: docs/oss/DECISIONS.md:3: conflict-marker {BASE}" in capsys.readouterr().out
+
+
+def test_lookalike_lines_are_not_conflict_markers(make_repo, capsys):
+    root = make_repo({
+        "setext.md": f"Title\n{SEP}\n\ntext\n",
+        "rst.rst": f"{SEP}\nTitle\n{SEP}\n",
+        "fence.md": f"```\n{SEP}\n{'=' * 4}\n```\n",
+        "table.md": "| a | b |\n|---|---|\n| 1 | 2 |\n",
+        "art.txt": f"{OURS}\n{THEIRS}\n{BASE}\n",  # seven characters with no label after them
+        "long.txt": f"{OURS}< x\n{THEIRS}> x\n",  # eight characters: git writes seven
+        "inline.md": f"text {OURS} HEAD\n  {THEIRS} indented\n",  # not at the start of the line
+    })
+    assert run(root, "--only", "conflict-markers") == 0
+    assert "OK: checks conflict-markers" in capsys.readouterr().out
+
+
+def test_conflict_markers_is_in_the_default_run(make_repo, capsys):
+    assert "conflict-markers" in check_repo.CHECKS
+    root = make_repo({"a.md": f"{OURS} HEAD\n"})
+    assert run(root) == 1
+    assert "conflict-markers: a.md:1:" in capsys.readouterr().out
+
+
+def test_binary_files_are_not_scanned_for_conflict_markers(make_repo, capsys):
+    root = make_repo({"img.png": b"\x89PNG\x00\x00\n" + f"{OURS} HEAD\n".encode()})
+    assert run(root, "--only", "conflict-markers") == 0

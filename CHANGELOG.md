@@ -8,6 +8,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- Portrait for Dov Yosef (refs #6): a Meitar Collection photograph (Benno Rothenberg, National Library of Israel, 1949) under CC BY 4.0, cropped, with its credit in `NOTICE`, on the extended `commons_licences.py` path from #30. Likeness check and the NLI confirmation before a paid release stay with the maintainer. Unity not run.
+- Portraits for Remez and Levin (refs #30): Government Press Office photographs, which Commons marks PD-Israel only, are replaced by Meitar Collection photographs (National Library of Israel, 1950 and 1949) under CC BY 4.0, cropped, with per-photo credits in `NOTICE`. `scripts/oss/commons_licences.py` now records an explicit Cc-by-4.0 file as `CC-BY-4.0` and marks it verified only with a named artist and a `NOTICE` entry; public domain, CC0 and the PD-Israel-only refusal are unchanged. Likeness check and the NLI confirmation before a paid release stay with the maintainer. Unity not run.
 - The website (`site/`, refs #393): a static Astro site in English (`/en/`) and Hebrew (`/he/`, right to left) with Home, Play, History, Sources, Media, Devlog, Contributors, How we make it, Press, Contribute and Privacy. Every image and video carries a visible label (in-engine capture with build and date, AI-generated concept art, or AI cinematic promo, not gameplay); the History and Sources pages show the events and sources from `content/` as they are. The in-engine images are the README's screenshots, read from `docs/images/build-*.jpg` and described in `docs/images/captures.yaml`, so retaking them updates the site. The cinematic trailer is hosted as one 720p H.264 encode, shown behind a click with captions in its own labelled section after the gameplay; a real gameplay clip listed in `captures.yaml` becomes the home page's muted hero loop, with a pause button. Self-hosted fonts and images, no analytics, no cookies and nothing loaded from another site. A `Site` workflow builds and checks it on pull requests; deploying to GitHub Pages waits for the owner.
 - The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
   hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
@@ -306,6 +308,24 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "Operation Yoav" now dates the attack on the supply convoy to 15 October 1948, not 14 October, as Israel's own reply in
+  the Acting Mediator's report S/1042 and the IDF account of the operation both give it. The rest of the card is
+  unchanged (refs #442).
+- Six society events (austerity, clothing rationing, the transit-camp schools, the Law of Return, the transit camps and
+  closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
+  published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
+  Text, dates and effects are unchanged (refs #442).
+- The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
+  Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
+  study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
+  "Education in the Immigrant Camps" cites the Knesset debates of 31 January and 28 February 1950 and keeps only the
+  Hebrew Wikipedia article, for the commission's first session and report dates. Text, dates and effects are unchanged
+  (refs #442).
+- Six war cards ("The Altalena", "The Ten Days", "The Second Truce", "Operation Yoav", "Operation Hiram", "Talks at
+  Rhodes") now cite primary sources beside Wikipedia: Security Council resolution 54, the Mediator's reports (A/648,
+  S/1042, S/1055, S/1357), FRUS 1948 and 1949, UN press releases, the JTA archive and the Irgun's own history of the
+  Altalena. "Talks at Rhodes" drops its Hebrew Wikipedia source, which FRUS now covers. Text, dates and effects are
+  unchanged (refs #442).
 - The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
   (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now

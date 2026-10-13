@@ -21,7 +21,6 @@ options:
     effects:
       - { target: morale, delta: -0.03 }
 sources:
-  - { url: "https://en.wikipedia.org/wiki/Second_government_of_Israel", checked: 2026-10-10 }
-  - { url: "https://he.wikipedia.org/wiki/ממשלת_ישראל_השנייה", checked: 2026-10-10 }
-  - { url: "https://he.wikipedia.org/wiki/הכנסת_הראשונה", checked: 2026-10-10 }
+  - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250264.pdf", checked: 2026-10-14 }
+  - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250266.pdf", checked: 2026-10-14 }
 status: fact-checked

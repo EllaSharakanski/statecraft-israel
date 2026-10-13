@@ -71,7 +71,7 @@ public class WarEvents1948Tests
         var row = Events.Single(x => x.Id == id);
         Assert.Contains(e.Status, new[] { "fact-checked", ReleaseGate.ReviewedStatus });   // sensitive ones carry the owner's sign-off (D11)
         Assert.True(e.Sources.Count >= 1, $"{id} has no source");
-        Assert.All(e.Sources, s => { Assert.StartsWith("https://", s.Url); Assert.Equal(new DateTime(2026, 10, 10), s.Checked); });
+        Assert.All(e.Sources, s => { Assert.StartsWith("https://", s.Url); Assert.True(s.Checked >= new DateTime(2026, 10, 10), $"{id}: {s.Url} checked before the 10 October review"); });
         Assert.Equal(row.Office, e.Office);
         Assert.True(e.To.HasValue, $"{id} needs a closed window");
         Assert.True(e.From >= Start && e.From < EgyptArmistice, $"{id} opens {e.From:yyyy-MM-dd}, outside the war period");
