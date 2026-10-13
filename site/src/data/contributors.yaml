@@ -7,6 +7,11 @@
 # photo: a file in site/src/assets/contributors/ (for example eyalgolan.jpg), supplied by the owner with the person's
 #   consent. Leave it empty and the card shows a monogram. Never a GitHub avatar, and never a generated or AI image of a
 #   person.
+# category (optional): team (the default), historian or sensitivity-reviewer. Historians and sensitivity reviewers get
+#   their own section on the page.
+# since, until (optional): when the person took part, as YYYY or YYYY-MM, quoted or not. An entry with `until` moves to
+#   the Past contributors section with its years. Only the person or the owner supplies these dates.
+# The two sections appear only when someone is in them.
 #
 # Hebrew titles are gendered. Where the person's preference is not known, the Hebrew uses a neutral wording.
 people:

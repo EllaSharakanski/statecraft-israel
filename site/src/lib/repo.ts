@@ -80,16 +80,39 @@ export function assetRules(): AssetRule[] {
   return (readYaml('ASSETS.yaml').rules as AssetRule[]);
 }
 
+export const personCategories = ['team', 'historian', 'sensitivity-reviewer'] as const;
+export type PersonCategory = (typeof personCategories)[number];
+
 export interface Person {
   github: string;
   name: { en?: string; he?: string };
   title: { en: string; he: string };
   photo?: string | null;
+  category: PersonCategory;
+  since?: string;
+  until?: string;
 }
 
+/** The file the contributors page reads. SITE_CONTRIBUTORS (a path from the repo root) swaps in a test fixture. */
+export const contributorsFile = process.env.SITE_CONTRIBUTORS || 'site/src/data/contributors.yaml';
+
 export function contributors(): Person[] {
-  const doc = YAML.parse(fs.readFileSync(path.join(repoRoot, 'site/src/data/contributors.yaml'), 'utf8'));
-  return doc.people as Person[];
+  const doc = YAML.parse(fs.readFileSync(path.resolve(repoRoot, contributorsFile), 'utf8'));
+  const people = (doc.people ?? []) as (Omit<Person, 'category' | 'since' | 'until'> & { category?: unknown; since?: unknown; until?: unknown })[];
+  const year = /^\d{4}(-\d{2})?$/;
+  return people.map((p) => {
+    const bad = (msg: string) => { throw new Error(`contributors: ${p.github ?? '(no github)'}: ${msg}`); };
+    if (!p.github) bad('no github handle');
+    if (!p.title?.en || !p.title?.he) bad('title needs both en and he');
+    const category = (p.category ?? 'team') as PersonCategory;
+    if (!personCategories.includes(category)) bad(`category must be one of ${personCategories.join(', ')}`);
+    // YAML reads a bare 2024 as a number; keep the text.
+    const since = p.since == null || p.since === '' ? undefined : String(p.since);
+    const until = p.until == null || p.until === '' ? undefined : String(p.until);
+    for (const [k, v] of [['since', since], ['until', until]] as const) if (v && !year.test(v)) bad(`${k} must be YYYY or YYYY-MM, not ${v}`);
+    if (since && until && until < since) bad('until is before since');
+    return { ...p, category, since, until };
+  });
 }
 
 /** The first `## Heading` section of a Markdown file, without the heading. */
