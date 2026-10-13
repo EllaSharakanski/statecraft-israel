@@ -56,3 +56,13 @@ def test_notice_credits_each_file_and_the_catalog_focus_matches():
         assert f"{pid} | CC BY 4.0 | {source(name)}\n" in listing
         entry = re.search(rf"  - personId: {pid}\n(.*?)(?=  - personId:|\Z)", catalog, re.S).group(1)
         assert f"focusY: {focus}" in entry
+
+
+def test_portraits_txt_header_matches_the_importer_and_order_matches_people_yaml():
+    importer = (ROOT / "unity/Assets/Editor/PortraitImport.cs").read_text(encoding="utf-8")
+    header = (ROOT / "unity/Assets/UI/Portraits/PORTRAITS.txt").read_text(encoding="utf-8").splitlines()[0]
+    assert f'new StringBuilder("{header}\\n")' in importer
+    order = [pid for pid, p in PEOPLE.items() if p.get("portrait") and p["portrait"].get("file")]
+    listed = [l.split(" | ")[0] for l in (ROOT / "unity/Assets/UI/Portraits/PORTRAITS.txt").read_text(encoding="utf-8").splitlines()[1:]]
+    catalog = re.findall(r"  - personId: (\w+)", (ROOT / "unity/Assets/UI/Portraits/PortraitCatalog.asset").read_text())
+    assert listed == order and catalog == order
