@@ -1,0 +1,283 @@
+---
+import { getImage } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import Figure from '../../components/Figure.astro';
+import VideoFacade from '../../components/VideoFacade.astro';
+import MediaLabel from '../../components/MediaLabel.astro';
+import { type Lang, languages, href, t, REPO, formatDate, asset } from '../../i18n/ui';
+import { engine, flythrough } from '../../lib/media';
+import { posts } from '../../lib/devlog';
+
+export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
+const lang = Astro.params.lang as Lang;
+const he = lang === 'he';
+
+const [heroShot, cabinet, why, topdown] = engine;
+// The hero is a real screenshot of the build (the LCP image): preloaded as AVIF, never lazy.
+const heroWidths = [800, 1200, 1568];
+const heroSizes = '100vw';
+const heroAvif = await getImage({ src: heroShot.src, widths: heroWidths, format: 'avif', quality: 70 });
+const heroWebp = await getImage({ src: heroShot.src, widths: heroWidths, format: 'webp', quality: 78 });
+const latest = posts(lang)[0];
+const abs = (p: string) => new URL(p, Astro.site).href;
+const poster = await getImage({ src: flythrough.poster, width: 1280, format: 'jpg' });
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'VideoGame',
+  name: 'Statecraft: Israel',
+  url: abs(href('en')),
+  description: t('en', 'site.tagline'),
+  genre: ['Strategy', 'Turn-based strategy'],
+  gamePlatform: 'Web browser',
+  applicationCategory: 'Game',
+  operatingSystem: 'Web browser',
+  inLanguage: 'en',
+  softwareVersion: '0.1.0',
+  author: { '@type': 'Person', name: 'Eyal Golan' },
+  license: 'https://opensource.org/licenses/MIT',
+  sameAs: [REPO],
+  image: abs(heroWebp.src),
+  trailer: {
+    '@type': 'VideoObject',
+    name: flythrough.title.en,
+    description: flythrough.description.en,
+    thumbnailUrl: abs(poster.src),
+    contentUrl: abs(asset(flythrough.sources[1].src)),
+    uploadDate: '2026-10-10',
+    duration: flythrough.duration,
+  },
+};
+
+const pitch = he
+  ? 'משחק אסטרטגיה מבוסס־תורות על ניהול מדינת ישראל. אתם ראש הממשלה ב־15 במאי 1948. השרים אמיתיים, המפה אמיתית, ולכל עובדה היסטורית יש מקור.'
+  : 'A turn-based grand-strategy game about governing Israel. You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.';
+
+const features = [
+  {
+    item: cabinet,
+    title: he ? 'שרים אמיתיים, קואליציה אמיתית' : 'Real ministers in a real coalition',
+    text: he
+      ? 'ממנים ומחליפים שרים אמיתיים, כמו דוד בן־גוריון, אליעזר קפלן ומשה שרת, בתוך קואליציה אמיתית. הפורטרטים הם צילומים בנחלת הכלל או ברישיון CC0.'
+      : 'Appoint and replace real ministers such as David Ben-Gurion, Eliezer Kaplan and Moshe Sharett, inside a real coalition. The portraits are public-domain or CC0 photographs.',
+  },
+  {
+    item: heroShot, crop: '100% 0%',
+    title: he ? 'החלטות אמיתיות במועדן האמיתי' : 'Real decisions at their real dates',
+    text: he
+      ? 'ההפוגה הראשונה, פרשת אלטלנה ורצח ברנדוט מגיעים במועדם, ולכל אירוע יש מקורות. בעמוד ההיסטוריה מופיעים כל האירועים שבמשחק, עם המקורות שלהם.'
+      : 'The First Truce, the Altalena affair and the Bernadotte assassination arrive at their real dates, and every event cites its sources. The History page lists every event in the game with them.',
+  },
+  {
+    item: why,
+    title: he ? 'למה זה קרה?' : 'Why did that happen?',
+    text: he
+      ? 'לוח "למה?" מפרט מה השתנה בכל תור ומה גרם לכל שינוי. מתחת רצה סימולציה דטרמיניסטית ב־C#: אותן בחירות תמיד נותנות אותה תוצאה, ומשחק שמור הוא זרע ההגרלה ורשימת הפקודות.'
+      : 'The “Why?” panel lists what changed in a turn and the cause of each change. Underneath runs a deterministic C# simulation: the same choices always give the same result, and a saved game is the seed plus the list of commands.',
+  },
+  {
+    item: topdown,
+    title: he ? 'מפה מנתונים אמיתיים' : 'A map built from real data',
+    text: he
+      ? 'מפת השטח נבנתה מנתוני גובה (Copernicus DEM) ומנתוני גשם (CHELSA ותחנות השירות המטאורולוגי). קווי הרכבת והדרכים של 1948 שורטטו על מפות Survey of Palestine.'
+      : 'The terrain is built from elevation data (Copernicus DEM) and rainfall data (CHELSA and the Israel Meteorological Service’s gauges). The railways and roads of 1948 are traced on Survey of Palestine maps.',
+  },
+];
+
+const works = he
+  ? ['תורות מ־15 במאי 1948 ועד סוף 1951.', 'מסך הממשלה עם מינויים.', 'מסך התקציב.', 'מסך הביטחון עם סולם ההסלמה וגיוס המילואים.', 'אירועים היסטוריים עם מקורות, ממלחמת 1948 ועד משבר המטבע הזר של 1951.', 'לוח "למה?".', 'שמירה אוטומטית וטעינה.', 'גרסת הדפדפן (WebGL), שבונים מקוד המקור.']
+  : ['Turns from 15 May 1948 to the end of 1951.', 'The Cabinet with appointments.', 'The Budget screen.', 'The Defence screen with the escalation ladder and reserve call-up.', 'Sourced historical events from the 1948 war through the 1951 foreign-currency crisis.', 'The “Why?” panel.', 'Autosave and load.', 'The browser (WebGL) build, built from source.'];
+const missing = he
+  ? ['האמנות שבתמונות הקונספט. היישובים והעצים הם עדיין אמנות זמנית.', 'דיפלומטיה.', 'מצב מלחמה.', 'כל מה שאחרי 1951.', 'גרסה מתארחת שאפשר לשחק בה בלחיצה אחת.']
+  : ['The art in the concept images. Settlements and trees are still placeholder art.', 'Diplomacy.', 'War mode.', 'Anything after 1951.', 'A hosted build you can play with one click.'];
+---
+<Layout lang={lang} page="" jsonLd={jsonLd}
+  preload={[{ srcset: heroAvif.srcSet.attribute, sizes: heroSizes, type: 'image/avif' }]}>
+  <section class="hero" aria-labelledby="hero-title">
+    <figure class="hero-media media" data-kind="engine">
+      <picture>
+        <source type="image/avif" srcset={heroAvif.srcSet.attribute} sizes={heroSizes} />
+        <img src={heroWebp.src} srcset={heroWebp.srcSet.attribute} sizes={heroSizes} width={heroShot.src.width}
+          height={heroShot.src.height} alt={heroShot.alt[lang]} fetchpriority="high" loading="eager" decoding="sync" />
+      </picture>
+      <figcaption class="hero-label"><MediaLabel lang={lang} kind="engine" build="build.m3" /></figcaption>
+    </figure>
+    <div class="hero-copy">
+      <div class="wrap">
+      <h1 id="hero-title" lang="en">Statecraft: Israel</h1>
+      <p class="hero-pitch">{pitch}</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href={href(lang, 'play')}>{t(lang, 'cta.play')}</a>
+        <a class="btn" href={REPO}>{t(lang, 'cta.github')}</a>
+      </div>
+      <p class="hero-version"><span>{t(lang, 'version')}</span> · {t(lang, 'cta.play.note')}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="what">
+    <div class="split">
+      <div class="prose">
+        <span class="eyebrow">{he ? 'על מה המשחק' : 'What it is'}</span>
+        <h2 id="what">{he ? 'אתם בכיסא ראש הממשלה מיום הקמת המדינה' : 'You sit in the prime minister’s chair from the founding of the state'}</h2>
+        {he ? (
+          <p>בכל תור אתם ממנים ומחליפים שרים אמיתיים בתוך קואליציה אמיתית, מחלקים תקציב זעום בין ביטחון, קליטת עלייה, המעברות והצנע, מנהלים את הביטחון על סולם הסלמה בן חמש דרגות, מאיומים שגרתיים ועד מלחמה כוללת, ומכריעים בהחלטות אמיתיות במועדן האמיתי.</p>
+        ) : (
+          <p>Each turn you appoint and replace real ministers inside a real coalition, divide a tiny budget between security, immigrant absorption, the ma’abarot transit camps and austerity, manage security on a five-level escalation ladder from routine threats to full war, and face real decisions at their real dates.</p>
+        )}
+        <p class="muted">{he
+          ? 'המשחק עוסק במלחמה, בטרור ובשואה כאירועים היסטוריים. המסגור שלו ישראלי, לכל עובדה יש מקור, ואף ציטוט אינו בדוי.'
+          : 'The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented.'}
+          {' '}<a href={href(lang, 'history/sources')}>{t(lang, 'nav.sources')}</a></p>
+      </div>
+      <div class="status panel">
+        <h3>{he ? 'מה עובד היום (M3)' : 'What works now (M3)'}</h3>
+        <ul>{works.map((w) => <li>{w}</li>)}</ul>
+        <h3>{he ? 'מה עוד חסר' : 'What is missing'}</h3>
+        <ul>{missing.map((w) => <li>{w}</li>)}</ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="footage">
+    <div class="section-head">
+      <span class="eyebrow">{he ? 'צילום מתוך המשחק' : 'In-engine footage'}</span>
+      <h2 id="footage">{he ? 'המפה, מהנגב ועד חיפה' : 'The map, from the Negev to Haifa'}</h2>
+      <p>{he
+        ? 'הסרטון הראשון באתר מצולם מתוך המשחק עצמו. הטריילר הקולנועי, שנוצר בכלי בינה מלאכותית, מופיע בעמוד המדיה עם תווית משלו.'
+        : 'The first video on this site is recorded in the game itself. The cinematic trailer, made with AI tools, is on the Media page under its own label.'}</p>
+    </div>
+    <VideoFacade video={flythrough} lang={lang} />
+  </section>
+
+  <section class="section wrap" aria-labelledby="features">
+    <div class="section-head">
+      <span class="eyebrow">{he ? 'במשחק' : 'In the game'}</span>
+      <h2 id="features">{he ? 'מה עושים בכל תור' : 'What you do each turn'}</h2>
+    </div>
+    <div class="features">
+      {features.map((f) => (
+        <article class="feature">
+          <Figure item={f.item} lang={lang} objectPosition={f.crop} class={f.crop ? 'crop' : undefined}
+            sizes="(min-width: 76rem) 40rem, (min-width: 48rem) 55vw, 100vw" />
+          <div class="feature-text">
+            <h3>{f.title}</h3>
+            <p>{f.text}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section wrap" aria-labelledby="next">
+    <div class="split">
+      <div class="prose">
+        <span class="eyebrow">{he ? 'לאן זה הולך' : 'Where it is going'}</span>
+        <h2 id="next">{he ? 'עיצוב חדש, עדיין בעבודה' : 'A new design, still in progress'}</h2>
+        {he ? (
+          <>
+            <p>מסמך עיצוב המשחק של הבעלים, GDD v0.1 מ־12 באוקטובר 2026, הוא העיצוב המחייב. הוא מתאר תורות חודשיים, יחידות, ערים, עבודת חלוצים ושלוש מטרות לשנים 1948 עד 1951. רבים מהכללים בו עדיין מסומנים כפתוחים, ובגרסה שאפשר לשחק בה הם עוד לא קיימים.</p>
+            <p>העבודה על המעבר התחילה מאחורי מתג שכבוי במשחק האמיתי.</p>
+          </>
+        ) : (
+          <>
+            <p>The design of record is the owner’s game design document, GDD v0.1 of 12 October 2026. It describes monthly turns, units, cities, pioneer work and three objectives for 1948 to 1951. Many of its rules are still marked open, and the playable build does not have them yet.</p>
+            <p>Work on the switch has started behind a setting that is off in the real game.</p>
+          </>
+        )}
+        <p><a href={`${REPO}/blob/main/docs/GDD.md`}>{he ? 'מסמך העיצוב (GDD, באנגלית)' : 'The design document (GDD)'}</a></p>
+      </div>
+      {latest && (
+        <article class="panel latest">
+          <span class="eyebrow">{he ? 'מיומן הפיתוח' : 'From the devlog'}</span>
+          <h3><a href={`${href(lang, 'devlog')}#${latest.slug}`}>{latest.title}</a></h3>
+          <p class="muted"><time datetime={latest.date}>{formatDate(lang, latest.date)}</time></p>
+          <p>{latest.summary}</p>
+        </article>
+      )}
+    </div>
+  </section>
+
+  <section class="section wrap honest" aria-labelledby="honest">
+    <div class="section-head">
+      <span class="eyebrow">{he ? 'בגלוי' : 'In the open'}</span>
+      <h2 id="honest">{he ? 'מה אמיתי ומה לא' : 'What is real and what is not'}</h2>
+    </div>
+    <div class="cards3">
+      <div class="panel">
+        <h3>{he ? 'קודם המשחק האמיתי' : 'The real build first'}</h3>
+        <p>{he
+          ? 'כל תמונה וכל סרטון באתר אומרים מה הם: צילום מתוך המשחק עם הגרסה והתאריך, אמנות קונספט שנוצרה בבינה מלאכותית, או פרומו קולנועי שנוצר בבינה מלאכותית ואינו צילום מהמשחק.'
+          : 'Every image and video on this site says what it is: an in-engine capture with its build and date, concept art made with AI, or a cinematic promo made with AI that is not gameplay.'}</p>
+        <a href={href(lang, 'media')}>{t(lang, 'nav.media')}</a>
+      </div>
+      <div class="panel">
+        <h3>{he ? 'מקורות ומסגור' : 'Sources and framing'}</h3>
+        <p>{he
+          ? 'לכל אירוע, שר, תאריך ומספר במשחק יש מקורות. המסגור ישראלי, והאתר אומר זאת. עדיין אף היסטוריון לא בדק את המשחק; בדיקה כזו מתוכננת לאבן הדרך M4.'
+          : 'Every event, minister, date and number in the game carries its sources. The framing is Israeli, and the site says so. No historian has reviewed the game yet; that is planned for M4.'}</p>
+        <a href={href(lang, 'history/sources')}>{t(lang, 'nav.sources')}</a>
+      </div>
+      <div class="panel">
+        <h3>{he ? 'בינה מלאכותית' : 'AI use'}</h3>
+        <p>{he
+          ? 'הקוד, אמנות הקונספט והטריילר הקולנועי נעשו בסיוע נרחב של בינה מלאכותית. דבר אינו נוצר בזמן אמת במהלך המשחק.'
+          : 'The code, the concept art and the cinematic trailer were made with heavy AI assistance. Nothing is generated live while you play.'}</p>
+        <a href={href(lang, 'how-we-make-it')}>{t(lang, 'nav.how')}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap closing" aria-labelledby="join">
+    <h2 id="join">{he ? 'להשתתף' : 'Take part'}</h2>
+    <p class="muted prose">{he
+      ? 'שאלות ורעיונות נכנסים לדיונים ב־GitHub, ובאגים וטעויות היסטוריות לרשימת הבעיות. מתכנתים, היסטוריונים, אמנים, מעצבי משחק, כותבים ומתרגמים מוזמנים.'
+      : 'Questions and ideas go in GitHub Discussions; bugs and historical errors go in the issue tracker. Programmers, historians, artists, game designers, writers and translators are welcome.'}</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href={href(lang, 'play')}>{t(lang, 'cta.play')}</a>
+      <a class="btn" href={href(lang, 'contribute')}>{t(lang, 'nav.contribute')}</a>
+      <a class="btn" href={`${REPO}/discussions`}>{he ? 'דיונים' : 'Discussions'}</a>
+      <a class="btn" href={`${REPO}/issues/new?template=historical_accuracy.yml`}>{he ? 'דיווח על טעות היסטורית' : 'Report a historical error'}</a>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero { position: relative; background: var(--navy-deep); }
+  .hero-media { margin: 0; position: relative; }
+  .hero-media img { inline-size: 100%; block-size: min(calc(100svh - var(--header-h)), 56.25vw); min-block-size: 22rem; object-fit: cover; object-position: 50% 30%; }
+  .hero-label { position: absolute; inset-block-end: 1.1rem; inset-inline-end: var(--gutter); padding: 0; z-index: 3; }
+  .hero-label :global(.label) { background: rgba(9, 14, 26, 0.92); margin: 0; font-size: 0.85rem; }
+  .hero-copy {
+    position: absolute; inset-inline: 0; inset-block-end: 0; padding-block: 7rem 3.5rem;
+    background: linear-gradient(to top, rgba(9, 14, 26, 0.97) 0%, rgba(9, 14, 26, 0.9) 45%, rgba(9, 14, 26, 0) 100%);
+  }
+  .hero-copy .wrap > * { max-inline-size: 44rem; }
+  .hero-copy h1 { margin-block-end: 0.35em; letter-spacing: 0.04em; font-family: var(--serif); }
+  .hero-pitch { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem); line-height: 1.5; margin-block-end: 1.25rem; }
+  .hero-version { margin: 1rem 0 0; color: var(--ink-dim); font-size: 0.95rem; }
+  .hero-version span { color: var(--gold-light); }
+  @media (max-width: 48rem) {
+    .hero-media img { block-size: auto; min-block-size: 0; aspect-ratio: 16 / 9; }
+    .hero-copy { position: static; background: var(--navy-deep); padding-block: 1.5rem 2rem; }
+    .hero-label { inset-block-end: 0.5rem; inset-inline-end: 0.5rem; }
+  }
+  .split { display: grid; gap: clamp(1.5rem, 4vw, 3.5rem); grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 56rem) { .split { grid-template-columns: 1fr; } }
+  .status ul { padding-inline-start: 1.2rem; font-size: 0.97em; }
+  .status h3 { font-size: 1.15rem; color: var(--gold-light); }
+  .features { display: grid; gap: clamp(2.5rem, 6vw, 4.5rem); }
+  .feature { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(1.25rem, 4vw, 3rem); align-items: center; }
+  .feature:nth-child(even) > :global(figure) { order: 2; }
+  .feature :global(.crop .media-frame img) { aspect-ratio: 4 / 3; object-fit: cover; }
+  .feature-text p { color: var(--ink-dim); }
+  @media (max-width: 48rem) {
+    .feature { grid-template-columns: 1fr; }
+    .feature:nth-child(even) > :global(figure) { order: 0; }
+  }
+  .cards3 { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+  .cards3 p { color: var(--ink-dim); font-size: 0.97em; }
+  .latest h3 a { color: var(--ink); text-decoration: none; }
+  .latest h3 a:hover { color: var(--gold-light); }
+  .closing .btn-row { margin-block-start: 1.25rem; }
+</style>

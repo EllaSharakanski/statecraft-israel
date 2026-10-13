@@ -1,0 +1,12 @@
+---
+// The visible label every image and video carries where it appears (both languages, never only in a footer).
+import { type Lang, t } from '../i18n/ui';
+import type { Kind } from '../lib/media';
+interface Props { lang: Lang; kind: Kind | 'archival'; build?: 'build.m3' | 'build.m2' }
+const { lang, kind, build } = Astro.props;
+const text = kind === 'engine' ? `${t(lang, 'label.engine')} — ${build ? t(lang, build) : ''}`
+  : kind === 'concept' ? t(lang, 'label.concept')
+  : kind === 'cinematic' ? t(lang, 'label.cinematic')
+  : t(lang, 'label.archival');
+---
+<span class={`label label-${kind}`} data-media-label={kind}>{text}</span>
