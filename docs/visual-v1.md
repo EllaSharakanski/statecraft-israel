@@ -230,6 +230,7 @@ Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on
 - the blur is a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv`;
 - the focus sits at the middle of the map area below the top bar;
 - the blur weakens to 35% between 60 km and the 250 km overview.
+- since issue #390, the far (top) band is lighter at the gameplay zoom (see "Issue #390" below).
 
 URP's far-only Gaussian DoF is retired. Toggle: `tiltshift`; the URL flag `notiltshift` (desktop: `-notiltshift`) boots with
 it off.
@@ -720,7 +721,7 @@ beyond budget + the larger spread.
 | Boot | `BOOT map_build_ms median=432 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3563 runs=3 cpu=1`<br>`BOOT map_build_ms median=1751 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6797 runs=3 cpu=4`<br>`BOOT map_build_ms median=426 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3477 runs=3 cpu=1`<br>`BOOT map_build_ms median=1746 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6696 runs=3 cpu=4` (Step 1, then final) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms); both runs exit 0 |
 | Shadows | 1 cascade, 2048, hard | 4 cascades, 2048, soft | `-shadows` at diorama02: Step 1 headless 10.32 - 7.36 = **2.96 ms** (spread 0.32: over 2.82), headed 2.90 (0.41: within), DPR 2 4.99 (0.23); final headless 2.89 (0.41: within 2.91), headed 2.92 (0.29: **over** 2.79), DPR 2 4.80. A 1024 build measured 2.84 (headless, spread 0.09), 2.94 (headed) and 5.03 (DPR 2): (1024 lines, headless: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.08 spread_ms=0.09 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.24 spread_ms=0.03 median_p95_ms=9.00`<br>headed: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.20 spread_ms=0.28 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.26 spread_ms=0.13 median_p95_ms=9.00`<br>DPR 2: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.34 spread_ms=0.21 median_p95_ms=19.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.31 spread_ms=0.10 median_p95_ms=14.00`): the map's resolution is not the cost (the caster pass redraws the whole map's geometry at the overview), so 1024 would blur the relief for nothing. **2048 kept; the overrun (about 0.1-0.4 ms beyond budget + spread at the 250 km overview only) is named here.** gameplay03: 0.33 ms final |
 | Tilt-shift | downsample 2 | downsample 2 | `-tiltshift` cost: Step 1 headless 0.09 / 0.09 ms (gameplay03 / diorama02), final headless 0.03 / -0.04, DPR 2 0.29 / -0.04: far under 1.5 ms |
-| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19); no owner verdict yet, so not changed |
+| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19). Owner's ruling (2026-10-13, issue #390): the bands stay as they are, except that the far band is lighter at the gameplay zoom ("Issue #390"); the bottom band is not changed |
 | Bloom | off (was the URP template's 0.25 above 1) | off | rendered on both tiers at both poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003, measured with a temporary `bloom` toggle, commit `8d45a93`, removed in fix round 1 once bloom shipped off); `-bloom` cost Step 1 headless 0.37 ms (diorama02), headed 0.18, macOS 0.17 / 0.13. Off in the pipeline profile (`Settings/SampleSceneProfile`), which keeps its Neutral tonemapper (the stripping guarantee, GradeTests) |
 | SSAO | none | off (was on) | metre radius cannot reach km relief; baked AO replaces it (Tasks 5-6) |
 | Grade, vignette, haze, grid, water, labels | on | on | Step 1 headless costs (gameplay03 / diorama02, ms): grade -0.02 / 0.27, haze 0.08 / 0.11, grid 0.07 / -0.14, water 0.04 / 0.14, labels -0.14 / -0.02; final headless: grade 0.00 / -0.03, haze -0.03 / -0.10, grid 0.00 / -0.01, water -0.05 / -0.06, labels -0.01 / 0.01; all within budget. The grid, unmeasured on a quiet machine since Task 8, costs nothing measurable |
@@ -2096,3 +2097,42 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   hitch.
 - **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
   it from the bake allocates its 3.4 MB of bytes and about 1.5 MB of vertices, short-lived. The borders add nothing (the edge bits ride in the existing texel).
+
+## Issue #390: a lighter far tilt-shift band at the gameplay zoom
+- **What happened.** #320 did not change the tilt-shift. Before it, normal play on the development machine was slow enough
+  that the runtime quality fallback stepped down to level 3 and turned the tilt-shift off (headed Chrome, 1920x1080, New
+  Game then End Turn: `QUALITY level=1` p95 51 ms, `level=2` 45, `level=3 ... tiltshift=off` 42). #320 made the frame
+  about 3.7x faster, so the fallback stays at level 0 and the far band drew in full: Tel Aviv, Hadera and the brigade
+  token were a smear. Main before #320 with `?nofallback` draws the same frame as 4abb64f (0.109% of pixels more than 24
+  levels apart, identical gradient energy per tenth of the rows). `?shot` and `?vprofile` turn the fallback off, so the
+  gameplay03 pixel A/B never showed it.
+- **Owner's ruling (2026-10-13).** Keep a soft tilt-shift, so the game still reads like promo 03, but keep the far towns
+  readable at the play zoom; the wide views (diorama02) keep the full effect. This also settles the open bottom-band note
+  above: the bottom band is not changed.
+- **What changed.** `TiltShift.FarStrength(distance)` scales the far (top) band's radius and its blend: 0.35
+  (`FarGameplayStrength`) up to 150 km, rising to 1 at the 250 km overview. The near band is unchanged. It is one global,
+  `_ScTiltShiftFar`, set with `_ScTiltShift` in `TiltShift.Apply`: no new keyword or variant.
+- **Readability bound.** Promo 03's far band (rows 10-18% from the top, columns 30-80%) has 0.34 of the gradient energy of
+  its focus band (rows 45-60%); a sharp frame of ours (`?notiltshift`, normal play) has 0.93 there, so the promo keeps about
+  37% of the far detail. `TiltShiftTests.TheFarBandStaysReadableAtTheGameplayZoom` asks for at least 60% (shifted / sharp,
+  rows 0.78-0.90 from the bottom, under the web bar) at 60 km and at the 120 km starting zoom. The fix keeps 0.72 and 0.69;
+  4abb64f kept 0.17 and 0.14. `TheDioramaKeepsBothBands` asks for at most 0.30 far and 0.45 near at diorama02 (0.20 and
+  0.33, unchanged). Mutants killed: the far strength at 1 at the gameplay zoom (4abb64f's look), a shader that ignores
+  `_ScTiltShiftFar`, a far strength stuck at 0.35 at the overview, and the far strength applied to both bands.
+- **WebGL captures**, 4abb64f against the fix. Gradient energy per tenth of the rows from the top, columns 30-80%:
+
+  | frame | build | 0-10% | 10-20% | 20-30% | 30-40% | 40-70% | 70-100% |
+  |---|---|---|---|---|---|---|---|
+  | normal play, 22 May 1948 (fallback on) | 4abb64f | 13.4 | 5.2 | 6.6 | 18.3 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | fix | 14.6 | 17.7 | 17.4 | 23.4 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | `?notiltshift` | 15.3 | 24.7 | 23.1 | 25.8 | 29.4 26.3 23.4 | 21.6 20.5 16.7 |
+  | gameplay03 (`?shot`) | 4abb64f | 12.4 | 3.4 | 4.4 | 12.1 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+  | | fix | 13.2 | 12.7 | 13.6 | 15.0 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+
+  diorama02 is pixel-identical (0 pixels more than 24 levels apart). The near band and the focus band do not move.
+- **Frame time** (WebGL headless `?vprofile`, 1920x1080, 2 interleaved rounds under the exclusive lock, medians): gameplay03
+  none 5.02 / 5.06 ms against 4abb64f's 5.07 / 5.20, all 7.90 / 7.99 against 7.89 / 7.87; diorama02 none 12.63 / 12.62
+  against 12.20 / 12.21, all 19.51 / 19.49 against 19.08 / 18.94. Main before #320 measured 20.98 ms at gameplay03 none
+  in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
+  strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
+  build-to-build noise, within the tilt-shift's 1.5 ms budget.

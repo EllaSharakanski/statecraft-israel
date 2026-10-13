@@ -270,6 +270,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The map's far tilt-shift band no longer blurs the far towns into a smear at the play zoom (#390). Since the map drew
+  faster (#320), the quality fallback no longer turns the tilt-shift off, and the far band showed in full. On the owner's
+  ruling it is now gently soft at the gameplay zoom, as on promo 03, and in full only at the overview. Presentation only.
 - The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
   into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
   Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
