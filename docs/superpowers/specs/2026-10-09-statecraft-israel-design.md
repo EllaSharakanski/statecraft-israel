@@ -51,7 +51,7 @@ The full report is `reports/Israel nation sim game build.md`, with notes in `res
 - **Licences:**
   - The CBS Open License allows commercial use with attribution.
   - Copernicus GLO-30 elevation data is free and requires attribution.
-  - Eleven Music is **not** licensed for commercial games on self-serve plans.
+  - Eleven Music: the owner confirmed on 2026-10-13 that the ElevenLabs Music the project uses is licensed for commercial use (decision D-M in `docs/oss/DECISIONS.md`). This replaces the earlier note that it was not licensed for commercial games on self-serve plans.
 - **Steam rules:**
   - Steam requires disclosure of AI-generated content, but coding assistants are exempt.
   - Takedowns followed glorified violence or government requests, not a game's point of view.
@@ -308,5 +308,5 @@ Each milestone after M0 produces something to show recruits.
 - Hebrew localisation; strings are still kept external.
 - Multiplayer.
 - Mod tools beyond the YAML content.
-- Music: ElevenLabs music cannot be used commercially in games on the current plan.
+- Music in the game (#39). The ElevenLabs Music licence is no longer the blocker (D-M); bringing music into scope is a separate decision.
 - Console versions.

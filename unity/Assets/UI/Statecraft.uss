@@ -230,8 +230,17 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .info-body { flex-grow: 1; flex-shrink: 1; min-width: 0; }
 .info-body > .row { flex-wrap: wrap; }
 .info-body > .row Button { margin-right: 6px; font-size: 18px; }
-/* Before a hex is chosen only the hint shows (InfoPanelPresenter sets info-empty). */
-.info-empty .gold-rule { display: none; }
+/* Before a hex is chosen only the hint shows (InfoPanelPresenter sets info-empty): a one-line chip that hugs its text, as
+   the promo shows no panel until a tile is chosen (HUD round 1, #398). */
+.info-panel.info-empty { min-height: 0; width: auto; padding: 8px 16px; }
+.info-empty .gold-rule, .info-empty #info-subtitle, .info-empty .reason { display: none; }
+.info-empty #info-title { font-size: 20px; }
+/* The hex's facts as the promo's icon rows: a gold sign, then the line, which wraps inside the panel (#397). A unit's card
+   reuses the lines without the signs (they name a hex's facts, not a unit's). */
+.info-row { flex-direction: row; align-items: flex-start; margin-bottom: 3px; }
+.info-row-sign { width: 22px; height: 22px; flex-shrink: 0; margin: 3px 10px 0 0; }
+.info-row-text { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.info-unit .info-row-sign { display: none; }
 /* Narrow, as the country is: the frame hugs the tall map picture (MinimapPresenter fits it to the content box). */
 /* The border layer's label, beside the minimap's lower left: what the outlines are (MapRegions.Label). Out of the column's
    flex flow (absolute), so it takes no height from the event card at any HUD tier (armistice review I-4). */

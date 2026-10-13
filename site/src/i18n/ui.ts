@@ -5,7 +5,7 @@ export const languages = ['en', 'he'] as const;
 export type Lang = (typeof languages)[number];
 
 export const pages = [
-  '', 'play', 'history', 'history/sources', 'media', 'devlog', 'contributors', 'how-we-make-it', 'press',
+  '', 'play', 'history', 'history/sources', 'history/approach', 'media', 'devlog', 'contributors', 'how-we-make-it', 'press',
   'contribute', 'privacy',
 ] as const;
 export type Page = (typeof pages)[number];
@@ -22,6 +22,7 @@ const en = {
   'nav.play': 'Play',
   'nav.history': 'History',
   'nav.sources': 'Sources',
+  'nav.approach': 'Our approach',
   'nav.media': 'Media',
   'nav.devlog': 'Devlog',
   'nav.contributors': 'Contributors',
@@ -84,6 +85,7 @@ const he: Dict = {
   'nav.play': 'לשחק',
   'nav.history': 'היסטוריה',
   'nav.sources': 'מקורות',
+  'nav.approach': 'הגישה שלנו',
   'nav.media': 'מדיה',
   'nav.devlog': 'יומן פיתוח',
   'nav.contributors': 'תורמים',

@@ -263,14 +263,14 @@ namespace Statecraft.Game.Map.Units
             return (top, low);
         }
 
-        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short dark grey-brown disc (the palette deck shade) of the
+        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short disc in the palette's trodden-earth dust of the
         /// boots' radius from its feet down to the lowest ground under them, so the downhill boot never floats. Not drawn
         /// on ground flatter than this rise (m).</summary>
         public const float BaseFromRiseM = 20f;
 
         /// <summary>The unit disc a base is drawn with (radius 1, from y = -1 to 0), scaled per figure.</summary>
         public static Mesh BaseMesh(string name) =>
-            new MiniatureMesh().Lathe(Matrix4x4.identity, new List<Vector2> { new Vector2(-1f, 1f), new Vector2(0f, 1f) }, UnitPalette.Deck, 16, shade: 0.55f).Build(name);
+            new MiniatureMesh().Lathe(Matrix4x4.identity, new List<Vector2> { new Vector2(-1f, 1f), new Vector2(0f, 1f) }, UnitPalette.Dust, 16, shade: 0.55f).Build(name);
 
         /// <summary>Adds the base under a figure standing at <paramref name="feet"/> when the ground under its boots falls
         /// more than <see cref="BaseFromRiseM"/> below them (see <see cref="StandRange"/>).</summary>

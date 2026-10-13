@@ -2266,3 +2266,72 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
   strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
   build-to-build noise, within the tilt-shift's 1.5 ms budget.
+
+## HUD round 1: the info panel and the gilt trim (#398, #397)
+
+Art-track gap 4, first step. The gap list and the later steps (the minimap and settlement badges; the top bar and card
+head, which wait for owner rulings) are in the issue.
+- The info panel: before a hex is chosen it is a one-line hint (promo 03 shows no panel until a tile is chosen). The
+  hex's facts are icon rows with gold signs (`UiIcon` region, house, village, flag): the region, the settlements, the 1948
+  localities and the placement. There are no yields (owner ruling) and no land-use name, because the land-use bake is
+  modelled, not a sourced record. The region line wraps (#397). One refusal shared by both map actions is said once,
+  without buttons, which takes the 1948 panel from about 385 to 300 px tall.
+- `UiFrame.Filigree`: a second inset rule and a scroll at each corner (on a panel at least 120 px tall the scrolls also
+  run down the sides). It is drawn with Painter2D on the date plate, the event card, the info panel and the minimap, and
+  takes no clicks.
+
+Allocations: GC.Alloc samples over 200 renders (`Recorder("GC.Alloc")`, a temporary probe run on both trees) were the
+same on main e5bbf0f and on the branch: the info panel 15,600 and the top bar 12,800. No per-frame work is added.
+
+Frame time, `?vprofile`, WebGL headless 1920x1080, DPR 1, `machine_lock.py --exclusive`. Two interleaved rounds per
+build, main e5bbf0f against the branch on it (median avg ms, spread in brackets):
+
+| Pose | main all | branch all | main none | branch none |
+|---|---|---|---|---|
+| gameplay03 | 8.09 (0.03), 8.03 (0.07) | 7.96 (0.16), 8.06 (0.06) | 5.25 (0.10), 5.32 (0.23) | 5.32 (0.04), 5.27 (0.10) |
+| diorama02 | 18.87 (0.72), 19.10 (0.61) | 18.88 (0.61), 18.99 (0.59) | 12.23 (0.02), 12.33 (0.19) | 11.66 (0.32), 11.57 (0.16) |
+
+Headed at DPR 2 (`headed.py profile --dpr 2`). The first run compared main e5bbf0f with the branch; then two
+interleaved rounds compared main db99f3a with the branch merged with it. Median avg ms, then p95, main first:
+
+| Pose, config | run 1 (e5bbf0f) | round 2 (db99f3a) | round 3 (db99f3a) |
+|---|---|---|---|
+| gameplay03 all | 14.61 / 14.62, p95 18 / 18 | 14.53 / 14.59, p95 18 / 18 | 14.59 / 14.56, p95 18 / 18 |
+| gameplay03 none | 8.66 / 8.64, p95 14 / 14 | 8.78 / 8.40, p95 14 / 14 | 8.57 / 8.43, p95 14 / 14 |
+| diorama02 all | 30.77 / 31.03, p95 36 / 40 | 30.95 / 31.26, p95 34 / 39 | 31.90 / 30.99, p95 36 / 39 |
+| diorama02 none | 20.46 / 20.46, p95 23 / 22 | 21.32 / 20.69, p95 24 / 23 | 21.17 / 20.63, p95 23 / 23 |
+
+The averages are within the spread everywhere; diorama02 has no hex chosen, so the branch draws a smaller panel. The
+p95 at diorama02 `all` at DPR 2 was 3 to 5 ms higher on the branch in all three runs, so it was not noise.
+
+**Bisect (DPR 2, diorama02 `all` p95, two interleaved rounds, main db99f3a first).** At the shot poses the event card is
+closed, so variant (c) draws no visible filigree:
+
+| Build | round 1 | round 2 |
+|---|---|---|
+| main | 36 | 35 |
+| (a) the branch without the filigree | 36 | 36 |
+| (b) only the info panel and refusal changes | 35 | 36 |
+| (c) the filigree on the event card only | 35 | 36 |
+| the branch (filigree on the date plate, info panel, minimap, card) | 39 | 39 |
+
+**Cause.** The filigree drawn as Painter2D curves. An EditMode probe found no regeneration: over 120 idle frames, and
+with the minimap's view box set every frame (still or moving), no `UiFrame` regenerated its mesh and no element got a
+`GeometryChangedEvent`. So the cost is in drawing the curves' tessellated, antialiased geometry each frame, not in
+rebuilding it.
+
+**Fix.** `UiFrame.Ornament` rasterises the scrolls and the leaf once, in code, into a 64x64 alpha texture (two variants,
+with and without the side scroll; no asset). Each corner draws one tinted, mirrored, textured quad, and the second rule
+is four plain quads. The look is unchanged at 1920x1080. Re-run, DPR 2, interleaved, main db99f3a, the fix, then the old
+branch (avg ms, then p95):
+
+| Pose, config | round 1 | round 2 |
+|---|---|---|
+| diorama02 all | 30.78 / 30.61 / 31.29, p95 35 / 33 / 39 | 31.57 / 30.53 / 31.93, p95 36 / 34 / 38 |
+| diorama02 none | 20.49 / 20.77 / 20.82, p95 23 / 24 / 23 | 21.35 / 20.35 / 21.09, p95 24 / 23 / 23 |
+| gameplay03 all | 14.64 / 14.99 / 16.10, p95 18 / 23 / 23 | 14.51 / 14.53 / 14.45, p95 18 / 18 / 18 |
+| gameplay03 none | 8.74 / 8.77 / 9.66, p95 14 / 14 / 17 | 8.64 / 8.67 / 8.37, p95 14 / 14 / 14 |
+
+The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In round 1, gameplay03 `all` was disturbed
+for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
+up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.

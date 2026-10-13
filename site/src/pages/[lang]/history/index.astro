@@ -65,7 +65,8 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
           : 'The game starts the next day, on 15 May 1948, with you as prime minister.'}</p>
         <p class="note">{he
           ? 'המשחק עוסק במלחמה, בטרור ובשואה כאירועים היסטוריים. המסגור שלו ישראלי. כל צילום ארכיון בעמוד הזה הוא צילום אמיתי עם קרדיט ורישיון; אין בעמוד תמונות שנוצרו בבינה מלאכותית.'
-          : 'The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli. Every archival photograph on this page is a real photograph with its credit and licence; there are no AI-generated images on this page.'}</p>
+          : 'The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli. Every archival photograph on this page is a real photograph with its credit and licence; there are no AI-generated images on this page.'}
+          {' '}<a href={href(lang, 'history/approach')}>{he ? 'איך המשחק מתייחס להיסטוריה' : 'How the game treats history'}</a></p>
         {he && <p class="note">{t(lang, 'history.en-only')} {'כותרות האירועים, הטקסטים והאפשרויות מוצגים כאן כפי שהם מופיעים במשחק.'}</p>}
       </div>
     </section>
@@ -141,7 +142,7 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
           <p>Because GDD v0.1 is now the design of record, this will change: under the GDD, completing an objective brings up a card about the historical event tied to it, with its real date.</p>
         </>
       )}
-      <p><a href={href(lang, 'history/sources')}>{t(lang, 'nav.sources')}</a></p>
+      <p><a href={href(lang, 'history/sources')}>{t(lang, 'nav.sources')}</a> · <a href={href(lang, 'history/approach')}>{t(lang, 'nav.approach')}</a></p>
     </section>
   </div>
 </Layout>

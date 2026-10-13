@@ -196,11 +196,22 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+<<<<<<< HEAD
 - The decision card opens in the middle of the screen (decision cards, 2026-10-13): up to 1040 px wide, with a 16:9 media
   header that shows the event's archival photograph at up to 960x540 (the 24 photographs re-cropped from the same originals
   to 16:9). While it is open a dim backdrop covers the map and the panels under it; Hide collapses it to a "Decision
   waiting" button that brings it back, and a new event opens it again with the keyboard focus on the card (Tab reaches the
   options; none is lit before the player picks). Any open screen hides it until it closes. Presentation only: no golden moves.
+=======
+- HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
+  hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
+  with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
+  without buttons. The date plate, the event card, the info panel and the minimap carry the promo's filigree trim, drawn
+  in code, which takes no clicks.
+- Map: the unit figures' uniforms are darker and warmer, so a trio stands out against the sunlit ground as promo 03's
+  does instead of khaki on khaki; a figure's slope base is painted trodden earth instead of a dark grey disc. A
+  readability choice at map scale; the sourced kit is unchanged (refs #197).
+>>>>>>> origin/main
 - The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
@@ -292,6 +303,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
+  (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
   are left out at draw time and come back when the figure goes (a later date, or the "units" toggle off, so plain
   screenshot checkpoints keep every tree); the kits' layout does not change (fixes #249).

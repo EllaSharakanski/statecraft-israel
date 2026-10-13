@@ -121,6 +121,28 @@ public class UnitShowcaseTests
         Object.DestroyImmediate(tex);
     }
 
+    /// <summary>Figures round 1 (refs #197): the uniform reads darker than the sunlit ground and warm brown, as promo 03's
+    /// figures do (figure/ground luminance about 0.45 there; 0.68-0.82 with the old khaki, 0.50-0.57 now, on the editor
+    /// renders), and the slope base is trodden earth, not a dark disc. Measured on the paint as drawn: the middle shade row
+    /// (Shade at 0.5, with its wash), Rec. 709 weights. The old khaki was 0.39-0.52 there and red/green 1.13-1.21.</summary>
+    [Test]
+    public void TheUniformIsDarkAndWarmAndTheBaseIsEarth()
+    {
+        static float Luma(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+        foreach (var slot in new[] { UnitPalette.Shirt, UnitPalette.ShirtFaded, UnitPalette.Trousers, UnitPalette.SlouchHat })
+        {
+            var c = UnitPalette.Shade(slot, 0.5f);
+            Assert.Less(Luma(c), 0.35f, $"slot {slot}: dark enough to stand out against the ground");
+            Assert.Greater(c.r / c.g, 1.24f, $"slot {slot}: warm brown, not olive khaki");
+        }
+        Assert.Less(Luma(UnitPalette.Shade(UnitPalette.Trousers, 0.5f)), Luma(UnitPalette.Shade(UnitPalette.Shirt, 0.5f)), "the trousers read darker than the shirt");
+        Assert.Greater(Luma(UnitPalette.Shade(UnitPalette.Dust, 0.5f)), 1.5f * Luma(UnitPalette.Shade(UnitPalette.Shirt, 0.5f)), "the base is earth, well lighter than the figure");
+        Assert.Greater(Luma(UnitPalette.Shade(UnitPalette.Dust, 0.5f)), Luma(UnitPalette.Shade(UnitPalette.Deck, 0.5f)) + 0.1f, "not the old dark deck-grey disc");
+        var disc = UnitShowcase.BaseMesh("base");
+        Assert.IsTrue(disc.uv.All(uv => Mathf.Abs(uv.x - UnitPalette.U(UnitPalette.Dust)) < 1e-4f), "the base is painted in the dust");
+        Object.DestroyImmediate(disc);
+    }
+
     [Test]
     public void FlightHoldsItsStillPhaseAndKeepsItsAltitude()
     {

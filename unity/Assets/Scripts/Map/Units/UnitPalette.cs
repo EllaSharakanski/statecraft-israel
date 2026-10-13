@@ -9,13 +9,15 @@ namespace Statecraft.Game.Map.Units
     /// Air Force, p. 12). The Spitfire's RAF day-fighter colours (Ocean Grey and Dark Green over Medium Sea Grey) are
     /// Efrati's p. 14. The S-199's khaki green is about RAL 6013 (Efrati pp. 8 and 11). The corvette's light grey follows its 1948 photograph. Colours are
     /// pushed a little warmer and lighter than the photographs so they read at map scale under the warm grade, as the
-    /// promo's painted figures do. The texture is made at runtime (no file ships), owned by the showcase.</summary>
+    /// promo's painted figures do. The figures' uniform slots (shirt, faded shirt, trousers, bush hat) are the exception:
+    /// they are darker and browner than the photographs' khaki, so a figure stands out against the sunlit ground as promo
+    /// 03's do (a readability choice at map scale, not a claim about the cloth: the 1948 photographs are black and white). The texture is made at runtime (no file ships), owned by the showcase.</summary>
     public static class UnitPalette
     {
         public const int Skin = 0, Shirt = 1, Trousers = 2, Webbing = 3, Helmet = 4, SlouchHat = 5, WoolCap = 6, Boots = 7,
             RifleWood = 8, RifleMetal = 9, Hair = 10, ShirtFaded = 11,
             CamoGrey = 12, CamoGreen = 13, Underside = 14, RoundelWhite = 15, RoundelBlue = 16, PropBlack = 17, Glass = 18,
-            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, MarkingRed = 23, AviaGreen = 24, Count = 25;
+            HullGrey = 19, Deck = 20, Waterline = 21, Funnel = 22, MarkingRed = 23, AviaGreen = 24, Dust = 25, Count = 26;
 
         /// <summary>Texels per slot along u: the sample at a slot's centre never reaches its neighbours (bilinear, no mips).</summary>
         public const int SlotWidth = 4, Rows = 32;
@@ -23,17 +25,17 @@ namespace Statecraft.Game.Map.Units
         static readonly Color[] Base =
         {
             new Color(0.80f, 0.60f, 0.46f),   // Skin: sun-tanned
-            new Color(0.74f, 0.63f, 0.42f),   // Shirt: khaki drill
-            new Color(0.47f, 0.40f, 0.28f),   // Trousers: khaki drill, darker and dustier (the photographs' trousers read darker than the shirts)
+            new Color(0.42f, 0.31f, 0.21f),   // Shirt: khaki drill, darker and warmer than the photographs' (see the class note)
+            new Color(0.26f, 0.19f, 0.14f),   // Trousers: khaki drill, darker and dustier (the photographs' trousers read darker than the shirts)
             new Color(0.86f, 0.80f, 0.62f),   // Webbing: 37-pattern, pale
             new Color(0.30f, 0.31f, 0.22f),   // Helmet: Mk II steel helmet, dark olive
-            new Color(0.60f, 0.49f, 0.33f),   // SlouchHat: khaki felt
+            new Color(0.38f, 0.28f, 0.19f),   // SlouchHat: khaki felt
             new Color(0.36f, 0.33f, 0.27f),   // WoolCap: knitted stocking cap, dark
             new Color(0.20f, 0.14f, 0.10f),   // Boots
             new Color(0.45f, 0.28f, 0.16f),   // RifleWood
             new Color(0.20f, 0.20f, 0.21f),   // RifleMetal
             new Color(0.17f, 0.13f, 0.10f),   // Hair
-            new Color(0.80f, 0.71f, 0.50f),   // ShirtFaded: sun-bleached khaki
+            new Color(0.50f, 0.38f, 0.26f),   // ShirtFaded: sun-bleached khaki
             new Color(0.47f, 0.50f, 0.50f),   // CamoGrey: ocean grey
             new Color(0.27f, 0.32f, 0.22f),   // CamoGreen: dark green
             new Color(0.68f, 0.71f, 0.72f),   // Underside: medium sea grey
@@ -47,6 +49,7 @@ namespace Statecraft.Game.Map.Units
             new Color(0.30f, 0.31f, 0.32f),   // Funnel top
             new Color(0.72f, 0.12f, 0.10f),   // MarkingRed: 101 Squadron's spinner and rudder stripes
             new Color(0.47f, 0.45f, 0.32f),   // AviaGreen: the S-199's one khaki green on all surfaces, about RAL 6013 (Efrati pp. 8 and 11: confirmed from an Avia fuel cap; Eduard Info 11/2025 pp. 53-54)
+            new Color(0.80f, 0.71f, 0.54f),   // Dust: the trodden earth a figure's base is painted in, so it reads as the promo's worn patch, not a dark disc
         };
 
         /// <summary>u of a slot's column centre.</summary>
