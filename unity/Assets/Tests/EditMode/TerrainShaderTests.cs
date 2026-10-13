@@ -36,14 +36,14 @@ public class TerrainShaderTests
         var shader = AssetDatabase.LoadAssetAtPath<Material>(TerrainMatPath).shader;
         var data = ShaderUtil.GetShaderData(shader);
         int including = 0;
-        for (int s = 0; s < data.SubshaderCount; s++)
+        for (int s = 0; s < data.SerializedSubshaderCount; s++)
         {
             var sub = data.GetSerializedSubshader(s);
             for (int p = 0; p < sub.PassCount; p++) if (sub.GetPass(p).SourceCode.Contains("StatecraftTerrain.hlsl")) including++;
         }
         Assert.Greater(including, 0, "no generated pass includes StatecraftTerrain.hlsl: the Custom Function is not in File mode");
         // Review I2: no node may compute at the template's half precision (mediump on GLES3 phones: ~210 m UV steps).
-        for (int s = 0; s < data.SubshaderCount; s++)
+        for (int s = 0; s < data.SerializedSubshaderCount; s++)
         {
             var sub = data.GetSerializedSubshader(s);
             for (int p = 0; p < sub.PassCount; p++)
