@@ -302,6 +302,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Six society events (austerity, clothing rationing, the transit-camp schools, the Law of Return, the transit camps and
+  closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
+  published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
+  Text, dates and effects are unchanged (refs #442).
 - The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
   (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
