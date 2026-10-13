@@ -75,6 +75,10 @@ rules:
     licence: CC-BY-4.0
     source: "Real screenshots of the game's own WebGL build, dated in the README caption; map derived from Copernicus DEM, portraits public domain or CC0, the event-card photograph CC BY 4.0 with its credit line in the picture (Meitar Collection / National Library of Israel; NOTICE), the start screen's painting AI-generated (CC0, its row above)"
     status: verified
+  - glob: "docs/images/build-gameplay.*"
+    licence: CC-BY-4.0
+    source: "In-engine capture: about 11 seconds of real play recorded from the game's own WebGL build (commit f93fd5e, 2026-10-13) in headed Chrome at 1920x1080; the animated WebP for the README, the MP4 (H.264) and WebM (VP9) for the website. Map derived from Copernicus DEM; the event-card photograph CC BY 4.0 with its credit line in the picture (Meitar Collection / National Library of Israel; NOTICE)"
+    status: verified
   - glob: "docs/GDD-v0.1.pdf"
     licence: CC-BY-4.0
     source: "The owner's game design document (Statecraft-Israel-GDD-v0.1.pages), exported to PDF on 2026-10-12; text copy in docs/GDD.md"
