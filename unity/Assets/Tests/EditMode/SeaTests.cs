@@ -48,6 +48,97 @@ public class SeaTests
         CollectionAssert.IsEmpty(ShaderChecks.Gles3Errors(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat").shader));
     }
 
+    /// <summary>Issue #195: the water inside the map is drawn by MapScene's TerrainWater, the terrain's surface over the
+    /// water and its shore (MapBuilder.BuildWaterMesh) with a copy of Sea.mat in its terrain-water mode: added on top right
+    /// after the terrain and before the other opaques, no depth write, no shadow, no collider. The mesh lies on the
+    /// heightmap (its vertices are heightmap samples or flat fans), reaches the open sea and both rift lakes, and stays off
+    /// inland hills.</summary>
+    [Test]
+    public void TheTerrainWaterLiesOnTheWaterWithTheSeaShader()
+    {
+        var map = OpenMap();
+        var t = map.Terrain.transform.Find(MapScene.TerrainWaterName);
+        Assert.IsNotNull(t, "TerrainWater under the terrain");
+        Assert.AreEqual(map.Terrain.transform.position, t.position);
+        Assert.IsNull(t.GetComponent<Collider>(), "clicks pick the terrain only");
+        var r = t.GetComponent<MeshRenderer>();
+        Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, r.shadowCastingMode);
+        var m = r.sharedMaterial;
+        Assert.AreEqual("Statecraft/Sea", m.shader.name);
+        Assert.AreEqual(1f, m.GetFloat("_ScTerrainWater"));
+        Assert.Greater(m.renderQueue, map.Terrain.materialTemplate.renderQueue, "after the terrain");
+        Assert.Less(m.renderQueue, (int)UnityEngine.Rendering.RenderQueue.Geometry, "before boats, harbours and units");
+        Assert.AreEqual(0f, m.GetFloat("_ScZWrite"));
+        Assert.IsFalse(m.GetShaderPassEnabled("DepthOnly")); Assert.IsFalse(m.GetShaderPassEnabled("DepthNormals"));
+        var mesh = t.GetComponent<MeshFilter>().sharedMesh;
+        var verts = mesh.vertices;
+        TestContext.WriteLine($"water mesh: {verts.Length} vertices, {mesh.triangles.Length / 3} triangles");
+        Assert.Less(mesh.triangles.Length / 3, 1_000_000, "a light mesh, not a second terrain");
+        // Every vertex lies on the terrain (a fan's centre on its flat block).
+        var origin = map.Terrain.transform.position;
+        for (int i = 0; i < verts.Length; i += 97)
+            Assert.AreEqual(map.Terrain.SampleHeight(origin + verts[i]), verts[i].y, 0.25f, $"vertex {i} {verts[i]}");
+        // Wet places are covered, an inland hill is not: horizontal hits on the mesh's triangles.
+        bool Covers(double lon, double lat)
+        {
+            var p = map.Frame.ToWorld(lon, lat, 0) - origin;
+            var tri = mesh.triangles;
+            for (int i = 0; i < tri.Length; i += 3)
+            {
+                Vector3 a = verts[tri[i]], b = verts[tri[i + 1]], c = verts[tri[i + 2]];
+                float d = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+                float u = ((b.z - c.z) * (p.x - c.x) + (c.x - b.x) * (p.z - c.z)) / d;
+                float v = ((c.z - a.z) * (p.x - c.x) + (a.x - c.x) * (p.z - c.z)) / d;
+                if (u >= 0 && v >= 0 && u + v <= 1) return true;
+            }
+            return false;
+        }
+        Assert.IsTrue(Covers(34.60, 32.08), "the open sea west of Tel Aviv");
+        Assert.IsTrue(Covers(35.50, 31.50), "the Dead Sea");
+        Assert.IsTrue(Covers(35.59, 32.82), "the Sea of Galilee");
+        Assert.IsFalse(Covers(35.21, 31.77), "Jerusalem's hills");
+    }
+
+    /// <summary>Issue #195: the baked water mesh (terrain_water.bytes, Editor TerrainWaterBake.Bake) is what the shipped
+    /// heightmap gives now, byte for byte, and the map scene uses it; a stale bake is refused and the map derives the mesh
+    /// instead, so it is never wrong, only slower to boot.</summary>
+    [Test]
+    public void TheBakedWaterMeshMatchesTheHeightmap()
+    {
+        var (meta, heights) = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap);
+        var (grid, indices) = MapBuilder.WaterMeshGrid(meta.width, MapBuilder.TerrainSize(meta), heights, meta.elev_min_m);
+        var baked = AssetDatabase.LoadAssetAtPath<TextAsset>(MapTexturePaths.WaterMesh);
+        Assert.IsNotNull(baked, MapTexturePaths.WaterMesh);
+        CollectionAssert.AreEqual(MapBuilder.WaterMeshBytes(meta.width, heights, grid, indices), baked.bytes,
+            "stale: re-run Statecraft.Game.EditorTools.TerrainWaterBake.Bake");
+        Assert.IsTrue(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out var why), why);
+        heights[145, 1995] += 0.001f;   // sample 997 x 300, one HeightsCheck reads
+        Assert.IsFalse(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out why), "other heights");
+        var derived = new System.Collections.Generic.List<string>();
+        void Watch(string message, string stack, LogType type) { if (message.Contains("deriving the water mesh")) derived.Add(message); }
+        Application.logMessageReceived += Watch;
+        try
+        {
+            var map = OpenMap();
+            var mesh = map.Terrain.transform.Find(MapScene.TerrainWaterName).GetComponent<MeshFilter>().sharedMesh;
+            Assert.AreEqual(grid.Length, mesh.vertexCount);
+        }
+        finally { Application.logMessageReceived -= Watch; }
+        CollectionAssert.IsEmpty(derived, "the scene's map uses the bake");
+    }
+
+    /// <summary>Issue #195: the terrain graph's function carries no water shading. Its size, not its arithmetic, cost about
+    /// 3 ms a frame at gameplay03 in WebGL (even with the water toggled off, so no toggle measures it); the water belongs in
+    /// Sea.shader's terrain-water mode.</summary>
+    [Test]
+    public void TheTerrainFunctionCarriesNoWaterShading()
+    {
+        var src = System.Text.RegularExpressions.Regex.Replace(
+            File.ReadAllText("Assets/Shaders/StatecraftTerrain.hlsl"), "//[^\n]*", "");   // comments may name them
+        foreach (var call in new[] { "ScWaterShade", "ScBreakers", "ScHazeWater", "ddx(", "ddy(" })
+            StringAssert.DoesNotContain(call, src);
+    }
+
     /// <summary>The controller's known gap: at the Jordanian plateau the land skirt holds the edge's height for 20 km (at
     /// least 80% of its height above the sea) and reaches sea level only at the last ring.</summary>
     [Test]
@@ -363,6 +454,31 @@ public class SeaTests
                 }
             TestContext.WriteLine($"block-edge energy: {log}worst {worst:0.000}");
             Assert.Less(worst, 0.25f, "no lattice of block edges in the sea's shading");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    /// <summary>Issue #195 review: the terrain water's depth pull follows an orthographic camera's parallel rays. Pulled
+    /// towards the camera's position instead, the water slid towards the view's axis, and the terrain's black water showed
+    /// between it and the shore. Straight down over the coast south of Tel Aviv, 30 km across with the axis 12 km offshore,
+    /// no pixel is black.</summary>
+    [UnityTest]
+    public IEnumerator TheTerrainWaterStaysPutUnderAnOrthographicCamera()
+    {
+        var map = OpenMap();
+        yield return null;
+        var centre = map.Frame.ToWorld(34.62, 32.0, 0); centre.y = 0f;
+        var go = new GameObject("TopCoast"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            const int n = 512;
+            cam.orthographic = true; cam.orthographicSize = 15000f; cam.aspect = 1f;
+            cam.transform.position = centre + Vector3.up * 20000f; cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            var r = RenderSample.Render(cam, n, n);
+            int black = r.Pixels.Count(c => Mathf.Max(c.r, Mathf.Max(c.g, c.b)) < 0.02f);
+            TestContext.WriteLine($"black pixels: {black} of {n * n}");
+            Assert.AreEqual(0, black, "the water covers the terrain's black water up to the shore");
         }
         finally { Object.DestroyImmediate(go); }
     }

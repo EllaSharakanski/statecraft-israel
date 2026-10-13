@@ -144,7 +144,15 @@ namespace Statecraft.Game.Map
                 foreach (var (q, r) in layer.Hexes)
                 {
                     if (!mapHexes.Contains((q, r))) throw new ArgumentException($"{layer.Name}: hex ({q}, {r}) is not on the map");
-                    px[(r - rMin) * w + (q - qMin)] = Encode(layer.RegionOf(q, r), layer.StyleOf(layer.RegionOf(q, r)));
+                    int id = layer.RegionOf(q, r), edges = 0;
+                    // Edge i borders another region when that neighbour is in one (an unlisted hex, on the map or off it,
+                    // is 0: the coast and the data's edge get no band) and it is not this one.
+                    for (int i = 0; i < NeighbourSteps.Length; i++)
+                    {
+                        int other = layer.RegionOf(q + NeighbourSteps[i].dq, r + NeighbourSteps[i].dr);
+                        if (other > 0 && other != id) edges |= 1 << i;
+                    }
+                    px[(r - rMin) * w + (q - qMin)] = Encode(id, layer.StyleOf(id), edges);
                 }
             texture.SetPixels32(px); texture.Apply(false, false);
             Current = layer; hasLayer = layer != null && layer.Count > 0;
@@ -155,8 +163,15 @@ namespace Statecraft.Game.Map
 
         static void DestroyObject(UnityEngine.Object o) { if (Application.isPlaying) UnityEngine.Object.Destroy(o); else UnityEngine.Object.DestroyImmediate(o); }
 
-        /// <summary>The texel of a hex: r + 256 g the region id, b the style (StatecraftBorders.hlsl, ScRegionAt).</summary>
-        public static Color32 Encode(int id, BorderStyle style) => new Color32((byte)(id & 0xFF), (byte)(id >> 8), (byte)style, 255);
+        /// <summary>The texel of a hex: r + 256 g the region id, b the style, a 192 plus a bit per edge that borders another
+        /// region, in <see cref="NeighbourSteps"/> order (StatecraftBorders.hlsl, ScRegionAt). Baked here so the terrain's
+        /// shader reads one texel, not seven (issue #195). The default, every edge, is 255.</summary>
+        public static Color32 Encode(int id, BorderStyle style, int borderEdges = 0x3F) =>
+            new Color32((byte)(id & 0xFF), (byte)(id >> 8), (byte)style, (byte)(0xC0 | (borderEdges & 0x3F)));
+
+        /// <summary>Axial steps to a hex's six neighbours, in tools/hexgrid.py's NEIGHBOURS order: the order of
+        /// StatecraftBorders.hlsl's ScHexNormals, so bit i of the edge mask is the edge shared with neighbour i.</summary>
+        public static readonly (int dq, int dr)[] NeighbourSteps = { (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1) };
 
         static void SetStyle(int colour, int light, int shape, Style s)
         {

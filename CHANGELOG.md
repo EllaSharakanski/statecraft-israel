@@ -8,6 +8,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
+  hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
+  message to start a new game. The real game is unchanged and the goldens do not move; a new `mvp-slice` golden pins the
+  switch on with monthly turns (GDD Phase 1, refs #357).
+- The loader refuses an event whose window runs past the end of its era (chapters spec 9: an event may not span a boundary;
+  split it). A `to` on the boundary is fine (it is exclusive); an open window (no `to`) is allowed only in the last era.
+  No current event is affected (refs #65).
+- The loader refuses a `from`/`to` window on the indicators the code reads by name (`morale`, `food_supply`, `housing`,
+  `security`, `intl_standing`), a follow-up from the review of #313 (refs #57).
 - Turn lengths per security rung are data: `turn_lengths` in `rules.yaml` or an era override, read in the era the turn
   starts in (R-TURN-001). The default is today's table, so the goldens do not move. GDD v0.1 Phase 1 uses it for monthly
   turns (refs #81).
@@ -247,6 +256,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
+  into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
+  Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
+  in the browser, even with the water and the borders toggled off. The look is unchanged. Presentation only.
 - The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
   June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
   Knesset's position records show no break; the plenum record of the resignation and of the new declarations of

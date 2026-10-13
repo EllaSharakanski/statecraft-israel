@@ -68,6 +68,13 @@ manifest line and the snapshot), then run the tests plain. A scenario that moves
 command; its snapshot diff in the PR shows what moved, and the commit message says why. Two ship: `cautious` and `reckless`. They stay in 1948, before any change a
 later era makes, so they move only when a 1948 rule or event does.
 
+**MVP goldens (GDD v0.1, before cutover).** `mvp-slice` plays `MvpSlice.Load`, the real content with the loop switch on and
+monthly turns (spec 2026-10-12 section 2.1, R-LOOP-003), from the golden seed in Historical mode with `HistoricalAI` until
+`MvpGolden.Until` (15 January 1949, eight monthly turns). `MvpGoldenTests` checks it against the manifest line `mvp-slice` and the
+snapshot `golden/mvp-slice.txt`, and the update command re-pins it like the others. It is not shown in this file's table or in
+`tools/web_check.py`, because the players run only the legacy goldens until cutover. A Phase 1 PR that adds a GDD rule the slice
+exercises moves it, re-pins it and says why; the legacy goldens never move for it.
+
 **Invariants.** A hash says something changed; `sim/Statecraft.Sim.Tests/golden/invariants.yaml` says whether it is
 still plausible. Each entry names a golden run (`1950` or `1952`), a value (an indicator id, or `treasury`, `debt`,
 `fx`, `population`, `stability`), when it is read (`end`, `always`, or a date: the first state on or after it), a `min`

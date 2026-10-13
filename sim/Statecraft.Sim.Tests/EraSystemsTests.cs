@@ -177,4 +177,57 @@ eras:
         var s2 = Simulation.NewGame(all, 1, Mode.Historical);
         Assert.NotEqual("That map action is not available in this chapter", MapActions.Check(all, s2, MapActions.TransitCamp, 0, 0));
     }
+
+    // R-LOOP-001
+    [Fact]
+    public void RealContentRunsTheLegacyLoop()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        Assert.Equal("legacy", c.Loop);
+        Assert.False(c.IsGdd);
+        Assert.Equal("legacy", c.Ruleset);
+    }
+
+    // R-LOOP-001
+    [Fact]
+    public void TheGddSwitchSetsTheLoopAndTheRuleset()
+    {
+        var c = Load("    systems: { loop: gdd }");
+        Assert.Equal("gdd", c.Loop);
+        Assert.True(c.IsGdd);
+        Assert.Equal("gdd-0.1", c.Ruleset);
+    }
+
+    [Fact]
+    public void ABadLoopFailsNamingTheField()
+    {
+        var ex = Assert.Throws<ContentException>(() => Load("    systems: { loop: civ }"));
+        Assert.Equal("eras.yaml", ex.File);
+        Assert.Equal("eras[founding].systems.loop", ex.Field);
+        Assert.Contains("must be legacy or gdd", ex.Message);
+    }
+
+    // R-LOOP-001
+    [Theory]
+    [InlineData("    systems: { loop: gdd }", "")]
+    [InlineData("", "    systems: { loop: gdd }")]
+    public void EveryEraMustRunTheSameLoop(string first, string second)
+    {
+        var o = new Dictionary<string, string> { ["eras.yaml"] = $@"
+eras:
+  - id: founding
+    name: The Founding
+    from: 1948-05-15
+    to: 1950-01-01
+{first}
+  - id: later
+    name: Later
+    from: 1950-01-01
+    to: 1957-01-01
+{second}
+" };
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(Fixture.Write(o)));
+        Assert.Equal("eras[later].systems.loop", ex.Field);
+        Assert.Contains("every era runs the same loop", ex.Message);
+    }
 }
