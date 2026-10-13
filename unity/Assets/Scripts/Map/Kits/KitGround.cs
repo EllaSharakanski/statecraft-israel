@@ -28,6 +28,12 @@ namespace Statecraft.Game.Map.Kits
             seaLevelY = terrainY + (0f - elevMinM) * exaggeration;
             bounds = hexes.bounds; hexSizeKm = hexes.hex_size_km; HexSizeM = hexes.hex_size_km * 1000f;
             foreach (var h in hexes.hexes) biome[(h.q, h.r)] = h.biome;
+            // The lakes' hexes and their neighbours: where a lake's water can lie (a lake hex is at least 40% water, so the
+            // lake's edge stays within its hexes' neighbours; KitTests.NothingStandsInALakesDrawnWater checks the whole rift).
+            foreach (var h in hexes.hexes)
+                if (h.biome == "lake")
+                    foreach (var (dq, dr) in new[] { (0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (1, -1), (-1, 1) })
+                        lakeZone.Add((h.q + dq, h.r + dr));
             int res = Mathf.Max(2, terrain.terrainData.heightmapResolution);
             sampleX = frame.WidthM / (res - 1); sampleZ = frame.LengthM / (res - 1);
         }
@@ -47,45 +53,62 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>Real metres above sea level at (x, z) (the heightmap's own elevation, before exaggeration).</summary>
         public float ElevM(float x, float z) => (Y(x, z) - seaLevelY) / exaggeration;
 
-        public string Biome(float x, float z)
+        public string Biome(float x, float z) => biome.TryGetValue(Hex(x, z), out var b) ? b : "sea";
+
+        (int, int) Hex(float x, float z)
         {
             var (lon, lat) = Frame.ToLonLat(new Vector3(x, 0f, z));
-            return biome.TryGetValue(HexPicker.FromLonLat(lon, lat, bounds, hexSizeKm), out var b) ? b : "sea";
+            return HexPicker.FromLonLat(lon, lat, bounds, hexSizeKm);
         }
 
-        /// <summary>Open sea (the heightmap writes it as exactly 0 m: MapBuilder.SeaToleranceM), a lake's water surface, or
-        /// off the map. In a lake hex only the water counts, not the whole hex: a lake hex also holds its shore (Tiberias stands
-        /// in one, 60-160 m above the Sea of Galilee), and counting all of it as water left Tiberias no ground to build on
-        /// (#317). The surface is told as tools/terrain_bake.py tells it for the drawn water (coast.png):
-        /// <see cref="LakeBelowM"/> and flat within <see cref="LakeFlatM"/> over the heightmap's 3 x 3 window.</summary>
+        readonly HashSet<(int, int)> lakeZone = new HashSet<(int, int)>();
+
+        /// <summary>Open sea (the heightmap writes it as exactly 0 m: MapBuilder.SeaToleranceM), a lake's water, or off the
+        /// map. A lake is its water surface, not its hexes (#317): a lake hex also holds its shore (Tiberias stands in one,
+        /// 60-160 m above the Sea of Galilee), and counting all of it as water left Tiberias no ground to build on, while a
+        /// shore hex of another biome can hold some of the lake. The surface is told as the drawn water tells it
+        /// (MapBuilder.WaterMeshGrid, tools/terrain_bake.py): below <see cref="MapBuilder.LakeBelowM"/> and flat within
+        /// <see cref="MapBuilder.LakeFlatM"/> over the heightmap's 3 x 3 window, at the point or one sample from it.</summary>
         public bool Water(float x, float z)
         {
             if (!Inside(x, z)) return true;
             float e = ElevM(x, z);
             if (Mathf.Abs(e) <= MapBuilder.SeaToleranceM + 0.5f) return true;
-            var b = Biome(x, z);
-            if (b == "lake") return e < LakeBelowM && LakeFlat(x, z);
-            return b == "sea" && e < 2f;
+            // Only the rift lies this low (no sea hex does), and only a lake's hex or its neighbour holds lake water.
+            if (e < MapBuilder.LakeBelowM) return lakeZone.Contains(Hex(x, z)) && NearLakeSurface(x, z);
+            return e < 2f && Biome(x, z) == "sea";
         }
 
-        /// <summary>A lake's water lies below this (tools/terrain_bake.py LAKE_BELOW_M; the Sea of Galilee is at about -214 m and
-        /// the Dead Sea's pans lower still).</summary>
-        public const float LakeBelowM = -150f;
-        /// <summary>The largest height range (m) over a heightmap 3 x 3 window that is still a water surface
-        /// (tools/terrain_bake.py LAKE_FLAT_M).</summary>
-        public const float LakeFlatM = 0.25f;
-
-        bool LakeFlat(float x, float z)
+        /// <summary>The lake's flat surface lies at (x, z) or within one heightmap sample of it. The drawn shore (coast.png's
+        /// distance, interpolated between texel centres) runs up to about a sample past the last flat sample, so a tree or
+        /// house one sample short of the flat water would still stand in the drawn lake (a shore palm by Ghuweir Abu Shusha
+        /// did).</summary>
+        bool NearLakeSurface(float x, float z)
         {
+            int gx = Mathf.RoundToInt(x / sampleX), gz = Mathf.RoundToInt(z / sampleZ);
+            for (int j = -1; j <= 1; j++)
+                for (int i = -1; i <= 1; i++)
+                    if (LakeFlat(gx + i, gz + j)) return true;
+            return false;
+        }
+
+        /// <summary>Whether heightmap sample (gx, gz) is a lake's flat surface: below LakeBelowM, its 3 x 3 window within
+        /// LakeFlatM. Cached per sample (the rift's floor is asked about thousands of times while the kits are built).</summary>
+        bool LakeFlat(int gx, int gz)
+        {
+            long key = ((long)gx << 32) | (uint)gz;
+            if (lakeFlat.TryGetValue(key, out var flat)) return flat;
             float lo = float.MaxValue, hi = float.MinValue;
             for (int j = -1; j <= 1; j++)
                 for (int i = -1; i <= 1; i++)
                 {
-                    float e = ElevM(x + i * sampleX, z + j * sampleZ);
+                    float e = ElevM((gx + i) * sampleX, (gz + j) * sampleZ);
                     lo = Mathf.Min(lo, e); hi = Mathf.Max(hi, e);
                 }
-            return hi - lo <= LakeFlatM;
+            return lakeFlat[key] = hi < MapBuilder.LakeBelowM && hi - lo <= MapBuilder.LakeFlatM;
         }
+
+        readonly Dictionary<long, bool> lakeFlat = new Dictionary<long, bool>();
 
         /// <summary>The steepest rise (real metres per real metre) between the four points of a w-wide square around (x, z).</summary>
         public float Slope(float x, float z, float w)

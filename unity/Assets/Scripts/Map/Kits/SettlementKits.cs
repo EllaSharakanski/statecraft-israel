@@ -527,17 +527,23 @@ namespace Statecraft.Game.Map.Kits
                         spots.Add((r, i, centre + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * r, yaw, b, srnd.Next()));
                     }
                     spots.Sort((x, y) => x.r != y.r ? x.r.CompareTo(y.r) : x.i.CompareTo(y.i));
+                    // The tests that do not depend on the house's size, once per spot (the boot budget): the cell, the water, the
+                    // quarter's rule (Nahalal's ring).
+                    var site = new bool[spots.Count];
+                    for (int k = 0; k < spots.Count; k++)
+                    {
+                        var (r, _, p, _, _, _) = spots[k]; float t = r / R;
+                        site[k] = ground.Inside(p.x, p.y) && Mine(p) && !ground.Water(p.x, p.y) && lattices.Exists(x => Allows(s, x, p, t, ground));
+                    }
                     int added = 0;
                     bool hillTown = arch == Archetype.ArabTown || arch == Archetype.OldTown;
                     // Full size first over every spot; only then 0.72 size (never the half-size fit: Acre's stray beach house).
                     foreach (var shrink in new[] { 1f, 0.72f })
-                    foreach (var (r, _, p, yaw, full, detail) in spots)
+                    for (int k = 0; k < spots.Count && added < want; k++)
                     {
-                        if (added >= want) break;
+                        if (!site[k]) continue;
+                        var (r, _, p, yaw, full, detail) = spots[k];
                         var b = Shrink(full, shrink);
-                        float t = r / R;
-                        if (!ground.Inside(p.x, p.y) || !Mine(p) || ground.Water(p.x, p.y)) continue;
-                        if (!lattices.Exists(x => Allows(s, x, p, t, ground))) continue;   // the quarter's rule (Nahalal's ring)
                         if (!lots.Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;
                         if (ground.Slope(p.x, p.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
                         if (CornerInWater(p, yaw, b.w, b.d, ground)) continue;
@@ -555,13 +561,13 @@ namespace Statecraft.Game.Map.Kits
             return placed;
         }
 
-        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6). Fourteen of the
-        /// 25 towns' lattices fall short of it (the moshavot and kibbutzim, Netanya, Beersheba and Acre); their fallback houses
-        /// join the lattice's where free ground is left (12 of them).</summary>
+        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6). Fifteen of the
+        /// 25 towns' lattices fall short of it (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre); their
+        /// fallback houses join the lattice's where free ground is left (13 of them).</summary>
         const int SmallTownFloor = 6;
         /// <summary>Random spots a small town's fallback tries before it settles for fewer than SmallTownFloor houses (round 1
         /// tried about 30 per building).</summary>
-        const int ScatterTries = 720;
+        const int ScatterTries = 240;
         /// <summary>Whether the small towns' fallback runs (on; tests switch it off to show it moves no other place).</summary>
         public static bool SmallTownScatter = true;
 

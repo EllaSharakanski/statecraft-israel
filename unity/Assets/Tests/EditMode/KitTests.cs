@@ -338,6 +338,48 @@ public class KitTests
         Assert.IsTrue(g.Water(lake.x, lake.z), "the Sea of Galilee is water");
     }
 
+    /// <summary>#317: nothing stands in a lake's drawn water. Read from coast.png itself (the file the water shader samples,
+    /// decoded here because the import is not CPU-readable): no tree trunk and no building's or landmark's lot centre in the
+    /// rift (a lake hex, or ground below MapBuilder.LakeBelowM) lies where the drawn water covers the ground (coast below
+    /// 0.5). A first version of the lake test put a palm in the Kinneret by Ghuweir Abu Shusha, in a shore hex of another
+    /// biome.</summary>
+    [Test]
+    public void NothingStandsInALakesDrawnWater()
+    {
+        var map = OpenMap();
+        var coast = new Texture2D(2, 2);
+        try
+        {
+            Assert.IsTrue(coast.LoadImage(System.IO.File.ReadAllBytes(System.IO.Path.Combine(Application.dataPath, "Textures/Map/coast.png"))));
+            var g = Ground(map);
+            foreach (var (line, half) in Corridors(map)) g.AddCorridor(line, half);
+            var doc = LoadLocalities(map);
+            var locs = doc.Places.Select(p => p.Settlement).ToList();
+            var built = SettlementKits.Build(map.Settlements, locs, doc.Encampments, g);
+            foreach (var k in built.Towns) Object.DestroyImmediate(k.mesh);
+            foreach (var t in built.Tiles) Object.DestroyImmediate(t.mesh);
+            foreach (var l in built.Claimed) g.Lots.Add((l.centre, l.radius));
+            var trees = Vegetation.Plant(map.Settlements.Concat(locs).ToList(), g);
+            bool Wet(float x, float z) => coast.GetPixelBilinear(x / g.Width, z / g.Length).r < 0.5f;
+            var bad = new List<string>();
+            int checkedN = 0;
+            bool Rift(float x, float z) => g.Biome(x, z) == "lake" || g.ElevM(x, z) < MapBuilder.LakeBelowM;
+            foreach (var l in built.Claimed)
+                if (Rift(l.centre.x, l.centre.y)) { checkedN++; if (Wet(l.centre.x, l.centre.y)) bad.Add($"{l.id} lot at {l.centre}"); }
+            foreach (var (kind, m) in trees)
+            {
+                Vector3 p = m.GetColumn(3);
+                if (!Rift(p.x, p.z)) continue;
+                checkedN++;
+                if (Wet(p.x, p.z)) bad.Add($"{kind} tree at ({p.x:0}, {p.z:0})");
+            }
+            TestContext.WriteLine($"{checkedN} lots and trees in the rift checked against the drawn water");
+            CollectionAssert.IsEmpty(bad.Take(20), $"{bad.Count} in the drawn water");
+            Assert.Greater(checkedN, 20, "the rift's shores hold lots and trees");
+        }
+        finally { Object.DestroyImmediate(coast); }
+    }
+
     /// <summary>#317, review of #339 (F2): the small towns' fallback houses take only ground no other place builds on. With
     /// the fallback on, every lot every place claims (the towns', the 1948 localities' and the camps') is the same, in the
     /// same order, as with it off; the fallback's lots only follow them, and each belongs to a game town.</summary>

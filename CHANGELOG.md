@@ -210,7 +210,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
 - Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
-  of random spots: the 25 towns draw 404 buildings where main drew 216, and no town draws fewer than on main (fixes #317: a small town
+  of random spots: the 25 towns draw 397 buildings where main drew 216, and no town draws fewer than on main (fixes #317: a small town
   whose lattice places fewer than 6 houses is filled up with round 1's full-size houses on ground no other place uses;
   the kits' water test counts a lake hex as water only at the lake's surface, so Tiberias builds on its shore again) (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
   70 to 110), with 55 landmarks instead of 27. Old Jaffa is packed small stone houses; Tel Aviv's white blocks are

@@ -1867,27 +1867,40 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
     Beersheba 3 (main 5).
   - **The lake was half the cause.** The kits' `KitGround.Water` counted every lake hex as water, and a lake hex also holds
     its shore. Tiberias stands in one, 60-160 m above the Sea of Galilee (about -214 m), so it had no ground left.
-    - In a lake hex, a point is now water only at the lake's surface, by the rule tools/terrain_bake.py uses for the drawn
-      water (coast.png): below -150 m and flat within 0.25 m over the heightmap's 3 x 3 window.
+    - A point is now lake water only at or next to the lake's surface, in any hex that is not sea (a shore hex of another
+      biome holds some of the lake too). It uses the rule the drawn water uses
+      (`MapBuilder.LakeBelowM` and `LakeFlatM`, tools/terrain_bake.py): below -150 m and flat within 0.25 m over the
+      heightmap's 3 x 3 window, at the point or within one heightmap sample of it.
+    - The drawn shore (coast.png's distance, interpolated between texel centres) runs up to about a sample past the last
+      flat sample. A first version without that sample's margin put a cypress in the drawn Kinneret, and one that looked
+      only in lake hexes put a palm and a citrus tree in it by Ghuweir Abu Shusha.
+    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached. The rift's floor
+      is asked about thousands of times while the kits are built; tested everywhere below -150 m, the kits phase was
+      about 47 ms heavier at cpu 4.
     - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
       level), on main or here.
     - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
       is land and that the lake at 35.58 E, 32.80 N (-214.5 m) is water. Each half fails when the lake branch is made
       always water, or never water.
-    - Tiberias's own lattice now draws 6 houses on its shore.
+    - `KitTests.NothingStandsInALakesDrawnWater` decodes coast.png itself, the file the water shader samples. It checks
+      that no lot centre and no tree trunk in the rift (a lake hex, or ground below -150 m; 129 of them) lies under the
+      drawn water. It fails on the cypress without the sample's margin, and on the palm and the citrus tree with lake
+      hexes only.
+    - Tiberias's lattice now draws 4 houses on its shore, and the fallback a fifth, full-size, beside them.
   - **The fallback.** A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) is filled up
     the way round 1 drew it.
     - Each house is the archetype's full-size building, the size main drew, and keeps its whole footprint as its lot.
-    - It tries 720 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
+    - It tries 240 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
       first. Every spot is tried at full size before any at 0.72; the half-size fit is never used. Every house keeps the
       beach setback.
     - `Build` runs the fallback after every place's own houses (towns, the 1948 localities) and the camps, so it takes
       only ground no other place uses. `KitTests.TheSmallTownFloorMovesNoOtherPlace` checks this: every lot of every
       place is the same, in the same order, with the fallback off and on.
-    - It fires in 14 towns (the moshavot and kibbutzim, Netanya, Beersheba and Acre) and adds 30 houses in 12 of them.
+    - It fires in 15 towns (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre) and adds 27 houses in 13
+      of them.
       Acre and Yad Mordechai have no free ground left.
-  - Every town now draws at least main's count: Tiberias 6, Netanya 4, Beersheba 6, Rosh Pinna 2, Nahalal 4. The 25
-    towns draw 404.
+  - Every town now draws at least main's count: Tiberias 5, Netanya 4, Beersheba 5, Rosh Pinna 2, Nahalal 3. The 25
+    towns draw 397.
   - **Tests:**
     - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`).
     - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
