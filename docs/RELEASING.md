@@ -51,7 +51,7 @@ The README's screenshots are claims about the current build. Re-take them whenev
 1. Build the web player (`docs/dev-setup.md`) and serve it. After visual-v1 has merged, capture with its
    `uv run tools/web_check.py <build> --shots …` under its machine lock, so the capture does not disturb profiling.
    Before that, capture by hand at 1640×920 in Chrome.
-2. Replace `docs/images/build-m3-map.jpg`, `build-m3-cabinet.jpg` and `build-m3-why.jpg` (or add `build-<milestone>-*`
+2. Replace `docs/images/build-m3-map.jpg`, `build-m3-start.jpg`, `build-m3-city.jpg`, `build-m3-cabinet.jpg` and `build-m3-why.jpg` (or add `build-<milestone>-*`
    and update the README to the new names). Each must show a non-sensitive moment: no unreviewed sensitive event card.
 3. Update the visible caption "Real screenshots from build X.Y.Z (Mn), YYYY-MM-DD." in `README.md`, and the
    "Is this any good?" and "Roadmap" text the change made stale.
