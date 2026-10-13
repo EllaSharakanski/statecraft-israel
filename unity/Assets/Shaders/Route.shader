@@ -26,22 +26,31 @@ Shader "Statecraft/Route"
             float _Opacity;
         CBUFFER_END
 
-        // Colours (sRGB) after the promo's gameplay frame (promo/final/03): pale packed dirt; a grey-brown ballast bed
-        // with dark timber sleepers and light steel rails (promo video 0:21).
+        // Colours (sRGB) after the promo's gameplay frame (promo/final/03): pale packed dirt with darker worn verges that
+        // outline it on pale ground, as the promo's tracks read; a cool grey stone ballast bed with dark timber sleepers and
+        // bright steel rails (promo video 0:21).
         static const float3 RoadSrgb = float3(0.86, 0.78, 0.62);
         static const float3 RutSrgb = float3(0.72, 0.63, 0.48);
-        static const float3 BallastSrgb = float3(0.50, 0.46, 0.41);
-        static const float3 BankSrgb = float3(0.42, 0.37, 0.31);     // the embankment's shoulders, darker
+        static const float3 VergeSrgb = float3(0.42, 0.35, 0.26);
+        static const float3 BallastSrgb = float3(0.56, 0.54, 0.50);
+        static const float3 BankSrgb = float3(0.44, 0.42, 0.39);     // the embankment's shoulders, darker
         static const float3 SleeperSrgb = float3(0.30, 0.22, 0.15);
         // Far off (a pixel over FarFromM, full by FarToM: the country-wide pose), pale dirt on pale ground would vanish,
         // so a road darkens to a grey-brown line, as the promo's diorama draws its roads (a symbolic far look).
         static const float3 RoadFarSrgb = float3(0.50, 0.44, 0.36);
         static const float FarFromM = 60.0, FarToM = 150.0;
-        static const float3 RailSrgb = float3(0.72, 0.70, 0.66);     // light worn steel, as the promo video's close-up
-        // The railway's pattern, in metres along (v) and as a share of the ribbon across (u).
-        static const float SleeperSpacingM = 150.0, SleeperDuty = 0.4, SleeperHalfSpan = 0.29;
+        static const float3 RailSrgb = float3(0.90, 0.89, 0.86);     // bright worn steel, as the promo video's close-up
+        // The railway's pattern, in metres along (v) and as a share of the ribbon across (u). Sleepers every 100 m (about
+        // 3 px at the gameplay zoom: a fine texture, as the promo's, not a coarse ladder).
+        static const float SleeperSpacingM = 100.0, SleeperDuty = 0.35, SleeperHalfSpan = 0.29;
         static const float RailOffset = 0.12, RailHalfWidth = 0.018;
+        // A rail is drawn at least RailMinPx wide, so at the gameplay zoom (its true 0.036 of the bed is under a pixel) it
+        // still reads as a bright line; the rails fade out where the two would merge (under RailFadeToPx apart).
+        static const float RailMinPx = 0.8, RailFadeFromPx = 1.5, RailFadeToPx = 3.0;
         static const float RutOffset = 0.16, RutHalfWidth = 0.05;
+        // The verges: a darker worn strip either side of the dirt, just inside the soft edge (RoadEdge), where the road is
+        // still nearly opaque, so the dark line outlines the pale core on pale ground.
+        static const float VergeOffset = 0.31, VergeHalfWidth = 0.09, VergeStrength = 0.9, RoadEdge = 0.18;
 
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float2 uv : TEXCOORD0; };
         struct Varyings { float4 positionCS : SV_POSITION; float3 positionWS : TEXCOORD0; float3 normalWS : TEXCOORD1; float2 uv : TEXCOORD2; };
@@ -93,7 +102,9 @@ Shader "Statecraft/Route"
                 float across = Band(u, 0.5, SleeperHalfSpan, du);
                 float sleeper = across * PulseBox(v, dv, SleeperSpacingM, SleeperDuty);
                 albedo = lerp(albedo, SRGBToLinear(SleeperSrgb), sleeper);
-                float rails = saturate(Band(u, 0.5 - RailOffset, RailHalfWidth, du) + Band(u, 0.5 + RailOffset, RailHalfWidth, du));
+                float railH = max(RailHalfWidth, 0.5 * RailMinPx * du);
+                float rails = saturate(Band(u, 0.5 - RailOffset, railH, du) + Band(u, 0.5 + RailOffset, railH, du));
+                rails *= smoothstep(RailFadeFromPx, RailFadeToPx, 2.0 * RailOffset / du);   // the two rails' spacing in pixels
                 albedo = lerp(albedo, SRGBToLinear(RailSrgb), rails);
                 float e = max(0.16, du);                  // the soft edge, at least a pixel wide (review M5)
                 alpha = smoothstep(0.0, e, u) * smoothstep(1.0, 1.0 - e, u);
@@ -103,8 +114,10 @@ Shader "Statecraft/Route"
                 albedo = SRGBToLinear(RoadSrgb);
                 float ruts = saturate(Band(u, 0.5 - RutOffset, RutHalfWidth, du) + Band(u, 0.5 + RutOffset, RutHalfWidth, du));
                 albedo = lerp(albedo, SRGBToLinear(RutSrgb), 0.6 * ruts);
+                float verges = saturate(Band(u, 0.5 - VergeOffset, VergeHalfWidth, du) + Band(u, 0.5 + VergeOffset, VergeHalfWidth, du));
+                albedo = lerp(albedo, SRGBToLinear(VergeSrgb), VergeStrength * verges);
                 albedo = lerp(albedo, SRGBToLinear(RoadFarSrgb), smoothstep(FarFromM, FarToM, dv));
-                float e = max(0.3, du);
+                float e = max(RoadEdge, du);
                 alpha = smoothstep(0.0, e, u) * smoothstep(1.0, 1.0 - e, u);
             }
             albedo = lerp(albedo, SRGBToLinear(ScGridLandSrgb), grid * _ScGrid.x);

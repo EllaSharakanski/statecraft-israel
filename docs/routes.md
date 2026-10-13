@@ -12,6 +12,7 @@ The map draws the railways and main roads of 1948, each from its sourced date, a
 | Tracer | `tools/routes_1948.py` (tests: `tools/tests/test_routes_1948.py`) |
 | Map layer | `unity/Assets/Scripts/Map/Routes/` (`RoutePaths`, `RouteLayer`, `RouteTrain`, `TrainModels`) |
 | Shader and materials | `unity/Assets/Shaders/Route.shader`; `Resources/Routes/Rail.mat`, `Road.mat` (`RouteMaterialAssets.Create`) |
+| Baked ribbons (generated) | `unity/Assets/Resources/Routes/RouteRibbons.bytes` (`RouteRibbonBake.Bake`; tests: `tools/tests/test_route_ribbon_bake.py`) |
 | Tests | `unity/Assets/Tests/EditMode/RouteTests.cs` |
 
 Both route files are map-only. `ContentLoader` never reads them, so the content hash and the goldens do not move
@@ -197,10 +198,23 @@ measurement in `docs/units.md`:
 - u runs across the ribbon and v along it, in metres.
 
 **The shader** (`Statecraft/Route`). It is transparent and has no new keywords; the shadow keywords are the terrain's.
-- The road is pale dirt with faint wheel ruts. At the country-wide pose (a pixel over 60–150 m), it darkens to a
-  grey-brown line, so it reads as the promo diorama's roads do instead of vanishing on pale ground.
-- The railway is a grey-brown ballast bed with darker shoulders, dark sleepers and two light steel rails, after the
-  promo video's 0:21 close-up.
+- The road is pale dirt with faint wheel ruts and darker worn verges (0.32 of the width either side of the line, about
+  1 px each at gameplay03), so it reads on pale sand and dry grass by its edges, as promo 03's tracks do. At the
+  country-wide pose (a pixel over 60–150 m), it darkens to a grey-brown line, so it reads as the promo diorama's roads
+  do instead of vanishing on pale ground.
+- The railway is a cool grey stone ballast bed with darker shoulders, dark sleepers every 100 m and two bright steel
+  rails, after promo 03 and the video's 0:21 close-up (refs #35, `.superpowers/borders-routes-r1/PLAN.md` R1 and R2).
+  - A rail is 0.036 of the 680 m bed, about 0.7 px at gameplay03, so its box filter left it faint: averaged along the
+    line (`TheRailsReadAsTwoBrightLinesAtGameplay03`, two railways, 30 points each), a rail stood 0.10–0.11 luma above
+    the bed beside it. It is now drawn at least 0.8 px wide (`RailMinPx`) and brighter, and stands 0.18–0.21 above it
+    (bound 0.15). The two fade out where they would merge, under 3 px apart (the overview).
+  - Roads: on the eight palest-ground road crossings in the gameplay03 frame (`RoadsReadOnPaleGroundByTheirVerges`),
+    the verges are darker than the core by at least 0.04 and darker than the ground beside them on 6 of 8 (bound 5);
+    with main's shader on 0 of 8.
+  - The sleepers were every 150 m at a duty of 0.4: a dark bar of about 1.7 px every 4.3 px, a coarse ladder. At 100 m
+    and 0.35 they are a fine texture, as the promo's.
+  - The ballast was a grey-brown (0.50, 0.46, 0.41) close to the land's ochre; it is now a stone grey (0.56, 0.54, 0.50),
+    with shoulders (0.44, 0.42, 0.39).
 - Every pattern is box-filtered to the pixel, so it fades to its mean at the overview instead of shimmering.
 - It is lit like the ground: the sun with its shadows and the ambient probe. Then come the hex grid and the land haze
   from `StatecraftMap.hlsl`.
@@ -234,6 +248,31 @@ measurement in `docs/units.md`:
   station" (Jaffa–Jerusalem railway). The later Tel Aviv South opened when Beit Hadar closed.
 
 **Toggles.** `routes` (the ribbons) and `train` (when there is one) are visual toggles, so `?vprofile` prices each one.
+
+**Baked ribbons** (issue #321). Boot places the ribbon meshes from a bake instead of deriving them, as the terrain water
+does (#320, docs/visual-v1.md).
+- `RouteRibbonFile` (format) and the editor's `RouteRibbonBake` write every mesh `RouteLayer.Build` draws, in its order
+  (`RouteLayer.Plan`): vertices, normals, uvs and indices, to `Resources/Routes/RouteRibbons.bytes`.
+- The header holds the bake's version, the heightmap's resolution and `HeightsCheck`, FNV-1a checks of `heightmap.json`
+  and `route_paths_1948.yaml`, the terrain's size and origin, and the geometry constants (widths, `StepM`, `ClearanceM`,
+  the tolerances, the sample counts, `VerticalExaggeration`).
+- When any of them differs from what the map loaded, the bake is refused with a warning (`ROUTES ...: deriving the route
+  ribbons at load`) and the ribbons are derived as before: the same meshes, only slower.
+- **Route index** (for the GDD Phase 4 corridors, #384). Each mesh lists its routes, each with its first vertex, vertex
+  count, first index and index count (`RouteSpan`), so a later change can show one route by its construction state.
+  Nothing reads it yet; the vertex layout is unchanged.
+- **Re-bake** whenever the heightmap, `heightmap.json`, the route file, a constant in the header or the ribbon rule
+  (`RouteLayer.Geometry`; bump `RouteRibbonFile.Version` with it) changes:
+  `Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod
+  Statecraft.Game.EditorTools.RouteRibbonBake.Bake`, under `tools/machine_lock.py` as any Unity run.
+- **Checks.** `tools/tests/test_route_ribbon_bake.py` (CI, no Unity) fails on a stale header, reading the constants from
+  the C# source, and checks the route index. `RouteTests.TheBakedRibbonsMatchTheRoutes` compares the bake with a fresh
+  derivation byte for byte, and with the map's own terrain vertex for vertex; `AStaleRibbonBakeIsDerivedAtLoad` checks
+  the fallback. A change to `RouteLayer.Geometry` without a version bump is caught only by the Unity test.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, phase `routes built`, three rounds interleaved with main `bc67247`
+  under the exclusive lock, 9 cold loads each, medians, 2026-10-13): 162 ms on main, 51 ms with the bake. The whole map
+  build is 3384 ms on main and 3414 ms with the bake, inside the runs' spread (3158-4240 ms); its other phases move by the
+  same few tens of milliseconds both ways from run to run.
 
 **Kits keep off the routes** (settlement kits and trees, #179).
 - `MapScene` reads the routes before building the kits, and hands `KitLayer.Build` every route's corridor

@@ -144,7 +144,21 @@ namespace Statecraft.Game.Map
                 foreach (var (q, r) in layer.Hexes)
                 {
                     if (!mapHexes.Contains((q, r))) throw new ArgumentException($"{layer.Name}: hex ({q}, {r}) is not on the map");
-                    px[(r - rMin) * w + (q - qMin)] = Encode(layer.RegionOf(q, r), layer.StyleOf(layer.RegionOf(q, r)));
+                    int id = layer.RegionOf(q, r), edges = 0, shared = 0;
+                    var style = layer.StyleOf(id);
+                    // Edge i borders another region when that neighbour is in one (an unlisted hex, on the map or off it,
+                    // is 0: the coast and the data's edge get no band) and it is not this one. It is shared when the neighbour
+                    // draws its band there in the same style: two sub-districts side by side. Each side then draws part of the
+                    // band, so the boundary reads as one band of the promo's width, not two (the Mandate frontier, against
+                    // the "outside" region of style none, and a primary-secondary edge keep the full band each side).
+                    for (int i = 0; i < NeighbourSteps.Length; i++)
+                    {
+                        int other = layer.RegionOf(q + NeighbourSteps[i].dq, r + NeighbourSteps[i].dr);
+                        if (other <= 0 || other == id) continue;
+                        edges |= 1 << i;
+                        if (style != BorderStyle.None && layer.StyleOf(other) == style) shared |= 1 << i;
+                    }
+                    px[(r - rMin) * w + (q - qMin)] = Encode(id, style, edges, shared);
                 }
             texture.SetPixels32(px); texture.Apply(false, false);
             Current = layer; hasLayer = layer != null && layer.Count > 0;
@@ -155,8 +169,18 @@ namespace Statecraft.Game.Map
 
         static void DestroyObject(UnityEngine.Object o) { if (Application.isPlaying) UnityEngine.Object.Destroy(o); else UnityEngine.Object.DestroyImmediate(o); }
 
-        /// <summary>The texel of a hex: r + 256 g the region id, b the style (StatecraftBorders.hlsl, ScRegionAt).</summary>
-        public static Color32 Encode(int id, BorderStyle style) => new Color32((byte)(id & 0xFF), (byte)(id >> 8), (byte)style, 255);
+        /// <summary>The texel of a hex: r + 256 g the region id; b the style in its low two bits and, above them, a bit per
+        /// shared edge (one whose neighbour draws a band in the same style, so each side draws part of it: StatecraftBorders.hlsl, ScSharedBand); a 192 plus a bit per edge
+        /// that borders another region; edge bits in <see cref="NeighbourSteps"/> order (StatecraftBorders.hlsl, ScRegionAt).
+        /// Baked here so the terrain's shader reads one texel, not seven (issue #195). The default, every edge a border and
+        /// none shared, is a = 255.</summary>
+        public static Color32 Encode(int id, BorderStyle style, int borderEdges = 0x3F, int sharedEdges = 0) =>
+            new Color32((byte)(id & 0xFF), (byte)(id >> 8), (byte)((int)style | (sharedEdges & borderEdges & 0x3F) << 2),
+                (byte)(0xC0 | (borderEdges & 0x3F)));
+
+        /// <summary>Axial steps to a hex's six neighbours, in tools/hexgrid.py's NEIGHBOURS order: the order of
+        /// StatecraftBorders.hlsl's ScHexNormals, so bit i of the edge mask is the edge shared with neighbour i.</summary>
+        public static readonly (int dq, int dr)[] NeighbourSteps = { (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1) };
 
         static void SetStyle(int colour, int light, int shape, Style s)
         {

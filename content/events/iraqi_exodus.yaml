@@ -23,4 +23,6 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Ezra_and_Nehemiah", checked: 2026-10-10 }
   - { url: "https://in.bgu.ac.il/bgi/iyunim/40/Meir-Glitzenstein.pdf", checked: 2026-10-10 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-211728", checked: 2026-10-13 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1951v05/d340", checked: 2026-10-13 }
 status: fact-checked

@@ -189,12 +189,17 @@ checks every anchor and logs each spot and its distance.
 - **Slopes (owner question, 2026-10-11).** Each rifleman stands on the highest ground under its boots
   (`UnitShowcase.Stand`: the centre plus 48 points on three rings out to the boots' 400 m radius), so no boot sinks into
   a hill. Where the ground under the boots falls more than 20 m, the figure stands on a base, as a painted miniature
-  does. The base is a dark grey-brown disc (the palette's deck shade) of the boots' radius, reaching down to the lowest ground, so the
+  does. The base is a disc of trodden earth (the palette's `Dust`) of the boots' radius, reaching down to the lowest ground, so the
   downhill boot never floats.
   - **Steepest spots:** the worst drop is about 0.6–1 km, against a 3.6 km figure, on the 3x relief of the Jerusalem
     hills.
   - **Tests:** `AFigureStandsOnASteepSlopeWithoutSinking` and `NoRiflemanSinksIntoTheHillsOfTheMap`.
   - **Close-ups** (`MapCapture.Promo -units -extraPose …`, at 12 and 20 km): at 6 km the camera sees only boots.
+- **Trees (#249).** The kit trees whose crowns reach a drawn figure's boots (its 400 m foot radius, which is also its
+  base's) are left out at draw time (`VegetationLayer.Hide`), so no orchard grows through a figure. Only the figures drawn
+  that day clear trees, and they come back when the figure goes. With the `units` toggle off, as in a plain `?shot` run,
+  every tree is drawn. The planting, and so the kits' layout, never changes. Tests:
+  `NoKitTreeGrowsThroughAShownFiguresFeet` and `OnlyTheShownFiguresTreesGoAndTheToggleBringsThemBack`.
 
 **Selection and the card.**
 - Clicking a token's hex selects it. The ring goes round it and the hex outline is cleared, so it has one highlight.
@@ -288,6 +293,18 @@ sized against the figures, as Civ sizes them, not against each other.
 **Owner ruling (2026-10-11): units stay Civ-style tokens at about 2,000x.** This is far above the 10–25x ruling for
 buildings and trees. At 10–25x a man is 18–45 m tall, which is under one pixel at 60 km. The promo, which wins over strict
 scale by the owner's ruling, draws units as tokens. The scale is one constant.
+
+## Colour at map scale
+
+The uniform's colours (shirt, faded shirt, trousers, bush hat in `UnitPalette`) are darker and browner than the khaki
+drill of the photographs. This is a readability choice at map scale, not a new historical claim: the 1948 photographs
+are black and white, and the kit itself (khaki drill, 37-pattern webbing, the three headgear) is unchanged and sourced
+below. Measured on editor renders of both tiers (gameplay03, the showcase trio at 20 km, the 7th Brigade at 15 km,
+Golani at 12 km, Harel at 15 km in the Judean hills and Etzioni at 30 km), a figure was 0.68–0.82 of the surrounding
+ground's luminance with the old, lighter khaki, and blended into it; it is now 0.50–0.57, and warm (red above green).
+Promo 03's figures are about 0.45 (figures round 1, refs #197). The webbing stays pale, as the promo's straps do. A
+slope base is painted trodden earth (`Dust`), within 7% of the ground's luminance where measured, so it reads as the
+promo's worn patch rather than a dark disc. The aircraft and ship colours are untouched.
 
 ## Sources (checked 2026-10-11)
 

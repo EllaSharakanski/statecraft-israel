@@ -12,6 +12,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   15 May 1948, the United Nations from 24 October 1945, the state offices from 14 May 1948. Yaakov Dori's chief-of-staff
   term is split at 14 May 1948 into a new `haganah_chief_of_staff` office and `chief_of_staff`. A Founding start holds the
   same records and the goldens are unchanged. `rationing` and `rationing_feeds` stay windowless (their office begins in 1949).
+- The website (`site/`, refs #393): a static Astro site in English (`/en/`) and Hebrew (`/he/`, right to left) with Home, Play, History, Sources, Media, Devlog, Contributors, How we make it, Press, Contribute and Privacy. Every image and video carries a visible label (in-engine capture with build and date, AI-generated concept art, or AI cinematic promo, not gameplay); the History and Sources pages show the events and sources from `content/` as they are. The in-engine images are the README's screenshots, read from `docs/images/build-*.jpg` and described in `docs/images/captures.yaml`, so retaking them updates the site. The cinematic trailer is hosted as one 720p H.264 encode, shown behind a click with captions in its own labelled section after the gameplay; a real gameplay clip listed in `captures.yaml` becomes the home page's muted hero loop, with a pause button. Self-hosted fonts and images, no analytics, no cookies and nothing loaded from another site. A `Site` workflow builds and checks it on pull requests; deploying to GitHub Pages waits for the owner.
 - The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
   hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
   message to start a new game. The real game is unchanged and the goldens do not move; a new `mvp-slice` golden pins the
@@ -199,6 +200,39 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
+  hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
+  with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
+  without buttons. The date plate, the event card, the info panel and the minimap carry the promo's filigree trim, drawn
+  in code, which takes no clicks.
+- Map: the unit figures' uniforms are darker and warmer, so a trio stands out against the sunlit ground as promo 03's
+  does instead of khaki on khaki; a figure's slope base is painted trodden earth instead of a dark grey disc. A
+  readability choice at map scale; the sourced kit is unchanged (refs #197).
+- The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
+  next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
+- The map's railways and roads are placed from a bake at boot instead of being built (refs #321), as the water's
+  mesh is since #195. The routes look the same: the bake holds the same meshes, and a stale or missing bake is refused
+  with a warning and the routes are built at load as before. `routes built` takes 51 ms at `--cpu 4`, from
+  162 ms. The bake also lists where each route lies in its mesh, for the corridors of GDD Phase 4 (#384).
+  Presentation only.
+- Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
+  surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a
+  wave's size), and sparse whitecaps on the streaks' bright side, close up only. All three sit behind a new `seatexture`
+  visual toggle. The glint is stronger close up, the white surf line is at least 1.5 pixels wide at every zoom, the beach
+  is wider (900 m) and paler, and the water's haze starts at 120 km, so the overview's sea pales towards the horizon. The
+  water shader is the only shader changed. A slow pan and zoom at the overview showed no crawl.
+- Map: a boundary between two regions of the same border style (two Mandate sub-districts) draws one band of the promo's
+  width, centred on the edge, instead of two full bands side by side; the Mandate frontier and a primary-secondary edge
+  keep the full band. Far off (a band under about 4 px, the overview) a band is a thin line of its colour, not a white
+  one. Visual only (refs #196).
+- Map: the railway and road look after promo 03 (`Route.shader` only): the two rails are drawn at least 0.8 px wide and
+  brighter, so they stand out at the gameplay zoom; the sleepers run every 100 m, a fine texture instead of a coarse ladder; the
+  ballast is a cooler stone grey; roads have darker worn verges, so they read on pale ground. No mesh, data or boot change
+  (refs #35).
+- Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
+  biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
+  at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
+  re-bake of `landuse.png` (same size and format) and a palette change, so the frame time and boot are unchanged.
 - Inland lowlands are no longer labelled "Coastal plain" (refs #204). `tools/hexgrid.py` now measures the distance from
   each hex centre to the shore and keeps `coastal_plain` for 0 to 200 m land within 25 km of it. Further inland the new
   biome `lowland` ("Inland lowland") applies: 30 of the 109 coastal plain hexes change, among them the hex that holds
@@ -213,6 +247,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The game settlements Lod and Ramla show their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
+- Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
+  of random spots: the 25 towns draw 397 buildings where main drew 216, and no town draws fewer than on main (fixes #317: a small town
+  whose lattice places fewer than 6 houses is filled up with round 1's full-size houses on ground no other place uses;
+  the kits' water test counts a lake hex as water only at the lake's surface, so Tiberias builds on its shore again) (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
+  70 to 110), with 55 landmarks instead of 27. Old Jaffa is packed small stone houses; Tel Aviv's white blocks are
+  taller in the core (promo ruling, at most eight storeys); Haifa has its lower town by the port and Hadar on the slope; Jerusalem has its stone
+  new city, its Arab quarters and a walled Old City; the large moshavot have a plastered centre. Sourced 1948 landmarks: Jerusalem's walls and gates, the
+  citadel, the Haram with the Dome of the Rock (lead dome, as before 1959) and Al-Aqsa; Haifa's port and German Colony;
+  Tel Aviv's port; Ramla's White Tower; Jaffa's lighthouse moved to the hill above the port. Map only: the goldens do not
+  move.
 - Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
 - Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
   reworded attention and full-war labels (#193).
@@ -260,6 +304,26 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
+  (fixes #397).
+- Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
+  are left out at draw time and come back when the figure goes (a later date, or the "units" toggle off, so plain
+  screenshot checkpoints keep every tree); the kits' layout does not change (fixes #249).
+- "The Jews of Iraq" cites two primary sources for its asset freeze and its count of those waiting to fly: the Israeli
+  letter to the Palestine Conciliation Commission of 19 March 1951 and FRUS 1951, vol. V, doc. 340. Its English Wikipedia
+  source puts the first flights a year late (#135) but stays, because it alone covers the transit camps' crowding. Text,
+  dates and effects are unchanged (refs #135).
+- In the two-row HUD (a window narrower than about square), a button in the event column or the info panel hidden under an
+  open screen could still take the keyboard focus once the 1950 build buttons were live. The covered panels are now
+  disabled as well as hidden, also when the window narrows under an open screen, and a panel hidden by the start screen
+  or a wide screen is not re-enabled by a tier change or a screen closing under it (#400).
+- The map's far tilt-shift band no longer blurs the far towns into a smear at the play zoom (#390). Since the map drew
+  faster (#320), the quality fallback no longer turns the tilt-shift off, and the far band showed in full. On the owner's
+  ruling it is now gently soft at the gameplay zoom, as on promo 03, and in full only at the overview. Presentation only.
+- The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
+  into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
+  Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
+  in the browser, even with the water and the borders toggled off. The look is unchanged. Presentation only.
 - The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
   June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
   Knesset's position records show no break; the plenum record of the resignation and of the new declarations of

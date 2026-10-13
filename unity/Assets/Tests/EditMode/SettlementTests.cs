@@ -420,6 +420,9 @@ public class MapSceneTests
             // frame against 0.024 (the grade scales the sea's chroma by about 2). Tilt-shift off: a colour test whose close
             // strips lie in the blurred bands at some yaws (task-3 carry m6).
             RenderSample.TiltShift(false);
+            // Sea round 2 (#388): the far sea's texture (a 2.5 km mottle) varies by itself between points 5 km apart, so it
+            // is off here; SeaTests.TheFarSeaTextureHasNoStepAtTheMapEdge checks the edge with it on, as a step.
+            VisualToggles.Set("seatexture", false);
             foreach (var graded in new[] { false, true })
             foreach (var grid in new[] { false, true })
             {
@@ -453,7 +456,7 @@ public class MapSceneTests
                     }
             }
         }
-        finally { VisualToggles.Set("grid", true); VisualToggles.Set("grade", true); RenderSample.TiltShift(true); }
+        finally { VisualToggles.Set("grid", true); VisualToggles.Set("grade", true); VisualToggles.Set("seatexture", true); RenderSample.TiltShift(true); }
     }
 
     /// <summary>Playtest 1, item 3: with the top bar covering the top <c>TopInset</c> of the screen, the look-at point is

@@ -3,7 +3,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 CONCEPT = "docs/images/hero-concept-1936.jpg"
-GRID = ["docs/images/build-m3-map.jpg", "docs/images/build-m3-cabinet.jpg", "docs/images/build-m3-why.jpg"]
+CLIP = "docs/images/build-gameplay.webp"
+GRID = ["docs/images/build-m3-map.jpg", "docs/images/build-m3-start.jpg", "docs/images/build-m3-city.jpg",
+        "docs/images/build-m3-cabinet.jpg", "docs/images/build-m3-why.jpg"]
 
 
 def read(rel: str) -> str:
@@ -40,10 +42,11 @@ def test_concept_art_opens_what_is_this_captioned_as_concept_art():
     assert "Concept art (AI-generated)" in after and "set in 1936" in after and "not the current build" in after
 
 
-def test_real_dated_screenshots_in_a_one_plus_two_grid():
+def test_real_dated_screenshots_in_a_one_plus_two_plus_two_grid():
     text = read("README.md")
-    assert images(text)[1:4] == GRID
-    for path, width in zip(GRID, ("820", "405", "405")):
+    assert images(text)[1:7] == [CLIP] + GRID
+    assert re.search(r"Real gameplay, build \d+\.\d+\.\d+, \d{4}-\d{2}-\d{2}, commit [0-9a-f]{7}\.", text)
+    for path, width in zip(GRID, ("820", "405", "405", "405", "405")):
         assert re.search(rf'<img src="{re.escape(path)}"[^>]*width="{width}"', text), path
     assert re.search(r"Real screenshots from build \d+\.\d+\.\d+ \(M3\), \d{4}-\d{2}-\d{2}\.", text)
 
@@ -103,7 +106,7 @@ def test_hebrew_readme_is_rtl_and_names_english_as_authoritative():
     assert he.lstrip().splitlines()[0].startswith("[English](README.md)")
     assert he.count('<div dir="rtl">') >= 2
     assert he.count("<div") == he.count("</div>")
-    assert "הנוסח האנגלי" in he and images(he)[:3] == GRID and CONCEPT in images(he)
+    assert "הנוסח האנגלי" in he and images(he)[:6] == [CLIP] + GRID and CONCEPT in images(he)
 
 
 def test_images_are_web_sized_and_the_original_stays():
@@ -128,7 +131,8 @@ def test_contributing_links_the_issue_filters_and_the_open_issues():
 
 def test_hebrew_readme_keeps_the_english_facts():
     he = read("README.he.md")
-    for fact in ("15 במאי 1948", "M3", "0.1.0", "2026-10-11", "M4", "CC BY-SA 4.0", "CC0", "Firaxis", "2K", "1936",
+    shot_date = re.search(r"Real screenshots from build [^,]+, (\d{4}-\d{2}-\d{2})\.", read("README.md")).group(1)
+    for fact in ("15 במאי 1948", "M3", "0.1.0", shot_date, "M4", "CC BY-SA 4.0", "CC0", "Firaxis", "2K", "1936",
                  "6000.3.25f1", "docs/CONTENT_POLICY.md", "historical_accuracy.yml", "SECURITY.md"):
         assert fact in he, fact
     assert "מסחרית" in he  # a commercial edition is planned
@@ -165,7 +169,7 @@ def test_hebrew_readme_polish_and_alt_text():
     for bad in ("מורשה ב־CC", "מצוטטת עם מקור", "מאסיבי", "שערי סקירה", "בזמן אמת בזמן"):
         assert bad not in he, bad
     alts = re.findall(r'alt="([^"]+)"', he)
-    assert len(alts) == 4 and all(re.search(r"[א-ת]", a) for a in alts)
+    assert len(alts) == 2 + len(GRID) and all(re.search(r"[א-ת]", a) for a in alts)
 
 
 def test_first_open_in_unity_is_in_all_three_files():

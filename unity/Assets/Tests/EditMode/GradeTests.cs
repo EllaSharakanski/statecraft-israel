@@ -95,6 +95,10 @@ public class GradeTests
         yield return null;
         var cam = Camera.main;
         VisualToggles.Set("tiltshift", false);   // the band is a thin line: measured sharp, as LightingTests measures detail
+        // The ring against the land's graded colour, not against a grove: a row of crowns (100x trees, far taller than the
+        // band's 30 m clearance) can stand on the sampled edge, and where a row ends moves whenever a town's lots change
+        // which trees stand (towns round 2).
+        VisualToggles.Set("trees", false);
         foreach (var pose in PromoPose.All)
         {
             pose.Apply(rig, map.Frame); rig.TopInset = 0f; rig.Apply();
@@ -124,6 +128,7 @@ public class GradeTests
         yield return null;
         var cam = Camera.main;
         VisualToggles.Set("tiltshift", false);   // the band is a thin line: measured sharp
+        VisualToggles.Set("trees", false);       // the ring against the land, not a grove (TheSelectedHexStillStandsOutOnGradedLand)
         PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0f; rig.Apply();
         var (band, land) = SelectNear(map, 34.86, 32.00);
         var sea = map.Frame.ToWorld(34.66, 32.00, 0); sea.y = map.Terrain.SampleHeight(sea);

@@ -45,6 +45,8 @@ OUT = ROOT / "content" / "map" / "hexes.json"
 PRECIP_DIR = ROOT / "content" / "map"
 PRECIP_NAME = "precip_bio12"
 DEAD_SEA_NORTH_TIP_LAT = 31.77
+# A design threshold, not a sourced fact: the coastal plain is about 15-40 km wide and the hexes show no natural gap, so 25 km
+# is a choice (#302); no source gives it (#204).
 COASTAL_PLAIN_MAX_KM = 25.0  # land of 0-200 m further than this from the shore is "lowland", not "coastal_plain"
 ARID_MM = 200.0  # mean annual precipitation below which land is desert (arid)
 PRECIP_NODATA = 65535

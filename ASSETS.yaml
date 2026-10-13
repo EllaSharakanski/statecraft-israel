@@ -73,7 +73,11 @@ rules:
     status: verified
   - glob: "docs/images/build-*.jpg"
     licence: CC-BY-4.0
-    source: "Real screenshots of the game's own WebGL build, dated in the README caption; map derived from Copernicus DEM, portraits public domain"
+    source: "Real screenshots of the game's own WebGL build, dated in the README caption; map derived from Copernicus DEM, portraits public domain or CC0, the event-card photograph CC BY 4.0 with its credit line in the picture (Meitar Collection / National Library of Israel; NOTICE), the start screen's painting AI-generated (CC0, its row above)"
+    status: verified
+  - glob: "docs/images/build-gameplay.*"
+    licence: CC-BY-4.0
+    source: "In-engine capture: about 11 seconds of real play recorded from the game's own WebGL build (commit f93fd5e, 2026-10-13) in headed Chrome at 1920x1080; the animated WebP for the README, the MP4 (H.264) and WebM (VP9) for the website. Map derived from Copernicus DEM; the event-card photograph CC BY 4.0 with its credit line in the picture (Meitar Collection / National Library of Israel; NOTICE)"
     status: verified
   - glob: "docs/GDD-v0.1.pdf"
     licence: CC-BY-4.0
@@ -103,6 +107,40 @@ rules:
     source: "https://github.com/fontef/frankruhllibre @ 2372d1998e51dc011f86554c0d23f1ccf44afddf, fonts/ttf/ (unity/Assets/UI/Fonts/FrankRuhlLibre/SOURCE.txt), unmodified"
     status: verified
     note: "The Hebrew face (EB Garamond has no Hebrew glyphs; #193); first used for the start screen's quotations."
+  # --- The website (site/; issue #393) ---
+  - glob: "site/public/fonts/EBGaramond-*.latin.woff2"
+    licence: OFL-1.1
+    source: "Subsets of unity/Assets/UI/Fonts/EBGaramond-Regular.ttf and -SemiBold.ttf (EBGaramond12 @ 106a4a6d), Latin range, made with pyftsubset (fonttools 4.60.1) as WOFF2 on 2026-10-13; licence text site/public/fonts/OFL-EBGaramond.txt"
+    status: verified
+  - glob: "site/public/fonts/FrankRuhlLibre-*.woff2"
+    licence: OFL-1.1
+    source: "Subsets of FrankRuhlLibre-Regular.ttf (sha256 20d7b981d876c9ddb0f9109c409b4e495b84f486457f6f220307de3afcf70e04) and -Medium.ttf (sha256 73b01157..., the file in unity/Assets/UI/Fonts/FrankRuhlLibre/) from https://github.com/fontef/frankruhllibre @ 2372d1998e51dc011f86554c0d23f1ccf44afddf, fonts/ttf/, Hebrew and Latin ranges, made with pyftsubset (fonttools 4.60.1) as WOFF2 on 2026-10-13; licence text site/public/fonts/OFL-FrankRuhlLibre.txt"
+    status: verified
+  - glob: "site/public/media/flythrough-m2-720p.*"
+    licence: CC-BY-4.0
+    source: "Re-encodes of promo/final/09-m2-flythrough.mp4 (in-engine capture) at 1280x720 with ffmpeg: H.264 CRF 26 (.mp4) and VP9 CRF 38 (.webm), no audio; terrain derived from Copernicus DEM (NOTICE)"
+    status: verified
+  - glob: "site/src/assets/media/flythrough-m2-poster.jpg"
+    licence: CC-BY-4.0
+    source: "The frame at 4 s of promo/final/09-m2-flythrough.mp4 (in-engine capture), extracted with ffmpeg; terrain derived from Copernicus DEM (NOTICE)"
+    status: verified
+  - glob: "site/src/assets/media/cinematic-trailer-1-poster.jpg"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "The frame at 3 s of the cinematic trailer published in README.md (the GitHub-hosted 1:23 video, the same cut as site/public/media/promo-trailer-720p.mp4; local file sha256 36322b1baca2df5248cb30dc3a36853566f7d8ef02d0d7cd07251fa0d6bffe4e), scaled to 1280 px with ffmpeg; the trailer was made with AI video tools from promo/final concept art"
+    status: owner-verify
+    note: "The website's poster for the trailer's click-to-play facade, labelled 'Cinematic promo — AI-generated, not gameplay'. Same terms question as promo/final (decision D5). The frame shows the sea and an on-screen line attributed to Theodor Herzl."
+  - glob: "site/public/media/promo-trailer-720p.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Web encodes of the cinematic trailer (demo 1), promo/demo/out/demo-16x9.mp4 (not in the repository; sha256 ef791cfbdca0868ae43d09157793d54558605cc9477547cf6231a088d9986951, 1920x1080, 83 s), scaled to 1280x720 with ffmpeg on 2026-10-13: H.264 High@3.1, two-pass 660 kb/s, with AAC 96 kb/s; no other change. The same cut as the video in README.md (that upload is a separate export of it, sha256 36322b1b...). The trailer was made with AI video tools from promo/final concept art; its score is planned in promo/demo/MUSIC.md as an ElevenLabs Music cue (owner to confirm the score's source)"
+    status: owner-verify
+    note: "Same terms question as promo/final (decision D5). Shown on the website only behind a click, labelled 'Cinematic promo — AI-generated, not gameplay'; captions in site/public/media/promo-trailer.*.vtt. Its on-screen quotations include a living person (Benjamin Netanyahu, 7 October 2023); the owner chose to show the trailer (2026-10-13)."
+  - glob: "site/public/favicon.svg"
+    licence: CC-BY-4.0
+    ai_generated: true
+    source: "Original geometric drawing for the website's tab icon (a gold hexagon with a cream serif I on navy, after the game's own tab icon), written as SVG by an AI coding agent on 2026-10-13"
+    status: verified
   # --- Map data ---
   - glob: "unity/Assets/StreamingAssets/map/heightmap.*"
     licence: Copernicus-DEM
@@ -154,6 +192,11 @@ rules:
     source: "Railways and main roads of May 1948 (issue #35): traced by tools/routes_1948.py on the Survey of Palestine 1:250,000 map of 1946 (public domain; scans and georeferencing by Palestine Open Maps, https://palopenmaps.org/en/maps?basemap=pal250k1946) between waypoints at Wikipedia API (CC BY-SA) and Wikidata (CC0) coordinates; per-route sources and check dates in routes_1948.yaml"
     status: verified
     note: "Public domain checked 2026-10-11: PD-UKGov (expired Crown copyright: 50 years from publication for published works, which HMSO treats as worldwide) and PD-scan, as Wikimedia Commons files the 1946 Survey of Palestine sheets (e.g. https://commons.wikimedia.org/wiki/File:Gaza_sh._04,_1946.jpg). Palestine Open Maps' About page calls its maps public domain under the UK Copyright, Designs and Patents Act and publishes no terms of its own for its tiles or georeferencing; the traced lines are our own derivative and copy none of its layers. No OpenStreetMap (ODbL) geometry is copied: OSM and OpenHistoricalMap lines are only measured against (tools/routes_accuracy.py, docs/routes.md)."
+  - glob: "unity/Assets/Resources/Routes/RouteRibbons.bytes"
+    licence: CC-BY-SA-4.0
+    source: "The route ribbons' meshes (issue #321), baked by Editor RouteRibbonBake from content/map/route_paths_1948.yaml (the traced lines above) draped on the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*); no new facts; attribution in NOTICE"
+    status: owner-verify
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM and coordinate inputs."
   - glob: "content/map/units_1948.yaml"
     licence: CC-BY-SA-4.0
     source: "The 1948 brigades, 101 Squadron and the first navy ships, with their dated positions (docs/units.md, Units in play): facts and place coordinates read from English and Hebrew Wikipedia (CC BY-SA; Wikipedia API prop=coordinates) and Wikidata (CC0), and the S-199 markings from Eduard Info 11/2025 pp. 53-54 (facts only, no text or image copied); per-row sources and check dates in the file"
@@ -167,7 +210,7 @@ rules:
     note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
-    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); attribution in NOTICE"
+    source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
     status: verified
   # --- Event-card header photographs: real archival photos, never AI (docs/event-images.md; owner rulings 2026-10-11) ---
   # Licences and artists re-read from each Commons file page on 2026-10-11; CC BY 4.0 credits are the licensor's credit

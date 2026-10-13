@@ -13,7 +13,7 @@
                     <ui:Label name="turn" class="muted" />
                     <ui:Label name="date" class="muted" />
                 </ui:VisualElement>
-                <Statecraft.Game.UI.UiFrame shadow="false" />
+                <Statecraft.Game.UI.UiFrame shadow="false" filigree="true" />
             </ui:VisualElement>
             <!-- Meter captions are the content display names in title case, a deliberate casing for captions (Treasury and
                  Foreign Currency: model.yaml money; Security and International Standing: model.yaml indicators;
@@ -96,7 +96,7 @@
                 <ui:ScrollView name="event-scroll" class="event-scroll"><ui:Label name="event-text" class="event-text" /></ui:ScrollView>
                 <ui:VisualElement name="event-options" />
                 <ui:Label name="event-count" class="muted" />
-                <Statecraft.Game.UI.UiFrame />
+                <Statecraft.Game.UI.UiFrame filigree="true" />
             </ui:VisualElement>
             <ui:VisualElement class="right-gap" picking-mode="Ignore" />
             <!-- What the map's region borders show while they are drawn (owner ruling 2026-10-11: "Mandate sub-districts, 1947"). -->
@@ -105,7 +105,7 @@
                 <ui:VisualElement name="minimap-image" class="minimap-image">
                     <ui:VisualElement name="minimap-view" class="minimap-view" picking-mode="Ignore" />
                 </ui:VisualElement>
-                <Statecraft.Game.UI.UiFrame />
+                <Statecraft.Game.UI.UiFrame filigree="true" />
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="info-panel" class="panel info-panel">
@@ -114,11 +114,13 @@
             <ui:VisualElement class="info-body">
                 <ui:Label name="info-title" class="title" />
                 <ui:Label name="info-subtitle" class="muted" />
-                <ui:Label name="info-region" class="muted" />
                 <ui:VisualElement class="gold-rule" />
-                <ui:Label name="info-settlements" />
-                <ui:Label name="info-localities" class="muted wrap" />
-                <ui:Label name="info-placement" class="muted" />
+                <!-- The hex's facts as the promo's icon rows (HUD round 1, #398): a sign, then the line, which wraps (#397).
+                     InfoPanelPresenter hides a row with nothing to say. Only what the game models: no yields, no land-use name. -->
+                <ui:VisualElement class="info-row"><Statecraft.Game.UI.UiIcon glyph="region" class="info-row-sign" /><ui:Label name="info-region" class="muted wrap info-row-text" /></ui:VisualElement>
+                <ui:VisualElement class="info-row"><Statecraft.Game.UI.UiIcon glyph="house" class="info-row-sign" /><ui:Label name="info-settlements" class="wrap info-row-text" /></ui:VisualElement>
+                <ui:VisualElement class="info-row"><Statecraft.Game.UI.UiIcon glyph="village" class="info-row-sign" /><ui:Label name="info-localities" class="muted wrap info-row-text" /></ui:VisualElement>
+                <ui:VisualElement class="info-row"><Statecraft.Game.UI.UiIcon glyph="flag" class="info-row-sign" /><ui:Label name="info-placement" class="muted wrap info-row-text" /></ui:VisualElement>
                 <ui:VisualElement class="row">
                     <ui:Button name="build-camp" />
                     <ui:Button name="build-housing" />
@@ -126,7 +128,7 @@
                 </ui:VisualElement>
                 <ui:Label name="info-reason" class="reason" />
             </ui:VisualElement>
-            <Statecraft.Game.UI.UiFrame />
+            <Statecraft.Game.UI.UiFrame filigree="true" />
         </ui:VisualElement>
         <!-- The Cabinet as promo/final/04 (CabinetPresenter): a wide screen; the Prime Minister's card and the appointment
              list at the side; the legislature's seats (Hemicycle) with its legend above a grid of person cards. -->

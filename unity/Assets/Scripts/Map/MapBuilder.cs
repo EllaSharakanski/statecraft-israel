@@ -284,6 +284,272 @@ namespace Statecraft.Game.Map
             return mesh;
         }
 
+        /// <summary>Lakes: flat water (a 3x3 height range within LakeFlatM) below LakeBelowM, tools/terrain_bake.py's rule.</summary>
+        public const float LakeBelowM = -150f, LakeFlatM = 0.25f;
+        /// <summary>The water mesh reaches this many heightmap samples past the last wet one: the shore's coverage ramp (about
+        /// 70 m inland) and the coast texture's own resolution stay inside it.</summary>
+        public const int WaterMeshReach = 2;
+        /// <summary>The largest flat block the water mesh draws as one fan (heightmap cells a side).</summary>
+        public const int WaterMeshBlock = 32;
+
+        /// <summary>The surface the water inside the map is drawn on (issue #195; MapScene.TerrainWaterName): the terrain's own
+        /// heightmap surface wherever the water's coverage can be above 0, so Sea.shader's terrain-water mode can add the water
+        /// on top of the terrain instead of the terrain's own shader carrying it. Wet samples are the sea (within SeaToleranceM
+        /// of 0 m) and flat rift lakes (LakeBelowM, LakeFlatM); every cell within WaterMeshReach samples of one is drawn at
+        /// the heightmap's full resolution, except square blocks whose samples all share one height (the open sea, the lakes'
+        /// flat middles), drawn as fans from the centre to every sample on their edge, so no edge has a T-junction.
+        /// <paramref name="heights"/> are the ones the terrain was given (Unity's [y, x], 0..1): the terrain stores them at
+        /// 16 bits, a few centimetres off, well inside the water's depth pull (Sea.shader).</summary>
+        public static Mesh BuildWaterMesh(TerrainData data, float[,] heights, float elevMinM, MapRuntimeAssets assets)
+        {
+            var (grid, indices) = WaterMeshGrid(data.heightmapResolution, data.size, heights, elevMinM);
+            return assets.Own(WaterMesh(data.heightmapResolution, data.size, heights, grid, indices));
+        }
+
+        /// <summary>The terrain's size (m: width, relief, length) for a heightmap, as Build gives it.</summary>
+        public static Vector3 TerrainSize(HeightmapMeta meta) =>
+            new Vector3(meta.width_km * 1000f, (meta.elev_max_m - meta.elev_min_m) * VerticalExaggeration, meta.length_km * 1000f);
+
+        /// <summary>BuildWaterMesh's geometry as heightmap samples: each vertex is sample (x, y) packed as x | y << 16, and
+        /// the triangles index them (three a triangle, facing up). Baked into terrain_water.bytes (WaterMeshBytes) so a
+        /// player only places the vertices (issue #195: boot time).</summary>
+        public static (int[] grid, int[] indices) WaterMeshGrid(int res, Vector3 size, float[,] heights, float elevMinM)
+        {
+            int cells = res - 1;
+            // Thresholds on the 0..1 heights (one sample is h * size.y / VerticalExaggeration + elevMinM metres): the scan
+            // below runs over every sample (4.2 million), so it stays a compare (boot time, issue #195).
+            float perMetre = VerticalExaggeration / size.y, zero = -elevMinM * perMetre;
+            float seaLo = zero - SeaToleranceM * perMetre, seaHi = zero + SeaToleranceM * perMetre;
+            float lakeBelow = (LakeBelowM - elevMinM) * perMetre, lakeFlat = LakeFlatM * perMetre;
+            // A sample is wet when it is sea, or the flat floor of a rift lake (its 3x3 neighbourhood within LakeFlatM).
+            bool Wet(int x, int y)
+            {
+                float h = heights[y, x];
+                if (h > seaLo && h < seaHi) return true;
+                if (h >= lakeBelow) return false;
+                float lo = h, hi = h;
+                for (int oy = -1; oy <= 1; oy++)
+                    for (int ox = -1; ox <= 1; ox++)
+                    {
+                        float n = heights[Mathf.Clamp(y + oy, 0, cells), Mathf.Clamp(x + ox, 0, cells)];
+                        lo = Mathf.Min(lo, n); hi = Mathf.Max(hi, n);
+                    }
+                return hi - lo <= lakeFlat;
+            }
+            // One pass over every sample, with no per-sample array (on WebGL a 4 MB allocation at boot costs more than the
+            // scan): which WaterMeshBlock-square blocks hold a wet sample. Only blocks with a wet sample in or beside them
+            // are looked at again (a cell is drawn when a wet sample lies within WaterMeshReach of one of its corners, and
+            // the reach is under a block), so the land away from the water costs a compare or two a sample (boot time,
+            // issue #195).
+            const int B = WaterMeshBlock, R = WaterMeshReach;
+            int blocks = (cells + B - 1) / B;
+            var blockWet = new bool[blocks * blocks];
+            // A row at a time (WebGL: the browser optimises a function after its first calls, not inside one long loop).
+            void ScanRow(int y)
+            {
+                int by = Mathf.Min(y / B, blocks - 1) * blocks;
+                for (int x = 0; x < res; x++)
+                {
+                    float h = heights[y, x];
+                    if ((h > seaLo && h < seaHi) || (h < lakeBelow && Wet(x, y))) blockWet[by + Mathf.Min(x / B, blocks - 1)] = true;
+                }
+            }
+            for (int y = 0; y < res; y++) ScanRow(y);
+            bool Relevant(int bx, int by)
+            {
+                for (int j = Mathf.Max(0, by - 1); j <= Mathf.Min(blocks - 1, by + 1); j++)
+                    for (int i = Mathf.Max(0, bx - 1); i <= Mathf.Min(blocks - 1, bx + 1); i++)
+                        if (blockWet[j * blocks + i]) return true;
+                return false;
+            }
+
+            var verts = new List<int>(1 << 17); var tris = new List<int>(3 << 18);
+            // Each sample's vertex is made once: samples on the blocks' grid lines are indexed globally, a block's inner
+            // samples in a block-local table (no dictionary: boot time).
+            var onColumn = new int[(blocks + 1) * res]; var onRow = new int[(blocks + 1) * res];
+            var inner = new int[(B - 1) * (B - 1)];
+            for (int i = 0; i < onColumn.Length; i++) { onColumn[i] = -1; onRow[i] = -1; }
+            int bx0 = 0, by0 = 0;
+            int Vertex(int x, int y)
+            {
+                int[] table; int at;
+                if (x % B == 0) { table = onColumn; at = x / B * res + y; }
+                else if (y % B == 0) { table = onRow; at = y / B * res + x; }
+                else { table = inner; at = (y - by0 - 1) * (B - 1) + (x - bx0 - 1); }
+                if (table[at] < 0) { table[at] = verts.Count; verts.Add(x | y << 16); }
+                return table[at];
+            }
+            // Triangles face up: every cell and fan below is listed anticlockwise seen from above (x east, z north), which
+            // Unity's clockwise front faces take in the reverse order.
+            void Tri(int i, int j, int l) { tris.Add(i); tris.Add(l); tris.Add(j); }
+            // Whether block (x0, y0, s) is all wet and all its samples share one height (bitwise: the sea's 0 m, a lake's
+            // quantised level).
+            bool Flat(int x0, int y0, int s)
+            {
+                float h = heights[y0, x0];
+                for (int y = y0; y <= y0 + s; y++)
+                    for (int x = x0; x <= x0 + s; x++)
+                    {
+                        float v = heights[y, x];
+                        if (v != h || !((v > seaLo && v < seaHi) || (v < lakeBelow && Wet(x, y)))) return false;
+                    }
+                return true;
+            }
+            // Within the top-level block being drawn: near[] says, per sample of the block (B + 1 a side), whether a wet
+            // sample lies within R: the wetness of the block plus R around it, then a separable dilation (counts of wet
+            // samples in a sliding window of 2 R + 1, along x, then along y).
+            int side = B + 1, span = side + 2 * R;
+            var near = new bool[side * side]; var localWet = new byte[span * span]; var rowNear = new byte[span * side];
+            int nx0 = 0, ny0 = 0;
+            void Dilate(int x0, int y0)
+            {
+                nx0 = x0; ny0 = y0;
+                for (int j = 0; j < span; j++)
+                    for (int i = 0; i < span; i++)
+                    {
+                        int x = x0 - R + i, y = y0 - R + j;
+                        bool w = false;
+                        if (x >= 0 && y >= 0 && x < res && y < res)
+                        {
+                            float h = heights[y, x];                           // the sea test inline: a call costs (boot time)
+                            w = (h > seaLo && h < seaHi) || (h < lakeBelow && Wet(x, y));
+                        }
+                        localWet[j * span + i] = (byte)(w ? 1 : 0);
+                    }
+                for (int j = 0; j < span; j++)                              // along x: sample i of the block is at i + R
+                {
+                    int o = j * span, count = 0;
+                    for (int k = 0; k < 2 * R; k++) count += localWet[o + k];
+                    for (int i = 0; i < side; i++)
+                    {
+                        count += localWet[o + i + 2 * R];
+                        rowNear[j * side + i] = (byte)(count > 0 ? 1 : 0);
+                        count -= localWet[o + i];
+                    }
+                }
+                for (int i = 0; i < side; i++)                              // then along y
+                {
+                    int count = 0;
+                    for (int k = 0; k < 2 * R; k++) count += rowNear[k * side + i];
+                    for (int j = 0; j < side; j++)
+                    {
+                        count += rowNear[(j + 2 * R) * side + i];
+                        near[j * side + i] = count > 0;
+                        count -= rowNear[j * side + i];
+                    }
+                }
+            }
+            bool Near(int x, int y) => near[(y - ny0) * side + (x - nx0)];
+            bool Drawn(int cx, int cy) => Near(cx, cy) || Near(cx + 1, cy) || Near(cx, cy + 1) || Near(cx + 1, cy + 1);
+            bool AnyDrawn(int x0, int y0, int s)
+            {
+                for (int y = y0; y < y0 + s; y++)
+                    for (int x = x0; x < x0 + s; x++)
+                        if (Drawn(x, y)) return true;
+                return false;
+            }
+            void Fan(int x0, int y0, int s)                             // from the centre to every sample on the edge: 4 s triangles
+            {
+                int c = verts.Count;
+                verts.Add((x0 + s / 2) | (y0 + s / 2) << 16);              // a sample: s is even, the block level
+                var ring = new List<int>(4 * s);
+                for (int i = 0; i < s; i++) ring.Add(Vertex(x0 + i, y0));
+                for (int i = 0; i < s; i++) ring.Add(Vertex(x0 + s, y0 + i));
+                for (int i = 0; i < s; i++) ring.Add(Vertex(x0 + s - i, y0 + s));
+                for (int i = 0; i < s; i++) ring.Add(Vertex(x0, y0 + s - i));
+                for (int i = 0; i < ring.Count; i++) Tri(c, ring[i], ring[(i + 1) % ring.Count]);
+            }
+            void Block(int x0, int y0, int s)                           // inside a dilated top-level block
+            {
+                if (x0 >= cells || y0 >= cells || !AnyDrawn(x0, y0, Mathf.Min(s, Mathf.Min(cells - x0, cells - y0)))) return;
+                if (x0 + s <= cells && y0 + s <= cells && s > 1 && Flat(x0, y0, s)) { Fan(x0, y0, s); return; }
+                if (s > 1)
+                {
+                    int h = s / 2;
+                    Block(x0, y0, h); Block(x0 + h, y0, h); Block(x0, y0 + h, h); Block(x0 + h, y0 + h, h);
+                    return;
+                }
+                if (!Drawn(x0, y0)) return;
+                int a = Vertex(x0, y0), b = Vertex(x0 + 1, y0), d = Vertex(x0, y0 + 1), e = Vertex(x0 + 1, y0 + 1);
+                Tri(a, b, e); Tri(a, e, d);
+            }
+            for (int by = 0; by < blocks; by++)
+                for (int bx = 0; bx < blocks; bx++)
+                {
+                    if (!Relevant(bx, by)) continue;
+                    int x0 = bx * B, y0 = by * B;
+                    bx0 = x0; by0 = y0;
+                    for (int i = 0; i < inner.Length; i++) inner[i] = -1;
+                    if (x0 + B <= cells && y0 + B <= cells && Flat(x0, y0, B)) { Fan(x0, y0, B); continue; }
+                    Dilate(x0, y0);
+                    Block(x0, y0, B);
+                }
+            return (verts.ToArray(), tris.ToArray());
+        }
+
+        /// <summary>The water mesh from its samples (WaterMeshGrid): every vertex on the terrain's own heightmap sample.</summary>
+        public static Mesh WaterMesh(int res, Vector3 size, float[,] heights, int[] grid, int[] indices)
+        {
+            int cells = res - 1;
+            float stepX = size.x / cells, stepZ = size.z / cells;
+            var verts = new Vector3[grid.Length];
+            for (int i = 0; i < grid.Length; i++)
+            {
+                int x = grid[i] & 0xFFFF, y = grid[i] >> 16;
+                verts[i] = new Vector3(x * stepX, heights[y, x] * size.y, y * stepZ);
+            }
+            var mesh = new Mesh { name = "TerrainWater", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+            mesh.SetVertices(verts);
+            mesh.SetIndices(indices, MeshTopology.Triangles, 0, false);
+            mesh.bounds = new Bounds(size * 0.5f, size);
+            if (!Application.isEditor) mesh.UploadMeshData(true);   // players keep only the GPU copy (about 4.5 MB less heap)
+            return mesh;
+        }
+
+        /// <summary>terrain_water.bytes (MapTexturePaths.WaterMesh): "SCW1", the heightmap's resolution, a check of its
+        /// heights (HeightsCheck), the vertex and index counts, then WaterMeshGrid's two arrays, all little-endian int32.</summary>
+        const int WaterMagic = 0x31574353;
+        public static byte[] WaterMeshBytes(int res, float[,] heights, int[] grid, int[] indices)
+        {
+            var bytes = new byte[20 + 4 * (grid.Length + indices.Length)];
+            int[] head = { WaterMagic, res, HeightsCheck(heights), grid.Length, indices.Length };
+            Buffer.BlockCopy(head, 0, bytes, 0, 20);
+            Buffer.BlockCopy(grid, 0, bytes, 20, 4 * grid.Length);
+            Buffer.BlockCopy(indices, 0, bytes, 20 + 4 * grid.Length, 4 * indices.Length);
+            return bytes;
+        }
+
+        /// <summary>Reads terrain_water.bytes; false (and the reason) when it is not for this heightmap.</summary>
+        public static bool TryReadWaterMesh(byte[] bytes, int res, float[,] heights, out int[] grid, out int[] indices, out string reason)
+        {
+            grid = indices = Array.Empty<int>();
+            if (bytes == null || bytes.Length < 20) { reason = "missing or short"; return false; }
+            var head = new int[5];
+            Buffer.BlockCopy(bytes, 0, head, 0, 20);
+            if (head[0] != WaterMagic) { reason = "not a water mesh"; return false; }
+            if (head[1] != res) { reason = $"made for a {head[1]} heightmap, this one is {res}"; return false; }
+            if (head[2] != HeightsCheck(heights)) { reason = "made for other heights (re-bake: TerrainWaterBake.Bake)"; return false; }
+            if (bytes.Length != 20 + 4L * (head[3] + head[4])) { reason = "truncated"; return false; }
+            grid = new int[head[3]]; indices = new int[head[4]];
+            Buffer.BlockCopy(bytes, 20, grid, 0, 4 * grid.Length);
+            Buffer.BlockCopy(bytes, 20 + 4 * grid.Length, indices, 0, 4 * indices.Length);
+            reason = "";
+            return true;
+        }
+
+        /// <summary>A cheap check that baked water data still matches the heights: FNV-1a over every 997th sample's bits.</summary>
+        public static int HeightsCheck(float[,] heights)
+        {
+            int res = heights.GetLength(1), n = heights.Length;
+            uint h = 2166136261;
+            for (int i = 0; i < n; i += 997)
+            {
+                uint bits = (uint)BitConverter.SingleToInt32Bits(heights[i / res, i % res]);
+                for (int k = 0; k < 4; k++) { h ^= (bits >> (8 * k)) & 0xFF; h *= 16777619; }
+            }
+            return (int)h;
+        }
+
         /// <summary>Vertices of one draped hex ring (<see cref="DrapedRing"/>).</summary>
         public const int RingVertices = 6 * OverlaySegmentsPerEdge;
 

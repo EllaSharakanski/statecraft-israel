@@ -43,6 +43,7 @@ namespace Statecraft.Game.UI
             ["coin"] = Coin, ["people"] = People, ["crowd"] = Crowd, ["shield"] = Shield, ["globe"] = Globe, ["banknote"] = Banknote,
             ["columns"] = Columns, ["scales"] = Scales, ["helmet"] = Helmet, ["question"] = Question, ["restart"] = Restart,
             ["chevron"] = Chevron, ["hourglass"] = Hourglass,
+            ["region"] = Region, ["house"] = House, ["village"] = Village, ["flag"] = Flag,
             ["biome-sea"] = Waves, ["biome-lake"] = Waves, ["biome-coastal_plain"] = Plain, ["biome-hills"] = Hills,
             ["biome-mountains"] = Mountains, ["biome-valley"] = Valley, ["biome-lowland"] = Plain, ["biome-desert"] = Dunes,
         };
@@ -257,6 +258,48 @@ namespace Statecraft.Game.UI
             p.BeginPath(); p.MoveTo(at(16.6f, 3)); p.BezierCurveTo(at(16.6f, 9), at(13, 10.4f), at(13, 12)); p.BezierCurveTo(at(13, 13.6f), at(16.6f, 15), at(16.6f, 21)); p.Stroke();
             p.fillColor = gold;
             p.BeginPath(); p.MoveTo(at(8.6f, 20)); p.LineTo(at(12, 16.4f)); p.LineTo(at(15.4f, 20)); p.ClosePath(); p.Fill();
+        }
+
+        // --- the info panel's fact rows (gold line art, as the promo's row signs; HUD round 1) ---
+        /// <summary>The region row: a folded map of three panels.</summary>
+        static void Region(Painter2D p, Func<float, float, Vector2> at, float s, Color gold)
+        {
+            p.strokeColor = gold; p.lineWidth = 1.4f * s;
+            p.BeginPath(); p.MoveTo(at(3, 6)); p.LineTo(at(9, 3.6f)); p.LineTo(at(15, 6)); p.LineTo(at(21, 3.6f)); p.LineTo(at(21, 18.4f));
+            p.LineTo(at(15, 20.8f)); p.LineTo(at(9, 18.4f)); p.LineTo(at(3, 20.8f)); p.ClosePath(); p.Stroke();
+            p.lineWidth = 1f * s;
+            p.BeginPath(); p.MoveTo(at(9, 3.6f)); p.LineTo(at(9, 18.4f)); p.Stroke();
+            p.BeginPath(); p.MoveTo(at(15, 6)); p.LineTo(at(15, 20.8f)); p.Stroke();
+        }
+
+        /// <summary>The settlements row: a house.</summary>
+        static void House(Painter2D p, Func<float, float, Vector2> at, float s, Color gold)
+        {
+            p.strokeColor = gold; p.lineWidth = 1.4f * s;
+            p.BeginPath(); p.MoveTo(at(2.6f, 11.4f)); p.LineTo(at(12, 3.4f)); p.LineTo(at(21.4f, 11.4f)); p.Stroke();
+            p.BeginPath(); p.MoveTo(at(5.4f, 9.6f)); p.LineTo(at(5.4f, 20.6f)); p.LineTo(at(18.6f, 20.6f)); p.LineTo(at(18.6f, 9.6f)); p.Stroke();
+            p.fillColor = gold; Rect(p, at, 10.4f, 14.4f, 3.2f, 6.2f); p.Fill();
+        }
+
+        /// <summary>The 1948 localities row: two small flat-roofed houses, one behind the other.</summary>
+        static void Village(Painter2D p, Func<float, float, Vector2> at, float s, Color gold)
+        {
+            p.fillColor = new Color(gold.r, gold.g, gold.b, 0.55f);
+            Rect(p, at, 11.6f, 6.8f, 9.4f, 8.6f); p.Fill();
+            p.fillColor = gold;
+            Rect(p, at, 3, 10.6f, 11, 9.8f); p.Fill();
+            p.fillColor = Navy;
+            Rect(p, at, 7.4f, 15.2f, 2.4f, 5.2f); p.Fill();
+            Rect(p, at, 15.4f, 9.4f, 2, 2.2f); p.Fill();
+        }
+
+        /// <summary>The placement row (an order or a built placement): a flag on a pole.</summary>
+        static void Flag(Painter2D p, Func<float, float, Vector2> at, float s, Color gold)
+        {
+            p.strokeColor = gold; p.lineWidth = 1.5f * s;
+            p.BeginPath(); p.MoveTo(at(6.4f, 21.4f)); p.LineTo(at(6.4f, 2.8f)); p.Stroke();
+            p.fillColor = gold;
+            p.BeginPath(); p.MoveTo(at(7.2f, 3.6f)); p.LineTo(at(19.6f, 7.6f)); p.LineTo(at(7.2f, 11.6f)); p.ClosePath(); p.Fill();
         }
 
         // --- terrain signs for the info panel (drawn dark on the biome's own map colour) ---

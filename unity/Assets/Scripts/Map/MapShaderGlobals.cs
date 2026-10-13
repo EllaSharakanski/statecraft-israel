@@ -11,7 +11,8 @@ namespace Statecraft.Game.Map
         public static readonly int Map = Shader.PropertyToID("_ScMap"), MapOrigin = Shader.PropertyToID("_ScMapOrigin"),
             Biome = Shader.PropertyToID("_ScBiomeTex"), Haze = Shader.PropertyToID("_ScHaze"), HazeWater = Shader.PropertyToID("_ScHazeWater"),
             HazeRange = Shader.PropertyToID("_ScHazeRange"), WaterOn = Shader.PropertyToID("_ScWaterOn"), Grid = Shader.PropertyToID("_ScGrid"),
-            WaterTime = Shader.PropertyToID("_ScWaterTime"), LandOn = Shader.PropertyToID("_ScLandOn");
+            WaterTime = Shader.PropertyToID("_ScWaterTime"), LandOn = Shader.PropertyToID("_ScLandOn"),
+            SeaTexture = Shader.PropertyToID("_ScSeaTexture");
 
         /// <summary>Pins the water's clock (waves, surf) to the given seconds, or back to Unity's time with null: for tests and
         /// frame captures that must render chosen moments (promo-sea review I2, M5).</summary>
@@ -62,6 +63,10 @@ namespace Statecraft.Game.Map
             assets.OnTeardown(VisualToggles.Register("land", on => Shader.SetGlobalFloat(LandOn, on ? 1f : 0f)));
             Shader.SetGlobalFloat(WaterOn, 1f);
             assets.OnTeardown(VisualToggles.Register("water", on => Shader.SetGlobalFloat(WaterOn, on ? 1f : 0f)));
+            // The far sea's texture (sea round 2, #388: StatecraftMap.hlsl's mottle, ripple and whitecaps); its own toggle, so
+            // the profile prices it and the seam test can pin it off.
+            Shader.SetGlobalFloat(SeaTexture, 1f);
+            assets.OnTeardown(VisualToggles.Register("seatexture", on => Shader.SetGlobalFloat(SeaTexture, on ? 1f : 0f)));
             assets.OnTeardown(VisualToggles.Register("haze", on =>
             {
                 Shader.SetGlobalVector(Haze, on ? haze : new Vector4(haze.x, haze.y, haze.z, 0f));
@@ -79,5 +84,8 @@ namespace Statecraft.Game.Map
         public const string Ao = "Assets/Textures/Map/ao.png";
         /// <summary>The land (tools/land_bake.py, issue #33): rgb its linear colour, a its weight over the biome ground.</summary>
         public const string Land = "Assets/Textures/Map/landuse.png";
+        /// <summary>The terrain water's mesh as heightmap samples (MapBuilder.WaterMeshBytes; Editor TerrainWaterBake), so a
+        /// player does not derive it at boot (issue #195).</summary>
+        public const string WaterMesh = "Assets/Textures/Map/terrain_water.bytes";
     }
 }

@@ -48,6 +48,97 @@ public class SeaTests
         CollectionAssert.IsEmpty(ShaderChecks.Gles3Errors(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Terrain.mat").shader));
     }
 
+    /// <summary>Issue #195: the water inside the map is drawn by MapScene's TerrainWater, the terrain's surface over the
+    /// water and its shore (MapBuilder.BuildWaterMesh) with a copy of Sea.mat in its terrain-water mode: added on top right
+    /// after the terrain and before the other opaques, no depth write, no shadow, no collider. The mesh lies on the
+    /// heightmap (its vertices are heightmap samples or flat fans), reaches the open sea and both rift lakes, and stays off
+    /// inland hills.</summary>
+    [Test]
+    public void TheTerrainWaterLiesOnTheWaterWithTheSeaShader()
+    {
+        var map = OpenMap();
+        var t = map.Terrain.transform.Find(MapScene.TerrainWaterName);
+        Assert.IsNotNull(t, "TerrainWater under the terrain");
+        Assert.AreEqual(map.Terrain.transform.position, t.position);
+        Assert.IsNull(t.GetComponent<Collider>(), "clicks pick the terrain only");
+        var r = t.GetComponent<MeshRenderer>();
+        Assert.AreEqual(UnityEngine.Rendering.ShadowCastingMode.Off, r.shadowCastingMode);
+        var m = r.sharedMaterial;
+        Assert.AreEqual("Statecraft/Sea", m.shader.name);
+        Assert.AreEqual(1f, m.GetFloat("_ScTerrainWater"));
+        Assert.Greater(m.renderQueue, map.Terrain.materialTemplate.renderQueue, "after the terrain");
+        Assert.Less(m.renderQueue, (int)UnityEngine.Rendering.RenderQueue.Geometry, "before boats, harbours and units");
+        Assert.AreEqual(0f, m.GetFloat("_ScZWrite"));
+        Assert.IsFalse(m.GetShaderPassEnabled("DepthOnly")); Assert.IsFalse(m.GetShaderPassEnabled("DepthNormals"));
+        var mesh = t.GetComponent<MeshFilter>().sharedMesh;
+        var verts = mesh.vertices;
+        TestContext.WriteLine($"water mesh: {verts.Length} vertices, {mesh.triangles.Length / 3} triangles");
+        Assert.Less(mesh.triangles.Length / 3, 1_000_000, "a light mesh, not a second terrain");
+        // Every vertex lies on the terrain (a fan's centre on its flat block).
+        var origin = map.Terrain.transform.position;
+        for (int i = 0; i < verts.Length; i += 97)
+            Assert.AreEqual(map.Terrain.SampleHeight(origin + verts[i]), verts[i].y, 0.25f, $"vertex {i} {verts[i]}");
+        // Wet places are covered, an inland hill is not: horizontal hits on the mesh's triangles.
+        bool Covers(double lon, double lat)
+        {
+            var p = map.Frame.ToWorld(lon, lat, 0) - origin;
+            var tri = mesh.triangles;
+            for (int i = 0; i < tri.Length; i += 3)
+            {
+                Vector3 a = verts[tri[i]], b = verts[tri[i + 1]], c = verts[tri[i + 2]];
+                float d = (b.z - c.z) * (a.x - c.x) + (c.x - b.x) * (a.z - c.z);
+                float u = ((b.z - c.z) * (p.x - c.x) + (c.x - b.x) * (p.z - c.z)) / d;
+                float v = ((c.z - a.z) * (p.x - c.x) + (a.x - c.x) * (p.z - c.z)) / d;
+                if (u >= 0 && v >= 0 && u + v <= 1) return true;
+            }
+            return false;
+        }
+        Assert.IsTrue(Covers(34.60, 32.08), "the open sea west of Tel Aviv");
+        Assert.IsTrue(Covers(35.50, 31.50), "the Dead Sea");
+        Assert.IsTrue(Covers(35.59, 32.82), "the Sea of Galilee");
+        Assert.IsFalse(Covers(35.21, 31.77), "Jerusalem's hills");
+    }
+
+    /// <summary>Issue #195: the baked water mesh (terrain_water.bytes, Editor TerrainWaterBake.Bake) is what the shipped
+    /// heightmap gives now, byte for byte, and the map scene uses it; a stale bake is refused and the map derives the mesh
+    /// instead, so it is never wrong, only slower to boot.</summary>
+    [Test]
+    public void TheBakedWaterMeshMatchesTheHeightmap()
+    {
+        var (meta, heights) = HeightmapLoader.Load(Statecraft.Game.Paths.StreamingMap);
+        var (grid, indices) = MapBuilder.WaterMeshGrid(meta.width, MapBuilder.TerrainSize(meta), heights, meta.elev_min_m);
+        var baked = AssetDatabase.LoadAssetAtPath<TextAsset>(MapTexturePaths.WaterMesh);
+        Assert.IsNotNull(baked, MapTexturePaths.WaterMesh);
+        CollectionAssert.AreEqual(MapBuilder.WaterMeshBytes(meta.width, heights, grid, indices), baked.bytes,
+            "stale: re-run Statecraft.Game.EditorTools.TerrainWaterBake.Bake");
+        Assert.IsTrue(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out var why), why);
+        heights[145, 1995] += 0.001f;   // sample 997 x 300, one HeightsCheck reads
+        Assert.IsFalse(MapBuilder.TryReadWaterMesh(baked.bytes, meta.width, heights, out _, out _, out why), "other heights");
+        var derived = new System.Collections.Generic.List<string>();
+        void Watch(string message, string stack, LogType type) { if (message.Contains("deriving the water mesh")) derived.Add(message); }
+        Application.logMessageReceived += Watch;
+        try
+        {
+            var map = OpenMap();
+            var mesh = map.Terrain.transform.Find(MapScene.TerrainWaterName).GetComponent<MeshFilter>().sharedMesh;
+            Assert.AreEqual(grid.Length, mesh.vertexCount);
+        }
+        finally { Application.logMessageReceived -= Watch; }
+        CollectionAssert.IsEmpty(derived, "the scene's map uses the bake");
+    }
+
+    /// <summary>Issue #195: the terrain graph's function carries no water shading. Its size, not its arithmetic, cost about
+    /// 3 ms a frame at gameplay03 in WebGL (even with the water toggled off, so no toggle measures it); the water belongs in
+    /// Sea.shader's terrain-water mode.</summary>
+    [Test]
+    public void TheTerrainFunctionCarriesNoWaterShading()
+    {
+        var src = System.Text.RegularExpressions.Regex.Replace(
+            File.ReadAllText("Assets/Shaders/StatecraftTerrain.hlsl"), "//[^\n]*", "");   // comments may name them
+        foreach (var call in new[] { "ScWaterShade", "ScBreakers", "ScHazeWater", "ddx(", "ddy(" })
+            StringAssert.DoesNotContain(call, src);
+    }
+
     /// <summary>The controller's known gap: at the Jordanian plateau the land skirt holds the edge's height for 20 km (at
     /// least 80% of its height above the sea) and reaches sea level only at the last ring.</summary>
     [Test]
@@ -363,6 +454,103 @@ public class SeaTests
                 }
             TestContext.WriteLine($"block-edge energy: {log}worst {worst:0.000}");
             Assert.Less(worst, 0.25f, "no lattice of block edges in the sea's shading");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    /// <summary>Sea round 2 (#388): the far sea's texture (the "seatexture" toggle: StatecraftMap.hlsl's mottle, ripple and
+    /// whitecaps) leaves no step where the terrain's water meets the skirt's sea at the map's west edge. The seam test
+    /// (SettlementTests.TheSeaBeyondTheEdgeMatchesTheTerrainSea) compares points 5 km apart, across which a 2.5 km mottle
+    /// varies by itself, so it pins the texture off; this one looks for a step, not a difference. Rendered straight down
+    /// (orthographic) at the seam test's pixel size (110 m, so the ripple and whitecaps have faded and the mottle is what
+    /// is on), over a 40 km strip of the edge with the water's clock pinned. Per row, the change between the two pixel
+    /// columns either side of x = 0 is compared with the change between neighbouring columns elsewhere in the strip: the
+    /// RMS across the edge may exceed the RMS elsewhere by at most the seam test's own pre-grade bound (0.012), which catches
+    /// a texture that does not continue; and the mean change across the edge, summed over r, g and b, stays under the same
+    /// bound, which catches a uniform step (an RMS adds a uniform step in quadrature with the texture's own change). (Fitting a
+    /// line either side and extrapolating was tried: over the whole strip a mismatched texture's steps cancel, and per
+    /// 880 m segment the texture's own variation swamped the fit, 0.049 with no seam against 0.059 with one.) The grade
+    /// is a per-pixel LUT, so it can
+    /// scale a step but not make one (the seam test's argument), and this test's own camera renders without it. The
+    /// texture must be there to be tested: the strip's luma varies more with it on than off.</summary>
+    [UnityTest]
+    public IEnumerator TheFarSeaTextureHasNoStepAtTheMapEdge()
+    {
+        var map = OpenMap();
+        yield return null;
+        VisualToggles.Set("grid", false);
+        MapShaderGlobals.PinWaterTime(100f);
+        var size = map.Terrain.terrainData.size; var origin = map.Terrain.transform.position;
+        const int w = 64, h = 364; const float metresPerPixel = 110f;
+        var go = new GameObject("TopEdge"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            cam.orthographic = true; cam.orthographicSize = h * metresPerPixel / 2f; cam.aspect = (float)w / h;
+            // Centred on the west edge (map x = 0), so the edge falls on the boundary between columns w/2 - 1 and w/2.
+            cam.transform.position = new Vector3(origin.x, 20000f, origin.z + 0.55f * size.z); cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            float Std(RenderSample r)
+            {
+                double sum = 0, sq = 0; int k = 0;
+                for (int j = 0; j < h; j++) for (int i = 0; i < w; i++) { double l = Luma(r.At(i, j)); sum += l; sq += l * l; k++; }
+                return (float)System.Math.Sqrt(sq / k - (sum / k) * (sum / k));
+            }
+            VisualToggles.Set("seatexture", false);
+            float plain = Std(RenderSample.Render(cam, w, h));
+            VisualToggles.Set("seatexture", true);
+            var r = RenderSample.Render(cam, w, h);
+            float textured = Std(r);
+            // The change between neighbouring pixel columns, |dr| + |dg| + |db| per row: across the edge (columns w/2 - 1
+            // and w/2, each 110 m wide, one either side of x = 0) and, as the control, between neighbours 4-12 columns out on
+            // either side, inside one mesh. A continuous texture changes as little across the edge as anywhere else; a
+            // mismatched one (or a step in the inputs) changes there by about its whole range. The RMS over the rows at the
+            // edge may exceed the control's by at most the seam test's bound.
+            double Pair(int i, int j) { var a = r.At(i, j); var b = r.At(i + 1, j); return Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b); }
+            double edgeSq = 0, controlSq = 0; int controlN = 0;
+            var signedEdge = Vector3.zero;   // the mean change across the edge per channel: a uniform step (an input mismatch)
+            for (int j = 0; j < h; j++)
+            {
+                double e = Pair(w / 2 - 1, j); edgeSq += e * e;
+                var ea = r.At(w / 2 - 1, j); var eb = r.At(w / 2, j); signedEdge += new Vector3(eb.r - ea.r, eb.g - ea.g, eb.b - ea.b) / h;
+                for (int k = 4; k <= 12; k++)
+                {
+                    double c1 = Pair(w / 2 - 1 - k, j), c2 = Pair(w / 2 - 1 + k, j);
+                    controlSq += c1 * c1 + c2 * c2; controlN += 2;
+                }
+            }
+            float edgeRms = (float)System.Math.Sqrt(edgeSq / h), controlRms = (float)System.Math.Sqrt(controlSq / controlN);
+            float step = edgeRms - controlRms;
+            float offset = Mathf.Abs(signedEdge.x) + Mathf.Abs(signedEdge.y) + Mathf.Abs(signedEdge.z);
+            const float bound = 0.012f;
+            TestContext.WriteLine($"neighbour change: across the edge RMS {edgeRms:0.0000}, elsewhere {controlRms:0.0000}, excess {step:0.0000}; mean change across the edge {offset:0.0000} (bound {bound} each); strip luma std {textured:0.0000} with the texture, {plain:0.0000} without");
+            Assert.Greater(textured, plain + 0.004f, "the far sea's texture shows at 110 m a pixel");
+            Assert.Less(step, bound, "the texture does not continue across the edge (a mismatch between the terrain's water and the skirt's sea)");
+            Assert.Less(offset, bound, "a uniform step where the terrain's water meets the skirt's sea");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    /// <summary>Issue #195 review: the terrain water's depth pull follows an orthographic camera's parallel rays. Pulled
+    /// towards the camera's position instead, the water slid towards the view's axis, and the terrain's black water showed
+    /// between it and the shore. Straight down over the coast south of Tel Aviv, 30 km across with the axis 12 km offshore,
+    /// no pixel is black.</summary>
+    [UnityTest]
+    public IEnumerator TheTerrainWaterStaysPutUnderAnOrthographicCamera()
+    {
+        var map = OpenMap();
+        yield return null;
+        var centre = map.Frame.ToWorld(34.62, 32.0, 0); centre.y = 0f;
+        var go = new GameObject("TopCoast"); var cam = go.AddComponent<Camera>();
+        try
+        {
+            const int n = 512;
+            cam.orthographic = true; cam.orthographicSize = 15000f; cam.aspect = 1f;
+            cam.transform.position = centre + Vector3.up * 20000f; cam.transform.rotation = Quaternion.Euler(90, 0, 0);
+            cam.nearClipPlane = 100f; cam.farClipPlane = 60000f;
+            var r = RenderSample.Render(cam, n, n);
+            int black = r.Pixels.Count(c => Mathf.Max(c.r, Mathf.Max(c.g, c.b)) < 0.02f);
+            TestContext.WriteLine($"black pixels: {black} of {n * n}");
+            Assert.AreEqual(0, black, "the water covers the terrain's black water up to the shore");
         }
         finally { Object.DestroyImmediate(go); }
     }

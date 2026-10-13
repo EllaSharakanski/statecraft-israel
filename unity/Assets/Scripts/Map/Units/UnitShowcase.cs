@@ -123,10 +123,12 @@ namespace Statecraft.Game.Map.Units
             // The trio: three riflemen in a loose triangle facing the camera's side of south-west, around the hex's centre.
             var centre = HexCentreNear(map, TrioAt.lon, TrioAt.lat);
             var looks = Trio;
+            var holes = new List<(Vector2 centre, float radius)>();
             for (int i = 0; i < looks.Length; i++)
             {
                 var (type, hat, pose, faded, offset, heading) = looks[i];
                 var p = Stand(map, centre + new Vector3(offset.x, 0, offset.y) * TrioSpread * hex);
+                holes.Add(TreeHole(p));
                 Piece(root.transform, $"Rifleman{i}", type, () => Built(UnitModels.Rifleman(hat, pose, faded, $"Rifleman1948-{i}")),
                     paint, p, Quaternion.Euler(0, heading, 0), FigureScale);
             }
@@ -153,8 +155,30 @@ namespace Statecraft.Game.Map.Units
             Piece(root.transform, "Corvette1948", CorvetteType, () => Built(UnitModels.Corvette("CorvetteK20")), paint, ship,
                 Quaternion.Euler(0, ShipHeadingDegrees, 0), ShipScale);
 
-            assets.OnTeardown(VisualToggles.Register(ToggleName, on => { if (root != null) root.SetActive(on); }));
+            HideTrees(map, ToggleName, holes);
+            assets.OnTeardown(() => HideTrees(map, ToggleName, NoHoles));
+            assets.OnTeardown(VisualToggles.Register(ToggleName, on =>
+            {
+                if (root != null) root.SetActive(on);
+                HideTrees(map, ToggleName, on ? holes : NoHoles);
+            }));
             return root;
+        }
+
+        static readonly IReadOnlyList<(Vector2 centre, float radius)> NoHoles = Array.Empty<(Vector2, float)>();
+
+        /// <summary>The ground a figure standing at <paramref name="feet"/> keeps free of kit trees (issue #249): its boots'
+        /// radius, which is also its base's (<see cref="AddBase"/>). Its legs, body and rifle are far above every crown.</summary>
+        public static (Vector2 centre, float radius) TreeHole(Vector3 feet) => (new Vector2(feet.x, feet.z), FootRadiusM);
+
+        /// <summary>Leaves out the map's kit trees under <paramref name="holes"/> for <paramref name="owner"/> (an empty list
+        /// gives them back), at draw time (Kits.VegetationLayer.Hide), so the kits' layout never changes. A map without kits
+        /// has no trees to hide.</summary>
+        internal static void HideTrees(MapScene map, string owner, IReadOnlyList<(Vector2 centre, float radius)> holes)
+        {
+            if (map == null) return;
+            var veg = map.GetComponentInChildren<Kits.VegetationLayer>(true);
+            if (veg != null) veg.Hide(owner, holes);
         }
 
         /// <summary>One unit model: the authored prefab for <paramref name="type"/> when there is one (the art hook),
@@ -239,14 +263,14 @@ namespace Statecraft.Game.Map.Units
             return (top, low);
         }
 
-        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short dark grey-brown disc (the palette deck shade) of the
+        /// <summary>A figure on a slope stands on a base, as a painted miniature does: a short disc in the palette's trodden-earth dust of the
         /// boots' radius from its feet down to the lowest ground under them, so the downhill boot never floats. Not drawn
         /// on ground flatter than this rise (m).</summary>
         public const float BaseFromRiseM = 20f;
 
         /// <summary>The unit disc a base is drawn with (radius 1, from y = -1 to 0), scaled per figure.</summary>
         public static Mesh BaseMesh(string name) =>
-            new MiniatureMesh().Lathe(Matrix4x4.identity, new List<Vector2> { new Vector2(-1f, 1f), new Vector2(0f, 1f) }, UnitPalette.Deck, 16, shade: 0.55f).Build(name);
+            new MiniatureMesh().Lathe(Matrix4x4.identity, new List<Vector2> { new Vector2(-1f, 1f), new Vector2(0f, 1f) }, UnitPalette.Dust, 16, shade: 0.55f).Build(name);
 
         /// <summary>Adds the base under a figure standing at <paramref name="feet"/> when the ground under its boots falls
         /// more than <see cref="BaseFromRiseM"/> below them (see <see cref="StandRange"/>).</summary>

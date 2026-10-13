@@ -42,6 +42,10 @@ public class MapEdgeTests
         var rt = new RenderTexture(W, H, 24);
         Directory.CreateDirectory(ShotDir);
         RenderSample.TiltShift(false);   // a colour test: the blur spreads pixels across the frame
+        // The water moves between the renders compared below (waves, breakers and, since sea round 2, the far sea's ripple),
+        // which changed a few pixels of the north-west corner's coast at random (0-14 a run, skirt or not): its clock is
+        // pinned, so the comparison sees only the skirt.
+        MapShaderGlobals.PinWaterTime(100f);
         try
         {
             cam.targetTexture = rt;      // the clamp measures the view at the render's aspect
@@ -85,7 +89,7 @@ public class MapEdgeTests
         }
         finally
         {
-            RenderSample.TiltShift(true);
+            RenderSample.TiltShift(true); MapShaderGlobals.PinWaterTime(null);
             skirt.enabled = true; map.Terrain.enabled = true;
             cam.targetTexture = null; rt.Release(); Object.DestroyImmediate(rt);
         }

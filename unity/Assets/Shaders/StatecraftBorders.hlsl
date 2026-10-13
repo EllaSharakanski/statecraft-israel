@@ -6,7 +6,10 @@
 // texel per hex (_ScRegionTex) and sets the globals; with no region data, or the "borders" toggle off, _ScBorders.w is 0 and
 // nothing is drawn. Included at the end of StatecraftMap.hlsl; the terrain calls ScBorderApply last.
 
-TEXTURE2D(_ScRegionTex);  // one texel per hex, linear RGBA8: r + 256 g the region id (0 = none), b the style (0 = none, 1, 2)
+TEXTURE2D(_ScRegionTex);  // one texel per hex, linear RGBA8: r + 256 g the region id (0 = none), b's low two bits the style
+                          // (0 = none, 1, 2) and its upper six which border edges the neighbour also draws in the same style (a
+                          // shared edge: each side draws ScSharedBand of the band, so the two make one band centred on the edge), a's low
+                          // six bits which edges border another region (MapBorders.Use bakes them; issue #195)
 float4 _ScRegionInfo;     // x q of texel column 0, y r of texel row 0, z width, w height (texels)
 float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as a share of the hex's inradius,
                           // z 1 = no early-out (tests prove the early-out exact), w 1 = on
@@ -15,19 +18,23 @@ float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as 
 float4 _ScBorderColour1, _ScBorderLight1, _ScBorderShape1;
 float4 _ScBorderColour2, _ScBorderLight2, _ScBorderShape2;
 
-// Axial neighbour steps and the outward unit normals of the edges shared with them (p space: x east, y south): tools/
-// hexgrid.py's NEIGHBOURS order.
-static const float2 ScHexSteps[6] = { float2(1, 0), float2(1, -1), float2(0, -1), float2(-1, 0), float2(-1, 1), float2(0, 1) };
+// The outward unit normals of a hex's edges (p space: x east, y south), in tools/hexgrid.py's NEIGHBOURS order (axial
+// steps (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1): MapBorders.NeighbourSteps). Bit i of a hex's edge mask is edge i.
+// The share of its band each side of a shared edge draws. At exactly half, each half loses its partly covered outer pixel
+// and the pair measured 6 px at gameplay03 against a full band's 8 (promo 03: about 8); at 0.6 the two measure as one band.
+static const float ScSharedBand = 0.6;
+
 static const float2 ScHexNormals[6] = { float2(1, 0), float2(0.5, -0.8660254), float2(-0.5, -0.8660254), float2(-1, 0),
                                         float2(-0.5, 0.8660254), float2(0.5, 0.8660254) };
 
-// Region id and style of axial hex (q, r); (0, 0) off the texture.
-float2 ScRegionAt(float2 qr)
+// Region id, style, border-edge mask and shared-edge mask of axial hex (q, r); 0 off the texture.
+float4 ScRegionAt(float2 qr)
 {
     int2 t = int2(qr - _ScRegionInfo.xy);
-    if (t.x < 0 || t.y < 0 || t.x >= (int)_ScRegionInfo.z || t.y >= (int)_ScRegionInfo.w) return float2(0.0, 0.0);
+    if (t.x < 0 || t.y < 0 || t.x >= (int)_ScRegionInfo.z || t.y >= (int)_ScRegionInfo.w) return float4(0.0, 0.0, 0.0, 0.0);
     float4 v = LOAD_TEXTURE2D(_ScRegionTex, t) * 255.0;
-    return float2(round(v.r) + 256.0 * round(v.g), round(v.b));
+    int b = (int)round(v.b);
+    return float4(round(v.r) + 256.0 * round(v.g), (float)(b & 3), (float)((int)round(v.a) & 63), (float)((b >> 2) & 63));
 }
 
 // The axial hex containing p (cube rounding: ScHexEdgeDistance's layout, p.x east and p.y south of the north-west corner)
@@ -68,17 +75,22 @@ void ScBorderApply(float2 mapM, float water, inout float3 baseColor, inout float
         float reach = max(max(_ScBorderShape1.x, _ScBorderShape2.x), 1.5 * _ScBorders.x * footprint) * washMul + 1.5 * footprint;
         reach = _ScBorders.z > 0.5 ? 1e9 : reach;
         float edge = inradius - max(abs(v.x), max(abs(0.5 * v.x + 0.8660254 * v.y), abs(0.5 * v.x - 0.8660254 * v.y)));
-        float2 own = edge < reach && water < 1.0 ? ScRegionAt(qr) : float2(0.0, 0.0);
-        [branch] if (own.x > 0.5 && own.y > 0.5)
+        float4 own = edge < reach && water < 1.0 ? ScRegionAt(qr) : float4(0.0, 0.0, 0.0, 0.0);
+        int edges = (int)own.z, sharedEdges = (int)own.w;
+        // A hex with no border edge draws nothing (the loop below would leave cover 0), so it skips the work.
+        [branch] if (own.x > 0.5 && own.y > 0.5 && edges != 0)
         {
-            float bestPx = 1e9, bestAa = 1.0;
+            // bestPx: the distance (px) to the nearest band, measured in units of that edge's band (a shared edge draws
+            // ScSharedBand of it on each side), so where a shared and an unshared edge meet at a corner each keeps its own width.
+            float bestPx = 1e9, bestAa = 1.0, bestHalf = 1.0;
             [unroll] for (int i = 0; i < 6; i++)
             {
                 float2 n = ScHexNormals[i];
-                // Only the edges within reach are looked up (one, or two near a corner).
+                // Only the edges within reach count (one, or two near a corner). Whether edge i borders another region is
+                // baked into the hex's own texel: the neighbours' six fetches here had pushed the terrain's fragment shader
+                // past a WebGL cost cliff (about 5 ms a frame at gameplay03, borders on or off: issue #195).
                 if (inradius - dot(v, n) >= reach) continue;
-                float2 other = ScRegionAt(qr + ScHexSteps[i]);
-                if (other.x > 0.5 && other.x != own.x)
+                if (((edges >> i) & 1) != 0)
                 {
                     // Distance to the edge segment (corners rounded, so two border edges join without a notch), in pixels
                     // along the direction it grows (Task 8's anisotropic filter: metres per pixel across the line).
@@ -88,7 +100,8 @@ void ScBorderApply(float2 mapM, float water, inout float3 baseColor, inout float
                     float d = length(e);
                     float2 g = d > 1e-3 ? e / d : -n;
                     float aa = max(length(float2(dot(px, g), dot(py, g))), 1e-3);
-                    if (d / aa < bestPx) { bestPx = d / aa; bestAa = aa; }
+                    float share = ((sharedEdges >> i) & 1) != 0 ? ScSharedBand : 1.0;
+                    if (d / aa / share < bestPx / bestHalf) { bestPx = d / aa; bestAa = aa; bestHalf = share; }
                 }
             }
             bool primary = own.y < 1.5;
@@ -99,13 +112,18 @@ void ScBorderApply(float2 mapM, float water, inout float3 baseColor, inout float
             // width, and the band plus its wash never wider than _ScBorders.y of the inradius (far zooms: a hex stays a hex).
             float widest = _ScBorders.y * inradius / bestAa;
             float bandPx = min(max(shape.x / bestAa, _ScBorders.x), widest / (1.0 + shape.z));
+            // Far off (a band under about 4 px: the overview), the light stripe would read as a white line, so it turns
+            // into the colour and the wash fades: a far band is a thin line of the region's colour.
+            float near = smoothstep(2.5, 4.5, bandPx);
+            // A shared edge: this side draws ScSharedBand of the band (and of the wash), the neighbour as much again.
+            bandPx *= bestHalf;
             float washPx = bandPx * shape.z;
             // Box-filtered stripes: the colour from the edge to shape.y of the band, the light stripe to its end.
             float cColour = saturate(shape.y * bandPx - bestPx + 0.5);
             float cBand = saturate(bandPx - bestPx + 0.5);
             // max(): a style with no wash (shape.z 0) must not make smoothstep divide by zero (review M3).
-            float wash = shape.w * (1.0 - smoothstep(bandPx, bandPx + max(washPx, 1e-3), bestPx)) * (1.0 - cBand);
-            float3 stripe = lerp(light.rgb, colour.rgb, cBand > 0.0 ? cColour / cBand : 0.0);
+            float wash = near * shape.w * (1.0 - smoothstep(bandPx, bandPx + max(washPx, 1e-3), bestPx)) * (1.0 - cBand);
+            float3 stripe = lerp(lerp(colour.rgb, light.rgb, near), colour.rgb, cBand > 0.0 ? cColour / cBand : 0.0);
             float cover = saturate(cBand + wash);
             float3 c = cBand > 0.0 || wash > 0.0 ? (stripe * cBand + colour.rgb * wash) / max(cover, 1e-4) : colour.rgb;
             float a = cover * (1.0 - water);

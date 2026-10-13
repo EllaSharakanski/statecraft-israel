@@ -91,7 +91,11 @@ public class UiLayoutTests
         doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
         go.SetActive(true);
         var root = doc.rootVisualElement;
-        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
+        // August 1950, when the map actions are open (in 1948 one shared refusal hides both build buttons, #398), so the
+        // build button below is really on the panel before a screen covers it.
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (g.State.Date < new System.DateTime(1950, 8, 1)) g.Step(HistoricalAI.Commands(C, g.State));
+        var bridge = new SimBridge(g, Text);
         var info = new InfoPanelPresenter(root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id));
         var nav = new ScreenNav(root);
         try
@@ -103,6 +107,8 @@ public class UiLayoutTests
             var panel = root.Q("info-panel");
             var build = root.Q<Button>("build-camp");
             Assert.AreEqual(DisplayStyle.Flex, panel.resolvedStyle.display, "precondition: the panel shows");
+            Assert.AreEqual(DisplayStyle.Flex, build.resolvedStyle.display, "precondition: the build button shows");
+            Assert.IsTrue(build.canGrabFocus, "precondition: the build button can take the focus before a screen covers it");
             foreach (var s in new[] { "cabinet", "defence" })
             {
                 nav.Open(s);
@@ -127,6 +133,90 @@ public class UiLayoutTests
             Assert.AreEqual((tlv.Q + 3, tlv.R), info.Selected, "and map clicks reach it again");
         }
         finally { nav.Dispose(); info.Dispose(); Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+    }
+
+    /// <summary>#400: in the two-row HUD every open screen takes the full width, and the stylesheet hides the event column and
+    /// the info panel under it (.hud-two-row.screen-open). In August 1950, with a hex selected and an event waiting, their
+    /// buttons are live, and none may take the focus while hidden: when Budget opens in two rows, and when a window already
+    /// showing Budget beside the panels narrows into two rows (the tier changes under the open screen). Widening again, or
+    /// closing the screen, brings them back.</summary>
+    [UnityTest]
+    public IEnumerator TheTwoRowHudKeepsWhatAScreenCoversOutOfReach()
+    {
+        var rt = new RenderTexture(1920, 1080, 0);
+        var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
+        ps.targetTexture = rt;
+        var go = new GameObject("TwoRowTest");
+        go.SetActive(false);
+        var doc = go.AddComponent<UIDocument>();
+        doc.panelSettings = ps;
+        doc.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UiPaths.GameUxml);
+        go.SetActive(true);
+        var root = doc.rootVisualElement;
+        var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
+        while (g.State.Date < new System.DateTime(1950, 8, 1) || g.State.PendingEvents.Count == 0) g.Step(HistoricalAI.Commands(C, g.State));
+        var bridge = new SimBridge(g, Text);
+        var owned = new List<System.IDisposable>();
+        void Resize(int w, int h) { var old = rt; rt = new RenderTexture(w, h, 0); ps.targetTexture = rt; old.Release(); Object.DestroyImmediate(old); }
+        try
+        {
+            root.Q("root").RemoveFromClassList("loading");
+            owned.Add(new HudPresenter(root, bridge, Text));
+            var nav = new ScreenNav(root); owned.Add(nav);
+            var info = new InfoPanelPresenter(root, bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id)); owned.Add(info);
+            owned.Add(new EventCardPresenter(root, bridge, Text, null));
+            var tlv = C.SettlementHexes.Single(x => x.Id == "tel_aviv");
+            info.Show(tlv.Q, tlv.R);
+            for (int i = 0; i < 4; i++) yield return null;
+            var build = root.Q<Button>("build-camp");
+            Assert.IsTrue(build.enabledSelf && build.style.display.value == DisplayStyle.Flex, "precondition: build-camp is live: " + root.Q<Label>("info-reason").text);
+            Assert.IsNotNull(root.Q("event-options").Q<Button>(), "precondition: an event's options are shown");
+            var covered = new[] { "right-column", "info-panel" };
+            List<Button> Buttons() => covered.SelectMany(r => root.Q(r).Query<Button>().ToList()).ToList();
+            void Reach(bool expected, string where)
+            {
+                // In reach: the two buttons known to be shown. Out of reach: every button in the covered panels.
+                foreach (var b in expected ? new[] { build, root.Q("event-options").Q<Button>() }.ToList() : Buttons())
+                {
+                    Assert.AreEqual(expected, b.canGrabFocus, $"{where}: {b.name} can take the focus");
+                    if (expected) continue;
+                    b.Focus();
+                    Assert.AreNotSame(b, b.focusController?.focusedElement, $"{where}: {b.name} is not focused");
+                }
+            }
+
+            // Budget, a narrow screen, at 1080p: the panels stay beside it, in reach.
+            nav.Open("budget");
+            for (int i = 0; i < 3; i++) yield return null;
+            Assert.IsFalse(root.Q("root").ClassListContains(HudPresenter.TwoRowClass), "precondition: one row at 1080p");
+            Reach(true, "1080p, Budget open");
+
+            // The window narrows under the open screen: two rows, the screen full width, the panels hidden and out of reach.
+            Resize(960, 1080);
+            for (int i = 0; i < 4; i++) yield return null;
+            Assert.IsTrue(root.Q("root").ClassListContains(HudPresenter.TwoRowClass), "precondition: two rows at 960x1080");
+            foreach (var r in covered) Assert.AreEqual(DisplayStyle.None, root.Q(r).resolvedStyle.display, r + " is hidden");
+            Reach(false, "narrowed with Budget open");
+
+            // Closed, then Budget opened again in two rows.
+            nav.Open(null);
+            for (int i = 0; i < 3; i++) yield return null;
+            Reach(true, "two rows, no screen");
+            nav.Open("budget");
+            for (int i = 0; i < 3; i++) yield return null;
+            Reach(false, "two rows, Budget opened");
+
+            // Widened again with Budget open: one row, the panels back.
+            Resize(1920, 1080);
+            for (int i = 0; i < 4; i++) yield return null;
+            Assert.IsFalse(root.Q("root").ClassListContains(HudPresenter.TwoRowClass), "precondition: one row again");
+            Reach(true, "widened with Budget open");
+        }
+        finally
+        {
+            for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
+            Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt);
+        }
     }
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
 

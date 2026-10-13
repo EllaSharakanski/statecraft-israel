@@ -230,6 +230,7 @@ Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on
 - the blur is a separable 9-tap Gaussian whose radius is `TiltShift.Weight(y) * MaxRadiusUv`;
 - the focus sits at the middle of the map area below the top bar;
 - the blur weakens to 35% between 60 km and the 250 km overview.
+- since issue #390, the far (top) band is lighter at the gameplay zoom (see "Issue #390" below).
 
 URP's far-only Gaussian DoF is retired. Toggle: `tiltshift`; the URL flag `notiltshift` (desktop: `-notiltshift`) boots with
 it off.
@@ -431,7 +432,8 @@ Judean slopes and the Negev (`PromoPose.CloseChecks`, haze off): no AO steps.
 ## Task 7: sea
 One water function (`StatecraftMap.hlsl` `ScWaterShade`) on both sides of the map's edge: the terrain graph outputs it as
 emission on a black, fully metallic, fully occluded surface, and the border skirt's `Sea.mat` (`Statecraft/Sea`, passes
-`Sea`, `DepthOnly`, `DepthNormals`) returns it directly. It is driven by Task 5's coast distance: a turquoise -> teal -> navy
+`Sea`, `DepthOnly`, `DepthNormals`) returns it directly. (Since issue #195 the terrain graph outputs only the black surface;
+`MapScene`'s `TerrainWater` mesh adds the water on top with `Sea.mat` in its `_ScTerrainWater` mode. See "Issue #195".) It is driven by Task 5's coast distance: a turquoise -> teal -> navy
 ramp over 12 km, foam within 350 m, the Dead Sea pale turquoise with a white salt rim. It samples the main light's shadows
 itself, takes the cooler water haze (`ScHazeWater`), and falls back to the flat sea colour under the `water` toggle. WebGL
 build: 77.1 MB, no `Shader error`. GLES3: `ShaderChecks.Gles3Errors` is empty for `Statecraft/Sea` and the terrain (no
@@ -719,7 +721,7 @@ beyond budget + the larger spread.
 | Boot | `BOOT map_build_ms median=432 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3563 runs=3 cpu=1`<br>`BOOT map_build_ms median=1751 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6797 runs=3 cpu=4`<br>`BOOT map_build_ms median=426 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3477 runs=3 cpu=1`<br>`BOOT map_build_ms median=1746 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6696 runs=3 cpu=4` (Step 1, then final) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms); both runs exit 0 |
 | Shadows | 1 cascade, 2048, hard | 4 cascades, 2048, soft | `-shadows` at diorama02: Step 1 headless 10.32 - 7.36 = **2.96 ms** (spread 0.32: over 2.82), headed 2.90 (0.41: within), DPR 2 4.99 (0.23); final headless 2.89 (0.41: within 2.91), headed 2.92 (0.29: **over** 2.79), DPR 2 4.80. A 1024 build measured 2.84 (headless, spread 0.09), 2.94 (headed) and 5.03 (DPR 2): (1024 lines, headless: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.08 spread_ms=0.09 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.24 spread_ms=0.03 median_p95_ms=9.00`<br>headed: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.20 spread_ms=0.28 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.26 spread_ms=0.13 median_p95_ms=9.00`<br>DPR 2: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.34 spread_ms=0.21 median_p95_ms=19.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.31 spread_ms=0.10 median_p95_ms=14.00`): the map's resolution is not the cost (the caster pass redraws the whole map's geometry at the overview), so 1024 would blur the relief for nothing. **2048 kept; the overrun (about 0.1-0.4 ms beyond budget + spread at the 250 km overview only) is named here.** gameplay03: 0.33 ms final |
 | Tilt-shift | downsample 2 | downsample 2 | `-tiltshift` cost: Step 1 headless 0.09 / 0.09 ms (gameplay03 / diorama02), final headless 0.03 / -0.04, DPR 2 0.29 / -0.04: far under 1.5 ms |
-| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19); no owner verdict yet, so not changed |
+| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19). Owner's ruling (2026-10-13, issue #390): the bands stay as they are, except that the far band is lighter at the gameplay zoom ("Issue #390"); the bottom band is not changed |
 | Bloom | off (was the URP template's 0.25 above 1) | off | rendered on both tiers at both poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003, measured with a temporary `bloom` toggle, commit `8d45a93`, removed in fix round 1 once bloom shipped off); `-bloom` cost Step 1 headless 0.37 ms (diorama02), headed 0.18, macOS 0.17 / 0.13. Off in the pipeline profile (`Settings/SampleSceneProfile`), which keeps its Neutral tonemapper (the stripping guarantee, GradeTests) |
 | SSAO | none | off (was on) | metre radius cannot reach km relief; baked AO replaces it (Tasks 5-6) |
 | Grade, vignette, haze, grid, water, labels | on | on | Step 1 headless costs (gameplay03 / diorama02, ms): grade -0.02 / 0.27, haze 0.08 / 0.11, grid 0.07 / -0.14, water 0.04 / 0.14, labels -0.14 / -0.02; final headless: grade 0.00 / -0.03, haze -0.03 / -0.10, grid 0.00 / -0.01, water -0.05 / -0.06, labels -0.01 / 0.01; all within budget. The grid, unmeasured on a quiet machine since Task 8, costs nothing measurable |
@@ -988,10 +990,12 @@ Each band lies inside its region, as Civ draws territory, so two outlined region
 to red+cream: promo 03 near Tel Aviv). The bands are world-space: they widen towards the camera.
 
 **What is drawn.** `MapBorders` (C#) bakes one texel per hex (`RegionHexes`, RGBA8 linear, point-sampled, 47 x 58: r + 256 g
-the region id, b the style) and sets the globals; `StatecraftBorders.hlsl`'s `ScBorderApply`, called last in the terrain
+the region id, b the style; since issue #195, a's low six bits say which edges border another region) and sets the
+globals; `StatecraftBorders.hlsl`'s `ScBorderApply`, called last in the terrain
 function, draws the band along each edge whose neighbour is in another region. A pixel farther from its hex's edges than
 the widest band plus wash can reach fetches nothing (exact: a segment is never nearer than its line); one nearer fetches its
-own hex and only the neighbours within reach (one, or two near a corner). The first version fetched all seven texels on
+own hex and only the neighbours within reach (one, or two near a corner); since issue #195 it fetches only its own hex,
+whose edge bits replace the neighbours' fetches. The first version fetched all seven texels on
 every land pixel and cost 3.3 ms at gameplay03 (`visual=all` 14.97 against `-borders` 11.64, a loaded machine): over the
 2.5 ms budget. The distance is to the edge segment (corners rounded, so bands join without notches), in pixels
 across the edge (Task 8's anisotropic filter), box-filtered. Stripes and wash are unlit (they replace BaseColor and go out
@@ -1104,6 +1108,25 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   while the lines leave gaps. A line is visible as a band only where it bounds a zone or is the Mandate frontier; at
   5-km hexes two of the three Syrian DMZ parts take no hex (true-polyline overlay: #237).
 
+**Shared edges and the far line (refs #196, `.superpowers/borders-routes-r1/PLAN.md` B1 and B3).** Every sub-district
+is Primary, so where two meet both drew their full band: blue, white, white, blue, about 11-13 px across at gameplay03
+against promo 03's one band of about 8 px, on every internal boundary. Promo 03 never shows two same-colour regions side
+by side. `MapBorders.Use` now also bakes, per hex, which border edges the neighbour draws in the same style (b's upper six
+bits; the style keeps the low two), and `ScBorderApply` draws 0.6 of the band and of the wash each side of such a shared
+edge (`ScSharedBand`), so the two make one band of the promo's width centred on the edge, with no jog where the drawing
+side would change. At exactly half, each half lost its partly covered outer pixel and the pair measured 6 px at
+gameplay03 against a full band's 8; at 0.6 the pair measures as one full band.
+The nearest edge is chosen in units of its own band, so where a shared edge meets the frontier at a corner each keeps
+its own width. Edges against a region of style none (the Mandate frontier against "outside") and primary-secondary edges
+(the double band promo 03 draws near Tel Aviv) keep the full band. Still one texel a pixel (`TheBordersReadOneTexelAPixel`).
+Far off, where the band is under about 4 px (diorama02), the 2 px floor band was mostly its light stripe and read as a
+white line; the light stripe now turns into the colour between 4.5 and 2.5 px and the wash fades with it, so a far band
+is a thin line of its colour. At gameplay03 (about 8 px) nothing changes. Tests:
+`ASharedEdgeDrawsOneCentredBandAndTheFrontierKeepsTheFullBand` (the proof's blocks, all primary and then primary
+against none), `AtTheOverviewTheBandsAreThin` (now also: few near-white pixels, a blueness gain), and
+`UseBakesWhichEdgesBorderAnotherRegion` (the shared bits). The proof pattern alternates styles, so the proof's
+measurements and `ColourBlindPlayersTellTheBorderStylesApart` are unchanged.
+
 **Research item: region data (to source, then the owner's sensitivity review).**
 - *What:* per-hex region labels for (a) the sub-districts of Mandatory Palestine at the end of the Mandate (six districts:
   Galilee, Haifa, Samaria, Jerusalem, Lydda, Gaza; sixteen sub-districts: Acre, Beisan, Nazareth, Safad, Tiberias, Haifa,
@@ -1127,7 +1150,7 @@ the game's start: the Administrative Divisions (Amendment) Proclamation, 1947 (P
   shareable build (chapters design §13).
 - *Limits of the renderer's data seam (review M8), for the data work to plan around:*
   1. Two drawn styles (Primary, Secondary) plus None. The 1949 lines set Israel against four neighbours; with two styles
-     the four share the red-orange band (the texel's style byte allows 255, but each new style needs colours that stay
+     the four share the red-orange band (the texel's style takes b's low two bits since the shared edges, so one more style fits; each new style needs colours that stay
      apart for colour-blind players, so it is a design task, not a constant). Districts may want a neutral third style.
   2. One layer at a time: districts and armistice lines cannot show together.
   3. Styles are per region, not per edge: an edge's look comes from the regions on its two sides.
@@ -1355,6 +1378,117 @@ Water and shore together (the toggle now covers both):
   unmeasured.
 - diorama02: 0.13 ms, below the noise (spread 0.18 ms).
 - p95 is at or under 16.7 ms at both poses.
+
+### Sea round 2 (branch `sea-round2`, refs #388)
+At the gameplay and overview zooms the sea had faded to a smooth surface. The chop is gone by a 170 m pixel, and the
+wave tilt and glint fade out by 120 m (Task 7, sea-fix), so gameplay03's 46 m pixels and diorama02's 190-300 m pixels saw
+a flat gradient. Sea detail on main measured 0.013 against promo 03's 0.060, and 0.019 against promo 02's 0.063. Every
+change is in `ScWaterShade` and `ScHazeWater` (`StatecraftMap.hlsl`), which only the water's own pass runs since #195,
+plus `ScShore`'s two constants. `Sea.shader` is unchanged.
+- **The far sea's texture**, all behind a new `seatexture` visual toggle (`_ScSeaTexture`), so the profile prices it as
+  one feature:
+  - wind streaks: a gradient-noise brightness variation (`ScMottleCellM` 2.5 km, 3x narrower across the wind, so 833 m
+    there, with a finer octave of about 309 m, +-`ScMottleGain` 0.32) on the open Mediterranean, past the shallows, not on
+    the rift lakes. Neither octave is faded by the footprint;
+  - a ripple: the waves' slope towards or away from the camera, read as their sky reflection. Under a 50 m pixel it is
+    +-0.54 (the tilted normal: swell and chop), faded out over 50-90 m; the 170 m chop's limit is 85 m. From 90 m it is
+    +-0.28 (the 700 m swell's own slope), faded over 250-450 m. That leaves it at half strength at the swell's 350 m limit,
+    and at 84-100% at diorama02's 190-300 m pixels (2.3-3.7 px a swell cell). It runs at 40% in the turquoise shallows,
+    so they keep their pale band;
+  - whitecaps: a fleck in some 120 m cells on the streaks' bright side, its brightness the share of the pixel it covers,
+    gone by an 80 m pixel.
+- **Glint:** 0.12 under a 40 m pixel, easing to Task 7's 0.06 by 60 m, so nothing changes from 60 m out.
+- **Surf line:** the swash is never under 1.5 pixels wide (`max(ScSwashM, 1.5 x footprint)`). The breakers and their box
+  filter are unchanged; at the breaker test's zoom the swash is still its own 180 m.
+- **Beach:** `ScBeachM` from 650 to 900 m; `ScSandSrgb` (0.88, 0.76, 0.56) to (0.90, 0.80, 0.62), drier and paler.
+- **Water haze:** the water's haze starts `ScWaterHazeLeadM` (80 km) nearer than the land's, at 120 km, so the
+  overview's sea pales towards the horizon as promo 02's does. The gameplay zoom, under 100 km, has none.
+- **The seam test** (reviewer-agreed option A). A 2.5 km streak pattern varies by itself between the seam test's points
+  5 km apart, so `TheSeaBeyondTheEdgeMatchesTheTerrainSea` pins `seatexture` off and keeps its bounds and cases. The new
+  `SeaTests.TheFarSeaTextureHasNoStepAtTheMapEdge` checks the edge with the texture on. It renders the west edge straight
+  down at the seam test's 110 m a pixel, over a 40 km strip, with the water's clock pinned, and runs two checks:
+  - per row, the change between the two pixel columns either side of x = 0 against neighbouring columns elsewhere. The
+    RMS excess at the edge must stay under 0.012;
+  - the mean signed change across the edge, summed over r, g and b, must stay under 0.012.
+
+  | run | RMS excess | mean change |
+  |---|---|---|
+  | green (final values) | -0.0032 | 0.0008 |
+  | red: the skirt's map coordinates offset by one streak cell (a texture that does not continue; streaks at 0.25) | 0.101 | |
+  | red: the skirt 4% brighter (an input step; streaks at 0.25) | | 0.0195 |
+
+  Both red runs fail. Fitting a line to each side and extrapolating was tried first. Over the whole strip, a mismatched
+  texture's steps cancel; per 880 m segment, the texture's own variation swamped the fit (0.049 with no seam, 0.059 with
+  one).
+
+- **`MapEdgeTests.PanningIntoACornerShowsNoSkirtSeamOrFlatFill` pins the water's clock.** It compares a render with the
+  skirt against one without, and the water moved between the two. A few pixels of the north-west corner's coast changed at
+  random: 0-14 a run, with the texture on or off, and main has the same exposure. The far sea's ripple made a failure
+  likelier (5 and 1 pixels in two branch runs). Pinned, it passed 3 of 3 runs with 0 pixels at every corner.
+
+Measured: WebGL `?shot` at main `db99f3a` (with towns round 2, land round 2 and #399's lighter far tilt-shift), then the
+branch on it (art-log rows `main-db99f3a` and `sea-round2-r`). The sea crops are those of #388, plus gameplay03's focus
+band (outside the tilt-shift's bands). Detail is the std of luma minus a 4 px blur, with the crop resized to 480 wide.
+Spread is luma p90 - p10.
+
+| | main | round 2 | promo | target |
+|---|---|---|---|---|
+| gameplay03 sea, #388 crop: detail / spread | 0.014 / 0.089 | **0.045** / **0.160** | 0.060 / 0.20 | >= 0.035 / >= 0.15 |
+| gameplay03 sea, focus band: detail / spread | 0.017 / 0.088 | **0.055** / **0.185** | 0.075 / 0.32 | >= 0.035 / >= 0.15 |
+| diorama02 sea: detail / spread | 0.019 / 0.038 | 0.026 / 0.069 | 0.063 / 0.11 | - / >= 0.07 |
+| gameplay03 palette distance | 0.361 | **0.347** | - | no worse |
+| diorama02 palette distance | 0.563 | **0.534** | - | no worse |
+| diorama02 warmth / saturation | 0.109 / 0.406 | 0.111 / 0.400 | 0.145 / 0.43 | [0.087, 0.145] / <= 0.48 |
+
+diorama02's spread misses its target by 0.001. Strengthening the streaks barely moves it (0.25 to 0.32 added 0.003). A
+stronger far ripple could close it, but the far ripple already runs at 84-100% at diorama02, at 2.3-3.7 px a swell cell.
+More contrast at that sampling would push it towards aliasing, so it was not raised. In the editor (web tier) the same
+spread is 0.079. The sea's faint hex lines (`GridWaterOpacity` 0.10, a measured grid ruling) are harder to see against
+the textured sea; that belongs to the grid, not here.
+
+**In motion** (review of #402: the far ripple and the streaks' fine octave sit near or under their sampling limit at
+diorama02). A temporary editor probe rendered diorama02 (web tier, tilt-shift on) during a slow pan (60 m east and 30 m
+north a frame, about 0.25 px) and a slow zoom (0.25% a frame), 24 frames each, with the water's clock at 1/60 s a frame.
+It was run for main `b10e95e`, the branch, and the branch with the far ripple faded over 175-350 m. For each 64 px
+open-sea patch and each pair of consecutive frames, the patch's sub-pixel shift was found by phase correlation and taken
+out. What remained was compared with the patch's fine texture (luma minus a 3 px blur):
+
+| sea band | main: fine texture / residual | branch | branch, far ripple at 175-350 m |
+|---|---|---|---|
+| in focus (y 30-60%), pan / zoom | residual 38% / 38% of 1.0 level | 19% / 19% of 4.7 levels | 20% / 18% |
+| far (y 13-30%, in the tilt-shift's band), pan / zoom | 0.35 level, residual 0.24 / 0.35 level | 0.60 level, residual 0.44 / 0.57 level | - |
+
+In focus the texture moves coherently: its residual is half main's share, at far more texture. In the far band, which is
+already blurred by the tilt-shift, what is left is under one 8-bit level, and so is its frame-to-frame change. Moving the
+far ripple's fade to 175-350 m changes neither. No shimmer or crawl was found, so the tuning stays.
+
+
+Frame time on the rebased head, against main `db99f3a`: one interleaved round, headless, under the exclusive lock (load
+about 5); three earlier rounds, before the rebase, agree:
+
+| pose | `all` main / branch | `-water` main / branch | `-seatexture` (branch) | `none` main / branch | p95 `all` main / branch |
+|---|---|---|---|---|---|
+| gameplay03 | 8.04 / 8.23 | 7.86 / 7.99 | 8.17 | 5.27 / 5.48 | 13 / 13 |
+| diorama02 | 19.94 / 18.72 | 19.41 / 18.94 | 18.73 | 12.66 / 12.35 | 22 / 21 |
+
+The texture costs 0.06 ms at gameplay03 and nothing measurable at diorama02. gameplay03's `all` rises 0.19 ms, as does its
+`none` (0.21 ms) with every feature off: build-to-build noise, not the water.
+
+Boot (against `4abb64f`, before the rebase; the change adds no boot work): `headed.py boot --runs 3 --cpu 4`, 3 rounds
+interleaved, 9 cold loads each, medians. Every phase but one equals main's (`biome texture baked` 433 / 436 ms, `kits built` 696 / 690, `terrain water` 20 / 20). `terrain heights set` is
+1395 / 1471 ms: the wasm build's own tier-up draw (see "Issue #195": every build lands near 1390 or 1490 ms). That gives
+`map_build_ms` 3063 / 3131 and `first_frame_ms` 10958 / 11010. The change adds no boot work beyond one shader global and
+a toggle registration.
+The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLDEN OK 1952 62f8ec61...` and
+`SMOKE OK 5 turns 1948-06-19 d3fdd459...`. EditMode 747/747 on the merged head, with 0 `warning CS`.
+
+Still different from the promo:
+- promo 03's sea has boats and building shadows in its dark tail (out of scope: no civilian boats);
+- promo 02's sea sparkles finely at the overview, where ours is held back from aliasing;
+- the open sea's turquoise near the coast reads a little paler against the brighter, textured open sea at diorama02. The
+  shallow-to-open gradient is unchanged (19 levels on both), and the turquoise thins slightly (g - r 43 to 40, 12-24 px
+  from the coast).
+
 ## Promo track: land use (issue #33, branch promo-land)
 The flat mustard/olive ground becomes the promo's patchwork. `tools/land_bake.py` (no network, about 20 s, deterministic:
 `test_the_committed_textures_are_the_bake` checks the committed PNGs against a fresh bake) decides where from real data
@@ -1426,6 +1560,71 @@ Licence: the texture is `owner-verify` in `ASSETS.yaml` pending decision D13 (`d
 Still different from the promo: soft at close zoom (rows, hedges and bushes read at the gameplay zoom, blur at 15-20 km
 and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
 its grade.
+
+### Land round 2 (branch `land-round2`, refs #33)
+Round 1's land read as yellow-olive. It also lost most of its field lines, because the bake's 2 x 2 supersampling averages
+an 18 m hedge or a 30 m track away inside a 79 x 105 m texel. Round 2 changes only the colours and the bake; the shader,
+the texture's size and format, the trees and the sea are untouched.
+- **Ground colour.** The land's colours in `tools/land_bake.py` (`SRGB`) and the plain, valley, lowland, hill and mountain
+  colours in `MapPalette.Ground` move toward promo 03's ground, (177, 144, 114) in the ground crop below: less green, more
+  blue, at its hue (28.6 degrees). The hill colours (soil, hillgrass, stone, and MapPalette's hills and mountains) are an
+  orange brown at 22-25 degrees, saturation 0.24-0.34. With round 2's first values (soil at 8 degrees and saturation 0.26;
+  stone, dust and fallow at about 18) the Judean hills read rose (review of #392): a red hue at low saturation. At 28.6
+  degrees they rendered at 34, yellower than promo 03's hills (26) and the video's (28), and diorama02 lost promo 02's
+  browns, about (208, 144, 112) and (176, 112, 80). The brightness (luma) of each colour is kept. The desert is unchanged.
+- **Fields.** Hedges and tree lines are `HEDGE_HALF_M` 75 m either side of a parcel edge. Farm tracks are `TRACK_HALF_M`
+  70 m either side of a block edge. Each line is chosen once per edge, so the parcels on both sides draw it. The crops are
+  further apart in luma: a darker green, darker ploughland, paler stubble and fallow.
+  `test_field_lines_are_wide_enough_for_the_texture` holds both lines to at least 1.5 texels across. It fails at round 1's
+  widths, measuring 15 m and 28 m.
+- **Hills.** Round bushes about 200 m across, at most one per 300 m cell. A 1.5 km noise sets the share of cells with one
+  (20-80%), so they clump. Each sample takes its dot from the 2 x 2 cells round it, so no dot is cut. Each bush has a
+  softer shadow offset east-south-east, away from the sun (`MapLighting.SunAzimuth` 285 degrees). The garrigue's weight
+  rises from 0.7 to 0.9. Terraces cover more of the slopes, with stronger stone lines.
+- **Bake.** About 30 s. Two runs give byte-identical PNGs. `test_the_committed_texture_is_the_bake` passes. The land weight
+  mean is 0.192 (round 1: 0.171), because the garrigue's weight rose.
+
+Measured: WebGL `?shot` at main `4abb64f`, then the branch on it, art-log rows `lc-r2-main` and `land-round2-fix5`. The
+ground crop is gameplay03's land (x 0.36-0.88, y 0.30-0.82), pixels at luma >= 0.4. The towns' tan walls and their ground
+tint are in it and unchanged, so it moves less than the ground does. The Judean hills are `-extraPose
+judea30:35.10:31.85:30000:10` (editor, web tier): the median hue of their pixels at luma >= 0.25.
+
+| | main | round 2 | promo |
+|---|---|---|---|
+| gameplay03 saturation / contrast / warmth | 0.447 / 0.181 / 0.070 | 0.429 / 0.178 / 0.062 | 0.38 / 0.203 / 0.064 |
+| gameplay03 palette distance | 0.435 | **0.378** | - |
+| diorama02 saturation / contrast / warmth | 0.414 / 0.184 / 0.113 | 0.406 / 0.183 / 0.109 | 0.43 / 0.200 / 0.145 |
+| diorama02 palette distance | 0.5633 | 0.5643 | - |
+| gameplay03 ground crop (sRGB) | (166, 148, 99) | (169, 143, 106) | (177, 144, 114) |
+| judea30 hill hue (degrees) | 39.8 | 30.5 | 26 (promo 03), 28 (video 0:21) |
+
+The bars hold: diorama02 warmth 0.109 is inside [0.087, 0.145], and its saturation is under 0.48. diorama02's palette
+distance is 0.001 above main's; promo 02's browns (about (208, 144, 112)) are what the hills' hue trades against.
+Every ground channel is within 8 levels of the promo's (it was within 15).
+
+Frame time: headless, main and the branch back to back under one exclusive lock, 3 rounds, rotated. The load average was
+about 6 from other sessions, so the absolute times are inflated. The table gives medians over the rounds, in ms:
+
+| pose | `all` main / branch | `-land` | `none` |
+|---|---|---|---|
+| gameplay03 | 8.13 / 8.05 | 8.05 / 7.81 | 5.09 / 4.97 |
+| diorama02 | 19.49 / 19.71 | 19.08 / 19.45 | 12.36 / 12.72 |
+
+Every difference is within about 0.4 ms, which is also how far `none` moves between the two builds. The review fix (the hill hues) changes only colours: the same texture size and format, no shader, so these numbers and the boot below stand. The shader and the
+texture's size are the same. diorama02's p95 is 21-22 ms on main and on the branch alike, under that load.
+
+Boot: `headed.py boot --runs 3 --cpu 4`, 3 rounds interleaved, 9 cold loads each, medians:
+- `map_build_ms`: main 3032, branch 3039;
+- `first_frame_ms`: main 10842, branch 10819;
+- `biome texture baked` (MapPalette's colours): main 437, branch 431;
+- `downloaded 53 files`: main 1048, branch 1040.
+
+Both builds' map build is over #321's budget at this load; that is main's, not this change's.
+The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLDEN OK 1952 62f8ec61...` and
+`SMOKE OK 5 turns 1948-06-19 d3fdd459...`. The tree count is unchanged (7,814).
+
+Still different from the promo: the trees and bushes, so far only painted in the bake (promo 03's land is 27% dark trees
+and shadow; ours is 10%). The grade's shadows are cool, where the promo's are warm brown (#391).
 
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
@@ -1676,3 +1875,463 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   - History: a first version scanned every lot and footprint linearly, taking 350 ms (kits) and 330 ms (trees) in the
     editor. `DiscIndex` (a 4 km grid) brought that to about 30 ms each.
   - Build: wasm +111,913 bytes and data +14,441, plus the localities file fetched at boot.
+## Towns round 2: dense, era-correct towns (branch `promo-towns-2`, issue #31)
+Question: why do Tel Aviv, Jaffa, Lod, Ramla, Rishon and Petah Tikva read as a sparse handful of boxes at gameplay03
+when promo 03 shows dense miniature towns, and what closes the gap within the frame-time and boot budgets?
+
+### Diagnosis (main `bdb5cd2`, measured before any change)
+Measured with `TownCensusTests.TheCensusIsLogged`. It builds the kits as `MapScene.Build` does, with the routes' and the
+units' clearings as corridors, and logs one `CENSUS` line per town. It reports:
+- **Buildings:** counted per town. Wings are a block's lower part.
+- **Cover:** the share of the town's own land under a building or landmark footprint. "Own land" is its footprint disc,
+  on land, in its cell. It is sampled every 100 m, over the whole disc and over its inner half radius ("core").
+- **Wall heights:** symbolic metres; one storey is 198 m at 60x and 330 m at 100x.
+- **Wall colours:** distinct sRGB colours at 4 bits per channel.
+
+The player logged `KITS buildings=261 vertices=10244 triangles=6892 trees=7283`.
+
+| town | footprint R | buildings (+wings) | landmarks | cover: all / core | wall height min / median / max | wall colours |
+|---|---|---|---|---|---|---|
+| Tel Aviv | 7.6 km | 43 (+11) | none | 24.7% / 24.9% | 396 / 594 / 1188 m | 7 |
+| Jaffa | 5.7 km | 16 | mosque, clock tower, church, lighthouse, breakwater | 42.6% / 14.6% | 330 / 660 / 990 m | 4 |
+| Haifa | 6.9 km | 34 (+10) | none | 17.8% / 23.7% | 396 / 594 / 990 m | 8 |
+| Jerusalem | 7.4 km | 70 | a generic mosque | 32.2% / 16.2% | 330 / 660 / 990 m | 8 |
+| Lod | 2.4 km | 5 | mosque | 13.6% / 11.8% | 330 / 330 / 660 m | 4 |
+| Ramla | 2.3 km | 5 | mosque | 19.5% / 27.6% | 330 m only | 3 |
+| Petah Tikva | 2.4 km | 3 | water tower | 10.5% / 7.0% | 330 / 330 / 660 m | 3 |
+| Rishon LeZion | 1.7 km | 2 | water tower | 9.5% / 2.7% | 330 m only | 2 |
+| all 25 | | 235 (+21) | 26 | | | |
+
+Jaffa's whole-disc cover is above its core cover because its cell is small (Tel Aviv's footprint takes its north) and
+four landmarks of up to 1 km sit in it.
+
+Causes, in order of weight:
+1. **Counts.** `TargetCount` was tuned at 25x and falls with the square of the scale. At the 60x / 100x ruling, every
+   town under about 30,000 people gets its floor of 6 buildings, and then places fewer: 1 to 5 in the moshavot, and 5 in
+   Lod and Ramla.
+2. **Placement.** Buildings went to random spots over the whole footprint (radius drawn as u^0.62), tried against
+   every lot. Each town had about 30 tries per building, and the footprint could stretch to 1.6 R.
+   - That spreads a town evenly at low cover, with no dense core and no street rows. Promo 03's towns are a solid core
+     with streets as the only gaps.
+   - The routes' corridors (300-680 m ribbons plus a 100 m margin) and the units' clearings then cut each disc further.
+3. **Old-town houses too big.** Old towns drew 7-14 m houses at 100x, so each was 0.7-1.4 km wide. Jaffa came out as 16
+   large blocks, not a packed old city.
+4. **Heights.** Tel Aviv's median block was 3 storeys and its tallest 6. Promo 03 shows 5-8. The owner's "promo over
+   era" ruling covers this.
+5. **Landmarks.** Only Jaffa had its own. Jerusalem had a generic mosque, and Haifa and Tel Aviv had none. Jaffa's
+   lighthouse stood at the breakwater's head; the real one (1865) stands on the hilltop above the old port.
+6. **Palette.** It is not the gap: each archetype's colours already match promo 03 (white and cream city, honey stone,
+   tan villages, terracotta roofs). Variety is limited by the counts.
+
+### Plan
+- **Plot lattices** replace the random tries (`SettlementKits.PlaceHouses`).
+  - Each town is laid out in rows of plots at its street grid's angle. Old towns and villages stagger alternate rows
+    and jitter each plot.
+  - Each plot is built with a probability that is near 1 in the core and falls towards the edge, to none at 1.1 R. That
+    is `UnitGround.FootprintMargin`: the units assume no building past it, and `PaintGround` tints the same disc.
+  - A plot by a road, or by another town's lot, tries a smaller building, then a small nudge within the plot, before it
+    stays empty.
+  - Plots are visited nearest the centre first. Each plot draws its random numbers whether or not it is built, so one
+    plot's fate never shifts another's.
+- **Building styles per quarter, at the ruled scales** (city blocks 60x, houses 100x).
+  - **Tel Aviv:** white International Style blocks with flat roofs (the White City, 1930s, Geddes plan 1925-29), some
+    stepped. Taller in the core under the promo ruling.
+  - **Jaffa and the old towns:** small stone houses (4.6-6.6 m real), packed, with domes and roof rooms. Some red tiled
+    roofs outside the core.
+  - **Haifa:** the lower town by the port in stone houses (below about 35 m elevation). Hadar HaCarmel up the slope in
+    white blocks.
+  - **Jerusalem:** stone-faced blocks in the new city to the west (Storrs' 1918 stone ordinance), a few with red roofs.
+    Arab-quarter houses round the other sides. Old-town houses within the walls.
+  - **Large moshavot** (Petah Tikva, Rehovot, Rishon LeZion, Hadera; 7,500+ people in 1945): a plastered two- and
+    three-storey centre inside red-roofed houses.
+  - **Arab towns and villages:** smaller stone houses (4.4-6.6 m) on a staggered lattice.
+- **Landmarks**, placed before any town's houses. Positions keep the real bearing from the settlement's point to the
+  landmark's sourced coordinate; distances and sizes are symbolic.
+  - **Jaffa:** the Mahmoudiya Mosque, the clock tower on the plaza east of it, St Peter's Church, the lighthouse on the
+    hill above the port (red and white bands), and the breakwater and boats.
+  - **Jerusalem:** Suleiman's walls round a symbolic square Old City with five gates, the citadel, the Haram platform,
+    the Dome of the Rock and Al-Aqsa.
+    - The Dome of the Rock is blue and white tiles with a dark lead dome: the gilded dome dates from the 1959-64
+      restoration, so it would be an anachronism in 1948.
+    - Al-Aqsa's dome is lead.
+  - **Haifa:** the 1933 port (main and lee breakwaters, quay sheds) and the German Colony: the Templer houses of 1868 in
+    stone with red roofs, in two rows along its north-south main street.
+  - **Tel Aviv:** its port (1936/1938) at its sourced coordinate.
+  - **Ramla:** the White Tower east of the town's heart.
+- **No anachronisms:**
+  - The Shrine of the Báb's dome (1953) is not drawn.
+  - Neither is the Dagon silo (1955), the gold Dome of the Rock, or any post-1948 tower.
+- **Performance:** one merged mesh per town as before, so the draw calls do not change. The lot index is promo-villages'
+  `DiscIndex`, ported byte for byte with its `KitGround` hunks so the two branches merge cleanly there. It also takes the
+  trees' lot test off its linear scan.
+- **Tests** (`TownCensusTests`):
+  - The towns are deterministic.
+  - Each city's landmarks are present.
+  - No building stands on a route or in the sea.
+  - Each of the four cities has a floor on its built cover.
+
+### Result (after merging the villages, #291)
+The census as the map now builds it: with the 1948 localities, whose landmarks claim their hearts before any town's
+houses (review M8). "Main" is `a3202ad`, with the villages and before towns round 2; same census, same corridors.
+
+| town | buildings, main → round 2 | cover all / core, main → round 2 | median wall height | landmarks, round 2 |
+|---|---|---|---|---|
+| Tel Aviv | 36 (+12 wings) → 43 (+11) | 18.4 / 19.7% → 17.4 / 18.5% | 396 → 792 m (2 → 4 storeys) | port, 3 hangar sheds |
+| Jaffa | 15 → 33 | 29.0 / 21.8% → 32.6 / 31.9% | 660 m | Mahmoudiya Mosque, clock tower, St Peter's, lighthouse on the hill, breakwater |
+| Haifa | 30 (+10) → 45 (+5) | 16.4 / 19.4% → 21.0 / 20.6% | 594 → 660 m | port (main and lee breakwaters, 4 quay sheds), German Colony (Templer houses in two rows) |
+| Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
+| Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
+| Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
+| all 25 | 216 → 365 (413 after the review: the small-town floor, #317) | | | 27 → 55 |
+
+Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
+blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
+
+- **Tel Aviv's cover did not rise.** Before the merge, round 2 had 62 blocks and 30.0% / 25.6%.
+  - The villages' landmarks inside its 7.6 km disc (Sheikh Muwannis, Summeil, Jammasin, Ramat Gan, Bnei Brak and
+    others) now claim their spots first. The lattice loses every plot their mosque or water-tower lots reach.
+  - What changed there is the form: narrower (12-16 m real), taller blocks in rows on the Geddes grid, with a 700 m beach
+    strip in front. The close-up crops show the difference better than the cover does.
+  - Taking the villages' spots back would break the villages' rule that a village keeps its heart, so it is left for the
+    owner.
+- **Jerusalem's Old City is symbolic and squeezed by the roads.**
+  - It is 4 km across, about 4 times the real one. The drawn 1948 roads (300 m ribbons) meet by Jaffa Gate and loop
+    round the north and east, so at any readable size they cross inside the square, through gaps in the walls.
+  - Only one place in its south-east quadrant fits a platform clear of every route: 1.3 x 1.1 km, wider than long. Al-Aqsa
+    therefore stands in its south-east corner, not across its south end.
+  - The citadel is moved east off the drawn Hebron road.
+  - The houses inside the walls are capped at two storeys, and the Dome's walls and drum are 30x high, so the walls and
+    the Dome stand above the roofs.
+- **Readability and colour:**
+  - The grid stays readable: 78% of edge midpoints (69 of 89), against the 75% floor and main's 79%.
+  - The beach beside Tel Aviv reads as sand at 26 of 33 samples (79%, floor 75%).
+  - At gameplay03 (WebGL), the palette distance to promo 03 is 0.43 (main 0.44), warmth 0.068 (0.070) and saturation
+    0.45 (0.45).
+- **Trees:** `Vegetation.Plant` now draws each tree's random numbers before its lot and route test. A town's new lots
+  remove only the trees they touch, instead of reshuffling every later grove.
+  - Two grade tests sample the selection ring against the land and could land on a crown. They now measure with the
+    trees off: the ring against the ground's graded colour, which is what they test.
+- **Frame time** (headless WebGL `?vprofile`, `machine_lock.py --exclusive --wait-unity`, main `a3202ad` against
+  `49bc88e`, two interleaved rounds each, 2026-10-12, load 3.6 at the start and 7.3 at the end):
+
+  | | gameplay03 all (p95) | gameplay03 all − none | diorama02 all (p95) | diorama02 all − none |
+  |---|---|---|---|---|
+  | main | 13.70 / 14.22 ms (15 / 16) | 3.00 / 3.45 ms | 18.07 / 18.71 ms (20 / 20) | 4.84 / 5.60 ms |
+  | round 2 | 14.15 / 13.97 ms (16 / 15) | 3.59 / 3.15 ms | 18.06 / 18.70 ms (21 / 21) | 5.54 / 5.53 ms |
+
+  - The kits stay one merged mesh per town: 63 draws, as on main. The triangles grow from 61,054 to 65,684.
+  - "-kits" draws the marker boxes instead, so the kits' own cost is within the noise (all − (-kits) is −0.6 / −1.1 ms
+    at gameplay03).
+  - Every budget holds: all − none is under 8 ms, and the p95 at gameplay03 is under 16.7 ms. The diorama02 p95 of 20-21
+    ms is main's too (the villages section).
+
+- **Boot** (`headed.py boot --runs 3`, three interleaved rounds per side, so 9 runs each; main `2b7212e` against this
+  branch's final head; `machine_lock.py --exclusive --wait-unity`, 2026-10-12).
+  - Other sessions loaded the machine (load average 6.5 rising to 25), so single runs reach 3.3 s at cpu 4. The medians
+    and the "kits built" phase are the fair comparison.
+
+  | | map_build median | `kits built` phase median | first_frame median |
+  |---|---|---|---|
+  | cpu 4, main | 2739 ms | 570 ms | 9494 ms |
+  | cpu 4, round 2 | 2679 ms | 563 ms | 8750 ms |
+  | cpu 1, main | 659 ms | 132 ms | 4029 ms |
+  | cpu 1, round 2 | 662 ms | 138 ms | 4020 ms |
+
+  - The towns add about nothing to the boot: the kit phase is 7 ms lighter at cpu 4 and 6 ms heavier at cpu 1.
+  - The lattice checks are cheap first, and only towns with water near them run the beach test.
+  - The earlier session on a quieter machine (main `a3202ad`, before those cuts) measured map_build 2668 → 2683 ms at
+    cpu 4 (6 runs each), with the cpu 1 kit phase 129 → 137 ms.
+  - The budget at cpu 4 is 2720 ms; #195 needs about 100 ms of it. Towns round 2 takes none.
+
+### Review (2026-10-12, on the merge with main `471c300`)
+- **Fixed on the branch:**
+  - The beach setback tested any water, so it also applied on the Sea of Galilee. It now tests the sea only (`Sea`: water
+    that is not a lake hex). Degania goes from 0 houses back to main's 1.
+  - Nahalal's ring ended at 0.88 of the radius, but its lattice's first ring of plots stands at 0.76 and 0.89, so it drew
+    no houses. The ring now runs out to the radius: 0 → 1 (main 1).
+  - Tel Aviv's blocks are capped at eight storeys, promo 03's tallest: the cap was ten. The tallest block is now 7
+    storeys (1,386 m) and the median is still 4.
+  - `TownCensusTests.SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` covers all three.
+- **Each test fails under a mutation:**
+  - Reverting the lake test, the ring and the cap fails the new test on all three counts.
+  - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
+  - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
+  - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
+- **Small-town floor (#317, fixed on the branch; reworked after the review of #339):**
+  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots, and the routes, the sea or
+    a neighbour's lots take most of them. On the first lattice Tiberias drew 0 houses (main 3), Netanya 1 (main 2) and
+    Beersheba 3 (main 5).
+  - **The lake was half the cause.** The kits' `KitGround.Water` counted every lake hex as water, and a lake hex also holds
+    its shore. Tiberias stands in one, 60-160 m above the Sea of Galilee (about -214 m), so it had no ground left.
+    - A point is now lake water only at or next to the lake's surface, in any hex that is not sea (a shore hex of another
+      biome holds some of the lake too). It uses the rule the drawn water uses
+      (`MapBuilder.LakeBelowM` and `LakeFlatM`, tools/terrain_bake.py): below -150 m and flat within 0.25 m over the
+      heightmap's 3 x 3 window, at the point or within one heightmap sample of it.
+    - The drawn shore (coast.png's distance, interpolated between texel centres) runs up to about a sample past the last
+      flat sample. A first version without that sample's margin put a cypress in the drawn Kinneret, and one that looked
+      only in lake hexes put a palm and a citrus tree in it by Ghuweir Abu Shusha.
+    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached: the rift's floor
+      is asked about thousands of times while the kits are built.
+    - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
+      level), on main or here.
+    - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
+      is land and that the lake at 35.58 E, 32.80 N (-214.5 m) is water. Each half fails when the lake branch is made
+      always water, or never water.
+    - `KitTests.NothingStandsInALakesDrawnWater` decodes coast.png itself, the file the water shader samples. It checks
+      that no lot centre and no tree trunk in the rift (a lake hex, or ground below -150 m; 129 of them) lies under the
+      drawn water. It fails on the cypress without the sample's margin, and on the palm and the citrus tree with lake
+      hexes only.
+    - Tiberias's lattice now draws 4 houses on its shore, and the fallback a fifth, full-size, beside them.
+  - **The fallback.** A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) is filled up
+    the way round 1 drew it.
+    - Each house is the archetype's full-size building, the size main drew, and keeps its whole footprint as its lot.
+    - It tries 240 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
+      first. Every spot is tried at full size before any at 0.72; the half-size fit is never used. Every house keeps the
+      beach setback.
+    - `Build` runs the fallback after every place's own houses (towns, the 1948 localities) and the camps, so it takes
+      only ground no other place uses. `KitTests.TheSmallTownFloorMovesNoOtherPlace` checks this: every lot of every
+      place is the same, in the same order, with the fallback off and on.
+    - It fires in 15 towns (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre) and adds 27 houses in 13
+      of them.
+      Acre and Yad Mordechai have no free ground left.
+  - Every town now draws at least main's count: Tiberias 5, Netanya 4, Beersheba 5, Rosh Pinna 2, Nahalal 3. The 25
+    towns draw 397.
+  - **Tests:**
+    - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`).
+    - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
+      fallback skips its own lattice's lots.
+  - The grid stays readable at 80% (71 of 89).
+  - **Perf, after the review's fixes** (WebGL, main `4abb64f` against the branch, `machine_lock.py --exclusive
+    --wait-unity`, two interleaved rounds, load 5-9, 2026-10-13):
+    - Frame time is equal. At gameplay03 `all` is 8.08 / 7.73 ms on main against 8.14 / 8.02 ms on the branch, and at
+      diorama02 19.43 / 19.50 against 18.90 / 19.42 ms. The p95s are equal, and there are 63 draws on both.
+    - Boot at cpu 4: the "kits built" phase is about 45 ms heavier, 691 / 709 ms on main against 743 / 750 ms.
+    - An attribution round (main, the branch, the branch with the fallback off, and the branch with the old whole-hex
+      lake rule) put about 10 ms of that on the fallback: 689 / 738 / 729 ms in the quieter round. The lake rule costs
+      nothing measurable. The rest is round 2's own placement against this main.
+    - The author's boot against `2b7212e` measured the kit phase within noise. The ~35 ms not explained here is not
+      attributed further.
+  - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
+    other sessions to load 15, so every number is high):
+    - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.
+    - Boot map_build median is 2982 against 3075 ms. The "kits built" phase is 746 against 686 ms.
+    - The editor's kit build_ms is 85-89 ms, with or without the floor.
+    - The floor adds no measurable cost; the boot difference is load. Still 63 draws.
+  - The label refresh is unchanged: `MapLabelTests.RefreshWhileTheCameraMovesIsCheapAndAllocationFree` measured 162-163 µs
+    with the floor and 171-180 µs without it, interleaved. The single 238 µs (fail) came in a full run at load 24.
+- **Still open, filed as issues:**
+  - #318: Tel Aviv's cover is held down by the localities' landmark lots.
+  - #319: the symbolic Old City has roads crossing inside its walls.
+- **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at
+  79% (26 of 33).
+- **Perf, re-measured by the review:** frame time is headless WebGL `?vprofile`; boot is `headed.py boot --runs 3 --cpu
+  4`. Main `471c300` against the branch at `4a68d05`, each round under `machine_lock.py --exclusive --wait-unity`, in
+  interleaved order. A third round was cut short by a stop.
+
+  | | gameplay03 all (p95) | gameplay03 none | diorama02 all (p95) | diorama02 none | boot cpu 4: map_build / first_frame |
+  |---|---|---|---|---|---|
+  | main, round 1 (load 3.1) | 14.21 ms (16) | 10.72 ms | 19.47 ms (23) | 13.20 ms | 2584 / 8431 ms |
+  | branch, round 1 (load 7.5) | 15.40 ms (17) | 11.32 ms | 18.18 ms (21) | 13.06 ms | 2598 / 8369 ms |
+  | branch, round 2 (load 13.6) | 14.36 ms (16) | 11.01 ms | 17.80 ms (20) | 13.00 ms | 2619 / 8367 ms |
+  | main, round 2 (load 4.2) | 14.23 ms (16) | 11.03 ms | 17.81 ms (20) | 13.02 ms | 2595 / 8390 ms |
+
+  - Round 2 is equal within noise. In round 1, the branch's gameplay03 cost rises with its `none` row (+0.6 ms both),
+    that is, with the machine's load.
+  - Boot's map_build is 14-24 ms over main, within the runs' spread, under the 2720 ms budget at cpu 4.
+
+### Sources (checked 2026-10-12)
+- Tel Aviv:
+  - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
+  - Port of Tel Aviv (opened 1936, completed 1938, closed 1965; 32.0965 N, 34.7733 E): https://en.wikipedia.org/wiki/Port_of_Tel_Aviv
+- Jaffa:
+  - Clock Tower (1900-03, limestone, at the north end of Yefet Street): https://en.wikipedia.org/wiki/Jaffa_Clock_Tower
+  - Mahmoudiya Mosque (mostly 1812, the old town's north-east corner, its east gate on the clock-tower plaza; 32.0549 N,
+    34.7555 E): https://en.wikipedia.org/wiki/Mahmoudiya_Mosque
+  - St Peter's Church (1888-94, on a hill near the shore, bell tower; 32.0548 N, 34.7521 E): https://en.wikipedia.org/wiki/St._Peter%27s_Church,_Jaffa
+  - Jaffa Light (1865, 10 m, red and white bands, on the hilltop above the old port; 32.0535 N, 34.7505 E): https://en.wikipedia.org/wiki/Jaffa_Light
+- Haifa:
+  - Port of Haifa (opened 31 October 1933; 32.8201 N, 35.0045 E): https://en.wikipedia.org/wiki/Port_of_Haifa
+  - German Colony (Templer colony of 1868; main street north-south down to the harbour; 32.8200 N, 34.9906 E): https://en.wikipedia.org/wiki/German_Colony,_Haifa
+  - Templer houses (stone, red roofs): https://en.wikipedia.org/wiki/Templers_(religious_believers)
+  - Shrine of the Báb (superstructure and dome completed 1953): https://en.wikipedia.org/wiki/Shrine_of_the_B%C3%A1b
+- Jerusalem:
+  - Walls (1537-41, 4,018 m, about 12 m high): https://en.wikipedia.org/wiki/Walls_of_Jerusalem
+  - Old City (0.9 km^2; 31.7767 N, 35.2342 E; the gates' sides): https://en.wikipedia.org/wiki/Old_City_of_Jerusalem
+  - Damascus Gate (the wall's north-west side): https://en.wikipedia.org/wiki/Damascus_Gate
+  - Tower of David (near Jaffa Gate; 31.7761 N, 35.2278 E): https://en.wikipedia.org/wiki/Tower_of_David
+  - Temple Mount (the Old City's eastern section, platform about 488 x 315 m; Al-Aqsa at its south end): https://en.wikipedia.org/wiki/Temple_Mount
+  - Dome of the Rock (blackened lead before 1959; Ottoman blue and white tiles): https://en.wikipedia.org/wiki/Dome_of_the_Rock
+  - Al-Aqsa Mosque (lead dome before 1969): https://en.wikipedia.org/wiki/Al-Aqsa_Mosque
+  - Jerusalem stone (Storrs' ordinance, 1918): https://en.wikipedia.org/wiki/Jerusalem_stone
+- Ramla:
+  - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
+
+## Issue #195: the water and the border lookups out of the terrain's fragment shader
+- **Why.** promo-sea (#138) put the water shading (`ScWaterShade`, the breakers' `fwidth`, the footprint) in the terrain
+  graph's function, and promo-borders (#206) six neighbour fetches in `ScBorderApply`'s loop. Either one makes the shader
+  big enough to slow every terrain pixel in WebGL, the water and borders toggled off included
+  (`.superpowers/handover-2026-10-11/promo/perf-investigation.md`): none@gameplay03 measured 2.5 ms without both, 7.3 ms
+  with the borders' fetches alone, about 10 ms with both.
+- **Water.** `StatecraftTerrain.hlsl` outputs a black, fully metallic, fully occluded surface with no emission on the water
+  (Lit adds 0 there). `MapBuilder.BuildWaterMesh` copies the terrain's surface wherever the water's coverage can be above
+  0: wet heightmap samples (the sea within 0.5 m of 0 m, flat rift lakes) and two samples around them, at full resolution,
+  with flat blocks as T-junction-free fans (129,882 vertices, 239,958 triangles). It is drawn with a copy of `Sea.mat` in
+  its `_ScTerrainWater` mode: additive, colour times coverage (the land adds 0: no per-pixel discard to split the shore's 2x2 quads, the lesson of #306), no depth write, its depth pulled two
+  pixels' worth towards the camera (the terrain's LOD splits the surface its own way). The terrain draws one queue earlier
+  (`Terrain.mat` 1998) and the water at 1999, before every other opaque, so boats and harbours cover it.
+- **Borders.** `MapBorders.Use` bakes, per hex, which of its six edges border another region (alpha: 192 plus a bit per
+  edge, `MapBorders.NeighbourSteps` order). `ScBorderApply` reads its own hex's texel only, where it read up to seven, and
+  skips a hex with no border edge (it would draw nothing). Same math, same pixels: `BorderTests` unchanged, and the border
+  pixels of the player's screenshots are identical. An overlay mesh along the bands, like the water's, was the plan; the
+  bake met the target with no mesh, no boot or memory cost and no rebuild hitch, so no mesh was built.
+- **Exactness.** On the water and its shore the sum is what the terrain drew before, except where a border band meets the
+  140 m coverage ramp at the shore, and the extra rounding of one blend.
+- **Measured** (WebGL, headless, 1920x1080, DPR 1; `PROFILE summary` medians over 3 interleaved rounds, main 1cdb356 and
+  the fix back to back under one exclusive machine lock per round, order rotated; [min-max] across rounds):
+
+  | pose, toggles | main 1cdb356 | fix |
+  |---|---|---|
+  | gameplay03, none | 10.48 [10.29-10.79] | 2.52 [2.44-2.55] |
+  | gameplay03, all | 13.94 [13.85-14.14] | 3.19 [3.16-3.19] |
+  | diorama02, none | 13.56 [12.40-13.78] | 8.18 [8.02-8.33] |
+  | diorama02, all | 18.72 [17.92-19.03] | 12.05 [11.93-12.35] |
+
+- **Baked.** The mesh's samples and triangles are baked into `Assets/Textures/Map/terrain_water.bytes` (3.4 MB;
+  `Statecraft.Game.EditorTools.TerrainWaterBake.Bake`, re-run whenever `heightmap.r16z` changes), referenced by
+  `Map.unity`'s `MapScene`, so a player only places the vertices on the heights it loaded. The file carries the
+  heightmap's resolution and a check of its heights; a stale or missing bake is refused (a warning) and the mesh derived at
+  load as before (22 ms unthrottled, about 87 ms at `--cpu 4`). `SeaTests.TheBakedWaterMeshMatchesTheHeightmap` fails on
+  a stale bake.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock per round, order rotated; six
+  rounds, 18 runs each, 2026-10-13, main 244723f against the fix merged on it, cc3c954): `map_build_ms` median main 3023
+  [3006-3042] ms, the fix 3039 [3017-3064] ms. `terrain water` takes 19 [17-22] ms, the fix's whole share; `terrain
+  heights set` is 1389 [1374-1411] ms on main and 1397 [1372-1409] ms on the fix.
+- **`SetHeights` moves with the build, not with the fix.** The review measured the fix merged on main 6d439a7 (44e1d63)
+  at about 105 ms over that main, 85 ms of it in `terrain heights set`, and it reproduces here (1473 [1462-1496] ms
+  against 1385 [1375-1418], nine runs each). It is not the 3.4 MB bake, and not the WebGL heap:
+  - The same commit rebuilt without `Map.unity`'s reference to the bake (the same wasm, byte for byte; the water mesh
+    then derived at load) keeps the slow `terrain heights set`: 1487 [1466-1503] ms against 1491 [1463-1499] with it.
+  - With heap probes (a `WebAssembly.Memory.grow` hook and the heap size after every boot phase) in builds of main 244723f
+    and of the fix merged on it, both grow the wasm heap at the same points to the same sizes (286 MB to 343 MB at
+    `new TerrainData`, none inside `SetHeights`); the bake adds 3 MB of reserved native memory and no grow. The
+    `SetHeights` call alone measured 1185-1198 ms on both.
+  - A small C# change that runs only after `SetHeights` (reading the bake through `TextAsset.GetData`, which cut
+    `terrain water` from 20 to 17 ms) made `terrain heights set` 1511 [1489-1530] ms in its build, against the fix's
+    1397. It was dropped.
+  - With V8's tiering off (`--js-flags=--no-wasm-dynamic-tiering`: every function compiled by TurboFan up front), five
+    builds (both mains, the fix, 44e1d63 and the `GetData` variant) all take 1426-1455 ms in `terrain heights set`.
+  So each wasm binary gets its own `SetHeights` time, about 1390 or about 1490 ms at `--cpu 4`, from when V8 tiers up
+  the code it runs. Any change can move it either way, and the next merge of main draws again. So judge a boot change
+  by its own phases, and read `terrain heights set` apart from them.
+- **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
+  hitch.
+- **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
+  it from the bake allocates its 3.4 MB of bytes and about 1.5 MB of vertices, short-lived. The borders add nothing (the edge bits ride in the existing texel).
+
+## Issue #390: a lighter far tilt-shift band at the gameplay zoom
+- **What happened.** #320 did not change the tilt-shift. Before it, normal play on the development machine was slow enough
+  that the runtime quality fallback stepped down to level 3 and turned the tilt-shift off (headed Chrome, 1920x1080, New
+  Game then End Turn: `QUALITY level=1` p95 51 ms, `level=2` 45, `level=3 ... tiltshift=off` 42). #320 made the frame
+  about 3.7x faster, so the fallback stays at level 0 and the far band drew in full: Tel Aviv, Hadera and the brigade
+  token were a smear. Main before #320 with `?nofallback` draws the same frame as 4abb64f (0.109% of pixels more than 24
+  levels apart, identical gradient energy per tenth of the rows). `?shot` and `?vprofile` turn the fallback off, so the
+  gameplay03 pixel A/B never showed it.
+- **Owner's ruling (2026-10-13).** Keep a soft tilt-shift, so the game still reads like promo 03, but keep the far towns
+  readable at the play zoom; the wide views (diorama02) keep the full effect. This also settles the open bottom-band note
+  above: the bottom band is not changed.
+- **What changed.** `TiltShift.FarStrength(distance)` scales the far (top) band's radius and its blend: 0.35
+  (`FarGameplayStrength`) up to 150 km, rising to 1 at the 250 km overview. The near band is unchanged. It is one global,
+  `_ScTiltShiftFar`, set with `_ScTiltShift` in `TiltShift.Apply`: no new keyword or variant.
+- **Readability bound.** Promo 03's far band (rows 10-18% from the top, columns 30-80%) has 0.34 of the gradient energy of
+  its focus band (rows 45-60%); a sharp frame of ours (`?notiltshift`, normal play) has 0.93 there, so the promo keeps about
+  37% of the far detail. `TiltShiftTests.TheFarBandStaysReadableAtTheGameplayZoom` asks for at least 60% (shifted / sharp,
+  rows 0.78-0.90 from the bottom, under the web bar) at 60 km and at the 120 km starting zoom. The fix keeps 0.72 and 0.69;
+  4abb64f kept 0.17 and 0.14. `TheDioramaKeepsBothBands` asks for at most 0.30 far and 0.45 near at diorama02 (0.20 and
+  0.33, unchanged). Mutants killed: the far strength at 1 at the gameplay zoom (4abb64f's look), a shader that ignores
+  `_ScTiltShiftFar`, a far strength stuck at 0.35 at the overview, and the far strength applied to both bands.
+- **WebGL captures**, 4abb64f against the fix. Gradient energy per tenth of the rows from the top, columns 30-80%:
+
+  | frame | build | 0-10% | 10-20% | 20-30% | 30-40% | 40-70% | 70-100% |
+  |---|---|---|---|---|---|---|---|
+  | normal play, 22 May 1948 (fallback on) | 4abb64f | 13.4 | 5.2 | 6.6 | 18.3 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | fix | 14.6 | 17.7 | 17.4 | 23.4 | 29.4 26.3 23.2 | 13.9 3.3 2.5 |
+  | | `?notiltshift` | 15.3 | 24.7 | 23.1 | 25.8 | 29.4 26.3 23.4 | 21.6 20.5 16.7 |
+  | gameplay03 (`?shot`) | 4abb64f | 12.4 | 3.4 | 4.4 | 12.1 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+  | | fix | 13.2 | 12.7 | 13.6 | 15.0 | 17.3 17.1 17.0 | 8.9 2.8 2.2 |
+
+  diorama02 is pixel-identical (0 pixels more than 24 levels apart). The near band and the focus band do not move.
+- **Frame time** (WebGL headless `?vprofile`, 1920x1080, 2 interleaved rounds under the exclusive lock, medians): gameplay03
+  none 5.02 / 5.06 ms against 4abb64f's 5.07 / 5.20, all 7.90 / 7.99 against 7.89 / 7.87; diorama02 none 12.63 / 12.62
+  against 12.20 / 12.21, all 19.51 / 19.49 against 19.08 / 18.94. Main before #320 measured 20.98 ms at gameplay03 none
+  in the same session, so #320's gain stands. The 0.4 ms at diorama02 repeated in both rounds; there the far band's
+  strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
+  build-to-build noise, within the tilt-shift's 1.5 ms budget.
+
+## HUD round 1: the info panel and the gilt trim (#398, #397)
+
+Art-track gap 4, first step. The gap list and the later steps (the minimap and settlement badges; the top bar and card
+head, which wait for owner rulings) are in the issue.
+- The info panel: before a hex is chosen it is a one-line hint (promo 03 shows no panel until a tile is chosen). The
+  hex's facts are icon rows with gold signs (`UiIcon` region, house, village, flag): the region, the settlements, the 1948
+  localities and the placement. There are no yields (owner ruling) and no land-use name, because the land-use bake is
+  modelled, not a sourced record. The region line wraps (#397). One refusal shared by both map actions is said once,
+  without buttons, which takes the 1948 panel from about 385 to 300 px tall.
+- `UiFrame.Filigree`: a second inset rule and a scroll at each corner (on a panel at least 120 px tall the scrolls also
+  run down the sides). It is drawn with Painter2D on the date plate, the event card, the info panel and the minimap, and
+  takes no clicks.
+
+Allocations: GC.Alloc samples over 200 renders (`Recorder("GC.Alloc")`, a temporary probe run on both trees) were the
+same on main e5bbf0f and on the branch: the info panel 15,600 and the top bar 12,800. No per-frame work is added.
+
+Frame time, `?vprofile`, WebGL headless 1920x1080, DPR 1, `machine_lock.py --exclusive`. Two interleaved rounds per
+build, main e5bbf0f against the branch on it (median avg ms, spread in brackets):
+
+| Pose | main all | branch all | main none | branch none |
+|---|---|---|---|---|
+| gameplay03 | 8.09 (0.03), 8.03 (0.07) | 7.96 (0.16), 8.06 (0.06) | 5.25 (0.10), 5.32 (0.23) | 5.32 (0.04), 5.27 (0.10) |
+| diorama02 | 18.87 (0.72), 19.10 (0.61) | 18.88 (0.61), 18.99 (0.59) | 12.23 (0.02), 12.33 (0.19) | 11.66 (0.32), 11.57 (0.16) |
+
+Headed at DPR 2 (`headed.py profile --dpr 2`). The first run compared main e5bbf0f with the branch; then two
+interleaved rounds compared main db99f3a with the branch merged with it. Median avg ms, then p95, main first:
+
+| Pose, config | run 1 (e5bbf0f) | round 2 (db99f3a) | round 3 (db99f3a) |
+|---|---|---|---|
+| gameplay03 all | 14.61 / 14.62, p95 18 / 18 | 14.53 / 14.59, p95 18 / 18 | 14.59 / 14.56, p95 18 / 18 |
+| gameplay03 none | 8.66 / 8.64, p95 14 / 14 | 8.78 / 8.40, p95 14 / 14 | 8.57 / 8.43, p95 14 / 14 |
+| diorama02 all | 30.77 / 31.03, p95 36 / 40 | 30.95 / 31.26, p95 34 / 39 | 31.90 / 30.99, p95 36 / 39 |
+| diorama02 none | 20.46 / 20.46, p95 23 / 22 | 21.32 / 20.69, p95 24 / 23 | 21.17 / 20.63, p95 23 / 23 |
+
+The averages are within the spread everywhere; diorama02 has no hex chosen, so the branch draws a smaller panel. The
+p95 at diorama02 `all` at DPR 2 was 3 to 5 ms higher on the branch in all three runs, so it was not noise.
+
+**Bisect (DPR 2, diorama02 `all` p95, two interleaved rounds, main db99f3a first).** At the shot poses the event card is
+closed, so variant (c) draws no visible filigree:
+
+| Build | round 1 | round 2 |
+|---|---|---|
+| main | 36 | 35 |
+| (a) the branch without the filigree | 36 | 36 |
+| (b) only the info panel and refusal changes | 35 | 36 |
+| (c) the filigree on the event card only | 35 | 36 |
+| the branch (filigree on the date plate, info panel, minimap, card) | 39 | 39 |
+
+**Cause.** The filigree drawn as Painter2D curves. An EditMode probe found no regeneration: over 120 idle frames, and
+with the minimap's view box set every frame (still or moving), no `UiFrame` regenerated its mesh and no element got a
+`GeometryChangedEvent`. So the cost is in drawing the curves' tessellated, antialiased geometry each frame, not in
+rebuilding it.
+
+**Fix.** `UiFrame.Ornament` rasterises the scrolls and the leaf once, in code, into a 64x64 alpha texture (two variants,
+with and without the side scroll; no asset). Each corner draws one tinted, mirrored, textured quad, and the second rule
+is four plain quads. The look is unchanged at 1920x1080. Re-run, DPR 2, interleaved, main db99f3a, the fix, then the old
+branch (avg ms, then p95):
+
+| Pose, config | round 1 | round 2 |
+|---|---|---|
+| diorama02 all | 30.78 / 30.61 / 31.29, p95 35 / 33 / 39 | 31.57 / 30.53 / 31.93, p95 36 / 34 / 38 |
+| diorama02 none | 20.49 / 20.77 / 20.82, p95 23 / 24 / 23 | 21.35 / 20.35 / 21.09, p95 24 / 23 / 23 |
+| gameplay03 all | 14.64 / 14.99 / 16.10, p95 18 / 23 / 23 | 14.51 / 14.53 / 14.45, p95 18 / 18 / 18 |
+| gameplay03 none | 8.74 / 8.77 / 9.66, p95 14 / 14 / 17 | 8.64 / 8.67 / 8.37, p95 14 / 14 / 14 |
+
+The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In round 1, gameplay03 `all` was disturbed
+for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
+up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.
