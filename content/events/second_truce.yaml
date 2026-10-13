@@ -28,4 +28,7 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/United_Nations_Security_Council_Resolution_54", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
+  - { url: "https://avalon.law.yale.edu/20th_century/scres054.asp", checked: 2026-10-14 }
+  - { url: "https://unispal.un.org/pdfs/AB14D4AAFC4E1BB985256204004F55FA.pdf", checked: 2026-10-14 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-210876/", checked: 2026-10-14 }
 status: fact-checked

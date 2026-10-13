@@ -312,6 +312,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   "Education in the Immigrant Camps" cites the Knesset debates of 31 January and 28 February 1950 and keeps only the
   Hebrew Wikipedia article, for the commission's first session and report dates. Text, dates and effects are unchanged
   (refs #442).
+- Six war cards ("The Altalena", "The Ten Days", "The Second Truce", "Operation Yoav", "Operation Hiram", "Talks at
+  Rhodes") now cite primary sources beside Wikipedia: Security Council resolution 54, the Mediator's reports (A/648,
+  S/1042, S/1055, S/1357), FRUS 1948 and 1949, UN press releases, the JTA archive and the Irgun's own history of the
+  Altalena. "Talks at Rhodes" drops its Hebrew Wikipedia source, which FRUS now covers. Text, dates and effects are
+  unchanged (refs #442).
 - The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
   (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
