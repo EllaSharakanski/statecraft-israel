@@ -6,7 +6,7 @@ anchor: hard
 tags: [security]
 office: foreign_minister
 # Egypt announced on 6 January 1949 that it would negotiate; Israel accepted the cease-fire on 7 January (en.wiki
-# "Operation Horev"); the Rhodes talks opened on 13 January 1949 (he.wiki elections page). The RAF clash of 7 January [C]
+# "Operation Horev"); the Rhodes talks opened on 13 January 1949 (FRUS 1949 vol. VI doc. 389). The RAF clash of 7 January [C]
 # (6 January on en.wiki "Operation Horev") is left out of the text. Research notes facts-1948.md section 9 (aftermath).
 # Only a player who launched Operation Horev sees this card (the cease-fire it names ends that operation).
 from: 1949-01-09
@@ -26,5 +26,7 @@ options:
       - { target: intl_standing, delta: -0.05 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
-  - { url: "https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת", checked: 2026-10-10 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d362", checked: 2026-10-14 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d389", checked: 2026-10-14 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-210639/", checked: 2026-10-14 }
 status: fact-checked

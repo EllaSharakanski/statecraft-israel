@@ -7,7 +7,7 @@ or for a coding agent. It has no Unity. Unity work (`unity/`, builds, edit-mode 
 
 | Tool | Version | Where the version comes from |
 | --- | --- | --- |
-| .NET SDK | 10.0.401 | `dotnet-version` in `.github/workflows/ci.yml`. The sim targets `net10.0`. There is no `global.json`. |
+| .NET SDK | 10.0.401 | `dotnet-version` in `.github/workflows/ci.yml`. The sim library targets `netstandard2.1` (for Unity); its tests and the CLI target `net10.0`. There is no `global.json`. |
 | uv | 0.12.5 | `version` of `astral-sh/setup-uv` in `.github/workflows/ci.yml` |
 | Python | 3.12 | Ubuntu 24.04's own `python3`, as on the `ubuntu-24.04` CI runner, and `UV_PYTHON` in `.github/workflows/ci.yml`. The scripts need `>=3.11`. |
 | OS | Ubuntu 24.04 (`devcontainers/base` 3.0.8) | `runs-on: ubuntu-24.04` in `.github/workflows/ci.yml` |

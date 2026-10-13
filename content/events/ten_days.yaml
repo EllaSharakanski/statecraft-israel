@@ -33,4 +33,6 @@ sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Danny", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
+  - { url: "https://unispal.un.org/pdfs/AB14D4AAFC4E1BB985256204004F55FA.pdf", checked: 2026-10-14 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d486", checked: 2026-10-14 }
 status: sensitivity-reviewed

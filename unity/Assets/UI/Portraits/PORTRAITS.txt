@@ -1,4 +1,4 @@
-# Portraits shipped in the build (copied from people.yaml portrait records; public domain only).
+# Portraits shipped in the build (copied from people.yaml portrait records; public domain, CC0 and CC BY 4.0 (attribution in NOTICE)).
 ben_gurion | Public domain | https://commons.wikimedia.org/wiki/File:Photograph_of_President_Truman_in_the_Oval_Office%2C_evidently_receiving_a_Menorah_as_a_gift_from_the_Prime_Minister_of..._-_NARA_-_200318.jpg
 zisling | Public domain | https://commons.wikimedia.org/wiki/File:Aharon_Zisling.jpg
 kaplan | Public domain | https://commons.wikimedia.org/wiki/File:Eliezer_Kaplan.jpg
@@ -10,8 +10,9 @@ bentov | Public domain | https://commons.wikimedia.org/wiki/File:MordechaiBentov
 sheetrit | Public domain | https://commons.wikimedia.org/wiki/File:Bechor-Shalom_Shitreet.jpg
 maimon | Public domain | https://commons.wikimedia.org/wiki/File:Yehuda_Leib_Maimon.jpg
 bernstein | Public domain | https://commons.wikimedia.org/wiki/File:Peretz_Bernstein.jpg
-remez | Public domain | https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg
-levin | Public domain | https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg
+remez | CC BY 4.0 | https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg
+levin | CC BY 4.0 | https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg
+dov_yosef | CC BY 4.0 | https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg
 shazar | Public domain | https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg
 golda_meir | CC0 | https://commons.wikimedia.org/wiki/File:Golda_Meir%2C_minister_van_buitenlandse_zaken_van_Israel%2C_Bestanddeelnr_255-4314.jpg
 weizmann | Public domain | https://commons.wikimedia.org/wiki/File:C._(Chaim)_Weizmann_LCCN2014712248.jpg
