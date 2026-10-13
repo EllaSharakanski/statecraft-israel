@@ -55,12 +55,20 @@ SUPERSAMPLE = 2                  # samples per texel per axis, box-filtered (the
 BLOCK_M = 5200.0                 # a farm block, one angle per block
 STRIP_M = 1000.0                 # strip width across the block (symbolic scale, like the kits)
 TERRACE_STEP_M = 40.0            # real metres of rise per terrace
+# Land round 2: lines and dots at the symbolic scale, like the kits, so the texture can hold them (a texel is about
+# 79 x 105 m; round 1's 18 m hedges and 30 m tracks were averaged away by the supersampling).
+HEDGE_HALF_M = 75.0              # a hedge or tree line along a parcel edge: about 150 m, 1.5-2 texels
+TRACK_HALF_M = 70.0              # a farm track along a block edge: about 140 m
+BUSH_CELL_M, BUSH_R_M = 300.0, 100.0   # at most one bush per cell, about 2.5 texels across, with a baked shadow
+BUSH_SHADOW = (0.966, -0.259)    # east-south-east: away from the sun (MapLighting.SunAzimuth 285 degrees)
 VERTICAL_EXAGGERATION = tb.VERTICAL_EXAGGERATION
 PALETTE_BRIGHTNESS, PALETTE_MAX = 1.107, 0.95   # MapPalette.Brightness and MaxChannel: the land sits in the biome palette
-SRGB = {  # the land's colours (sRGB, before PALETTE_BRIGHTNESS), sampled from promo/final/03's ground and tuned on renders
-    "green": (0.46, 0.50, 0.31), "ochre": (0.78, 0.66, 0.44), "plough": (0.58, 0.47, 0.34), "fallow": (0.72, 0.66, 0.51),
-    "grass": (0.52, 0.54, 0.33), "orchard": (0.52, 0.47, 0.31), "hedge": (0.27, 0.30, 0.18), "dust": (0.84, 0.76, 0.61),
-    "soil": (0.66, 0.57, 0.46), "hillgrass": (0.56, 0.55, 0.37), "stone": (0.74, 0.68, 0.56), "scrub": (0.34, 0.36, 0.22),
+SRGB = {  # the land's colours (sRGB, before PALETTE_BRIGHTNESS), sampled from promo/final/03's ground and tuned on renders.
+    # Land round 2: warm sand and dry grass rather than yellow-olive (promo 03's ground between its trees renders about
+    # (177, 144, 114), round 1's (166, 148, 99)), and a wider spread between the crops, so the parcels read at 30-60 km.
+    "green": (0.42, 0.48, 0.28), "ochre": (0.82, 0.62, 0.50), "plough": (0.55, 0.41, 0.32), "fallow": (0.78, 0.64, 0.58),
+    "grass": (0.61, 0.525, 0.445), "orchard": (0.50, 0.42, 0.31), "hedge": (0.24, 0.23, 0.15), "dust": (0.88, 0.72, 0.65),
+    "soil": (0.69, 0.535, 0.51), "hillgrass": (0.64, 0.545, 0.47), "stone": (0.80, 0.69, 0.64), "scrub": (0.27, 0.25, 0.18),
 }
 
 
@@ -185,13 +193,19 @@ def paint_samples(x: np.ndarray, y: np.ndarray, fields: np.ndarray, orchards: np
     crop[grove] = col["orchard"]; gain[grove] = 0.12
     rows = 0.6 * np.sin(lx * (2 * math.pi / 320.0))                     # rows (symbolic: 320 m apart, about 3 texels)
     crop *= ((1 + gain * rows) * (0.92 + 0.16 * pv))[..., None]
-    rim = smoothstep(20.0, 90.0, edge_m)[..., None]                     # soft grassy rims (promo 03)
+    rim = smoothstep(30.0, 100.0, edge_m)[..., None]                    # soft grassy rims (promo 03)
     farmed = col["grass"] * (1 - rim) + crop * rim
-    hedge = ((edge_m < 18.0) & (pv > 0.45))[..., None]
-    farmed = np.where(hedge, farmed * 0.3 + col["hedge"] * 0.7, farmed)
-    block_edge_m = np.minimum(np.minimum(bfx, 1 - bfx), np.minimum(bfy, 1 - bfy)) * BLOCK_M
-    edge_track = ((block_edge_m < 30.0) & (hash01(np.floor(bpx + 0.5), np.floor(bpy + 0.5), bix, biy, 7) > 0.65))[..., None]
-    farmed = np.where(edge_track, col["dust"] * 0.85 + farmed * 0.15, farmed)
+    # Hedges and tree lines: chosen per edge (the hash of the edge itself), so both parcels draw the same line, HEDGE_HALF_M
+    # either side of it.
+    across_m = np.minimum(sx - ci, ci + 1 - sx) * STRIP_M
+    along_m = np.minimum(sy - pj, pj + 1 - sy) * len_m
+    hedge = (((across_m < HEDGE_HALF_M) & (hash01(np.floor(sx + 0.5), bix, biy, 9) > 0.45))
+             | ((along_m < HEDGE_HALF_M) & (hash01(ci, np.floor(sy + 0.5), bix, biy, 10) > 0.45)))[..., None]
+    farmed = np.where(hedge, farmed * 0.25 + col["hedge"] * 0.75, farmed)
+    # Farm tracks along some block edges, likewise one choice per edge.
+    track_x = (np.minimum(bfx, 1 - bfx) * BLOCK_M < TRACK_HALF_M) & (hash01(np.floor(bpx + 0.5), biy, 7) > 0.65)
+    track_y = (np.minimum(bfy, 1 - bfy) * BLOCK_M < TRACK_HALF_M) & (hash01(bix, np.floor(bpy + 0.5), 11) > 0.65)
+    farmed = np.where((track_x | track_y)[..., None], col["dust"] * 0.85 + farmed * 0.15, farmed)
     farm_w = fields * smoothstep(0.08, 0.22, patch * 0.6 + fields * 0.5)
 
     # The wet unfarmed hills: patches of stony soil and grass (garrigue), terraces on the slopes, scrub.
@@ -201,15 +215,34 @@ def paint_samples(x: np.ndarray, y: np.ndarray, fields: np.ndarray, orchards: np
     tf = np.mod(elev / TERRACE_STEP_M, 1.0)
     steps_per_texel = grad * TEXEL_M / TERRACE_STEP_M
     terrace = (smoothstep(0.05, 0.10, slope) * (1 - smoothstep(0.45, 0.65, slope)) * smoothstep(120.0, 320.0, elev)
-               * smoothstep(0.55, 0.70, 1 - patch) * (1 - smoothstep(0.35, 0.8, steps_per_texel)))[..., None]
-    terraced = hill * (0.78 + 0.24 * tf)[..., None]
-    terraced = np.where((tf > 0.75)[..., None], terraced * 0.65 + col["stone"] * 0.35, terraced)
+               * smoothstep(0.40, 0.55, 1 - patch) * (1 - smoothstep(0.35, 0.8, steps_per_texel)))[..., None]
+    terraced = hill * (0.72 + 0.32 * tf)[..., None]
+    terraced = np.where((tf > 0.75)[..., None], terraced * 0.45 + col["stone"] * 0.55, terraced)
     hill = hill * (1 - terrace) + terraced * terrace
-    scrub = (0.14 + 0.2 * smoothstep(0.55, 0.85, patch)) * (1 - smoothstep(0.5, 0.8, slope))
-    speck = (hash01(np.floor(x / 160.0), np.floor(y / 160.0), 8) < 0.30) * (1 - smoothstep(0.5, 0.8, slope)) * 0.7   # bushes
-    hill = hill * (1 - np.maximum(scrub, speck))[..., None] + col["scrub"] * np.maximum(scrub, speck)[..., None]
+    flat_enough = 1 - smoothstep(0.5, 0.8, slope)
+    scrub = (0.14 + 0.2 * smoothstep(0.55, 0.85, patch)) * flat_enough
+    hill = hill * (1 - scrub)[..., None] + col["scrub"] * scrub[..., None]
+    # Bushes: round dots BUSH_R_M across, at most one per BUSH_CELL_M cell anywhere in it, in clumps (a 1.5 km noise sets
+    # the share of cells with one), each with a softer shadow offset away from the sun. A sample takes the nearest dot of
+    # the 2 x 2 cells round it, so a dot or shadow near a cell's edge is never cut.
+    clumps = 0.2 + 0.6 * smoothstep(0.3, 0.75, value_noise(x / 1500.0, y / 1500.0, 14))
+    bush = np.zeros(x.shape); shade = np.zeros(x.shape)
+    gx0, gy0 = np.floor(x / BUSH_CELL_M - 0.5), np.floor(y / BUSH_CELL_M - 0.5)
+    for ox in (0, 1):
+        for oy in (0, 1):
+            cx, cy = gx0 + ox, gy0 + oy
+            bx = (cx + 0.1 + 0.8 * hash01(cx, cy, 12)) * BUSH_CELL_M
+            by = (cy + 0.1 + 0.8 * hash01(cx, cy, 13)) * BUSH_CELL_M
+            present = hash01(cx, cy, 8) < clumps
+            bush = np.maximum(bush, present * (1 - smoothstep(0.7 * BUSH_R_M, BUSH_R_M, np.hypot(x - bx, y - by))))
+            sx_, sy_ = bx + BUSH_SHADOW[0] * 0.45 * BUSH_R_M, by + BUSH_SHADOW[1] * 0.45 * BUSH_R_M
+            shade = np.maximum(shade, present * (1 - smoothstep(0.6 * BUSH_R_M, 0.9 * BUSH_R_M, np.hypot(x - sx_, y - sy_))))
+    bush *= flat_enough
+    shade *= flat_enough * (1 - bush)
+    hill = hill * (1 - 0.45 * shade)[..., None]
+    hill = hill * (1 - 0.9 * bush)[..., None] + col["scrub"] * (0.9 * bush)[..., None]
     # Not on the steep faces, where the shader draws rock (ScGroundBase: smoothstep(0.22, 0.45, slope), review M5).
-    wild_w = wild * smoothstep(80.0, 250.0, elev) * 0.7 * (1 - smoothstep(0.22, 0.45, slope))
+    wild_w = wild * smoothstep(80.0, 250.0, elev) * 0.9 * (1 - smoothstep(0.22, 0.45, slope))
 
     w = farm_w + wild_w
     colour = (farmed * farm_w[..., None] + hill * wild_w[..., None]) / np.maximum(w, 1e-6)[..., None]

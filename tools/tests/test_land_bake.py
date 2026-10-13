@@ -26,6 +26,26 @@ def test_the_painted_land_is_weighted_by_the_masks_and_holds_every_crop():
         assert near.mean() > share, name
 
 
+@pytest.mark.parametrize("name, size_m, step_m", [("HEDGE_HALF_M", (8000, 2000), 5.0), ("TRACK_HALF_M", (36000, 4000), 14.0)])
+def test_field_lines_are_wide_enough_for_the_texture(name, size_m, step_m, monkeypatch):
+    # Land round 2: round 1's 18 m hedges and 30 m tracks were averaged away in the texture's 79 x 105 m texel. A line's
+    # own samples are those that change when its half width is 0; runs of them along east-west rows cross the lines at
+    # their angles (and the blocks' wobble stretches them by up to about 20% either way), so the median run measures the
+    # line across: at least 1.5 texels. (Tracks lie only on some 5.2 km block edges, so they need the larger ground.)
+    x, y = np.meshgrid(np.arange(0, size_m[0], step_m), np.arange(0, size_m[1], step_m))
+    zero, one = np.zeros_like(x), np.ones_like(x)
+    with_lines, _ = lb.paint_samples(x, y, one, zero, zero, zero + 50.0, zero)
+    monkeypatch.setattr(lb, name, 0.0)
+    without, _ = lb.paint_samples(x, y, one, zero, zero, zero + 50.0, zero)
+    line = np.abs(with_lines - without).max(axis=-1) > 1e-6
+    runs = []
+    for row in line:
+        edges = np.flatnonzero(np.diff(np.concatenate([[0], row.astype(np.int8), [0]])))
+        runs += [(b - a) * step_m for a, b in zip(edges[::2], edges[1::2]) if a > 0 and b < row.size]
+    assert line.mean() > 0.002 and len(runs) > 100
+    assert np.median(runs) >= 1.5 * 79.0, f"{name}: lines {np.median(runs):.0f} m across, under 1.5 texels"
+
+
 def test_empty_texels_take_the_neighbouring_land_colour():
     rgb = np.zeros((8, 8, 3)); filled = np.zeros((8, 8), dtype=bool)
     rgb[:, :2] = (0.5, 0.4, 0.2); filled[:, :2] = True

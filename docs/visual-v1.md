@@ -1430,6 +1430,66 @@ Still different from the promo: soft at close zoom (rows, hedges and bushes read
 and closer); terraces read faintly; the orchard ground and promo-art's groves follow separate rules; the promo's ground is warmer and browner under
 its grade.
 
+### Land round 2 (branch `land-round2`, refs #33)
+Round 1's land read as yellow-olive. It also lost most of its field lines, because the bake's 2 x 2 supersampling averages
+an 18 m hedge or a 30 m track away inside a 79 x 105 m texel. Round 2 changes only the colours and the bake; the shader,
+the texture's size and format, the trees and the sea are untouched.
+- **Ground colour.** The land's colours in `tools/land_bake.py` (`SRGB`) and the plain, valley, lowland, hill and mountain
+  colours in `MapPalette.Ground` move toward promo 03's ground: less green, more blue. Promo 03's open ground, between its
+  trees and away from its towns, measures sRGB (169, 135, 107) at luma >= 0.4: B/R 0.63, G/R 0.80. The desert is unchanged.
+- **Fields.** Hedges and tree lines are `HEDGE_HALF_M` 75 m either side of a parcel edge. Farm tracks are `TRACK_HALF_M`
+  70 m either side of a block edge. Each line is chosen once per edge, so the parcels on both sides draw it. The crops are
+  further apart in luma: a darker green, darker ploughland, paler stubble and fallow.
+  `test_field_lines_are_wide_enough_for_the_texture` holds both lines to at least 1.5 texels across. It fails at round 1's
+  widths, measuring 15 m and 28 m.
+- **Hills.** Round bushes about 200 m across, at most one per 300 m cell. A 1.5 km noise sets the share of cells with one
+  (20-80%), so they clump. Each sample takes its dot from the 2 x 2 cells round it, so no dot is cut. Each bush has a
+  softer shadow offset east-south-east, away from the sun (`MapLighting.SunAzimuth` 285 degrees). The garrigue's weight
+  rises from 0.7 to 0.9. Terraces cover more of the slopes, with stronger stone lines.
+- **Bake.** About 30 s. Two runs give byte-identical PNGs. `test_the_committed_texture_is_the_bake` passes. The land weight
+  mean is 0.192 (round 1: 0.171), because the garrigue's weight rose.
+
+Measured: WebGL `?shot` at main `4abb64f`, then the branch on it, art-log rows `lc-r2-main` and `land-round2`. The ground
+crop is gameplay03's land (x 0.36-0.88, y 0.30-0.82), pixels at luma >= 0.4. The towns' tan walls and their ground tint
+are in it and unchanged, so it moves less than the ground does.
+
+| | main | round 2 | promo |
+|---|---|---|---|
+| gameplay03 saturation / contrast / warmth | 0.447 / 0.181 / 0.070 | 0.421 / 0.178 / 0.057 | 0.38 / 0.203 / 0.064 |
+| gameplay03 palette distance | 0.435 | **0.371** | - |
+| diorama02 saturation / contrast / warmth | 0.414 / 0.184 / 0.113 | 0.403 / 0.183 / 0.107 | 0.43 / 0.200 / 0.145 |
+| diorama02 palette distance | 0.563 | 0.563 | - |
+| gameplay03 ground crop (sRGB) | (166, 148, 99) | (169, 142, 108) | (177, 144, 114) |
+
+The bars hold: diorama02 warmth 0.107 is inside [0.087, 0.145], and its saturation is under 0.48. gameplay03 warmth
+falls 0.006 below the promo; it was 0.006 above it. Every ground channel is now within 8 levels of the promo's (it was
+within 15).
+
+Frame time: headless, main and the branch back to back under one exclusive lock, 3 rounds, rotated. The load average was
+about 6 from other sessions, so the absolute times are inflated. The table gives medians over the rounds, in ms:
+
+| pose | `all` main / branch | `-land` | `none` |
+|---|---|---|---|
+| gameplay03 | 8.13 / 8.05 | 8.05 / 7.81 | 5.09 / 4.97 |
+| diorama02 | 19.49 / 19.71 | 19.08 / 19.45 | 12.36 / 12.72 |
+
+Every difference is within about 0.4 ms, which is also how far `none` moves between the two builds. The shader and the
+texture's size are the same. diorama02's p95 is 21-22 ms on main and on the branch alike, under that load.
+
+Boot: `headed.py boot --runs 3 --cpu 4`, 3 rounds interleaved, 9 cold loads each, medians:
+- `map_build_ms`: main 3032, branch 3039;
+- `first_frame_ms`: main 10842, branch 10819;
+- `biome texture baked` (MapPalette's colours): main 437, branch 431;
+- `downloaded 53 files`: main 1048, branch 1040.
+
+Both builds' map build is over #321's budget at this load; that is main's, not this change's.
+The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLDEN OK 1952 62f8ec61...` and
+`SMOKE OK 5 turns 1948-06-19 d3fdd459...`. The tree count is unchanged (7,814).
+
+Still different from the promo: the trees and bushes, so far only painted in the bake (promo 03's land is 27% dark trees
+and shadow; ours is 10%). The grade's teal shadows also give the shaded hill flanks a rose cast, where the promo's shadows
+are warm brown.
+
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.
 
