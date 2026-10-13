@@ -8,7 +8,7 @@ namespace Statecraft.Game.Map.Kits
     /// WebGL is per instance (the matrices uploaded each frame), not per triangle, so the dense groves are instanced in fours.</summary>
     public enum TreeKind { Citrus, Olive, Palm, Cypress, CitrusPatch }
 
-    /// <summary>Procedural trees at the symbolic scale (issue #34): citrus groves (dense rows of round dark-green trees with
+    /// <summary>Procedural trees at the symbolic scale (issue #34): citrus groves (dense rows of round dark olive-brown trees with
     /// fruit specks) on the coastal plain round the towns, olives scattered over the hills, palms by the shore of the coastal
     /// towns, cypress windbreaks by villages. There is no land-use layer yet (Deferred row "Land-use texture"), so where
     /// each grows is a seeded rule over the biome, elevation, slope and the settlements; every draw is seeded (no
@@ -39,9 +39,9 @@ namespace Statecraft.Game.Map.Kits
                     break;
                 case TreeKind.Olive:
                     km.Shaft(new Vector3(0, -0.6f, 0), new Vector3(0.15f, 1.7f, 0.1f), 0.32f, 0.22f, C(0.36f, 0.31f, 0.25f), 4);
-                    km.Crown(new Vector3(0.5f, 2.9f, 0.2f), new Vector3(2.0f, 1.5f, 1.9f), C(0.50f, 0.55f, 0.39f), ref rnd, 0.16f, 7, 4);
-                    km.Crown(new Vector3(-0.8f, 2.6f, -0.4f), new Vector3(1.6f, 1.3f, 1.5f), C(0.46f, 0.52f, 0.37f), ref rnd, 0.18f, 6, 4);
-                    km.Crown(new Vector3(-0.1f, 3.5f, 0.6f), new Vector3(1.3f, 1.0f, 1.3f), C(0.55f, 0.60f, 0.44f), ref rnd, 0.15f, 6, 3);
+                    km.Crown(new Vector3(0.5f, 2.9f, 0.2f), new Vector3(2.0f, 1.5f, 1.9f), C(0.55f, 0.53f, 0.39f), ref rnd, 0.16f, 7, 4);
+                    km.Crown(new Vector3(-0.8f, 2.6f, -0.4f), new Vector3(1.6f, 1.3f, 1.5f), C(0.52f, 0.50f, 0.37f), ref rnd, 0.18f, 6, 4);
+                    km.Crown(new Vector3(-0.1f, 3.5f, 0.6f), new Vector3(1.3f, 1.0f, 1.3f), C(0.60f, 0.58f, 0.44f), ref rnd, 0.15f, 6, 3);
                     break;
                 case TreeKind.Palm:
                 {
@@ -53,13 +53,13 @@ namespace Statecraft.Game.Map.Kits
                     {
                         float a = i * Mathf.PI * 2f / 9f + rnd.Range(-0.15f, 0.15f);
                         km.Frond(top, new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)), rnd.Range(3.8f, 4.6f), 1.1f, rnd.Range(0.55f, 0.85f),
-                            i % 3 == 0 ? C(0.36f, 0.45f, 0.20f) : C(0.28f, 0.40f, 0.17f));
+                            i % 3 == 0 ? C(0.40f, 0.44f, 0.20f) : C(0.33f, 0.38f, 0.17f));
                     }
                     break;
                 }
                 default:
                     km.Shaft(new Vector3(0, -0.6f, 0), new Vector3(0, 0.8f, 0), 0.2f, 0.18f, C(0.30f, 0.24f, 0.18f), 5);
-                    km.Crown(new Vector3(0, 4.6f, 0), new Vector3(1.05f, 4.4f, 1.05f), C(0.14f, 0.27f, 0.13f), ref rnd, 0.08f, 7, 7, 0f, default, 0.9f);
+                    km.Crown(new Vector3(0, 4.6f, 0), new Vector3(1.05f, 4.4f, 1.05f), C(0.20f, 0.25f, 0.13f), ref rnd, 0.08f, 7, 7, 0f, default, 0.9f);
                     break;
             }
             return km;
@@ -79,7 +79,7 @@ namespace Statecraft.Game.Map.Kits
         static void CitrusTree(KitMesh km, Vector3 at, float size, ref KitRandom rnd, float shade = 1f)
         {
             Color32 C(float r, float g, float b) => new Color32((byte)(r * 255), (byte)(g * 255), (byte)(b * 255), 0);
-            var leaf = C(0.17f * shade, 0.30f * shade, 0.12f * shade); var fruit = C(0.92f, 0.50f, 0.09f);
+            var leaf = C(0.32f * shade, 0.28f * shade, 0.18f * shade); var fruit = C(0.92f, 0.50f, 0.09f);
             km.Shaft(at + new Vector3(0, -0.6f, 0), at + new Vector3(0, 1.0f, 0) * size, 0.18f * size, 0.14f * size, C(0.33f, 0.25f, 0.17f), 4);
             km.Crown(at + new Vector3(0, 2.3f, 0) * size, new Vector3(2.1f, 1.8f, 2.1f) * size, leaf, ref rnd, 0.10f, 7, 5, 0.13f, fruit, 0.55f);
             km.Crown(at + new Vector3(0.9f, 2.9f, 0.5f) * size, new Vector3(1.3f, 1.1f, 1.3f) * size, leaf, ref rnd, 0.12f, 6, 4, 0.16f, fruit, 0.5f);
