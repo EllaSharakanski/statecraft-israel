@@ -2161,8 +2161,20 @@ build, main e5bbf0f against the branch on it (median avg ms, spread in brackets)
 | gameplay03 | 8.09 (0.03), 8.03 (0.07) | 7.96 (0.16), 8.06 (0.06) | 5.25 (0.10), 5.32 (0.23) | 5.32 (0.04), 5.27 (0.10) |
 | diorama02 | 18.87 (0.72), 19.10 (0.61) | 18.88 (0.61), 18.99 (0.59) | 12.23 (0.02), 12.33 (0.19) | 11.66 (0.32), 11.57 (0.16) |
 
-Headed at DPR 2 (`headed.py profile --dpr 2`, one run each, main first): gameplay03 all 14.61 against 14.62, none 8.66 against 8.64;
-diorama02 all 30.77 against 31.03 (spread 0.69), none 20.46 against 20.46. The averages are within the spread
-everywhere. diorama02 has no hex chosen, so the branch draws a smaller panel there, and `none` is about 0.6 ms lower.
-The p95 values are whole milliseconds and noisy at diorama02 (main first): headless `none` 14 against 16 in both rounds, DPR-2 `all`
-36 against 40, DPR-2 `none` 23 against 22.
+Headed at DPR 2 (`headed.py profile --dpr 2`). The first run compared main e5bbf0f with the branch; then two
+interleaved rounds compared main db99f3a with the branch merged with it. Median avg ms, then p95, main first:
+
+| Pose, config | run 1 (e5bbf0f) | round 2 (db99f3a) | round 3 (db99f3a) |
+|---|---|---|---|
+| gameplay03 all | 14.61 / 14.62, p95 18 / 18 | 14.53 / 14.59, p95 18 / 18 | 14.59 / 14.56, p95 18 / 18 |
+| gameplay03 none | 8.66 / 8.64, p95 14 / 14 | 8.78 / 8.40, p95 14 / 14 | 8.57 / 8.43, p95 14 / 14 |
+| diorama02 all | 30.77 / 31.03, p95 36 / 40 | 30.95 / 31.26, p95 34 / 39 | 31.90 / 30.99, p95 36 / 39 |
+| diorama02 none | 20.46 / 20.46, p95 23 / 22 | 21.32 / 20.69, p95 24 / 23 | 21.17 / 20.63, p95 23 / 23 |
+
+The averages are within the spread everywhere; diorama02 has no hex chosen, so the branch draws a smaller panel. **The
+p95 at diorama02 `all` at DPR 2 is 3 to 5 ms higher on the branch in all three runs, so it is not noise.** In run 1
+almost every config at diorama02 shows it: `-labels` has p95 36 / 40, so it is not the labels, and `-shadows` has 24 /
+24. `none` (the HUD with every map feature off) does not show it, nor does gameplay03, nor headless DPR 1 at either
+pose. The cause is not found. The suspects are a UI repaint that lands on an already heavy (~31 ms) frame, or the
+filigree's extra Painter2D geometry at DPR 2. A development build with the UI Toolkit profiler markers would settle it.
+Main's own DPR-2 diorama02 p95 (34-36 ms) is already over the 33 ms floor.
