@@ -52,7 +52,7 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
     values from `docs/determinism.md`: PASS on both builds (the Brotli build too).
 - **Play it locally:** serve the folder with web_check's handler, which sends `Content-Encoding: br` for `*.br`. Plain `python3 -m http.server` does not, so the Brotli build would not load. Then open http://localhost:8000/.
   ```
-  python3 -c "import sys,functools,http.server; sys.path.insert(0,'tools'); import web_check as w; http.server.ThreadingHTTPServer(('127.0.0.1',8000), functools.partial(w.Handler, directory='unity/Builds/Web-brotli')).serve_forever()"
+  uv run --python 3.12 python -c "import sys,functools,http.server; sys.path.insert(0,'tools'); import web_check as w; http.server.ThreadingHTTPServer(('127.0.0.1',8000), functools.partial(w.Handler, directory='unity/Builds/Web-brotli')).serve_forever()"
   ```
   The uncompressed build also works with `python3 -m http.server 8000 --directory unity/Builds/Web-disabled`.
 - **Console lines a browser check can rely on:**
