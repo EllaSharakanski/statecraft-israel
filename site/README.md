@@ -25,6 +25,10 @@ npm run preview    # http://localhost:4321/statecraft-israel/en/
 - `src/lib/repo.ts`: reads `content/events/`, `ASSETS.yaml` and the event photographs' mapping at build time. The History and Sources pages show that content as it is.
 - `src/data/contributors.yaml`: the Contributors grid. Photos go in `src/assets/contributors/`, each with an `ASSETS.yaml` row and the person's consent. Never a GitHub avatar, never a generated image of a person.
 
+## The gameplay clip
+
+A real gameplay clip in `docs/images/build-*.mp4` and `.webm`, listed under `video:` in `docs/images/captures.yaml`, becomes the home page's hero loop: muted, looping, started only after the page has loaded, never under reduced motion, with a pause button, and labelled "Real gameplay — <build>, <date>". The M2 flythrough then leaves the home page and stays in the Media page's in-engine gallery, after the clip. Until the clip exists, the hero is the first screenshot.
+
 ## Refreshing the screenshots
 
 The site always shows the README's screenshots. To refresh both, retake `docs/images/build-*.jpg` (same file names), then set `build` and `date` in `docs/images/captures.yaml`; the labels read "In-engine capture — <build>, <date>". A new screenshot needs an entry with its alt text in both languages.
@@ -40,7 +44,7 @@ Every image and video carries one of these labels where it appears, in both lang
 - Cinematic promo — AI-generated, not gameplay;
 - Archival photograph, with its credit.
 
-The first image and the first video on the home page are in-engine captures. AI promo video appears only in the Media page's cinematic gallery.
+The first image and the first video on the home page are in-engine captures (the build check enforces it). The AI cinematic trailer appears only in its own labelled section on Home, after the gameplay, and in the Media page's cinematic gallery, behind a click and never with sound by itself.
 
 ## Deploying
 

@@ -87,8 +87,13 @@ for (const lang of ['en', 'he']) {
   const main = fs.readFileSync(f, 'utf8').match(/<main[\s\S]*<\/main>/)?.[0] ?? '';
   const firstLabel = main.match(/data-media-label="(\w+)"/)?.[1];
   if (firstLabel !== 'engine') fail(f, `the first image is labelled ${firstLabel}, not an in-engine capture`);
-  const firstVideo = main.match(/<figure class="media" data-kind="(\w+)"><div class="media-frame">[\s\S]*?class="facade"/)?.[1];
-  if (firstVideo && firstVideo !== 'engine') fail(f, `the first video is ${firstVideo}, not in-engine`);
+  // The first video (a <video> or a click-to-play facade) sits in a figure labelled as an in-engine capture.
+  const v = main.search(/<video\b|class="facade"/);
+  if (v >= 0) {
+    const fig = main.slice(main.lastIndexOf('<figure', v), main.indexOf('</figure>', v));
+    const kind = fig.match(/data-media-label="(\w+)"/)?.[1];
+    if (kind !== 'engine') fail(f, `the first video is labelled ${kind}, not an in-engine capture`);
+  }
 }
 
 if (problems.length) {

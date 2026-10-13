@@ -36,6 +36,7 @@ const en = {
   'footer.privacy': 'No analytics and no cookies.',
 
   'label.engine': 'In-engine capture',
+  'label.gameplay': 'Real gameplay',
   'label.concept': 'Concept art — AI-generated',
   'label.concept.target': 'A visual target, not the current build',
   'label.cinematic': 'Cinematic promo — AI-generated, not gameplay',
@@ -44,6 +45,9 @@ const en = {
 
 
   'video.play': 'Play video',
+  'video.pause': 'Pause',
+  'video.resume': 'Play',
+  'hero.video': 'Real gameplay, looping without sound',
   'video.nosound': 'No sound',
   'video.loads': 'The video loads from this site when you press play.',
   'video.captions': 'Captions',
@@ -97,6 +101,7 @@ const he: Dict = {
   'footer.privacy': 'בלי כלי אנליטיקה ובלי עוגיות.',
 
   'label.engine': 'צילום מתוך המשחק',
+  'label.gameplay': 'משחק אמיתי, מצולם מהמשחק',
   'label.concept': 'אמנות קונספט — נוצרה בבינה מלאכותית',
   'label.concept.target': 'יעד חזותי, לא הגרסה הנוכחית',
   'label.cinematic': 'פרומו קולנועי — נוצר בבינה מלאכותית, אינו צילום מהמשחק',
@@ -105,6 +110,9 @@ const he: Dict = {
 
 
   'video.play': 'הפעלת הווידאו',
+  'video.pause': 'השהיה',
+  'video.resume': 'הפעלה',
+  'hero.video': 'משחק אמיתי, בלולאה וללא קול',
   'video.nosound': 'ללא קול',
   'video.loads': 'הווידאו נטען מהאתר הזה רק כשלוחצים על הפעלה.',
   'video.captions': 'כתוביות',

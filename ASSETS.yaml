@@ -125,7 +125,13 @@ rules:
     ai_generated: true
     source: "The frame at 3 s of the cinematic trailer published in README.md (the GitHub-hosted 1:23 video; local file sha256 36322b1baca2df5248cb30dc3a36853566f7d8ef02d0d7cd07251fa0d6bffe4e), scaled to 1280 px with ffmpeg; the trailer was made with AI video tools from promo/final concept art"
     status: owner-verify
-    note: "The website's poster for its link to the trailer, labelled 'Cinematic promo — AI-generated, not gameplay'. Same terms question as promo/final (decision D5). The frame shows the sea and an on-screen line attributed to Theodor Herzl."
+    note: "The website's poster for the trailer's click-to-play facade, labelled 'Cinematic promo — AI-generated, not gameplay'. Same terms question as promo/final (decision D5). The frame shows the sea and an on-screen line attributed to Theodor Herzl."
+  - glob: "site/public/media/promo-trailer-720p.*"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Web encodes of the cinematic trailer (demo 1), promo/demo/out/demo-16x9.mp4 (not in the repository; sha256 ef791cfbdca0868ae43d09157793d54558605cc9477547cf6231a088d9986951, 1920x1080, 83 s), scaled to 1280x720 with ffmpeg on 2026-10-13: H.264 two-pass 820 kb/s with AAC 96 kb/s (.mp4) and SVT-AV1 CRF 42 with Opus 96 kb/s (.webm); no other change. The trailer was made with AI video tools from promo/final concept art; its score is planned in promo/demo/MUSIC.md as an ElevenLabs Music cue (owner to confirm the score's source)"
+    status: owner-verify
+    note: "Same terms question as promo/final (decision D5). Shown on the website only behind a click, labelled 'Cinematic promo — AI-generated, not gameplay'; captions in site/public/media/promo-trailer.*.vtt. Its on-screen quotations include a living person (Benjamin Netanyahu, 7 October 2023); the owner chose to show the trailer (2026-10-13)."
   - glob: "site/public/favicon.svg"
     licence: CC-BY-4.0
     ai_generated: true

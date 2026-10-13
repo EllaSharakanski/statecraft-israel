@@ -5,7 +5,7 @@ import Figure from '../../components/Figure.astro';
 import VideoFacade from '../../components/VideoFacade.astro';
 import MediaLabel from '../../components/MediaLabel.astro';
 import { type Lang, languages, href, t, REPO, formatDate, asset } from '../../i18n/ui';
-import { captures, capture, currentBuild, engine, flythrough } from '../../lib/media';
+import { captures, capture, currentBuild, engine, flythrough, trailer, gameplay, captureDateIso } from '../../lib/media';
 import { posts } from '../../lib/devlog';
 
 export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
@@ -42,7 +42,15 @@ const jsonLd = {
   license: 'https://opensource.org/licenses/MIT',
   sameAs: [REPO],
   image: abs(heroWebp.src),
-  trailer: {
+  // The trailer in the markup is real gameplay, never the AI promo.
+  trailer: gameplay ? {
+    '@type': 'VideoObject',
+    name: gameplay.title.en,
+    description: gameplay.description.en,
+    thumbnailUrl: abs(heroWebp.src),
+    contentUrl: abs(gameplay.sources[gameplay.sources.length - 1].src),
+    uploadDate: captureDateIso,
+  } : {
     '@type': 'VideoObject',
     name: flythrough.title.en,
     description: flythrough.description.en,
@@ -104,7 +112,20 @@ const missing = he
         <img src={heroWebp.src} srcset={heroWebp.srcSet.attribute} sizes={heroSizes} width={heroShot.src.width}
           height={heroShot.src.height} alt={heroShot.alt[lang]} fetchpriority="high" loading="eager" decoding="sync" />
       </picture>
-      <figcaption class="hero-label"><MediaLabel lang={lang} kind="engine" build={currentBuild} /></figcaption>
+      {gameplay && (
+        <video class="hero-video" muted loop playsinline preload="none" aria-label={`${t(lang, 'hero.video')}: ${gameplay.alt[lang]}`} data-hero-video>
+          {gameplay.sources.map((s) => <source src={s.src} type={s.type} />)}
+        </video>
+      )}
+      <figcaption class="hero-label">
+        {gameplay
+          ? <MediaLabel lang={lang} kind="engine" build={gameplay.build} gameplay />
+          : <MediaLabel lang={lang} kind="engine" build={currentBuild} />}
+        {gameplay && (
+          <button type="button" class="hero-pause" data-hero-pause
+            data-pause={t(lang, 'video.pause')} data-play={t(lang, 'video.resume')}>{t(lang, 'video.pause')}</button>
+        )}
+      </figcaption>
     </figure>
     <div class="hero-copy">
       <div class="wrap">
@@ -143,15 +164,28 @@ const missing = he
     </div>
   </section>
 
+{!gameplay && (
   <section class="section wrap" aria-labelledby="footage">
     <div class="section-head">
       <span class="eyebrow">{he ? 'צילום מתוך המשחק' : 'In-engine footage'}</span>
       <h2 id="footage">{he ? 'המפה, מהנגב ועד חיפה' : 'The map, from the Negev to Haifa'}</h2>
       <p>{he
-        ? 'הסרטון הראשון באתר מצולם מתוך המשחק עצמו. הטריילר הקולנועי, שנוצר בכלי בינה מלאכותית, מופיע בעמוד המדיה עם תווית משלו.'
-        : 'The first video on this site is recorded in the game itself. The cinematic trailer, made with AI tools, is on the Media page under its own label.'}</p>
+        ? 'הסרטון הראשון באתר מצולם מתוך המשחק עצמו. הטריילר הקולנועי, שנוצר בכלי בינה מלאכותית, מופיע אחריו עם תווית משלו.'
+        : 'The first video on this site is recorded in the game itself. The cinematic trailer, made with AI tools, follows below under its own label.'}</p>
     </div>
     <VideoFacade video={flythrough} lang={lang} />
+  </section>
+)}
+
+  <section class="section wrap promo" aria-labelledby="promo">
+    <div class="section-head">
+      <span class="label label-cinematic">{t(lang, 'label.cinematic')}</span>
+      <h2 id="promo">{he ? 'הטריילר' : 'The trailer'}</h2>
+      <p>{he
+        ? 'סיפור על התקופה שנוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו. זה אינו צילום מהמשחק: את המשחק עצמו רואים בצילומים שלמעלה ובעמוד המדיה.'
+        : 'A story about the era, made with AI video tools from our concept art. It is not gameplay: the game itself is in the captures above and on the Media page.'}</p>
+    </div>
+    <VideoFacade video={trailer} lang={lang} />
   </section>
 
   <section class="section wrap" aria-labelledby="features">
@@ -250,7 +284,11 @@ const missing = he
   .hero { position: relative; background: var(--navy-deep); }
   .hero-media { margin: 0; position: relative; }
   .hero-media img { inline-size: 100%; block-size: min(calc(100svh - var(--header-h)), 56.25vw); min-block-size: 22rem; object-fit: cover; object-position: 50% 30%; }
-  .hero-label { position: absolute; inset-block-end: 1.1rem; inset-inline-end: var(--gutter); padding: 0; z-index: 3; }
+  .hero-label { position: absolute; inset-block-end: 1.1rem; inset-inline-end: var(--gutter); padding: 0; z-index: 3; display: flex; gap: 0.5rem; align-items: center; }
+  .hero-video { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: 50% 30%; opacity: 0; }
+  .hero-video.on { opacity: 1; }
+  .hero-pause { font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--ink); background: rgba(9, 14, 26, 0.92); border: 1px solid var(--gold-dim); border-radius: 2px; padding: 0.25em 0.8em; cursor: pointer; min-block-size: 2rem; }
+  .hero-pause:hover { border-color: var(--gold); color: var(--gold-light); }
   .hero-label :global(.label) { background: rgba(9, 14, 26, 0.92); margin: 0; font-size: 0.85rem; }
   .hero-copy {
     position: absolute; inset-inline: 0; inset-block-end: 0; padding-block: 7rem 3.5rem;
@@ -285,3 +323,21 @@ const missing = he
   .latest h3 a:hover { color: var(--gold-light); }
   .closing .btn-row { margin-block-start: 1.25rem; }
 </style>
+
+<script>
+  // The hero loop: real gameplay, muted. It starts only after the page has loaded (the still stays the LCP image), never
+  // under prefers-reduced-motion, and the button pauses and resumes it (WCAG 2.2.2).
+  const video = document.querySelector<HTMLVideoElement>('[data-hero-video]');
+  const button = document.querySelector<HTMLButtonElement>('[data-hero-pause]');
+  if (video && button) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const show = (playing: boolean) => {
+      button.textContent = playing ? button.dataset.pause! : button.dataset.play!;
+    };
+    const start = () => { video.preload = 'auto'; video.play().then(() => { video.classList.add('on'); show(true); }).catch(() => show(false)); };
+    button.addEventListener('click', () => { if (video.paused) start(); else { video.pause(); show(false); } });
+    if (reduce) show(false);
+    else if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  }
+</script>

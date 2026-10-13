@@ -4,7 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import Figure from '../../components/Figure.astro';
 import VideoFacade from '../../components/VideoFacade.astro';
 import { type Lang, languages, href, t } from '../../i18n/ui';
-import { engine, concept, flythrough, trailer } from '../../lib/media';
+import { engine, concept, flythrough, trailer, gameplayVideo } from '../../lib/media';
 
 export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
 const lang = Astro.params.lang as Lang;
@@ -32,6 +32,11 @@ const he = lang === 'he';
       <div class="gallery">
         {engine.map((item, i) => <Figure item={item} lang={lang} eager={i === 0} />)}
       </div>
+      {gameplayVideo && (
+        <div class="video-row">
+          <VideoFacade video={gameplayVideo} lang={lang} sizes="(min-width: 76rem) 48rem, 100vw" />
+        </div>
+      )}
       <div class="video-row">
         <VideoFacade video={flythrough} lang={lang} sizes="(min-width: 76rem) 48rem, 100vw" />
       </div>

@@ -26,4 +26,4 @@ Nothing is generated live while you play.
 
 ## This website
 
-The website's code and text were written with an AI coding agent, and the owner reviews them before they are published. Its pictures are the project's own images and a frame of the published trailer, all shown with their labels on the Media page.
+The website's code and text were written with an AI coding agent, and the owner reviews them before they are published. Its pictures and videos are the project's own: the game's screenshots and recordings, the concept art and the cinematic trailer, each shown with its label.

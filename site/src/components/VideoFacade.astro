@@ -7,11 +7,11 @@ import { type Lang, asset, t } from '../i18n/ui';
 import type { MediaVideo } from '../lib/media';
 interface Props { video: MediaVideo; lang: Lang; sizes?: string }
 const { video, lang, sizes = '(min-width: 76rem) 72rem, 100vw' } = Astro.props;
-const sources = video.sources.map((s) => ({ src: asset(s.src), type: s.type }));
+const sources = video.sources.map((s) => ({ src: s.src.startsWith('/') ? s.src : asset(s.src), type: s.type }));
 const tracks = video.captions
   ? (['en', 'he'] as const).map((l) => ({ src: asset(video.captions![l]), srclang: l, label: l === 'he' ? 'עברית' : 'English', default: l === lang }))
   : [];
-const meta = `${video.title[lang]} · ${t(lang, 'video.length')} ${video.durationText}${video.sound ? '' : ` · ${t(lang, 'video.nosound')}`}`;
+const meta = [video.title[lang], video.durationText && `${t(lang, 'video.length')} ${video.durationText}`, !video.sound && t(lang, 'video.nosound')].filter(Boolean).join(' · ');
 ---
 <figure class="media" data-kind={video.kind}>
   <div class="media-frame">

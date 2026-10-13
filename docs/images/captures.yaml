@@ -4,6 +4,15 @@
 # "In-engine capture — <build>, <date>"). A new build-*.jpg needs an entry here, and an entry needs its file: the site's
 # build fails otherwise. The first entry is the home page's hero image.
 # `ai_part` names any AI-generated part of a real screenshot, shown with the picture (the start screen's painting).
+# `video` (optional) is the real gameplay clip, the home page's hero loop (muted, looping, with a pause button):
+#   video:
+#     files: [build-gameplay.webm, build-gameplay.mp4]
+#     title: { en: "...", he: "..." }
+#     description: { en: "...", he: "..." }
+#     alt: { en: "...", he: "..." }
+#     build: main abc1234      # optional; defaults to the build above
+#     date: 2026-10-13         # optional; defaults to the date above
+# A build-*.mp4 or .webm that is not listed there fails the site's build.
 build: main 47eac52
 date: 2026-10-13
 images:

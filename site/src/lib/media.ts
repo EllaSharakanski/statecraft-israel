@@ -43,17 +43,40 @@ export interface MediaImage {
 const shotFiles = import.meta.glob<{ default: ImageMetadata }>('../../../docs/images/build-*.jpg', { eager: true });
 const shotByName = new Map(Object.entries(shotFiles).map(([p, m]) => [p.split('/').pop()!, m.default]));
 interface CaptureEntry { file: string; title: Text; alt: Text; ai_part?: Text }
+interface VideoEntry { files: string[]; title: Text; description: Text; alt: Text; build?: string; date?: string | Date }
 const manifest = YAML.parse(fs.readFileSync(path.join(repoRoot, 'docs/images/captures.yaml'), 'utf8')) as {
-  build: string; date: string | Date; images: CaptureEntry[];
+  build: string; date: string | Date; images: CaptureEntry[]; video?: VideoEntry;
 };
-const captureDate = manifest.date instanceof Date ? manifest.date.toISOString().slice(0, 10) : String(manifest.date);
-export const currentBuild: Text = {
-  en: `${manifest.build}, ${formatDate('en', captureDate)}`,
-  he: `${manifest.build}, ${formatDate('he', captureDate)}`,
-};
+const isoDate = (d: string | Date) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d));
+const buildText = (build: string, date: string | Date): Text => ({
+  en: `${build}, ${formatDate('en', isoDate(date))}`,
+  he: `${build}, ${formatDate('he', isoDate(date))}`,
+});
+export const currentBuild: Text = buildText(manifest.build, manifest.date);
+export const captureDateIso = isoDate(manifest.video?.date ?? manifest.date);
 for (const name of shotByName.keys()) {
   if (!manifest.images.some((e) => e.file === name)) throw new Error(`media: docs/images/${name} has no entry in docs/images/captures.yaml`);
 }
+
+// The real gameplay clip (docs/images/build-*.mp4 and .webm), the home page's hero loop once it exists. Vite copies the
+// files into the build; nothing is copied into site/.
+const clipUrls = import.meta.glob<string>('../../../docs/images/build-*.{mp4,webm}', { eager: true, query: '?url', import: 'default' });
+const clipByName = new Map(Object.entries(clipUrls).map(([p, u]) => [p.split('/').pop()!, u]));
+for (const name of clipByName.keys()) {
+  if (!manifest.video?.files.includes(name)) throw new Error(`media: docs/images/${name} is not listed under video: in docs/images/captures.yaml`);
+}
+export interface GameplayClip { title: Text; description: Text; alt: Text; build: Text; sources: { src: string; type: string }[] }
+export const gameplay: GameplayClip | undefined = manifest.video ? {
+  title: manifest.video.title,
+  description: manifest.video.description,
+  alt: manifest.video.alt,
+  build: buildText(manifest.video.build ?? manifest.build, manifest.video.date ?? manifest.date),
+  sources: manifest.video.files.map((f) => {
+    const src = clipByName.get(f);
+    if (!src) throw new Error(`media: docs/images/captures.yaml names ${f}, which is not in docs/images/`);
+    return { src, type: f.endsWith('.webm') ? 'video/webm' : 'video/mp4' };
+  }).sort((a, b) => (a.type === 'video/webm' ? -1 : 1) - (b.type === 'video/webm' ? -1 : 1)),
+} : undefined;
 
 /** The current build's screenshots, in the manifest's order. The first is the home page's hero. */
 export const captures: MediaImage[] = manifest.images.map((e) => {
@@ -172,22 +195,32 @@ export const flythrough: MediaVideo = {
     he: 'שמונה שניות שהוקלטו במנוע המשחק: המצלמה טסה צפונה מעל מפת השטח, מבאר שבע והנגב, על פני ירושלים ותל אביב, ועד חיפה. בלי ממשק ובלי קול.',
   },
   sources: [
-    { src: 'media/flythrough-m2-720p.webm', type: 'video/webm' },
+    { src: 'media/flythrough-m2-720p.webm', type: 'video/webm; codecs="vp9"' },
     { src: 'media/flythrough-m2-720p.mp4', type: 'video/mp4' },
   ],
   captions: { en: 'media/flythrough-m2.en.vtt', he: 'media/flythrough-m2.he.vtt' },
   duration: 'PT8S', durationText: '0:08', sound: false,
 };
 
-/** The cinematic trailer published in the README (GitHub's player). The site does not host it; it links to it. */
+/** The gameplay clip as a click-to-play video for the Media page's in-engine gallery. */
+export const gameplayVideo: MediaVideo | undefined = gameplay && {
+  id: 'gameplay', kind: 'engine', poster: captures[0].src, build: gameplay.build,
+  title: gameplay.title, description: gameplay.description, sources: gameplay.sources,
+  duration: '', durationText: '', sound: false,
+};
+
+/** The cinematic trailer (demo 1), web encodes of the master in site/public/media. Shown only behind a click, with its label. */
 export const trailer: MediaVideo = {
   id: 'cinematic-trailer-1', kind: 'cinematic', poster: trailerPoster,
   title: { en: 'The cinematic trailer', he: 'הטריילר הקולנועי' },
   description: {
-    en: 'Made with AI video tools from our concept art. It is not in-game footage, and it shows scenes, places and years the game does not have. Music, with quotations of public figures on screen.',
-    he: 'נוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו. זה אינו צילום מתוך המשחק, והוא מציג סצנות, מקומות ושנים שאין במשחק. מוזיקה, וציטוטים של אישי ציבור על המסך.',
+    en: 'Made with AI video tools from our concept art. It is not in-game footage, and it shows scenes, places and years the game does not have. Music, with quotations of public figures on screen; the captions repeat them.',
+    he: 'נוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו. זה אינו צילום מתוך המשחק, והוא מציג סצנות, מקומות ושנים שאין במשחק. מוזיקה, וציטוטים של אישי ציבור על המסך באנגלית; הכתוביות חוזרות עליהם.',
   },
-  sources: [],
-  link: 'https://github.com/eyalgolan/statecraft-israel#readme',
+  sources: [
+    { src: 'media/promo-trailer-720p.webm', type: 'video/webm; codecs="av01.0.05M.10, opus"' },
+    { src: 'media/promo-trailer-720p.mp4', type: 'video/mp4; codecs="avc1.64001F, mp4a.40.2"' },
+  ],
+  captions: { en: 'media/promo-trailer.en.vtt', he: 'media/promo-trailer.he.vtt' },
   duration: 'PT1M23S', durationText: '1:23', sound: true,
 };
