@@ -6,10 +6,14 @@
 //     photograph), except contributor photos, which are portraits supplied by the owner;
 //  4. nothing loads from another origin: no external script, stylesheet, font, image, video or frame;
 //  5. every file under _astro/ that a page names exists;
-//  6. both devlog RSS feeds exist, are well-formed, list every post, and the devlog page links to them.
+//  6. both devlog RSS feeds exist, are well-formed, list every post, and the devlog page links to them;
+//  7. the contributors page puts each person from contributors.yaml in their group (team, historians and sensitivity
+//     reviewers, past contributors, with years), and leaves out a group with no one in it. SITE_CONTRIBUTORS, as in
+//     the build, points at a fixture instead (site/scripts/fixtures/contributors.yaml has one of each).
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
+import YAML from 'yaml';
 
 const dist = path.resolve(process.argv[2] ?? 'dist');
 const problems = [];
@@ -134,6 +138,29 @@ for (const lang of ['en', 'he']) {
   const html = fs.existsSync(page) ? fs.readFileSync(page, 'utf8') : '';
   if (!/<link rel="alternate" type="application\/rss\+xml"[^>]*href="https?:\/\/[^"]*\/devlog\/rss\.xml"/.test(html)) fail(page, 'no RSS <link> in <head>');
   if (!/<main[\s\S]*<a href="[^"]*\/devlog\/rss\.xml"[\s\S]*<\/main>/.test(html)) fail(page, 'no link to the RSS feed');
+}
+
+// 7. The contributors page: everyone in the right group, no empty group, years on every past entry.
+{
+  const file = path.resolve(import.meta.dirname, '../..', process.env.SITE_CONTRIBUTORS || 'site/src/data/contributors.yaml');
+  const people = YAML.parse(fs.readFileSync(file, 'utf8')).people ?? [];
+  const group = (p) => (p.until != null && p.until !== '' ? 'past' : (p.category ?? 'team') === 'team' ? 'team' : 'reviewers');
+  for (const lang of ['en', 'he']) {
+    const f = path.join(dist, lang, 'contributors', 'index.html');
+    if (!fs.existsSync(f)) { problems.push(`${lang}/contributors/: missing`); continue; }
+    const html = fs.readFileSync(f, 'utf8');
+    for (const g of ['team', 'reviewers', 'past']) {
+      const want = people.filter((p) => group(p) === g).map((p) => p.github).sort();
+      const at = html.indexOf(`data-people="${g}"`);
+      if (!want.length) { if (at >= 0) fail(f, `shows an empty ${g} section`); continue; }
+      if (at < 0) { fail(f, `no ${g} section for ${want.join(', ')}`); continue; }
+      const section = html.slice(at, html.indexOf('</section>', at));
+      const got = [...section.matchAll(/class="gh"[^>]*>@([^<]+)</g)].map((m) => m[1]).sort();
+      if (got.join() !== want.join()) fail(f, `${g} section lists ${got.join(', ') || 'no one'}, expected ${want.join(', ')}`);
+      if (g !== 'team' && !/<h2[^>]*>[^<]+<\/h2>/.test(section)) fail(f, `${g} section has no heading`);
+      if (g === 'past' && (section.match(/class="tenure"/g) ?? []).length !== want.length) fail(f, 'a past contributor without years');
+    }
+  }
 }
 
 if (problems.length) {
