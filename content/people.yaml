@@ -432,7 +432,7 @@ people:
     party: mapai
     competence: 7
     loyalty: 8
-    portrait: { file: promo/ref/people/David_Remez.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg", focus_y: 0.38 }
+    portrait: { file: promo/ref/people/David_Remez_CCBY_1950.jpg, license: CC BY 4.0, source: "https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg", focus_y: 0.38 }
     offices:
       - { office: transportation_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: transportation_minister, from: 1949-03-10, to: 1950-11-01, sources: *first }
@@ -451,7 +451,7 @@ people:
     party: agudat_yisrael
     competence: 6
     loyalty: 6
-    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin.jpg, license: Public domain, source: "https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg", focus_y: 0.28 }
+    portrait: { file: promo/ref/people/Yitzhak-Meir_Levin_CCBY_1949.jpg, license: CC BY 4.0, source: "https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg", focus_y: 0.41 }
     offices:
       - { office: welfare_minister, from: 1948-05-14, to: 1949-03-10, sources: *prov }
       - { office: welfare_minister, from: 1949-03-10, to: 1950-11-01, party: united_religious_front, sources: *first }

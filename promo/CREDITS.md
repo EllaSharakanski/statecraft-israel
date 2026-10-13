@@ -9,7 +9,8 @@ not final game art. Steam requires disclosure of AI-generated marketing assets.
 Public domain: David Ben-Gurion (D597-087), Eliezer Kaplan, Moshe Sharett (Portrait), Haim-Moshe Shapira
 (Moshe_Shapira.jpg), Yitzhak Gruenbaum (1948), Pinchas Rosen, Aharon Zisling, Mordechai Bentov,
 Bechor-Shalom Sheetrit (Shitreet), Yehuda Leib Maimon, Peretz Bernstein, David Remez (cropped),
-Yitzhak Meir Levin.
+Yitzhak Meir Levin. The GPO photographs of Remez and Levin are still in promo/ref/cabinet-1948-sheet.jpg; their
+in-game portraits are replaced below.
 CC0: "Moshe Dayan met mgr. A.C. Ramselaar (cropped).jpg" (1962).
 
 ## In-game portraits from US-safe sources (licence checked on 2026-10-11)
@@ -42,6 +43,18 @@ CC0: "Moshe Dayan met mgr. A.C. Ramselaar (cropped).jpg" (1962).
   https://www.nationaalarchief.nl/onderzoeken/fotocollectie/aed665c6-d0b4-102d-bcf8-003048976d84
   Collection Israel 1948-1949; archive date field 1948-01-01 conflicts with the caption identifying the
   new state's foreign minister. No exact day is inferred. Old GPO likeness reference above remains unchanged.
+- David Remez: crop of Boris Carmi / Meitar Collection / National Library of Israel, 1950, CC BY 4.0
+  (attribution in NOTICE):
+  https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg
+  Identity: NLI record 997009452176205171, «פורטרט של חבר הכנסת מטעם מפא"י, דוד רמז.» (archive ARC. 4* 2069 / 24775).
+  Replaces the earlier Government Press Office photograph (PD-Israel only, no US status). Likeness check by the
+  maintainer still needed.
+- Yitzhak-Meir Levin: crop of Benno Rothenberg / Meitar Collection / National Library of Israel, 1949, CC BY 4.0
+  (attribution in NOTICE):
+  https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg
+  Identity: NLI record 997008137163805171, «יצחק מאיר לוין עובר על מסמכים במשרדו». The bearded man at the desk on the
+  right of a two-person photograph; he looks down at papers. Replaces the earlier Government Press Office photograph.
+  Likeness check by the maintainer still needed.
 
 ## Facts shown (verified 2026-10-09)
 - Provisional Government (May 1948): 13 ministers and portfolios; Provisional State Council 37 members,
