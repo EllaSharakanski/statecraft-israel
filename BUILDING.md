@@ -29,6 +29,7 @@ A build rewrites some cached settings. Drop them afterwards with
 ## In the editor
 
 Unity Hub → **Add** → select `unity/`. Run `uv run tools/build_sim_for_unity.py` again after every change under `sim/`.
+`tools/build_sim_for_unity.sh` is a thin wrapper that runs the same script.
 
 ### First open in Unity
 
