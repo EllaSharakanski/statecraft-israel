@@ -196,8 +196,7 @@ rules:
     licence: CC-BY-SA-4.0
     source: "The route ribbons' meshes (issue #321), baked by Editor RouteRibbonBake from content/map/route_paths_1948.yaml (the traced lines above) draped on the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*); no new facts; attribution in NOTICE"
     status: owner-verify
-    allow_empty: true
-    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM and coordinate inputs. allow_empty until the first bake is committed (it is made in Unity)."
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM and coordinate inputs."
   - glob: "content/map/units_1948.yaml"
     licence: CC-BY-SA-4.0
     source: "The 1948 brigades, 101 Squadron and the first navy ships, with their dated positions (docs/units.md, Units in play): facts and place coordinates read from English and Hebrew Wikipedia (CC BY-SA; Wikipedia API prop=coordinates) and Wikidata (CC0), and the S-199 markings from Eduard Info 11/2025 pp. 53-54 (facts only, no text or image copied); per-row sources and check dates in the file"
