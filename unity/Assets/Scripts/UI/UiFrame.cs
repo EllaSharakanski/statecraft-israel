@@ -134,8 +134,9 @@ namespace Statecraft.Game.UI
             /// <summary>One quad from the corner (cx, cy) inwards (sx, sy), size x size, tinted.</summary>
             public static void Quad(MeshGenerationContext mgc, Texture2D texture, float cx, float cy, float sx, float sy, float size, Color tint)
             {
+                // UVs in the texture's own 0..1 space: UI Toolkit remaps them into the atlas itself (MeshWriteData.uvRegion is
+                // obsolete in Unity 6.3 for that reason).
                 var m = mgc.Allocate(4, 6, texture);
-                var uv = m.uvRegion;
                 (float u, float v)[] corners = { (0, 0), (1, 0), (1, 1), (0, 1) };
                 foreach (var (u, v) in corners)
                     m.SetNextVertex(new Vertex
@@ -143,7 +144,7 @@ namespace Statecraft.Game.UI
                         position = new Vector3(cx + sx * u * size, cy + sy * v * size, Vertex.nearZ),
                         tint = tint,
                         // texture row 0 is the bottom, design y grows downwards
-                        uv = new Vector2(uv.xMin + u * uv.width, uv.yMin + (1f - v) * uv.height),
+                        uv = new Vector2(u, 1f - v),
                     });
                 // UI Toolkit wants clockwise triangles on screen; a quad mirrored on one axis reverses the order
                 if (sx * sy > 0) { m.SetNextIndex(0); m.SetNextIndex(1); m.SetNextIndex(2); m.SetNextIndex(0); m.SetNextIndex(2); m.SetNextIndex(3); }
