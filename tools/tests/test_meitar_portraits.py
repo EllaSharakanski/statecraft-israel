@@ -1,4 +1,4 @@
-"""The #30 batch (Remez, Levin): Meitar CC BY 4.0 portraits keep source, runtime, credit and licence record together."""
+"""Meitar CC BY 4.0 portraits (#30: Remez, Levin; #6: Dov Yosef) keep source, runtime, credit and licence together."""
 from pathlib import Path
 import re
 
@@ -10,6 +10,8 @@ BATCH = {
     "remez": ("David_Remez_(997009452176205171).jpg", "promo/ref/people/David_Remez_CCBY_1950.jpg", 0.38, "Boris Carmi"),
     "levin": ("Yitzhak-Meir_Levin_(997008137163805171).jpg", "promo/ref/people/Yitzhak-Meir_Levin_CCBY_1949.jpg", 0.41,
               "Benno Rothenberg"),
+    "dov_yosef": ("Dov_Yosef_(997008137381905171).jpg", "promo/ref/people/Dov_Yosef_CCBY_1949.jpg", 0.36,
+                  "Benno Rothenberg"),
 }
 PEOPLE = {p["id"]: p for p in yaml.safe_load((ROOT / "content/people.yaml").read_text(encoding="utf-8"))["people"]}
 RULES = yaml.safe_load((ROOT / "ASSETS.portraits.yaml").read_text(encoding="utf-8"))["rules"]
@@ -31,6 +33,13 @@ def test_licence_rows_are_cc_by_and_verified_for_source_and_runtime():
             r = next(r for r in RULES if r["glob"] == path)
             assert r["licence"] == "CC-BY-4.0" and r["status"] == "verified" and r["source"] == source(name)
             assert r["artist"] == artist and "Cc-by-4.0" in r["commons"]
+
+
+def test_dov_yosef_catalog_guid_matches_the_meta_file():
+    meta = (ROOT / "unity/Assets/UI/Portraits/dov_yosef.jpg.meta").read_text()
+    guid = re.search(r"^guid: ([0-9a-f]{32})$", meta, re.M).group(1)
+    catalog = (ROOT / "unity/Assets/UI/Portraits/PortraitCatalog.asset").read_text()
+    assert f"guid: {guid}, type: 3}}" in re.search(r"  - personId: dov_yosef\n(.*?)(?=  - personId:|\Z)", catalog, re.S).group(1)
 
 
 def test_the_old_government_press_office_files_are_gone_from_the_rules():

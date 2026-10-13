@@ -176,6 +176,18 @@ rules:
   status: verified
   commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
   artist: Benno Rothenberg
+- glob: promo/ref/people/Dov_Yosef_CCBY_1949.jpg
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Benno Rothenberg
+- glob: unity/Assets/UI/Portraits/dov_yosef.jpg
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Benno Rothenberg
 - glob: promo/ref/people/Zalman_Shazar_USGov_1966.jpg
   licence: Public-Domain
   source: https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg

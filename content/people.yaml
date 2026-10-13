@@ -470,6 +470,7 @@ people:
       name_he: &dov_yosef_bio [{ url: "https://en.wikipedia.org/wiki/Dov_Yosef", checked: 2026-10-11 }]
       born: *dov_yosef_bio
       died: *dov_yosef_bio
+    portrait: { file: promo/ref/people/Dov_Yosef_CCBY_1949.jpg, license: CC BY 4.0, source: "https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg", focus_y: 0.36 }
     living: false
     party: mapai
     competence: 7
