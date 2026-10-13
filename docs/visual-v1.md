@@ -1874,9 +1874,8 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
     - The drawn shore (coast.png's distance, interpolated between texel centres) runs up to about a sample past the last
       flat sample. A first version without that sample's margin put a cypress in the drawn Kinneret, and one that looked
       only in lake hexes put a palm and a citrus tree in it by Ghuweir Abu Shusha.
-    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached. The rift's floor
-      is asked about thousands of times while the kits are built; tested everywhere below -150 m, the kits phase was
-      about 47 ms heavier at cpu 4.
+    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached: the rift's floor
+      is asked about thousands of times while the kits are built.
     - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
       level), on main or here.
     - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
@@ -1906,6 +1905,16 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
     - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
       fallback skips its own lattice's lots.
   - The grid stays readable at 80% (71 of 89).
+  - **Perf, after the review's fixes** (WebGL, main `4abb64f` against the branch, `machine_lock.py --exclusive
+    --wait-unity`, two interleaved rounds, load 5-9, 2026-10-13):
+    - Frame time is equal. At gameplay03 `all` is 8.08 / 7.73 ms on main against 8.14 / 8.02 ms on the branch, and at
+      diorama02 19.43 / 19.50 against 18.90 / 19.42 ms. The p95s are equal, and there are 63 draws on both.
+    - Boot at cpu 4: the "kits built" phase is about 45 ms heavier, 691 / 709 ms on main against 743 / 750 ms.
+    - An attribution round (main, the branch, the branch with the fallback off, and the branch with the old whole-hex
+      lake rule) put about 10 ms of that on the fallback: 689 / 738 / 729 ms in the quieter round. The lake rule costs
+      nothing measurable. The rest is round 2's own placement against this main.
+    - The author's boot against `2b7212e` measured the kit phase within noise. The ~35 ms not explained here is not
+      attributed further.
   - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
     other sessions to load 15, so every number is high):
     - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.
