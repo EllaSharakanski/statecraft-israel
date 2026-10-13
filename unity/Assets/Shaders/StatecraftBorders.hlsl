@@ -6,7 +6,8 @@
 // texel per hex (_ScRegionTex) and sets the globals; with no region data, or the "borders" toggle off, _ScBorders.w is 0 and
 // nothing is drawn. Included at the end of StatecraftMap.hlsl; the terrain calls ScBorderApply last.
 
-TEXTURE2D(_ScRegionTex);  // one texel per hex, linear RGBA8: r + 256 g the region id (0 = none), b the style (0 = none, 1, 2)
+TEXTURE2D(_ScRegionTex);  // one texel per hex, linear RGBA8: r + 256 g the region id (0 = none), b the style (0 = none, 1, 2),
+                          // a's low six bits which edges border another region (MapBorders.Use bakes them; issue #195)
 float4 _ScRegionInfo;     // x q of texel column 0, y r of texel row 0, z width, w height (texels)
 float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as a share of the hex's inradius,
                           // z 1 = no early-out (tests prove the early-out exact), w 1 = on
@@ -15,19 +16,18 @@ float4 _ScBorders;        // x least band width (px), y widest band (+ wash) as 
 float4 _ScBorderColour1, _ScBorderLight1, _ScBorderShape1;
 float4 _ScBorderColour2, _ScBorderLight2, _ScBorderShape2;
 
-// Axial neighbour steps and the outward unit normals of the edges shared with them (p space: x east, y south): tools/
-// hexgrid.py's NEIGHBOURS order.
-static const float2 ScHexSteps[6] = { float2(1, 0), float2(1, -1), float2(0, -1), float2(-1, 0), float2(-1, 1), float2(0, 1) };
+// The outward unit normals of a hex's edges (p space: x east, y south), in tools/hexgrid.py's NEIGHBOURS order (axial
+// steps (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1), (0, 1): MapBorders.NeighbourSteps). Bit i of a hex's edge mask is edge i.
 static const float2 ScHexNormals[6] = { float2(1, 0), float2(0.5, -0.8660254), float2(-0.5, -0.8660254), float2(-1, 0),
                                         float2(-0.5, 0.8660254), float2(0.5, 0.8660254) };
 
-// Region id and style of axial hex (q, r); (0, 0) off the texture.
-float2 ScRegionAt(float2 qr)
+// Region id, style and border-edge mask of axial hex (q, r); (0, 0, 0) off the texture.
+float3 ScRegionAt(float2 qr)
 {
     int2 t = int2(qr - _ScRegionInfo.xy);
-    if (t.x < 0 || t.y < 0 || t.x >= (int)_ScRegionInfo.z || t.y >= (int)_ScRegionInfo.w) return float2(0.0, 0.0);
+    if (t.x < 0 || t.y < 0 || t.x >= (int)_ScRegionInfo.z || t.y >= (int)_ScRegionInfo.w) return float3(0.0, 0.0, 0.0);
     float4 v = LOAD_TEXTURE2D(_ScRegionTex, t) * 255.0;
-    return float2(round(v.r) + 256.0 * round(v.g), round(v.b));
+    return float3(round(v.r) + 256.0 * round(v.g), round(v.b), (float)((int)round(v.a) & 63));
 }
 
 // The axial hex containing p (cube rounding: ScHexEdgeDistance's layout, p.x east and p.y south of the north-west corner)
@@ -68,17 +68,20 @@ void ScBorderApply(float2 mapM, float water, inout float3 baseColor, inout float
         float reach = max(max(_ScBorderShape1.x, _ScBorderShape2.x), 1.5 * _ScBorders.x * footprint) * washMul + 1.5 * footprint;
         reach = _ScBorders.z > 0.5 ? 1e9 : reach;
         float edge = inradius - max(abs(v.x), max(abs(0.5 * v.x + 0.8660254 * v.y), abs(0.5 * v.x - 0.8660254 * v.y)));
-        float2 own = edge < reach && water < 1.0 ? ScRegionAt(qr) : float2(0.0, 0.0);
-        [branch] if (own.x > 0.5 && own.y > 0.5)
+        float3 own = edge < reach && water < 1.0 ? ScRegionAt(qr) : float3(0.0, 0.0, 0.0);
+        int edges = (int)own.z;
+        // A hex with no border edge draws nothing (the loop below would leave cover 0), so it skips the work.
+        [branch] if (own.x > 0.5 && own.y > 0.5 && edges != 0)
         {
             float bestPx = 1e9, bestAa = 1.0;
             [unroll] for (int i = 0; i < 6; i++)
             {
                 float2 n = ScHexNormals[i];
-                // Only the edges within reach are looked up (one, or two near a corner).
+                // Only the edges within reach count (one, or two near a corner). Whether edge i borders another region is
+                // baked into the hex's own texel: the neighbours' six fetches here had pushed the terrain's fragment shader
+                // past a WebGL cost cliff (about 5 ms a frame at gameplay03, borders on or off: issue #195).
                 if (inradius - dot(v, n) >= reach) continue;
-                float2 other = ScRegionAt(qr + ScHexSteps[i]);
-                if (other.x > 0.5 && other.x != own.x)
+                if (((edges >> i) & 1) != 0)
                 {
                     // Distance to the edge segment (corners rounded, so two border edges join without a notch), in pixels
                     // along the direction it grows (Task 8's anisotropic filter: metres per pixel across the line).
