@@ -35,7 +35,7 @@ You sit in the prime minister's chair from the founding of the state. Each turn 
 
 A deterministic C# simulation runs underneath. The same choices always give the same result, and a saved game is the seed plus the list of commands. Unity draws a real terrain map of the country built from elevation and climate data.
 
-The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): monthly turns in which you build and defend Israel from 1948 to 1951 with units, cities and construction, and choose your ministers. The list above is the game you can play today. The new design is not built yet; the [build plan](docs/superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md) brings it in phases.
+The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): monthly turns in which you build and defend Israel from 1948 to 1951 with units, cities and construction, and choose your ministers. The list above is the game you can play today. The new design is not playable yet; the [build plan](docs/superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md) brings it in phases.
 
 ## What it looks like today
 
@@ -44,11 +44,11 @@ The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): m
 </p>
 <p align="center">
   <img src="docs/images/build-m3-start.jpg" alt="Current build: the start screen, two lines of the Declaration of Independence in Hebrew and English over an AI-generated painting of the 14 May 1948 ceremony" width="405">
-  <img src="docs/images/build-m3-city.jpg" alt="Current build: close-up of Tel Aviv and Jaffa with its harbour, a rifle-trio brigade token, an aircraft, railways and the Mandate sub-district borders" width="405">
+  <img src="docs/images/build-m3-city.jpg" alt="Current build: close-up of Tel Aviv and Jaffa with its harbour, towns and villages, groves, railways and the Mandate sub-district borders" width="405">
   <br>
   <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen with the Provisional State Council as a half circle of seats and the ministers' portrait cards" width="405">
   <img src="docs/images/build-m3-why.jpg" alt="Current build: the Why panel explaining a turn's changes" width="405">
-  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-12. The start screen's painting is AI-generated.</em>
+  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-13. The start screen's painting is AI-generated.</em>
 </p>
 
 ## Is this any good?
