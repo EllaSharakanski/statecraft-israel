@@ -203,8 +203,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - The map's railways and roads are placed from a bake at boot instead of being built (refs #321), as the water's
   mesh is since #195. The routes look the same: the bake holds the same meshes, and a stale or missing bake is refused
-  with a warning and the routes are built at load as before. `routes built` takes TODO(measure) ms at `--cpu 4`, from
-  TODO(measure). The bake also lists where each route lies in its mesh, for the corridors of GDD Phase 4 (#384).
+  with a warning and the routes are built at load as before. `routes built` takes 51 ms at `--cpu 4`, from
+  162 ms. The bake also lists where each route lies in its mesh, for the corridors of GDD Phase 4 (#384).
   Presentation only.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
   surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a

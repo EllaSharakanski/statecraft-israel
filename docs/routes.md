@@ -269,8 +269,10 @@ does (#320, docs/visual-v1.md).
   the C# source, and checks the route index. `RouteTests.TheBakedRibbonsMatchTheRoutes` compares the bake with a fresh
   derivation byte for byte, and with the map's own terrain vertex for vertex; `AStaleRibbonBakeIsDerivedAtLoad` checks
   the fallback. A change to `RouteLayer.Geometry` without a version bump is caught only by the Unity test.
-- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, phase `routes built`): TODO(measure) ms on main, TODO(measure) ms
-  with the bake.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, phase `routes built`, three rounds interleaved with main `bc67247`
+  under the exclusive lock, 9 cold loads each, medians, 2026-10-13): 162 ms on main, 51 ms with the bake. The whole map
+  build is 3384 ms on main and 3414 ms with the bake, inside the runs' spread (3158-4240 ms); its other phases move by the
+  same few tens of milliseconds both ways from run to run.
 
 **Kits keep off the routes** (settlement kits and trees, #179).
 - `MapScene` reads the routes before building the kits, and hands `KitLayer.Build` every route's corridor
