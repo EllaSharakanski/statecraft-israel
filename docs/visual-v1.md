@@ -431,7 +431,8 @@ Judean slopes and the Negev (`PromoPose.CloseChecks`, haze off): no AO steps.
 ## Task 7: sea
 One water function (`StatecraftMap.hlsl` `ScWaterShade`) on both sides of the map's edge: the terrain graph outputs it as
 emission on a black, fully metallic, fully occluded surface, and the border skirt's `Sea.mat` (`Statecraft/Sea`, passes
-`Sea`, `DepthOnly`, `DepthNormals`) returns it directly. It is driven by Task 5's coast distance: a turquoise -> teal -> navy
+`Sea`, `DepthOnly`, `DepthNormals`) returns it directly. (Since issue #195 the terrain graph outputs only the black surface;
+`MapScene`'s `TerrainWater` mesh adds the water on top with `Sea.mat` in its `_ScTerrainWater` mode. See "Issue #195".) It is driven by Task 5's coast distance: a turquoise -> teal -> navy
 ramp over 12 km, foam within 350 m, the Dead Sea pale turquoise with a white salt rim. It samples the main light's shadows
 itself, takes the cooler water haze (`ScHazeWater`), and falls back to the flat sea colour under the `water` toggle. WebGL
 build: 77.1 MB, no `Shader error`. GLES3: `ShaderChecks.Gles3Errors` is empty for `Statecraft/Sea` and the terrain (no
@@ -988,10 +989,12 @@ Each band lies inside its region, as Civ draws territory, so two outlined region
 to red+cream: promo 03 near Tel Aviv). The bands are world-space: they widen towards the camera.
 
 **What is drawn.** `MapBorders` (C#) bakes one texel per hex (`RegionHexes`, RGBA8 linear, point-sampled, 47 x 58: r + 256 g
-the region id, b the style) and sets the globals; `StatecraftBorders.hlsl`'s `ScBorderApply`, called last in the terrain
+the region id, b the style; since issue #195, a's low six bits say which edges border another region) and sets the
+globals; `StatecraftBorders.hlsl`'s `ScBorderApply`, called last in the terrain
 function, draws the band along each edge whose neighbour is in another region. A pixel farther from its hex's edges than
 the widest band plus wash can reach fetches nothing (exact: a segment is never nearer than its line); one nearer fetches its
-own hex and only the neighbours within reach (one, or two near a corner). The first version fetched all seven texels on
+own hex and only the neighbours within reach (one, or two near a corner); since issue #195 it fetches only its own hex,
+whose edge bits replace the neighbours' fetches. The first version fetched all seven texels on
 every land pixel and cost 3.3 ms at gameplay03 (`visual=all` 14.97 against `-borders` 11.64, a loaded machine): over the
 2.5 ms budget. The distance is to the edge segment (corners rounded, so bands join without notches), in pixels
 across the edge (Task 8's anisotropic filter), box-filtered. Stripes and wash are unlit (they replace BaseColor and go out
@@ -1944,3 +1947,65 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
   - Jerusalem stone (Storrs' ordinance, 1918): https://en.wikipedia.org/wiki/Jerusalem_stone
 - Ramla:
   - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
+
+## Issue #195: the water and the border lookups out of the terrain's fragment shader
+- **Why.** promo-sea (#138) put the water shading (`ScWaterShade`, the breakers' `fwidth`, the footprint) in the terrain
+  graph's function, and promo-borders (#206) six neighbour fetches in `ScBorderApply`'s loop. Either one makes the shader
+  big enough to slow every terrain pixel in WebGL, the water and borders toggled off included
+  (`.superpowers/handover-2026-10-11/promo/perf-investigation.md`): none@gameplay03 measured 2.5 ms without both, 7.3 ms
+  with the borders' fetches alone, about 10 ms with both.
+- **Water.** `StatecraftTerrain.hlsl` outputs a black, fully metallic, fully occluded surface with no emission on the water
+  (Lit adds 0 there). `MapBuilder.BuildWaterMesh` copies the terrain's surface wherever the water's coverage can be above
+  0: wet heightmap samples (the sea within 0.5 m of 0 m, flat rift lakes) and two samples around them, at full resolution,
+  with flat blocks as T-junction-free fans (129,882 vertices, 239,958 triangles). It is drawn with a copy of `Sea.mat` in
+  its `_ScTerrainWater` mode: additive, colour times coverage (the land adds 0: no per-pixel discard to split the shore's 2x2 quads, the lesson of #306), no depth write, its depth pulled two
+  pixels' worth towards the camera (the terrain's LOD splits the surface its own way). The terrain draws one queue earlier
+  (`Terrain.mat` 1998) and the water at 1999, before every other opaque, so boats and harbours cover it.
+- **Borders.** `MapBorders.Use` bakes, per hex, which of its six edges border another region (alpha: 192 plus a bit per
+  edge, `MapBorders.NeighbourSteps` order). `ScBorderApply` reads its own hex's texel only, where it read up to seven, and
+  skips a hex with no border edge (it would draw nothing). Same math, same pixels: `BorderTests` unchanged, and the border
+  pixels of the player's screenshots are identical. An overlay mesh along the bands, like the water's, was the plan; the
+  bake met the target with no mesh, no boot or memory cost and no rebuild hitch, so no mesh was built.
+- **Exactness.** On the water and its shore the sum is what the terrain drew before, except where a border band meets the
+  140 m coverage ramp at the shore, and the extra rounding of one blend.
+- **Measured** (WebGL, headless, 1920x1080, DPR 1; `PROFILE summary` medians over 3 interleaved rounds, main 1cdb356 and
+  the fix back to back under one exclusive machine lock per round, order rotated; [min-max] across rounds):
+
+  | pose, toggles | main 1cdb356 | fix |
+  |---|---|---|
+  | gameplay03, none | 10.48 [10.29-10.79] | 2.52 [2.44-2.55] |
+  | gameplay03, all | 13.94 [13.85-14.14] | 3.19 [3.16-3.19] |
+  | diorama02, none | 13.56 [12.40-13.78] | 8.18 [8.02-8.33] |
+  | diorama02, all | 18.72 [17.92-19.03] | 12.05 [11.93-12.35] |
+
+- **Baked.** The mesh's samples and triangles are baked into `Assets/Textures/Map/terrain_water.bytes` (3.4 MB;
+  `Statecraft.Game.EditorTools.TerrainWaterBake.Bake`, re-run whenever `heightmap.r16z` changes), referenced by
+  `Map.unity`'s `MapScene`, so a player only places the vertices on the heights it loaded. The file carries the
+  heightmap's resolution and a check of its heights; a stale or missing bake is refused (a warning) and the mesh derived at
+  load as before (22 ms unthrottled, about 87 ms at `--cpu 4`). `SeaTests.TheBakedWaterMeshMatchesTheHeightmap` fails on
+  a stale bake.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, interleaved under one exclusive lock per round, order rotated; six
+  rounds, 18 runs each, 2026-10-13, main 244723f against the fix merged on it, cc3c954): `map_build_ms` median main 3023
+  [3006-3042] ms, the fix 3039 [3017-3064] ms. `terrain water` takes 19 [17-22] ms, the fix's whole share; `terrain
+  heights set` is 1389 [1374-1411] ms on main and 1397 [1372-1409] ms on the fix.
+- **`SetHeights` moves with the build, not with the fix.** The review measured the fix merged on main 6d439a7 (44e1d63)
+  at about 105 ms over that main, 85 ms of it in `terrain heights set`, and it reproduces here (1473 [1462-1496] ms
+  against 1385 [1375-1418], nine runs each). It is not the 3.4 MB bake, and not the WebGL heap:
+  - The same commit rebuilt without `Map.unity`'s reference to the bake (the same wasm, byte for byte; the water mesh
+    then derived at load) keeps the slow `terrain heights set`: 1487 [1466-1503] ms against 1491 [1463-1499] with it.
+  - With heap probes (a `WebAssembly.Memory.grow` hook and the heap size after every boot phase) in builds of main 244723f
+    and of the fix merged on it, both grow the wasm heap at the same points to the same sizes (286 MB to 343 MB at
+    `new TerrainData`, none inside `SetHeights`); the bake adds 3 MB of reserved native memory and no grow. The
+    `SetHeights` call alone measured 1185-1198 ms on both.
+  - A small C# change that runs only after `SetHeights` (reading the bake through `TextAsset.GetData`, which cut
+    `terrain water` from 20 to 17 ms) made `terrain heights set` 1511 [1489-1530] ms in its build, against the fix's
+    1397. It was dropped.
+  - With V8's tiering off (`--js-flags=--no-wasm-dynamic-tiering`: every function compiled by TurboFan up front), five
+    builds (both mains, the fix, 44e1d63 and the `GetData` variant) all take 1426-1455 ms in `terrain heights set`.
+  So each wasm binary gets its own `SetHeights` time, about 1390 or about 1490 ms at `--cpu 4`, from when V8 tiers up
+  the code it runs. Any change can move it either way, and the next merge of main draws again. So judge a boot change
+  by its own phases, and read `terrain heights set` apart from them.
+- **A layer change** (`MapBorders.Use`) takes 0.8 ms for the 870-hex 1948 layer, texture upload included: no rebuild, no
+  hitch.
+- **Memory.** The water mesh keeps about 4.5 MB on the GPU (its CPU copy is dropped in players, `UploadMeshData`); placing
+  it from the bake allocates its 3.4 MB of bytes and about 1.5 MB of vertices, short-lived. The borders add nothing (the edge bits ride in the existing texel).

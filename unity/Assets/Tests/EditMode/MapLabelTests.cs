@@ -664,10 +664,18 @@ public class MapLabelTests
         finally { inset.Dispose(); labels.Dispose(); hd.Dispose(); }
     }
 
-    /// <summary>Review I3: a refresh allocates nothing, and placing every pill while the camera turns and zooms is cheap
-    /// (240 refreshes, each with a new view).</summary>
+    /// <summary>One step of the camera sweep the refresh tests share: a turn of 1.5 degrees and a zoom from 60 km out to
+    /// the farthest, over 240 steps, so that every refresh sees a new view.</summary>
+    void SweepStep(int i)
+    {
+        rig.Yaw += 1.5f; rig.Distance = Mathf.Lerp(60000f, CameraController.MaxDistance, i / 239f); rig.Apply();
+    }
+
+    /// <summary>Review I3: a refresh allocates nothing, forced or while the camera turns and zooms (240 refreshes, each with
+    /// a new view, after one sweep that lets the presenter's lists reach their size). Counted by the profiler, so it does
+    /// not depend on the machine's load (#322).</summary>
     [UnityTest]
-    public IEnumerator RefreshWhileTheCameraMovesIsCheapAndAllocationFree()
+    public IEnumerator RefreshWhileTheCameraMovesAllocatesNothing()
     {
         var hd = new HdPanel(cam);
         var labels = new MapLabelsPresenter(hd.Root, map, cam);
@@ -675,24 +683,55 @@ public class MapLabelTests
         {
             yield return Settle(labels);
             Assert.That(() => labels.Refresh(force: true), Is.Not.AllocatingGCMemory());
-            var tlv = labels.Slots.Single(s => s.name == "slot-tel_aviv");
-            var times = new System.Collections.Generic.List<double>();
-            var watch = new System.Diagnostics.Stopwatch();
-            int moved = 0; var last = tlv.style.translate.value;
+            for (int i = 0; i < 240; i++) { SweepStep(i); labels.Refresh(); }   // warm-up: the lists grow to their size
             for (int i = 0; i < 240; i++)
             {
-                rig.Yaw += 1.5f; rig.Distance = Mathf.Lerp(60000f, CameraController.MaxDistance, i / 239f); rig.Apply();
-                watch.Restart(); labels.Refresh(); watch.Stop();
-                times.Add(watch.Elapsed.TotalMilliseconds * 1000.0);
-                var now = tlv.style.translate.value;
-                if (now.x != last.x || now.y != last.y) moved++;
-                last = now;
+                SweepStep(i);
+                Assert.That(() => labels.Refresh(), Is.Not.AllocatingGCMemory(), $"refresh {i} of the sweep");
             }
-            times.Sort();
-            double avg = times.Average(), p95 = times[(int)(0.95 * (times.Count - 1))];
-            TestContext.WriteLine(System.FormattableString.Invariant($"LABELS refresh moving avg_us={avg:0} p95_us={p95:0} moved={moved}"));
-            Assert.Greater(moved, 120, "the refreshes did work: Tel Aviv's pill moved");
-            Assert.Less(avg, 200.0, "average refresh under 200 us (editor Mono)");
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Review I3: placing every pill while the camera turns and zooms is cheap. The figure is the median refresh of
+    /// the quickest of 5 sweeps of 240 refreshes (each with a new view): the median ignores the refreshes the scheduler
+    /// interrupts, and the quickest sweep the stretches when another job holds the cores. The limit is set from measurements
+    /// (#322): quiet runs give about 115-130 us, the worst loaded full runs averaged 193-216 us, and a refresh made 3x
+    /// slower gives about 350 us or more.</summary>
+    [UnityTest]
+    public IEnumerator RefreshWhileTheCameraMovesIsCheap()
+    {
+        const int Sweeps = 5, Steps = 240;
+        const double LimitUs = 300.0;   // editor Mono
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
+        try
+        {
+            yield return Settle(labels);
+            var tlv = labels.Slots.Single(s => s.name == "slot-tel_aviv");
+            var times = new double[Steps];
+            var medians = new double[Sweeps];
+            var watch = new System.Diagnostics.Stopwatch();
+            int moved = 0; var last = tlv.style.translate.value;
+            for (int s = 0; s < Sweeps; s++)
+            {
+                for (int i = 0; i < Steps; i++)
+                {
+                    SweepStep(i);
+                    watch.Restart(); labels.Refresh(); watch.Stop();
+                    times[i] = watch.Elapsed.TotalMilliseconds * 1000.0;
+                    var now = tlv.style.translate.value;
+                    if (now.x != last.x || now.y != last.y) moved++;
+                    last = now;
+                }
+                System.Array.Sort(times);
+                medians[s] = (times[Steps / 2 - 1] + times[Steps / 2]) / 2.0;
+            }
+            double best = medians.Min();
+            TestContext.WriteLine(System.FormattableString.Invariant(
+                $"LABELS refresh moving median_us={best:0} sweeps_us={string.Join(",", medians.Select(m => m.ToString("0", System.Globalization.CultureInfo.InvariantCulture)))} moved={moved}"));
+            Assert.Greater(moved, Sweeps * Steps / 2, "the refreshes did work: Tel Aviv's pill moved");
+            Assert.Less(best, LimitUs, $"median refresh of the quickest sweep under {LimitUs} us (editor Mono)");
         }
         finally { labels.Dispose(); hd.Dispose(); }
     }

@@ -266,6 +266,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
+  into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
+  Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
+  in the browser, even with the water and the borders toggled off. The look is unchanged. Presentation only.
 - The four General Zionist ministers (Rokach, Bernstein, Sapir, Serlin) leave office on 25 May 1953 and return on 3
   June 1953, and the Prime Minister holds their ministries in between, as he told the Knesset on 25 May. The
   Knesset's position records show no break; the plenum record of the resignation and of the new declarations of
