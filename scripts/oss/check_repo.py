@@ -170,6 +170,7 @@ CHECKS: dict[str, Callable[[Path, list[str], bool], list[Finding]]] = {
     "secrets": _line_check("secrets", P.secret_kinds),
     "emails": _line_check("emails", P.email_kinds),
     "home-paths": _line_check("home-paths", P.home_path_kinds),
+    "conflict-markers": _line_check("conflict-markers", P.conflict_marker_kinds),
     "sizes": check_sizes,
     "symlinks": check_symlinks,
     "required": check_required,
