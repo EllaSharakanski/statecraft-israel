@@ -26,4 +26,5 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Ma'abarot", checked: 2026-10-10 }
   - { url: "https://he.wikipedia.org/wiki/מעברה", checked: 2026-10-10 }
+  - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250140.pdf", checked: 2026-10-14 }
 status: fact-checked
