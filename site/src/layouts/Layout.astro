@@ -3,7 +3,7 @@ import '../styles/global.css';
 import { getImage } from 'astro:assets';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { type Lang, type Page, dir, href, asset, ogLocale, otherLang, t } from '../i18n/ui';
+import { type Lang, type Page, dir, href, asset, ogLocale, otherLang, t, CSP } from '../i18n/ui';
 import { captures } from '../lib/media';
 const ogSource = captures[0].src;
 
@@ -37,15 +37,13 @@ const fontFaces = `
 @font-face { font-family: 'Frank Ruhl Libre'; font-weight: 400; font-style: normal; font-display: swap; src: url('${asset('fonts/FrankRuhlLibre-Regular.woff2')}') format('woff2'); }
 @font-face { font-family: 'Frank Ruhl Libre'; font-weight: 500 700; font-style: normal; font-display: swap; src: url('${asset('fonts/FrankRuhlLibre-Medium.woff2')}') format('woff2'); }`;
 const bodyFont = lang === 'he' ? 'fonts/FrankRuhlLibre-Regular.woff2' : 'fonts/EBGaramond-Regular.latin.woff2';
-// Nothing loads from another origin: scripts, styles, fonts, images and media all come from this site.
-const csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'";
 ---
 <!doctype html>
 <html lang={lang} dir={dir(lang)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta http-equiv="Content-Security-Policy" content={CSP} />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />

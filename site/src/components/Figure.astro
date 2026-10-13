@@ -30,7 +30,7 @@ const full = await getImage({ src: item.src, width: Math.min(item.src.width, 240
       {item.kind === 'concept' && <> · {t(lang, 'label.concept.target')}</>}
       {item.likeness && <> · {t(lang, 'label.likeness')}</>}
       {item.aiPart && <> · <span class="ai-part">{item.aiPart[lang]}</span></>}
-      {' · '}<a href={full.src}>{t(lang, 'figure.full')}</a>
+      {' · '}<a href={full.src}>{t(lang, 'figure.full')}<span class="visually-hidden">: {item.title[lang]}</span></a>
     </figcaption>
   )}
 </figure>

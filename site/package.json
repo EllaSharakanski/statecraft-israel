@@ -4,15 +4,17 @@
   "type": "module",
   "description": "The Statecraft: Israel website (static, English and Hebrew).",
   "license": "MIT",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/check-site.mjs",
+    "build": "astro build && node scripts/prune-dist.mjs && node scripts/check-site.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
     "astro": "7.3.5",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "yaml": "2.8.4"
   }
 }

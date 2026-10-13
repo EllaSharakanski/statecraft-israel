@@ -4,7 +4,8 @@
 //  3. every image and video in the page body sits in a <figure> that carries a visible media label
 //     (In-engine capture, Concept art — AI-generated, Cinematic promo — AI-generated, not gameplay, or Archival
 //     photograph), except contributor photos, which are portraits supplied by the owner;
-//  4. nothing loads from another origin: no external script, stylesheet, font, image, video or frame.
+//  4. nothing loads from another origin: no external script, stylesheet, font, image, video or frame;
+//  5. every file under _astro/ that a page names exists.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,6 +60,11 @@ for (const f of pages) {
     for (const u of m[1].split(',').map((s) => s.trim().split(/\s+/)[0])) {
       if (external.test(u)) fail(f, `loads from another origin: ${u}`);
     }
+  }
+
+  // 5. Every built asset a page names exists (the prune step must never remove a file in use).
+  for (const m of html.matchAll(/\/_astro\/([^"'\s,)&]+)/g)) {
+    if (!fs.existsSync(path.join(dist, '_astro', m[1]))) fail(f, `names a missing file: _astro/${m[1]}`);
   }
 
   // 3. Every image and video in <main> carries a media label in its <figure>.

@@ -43,8 +43,8 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
       <span class="eyebrow">{t(lang, 'nav.history')}</span>
       <h1>{he ? '1948 עד 1951, אירוע אחר אירוע' : '1948 to 1951, event by event'}</h1>
       <p>{he
-        ? `העמוד מציג את ${list.length} האירועים ההיסטוריים שבמשחק, לפי הסדר שבו השחקן פוגש אותם. בכל אירוע מופיע קודם מה שקרה, בטקסט של המשחק עצמו ועם המקורות שלו, ואחר כך ההחלטה שהמשחק מציב. הטקסטים והמקורות נלקחים כמו שהם מתיקיית content במאגר.`
-        : `This page lists the ${list.length} historical events in the game, in the order the player meets them. Each one shows first what happened, in the game's own text with its sources, then the decision the game puts to the player. The text and the sources are taken as they are from the repository's content folder.`}</p>
+        ? `העמוד מציג את ${list.length} האירועים ההיסטוריים שבמשחק, לפי הסדר שבו השחקן פוגש אותם. בכל אירוע מופיע קודם מה שקרה, בטקסט של המשחק עצמו ועם המקורות שלו, ואחר כך ההחלטה שהמשחק מציב. הטקסטים והמקורות נלקחים כמו שהם מתיקיית content במאגר, ושמות התפקידים ממולאים בהם.`
+        : `This page lists the ${list.length} historical events in the game, in the order the player meets them. Each one shows first what happened, in the game's own text with its sources, then the decision the game puts to the player. The text and the sources are taken as they are from the repository's content folder, with the office names filled in.`}</p>
     </header>
 
     <section class="opening" aria-labelledby="opening">
@@ -90,7 +90,7 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
                     <Picture src={img} alt={ph.alt} lang="en" formats={['avif']} fallbackFormat="webp" widths={[400, 720]}
                       sizes="(min-width: 60rem) 22rem, 100vw" loading="lazy" />
                   </div>
-                  <figcaption><span lang="en" dir="ltr">{ph.credit}</span> · <a href={ph.commons}>Wikimedia Commons</a></figcaption>
+                  <figcaption lang="en" dir="ltr">{ph.credit} · <a href={ph.commons}>Wikimedia&nbsp;Commons</a></figcaption>
                 </figure>
               )}
               <div class="event-body">
@@ -99,11 +99,11 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
                 <p class="event-text" lang="en" dir="ltr">{e.text}</p>
                 <div class="choice">
                   <h4>{t(lang, 'history.choice')}</h4>
-                  <ul>
+                  <ul lang="en" dir="ltr">
                     {e.options.map((o) => (
                       <li class:list={{ historical: o.historical }}>
-                        <span lang="en" dir="ltr">{o.text}</span>
-                        {o.historical && <span class="tag">{t(lang, 'history.historical')}</span>}
+                        {o.text}
+                        {o.historical && <span class="tag" lang={lang} dir={he ? 'rtl' : undefined}>{t(lang, 'history.historical')}</span>}
                       </li>
                     ))}
                   </ul>
@@ -154,7 +154,7 @@ const sensitiveCount = list.filter((e) => e.status === 'sensitivity-reviewed').l
   .decl-en { font-family: var(--serif); font-size: 0.85rem; letter-spacing: 0.05em; color: var(--gold-light); margin-block-end: 1.1rem !important; text-align: left; }
   .decl-source { font-size: 0.9rem; color: var(--ink-dim); margin-block-start: 1rem !important; }
   .note { color: var(--ink-dim); font-size: 0.95em; border-block-start: 1px solid var(--gold-faint); padding-block-start: 0.8rem; }
-  .years { position: sticky; inset-block-start: var(--header-h); z-index: 5; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding-block: 0.6rem; background: rgba(9, 14, 26, 0.96); border-block: 1px solid var(--gold-faint); margin-block-end: 1rem; }
+  .years { position: sticky; inset-block-start: var(--header-h); z-index: 5; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding-block: 0.6rem; background: var(--navy-deep); border-block: 1px solid var(--gold-faint); margin-block-end: 1rem; }
   .years a { color: var(--gold-light); text-decoration: none; font-weight: 600; }
   .year-title { font-size: clamp(2.2rem, 1.6rem + 2vw, 3.2rem); color: var(--gold); margin-block: 2.5rem 1rem; border-block-end: 1px solid var(--gold-faint); padding-block-end: 0.3rem; }
   .event { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: clamp(1rem, 3vw, 2rem); padding-block: 1.75rem; border-block-end: 1px solid var(--navy-line); }

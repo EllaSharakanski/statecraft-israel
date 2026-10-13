@@ -1,16 +1,15 @@
 ---
 // The language chooser at the site root, which hreflang names as x-default. No automatic redirect.
 import '../styles/global.css';
-import { href, asset } from '../i18n/ui';
+import { href, asset, CSP } from '../i18n/ui';
 const abs = (p: string) => new URL(p, Astro.site).href;
-const csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'";
 ---
 <!doctype html>
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta http-equiv="Content-Security-Policy" content={CSP} />
     <title>Statecraft: Israel</title>
     <meta name="description" content="A turn-based strategy game about governing Israel from 15 May 1948. English and Hebrew." />
     <link rel="canonical" href={abs(href(null))} />

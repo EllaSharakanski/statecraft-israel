@@ -50,9 +50,6 @@ const en = {
   'hero.video': 'Real gameplay, looping without sound',
   'video.nosound': 'No sound',
   'video.loads': 'The video loads from this site when you press play.',
-  'video.captions': 'Captions',
-  'video.github': 'Watch on GitHub',
-  'video.github.note': 'Opens the project page on GitHub, where GitHub’s player shows it. Nothing loads from GitHub until you click.',
   'video.length': 'length',
 
   'cta.play': 'Play',
@@ -68,7 +65,7 @@ const en = {
   'history.status': 'Review status',
   'history.status.fact-checked': 'fact-checked',
   'history.status.sensitivity-reviewed': 'fact-checked and sensitivity-reviewed',
-  'history.en-only': '',
+  'history.en-only': 'The game’s text, which exists in English only for now.',
   'contributors.photo.missing': 'No photo yet',
   'contributors.github': 'GitHub profile',
 } as const;
@@ -101,7 +98,7 @@ const he: Dict = {
   'footer.privacy': 'בלי כלי אנליטיקה ובלי עוגיות.',
 
   'label.engine': 'צילום מתוך המשחק',
-  'label.gameplay': 'משחק אמיתי, מצולם מהמשחק',
+  'label.gameplay': 'צילום של משחק אמיתי',
   'label.concept': 'אמנות קונספט — נוצרה בבינה מלאכותית',
   'label.concept.target': 'יעד חזותי, לא הגרסה הנוכחית',
   'label.cinematic': 'פרומו קולנועי — נוצר בבינה מלאכותית, אינו צילום מהמשחק',
@@ -115,9 +112,6 @@ const he: Dict = {
   'hero.video': 'משחק אמיתי, בלולאה וללא קול',
   'video.nosound': 'ללא קול',
   'video.loads': 'הווידאו נטען מהאתר הזה רק כשלוחצים על הפעלה.',
-  'video.captions': 'כתוביות',
-  'video.github': 'לצפייה ב־GitHub',
-  'video.github.note': 'הקישור פותח את עמוד הפרויקט ב־GitHub, והסרטון מוצג שם בנגן של GitHub. שום דבר לא נטען מ־GitHub לפני הלחיצה.',
   'video.length': 'אורך',
 
   'cta.play': 'לשחק',
@@ -163,6 +157,9 @@ export function href(lang: Lang | null, page: Page | string = ''): string {
 
 /** A file under public/ with the base. */
 export const asset = (p: string) => `${base}${p.replace(/^\//, '')}`;
+
+/** The pages' content security policy: nothing loads from another origin. */
+export const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'";
 
 export const REPO = 'https://github.com/eyalgolan/statecraft-israel';
 export const repoFile = (p: string) => `${REPO}/blob/main/${p}`;

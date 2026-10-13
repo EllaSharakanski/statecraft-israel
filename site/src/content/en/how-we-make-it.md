@@ -5,7 +5,7 @@ This project is built with heavy AI assistance. This page says what that means, 
 - **Code:** written with AI coding agents and reviewed through tests and review gates.
 - **Graphics:** the concept and promo images are AI-generated. The cinematic trailer was made with AI video tools from that concept art. The game's start-screen painting is AI-generated and shows no identifiable person. The game's tab icon and this website's icon were drawn with AI help.
 - **Text:** event and content text was drafted with AI, and every fact is checked against the cited source.
-- **Sound:** none yet.
+- **Sound:** none in the game yet. The cinematic trailer has music; its source is awaiting the owner's check.
 
 Nothing is generated live while you play.
 
@@ -19,7 +19,7 @@ Nothing is generated live while you play.
 ## The rules we keep
 
 - Every AI image and video is labelled where it appears, on this site and in the README.
-- AI likenesses of real people appear only in two concept images. They are recorded as AI-generated, are never presented as photographs, and are not used in the game.
+- AI likenesses of real people appear only in two concept images and in the cinematic trailer, which shows one of them. They are recorded as AI-generated, are never presented as photographs, and are not used in the game.
 - No AI-generated “period photograph” is shown next to real archival photographs.
 - AI-assisted writing is a draft. A person checks each factual claim in it against its sources before it is marked fact-checked.
 - Every AI-generated file is flagged `ai_generated: true` in [ASSETS.yaml](https://github.com/eyalgolan/statecraft-israel/blob/main/ASSETS.yaml). The table below is built from it each time the site is built.

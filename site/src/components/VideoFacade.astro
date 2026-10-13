@@ -1,6 +1,6 @@
 ---
 // A click-to-load video. Before the click the page has only a poster image and a button: no video bytes, and nothing
-// from another site. A video hosted elsewhere (the cinematic trailer) is a plain link instead.
+// from another site. The video never starts with sound by itself.
 import { Picture } from 'astro:assets';
 import MediaLabel from './MediaLabel.astro';
 import { type Lang, asset, t } from '../i18n/ui';
@@ -17,23 +17,15 @@ const meta = [video.title[lang], video.durationText && `${t(lang, 'video.length'
   <div class="media-frame">
     <MediaLabel lang={lang} kind={video.kind} build={video.build} />
     {video.kind !== 'engine' && <span class="ai-mark" aria-hidden="true">AI</span>}
-    {video.link ? (
-      <a class="facade" href={video.link} rel="noopener">
-        <Picture src={video.poster} alt="" formats={['avif']} fallbackFormat="webp" widths={[640, 1280]} sizes={sizes} loading="lazy" />
-        <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" /></svg></span>
-        <span class="facade-meta">{meta} · <strong>{t(lang, 'video.github')}</strong></span>
-      </a>
-    ) : (
-      <button type="button" class="facade" data-video={JSON.stringify({ sources, tracks })} aria-label={`${t(lang, 'video.play')}: ${video.title[lang]}`}>
-        <Picture src={video.poster} alt="" formats={['avif']} fallbackFormat="webp" widths={[640, 1280]} sizes={sizes} loading="lazy" />
-        <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" /></svg></span>
-        <span class="facade-meta">{meta}</span>
-      </button>
-    )}
+    <button type="button" class="facade" data-video={JSON.stringify({ sources, tracks })} aria-label={`${t(lang, 'video.play')}: ${video.title[lang]}`}>
+      <Picture src={video.poster} alt="" formats={['avif']} fallbackFormat="webp" widths={[640, 1280]} sizes={sizes} loading="lazy" />
+      <span class="play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z" /></svg></span>
+      <span class="facade-meta">{meta}</span>
+    </button>
   </div>
   <figcaption>
     <strong>{video.title[lang]}.</strong> {video.description[lang]}
-    {video.link ? <> {t(lang, 'video.github.note')}</> : <> {t(lang, 'video.loads')}</>}
+    {' '}{t(lang, 'video.loads')}
   </figcaption>
 </figure>
 

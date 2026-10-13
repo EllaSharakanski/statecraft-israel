@@ -21,13 +21,15 @@ import { repoRoot } from './repo';
 
 export type Kind = 'engine' | 'concept' | 'cinematic';
 type Text = Record<Lang, string>;
+/** A build and its date for a label: the id is shown isolated, so a Latin build id and a Hebrew date never run together. */
+export interface BuildInfo { id: Text; date: Text }
 
 export interface MediaImage {
   id: string;
   kind: Kind;
   src: ImageMetadata;
   /** Which build and when, for in-engine captures, in each language ("main 4abb64f, 13 October 2026"). */
-  build?: Text;
+  build?: BuildInfo;
   title: Text;
   alt: Text;
   /** An AI-generated part of a real screenshot (the start screen's painting), said beside the picture. */
@@ -48,11 +50,11 @@ const manifest = YAML.parse(fs.readFileSync(path.join(repoRoot, 'docs/images/cap
   build: string; date: string | Date; images: CaptureEntry[]; video?: VideoEntry;
 };
 const isoDate = (d: string | Date) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d));
-const buildText = (build: string, date: string | Date): Text => ({
-  en: `${build}, ${formatDate('en', isoDate(date))}`,
-  he: `${build}, ${formatDate('he', isoDate(date))}`,
+const buildText = (build: string, date: string | Date): BuildInfo => ({
+  id: { en: build, he: build },
+  date: { en: formatDate('en', isoDate(date)), he: formatDate('he', isoDate(date)) },
 });
-export const currentBuild: Text = buildText(manifest.build, manifest.date);
+export const currentBuild: BuildInfo = buildText(manifest.build, manifest.date);
 export const captureDateIso = isoDate(manifest.video?.date ?? manifest.date);
 for (const name of shotByName.keys()) {
   if (!manifest.images.some((e) => e.file === name)) throw new Error(`media: docs/images/${name} has no entry in docs/images/captures.yaml`);
@@ -65,7 +67,7 @@ const clipByName = new Map(Object.entries(clipUrls).map(([p, u]) => [p.split('/'
 for (const name of clipByName.keys()) {
   if (!manifest.video?.files.includes(name)) throw new Error(`media: docs/images/${name} is not listed under video: in docs/images/captures.yaml`);
 }
-export interface GameplayClip { title: Text; description: Text; alt: Text; build: Text; sources: { src: string; type: string }[] }
+export interface GameplayClip { title: Text; description: Text; alt: Text; build: BuildInfo; sources: { src: string; type: string }[] }
 export const gameplay: GameplayClip | undefined = manifest.video ? {
   title: manifest.video.title,
   description: manifest.video.description,
@@ -90,7 +92,7 @@ export const capture = (file: string) => {
   return c;
 };
 
-const m2Build: Text = { en: 'M2 map build, 10 October 2026', he: 'גרסת המפה של M2, 10 באוקטובר 2026' };
+const m2Build: BuildInfo = { id: { en: 'M2 map build', he: 'גרסת המפה של M2' }, date: { en: '10 October 2026', he: '10 באוקטובר 2026' } };
 
 export const engine: MediaImage[] = [
   ...captures,
@@ -175,13 +177,12 @@ export interface MediaVideo {
   id: string;
   kind: Kind;
   poster: ImageMetadata;
-  build?: Text;
+  build?: BuildInfo;
   title: Text;
   description: Text;
-  /** Files under public/, best first. Empty when the video is watched elsewhere (link). */
+  /** The files, best first: paths under public/, or URLs Vite emitted for files elsewhere in the repository. */
   sources: { src: string; type: string }[];
   captions?: Record<Lang, string>;
-  link?: string;
   duration: string; // ISO 8601
   durationText: string;
   sound: boolean;
@@ -209,16 +210,15 @@ export const gameplayVideo: MediaVideo | undefined = gameplay && {
   duration: '', durationText: '', sound: false,
 };
 
-/** The cinematic trailer (demo 1), web encodes of the master in site/public/media. Shown only behind a click, with its label. */
+/** The cinematic trailer (demo 1), one H.264 web encode of the master in site/public/media. Shown only behind a click, with its label. */
 export const trailer: MediaVideo = {
   id: 'cinematic-trailer-1', kind: 'cinematic', poster: trailerPoster,
   title: { en: 'The cinematic trailer', he: 'הטריילר הקולנועי' },
   description: {
-    en: 'Made with AI video tools from our concept art. It is not in-game footage, and it shows scenes, places and years the game does not have. Music, with quotations of public figures on screen; the captions repeat them.',
-    he: 'נוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו. זה אינו צילום מתוך המשחק, והוא מציג סצנות, מקומות ושנים שאין במשחק. מוזיקה, וציטוטים של אישי ציבור על המסך באנגלית; הכתוביות חוזרות עליהם.',
+    en: 'Made with AI video tools from our concept art. It is not in-game footage, and it shows scenes, places and years the game does not have. Music, with quotations of public figures on screen; the captions repeat them. It shows AI likenesses of real ministers and AI scenes of real places; it is not a historical record.',
+    he: 'נוצר בכלי וידאו של בינה מלאכותית מאמנות הקונספט שלנו. זה אינו צילום מתוך המשחק, והוא מציג סצנות, מקומות ושנים שאין במשחק. מוזיקה, וציטוטים של אישי ציבור על המסך באנגלית; הכתוביות חוזרות עליהם. מופיעות בו דמויות של שרים אמיתיים וסצנות של מקומות אמיתיים שנוצרו בבינה מלאכותית; הוא אינו תיעוד היסטורי.',
   },
   sources: [
-    { src: 'media/promo-trailer-720p.webm', type: 'video/webm; codecs="av01.0.05M.10, opus"' },
     { src: 'media/promo-trailer-720p.mp4', type: 'video/mp4; codecs="avc1.64001F, mp4a.40.2"' },
   ],
   captions: { en: 'media/promo-trailer.en.vtt', he: 'media/promo-trailer.he.vtt' },
