@@ -195,6 +195,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Map: a boundary between two regions of the same border style (two Mandate sub-districts) draws one band of the promo's
+  width, centred on the edge, instead of two full bands side by side; the Mandate frontier and a primary-secondary edge
+  keep the full band. Far off (a band under about 4 px, the overview) a band is a thin line of its colour, not a white
+  one. Visual only (refs #196).
 - Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
   biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
   at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
