@@ -664,4 +664,165 @@ public class RouteTests
         }
         finally { VisualToggles.SetAll(true); Object.DestroyImmediate(map.gameObject); }
     }
+
+    /// <summary>A walk across a route at gameplay03's pose: the pixels from -<paramref name="halfM"/> to +halfM across the
+    /// line at the line point nearest (lon, lat), with the routes on and off, and each pixel's offset (m) from the line.</summary>
+    sealed class Across { public readonly List<Color> On = new List<Color>(), Off = new List<Color>(); public readonly List<float> M = new List<float>(); }
+
+    static List<Across> WalkAcross(MapScene map, Camera cam, List<Vector2> line, IEnumerable<int> at, float halfM, float stepM)
+    {
+        var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+        var world = new List<Vector3>(); var offs = new List<(int walk, float m)>();
+        int walk = 0;
+        foreach (int i in at)
+        {
+            var dir = (line[Mathf.Min(line.Count - 1, i + 1)] - line[Mathf.Max(0, i - 1)]).normalized; var side = new Vector2(dir.y, -dir.x);
+            for (float m = -halfM; m <= halfM + 1e-3f; m += stepM)
+            {
+                var q = line[i] + side * m;
+                world.Add(new Vector3(q.x, RouteLayer.Ground(data, origin, q), q.y)); offs.Add((walk, m));
+            }
+            walk++;
+        }
+        var px = new Vector2[world.Count];
+        var on = RenderSample.Render(cam, 1920, 1080, world.ToArray(), px);
+        VisualToggles.Set(RouteLayer.RoutesToggle, false);
+        var off = RenderSample.Render(cam, 1920, 1080);
+        VisualToggles.Set(RouteLayer.RoutesToggle, true);
+        var walks = Enumerable.Range(0, walk).Select(_ => new Across()).ToList();
+        var seen = new HashSet<(int, int, int)>();
+        for (int k = 0; k < world.Count; k++)
+        {
+            int x = Mathf.FloorToInt(px[k].x), y = Mathf.FloorToInt(px[k].y);
+            if (!seen.Add((offs[k].walk, x, y))) continue;
+            var w = walks[offs[k].walk]; w.On.Add(on.At(x, y)); w.Off.Add(off.At(x, y)); w.M.Add(offs[k].m);
+        }
+        return walks;
+    }
+
+    /// <summary><paramref name="count"/> points of <paramref name="line"/> in the frame's middle, spread along the line; null
+    /// when fewer lie there.</summary>
+    static List<int> InFrame(MapScene map, Camera cam, List<Vector2> line, int count)
+    {
+        var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+        var inside = new List<int>();
+        for (int i = 2; i + 2 < line.Count; i++)
+        {
+            var v = cam.WorldToViewportPoint(new Vector3(line[i].x, RouteLayer.Ground(data, origin, line[i]), line[i].y));
+            if (v.z > 0 && v.x > 0.2f && v.x < 0.8f && v.y > 0.3f && v.y < 0.7f) inside.Add(i);
+        }
+        if (inside.Count < count) return null;
+        return Enumerable.Range(0, count).Select(k => inside[(int)((k + 0.5f) * inside.Count / count)]).ToList();
+    }
+
+    /// <summary>Promo 03 and the video's 0:21 close-up draw two bright steel rails on the grey ballast. A rail is 0.036 of
+    /// the 680 m bed, under a pixel at gameplay03, so it is drawn at least RailMinPx wide. A line detector at gameplay03
+    /// (tilt-shift off, the train hidden): at 30 points along each of two railways in the frame's middle, the luma at each
+    /// offset across the line, averaged along the line (so the sleepers, which cross it, average out and a line along it
+    /// stays); on each side, the rail's offset (0.12 of the width, about 82 m) stands above the bed either side of it by
+    /// RailContrast.</summary>
+    [Test]
+    public void TheRailsReadAsTwoBrightLinesAtGameplay03()
+    {
+        var map = BuildMap();
+        try
+        {
+            RenderSample.TiltShift(false);
+            VisualToggles.Set(RouteLayer.TrainToggle, false);
+            var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+            PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
+            var routes = RoutePaths.Parse(CommittedYaml, Bounds);
+            var data = map.Terrain.terrainData; var origin = map.Terrain.transform.position;
+            const float Step = 5f, Half = 200f;
+            int n = Mathf.RoundToInt(2 * Half / Step) + 1;
+            foreach (var id in new[] { "eastern_railway", "jaffa_jerusalem_railway" })
+            {
+                var line = RouteLayer.Resample(RouteLayer.World(map.Frame, routes.First(r => r.Id == id)), 60f).points;
+                var at = InFrame(map, cam, line, 30);
+                Assert.IsNotNull(at, $"{id} crosses the middle of the gameplay frame");
+                var world = new List<Vector3>();
+                foreach (int i in at)
+                {
+                    var dir = (line[Mathf.Min(line.Count - 1, i + 1)] - line[Mathf.Max(0, i - 1)]).normalized; var side = new Vector2(dir.y, -dir.x);
+                    for (int k = 0; k < n; k++)
+                    {
+                        var q = line[i] + side * (-Half + k * Step);
+                        world.Add(new Vector3(q.x, RouteLayer.GradeHeight(data, origin, q, dir), q.y));
+                    }
+                }
+                var px = new Vector2[world.Count];
+                var on = RenderSample.Render(cam, 1920, 1080, world.ToArray(), px);
+                var profile = new float[n];
+                for (int j = 0; j < world.Count; j++) profile[j % n] += RenderSample.Luma(on.At(Mathf.FloorToInt(px[j].x), Mathf.FloorToInt(px[j].y))) / at.Count;
+                float Window(float lo, float hi, int sign, bool max)
+                {
+                    var v = Enumerable.Range(0, n).Select(k => (m: -Half + k * Step, l: profile[k]))
+                        .Where(x => Mathf.Sign(x.m) == sign && Mathf.Abs(x.m) >= lo && Mathf.Abs(x.m) <= hi).Select(x => x.l).ToList();
+                    return max ? v.Max() : v.Average();
+                }
+                TestContext.WriteLine($"{id}: profile along the line {string.Join(" ", profile.Select(l => l.ToString("0.000")))}");
+                foreach (int sign in new[] { -1, +1 })
+                {
+                    float rail = Window(65f, 100f, sign, true), bed = 0.5f * (Window(20f, 50f, sign, false) + Window(115f, 145f, sign, false));
+                    TestContext.WriteLine($"{id} side {sign}: rail {rail:0.000} bed {bed:0.000} contrast {rail - bed:0.000}");
+                    Assert.GreaterOrEqual(rail - bed, RailContrast, $"{id}: the rail on side {sign} reads as a bright line along the bed");
+                }
+            }
+        }
+        finally { VisualToggles.SetAll(true); Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Bound for the rail test, set from its log.</summary>
+    const float RailContrast = 0.15f;   // measured 0.18-0.21 (main's shader: 0.10-0.11)
+
+    /// <summary>Promo 03's dirt tracks read on any ground by their darker worn edges. On the palest ground a road crosses in
+    /// the gameplay03 frame (the sand and dry grass, where a pale road alone melts in), across the road the verges are
+    /// darker than its core by VergeStep, and darker than the ground beside them with the routes off.</summary>
+    [Test]
+    public void RoadsReadOnPaleGroundByTheirVerges()
+    {
+        var map = BuildMap();
+        try
+        {
+            RenderSample.TiltShift(false);
+            VisualToggles.Set(RouteLayer.TrainToggle, false);
+            var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
+            PromoPose.Gameplay03.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
+            var routes = RoutePaths.Parse(CommittedYaml, Bounds);
+            // Every road point in the frame's middle, walked across; the palest ground (the routes off) first.
+            var walks = new List<(string id, Across w, float ground)>();
+            foreach (var r in routes.Where(r => r.Kind == RoutePaths.Road))
+            {
+                var line = RouteLayer.World(map.Frame, r);
+                var at = InFrame(map, cam, line, 6);
+                if (at == null) continue;
+                foreach (var w in WalkAcross(map, cam, line, at, 300f, 5f))
+                {
+                    var g = w.M.Select((m, k) => (m, k)).Where(x => Mathf.Abs(x.m) > 200f).Select(x => RenderSample.Luma(w.Off[x.k])).ToList();
+                    if (g.Count > 0) walks.Add((r.Id, w, g.Average()));
+                }
+            }
+            var pale = walks.OrderByDescending(x => x.ground).Take(8).ToList();
+            Assert.GreaterOrEqual(pale.Count, 6, "roads cross the gameplay frame");
+            int read = 0;
+            foreach (var (id, w, ground) in pale)
+            {
+                float Mean(float lo, float hi, List<Color> c) { var v = w.M.Select((m, k) => (m, k)).Where(x => Mathf.Abs(x.m) >= lo && Mathf.Abs(x.m) <= hi).Select(x => RenderSample.Luma(c[x.k])).ToList(); return v.Count == 0 ? float.NaN : v.Average(); }
+                float core = Mean(0f, 30f, w.On);
+                // The verge's darkest pixel on each side.
+                float VergeSide(int sign) { var v = w.M.Select((m, k) => (m, k)).Where(x => Mathf.Sign(x.m) == sign && Mathf.Abs(x.m) >= 60f && Mathf.Abs(x.m) <= 130f).Select(x => RenderSample.Luma(w.On[x.k])).ToList(); return v.Count == 0 ? float.NaN : v.Min(); }
+                float verge = Mathf.Max(VergeSide(-1), VergeSide(+1));   // the weaker side
+                float off = Mean(60f, 130f, w.Off);
+                bool ok = core - verge >= VergeStep && verge < off - VergeBelowGround;
+                if (ok) read++;
+                TestContext.WriteLine($"{id}: ground {ground:0.000} core {core:0.000} verge {verge:0.000} (off {off:0.000}) -> {(ok ? "reads" : "melts")}");
+            }
+            TestContext.WriteLine($"{read} of {pale.Count} pale-ground walks read");
+            Assert.GreaterOrEqual(read / (float)pale.Count, PaleReadShare, "roads read on pale ground");
+        }
+        finally { VisualToggles.SetAll(true); Object.DestroyImmediate(map.gameObject); }
+    }
+
+    /// <summary>Bounds for the road test, set from its log.</summary>
+    const float VergeStep = 0.04f, VergeBelowGround = 0.01f, PaleReadShare = 0.6f;
 }
