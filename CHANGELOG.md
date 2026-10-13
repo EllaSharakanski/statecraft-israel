@@ -200,6 +200,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Changed
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
+- Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
+  upper storey, deep windows and more roof rooms. The old towns' and villages' houses step back (the top storey a smaller
+  block on the lower roof), have roof rooms and grey-buff limestone walls under lime roofs. Domes stay on hill houses only,
+  fewer (old towns 22% to 8%, hill villages 7%; plain villages none, as their mud-brick houses had flat roofs) and low.
+  Every house stands where it did: same lots, trees and building count (docs/visual-v1.md, "Settlement quick wins").
 - HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
   hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
   with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,

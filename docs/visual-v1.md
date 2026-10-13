@@ -2166,6 +2166,92 @@ blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
 - Ramla:
   - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
 
+## Settlement quick wins (branch `art/settlements-quickwins`, refs #31)
+The 2026-10-13 gap audit (`.superpowers/audit-2026-10-13/renders`: `measure.py`, `metrics.json`) ranked the settlements
+the biggest gap to promo 03. Measured with its crops and poses: editor renders (`MapCapture.Promo`, Mobile tier, with
+`-extraPose close30:34.83:32.00:30000:10`) and the WebGL `?shot` of gameplay03. Main is `7aeec3f`.
+
+**Changes.**
+- **White City** (`Style.WhiteBlock`):
+  - Walls are lime-white plaster (0.94, 0.945, 0.94; was 0.94, 0.92, 0.87), with 8% of blocks cream (was 12%).
+  - Roofs are paler (0.90, 0.89, 0.86).
+  - Each upper storey has a balcony with a solid plastered parapet on the street side, and on most blocks the back too
+    (`WhiteBlockDetail`). Each balcony stays inside the plot's lot.
+  - Roof rooms are on 80% of blocks (was 50%), and a second room is on 45% of the blocks that do not step.
+  - `Kit.shader`, White City walls only: discrete windows with plaster piers between them, the glass near black
+    (`_CityWindowDark` 0.95; the other styles keep `_WindowDark` 0.55), and a darker band under the balcony slab. The
+    storey pattern holds until a storey is about two pixels (was three), so the 30 km look keeps its window rows.
+- **Old towns, Arab towns and villages** (`Style.OldHouse`, `Style.Village`, `Archetype.OldTown`, `Archetype.ArabTown`;
+  `StoneHouse`):
+  - Three in four houses of two storeys or more step back: the top storey is a smaller block on one corner of the lower
+    roof. Single-storey houses often have a roof room.
+  - Walls are grey-buff limestone (0.77, 0.70, 0.60, jittered from grey to buff) and roofs lime plaster.
+  - A village below 120 m (the coastal plain and the valleys) is mud brick (0.78, 0.69, 0.56) with flat roofs.
+  - Domes are fewer and lower: a cap rising 0.6 of its radius, not a hemisphere, in the roof's lime colour, not white.
+    - Old towns: 8% of flat-roofed houses (was 22%).
+    - Hill villages: 7% (was 10% of every village).
+    - Plain villages: none.
+  - The mosques' and landmarks' domes are unchanged.
+- **Historical basis.** The owner's ruling (m3-rulings, "Owner rulings"): where the promo departs from the era, the promo
+  wins, but the architecture stays plausible for 1948. Domes are reduced, not removed.
+  - The hill country built in limestone, and its houses were roofed with stone vaults and cupolas.
+  - The coastal plain and the valleys built in mud brick, with flat roofs of beams and earth.
+  - So domes stay on hill houses only, as the low cap a vault shows from outside.
+  - Sources are under "Sources" below.
+- **Layout unchanged.** A 1948 locality's houses share the locality's random stream with its spots. `Emit(Archetype.ArabTown)`
+  still draws exactly five numbers from it (wall, roof, the dome roll), and each house's detail comes from a stream seeded
+  off it. The lattice towns' houses already had a stream of their own.
+  - Every building stands where it did: same lots, same trees, buildings 1954 (WebGL) / 1953 (editor), locality buildings
+    1339, trees 8358, draws 63.
+  - So #318 (the localities' landmark lots in Tel Aviv) and #249 (tree holes under the figures) are untouched.
+
+**Result** (main → branch; promo in brackets):
+
+| | main | branch | promo 03 | target |
+|---|---|---|---|---|
+| gameplay03 white share (V > 0.72, S < 0.28; WebGL shot, map area) | 2.49% | 6.55% | 7.46% (audit) | >= 4.5%: met |
+| gameplay03 white share (editor, Mobile) | 2.36% | 6.84% | | |
+| close30 Tel Aviv edge density (crop 0.32-0.58 x 0-0.30, 600x400) | 0.038 | 0.054 | 0.114 | >= 0.07: not met |
+| close30 Tel Aviv p5 / p95 | 0.241 / 0.753 | 0.221 / 0.787 | 0.136 / 0.896 | p5 <= 0.18: not met |
+| close30 Tel Aviv warmth | 0.131 | 0.114 | 0.090 | <= 0.09: not met |
+| close30 Jaffa edge / warmth | 0.041 / 0.141 | 0.047 / 0.112 | 0.100 / 0.107 | |
+| close30 village crop edge / warmth | 0.035 / 0.222 | 0.036 / 0.198 | 0.071 / 0.132 | |
+
+- **Why Tel Aviv's edge, p5 and warmth fall short.**
+  - At close30 a storey is about three pixels. The crop's top third lies in the far tilt-shift band: the edge per band
+    rose from 0.031-0.046 to 0.039-0.058, against the promo's 0.05-0.16.
+  - About half the crop is the town's sand ground. Its tint comes from `PaintGround`, and
+    `SeaTests.TheBeachBesideTelAvivStaysSandWithTheKitsOn` pins it.
+  - The walls are already near-neutral white; the remaining yellow is the sun and the grade.
+  - Closing the gap needs denser, smaller blocks (a layout change that meets #318), palms between the buildings (the
+    vegetation) and a ground or light change. None is a quick win, so they are left as follow-ups.
+- **Kit numbers** (WebGL `KITS` line, main → branch): buildings 1954 → 1954, vertices 85,401 → 99,131, triangles
+  66,436 → 68,366, draws 63 → 63.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, three rounds, order rotated, each round under one exclusive
+  `machine_lock`, 2026-10-14; builds of main `7aeec3f` and this branch; 9 cold loads each):
+
+  | | map_build median (range) | `kits built` phase median | first_frame median |
+  |---|---|---|---|
+  | main | 3067 ms (3042-3085) | 747 ms | 11075 ms |
+  | branch | 3055 ms (3036-3077) | 743 ms | 11081 ms |
+
+  - Within noise: the per-round medians alternate (+19, -26, -16 ms), and the kit phase is unchanged.
+  - The machine was loaded (other sessions' jobs), so both sides sit over the 2720 ms budget. Main does too; that is
+    #321's margin, not this change.
+- **Goldens:** the WebGL `golden&smoke=5` run shows `GOLDEN OK 1950 71e9904d`, `GOLDEN OK 1952 62f8ec61` and
+  `SMOKE OK 5 turns 1948-06-19 d3fdd459`, unchanged.
+- **Tests:** EditMode passes 768/768 with 0 `warning CS`, on the branch and on main `7aeec3f` alike. An earlier run on
+  the old base lost 52 UI, label and border coroutine tests to destroyed scene objects. It did not reproduce: all 768
+  pass on both.
+
+### Sources (checked 2026-10-13)
+- Stone in the mountains, mud brick and wood on the coast and in the valleys: Palestine Ministry of Tourism and Antiquities,
+  virtual museum, "Traditional Palestinian House - Al Hosh - The Courtyard":
+  https://virtualmuseum.tourism.ps/en/article/72/Traditional-Palestinian-House---Al-Hosh---The-Courtyard
+- Vaults, cupolas and roofing of the Palestinian traditional house: M. Abuarkub, "Traditional Building Materials and
+  Techniques in Palestine", Prostor 25 (2017) 140-153, https://doi.org/10.31522/p.25.1(53).9
+- The White City (1930s International Style, flat roofs, balconies): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
+
 ## Issue #195: the water and the border lookups out of the terrain's fragment shader
 - **Why.** promo-sea (#138) put the water shading (`ScWaterShade`, the breakers' `fwidth`, the footprint) in the terrain
   graph's function, and promo-borders (#206) six neighbour fetches in `ScBorderApply`'s loop. Either one makes the shader
