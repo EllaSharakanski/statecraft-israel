@@ -12,6 +12,7 @@ The map draws the railways and main roads of 1948, each from its sourced date, a
 | Tracer | `tools/routes_1948.py` (tests: `tools/tests/test_routes_1948.py`) |
 | Map layer | `unity/Assets/Scripts/Map/Routes/` (`RoutePaths`, `RouteLayer`, `RouteTrain`, `TrainModels`) |
 | Shader and materials | `unity/Assets/Shaders/Route.shader`; `Resources/Routes/Rail.mat`, `Road.mat` (`RouteMaterialAssets.Create`) |
+| Baked ribbons (generated) | `unity/Assets/Resources/Routes/RouteRibbons.bytes` (`RouteRibbonBake.Bake`; tests: `tools/tests/test_route_ribbon_bake.py`) |
 | Tests | `unity/Assets/Tests/EditMode/RouteTests.cs` |
 
 Both route files are map-only. `ContentLoader` never reads them, so the content hash and the goldens do not move
@@ -247,6 +248,31 @@ measurement in `docs/units.md`:
   station" (Jaffa–Jerusalem railway). The later Tel Aviv South opened when Beit Hadar closed.
 
 **Toggles.** `routes` (the ribbons) and `train` (when there is one) are visual toggles, so `?vprofile` prices each one.
+
+**Baked ribbons** (issue #321). Boot places the ribbon meshes from a bake instead of deriving them, as the terrain water
+does (#320, docs/visual-v1.md).
+- `RouteRibbonFile` (format) and the editor's `RouteRibbonBake` write every mesh `RouteLayer.Build` draws, in its order
+  (`RouteLayer.Plan`): vertices, normals, uvs and indices, to `Resources/Routes/RouteRibbons.bytes`.
+- The header holds the bake's version, the heightmap's resolution and `HeightsCheck`, FNV-1a checks of `heightmap.json`
+  and `route_paths_1948.yaml`, the terrain's size and origin, and the geometry constants (widths, `StepM`, `ClearanceM`,
+  the tolerances, the sample counts, `VerticalExaggeration`).
+- When any of them differs from what the map loaded, the bake is refused with a warning (`ROUTES ...: deriving the route
+  ribbons at load`) and the ribbons are derived as before: the same meshes, only slower.
+- **Route index** (for the GDD Phase 4 corridors, #384). Each mesh lists its routes, each with its first vertex, vertex
+  count, first index and index count (`RouteSpan`), so a later change can show one route by its construction state.
+  Nothing reads it yet; the vertex layout is unchanged.
+- **Re-bake** whenever the heightmap, `heightmap.json`, the route file, a constant in the header or the ribbon rule
+  (`RouteLayer.Geometry`; bump `RouteRibbonFile.Version` with it) changes:
+  `Unity -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -executeMethod
+  Statecraft.Game.EditorTools.RouteRibbonBake.Bake`, under `tools/machine_lock.py` as any Unity run.
+- **Checks.** `tools/tests/test_route_ribbon_bake.py` (CI, no Unity) fails on a stale header, reading the constants from
+  the C# source, and checks the route index. `RouteTests.TheBakedRibbonsMatchTheRoutes` compares the bake with a fresh
+  derivation byte for byte, and with the map's own terrain vertex for vertex; `AStaleRibbonBakeIsDerivedAtLoad` checks
+  the fallback. A change to `RouteLayer.Geometry` without a version bump is caught only by the Unity test.
+- **Boot** (`tools/headed.py boot --runs 3 --cpu 4`, phase `routes built`, three rounds interleaved with main `bc67247`
+  under the exclusive lock, 9 cold loads each, medians, 2026-10-13): 162 ms on main, 51 ms with the bake. The whole map
+  build is 3384 ms on main and 3414 ms with the bake, inside the runs' spread (3158-4240 ms); its other phases move by the
+  same few tens of milliseconds both ways from run to run.
 
 **Kits keep off the routes** (settlement kits and trees, #179).
 - `MapScene` reads the routes before building the kits, and hands `KitLayer.Build` every route's corridor

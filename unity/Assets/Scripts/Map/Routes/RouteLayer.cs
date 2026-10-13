@@ -89,12 +89,46 @@ namespace Statecraft.Game.Map.Routes
             _ => throw new ArgumentException($"unknown route kind '{kind}'", nameof(kind)),
         };
 
+        /// <summary>One ribbon mesh Build draws: the routes of one display window in one look ("Rail", or "Roads" for the
+        /// roads and tracks), in the file's order.</summary>
+        public sealed class RibbonPlan
+        {
+            public RouteWindow Window;
+            public string Look = "";
+            public List<RoutePath> Routes = new List<RoutePath>();
+            public bool RailGrade => Look == "Rail";
+            public string MeshName => $"Route{Look} {Window}";
+        }
+
+        /// <summary>The ribbons Build draws, in its order: the windows in the order they open, and in each the rail, then the
+        /// roads, where the window has any. The bake (RouteRibbonFile) stores its meshes in this order.</summary>
+        public static List<RibbonPlan> Plan(IReadOnlyList<RoutePath> routes)
+        {
+            var plans = new List<RibbonPlan>();
+            foreach (var group in routes.GroupBy(RoutePaths.WindowOf).OrderBy(g => g.Key.From).ThenBy(g => g.Key.To ?? DateTime.MaxValue))
+                foreach (var (kinds, look) in new[] { (new[] { RoutePaths.Rail }, "Rail"), (new[] { RoutePaths.Road, RoutePaths.Track }, "Roads") })
+                {
+                    var members = group.Where(r => kinds.Contains(r.Kind)).ToList();
+                    if (members.Count > 0) plans.Add(new RibbonPlan { Window = group.Key, Look = look, Routes = members });
+                }
+            return plans;
+        }
+
+        /// <summary>A plan's ribbon, derived from the terrain (what the bake stores).</summary>
+        public static RibbonGeometry Derive(RibbonPlan plan, GeoFrame frame, TerrainData data, Vector3 origin) =>
+            Geometry(plan.Routes.Select(r => (r.Id, World(frame, r), WidthOf(r.Kind))), data, origin, plan.RailGrade);
+
         /// <summary>Builds the routes under <paramref name="terrain"/> (so a map rebuild destroys them): one group per display
         /// window (its rail and road ribbons), shown as at <paramref name="date"/>, and, when <paramref name="train"/> is not
         /// None and the train's route is in <paramref name="routes"/>, the train (still: it stands at its still position, so
         /// screenshots and editor renders repeat exactly). Meshes, the train's palette and its material copy are owned by
-        /// the root's own MapRuntimeAssets, which also unregisters the toggles. Returns the root.</summary>
-        public static GameObject Build(Terrain terrain, GeoFrame frame, IReadOnlyList<RoutePath> routes, TrainMode train, DateTime date)
+        /// the root's own MapRuntimeAssets, which also unregisters the toggles. Returns the root.
+        /// With <paramref name="baked"/> (the inputs the map read), the ribbons are placed from the bake
+        /// (RouteRibbonFile.Resource, Editor RouteRibbonBake) when it was made from the same inputs; a missing or stale bake
+        /// is refused with a warning and the ribbons derived at load, the same meshes, only slower (issue #321). Without it
+        /// they are derived.</summary>
+        public static GameObject Build(Terrain terrain, GeoFrame frame, IReadOnlyList<RoutePath> routes, TrainMode train, DateTime date,
+            RouteRibbonFile.Source? baked = null)
         {
             if (terrain == null) throw new ArgumentNullException(nameof(terrain));
             if (routes == null) throw new ArgumentNullException(nameof(routes));
@@ -112,30 +146,28 @@ namespace Statecraft.Game.Map.Routes
             var data = terrain.terrainData; var origin = terrain.transform.position;
 
             // One group per display window, in the order the windows open (deterministic names and draw order).
-            foreach (var group in routes.GroupBy(RoutePaths.WindowOf).OrderBy(g => g.Key.From).ThenBy(g => g.Key.To ?? DateTime.MaxValue))
+            var plans = Plan(routes);
+            var geometry = Geometries(plans, frame, data, origin, baked);
+            GameObject? holder = null;
+            for (int i = 0; i < plans.Count; i++)
             {
-                var holder = new GameObject($"Window {group.Key}");
-                holder.transform.SetParent(ribbons.transform, false);
-                holder.AddComponent<RouteGroup>().Window = group.Key;
-                foreach (var (kinds, material, name) in new[]
-                         {
-                             (new[] { RoutePaths.Rail }, rail, "Rail"),
-                             (new[] { RoutePaths.Road, RoutePaths.Track }, road, "Roads"),
-                         })
+                var plan = plans[i];
+                if (holder == null || !plans[i - 1].Window.Equals(plan.Window))
                 {
-                    var lines = group.Where(r => kinds.Contains(r.Kind)).Select(r => (World(frame, r), WidthOf(r.Kind))).ToList();
-                    if (lines.Count == 0) continue;
-                    var mesh = assets.Own(Ribbon(lines, data, origin, $"Route{name} {group.Key}", railGrade: name == "Rail"));
-                    mesh.UploadMeshData(true);
-                    var go = new GameObject(name);
-                    go.transform.SetParent(holder.transform, false);
-                    go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                    var r = go.AddComponent<MeshRenderer>();
-                    r.sharedMaterial = material;
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    r.receiveShadows = true;
+                    holder = new GameObject($"Window {plan.Window}");
+                    holder.transform.SetParent(ribbons.transform, false);
+                    holder.AddComponent<RouteGroup>().Window = plan.Window;
+                    holder.SetActive(plan.Window.Covers(date));
                 }
-                holder.SetActive(group.Key.Covers(date));
+                var mesh = assets.Own(geometry[i].ToMesh(plan.MeshName));
+                mesh.UploadMeshData(true);
+                var go = new GameObject(plan.Look);
+                go.transform.SetParent(holder.transform, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = plan.RailGrade ? rail : road;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                r.receiveShadows = true;
             }
             assets.OnTeardown(VisualToggles.Register(RoutesToggle, on => { if (ribbons != null) ribbons.SetActive(on); }));
 
@@ -148,6 +180,25 @@ namespace Statecraft.Game.Map.Routes
                 assets.OnTeardown(VisualToggles.Register(TrainToggle, on => { if (go != null) go.SetActive(on); }));
             }
             return root;
+        }
+
+        /// <summary>The plans' ribbons: from the bake when <paramref name="baked"/> is given and the bake is for those inputs,
+        /// else derived.</summary>
+        static List<RibbonGeometry> Geometries(List<RibbonPlan> plans, GeoFrame frame, TerrainData data, Vector3 origin, RouteRibbonFile.Source? baked)
+        {
+            if (baked is { } source && plans.Count > 0)
+            {
+                var asset = Resources.Load<TextAsset>(RouteRibbonFile.Resource);
+                string why = "missing";
+                if (asset != null)
+                {
+                    bool ok = RouteRibbonFile.TryRead(asset.bytes, source, data.size, origin, plans, out var read, out why);
+                    if (!Application.isEditor) Resources.UnloadAsset(asset);   // its bytes were copied; drop the native copy
+                    if (ok) return read;
+                }
+                Debug.LogWarning($"ROUTES {RouteRibbonFile.AssetPath}: {why}; deriving the route ribbons at load");
+            }
+            return plans.ConvertAll(p => Derive(p, frame, data, origin));
         }
 
         /// <summary>A route's points in world metres (x east, z north).</summary>
@@ -204,7 +255,7 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>The narrowest a cross-section gets, as a share of the ribbon's width (a gorge floor).</summary>
         public const float MinWidthShare = 0.25f;
         /// <summary>Samples per side when a cross-section looks for where it must stop.</summary>
-        const int NarrowSamples = 8;
+        internal const int NarrowSamples = 8;
 
         /// <summary>The half-width (m) a cross-section at <paramref name="q"/> (flat at <paramref name="y"/>) may span. A sample
         /// leaves the tolerance where the ground is more than <see cref="RiseToleranceM"/> above the section or more than
@@ -259,7 +310,7 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>Clearance (m, world) of the rails over the highest ground under them, where a section had to be lifted.</summary>
         public const float RailClearanceM = 3f;
         /// <summary>Ground samples each side of the line when a section checks the ground under its rails (<see cref="RailSpanShare"/>).</summary>
-        const int LiftSamples = 4;
+        internal const int LiftSamples = 4;
 
         /// <summary>The half-widths of a rail line's sections (centre points <paramref name="pts"/>, unit directions
         /// <paramref name="dirs"/>, heights <paramref name="ys"/>), smoothed along the line: FlatHalfWidth per section, then
@@ -295,14 +346,21 @@ namespace Statecraft.Game.Map.Routes
         /// rails (<see cref="RailSpanShare"/>; review A-I2). Normal: the terrain's at the line.</item>
         /// </list></summary>
         public static Mesh Ribbon(IEnumerable<(List<Vector2> line, float width)> lines, TerrainData data, Vector3 origin, string name,
+            bool railGrade = false) =>
+            Geometry(lines.Select(l => ("", l.line, l.width)), data, origin, railGrade).ToMesh(name);
+
+        /// <summary><see cref="Ribbon"/>'s arrays before they become a mesh, with each line's vertex and index range under its
+        /// route id (<see cref="RibbonGeometry.Routes"/>).</summary>
+        public static RibbonGeometry Geometry(IEnumerable<(string id, List<Vector2> line, float width)> lines, TerrainData data, Vector3 origin,
             bool railGrade = false)
         {
             var verts = new List<Vector3>(); var normals = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
-            foreach (var (line, width) in lines)
+            var spans = new List<RouteSpan>();
+            foreach (var (id, line, width) in lines)
             {
-                if (line.Count < 2) continue;
+                if (line.Count < 2) { spans.Add(new RouteSpan(id, verts.Count, 0, tris.Count, 0)); continue; }
                 var (pts, along) = Resample(line, StepM);
-                int n = pts.Count, first = verts.Count;
+                int n = pts.Count, first = verts.Count, firstIndex = tris.Count;
                 var dirs = new Vector2[n];
                 for (int i = 0; i < n; i++) dirs[i] = (pts[Math.Min(n - 1, i + 2)] - pts[Math.Max(0, i - 2)]).normalized;
                 if (railGrade)
@@ -346,12 +404,9 @@ namespace Statecraft.Game.Map.Routes
                         int a = first + i * Across + j, b = a + 1, c = a + Across, d = c + 1;
                         tris.AddRange(new[] { a, c, b, b, c, d });         // the shader draws both faces
                     }
+                spans.Add(new RouteSpan(id, first, verts.Count - first, firstIndex, tris.Count - firstIndex));
             }
-            var mesh = new Mesh { name = name };
-            if (verts.Count > 65535) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            mesh.SetVertices(verts); mesh.SetNormals(normals); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
-            mesh.RecalculateBounds();
-            return mesh;
+            return new RibbonGeometry(verts.ToArray(), normals.ToArray(), uvs.ToArray(), tris.ToArray(), spans.ToArray());
         }
     }
 }
