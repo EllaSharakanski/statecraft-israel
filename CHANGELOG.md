@@ -300,6 +300,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
+  `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
+  The pixels are unchanged.
 - The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
   (fixes #397).
 - Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
