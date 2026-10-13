@@ -11,13 +11,19 @@ namespace Statecraft.Game.Map.Kits
     /// <see cref="KitScale"/> times their real size (per class), a town's footprint spread over neighbouring hexes in
     /// proportion to its population, geography real (towns stay on land, at their sourced coordinates). Built at load time
     /// from the settlement id's seed (<see cref="KitRandom"/>), so every load of a build draws the same towns; nothing here reads or
-    /// writes the sim.</summary>
-    public static class SettlementKits
+    /// writes the sim.
+    /// Towns round 2 (docs/visual-v1.md, "Towns round 2"): every town is laid out on plot lattices (streets of plots at the
+    /// town's grid angle; organic towns jittered), each plot built with a probability that falls from the core to the edge,
+    /// instead of random spots tried against every lot. The landmarks of the four cities live in SettlementKits.Landmarks.cs.</summary>
+    public static partial class SettlementKits
     {
         /// <summary>Settled population per hex of footprint: a town of this many people covers one hex (about 65 km^2).</summary>
         public const float PeoplePerHex = 60000f;
         /// <summary>The smallest footprint, in hexes, so a kibbutz of 240 still reads as a place at the gameplay zoom.</summary>
         public const float MinHexes = 0.08f;
+        /// <summary>How far past its footprint radius a town's plots reach (UnitGround.FootprintMargin: the units assume no
+        /// building beyond it; PaintGround tints the same disc).</summary>
+        public const float PlotReach = 1.1f;
 
         public static Archetype ArchetypeOf(Settlement s)
         {
@@ -49,13 +55,44 @@ namespace Statecraft.Game.Map.Kits
             Build(list, ground, out _);
 
         /// <summary>As Build, also returning every claimed lot (centre, radius, owning settlement id): buildings and landmarks
-        /// of all towns, none overlapping another (tests).</summary>
+        /// of all towns, none overlapping another (tests); and, when <paramref name="columns"/> is given, filling it with each
+        /// non-empty kit's columns by settlement id (KitMesh.Columns, read before the mesh's CPU copy is dropped).</summary>
         public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
-            out List<(Vector2 centre, float radius, string id)> claimed, Dictionary<string, Bounds[]>? columns = null)
+            out List<(Vector2 centre, float radius, string id)> claimed, Dictionary<string, Bounds[]>? columns = null) =>
+            Build(list, ground, out claimed, out _, columns);
+
+        /// <summary>One thing a kit placed, for the tests' and the docs' town census: a building (<see cref="Placed.Kind"/>
+        /// "building", or "wing" for a block's lower part) or a landmark (its name: "mosque", "clock_tower", ...), with its
+        /// world footprint (centre, yaw in degrees, width and depth in m), its wall height (m) and wall colour.</summary>
+        public readonly struct Placed
         {
-            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground, columns);
+            public readonly string Id, Kind; public readonly Vector2 C; public readonly float Yaw, W, D, H; public readonly Color32 Wall;
+            public Placed(string id, string kind, Vector2 c, float yaw, float w, float d, float h, Color32 wall)
+            { Id = id; Kind = kind; C = c; Yaw = yaw; W = w; D = d; H = h; Wall = wall; }
+            /// <summary>Harbour works stand in the sea by design; everything else stands on land.</summary>
+            public bool InSea => Kind == "port" || Kind == "breakwater";
+        }
+
+        [System.ThreadStatic] static List<Placed>? census;
+        static void Record(string id, string kind, Vector2 c, float yaw, float w, float d, float h, Color32 wall) =>
+            census?.Add(new Placed(id, kind, c, yaw, w, d, h, wall));
+
+        /// <summary>As Build, also listing everything placed (<see cref="Placed"/>), in placement order.</summary>
+        public static List<(Settlement s, Mesh mesh, int buildings)> Build(IReadOnlyList<Settlement> list, KitGround ground,
+            out List<(Vector2 centre, float radius, string id)> claimed, out List<Placed> placed, Dictionary<string, Bounds[]>? columns = null)
+        {
+            var all = Build(list, new List<Settlement>(), new List<Localities.Area>(), ground, out placed, columns);
             claimed = all.Claimed;
             return all.Towns;
+        }
+
+        /// <summary>As the full Build, also listing everything placed (<see cref="Placed"/>), in placement order.</summary>
+        public static Result Build(IReadOnlyList<Settlement> towns, IReadOnlyList<Settlement> localities, IReadOnlyList<Localities.Area> camps,
+            KitGround ground, out List<Placed> placed, Dictionary<string, Bounds[]>? columns = null)
+        {
+            census = placed = new List<Placed>();
+            try { return Build(towns, localities, camps, ground, columns); }
+            finally { census = null; }
         }
 
         /// <summary>What <see cref="Build(IReadOnlyList{Settlement}, IReadOnlyList{Settlement}, IReadOnlyList{Localities.Area}, KitGround)"/>
@@ -67,7 +104,7 @@ namespace Statecraft.Game.Map.Kits
             public List<(string name, Mesh mesh)> Tiles = new List<(string, Mesh)>();
             public List<(Vector2 centre, float radius, string id)> Claimed = new List<(Vector2, float, string)>();
             public int LocalityBuildings, Camps, Tents;
-            /// <summary>Landmarks each game settlement built (its archetype's: a mosque, a water tower, Jaffa's three).</summary>
+            /// <summary>Landmarks each game settlement built (SettlementKits.Landmarks.cs: a city's own, else its archetype's).</summary>
             public Dictionary<string, int> TownLandmarks = new Dictionary<string, int>();
         }
 
@@ -105,6 +142,7 @@ namespace Statecraft.Game.Map.Kits
             var streams = new Dictionary<string, KitRandom>(); var landmarks = new Dictionary<string, int>();
             var spans = new Dictionary<string, List<(KitMesh km, int from, int to)>>();   // each locality's vertices in its tile
             var townMeshes = new Dictionary<string, KitMesh>();
+            var gameTowns = new List<(Settlement s, KitMesh km, int n, System.Func<int>? scatter)>();
             // Landmarks first: every game settlement's (largest first), then every locality's, each at its heart, before any
             // houses. A village at a city's edge (Jammasin by Tel Aviv) keeps its heart, and no village takes a game town's
             // landmark spot (review M8).
@@ -115,7 +153,9 @@ namespace Statecraft.Game.Map.Kits
                     var rnd = new KitRandom(s.Id, 1);
                     var km = pass ? Tile(centres[s.Id]) : (townMeshes[s.Id] = new KitMesh());
                     int from = km.VertexCount;
-                    int n = BuildOne(s, centres[s.Id], ground, km, lots, Phase.Landmark, ref rnd, 0, null);
+                    // A game settlement's own landmarks (towns round 2: TownLandmarks), a locality's its archetype's.
+                    int n = pass ? BuildOne(s, centres[s.Id], ground, km, lots, Phase.Landmark, ref rnd, 0, null)
+                        : TownLandmarks(s, centres[s.Id], ground, km, lots, ref rnd);
                     if (pass) { spans[s.Id] = new List<(KitMesh, int, int)> { (km, from, km.VertexCount) }; result.LocalityBuildings += n; }
                     else result.TownLandmarks[s.Id] = n;
                     landmarks[s.Id] = n; streams[s.Id] = rnd;
@@ -134,14 +174,21 @@ namespace Statecraft.Game.Map.Kits
                     continue;
                 }
                 var km = townMeshes[s.Id];
-                int n = landmarks[s.Id] + BuildOne(s, centres[s.Id], ground, km, lots, Phase.Houses, ref rnd, landmarks[s.Id], merged);
-                if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
-                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), n));
+                int n = landmarks[s.Id] + PlaceHouses(s, centres[s.Id], ground, km, lots, ref rnd, merged, out var scatter);   // towns round 2: plot lattices
+                gameTowns.Add((s, km, n, scatter));
             }
             foreach (var area in camps)
             {
                 var (c, t) = Encampments(area, ground, lots, Tile);
                 result.Camps += c; result.Tents += t;
+            }
+            // Last, the small towns' fallback houses (#317), largest place first: after every place's own houses and the camps,
+            // so they take only ground no other place builds on, and every other place draws as it would without them.
+            foreach (var (s, km, n, scatter) in gameTowns)
+            {
+                int total = n + (scatter?.Invoke() ?? 0);
+                if (columns != null && km.VertexCount > 0) columns[s.Id] = km.Columns();
+                result.Towns.Add((s, km.ToMesh(s.Id + "_kit"), total));
             }
             // A locality's columns, from its own vertices in its tile (read before ToMesh drops the CPU copy).
             if (columns != null)
@@ -200,21 +247,36 @@ namespace Statecraft.Game.Map.Kits
             }
         }
 
-        sealed class Lot { public Vector2 c; public float r; public string id = ""; }
+        /// <summary>A claimed lot: its disc, its town and, for a plot, its lattice (<see cref="group"/>; -1 for a landmark).
+        /// Plots of one lattice never overlap by construction, so they do not test each other's discs.</summary>
+        sealed class Lot { public Vector2 c; public float r; public string id = ""; public int group = -1; }
 
-        /// <summary>The shared lot list, in claim order, with a grid index for the free-spot test.</summary>
+        /// <summary>The shared lot list, in claim order, with a grid index (DiscIndex, as KitGround's) for the free-spot test.</summary>
         sealed class Lots
         {
             public readonly List<Lot> List = new List<Lot>();
             readonly DiscIndex index = new DiscIndex(1f, KitGround.LotQueryM);
             public void Add(Lot l) { List.Add(l); index.Add((l.c, l.r, l.id)); }
-            public bool Free(Vector2 p, float r)
+
+            /// <summary>No lot within reach of a disc of radius r at p, except the plots of <paramref name="id"/>'s lattice
+            /// <paramref name="group"/> (pass group -1 to test against every lot).</summary>
+            public bool Free(Vector2 p, float r, string id = "", int group = -1)
             {
-                if (r > KitGround.LotQueryM) { foreach (var l in List) if ((l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false; return true; }
+                if (r > KitGround.LotQueryM)
+                {
+                    foreach (var l in List) if (!Same(l, id, group) && (l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false;
+                    return true;
+                }
                 var near = index.Near(p);
-                for (int k = 0; k < near.Count; k++) { var (c, lr, _) = index[near[k]]; if ((c - p).sqrMagnitude < (lr + r) * (lr + r)) return false; }
+                for (int k = 0; k < near.Count; k++)
+                {
+                    var l = List[near[k]];
+                    if (!Same(l, id, group) && (l.c - p).sqrMagnitude < (l.r + r) * (l.r + r)) return false;
+                }
                 return true;
             }
+
+            static bool Same(Lot l, string id, int group) => group >= 0 && l.group == group && l.id == id;
         }
 
         static bool FreeAt(Lots lots, Vector2 p, float r) => lots.Free(p, r);
@@ -238,11 +300,522 @@ namespace Statecraft.Game.Map.Kits
             at = want; return false;
         }
 
+        // ---- Plots ----------------------------------------------------------------------------------------------------
+
+        /// <summary>The kinds of building a plot lattice lays out. Real sizes (m, before the symbolic scale) and storeys are
+        /// in <see cref="Pick"/>; lattice pitch, density and scale in <see cref="Grid"/>.</summary>
+        enum Style
+        {
+            /// <summary>Tel Aviv's and Hadar HaCarmel's International Style blocks: white plaster, flat roofs (60x).</summary>
+            WhiteBlock,
+            /// <summary>The plastered two- and three-storey centre of a large moshava (Petah Tikva, Rehovot) (60x).</summary>
+            TownBlock,
+            /// <summary>Jerusalem's new city: stone-faced blocks, Storrs' 1918 ordinance (60x).</summary>
+            StoneBlock,
+            /// <summary>An Ottoman old town's stone house: Jaffa, Acre, Gaza, Jerusalem within the walls, Haifa's lower town (100x).</summary>
+            OldHouse,
+            /// <summary>An Arab town's or village's stone or mud-brick house (100x).</summary>
+            Village,
+            /// <summary>A moshava's, kibbutz's or moshav's red-roofed house (100x).</summary>
+            Moshava,
+            /// <summary>A Templer house of Haifa's German Colony: stone, red roof (100x; placed along its avenue, not on a lattice).</summary>
+            Templer,
+        }
+
+        /// <summary>A plot lattice: rows of plots at its style's pitch (<see cref="Grid"/>), turned <see cref="Yaw"/> degrees;
+        /// <see cref="Group"/> tells a town's lattices apart (plots of one lattice never overlap, so they skip each other's lot test).</summary>
+        readonly struct Lattice
+        {
+            public readonly Style Style; public readonly float Yaw; public readonly int Group;
+            public Lattice(Style style, float yaw, int group) { Style = style; Yaw = yaw; Group = group; }
+        }
+
+        /// <summary>Plot pitch along and across the street (real m), jitter (share of the pitch), the symbolic scale, and
+        /// the share of plots built in the core (out to t0 of the radius), at the radius, and past it (falling to none at
+        /// <see cref="PlotReach"/>).</summary>
+        static (float pu, float pv, float jitter, float scale, float core, float t0, float edge) Grid(Style st) => st switch
+        {
+            Style.WhiteBlock => (18.5f, 13.5f, 0f, KitScale.CityBlocks, 1.00f, 0.60f, 0.70f),
+            Style.TownBlock => (20f, 16f, 0.03f, KitScale.CityBlocks, 1.00f, 0.30f, 0.80f),
+            Style.StoneBlock => (23f, 17.5f, 0.03f, KitScale.CityBlocks, 0.97f, 0.50f, 0.60f),
+            Style.OldHouse => (7.2f, 6.8f, 0.05f, KitScale.Houses, 1.00f, 0.60f, 0.75f),
+            Style.Village => (7.6f, 7.2f, 0.07f, KitScale.Houses, 1.00f, 0.50f, 0.60f),
+            _ => (11.5f, 9.8f, 0.04f, KitScale.Houses, 0.95f, 0.40f, 0.60f),
+        };
+
+        static float Density(Style st, float t)
+        {
+            var g = Grid(st);
+            if (t <= g.t0) return g.core;
+            if (t <= 1f) return Mathf.Lerp(g.core, g.edge, (t - g.t0) / (1f - g.t0));
+            return Mathf.Lerp(g.edge, 0f, (t - 1f) / (PlotReach - 1f));
+        }
+
+        /// <summary>The lattices a town is laid out on: one per archetype, two or three where a town has quarters of different
+        /// building (Jerusalem: the walled Old City, the stone new city, the Arab quarters and villages round it; Haifa: the
+        /// lower town by the port and Hadar on the slope; a large moshava's plastered centre).</summary>
+        static List<Lattice> Lattices(Settlement s, Archetype arch)
+        {
+            float yaw = GridYaw(s.Id);
+            switch (s.Id)
+            {
+                case "jerusalem": return new List<Lattice> { new Lattice(Style.OldHouse, 0f, 0), new Lattice(Style.StoneBlock, yaw, 1), new Lattice(Style.Village, yaw, 2) };
+                case "haifa": return new List<Lattice> { new Lattice(Style.WhiteBlock, yaw, 0), new Lattice(Style.OldHouse, yaw, 1) };
+            }
+            switch (arch)
+            {
+                case Archetype.WhiteCity: return new List<Lattice> { new Lattice(Style.WhiteBlock, yaw, 0) };
+                case Archetype.OldTown: return new List<Lattice> { new Lattice(Style.OldHouse, yaw, 0) };
+                case Archetype.ArabTown: return new List<Lattice> { new Lattice(Style.Village, yaw, 0) };
+                default:
+                    return s.Type == "town" && KitPopulation.Of(s.Id) >= LargeMoshava
+                        ? new List<Lattice> { new Lattice(Style.TownBlock, yaw, 0), new Lattice(Style.Moshava, yaw, 1) }
+                        : new List<Lattice> { new Lattice(Style.Moshava, yaw, 0) };
+            }
+        }
+
+        /// <summary>A moshava of at least this many people (1945) gets a plastered town centre (Petah Tikva, Rehovot, Rishon
+        /// LeZion, Hadera).</summary>
+        const int LargeMoshava = 7500;
+
+        /// <summary>Whether lattice <paramref name="L"/> builds at <paramref name="p"/> (t: distance over the footprint radius).</summary>
+        static bool Allows(Settlement s, Lattice L, Vector2 p, float t, KitGround ground)
+        {
+            switch (s.Id)
+            {
+                case "jerusalem":
+                {
+                    var (oc, half) = OldCity(ground);
+                    var d = p - oc;
+                    bool inside = Mathf.Abs(d.x) < half - OldCityInset && Mathf.Abs(d.y) < half - OldCityInset;
+                    bool outside = Mathf.Abs(d.x) > half + OldCityInset || Mathf.Abs(d.y) > half + OldCityInset;
+                    // West of the Old City: the Jewish new city (the city centre, Rehavia); north, east and south: the Arab
+                    // quarters and villages. (The Old City's symbolic square covers the ground of its nearest neighbourhoods.)
+                    bool west = d.x < -half * 0.6f;
+                    return L.Style == Style.OldHouse ? inside : outside && (L.Style == Style.StoneBlock) == west;
+                }
+                case "haifa":
+                    // The lower town by the bay (old Arab Haifa, below about 35 m) and Hadar HaCarmel up the slope.
+                    return (L.Style == Style.OldHouse) == (ground.ElevM(p.x, p.y) < 35f);
+                case "nahalal":
+                    // Nahalal's ring of farmsteads round the public buildings, out to the footprint's edge: its lattice's
+                    // first ring of plots stands at 0.76 and 0.89 of the radius.
+                    return t > 0.42f && t <= 1f;
+            }
+            if (L.Style == Style.TownBlock) return t < 0.42f;
+            if (L.Style == Style.Moshava && L.Group == 1) return t > 0.36f;
+            return true;
+        }
+
+        /// <summary>Places a town's houses on its lattices, nearest the centre first; returns how many. When the lattice
+        /// places fewer than <see cref="SmallTownFloor"/>, <paramref name="scatter"/> is the town's fallback (#317), which
+        /// Build runs after every other place's houses; else null.</summary>
+        static int PlaceHouses(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, HashSet<string>? ignoreCellsOf,
+            out System.Func<int>? scatter)
+        {
+            var arch = ArchetypeOf(s);
+            float R = FootprintRadiusM(s, ground.HexSizeM), reach = R * PlotReach;
+            var lattices = Lattices(s, arch);
+
+            // A point belongs to the settlement whose footprint it is deepest inside (distance over radius), so Jaffa and Tel
+            // Aviv, or Lod and Ramla, meet along a seam instead of overlapping. The 1948 localities' cells (ignoreCellsOf) do
+            // not count: a game settlement keeps the ground it had before the villages came (their landmarks' lots still stand).
+            bool Mine(Vector2 p)
+            {
+                float mine = (p - centre).magnitude / R;
+                var fp = ground.Footprints;
+                var near = fp.Near(p);
+                for (int k = 0; k < near.Count; k++)
+                {
+                    int i = near[k];
+                    if (fp[i].id != s.Id && (ignoreCellsOf == null || !ignoreCellsOf.Contains(fp[i].id))
+                        && (p - fp[i].centre).magnitude / fp[i].radius < mine) return false;
+                }
+                return true;
+            }
+
+            // Only a town with water near its footprint tests the beach setback per plot (eight samples each: the boot budget).
+            bool shore = WaterWithin(centre, reach + BeachSetbackM + 1000f, ground);
+            var plots = new List<(float d, int order, Vector2 p, int lattice)>();
+            for (int li = 0; li < lattices.Count; li++)
+            {
+                var g = Grid(lattices[li].Style);
+                float pu = g.pu * g.scale, pv = g.pv * g.scale, a = lattices[li].Yaw * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                int nu = Mathf.CeilToInt(reach / pu) + 1, nv = Mathf.CeilToInt(reach / pv) + 1;
+                for (int j = -nv; j <= nv; j++)
+                    for (int i = -nu; i <= nu; i++)
+                    {
+                        // Organic towns stagger alternate rows by half a plot: no straight cross streets.
+                        float u = (i + (g.jitter > 0f && (j & 1) != 0 ? 0.5f : 0f)) * pu, v = j * pv;
+                        var p = centre + new Vector2(u * ca - v * sa, u * sa + v * ca);
+                        float d = (p - centre).magnitude;
+                        if (d <= reach) plots.Add((d, plots.Count, p, li));
+                    }
+            }
+            plots.Sort((x, y) => x.d != y.d ? x.d.CompareTo(y.d) : x.order.CompareTo(y.order));
+
+            // Whether lattice L's building fits at p: the full building, else a smaller one on the plot or nudged within it,
+            // so a plot by a road or a neighbour's lot keeps a smaller building instead of standing empty. A nudged, shrunk
+            // building still stays inside its plot, so it never reaches a neighbouring plot's building. group -1 tests
+            // against every lot, this town's plots included (the scatter below).
+            bool Fit(Lattice L, Vector2 p, float yaw, float t, Spec spec, int group, out Spec b, out Vector2 q)
+            {
+                var g = Grid(L.Style);
+                float a = L.Yaw * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                bool hillTown = L.Style == Style.OldHouse || L.Style == Style.Village;
+                foreach (var (shrink, du, dv) in Fits)
+                {
+                    b = Shrink(spec, shrink);
+                    float u = du * g.pu * g.scale, v = dv * g.pv * g.scale;
+                    q = p + new Vector2(u * ca - v * sa, u * sa + v * ca);
+                    if ((du != 0f || dv != 0f) && (!ground.Inside(q.x, q.y) || !Mine(q) || !Allows(s, L, q, t, ground) || ground.Water(q.x, q.y))) continue;
+                    if (!lots.Free(q, b.lotR, s.Id, group) || ground.OnRoute(q, b.lotR)) continue;   // off the railways and roads too
+                    if (ground.Slope(q.x, q.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
+                    if (CornerInWater(q, yaw, b.w, b.d, ground)) continue;   // the whole footprint is dry
+                    if (shore && L.Style != Style.OldHouse && NearSea(q, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
+                    return true;
+                }
+                b = spec; q = p; return false;
+            }
+
+            int placed = 0;
+            foreach (var (d, _, p0, li) in plots)
+            {
+                var L = lattices[li]; var g = Grid(L.Style);
+                float t = d / R;
+                // Every plot draws the same numbers whether or not it is built, so one plot's fate never shifts another's.
+                bool build = rnd.Chance(Density(L.Style, t));
+                float ju = rnd.Range(-1f, 1f) * g.jitter * g.pu * g.scale, jv = rnd.Range(-1f, 1f) * g.jitter * g.pv * g.scale;
+                var spec = Pick(L.Style, t, ref rnd, g.scale);
+                // Inside Jerusalem's walls, one or two storeys: the walls and the Dome of the Rock stand above the roofs.
+                if (s.Id == "jerusalem" && L.Style == Style.OldHouse && spec.storeys > 2) { spec.storeys = 2; spec.h = 2f * 3.3f * g.scale; }
+                float yaw = L.Yaw + (g.jitter > 0f ? rnd.Range(-4f, 4f) : 0f);
+                ulong detail = rnd.Next();
+                if (!build) continue;
+                float a = L.Yaw * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                var p = p0 + new Vector2(ju * ca - jv * sa, ju * sa + jv * ca);
+                // The cheap tests first (the boot budget): the cell and the quarter, then the terrain samples.
+                if (!ground.Inside(p.x, p.y) || !Mine(p) || !Allows(s, L, p, t, ground) || ground.Water(p.x, p.y)) continue;
+                if (!Fit(L, p, yaw, t, spec, L.Group, out var b, out var q)) continue;
+                lots.Add(new Lot { c = q, r = b.lotR, id = s.Id, group = L.Group });
+                var drnd = new KitRandom(detail);
+                Emit(s.Id, L.Style, q, yaw, b, t, ground, km, ref drnd);
+                placed++;
+            }
+
+            // A small town's floor (#317): at the houses' 100x scale a plot is about 1 km, so a footprint of 1.3-2 km radius
+            // holds only some 7 plots, and the routes, the sea or a neighbour's lots can take most of them.
+            // Below SmallTownFloor houses the town is filled up as round 1 drew it: its archetype's full-size building (the
+            // size main drew, never shrunk), on random spots over the footprint tried nearest the heart first, from its own
+            // stream (KitRandom(id, 3)). Build runs it after every place's own houses and the camps, so it takes only ground
+            // no other place builds on.
+            scatter = null;
+            if (placed < SmallTownFloor && SmallTownScatter)
+            {
+                int want = SmallTownFloor - placed;
+                scatter = () =>
+                {
+                    var srnd = new KitRandom(s.Id, 3);
+                    float m = KitScale.For(arch);
+                    var spots = new List<(float r, int i, Vector2 p, float yaw, Spec b, ulong detail)>();
+                    for (int i = 0; i < ScatterTries; i++)
+                    {
+                        float r = reach * Mathf.Sqrt(srnd.Value()), ang = srnd.Range(0f, 2f * Mathf.PI);
+                        var b = Pick(arch, r / R, ref srnd, m);
+                        b.lotR = 0.5f * Mathf.Sqrt(b.w * b.w + b.d * b.d);   // the whole footprint, as a plot's (round 1's lot let a corner reach a road)
+                        float yaw = arch == Archetype.Moshava || arch == Archetype.WhiteCity ? GridYaw(s.Id) + srnd.Range(-4f, 4f) : srnd.Range(0f, 90f);
+                        spots.Add((r, i, centre + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * r, yaw, b, srnd.Next()));
+                    }
+                    spots.Sort((x, y) => x.r != y.r ? x.r.CompareTo(y.r) : x.i.CompareTo(y.i));
+                    // The tests that do not depend on the house's size, once per spot (the boot budget): the cell, the water, the
+                    // quarter's rule (Nahalal's ring).
+                    var site = new bool[spots.Count];
+                    for (int k = 0; k < spots.Count; k++)
+                    {
+                        var (r, _, p, _, _, _) = spots[k]; float t = r / R;
+                        site[k] = ground.Inside(p.x, p.y) && Mine(p) && !ground.Water(p.x, p.y) && lattices.Exists(x => Allows(s, x, p, t, ground));
+                    }
+                    int added = 0;
+                    bool hillTown = arch == Archetype.ArabTown || arch == Archetype.OldTown;
+                    // Full size first over every spot; only then 0.72 size (never the half-size fit: Acre's stray beach house).
+                    foreach (var shrink in new[] { 1f, 0.72f })
+                    for (int k = 0; k < spots.Count && added < want; k++)
+                    {
+                        if (!site[k]) continue;
+                        var (r, _, p, yaw, full, detail) = spots[k];
+                        var b = Shrink(full, shrink);
+                        if (!lots.Free(p, b.lotR) || ground.OnRoute(p, b.lotR)) continue;
+                        if (ground.Slope(p.x, p.y, b.w) > (hillTown ? 0.6f : 0.35f)) continue;
+                        if (CornerInWater(p, yaw, b.w, b.d, ground)) continue;
+                        // Every fallback house keeps off the beach strip, an old town's too (Acre's stood alone on the sand).
+                        if (shore && NearSea(p, yaw, b.w + 2f * BeachSetbackM, b.d + 2f * BeachSetbackM, ground)) continue;
+                        lots.Add(new Lot { c = p, r = b.lotR, id = s.Id });
+                        var drnd = new KitRandom(detail);
+                        var wall = Emit(arch, p, yaw, b, ground, km, ref drnd);
+                        Record(s.Id, "building", p, yaw, b.w, b.d, b.h, wall);
+                        added++;
+                    }
+                    return added;
+                };
+            }
+            return placed;
+        }
+
+        /// <summary>The fewest houses a town keeps (#317): round 1's floor per town (TargetCount's minimum of 6). Fifteen of the
+        /// 25 towns' lattices fall short of it (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre); their
+        /// fallback houses join the lattice's where free ground is left (13 of them).</summary>
+        const int SmallTownFloor = 6;
+        /// <summary>Random spots a small town's fallback tries before it settles for fewer than SmallTownFloor houses (round 1
+        /// tried about 30 per building).</summary>
+        const int ScatterTries = 240;
+        /// <summary>Whether the small towns' fallback runs (on; tests switch it off to show it moves no other place).</summary>
+        public static bool SmallTownScatter = true;
+
+        /// <summary>The fits a plot tries in turn: (size share, nudge along and across the street as a share of the pitch).</summary>
+        static readonly (float shrink, float du, float dv)[] Fits =
+        {
+            (1f, 0f, 0f), (0.72f, 0f, 0f), (0.72f, 0.15f, 0f), (0.72f, -0.15f, 0f), (0.72f, 0f, 0.15f), (0.72f, 0f, -0.15f), (0.5f, 0f, 0f),
+        };
+
+        static Spec Shrink(Spec b, float k) =>
+            k >= 1f ? b : new Spec { w = b.w * k, d = b.d * k, h = b.h, storeys = b.storeys, lotR = b.lotR * k };
+
+
+        /// <summary>How far (m) a new town's buildings keep back from the sea: the beach strip (promo-sea's ScBeachM, 650 m on
+        /// average) stays sand, with its palms, as in promo 03's Tel Aviv. The old towns (Jaffa, Acre, Gaza, Haifa's lower
+        /// town by the port) meet the water.</summary>
+        const float BeachSetbackM = 700f;
+
+        /// <summary>Water that is not a lake: the beach strip is the Mediterranean's. The Sea of Galilee's and the Hula's towns
+        /// (Tiberias, Degania) meet the water, as the old towns do.</summary>
+        static bool Sea(float x, float z, KitGround ground) => ground.Water(x, z) && !(ground.Inside(x, z) && ground.Biome(x, z) == "lake");
+
+        /// <summary>Any sea on 24 rays from <paramref name="c"/>, sampled every kilometre out to <paramref name="radius"/>: whether a
+        /// town's plots need the beach setback test at all.</summary>
+        static bool WaterWithin(Vector2 c, float radius, KitGround ground)
+        {
+            for (int i = 0; i < 24; i++)
+            {
+                float a = i * Mathf.PI / 12f;
+                var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+                for (float d = 1000f; d <= radius; d += 1000f)
+                {
+                    var p = c + dir * d;
+                    if (Sea(p.x, p.y, ground)) return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>Any sea (not a lake) at the corners or edge midpoints of a w x d rectangle at <paramref name="p"/>.</summary>
+        static bool NearSea(Vector2 p, float yawDeg, float w, float d, KitGround ground)
+        {
+            float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+            foreach (var (u, v) in new[] { (-0.5f * w, -0.5f * d), (0.5f * w, -0.5f * d), (-0.5f * w, 0.5f * d), (0.5f * w, 0.5f * d),
+                         (0.5f * w, 0f), (-0.5f * w, 0f), (0f, 0.5f * d), (0f, -0.5f * d) })
+                if (Sea(p.x + u * ca - v * sa, p.y + u * sa + v * ca, ground)) return true;
+            return false;
+        }
+
+        static bool CornerInWater(Vector2 p, float yawDeg, float w, float d, KitGround ground)
+        {
+            float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+            for (int i = 0; i < 4; i++)
+            {
+                float u = ((i & 1) == 0 ? -0.5f : 0.5f) * w, v = ((i & 2) == 0 ? -0.5f : 0.5f) * d;
+                if (ground.Water(p.x + u * ca - v * sa, p.y + u * sa + v * ca)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The street grid's angle per town (Tel Aviv's Geddes plan runs about 20 degrees off north, parallel to the
+        /// shore; the others get a seeded angle).</summary>
+        static float GridYaw(string id) => id == "tel_aviv" ? 20f : id == "haifa" ? 35f : new KitRandom(id, 7).Range(0f, 90f);
+
+        struct Spec { public float w, d, h, lotR; public int storeys; }
+
+        /// <summary>A plot's building: real size and storeys by style and by t (0 at the heart, 1 at the footprint's edge),
+        /// times the scale <paramref name="m"/>. Every size fits its lattice's plot with a street to spare.</summary>
+        static Spec Pick(Style st, float t, ref KitRandom rnd, float m)
+        {
+            float w, d; int storeys;
+            switch (st)
+            {
+                case Style.WhiteBlock:
+                    w = rnd.Range(12f, 16f); d = rnd.Range(9f, 11.5f);
+                    // Taller near the centre, a few taller still: promo 03's five- to eight-storey skyline, above the real White
+                    // City's three or four storeys (owner ruling 2026-10-10: where the promo departs from the era, the promo wins).
+                    storeys = Mathf.RoundToInt(Mathf.Lerp(7f, 3f, Mathf.Clamp01(t)) + rnd.Range(-1.5f, 1.5f));
+                    if (t < 0.5f && rnd.Chance(0.1f)) storeys = rnd.Range(7, 9);
+                    storeys = Mathf.Clamp(storeys, 2, 8);   // promo 03's tallest block is eight storeys; nothing reads as a later tower
+                    break;
+                case Style.TownBlock:
+                    w = rnd.Range(12f, 17f); d = rnd.Range(9f, 13f);
+                    storeys = rnd.Chance(Mathf.Lerp(0.6f, 0.2f, t / 0.42f)) ? 3 : 2;
+                    break;
+                case Style.StoneBlock:
+                    w = rnd.Range(13f, 20f); d = rnd.Range(10f, 14.5f);
+                    storeys = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3.6f, 2f, Mathf.Clamp01(t)) + rnd.Range(-0.8f, 0.8f)), 2, 4);
+                    break;
+                case Style.OldHouse:
+                    w = rnd.Range(4.6f, 6.6f); d = rnd.Range(4.4f, 6.2f);
+                    storeys = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3.2f, 1.3f, Mathf.Clamp01(t)) + rnd.Range(-0.8f, 0.8f)), 1, 4);
+                    break;
+                case Style.Village:
+                    w = rnd.Range(4.4f, 6.6f); d = rnd.Range(4.2f, 6.0f);
+                    storeys = rnd.Chance(Mathf.Lerp(0.45f, 0.1f, Mathf.Clamp01(t))) ? 2 : 1;
+                    break;
+                case Style.Templer:
+                    w = rnd.Range(8.5f, 10.5f); d = rnd.Range(7.5f, 9f);
+                    storeys = 2;
+                    break;
+                default:
+                    w = rnd.Range(7.5f, 10f); d = rnd.Range(6f, 7.8f);
+                    storeys = rnd.Chance(0.15f) ? 2 : 1;
+                    break;
+            }
+            return new Spec { w = w * m, d = d * m, h = storeys * 3.3f * m, storeys = storeys, lotR = 0.5f * Mathf.Sqrt(w * w + d * d) * m };
+        }
+
+        // sRGB palettes (promo 03: white and cream city, honey stone Jaffa, tan villages, terracotta roofs).
+        static Color32 C(float r, float g, float b) => new Color32((byte)(r * 255), (byte)(g * 255), (byte)(b * 255), 255);
+        static Color32 Jitter(Color32 c, ref KitRandom rnd, float amount)
+        {
+            float k = 1f + rnd.Range(-amount, amount), warm = rnd.Range(-amount, amount) * 0.5f;
+            return C(Mathf.Clamp01(c.r / 255f * k * (1 + warm)), Mathf.Clamp01(c.g / 255f * k), Mathf.Clamp01(c.b / 255f * k * (1 - warm)));
+        }
+
+        /// <summary>Draws one plot's building and records it in the census.</summary>
+        static void Emit(string id, Style st, Vector2 p, float yaw, Spec b, float t, KitGround ground, KitMesh km, ref KitRandom rnd)
+        {
+            float m = Grid(st).scale;
+            var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground, m);
+            float storey = 3.3f * m;
+            switch (st)
+            {
+                case Style.WhiteBlock:
+                case Style.TownBlock:
+                {
+                    var wall = rnd.Chance(st == Style.TownBlock ? 0.3f : 0.12f) ? Jitter(C(0.90f, 0.84f, 0.72f), ref rnd, 0.04f) : Jitter(C(0.94f, 0.92f, 0.87f), ref rnd, 0.035f);
+                    var roof = Jitter(C(0.80f, 0.78f, 0.74f), ref rnd, 0.05f);
+                    // A third of the blocks step down at one end: a lower wing within the plot (L and stepped massing).
+                    if (b.storeys >= 3 && rnd.Chance(0.33f))
+                    {
+                        float a = yaw * Mathf.Deg2Rad, share = rnd.Range(0.58f, 0.72f), side = rnd.Chance(0.5f) ? 1f : -1f;
+                        float w1 = b.w * share, w2 = b.w - w1, d2 = b.d * rnd.Range(0.7f, 1f), h2 = b.h - storey * rnd.Range(1, 3);
+                        float u1 = side * (b.w - w1) * 0.5f, u2 = -side * (b.w - w2) * 0.5f, v2 = (b.d - d2) * 0.5f;
+                        var c1 = p + new Vector2(u1 * Mathf.Cos(a), u1 * Mathf.Sin(a));
+                        var c2 = p + new Vector2(u2 * Mathf.Cos(a) - v2 * Mathf.Sin(a), u2 * Mathf.Sin(a) + v2 * Mathf.Cos(a));
+                        km.Box(c1.x, c1.y, yaw, w1, b.d, bottom, top, b.h, wall, roof, Facade.WhiteCity, m);
+                        km.Box(c2.x, c2.y, yaw, w2 * 1.01f, d2, bottom, top, h2, wall, roof, Facade.WhiteCity, m);
+                        Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                        Record(id, "wing", c2, yaw, w2, d2, h2, wall);
+                    }
+                    else
+                    {
+                        km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.WhiteCity, m);
+                        Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    }
+                    // A stair tower or roof room on many Bauhaus blocks.
+                    if (rnd.Chance(0.5f))
+                    {
+                        float rw = b.w * rnd.Range(0.22f, 0.36f), rd = b.d * rnd.Range(0.3f, 0.45f);
+                        km.Box(p.x + b.w * rnd.Range(-0.15f, 0.15f), p.y + b.d * rnd.Range(-0.12f, 0.12f), yaw, rw, rd, top + b.h - 2f, top + b.h, 2.8f * m, wall, roof, Facade.Plain, m);
+                    }
+                    break;
+                }
+                case Style.StoneBlock:
+                {
+                    var wall = Jitter(C(0.86f, 0.79f, 0.64f), ref rnd, 0.05f);
+                    var roof = Jitter(C(0.82f, 0.77f, 0.66f), ref rnd, 0.04f);
+                    bool tiled = rnd.Chance(0.15f);   // the red-roofed villas of the new city's garden suburbs
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m, roofed: tiled);
+                    if (tiled) km.Pyramid(p.x, p.y, yaw, b.w * 1.04f, b.d * 1.04f, top + b.h, 2.6f * m, Jitter(C(0.70f, 0.33f, 0.22f), ref rnd, 0.06f));
+                    else if (rnd.Chance(0.35f))
+                        km.Box(p.x, p.y, yaw, b.w * 0.3f, b.d * 0.35f, top + b.h - 2f, top + b.h, 2.6f * m, wall, roof, Facade.Plain, m);
+                    Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    break;
+                }
+                case Style.OldHouse:
+                {
+                    var wall = Jitter(C(0.83f, 0.72f, 0.54f), ref rnd, 0.06f);
+                    var roof = Jitter(C(0.86f, 0.77f, 0.60f), ref rnd, 0.05f);
+                    // Outside the core, some Ottoman-era houses have red tiled roofs (Jaffa's Ajami, Haifa's lower town).
+                    bool tiled = rnd.Chance(t > 0.6f ? 0.14f : 0.03f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m, roofed: tiled);
+                    if (tiled) km.Pyramid(p.x, p.y, yaw, b.w * 1.04f, b.d * 1.04f, top + b.h, 2.2f * m, Jitter(C(0.70f, 0.33f, 0.22f), ref rnd, 0.06f));
+                    else if (rnd.Chance(0.22f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.33f, Jitter(C(0.88f, 0.84f, 0.76f), ref rnd, 0.05f));
+                    else if (b.storeys >= 2 && rnd.Chance(0.3f))   // a roof room on the flat roof
+                        km.Box(p.x + b.w * 0.2f, p.y - b.d * 0.15f, yaw, b.w * 0.45f, b.d * 0.5f, top + b.h - 2f, top + b.h, storey * 0.9f, wall, roof, Facade.Stone, m);
+                    Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    break;
+                }
+                case Style.Village:
+                {
+                    var wall = Jitter(C(0.80f, 0.70f, 0.53f), ref rnd, 0.07f);
+                    var roof = Jitter(C(0.84f, 0.75f, 0.59f), ref rnd, 0.06f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m);
+                    if (rnd.Chance(0.10f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.3f, roof);
+                    Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    break;
+                }
+                case Style.Templer:
+                {
+                    var wall = Jitter(C(0.86f, 0.79f, 0.66f), ref rnd, 0.04f);
+                    var roof = Jitter(C(0.72f, 0.31f, 0.20f), ref rnd, 0.06f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m, roofed: true);
+                    km.Gable(p.x, p.y, yaw, b.w, b.d, top + b.h, Mathf.Min(b.w, b.d) * 0.55f, roof, wall);
+                    Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    break;
+                }
+                default:
+                {
+                    var wall = Jitter(C(0.92f, 0.89f, 0.82f), ref rnd, 0.04f);
+                    var roof = Jitter(C(0.74f, 0.31f, 0.20f), ref rnd, 0.08f);
+                    km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m, roofed: true);
+                    km.Gable(p.x, p.y, yaw, b.w, b.d, top + b.h, Mathf.Min(b.w, b.d) * 0.42f, roof, wall);
+                    Record(id, "building", p, yaw, b.w, b.d, b.h, wall);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>Wall bottom (sunk 2 m below the lowest corner, so a house on a slope stands on a plinth, not on air) and the
+        /// ground level the walls rise from (the highest corner, so the slope never buries a storey).</summary>
+        static (float bottom, float ground) GroundSpan(Vector2 p, float yawDeg, float w, float d, KitGround ground, float m)
+        {
+            float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+            float lo = float.MaxValue, hi = float.MinValue;
+            for (int i = 0; i < 5; i++)
+            {
+                float u = i == 4 ? 0 : ((i & 1) == 0 ? -0.5f : 0.5f) * w, v = i == 4 ? 0 : ((i & 2) == 0 ? -0.5f : 0.5f) * d;
+                float y = ground.Y(p.x + u * ca - v * sa, p.y + u * sa + v * ca);
+                lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y);
+            }
+            return (lo - 2f * m, hi);
+        }
+
+        static Vector2 DryNear(Vector2 c, KitGround ground, float within, ref KitRandom rnd)
+        {
+            if (ground.Inside(c.x, c.y) && !ground.Water(c.x, c.y)) return c;
+            for (int i = 0; i < 64; i++)
+            {
+                float a = rnd.Range(0f, 2f * Mathf.PI), r = within * (i + 1) / 64f;
+                var p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
+                if (ground.Inside(p.x, p.y) && !ground.Water(p.x, p.y)) return p;
+            }
+            return c;
+        }
+
+        // ---- The 1948 localities (promo-villages) ---------------------------------------------------------------------
+
         /// <summary>Which part of a settlement BuildOne places: only its landmark (the first passes: every game settlement's,
         /// then every locality's, claims its heart before any houses), or only its houses (continuing the same random stream,
         /// so a place draws as it would in one pass).</summary>
         enum Phase { Landmark, Houses }
 
+        /// <summary>A 1948 locality's landmark or houses (promo-villages): random spots over its disc, its archetype's buildings,
+        /// clear of the grid's edge midpoints. The 25 game settlements use TownLandmarks and PlaceHouses (towns round 2).</summary>
         static int BuildOne(Settlement s, Vector2 centre, KitGround ground, KitMesh km, Lots lots, Phase phase, ref KitRandom rnd, int landmarksBefore,
             HashSet<string>? ignoreCellsOf)
         {
@@ -318,7 +891,7 @@ namespace Statecraft.Game.Map.Kits
                     + WaterTower(s.Id, heart + new Vector2(R * 0.35f, 0f), ground, km, lots);
             switch (arch)
             {
-                case Archetype.OldTown: return OldTownLandmarks(s, heart, ground, km, lots, ref rnd);
+                case Archetype.OldTown: return Mosque(s.Id, heart, ground, km, lots, ref rnd, 1.2f);   // no locality is an old town today
                 case Archetype.ArabTown:
                     float size = s.Type == "village" ? 0.8f : 1f;
                     switch (Localities.LandmarkOf(s.Id) ?? Landmark.Mosque)
@@ -346,12 +919,7 @@ namespace Statecraft.Game.Map.Kits
             return Mathf.Clamp(Mathf.RoundToInt(area * share / lot), 6, 900);
         }
 
-        /// <summary>The street grid's angle per town (Tel Aviv's Geddes plan runs about 20 degrees off north, parallel to the
-        /// shore; the others get a seeded angle).</summary>
-        static float GridYaw(string id) => id == "tel_aviv" ? 20f : id == "haifa" ? 35f : new KitRandom(id, 7).Range(0f, 90f);
-
-        struct Spec { public float w, d, h, lotR; public int storeys; }
-
+        /// <summary>A locality's building, by archetype (promo-villages).</summary>
         static Spec Pick(Archetype arch, float t, ref KitRandom rnd, float m)
         {
             float w, d; int storeys;
@@ -387,15 +955,9 @@ namespace Statecraft.Game.Map.Kits
             };
         }
 
-        // sRGB palettes (promo 03: white and cream city, honey stone Jaffa, tan villages, terracotta roofs).
-        static Color32 C(float r, float g, float b) => new Color32((byte)(r * 255), (byte)(g * 255), (byte)(b * 255), 255);
-        static Color32 Jitter(Color32 c, ref KitRandom rnd, float amount)
-        {
-            float k = 1f + rnd.Range(-amount, amount), warm = rnd.Range(-amount, amount) * 0.5f;
-            return C(Mathf.Clamp01(c.r / 255f * k * (1 + warm)), Mathf.Clamp01(c.g / 255f * k), Mathf.Clamp01(c.b / 255f * k * (1 - warm)));
-        }
-
-        static void Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
+        /// <summary>Draws a locality's building (promo-villages).</summary>
+        /// <returns>The wall colour (the census records it for a town's fallback houses, #317).</returns>
+        static Color32 Emit(Archetype arch, Vector2 p, float yaw, Spec b, KitGround ground, KitMesh km, ref KitRandom rnd)
         {
             float m = KitScale.For(arch);
             var (bottom, top) = GroundSpan(p, yaw, b.w, b.d, ground, m);
@@ -422,7 +984,7 @@ namespace Statecraft.Game.Map.Kits
                         float rw = b.w * rnd.Range(0.25f, 0.4f), rd = b.d * rnd.Range(0.3f, 0.45f);
                         km.Box(p.x + b.w * rnd.Range(-0.2f, 0.2f), p.y + b.d * rnd.Range(-0.15f, 0.15f), yaw, rw, rd, top + b.h - 2f, top + b.h, 2.8f * m, wall, roof, Facade.Plain, m);
                     }
-                    break;
+                    return wall;
                 }
                 case Archetype.OldTown:
                 {
@@ -431,7 +993,7 @@ namespace Statecraft.Game.Map.Kits
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Stone, m);
                     if (rnd.Chance(0.22f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.33f, Jitter(C(0.88f, 0.84f, 0.76f), ref rnd, 0.05f));
                     else if (rnd.Chance(0.03f)) km.Pyramid(p.x, p.y, yaw, b.w * 1.04f, b.d * 1.04f, top + b.h, 2.2f * m, Jitter(C(0.70f, 0.33f, 0.22f), ref rnd, 0.06f));
-                    break;
+                    return wall;
                 }
                 case Archetype.ArabTown:
                 {
@@ -439,7 +1001,7 @@ namespace Statecraft.Game.Map.Kits
                     var roof = Jitter(C(0.84f, 0.75f, 0.59f), ref rnd, 0.06f);
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m);
                     if (rnd.Chance(0.10f)) km.Dome(p.x, p.y, top + b.h - 1f, Mathf.Min(b.w, b.d) * 0.3f, roof);
-                    break;
+                    return wall;
                 }
                 default:
                 {
@@ -447,135 +1009,9 @@ namespace Statecraft.Game.Map.Kits
                     var roof = Jitter(C(0.74f, 0.31f, 0.20f), ref rnd, 0.08f);
                     km.Box(p.x, p.y, yaw, b.w, b.d, bottom, top, b.h, wall, roof, Facade.Village, m, roofed: true);
                     km.Gable(p.x, p.y, yaw, b.w, b.d, top + b.h, Mathf.Min(b.w, b.d) * 0.42f, roof, wall);
-                    break;
+                    return wall;
                 }
             }
-        }
-
-        /// <summary>Wall bottom (sunk 2 m below the lowest corner, so a house on a slope stands on a plinth, not on air) and the
-        /// ground level the walls rise from (the highest corner, so the slope never buries a storey).</summary>
-        static (float bottom, float ground) GroundSpan(Vector2 p, float yawDeg, float w, float d, KitGround ground, float m)
-        {
-            float a = yawDeg * Mathf.Deg2Rad, ca = Mathf.Cos(a), sa = Mathf.Sin(a);
-            float lo = float.MaxValue, hi = float.MinValue;
-            for (int i = 0; i < 5; i++)
-            {
-                float u = i == 4 ? 0 : ((i & 1) == 0 ? -0.5f : 0.5f) * w, v = i == 4 ? 0 : ((i & 2) == 0 ? -0.5f : 0.5f) * d;
-                float y = ground.Y(p.x + u * ca - v * sa, p.y + u * sa + v * ca);
-                lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y);
-            }
-            return (lo - 2f * m, hi);
-        }
-
-        static Vector2 DryNear(Vector2 c, KitGround ground, float within, ref KitRandom rnd)
-        {
-            if (ground.Inside(c.x, c.y) && !ground.Water(c.x, c.y)) return c;
-            for (int i = 0; i < 64; i++)
-            {
-                float a = rnd.Range(0f, 2f * Mathf.PI), r = within * (i + 1) / 64f;
-                var p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
-                if (ground.Inside(p.x, p.y) && !ground.Water(p.x, p.y)) return p;
-            }
-            return c;
-        }
-
-        /// <summary>Jaffa: the clock tower (1903-06) by the old town's gate, the Mahmoudiya mosque's minaret and dome, and a
-        /// church belfry above the harbour; the other old towns get a mosque.</summary>
-        static int OldTownLandmarks(Settlement s, Vector2 heart, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd)
-        {
-            float m = KitScale.Landmarks;
-            int n = Mosque(s.Id, heart + new Vector2(-5f * m, 6f * m), ground, km, lots, ref rnd, 1.2f);
-            if (s.Id == "jaffa")
-            {
-                var stone = C(0.86f, 0.76f, 0.57f);
-                if (!Claim(lots, heart + new Vector2(14f * m, 4f * m), 4.5f * m, s.Id, ground, out var p)) return n;
-                float y = ground.Y(p.x, p.y);
-                km.Box(p.x, p.y, 15f, 5f * m, 5f * m, y - 2f * m, y, 24f * m, stone, stone, Facade.Stone, m, roofed: true);
-                km.Box(p.x, p.y, 15f, 4f * m, 4f * m, y + 24f * m, y + 24f * m, 4f * m, C(0.90f, 0.82f, 0.64f), stone, Facade.Plain, m, roofed: true);
-                km.Pyramid(p.x, p.y, 15f, 4.4f * m, 4.4f * m, y + 28f * m, 3.5f * m, C(0.55f, 0.47f, 0.40f));
-                n++;
-                if (!Church(s.Id, heart + new Vector2(-10f * m, -12f * m), ground, km, lots, 1f)) return n;
-                n += 1 + Port(heart, ground, km, ref rnd);
-            }
-            return n;
-        }
-
-        /// <summary>Jaffa's harbour, as promo 03 draws it: a stone breakwater curving out to sea from the shore west of the
-        /// old town, a lighthouse at its head, and a few sailing boats inside it.</summary>
-        static int Port(Vector2 heart, KitGround ground, KitMesh km, ref KitRandom rnd)
-        {
-            float m = KitScale.Landmarks;
-            var shore = heart;
-            for (int i = 0; i < 120 && !ground.Water(shore.x, shore.y); i++) shore.x -= 50f;
-            if (!ground.Water(shore.x, shore.y)) return 0;
-            float sea = ground.Y(shore.x, shore.y);
-            var stone = C(0.74f, 0.70f, 0.62f);
-            // A quarter-circle arm: out to the west, then north.
-            var c = shore + new Vector2(0f, 60f * m);
-            float r = 60f * m;
-            Vector2 prev = c + new Vector2(0f, -r);
-            for (int k = 1; k <= 9; k++)
-            {
-                float a = -Mathf.PI * 0.5f - k * (Mathf.PI * 0.5f / 9f);
-                var cur = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
-                var mid = (prev + cur) * 0.5f; var dir = cur - prev;
-                float yaw = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-                km.Box(mid.x, mid.y, yaw, dir.magnitude * 1.08f, 5f * m, sea - 2f * m, sea, 2.2f * m, stone, stone, Facade.Plain, m);
-                prev = cur;
-            }
-            // The lighthouse at the arm's head.
-            var white = C(0.93f, 0.92f, 0.88f);
-            km.Shaft(new Vector3(prev.x, sea, prev.y), new Vector3(prev.x, sea + 16f * m, prev.y), 2.0f * m, 1.5f * m, white, 10);
-            km.Shaft(new Vector3(prev.x, sea + 16f * m, prev.y), new Vector3(prev.x, sea + 19f * m, prev.y), 1.6f * m, 1.6f * m, C(0.30f, 0.32f, 0.30f), 10);
-            km.Cone(new Vector3(prev.x, sea + 19f * m, prev.y), 1.9f * m, 2.4f * m, C(0.68f, 0.24f, 0.18f), 10);
-            // Sailing boats in and off the harbour.
-            int boats = 0;
-            for (int i = 0; i < 12 && boats < 5; i++)
-            {
-                var b = c + new Vector2(rnd.Range(-1.6f, 0.2f) * r, rnd.Range(-1.4f, 0.4f) * r);
-                if (!ground.Water(b.x, b.y) || ground.Water(b.x + 40f * m, b.y) == false) continue;
-                float yaw = rnd.Range(0f, 360f), L = rnd.Range(9f, 14f) * m;
-                km.Box(b.x, b.y, yaw, L, L * 0.32f, sea - 1f * m, sea, 1.6f * m, C(0.42f, 0.30f, 0.20f), C(0.55f, 0.42f, 0.30f), Facade.Plain, m);
-                float a = yaw * Mathf.Deg2Rad; var fwd = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
-                var mast = new Vector3(b.x, sea + 1.6f * m, b.y);
-                km.Shaft(mast, mast + Vector3.up * L * 0.9f, 0.18f * m, 0.12f * m, C(0.35f, 0.28f, 0.20f), 4);
-                var sail = C(0.95f, 0.93f, 0.86f);
-                var s0 = mast + Vector3.up * L * 0.85f; var s1 = mast + Vector3.up * 0.4f * m; var s2 = mast + fwd * (-L * 0.45f) + Vector3.up * 0.4f * m;
-                km.Triangle(s0, s1, s2, sail); km.Triangle(s0, s2, s1, sail);
-                boats++;
-            }
-            return 1;
-        }
-
-        static int Mosque(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots, ref KitRandom rnd, float size)
-        {
-            float m = KitScale.Landmarks * size;
-            if (!Claim(lots, want, 11f * m, owner, ground, out var p)) return 0;   // the lot covers the minaret too
-            float y = ground.Y(p.x, p.y);
-            var stone = Jitter(C(0.87f, 0.80f, 0.66f), ref rnd, 0.03f);
-            km.Box(p.x, p.y, 0f, 14f * m, 14f * m, y - 2f * m, y, 7f * m, stone, stone, Facade.Stone, KitScale.Landmarks);
-            km.Dome(p.x, p.y, y + 7f * m - 0.5f * m, 5.5f * m, C(0.80f, 0.80f, 0.76f));
-            float mx = p.x + 8.5f * m, mz = p.y - 6f * m;
-            float my = ground.Y(mx, mz);
-            km.Shaft(new Vector3(mx, my - 2f * m, mz), new Vector3(mx, my + 26f * m, mz), 1.6f * m, 1.35f * m, stone, 8);
-            km.Shaft(new Vector3(mx, my + 20f * m, mz), new Vector3(mx, my + 21f * m, mz), 2.1f * m, 2.1f * m, stone, 8);   // the balcony
-            km.Cone(new Vector3(mx, my + 26f * m, mz), 1.5f * m, 4.5f * m, C(0.62f, 0.62f, 0.58f), 8);
-            return 1;
-        }
-
-        /// <summary>A stone church with a gabled nave and a belfry topped by a pyramid roof (Jaffa's above its harbour, and the
-        /// Christian-majority 1948 localities' at their heart); false, and nothing built, when no free dry spot is near.</summary>
-        static bool Church(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots, float size)
-        {
-            float m = KitScale.Landmarks * size;
-            var stone = C(0.86f, 0.76f, 0.57f);
-            if (!Claim(lots, want, 10f * m, owner, ground, out var q)) return false;
-            float yq = ground.Y(q.x, q.y);
-            km.Box(q.x, q.y, 0f, 9f * m, 18f * m, yq - 2f * m, yq, 12f * m, stone, stone, Facade.Stone, m, roofed: true);
-            km.Box(q.x, q.y + 7f * m, 0f, 4.5f * m, 4.5f * m, yq + 12f * m, yq + 12f * m, 14f * m, stone, stone, Facade.Stone, m, roofed: true);
-            km.Pyramid(q.x, q.y + 7f * m, 0f, 4.8f * m, 4.8f * m, yq + 26f * m, 6f * m, C(0.60f, 0.52f, 0.44f));
-            km.Gable(q.x, q.y, 0f, 9f * m, 18f * m, yq + 12f * m, 4f * m, C(0.66f, 0.34f, 0.24f), stone);
-            return true;
         }
 
         /// <summary>A sub-district's Bedouin camps (owner ruling 2026-10-11: a light scatter sized by the sourced total, no named
@@ -634,23 +1070,6 @@ namespace Statecraft.Game.Map.Kits
                 }
             }
             return (camps, tents);
-        }
-
-        static int WaterTower(string owner, Vector2 want, KitGround ground, KitMesh km, Lots lots)
-        {
-            float m = KitScale.Houses;
-            if (!Claim(lots, want, 4f * m, owner, ground, out var p)) return 0;
-            float y = ground.Y(p.x, p.y);
-            var concrete = C(0.82f, 0.80f, 0.76f);
-            for (int i = 0; i < 4; i++)
-            {
-                float a = Mathf.PI * 0.5f * i + 0.6f;
-                var b = new Vector3(p.x + Mathf.Cos(a) * 2.6f * m, y - 2f * m, p.y + Mathf.Sin(a) * 2.6f * m);
-                km.Shaft(b, new Vector3(p.x + Mathf.Cos(a) * 1.8f * m, y + 9f * m, p.y + Mathf.Sin(a) * 1.8f * m), 0.35f * m, 0.3f * m, concrete, 4);
-            }
-            km.Shaft(new Vector3(p.x, y + 9f * m, p.y), new Vector3(p.x, y + 13.5f * m, p.y), 3f * m, 3f * m, concrete, 10);
-            km.Cone(new Vector3(p.x, y + 13.5f * m, p.y), 3.1f * m, 1.2f * m, C(0.66f, 0.64f, 0.60f), 10);
-            return 1;
         }
     }
 
