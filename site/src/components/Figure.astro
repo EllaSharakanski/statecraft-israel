@@ -21,7 +21,7 @@ const full = await getImage({ src: item.src, width: Math.min(item.src.width, 240
     {item.kind !== 'engine' && <span class="ai-mark" aria-hidden="true">AI</span>}
     {item.aiPart && <span class="ai-mark ai-mark-low" aria-hidden="true">AI</span>}
     <Picture src={item.src} alt={item.alt[lang]} formats={['avif']} fallbackFormat="webp" widths={usable} sizes={sizes}
-      quality={78} loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'}
+      quality={68} loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'}
       fetchpriority={eager ? 'high' : undefined} style={objectPosition ? `object-position:${objectPosition}` : undefined} />
   </div>
   {caption && (
