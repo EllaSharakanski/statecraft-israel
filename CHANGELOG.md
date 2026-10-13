@@ -196,6 +196,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Map: the unit figures' uniforms are darker and warmer, so a trio stands out against the sunlit ground as promo 03's
+  does instead of khaki on khaki; a figure's slope base is painted trodden earth instead of a dark grey disc. A
+  readability choice at map scale; the sourced kit is unchanged (refs #197).
 - The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
