@@ -195,6 +195,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- Map: a boundary between two regions of the same border style (two Mandate sub-districts) draws one band of the promo's
+  width, centred on the edge, instead of two full bands side by side; the Mandate frontier and a primary-secondary edge
+  keep the full band. Far off (a band under about 4 px, the overview) a band is a thin line of its colour, not a white
+  one. Visual only (refs #196).
 - Map: the railway and road look after promo 03 (`Route.shader` only): the two rails are drawn at least 0.8 px wide and
   brighter, so they stand out at the gameplay zoom; the sleepers run every 100 m, a fine texture instead of a coarse ladder; the
   ballast is a cooler stone grey; roads have darker worn verges, so they read on pale ground. No mesh, data or boot change
