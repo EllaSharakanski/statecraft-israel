@@ -209,6 +209,16 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The game settlements Lod and Ramla show their 1948 names, Lydda and Ramle, as Village Statistics 1945 lists them
   (owner ruling). Content only: the goldens and the smoke run are unchanged; saves made before load with the
   "different game content" warning.
+- Map, towns round 2 (#31): the towns are laid out on rows of plots, dense in the core and thinning to the edge, instead
+  of random spots: the 25 towns draw 397 buildings where main drew 216, and no town draws fewer than on main (fixes #317: a small town
+  whose lattice places fewer than 6 houses is filled up with round 1's full-size houses on ground no other place uses;
+  the kits' water test counts a lake hex as water only at the lake's surface, so Tiberias builds on its shore again) (Jaffa 15 to 33, Lod and Ramla 5 to 11, Jerusalem
+  70 to 110), with 55 landmarks instead of 27. Old Jaffa is packed small stone houses; Tel Aviv's white blocks are
+  taller in the core (promo ruling, at most eight storeys); Haifa has its lower town by the port and Hadar on the slope; Jerusalem has its stone
+  new city, its Arab quarters and a walled Old City; the large moshavot have a plastered centre. Sourced 1948 landmarks: Jerusalem's walls and gates, the
+  citadel, the Haram with the Dome of the Rock (lead dome, as before 1959) and Al-Aqsa; Haifa's port and German Colony;
+  Tel Aviv's port; Ramla's White Tower; Jaffa's lighthouse moved to the hill above the port. Map only: the goldens do not
+  move.
 - Sharett's in-game portrait uses a CC0 Van de Poll photograph in place of the US-unverified GPO source (refs #30).
 - Hebrew UI wording, still not enabled: a count-neutral pending-decisions line, "מנדטים" for Knesset seats, and
   reworded attention and full-war labels (#193).

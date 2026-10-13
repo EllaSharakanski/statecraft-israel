@@ -1679,6 +1679,296 @@ place carries on; Lydda and Ramle for the game settlements `lod` and `ramla`; Ne
   - History: a first version scanned every lot and footprint linearly, taking 350 ms (kits) and 330 ms (trees) in the
     editor. `DiscIndex` (a 4 km grid) brought that to about 30 ms each.
   - Build: wasm +111,913 bytes and data +14,441, plus the localities file fetched at boot.
+## Towns round 2: dense, era-correct towns (branch `promo-towns-2`, issue #31)
+Question: why do Tel Aviv, Jaffa, Lod, Ramla, Rishon and Petah Tikva read as a sparse handful of boxes at gameplay03
+when promo 03 shows dense miniature towns, and what closes the gap within the frame-time and boot budgets?
+
+### Diagnosis (main `bdb5cd2`, measured before any change)
+Measured with `TownCensusTests.TheCensusIsLogged`. It builds the kits as `MapScene.Build` does, with the routes' and the
+units' clearings as corridors, and logs one `CENSUS` line per town. It reports:
+- **Buildings:** counted per town. Wings are a block's lower part.
+- **Cover:** the share of the town's own land under a building or landmark footprint. "Own land" is its footprint disc,
+  on land, in its cell. It is sampled every 100 m, over the whole disc and over its inner half radius ("core").
+- **Wall heights:** symbolic metres; one storey is 198 m at 60x and 330 m at 100x.
+- **Wall colours:** distinct sRGB colours at 4 bits per channel.
+
+The player logged `KITS buildings=261 vertices=10244 triangles=6892 trees=7283`.
+
+| town | footprint R | buildings (+wings) | landmarks | cover: all / core | wall height min / median / max | wall colours |
+|---|---|---|---|---|---|---|
+| Tel Aviv | 7.6 km | 43 (+11) | none | 24.7% / 24.9% | 396 / 594 / 1188 m | 7 |
+| Jaffa | 5.7 km | 16 | mosque, clock tower, church, lighthouse, breakwater | 42.6% / 14.6% | 330 / 660 / 990 m | 4 |
+| Haifa | 6.9 km | 34 (+10) | none | 17.8% / 23.7% | 396 / 594 / 990 m | 8 |
+| Jerusalem | 7.4 km | 70 | a generic mosque | 32.2% / 16.2% | 330 / 660 / 990 m | 8 |
+| Lod | 2.4 km | 5 | mosque | 13.6% / 11.8% | 330 / 330 / 660 m | 4 |
+| Ramla | 2.3 km | 5 | mosque | 19.5% / 27.6% | 330 m only | 3 |
+| Petah Tikva | 2.4 km | 3 | water tower | 10.5% / 7.0% | 330 / 330 / 660 m | 3 |
+| Rishon LeZion | 1.7 km | 2 | water tower | 9.5% / 2.7% | 330 m only | 2 |
+| all 25 | | 235 (+21) | 26 | | | |
+
+Jaffa's whole-disc cover is above its core cover because its cell is small (Tel Aviv's footprint takes its north) and
+four landmarks of up to 1 km sit in it.
+
+Causes, in order of weight:
+1. **Counts.** `TargetCount` was tuned at 25x and falls with the square of the scale. At the 60x / 100x ruling, every
+   town under about 30,000 people gets its floor of 6 buildings, and then places fewer: 1 to 5 in the moshavot, and 5 in
+   Lod and Ramla.
+2. **Placement.** Buildings went to random spots over the whole footprint (radius drawn as u^0.62), tried against
+   every lot. Each town had about 30 tries per building, and the footprint could stretch to 1.6 R.
+   - That spreads a town evenly at low cover, with no dense core and no street rows. Promo 03's towns are a solid core
+     with streets as the only gaps.
+   - The routes' corridors (300-680 m ribbons plus a 100 m margin) and the units' clearings then cut each disc further.
+3. **Old-town houses too big.** Old towns drew 7-14 m houses at 100x, so each was 0.7-1.4 km wide. Jaffa came out as 16
+   large blocks, not a packed old city.
+4. **Heights.** Tel Aviv's median block was 3 storeys and its tallest 6. Promo 03 shows 5-8. The owner's "promo over
+   era" ruling covers this.
+5. **Landmarks.** Only Jaffa had its own. Jerusalem had a generic mosque, and Haifa and Tel Aviv had none. Jaffa's
+   lighthouse stood at the breakwater's head; the real one (1865) stands on the hilltop above the old port.
+6. **Palette.** It is not the gap: each archetype's colours already match promo 03 (white and cream city, honey stone,
+   tan villages, terracotta roofs). Variety is limited by the counts.
+
+### Plan
+- **Plot lattices** replace the random tries (`SettlementKits.PlaceHouses`).
+  - Each town is laid out in rows of plots at its street grid's angle. Old towns and villages stagger alternate rows
+    and jitter each plot.
+  - Each plot is built with a probability that is near 1 in the core and falls towards the edge, to none at 1.1 R. That
+    is `UnitGround.FootprintMargin`: the units assume no building past it, and `PaintGround` tints the same disc.
+  - A plot by a road, or by another town's lot, tries a smaller building, then a small nudge within the plot, before it
+    stays empty.
+  - Plots are visited nearest the centre first. Each plot draws its random numbers whether or not it is built, so one
+    plot's fate never shifts another's.
+- **Building styles per quarter, at the ruled scales** (city blocks 60x, houses 100x).
+  - **Tel Aviv:** white International Style blocks with flat roofs (the White City, 1930s, Geddes plan 1925-29), some
+    stepped. Taller in the core under the promo ruling.
+  - **Jaffa and the old towns:** small stone houses (4.6-6.6 m real), packed, with domes and roof rooms. Some red tiled
+    roofs outside the core.
+  - **Haifa:** the lower town by the port in stone houses (below about 35 m elevation). Hadar HaCarmel up the slope in
+    white blocks.
+  - **Jerusalem:** stone-faced blocks in the new city to the west (Storrs' 1918 stone ordinance), a few with red roofs.
+    Arab-quarter houses round the other sides. Old-town houses within the walls.
+  - **Large moshavot** (Petah Tikva, Rehovot, Rishon LeZion, Hadera; 7,500+ people in 1945): a plastered two- and
+    three-storey centre inside red-roofed houses.
+  - **Arab towns and villages:** smaller stone houses (4.4-6.6 m) on a staggered lattice.
+- **Landmarks**, placed before any town's houses. Positions keep the real bearing from the settlement's point to the
+  landmark's sourced coordinate; distances and sizes are symbolic.
+  - **Jaffa:** the Mahmoudiya Mosque, the clock tower on the plaza east of it, St Peter's Church, the lighthouse on the
+    hill above the port (red and white bands), and the breakwater and boats.
+  - **Jerusalem:** Suleiman's walls round a symbolic square Old City with five gates, the citadel, the Haram platform,
+    the Dome of the Rock and Al-Aqsa.
+    - The Dome of the Rock is blue and white tiles with a dark lead dome: the gilded dome dates from the 1959-64
+      restoration, so it would be an anachronism in 1948.
+    - Al-Aqsa's dome is lead.
+  - **Haifa:** the 1933 port (main and lee breakwaters, quay sheds) and the German Colony: the Templer houses of 1868 in
+    stone with red roofs, in two rows along its north-south main street.
+  - **Tel Aviv:** its port (1936/1938) at its sourced coordinate.
+  - **Ramla:** the White Tower east of the town's heart.
+- **No anachronisms:**
+  - The Shrine of the Báb's dome (1953) is not drawn.
+  - Neither is the Dagon silo (1955), the gold Dome of the Rock, or any post-1948 tower.
+- **Performance:** one merged mesh per town as before, so the draw calls do not change. The lot index is promo-villages'
+  `DiscIndex`, ported byte for byte with its `KitGround` hunks so the two branches merge cleanly there. It also takes the
+  trees' lot test off its linear scan.
+- **Tests** (`TownCensusTests`):
+  - The towns are deterministic.
+  - Each city's landmarks are present.
+  - No building stands on a route or in the sea.
+  - Each of the four cities has a floor on its built cover.
+
+### Result (after merging the villages, #291)
+The census as the map now builds it: with the 1948 localities, whose landmarks claim their hearts before any town's
+houses (review M8). "Main" is `a3202ad`, with the villages and before towns round 2; same census, same corridors.
+
+| town | buildings, main → round 2 | cover all / core, main → round 2 | median wall height | landmarks, round 2 |
+|---|---|---|---|---|
+| Tel Aviv | 36 (+12 wings) → 43 (+11) | 18.4 / 19.7% → 17.4 / 18.5% | 396 → 792 m (2 → 4 storeys) | port, 3 hangar sheds |
+| Jaffa | 15 → 33 | 29.0 / 21.8% → 32.6 / 31.9% | 660 m | Mahmoudiya Mosque, clock tower, St Peter's, lighthouse on the hill, breakwater |
+| Haifa | 30 (+10) → 45 (+5) | 16.4 / 19.4% → 21.0 / 20.6% | 594 → 660 m | port (main and lee breakwaters, 4 quay sheds), German Colony (Templer houses in two rows) |
+| Jerusalem | 70 → 110 | 25.7 / 19.8% → 22.7 / 24.9% | 660 → 330 m | walls (a gap where a road crosses), 13 gates, citadel, Haram, Dome of the Rock, Al-Aqsa |
+| Lod / Ramla | 5 / 5 → 11 / 11 | | | mosque; Ramla also the White Tower |
+| Petah Tikva / Rehovot / Rishon | 2 / 3 / 2 → 8 / 5 / 3 | | | water tower |
+| all 25 | 216 → 365 (413 after the review: the small-town floor, #317) | | | 27 → 55 |
+
+Distinct wall colours: Haifa 7 → 16 (white blocks, the lower town's stone, the Templer houses), Jerusalem 8 → 14 (stone
+blocks, village houses, red-roofed villas), Jaffa 6 → 7, Tel Aviv 8 → 7.
+
+- **Tel Aviv's cover did not rise.** Before the merge, round 2 had 62 blocks and 30.0% / 25.6%.
+  - The villages' landmarks inside its 7.6 km disc (Sheikh Muwannis, Summeil, Jammasin, Ramat Gan, Bnei Brak and
+    others) now claim their spots first. The lattice loses every plot their mosque or water-tower lots reach.
+  - What changed there is the form: narrower (12-16 m real), taller blocks in rows on the Geddes grid, with a 700 m beach
+    strip in front. The close-up crops show the difference better than the cover does.
+  - Taking the villages' spots back would break the villages' rule that a village keeps its heart, so it is left for the
+    owner.
+- **Jerusalem's Old City is symbolic and squeezed by the roads.**
+  - It is 4 km across, about 4 times the real one. The drawn 1948 roads (300 m ribbons) meet by Jaffa Gate and loop
+    round the north and east, so at any readable size they cross inside the square, through gaps in the walls.
+  - Only one place in its south-east quadrant fits a platform clear of every route: 1.3 x 1.1 km, wider than long. Al-Aqsa
+    therefore stands in its south-east corner, not across its south end.
+  - The citadel is moved east off the drawn Hebron road.
+  - The houses inside the walls are capped at two storeys, and the Dome's walls and drum are 30x high, so the walls and
+    the Dome stand above the roofs.
+- **Readability and colour:**
+  - The grid stays readable: 78% of edge midpoints (69 of 89), against the 75% floor and main's 79%.
+  - The beach beside Tel Aviv reads as sand at 26 of 33 samples (79%, floor 75%).
+  - At gameplay03 (WebGL), the palette distance to promo 03 is 0.43 (main 0.44), warmth 0.068 (0.070) and saturation
+    0.45 (0.45).
+- **Trees:** `Vegetation.Plant` now draws each tree's random numbers before its lot and route test. A town's new lots
+  remove only the trees they touch, instead of reshuffling every later grove.
+  - Two grade tests sample the selection ring against the land and could land on a crown. They now measure with the
+    trees off: the ring against the ground's graded colour, which is what they test.
+- **Frame time** (headless WebGL `?vprofile`, `machine_lock.py --exclusive --wait-unity`, main `a3202ad` against
+  `49bc88e`, two interleaved rounds each, 2026-10-12, load 3.6 at the start and 7.3 at the end):
+
+  | | gameplay03 all (p95) | gameplay03 all − none | diorama02 all (p95) | diorama02 all − none |
+  |---|---|---|---|---|
+  | main | 13.70 / 14.22 ms (15 / 16) | 3.00 / 3.45 ms | 18.07 / 18.71 ms (20 / 20) | 4.84 / 5.60 ms |
+  | round 2 | 14.15 / 13.97 ms (16 / 15) | 3.59 / 3.15 ms | 18.06 / 18.70 ms (21 / 21) | 5.54 / 5.53 ms |
+
+  - The kits stay one merged mesh per town: 63 draws, as on main. The triangles grow from 61,054 to 65,684.
+  - "-kits" draws the marker boxes instead, so the kits' own cost is within the noise (all − (-kits) is −0.6 / −1.1 ms
+    at gameplay03).
+  - Every budget holds: all − none is under 8 ms, and the p95 at gameplay03 is under 16.7 ms. The diorama02 p95 of 20-21
+    ms is main's too (the villages section).
+
+- **Boot** (`headed.py boot --runs 3`, three interleaved rounds per side, so 9 runs each; main `2b7212e` against this
+  branch's final head; `machine_lock.py --exclusive --wait-unity`, 2026-10-12).
+  - Other sessions loaded the machine (load average 6.5 rising to 25), so single runs reach 3.3 s at cpu 4. The medians
+    and the "kits built" phase are the fair comparison.
+
+  | | map_build median | `kits built` phase median | first_frame median |
+  |---|---|---|---|
+  | cpu 4, main | 2739 ms | 570 ms | 9494 ms |
+  | cpu 4, round 2 | 2679 ms | 563 ms | 8750 ms |
+  | cpu 1, main | 659 ms | 132 ms | 4029 ms |
+  | cpu 1, round 2 | 662 ms | 138 ms | 4020 ms |
+
+  - The towns add about nothing to the boot: the kit phase is 7 ms lighter at cpu 4 and 6 ms heavier at cpu 1.
+  - The lattice checks are cheap first, and only towns with water near them run the beach test.
+  - The earlier session on a quieter machine (main `a3202ad`, before those cuts) measured map_build 2668 → 2683 ms at
+    cpu 4 (6 runs each), with the cpu 1 kit phase 129 → 137 ms.
+  - The budget at cpu 4 is 2720 ms; #195 needs about 100 ms of it. Towns round 2 takes none.
+
+### Review (2026-10-12, on the merge with main `471c300`)
+- **Fixed on the branch:**
+  - The beach setback tested any water, so it also applied on the Sea of Galilee. It now tests the sea only (`Sea`: water
+    that is not a lake hex). Degania goes from 0 houses back to main's 1.
+  - Nahalal's ring ended at 0.88 of the radius, but its lattice's first ring of plots stands at 0.76 and 0.89, so it drew
+    no houses. The ring now runs out to the radius: 0 → 1 (main 1).
+  - Tel Aviv's blocks are capped at eight storeys, promo 03's tallest: the cap was ten. The tallest block is now 7
+    storeys (1,386 m) and the median is still 4.
+  - `TownCensusTests.SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` covers all three.
+- **Each test fails under a mutation:**
+  - Reverting the lake test, the ring and the cap fails the new test on all three counts.
+  - A per-build counter in the plot yaw fails `EveryBuildPlacesTheSameTowns`.
+  - Dropping the plots' route test fails `NoBuildingStandsOnARouteOrInTheSea` (268 placements).
+  - Thinning the core to 0.4 fails `TheCitiesCoverTheirGround`.
+- **Small-town floor (#317, fixed on the branch; reworked after the review of #339):**
+  - At 100x a plot is about 1 km, so a small town (1.3-2 km footprint radius) has about 7 plots, and the routes, the sea or
+    a neighbour's lots take most of them. On the first lattice Tiberias drew 0 houses (main 3), Netanya 1 (main 2) and
+    Beersheba 3 (main 5).
+  - **The lake was half the cause.** The kits' `KitGround.Water` counted every lake hex as water, and a lake hex also holds
+    its shore. Tiberias stands in one, 60-160 m above the Sea of Galilee (about -214 m), so it had no ground left.
+    - A point is now lake water only at or next to the lake's surface, in any hex that is not sea (a shore hex of another
+      biome holds some of the lake too). It uses the rule the drawn water uses
+      (`MapBuilder.LakeBelowM` and `LakeFlatM`, tools/terrain_bake.py): below -150 m and flat within 0.25 m over the
+      heightmap's 3 x 3 window, at the point or within one heightmap sample of it.
+    - The drawn shore (coast.png's distance, interpolated between texel centres) runs up to about a sample past the last
+      flat sample. A first version without that sample's margin put a cypress in the drawn Kinneret, and one that looked
+      only in lake hexes put a palm and a citrus tree in it by Ghuweir Abu Shusha.
+    - The test runs only in a lake's hexes and their neighbours, and each sample's flatness is cached: the rift's floor
+      is asked about thousands of times while the kits are built.
+    - Sea hexes keep their test. The Hula is not water in the heightmap's rule (its surface is about 70 m above sea
+      level), on main or here.
+    - `KitTests.TheLakeIsItsWaterNotItsWholeHex` checks that Tiberias's shore at 35.530 E, 32.7944 N (lake hex, -111 m)
+      is land and that the lake at 35.58 E, 32.80 N (-214.5 m) is water. Each half fails when the lake branch is made
+      always water, or never water.
+    - `KitTests.NothingStandsInALakesDrawnWater` decodes coast.png itself, the file the water shader samples. It checks
+      that no lot centre and no tree trunk in the rift (a lake hex, or ground below -150 m; 129 of them) lies under the
+      drawn water. It fails on the cypress without the sample's margin, and on the palm and the citrus tree with lake
+      hexes only.
+    - Tiberias's lattice now draws 4 houses on its shore, and the fallback a fifth, full-size, beside them.
+  - **The fallback.** A town whose lattice places fewer than 6 houses (round 1's floor, `SmallTownFloor`) is filled up
+    the way round 1 drew it.
+    - Each house is the archetype's full-size building, the size main drew, and keeps its whole footprint as its lot.
+    - It tries 240 spots (`ScatterTries`) from its own stream (`KitRandom(id, 3)`), nearest the town's sourced point
+      first. Every spot is tried at full size before any at 0.72; the half-size fit is never used. Every house keeps the
+      beach setback.
+    - `Build` runs the fallback after every place's own houses (towns, the 1948 localities) and the camps, so it takes
+      only ground no other place uses. `KitTests.TheSmallTownFloorMovesNoOtherPlace` checks this: every lot of every
+      place is the same, in the same order, with the fallback off and on.
+    - It fires in 15 towns (the moshavot and kibbutzim, Tiberias, Netanya, Beersheba and Acre) and adds 27 houses in 13
+      of them.
+      Acre and Yad Mordechai have no free ground left.
+  - Every town now draws at least main's count: Tiberias 5, Netanya 4, Beersheba 5, Rosh Pinna 2, Nahalal 3. The 25
+    towns draw 397.
+  - **Tests:**
+    - `SmallTownsKeepTheirHousesAndNoBlockOutgrowsThePromo` pins every town at main's count (`MainBuildings`).
+    - `TownCensusTests.NoTwoHousesOfATownOverlap` checks the footprints by separating axes. It fails (20 pairs) when the
+      fallback skips its own lattice's lots.
+  - The grid stays readable at 80% (71 of 89).
+  - **Perf, after the review's fixes** (WebGL, main `4abb64f` against the branch, `machine_lock.py --exclusive
+    --wait-unity`, two interleaved rounds, load 5-9, 2026-10-13):
+    - Frame time is equal. At gameplay03 `all` is 8.08 / 7.73 ms on main against 8.14 / 8.02 ms on the branch, and at
+      diorama02 19.43 / 19.50 against 18.90 / 19.42 ms. The p95s are equal, and there are 63 draws on both.
+    - Boot at cpu 4: the "kits built" phase is about 45 ms heavier, 691 / 709 ms on main against 743 / 750 ms.
+    - An attribution round (main, the branch, the branch with the fallback off, and the branch with the old whole-hex
+      lake rule) put about 10 ms of that on the fallback: 689 / 738 / 729 ms in the quieter round. The lake rule costs
+      nothing measurable. The rest is round 2's own placement against this main.
+    - The author's boot against `2b7212e` measured the kit phase within noise. The ~35 ms not explained here is not
+      attributed further.
+  - Perf, one interleaved round with the floor (`95710e7` against main `471c300`, exclusive lock, the machine loaded by
+    other sessions to load 15, so every number is high):
+    - Frame time at gameplay03 is 25.62 ms (main) against 25.24 ms (branch), and at diorama02 27.78 against 27.67 ms.
+    - Boot map_build median is 2982 against 3075 ms. The "kits built" phase is 746 against 686 ms.
+    - The editor's kit build_ms is 85-89 ms, with or without the floor.
+    - The floor adds no measurable cost; the boot difference is load. Still 63 draws.
+  - The label refresh is unchanged: `MapLabelTests.RefreshWhileTheCameraMovesIsCheapAndAllocationFree` measured 162-163 µs
+    with the floor and 171-180 µs without it, interleaved. The single 238 µs (fail) came in a full run at load 24.
+- **Still open, filed as issues:**
+  - #318: Tel Aviv's cover is held down by the localities' landmark lots.
+  - #319: the symbolic Old City has roads crossing inside its walls.
+- **Unchanged after the fixes:** the grid stays readable at 78% (69 of 89), and the beach beside Tel Aviv reads as sand at
+  79% (26 of 33).
+- **Perf, re-measured by the review:** frame time is headless WebGL `?vprofile`; boot is `headed.py boot --runs 3 --cpu
+  4`. Main `471c300` against the branch at `4a68d05`, each round under `machine_lock.py --exclusive --wait-unity`, in
+  interleaved order. A third round was cut short by a stop.
+
+  | | gameplay03 all (p95) | gameplay03 none | diorama02 all (p95) | diorama02 none | boot cpu 4: map_build / first_frame |
+  |---|---|---|---|---|---|
+  | main, round 1 (load 3.1) | 14.21 ms (16) | 10.72 ms | 19.47 ms (23) | 13.20 ms | 2584 / 8431 ms |
+  | branch, round 1 (load 7.5) | 15.40 ms (17) | 11.32 ms | 18.18 ms (21) | 13.06 ms | 2598 / 8369 ms |
+  | branch, round 2 (load 13.6) | 14.36 ms (16) | 11.01 ms | 17.80 ms (20) | 13.00 ms | 2619 / 8367 ms |
+  | main, round 2 (load 4.2) | 14.23 ms (16) | 11.03 ms | 17.81 ms (20) | 13.02 ms | 2595 / 8390 ms |
+
+  - Round 2 is equal within noise. In round 1, the branch's gameplay03 cost rises with its `none` row (+0.6 ms both),
+    that is, with the machine's load.
+  - Boot's map_build is 14-24 ms over main, within the runs' spread, under the 2720 ms budget at cpu 4.
+
+### Sources (checked 2026-10-12)
+- Tel Aviv:
+  - White City (1930s International Style, flat roofs; Geddes plan 1925-29): https://en.wikipedia.org/wiki/White_City,_Tel_Aviv
+  - Port of Tel Aviv (opened 1936, completed 1938, closed 1965; 32.0965 N, 34.7733 E): https://en.wikipedia.org/wiki/Port_of_Tel_Aviv
+- Jaffa:
+  - Clock Tower (1900-03, limestone, at the north end of Yefet Street): https://en.wikipedia.org/wiki/Jaffa_Clock_Tower
+  - Mahmoudiya Mosque (mostly 1812, the old town's north-east corner, its east gate on the clock-tower plaza; 32.0549 N,
+    34.7555 E): https://en.wikipedia.org/wiki/Mahmoudiya_Mosque
+  - St Peter's Church (1888-94, on a hill near the shore, bell tower; 32.0548 N, 34.7521 E): https://en.wikipedia.org/wiki/St._Peter%27s_Church,_Jaffa
+  - Jaffa Light (1865, 10 m, red and white bands, on the hilltop above the old port; 32.0535 N, 34.7505 E): https://en.wikipedia.org/wiki/Jaffa_Light
+- Haifa:
+  - Port of Haifa (opened 31 October 1933; 32.8201 N, 35.0045 E): https://en.wikipedia.org/wiki/Port_of_Haifa
+  - German Colony (Templer colony of 1868; main street north-south down to the harbour; 32.8200 N, 34.9906 E): https://en.wikipedia.org/wiki/German_Colony,_Haifa
+  - Templer houses (stone, red roofs): https://en.wikipedia.org/wiki/Templers_(religious_believers)
+  - Shrine of the Báb (superstructure and dome completed 1953): https://en.wikipedia.org/wiki/Shrine_of_the_B%C3%A1b
+- Jerusalem:
+  - Walls (1537-41, 4,018 m, about 12 m high): https://en.wikipedia.org/wiki/Walls_of_Jerusalem
+  - Old City (0.9 km^2; 31.7767 N, 35.2342 E; the gates' sides): https://en.wikipedia.org/wiki/Old_City_of_Jerusalem
+  - Damascus Gate (the wall's north-west side): https://en.wikipedia.org/wiki/Damascus_Gate
+  - Tower of David (near Jaffa Gate; 31.7761 N, 35.2278 E): https://en.wikipedia.org/wiki/Tower_of_David
+  - Temple Mount (the Old City's eastern section, platform about 488 x 315 m; Al-Aqsa at its south end): https://en.wikipedia.org/wiki/Temple_Mount
+  - Dome of the Rock (blackened lead before 1959; Ottoman blue and white tiles): https://en.wikipedia.org/wiki/Dome_of_the_Rock
+  - Al-Aqsa Mosque (lead dome before 1969): https://en.wikipedia.org/wiki/Al-Aqsa_Mosque
+  - Jerusalem stone (Storrs' ordinance, 1918): https://en.wikipedia.org/wiki/Jerusalem_stone
+- Ramla:
+  - White Tower (square, five storeys, 27 m; rebuilt after the 1318 earthquake; 31.9275 N, 34.8661 E): https://en.wikipedia.org/wiki/White_Tower_(Ramla)
 
 ## Issue #195: the water and the border lookups out of the terrain's fragment shader
 - **Why.** promo-sea (#138) put the water shading (`ScWaterShade`, the breakers' `fwidth`, the footprint) in the terrain
