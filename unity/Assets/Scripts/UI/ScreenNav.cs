@@ -57,6 +57,7 @@ namespace Statecraft.Game.UI
             root.UnregisterCallback(onCancel, TrickleDown.TrickleDown);
             var r = root.Q("root") ?? root;
             r.RemoveFromClassList(WideOpenClass); r.RemoveFromClassList(ScreenOpenClass);
+            root.Q("info-panel")?.SetEnabled(true);
         }
 
         /// <summary>Closes the open screen (Escape); false when none was open.</summary>
@@ -88,6 +89,9 @@ namespace Statecraft.Game.UI
                 if (s == screen) wide = element.ClassListContains(WideClass);
             }
             (root.Q("root") ?? root).EnableInClassList(WideOpenClass, wide);
+            // Hidden by the class above, but a child of an undisplayed element can still grab the focus: disable the covered
+            // panel too, so its build buttons are out of keyboard reach (review I3; found when #398 made its test real).
+            root.Q("info-panel")?.SetEnabled(!wide);
             (root.Q("root") ?? root).EnableInClassList(ScreenOpenClass, screen != null);
             if (screen != null) (root.Q<VisualElement>("screen-" + screen).userData as System.Action)?.Invoke();
         }

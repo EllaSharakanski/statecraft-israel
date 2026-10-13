@@ -195,6 +195,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
+  hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
+  with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
+  without buttons. The date plate, the event card, the info panel and the minimap carry the promo's filigree trim, drawn
+  in code, which takes no clicks.
 - Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
   biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
   at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
@@ -270,6 +275,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The info panel's region line ran out of the panel and over the map; it now wraps inside the panel at every window size
+  (fixes #397).
 - The map draws about four times faster at the gameplay zoom (#195). The water's shading moved out of the terrain's shader
   into its own pass over the water and the shore, and the region borders read one texel a pixel instead of up to seven.
   Since the promo sea (#138) and the borders (#206) the terrain's shader had grown large enough to slow every terrain pixel
