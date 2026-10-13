@@ -6,10 +6,20 @@
 //     photograph), except contributor photos, which are portraits supplied by the owner;
 //  4. nothing loads from another origin: no external script, stylesheet, font, image, video or frame;
 //  5. every file under _astro/ that a page names exists;
-//  6. both devlog RSS feeds exist, are well-formed, list every post, and the devlog page links to them.
+//  6. both devlog RSS feeds exist, are well-formed, list every post, and the devlog page links to them;
+//  7. the contributors page puts each person from contributors.yaml in their group (team, historians and sensitivity
+//     reviewers, past contributors, with years), and leaves out a group with no one in it. SITE_CONTRIBUTORS, as in
+//     the build, points at a fixture instead (site/scripts/fixtures/contributors.yaml has one of each).
+//  8. the Press page's two zips (scripts/press-kit.mjs) exist, hold exactly the expected files and a README that names
+//     each of them, keep concept art out of the screenshots, carry "AI concept art" in every concept file name
+//     (and "AI likeness, not a photograph" in 04 and 08, which the README's first line names), and
+//     are linked from the Press page in both languages.
+//  9. the history approach page exists in both languages, links to the two documents it restates, and History links to it.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
+import YAML from 'yaml';
+import { plan, zipEntries, zipRead, CONCEPT_TAG, LIKENESS_TAG } from './press-kit.mjs';
 
 const dist = path.resolve(process.argv[2] ?? 'dist');
 const problems = [];
@@ -136,9 +146,82 @@ for (const lang of ['en', 'he']) {
   if (!/<main[\s\S]*<a href="[^"]*\/devlog\/rss\.xml"[\s\S]*<\/main>/.test(html)) fail(page, 'no link to the RSS feed');
 }
 
+// 7. The contributors page: everyone in the right group, no empty group, years on every past entry.
+{
+  const file = path.resolve(import.meta.dirname, '../..', process.env.SITE_CONTRIBUTORS || 'site/src/data/contributors.yaml');
+  const people = YAML.parse(fs.readFileSync(file, 'utf8')).people ?? [];
+  const group = (p) => (p.until != null && p.until !== '' ? 'past' : (p.category ?? 'team') === 'team' ? 'team' : 'reviewers');
+  for (const lang of ['en', 'he']) {
+    const f = path.join(dist, lang, 'contributors', 'index.html');
+    if (!fs.existsSync(f)) { problems.push(`${lang}/contributors/: missing`); continue; }
+    const html = fs.readFileSync(f, 'utf8');
+    for (const g of ['team', 'reviewers', 'past']) {
+      const want = people.filter((p) => group(p) === g).map((p) => p.github).sort();
+      const at = html.indexOf(`data-people="${g}"`);
+      if (!want.length) { if (at >= 0) fail(f, `shows an empty ${g} section`); continue; }
+      if (at < 0) { fail(f, `no ${g} section for ${want.join(', ')}`); continue; }
+      const section = html.slice(at, html.indexOf('</section>', at));
+      const got = [...section.matchAll(/class="gh"[^>]*>@([^<]+)</g)].map((m) => m[1]).sort();
+      if (got.join() !== want.join()) fail(f, `${g} section lists ${got.join(', ') || 'no one'}, expected ${want.join(', ')}`);
+      if (g !== 'team' && !/<h2[^>]*>[^<]+<\/h2>/.test(section)) fail(f, `${g} section has no heading`);
+      if (g === 'past' && (section.match(/class="tenure"/g) ?? []).length !== want.length) fail(f, 'a past contributor without years');
+    }
+  }
+}
+
+// 8. The press downloads.
+const [shotsZip, artZip] = plan();
+for (const z of [shotsZip, artZip]) {
+  const file = path.join(dist, 'downloads', z.zip);
+  if (!fs.existsSync(file) || fs.statSync(file).size === 0) { problems.push(`downloads/${z.zip}: missing or empty`); continue; }
+  const buf = fs.readFileSync(file);
+  let entries;
+  try { entries = zipEntries(buf); } catch (e) { problems.push(`downloads/${z.zip}: not a readable zip (${e.message})`); continue; }
+  const names = entries.map((e) => e.name);
+  const want = [`${z.dir}/README.txt`, ...z.entries.map((e) => `${z.dir}/${e.name}`)].sort();
+  if (JSON.stringify([...names].sort()) !== JSON.stringify(want)) problems.push(`downloads/${z.zip}: holds ${names.join(', ')}; expected ${want.join(', ')}`);
+  if (z.entries.length === 0) problems.push(`downloads/${z.zip}: no images`);
+  for (const e of entries) if (e.size === 0) problems.push(`downloads/${z.zip}: ${e.name} is empty`);
+  const readme = entries.find((e) => e.name.endsWith('/README.txt'));
+  const text = readme ? zipRead(buf, readme).toString('utf8') : '';
+  for (const e of z.entries) if (!text.includes(e.name)) problems.push(`downloads/${z.zip}: README.txt does not list ${e.name}`);
+  if (z === artZip) {
+    if (!text.includes('AI-generated concept art')) problems.push(`downloads/${z.zip}: README.txt does not say the images are AI-generated concept art`);
+    for (const e of z.entries) if (!e.name.includes(CONCEPT_TAG)) problems.push(`downloads/${z.zip}: ${e.name} lacks "${CONCEPT_TAG}" in its name`);
+    // The two images with AI likenesses of real ministers say so in the README's first line and in their file names.
+    const first = text.split('\n')[0];
+    for (const stem of ['04-cabinet-1948', '08-defense-1955']) {
+      const e = z.entries.find((x) => x.name.includes(stem));
+      if (!e || !e.name.includes(LIKENESS_TAG)) problems.push(`downloads/${z.zip}: ${stem} lacks "${LIKENESS_TAG}" in its name`);
+      if (!first.includes(stem)) problems.push(`downloads/${z.zip}: README.txt's first line does not name ${stem}`);
+    }
+    if (!/AI likeness/.test(first) || !/not photographs?/.test(first)) problems.push(`downloads/${z.zip}: README.txt's first line does not say the likenesses are not photographs`);
+  } else {
+    if (!text.includes('In-engine capture') || !text.includes('CC BY 4.0')) problems.push(`downloads/${z.zip}: README.txt lacks the label or the licence`);
+    for (const n of names) if (/concept|hero|social|trailer|cinematic|\.(mp4|webm|png)$/i.test(n)) problems.push(`downloads/${z.zip}: ${n} is not an in-engine screenshot`);
+  }
+  for (const lang of ['en', 'he']) {
+    const page = path.join(dist, lang, 'press', 'index.html');
+    if (!fs.existsSync(page) || !new RegExp(`href="[^"]*/downloads/${z.zip.replace(/\./g, '\\.')}"`).test(fs.readFileSync(page, 'utf8'))) {
+      problems.push(`${lang}/press/index.html: no link to downloads/${z.zip}`);
+    }
+  }
+}
+
+// 9. The history approach page (#414) exists in both languages, the History page links to it, and it links to the two
+// documents it restates.
+for (const lang of ['en', 'he']) {
+  const page = path.join(dist, lang, 'history', 'approach', 'index.html');
+  if (!fs.existsSync(page)) { problems.push(`${lang}/history/approach/: missing`); continue; }
+  const html = fs.readFileSync(page, 'utf8');
+  for (const doc of ['docs/CONTENT_POLICY.md', 'docs/GDD.md']) if (!html.includes(doc)) fail(page, `no link to ${doc}`);
+  const index = path.join(dist, lang, 'history', 'index.html');
+  if (!fs.existsSync(index) || !fs.readFileSync(index, 'utf8').includes(`/${lang}/history/approach/"`)) fail(index, 'no link to history/approach/');
+}
+
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`check-site: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds)`);
+console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips, history approach page)`);

@@ -40,6 +40,10 @@ The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): m
 ## What it looks like today
 
 <p align="center">
+  <img src="docs/images/build-gameplay.webp" alt="Real gameplay, 22 to 29 May 1948: a pan across Tel Aviv, Jaffa and the coastal plain, a click on a hex that opens its panel, the One Army decision, and End Turn moving the date to 29 May" width="820">
+  <br><em>Real gameplay, build 0.1.0, 2026-10-13, commit f93fd5e.</em>
+</p>
+<p align="center">
   <img src="docs/images/build-m3-map.jpg" alt="Current build, 22 May 1948: the coastal plain from Tel Aviv and Jaffa to Jerusalem with Tel Aviv's white blocks, towns and villages, groves, railways and roads, brigade tokens and an aircraft, the top bar, and the One Army event card with an archival photograph" width="820">
 </p>
 <p align="center">
@@ -48,7 +52,7 @@ The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): m
   <br>
   <img src="docs/images/build-m3-cabinet.jpg" alt="Current build: the Cabinet screen with the Provisional State Council as a half circle of seats and the ministers' portrait cards" width="405">
   <img src="docs/images/build-m3-why.jpg" alt="Current build: the Why panel explaining a turn's changes" width="405">
-  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-13. Taken at commit 47eac52. The start screen's painting is AI-generated.</em>
+  <br><em>Real screenshots from build 0.1.0 (M3), 2026-10-13. Taken at commit f93fd5e. The start screen's painting is AI-generated.</em>
 </p>
 
 ## Is this any good?

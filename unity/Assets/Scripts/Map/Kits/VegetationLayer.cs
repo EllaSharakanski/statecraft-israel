@@ -17,15 +17,25 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>Tiles nearer than this draw every tree; beyond it the share falls as (ThinStartM / distance)^2.</summary>
         public const float ThinStartM = 110000f;
 
-        sealed class Tile { public TreeKind kind; public Bounds bounds; public Matrix4x4[] m = System.Array.Empty<Matrix4x4>(); }
+        /// <summary>A tile's trees: <c>all</c> as planted (shuffled), <c>m</c> the ones drawn (all, less those under a unit
+        /// figure: <see cref="Hide"/>), in the same order, so drawing a prefix still thins evenly; <c>crown</c> is the largest
+        /// crown radius (m) among them.</summary>
+        sealed class Tile { public TreeKind kind; public Bounds bounds; public float crown; public Matrix4x4[] all = System.Array.Empty<Matrix4x4>(), m = System.Array.Empty<Matrix4x4>(); }
 
         readonly List<Tile> tiles = new List<Tile>();
+        readonly SortedDictionary<string, List<(Vector2 centre, float radius)>> holes = new SortedDictionary<string, List<(Vector2, float)>>(System.StringComparer.Ordinal);
         readonly Dictionary<TreeKind, Mesh> meshes = new Dictionary<TreeKind, Mesh>();
         Material? material;
         public bool Draw { get; set; } = true;
         public int Count { get; private set; }
         /// <summary>Instances submitted for the last camera (a test and profiling aid).</summary>
         public int LastDrawn { get; private set; }
+        /// <summary>Trees left out now because they stand under a unit figure (<see cref="Hide"/>).</summary>
+        public int Hidden { get; private set; }
+
+        /// <summary>A tree's crown radius (m) as placed: its kind's real crown times the instance's scale, with the planting
+        /// margin (Vegetation.Plant keeps a crown this wide off the lots and routes).</summary>
+        public static float CrownRadius(TreeKind kind, Matrix4x4 m) => Vegetation.CrownRadiusM(kind) * ((Vector3)m.GetColumn(0)).magnitude * 1.15f;
 
         public void Init(List<(TreeKind kind, Matrix4x4 m)> trees, Material treeMaterial, MapRuntimeAssets assets)
         {
@@ -50,9 +60,72 @@ namespace Statecraft.Game.Map.Kits
                 var b = new Bounds((Vector3)list[0].GetColumn(3), Vector3.zero);
                 foreach (var m in list) b.Encapsulate((Vector3)m.GetColumn(3));
                 b.Expand(new Vector3(400f, 800f, 400f) * (KitScale.Trees / KitScale.CountReference));   // the crowns round the trunk points
-                tiles.Add(new Tile { kind = key.Item1, bounds = b, m = list.ToArray() });
+                float crown = 0f;
+                foreach (var m in list) crown = Mathf.Max(crown, CrownRadius(key.Item1, m));
+                var arr = list.ToArray();
+                tiles.Add(new Tile { kind = key.Item1, bounds = b, crown = crown, all = arr, m = arr });
             }
             Count = trees.Count;
+            holes.Clear(); Hidden = 0;
+        }
+
+        /// <summary>Issue #249: leaves out, at draw time, every tree whose crown reaches into one of <paramref name="where"/>
+        /// (centre x, z; radius m): the ground under the unit figures drawn now. Each caller (<paramref name="owner"/>: the
+        /// units in play, the showcase) sets its own holes, and an empty list gives its trees back. The planting itself, and
+        /// so the kits' layout, never changes; only the tiles a hole reaches are rebuilt, when a caller's holes change (a
+        /// roster change), never per frame.</summary>
+        public void Hide(string owner, IReadOnlyList<(Vector2 centre, float radius)> where)
+        {
+            if (where.Count == 0) holes.Remove(owner); else holes[owner] = new List<(Vector2, float)>(where);
+            var all = new List<(Vector2 centre, float radius)>();
+            foreach (var h in holes.Values) all.AddRange(h);
+            int hidden = 0;
+            var keep = new List<Matrix4x4>();
+            foreach (var t in tiles)
+            {
+                if (!Reaches(t, all)) { t.m = t.all; continue; }
+                keep.Clear();
+                foreach (var m in t.all)
+                {
+                    if (Covered(t.kind, m, all)) hidden++; else keep.Add(m);
+                }
+                t.m = keep.Count == t.all.Length ? t.all : keep.ToArray();
+            }
+            Hidden = hidden;
+        }
+
+        static bool Reaches(Tile t, List<(Vector2 centre, float radius)> where)
+        {
+            foreach (var (c, r) in where)
+            {
+                float reach = r + t.crown;
+                float dx = Mathf.Max(t.bounds.min.x - c.x, 0f, c.x - t.bounds.max.x), dz = Mathf.Max(t.bounds.min.z - c.y, 0f, c.y - t.bounds.max.z);
+                if (dx * dx + dz * dz < reach * reach) return true;
+            }
+            return false;
+        }
+
+        static bool Covered(TreeKind kind, Matrix4x4 m, List<(Vector2 centre, float radius)> where)
+        {
+            var p = m.GetColumn(3); float crown = CrownRadius(kind, m);
+            foreach (var (c, r) in where)
+            {
+                float dx = p.x - c.x, dz = p.z - c.y, reach = r + crown;
+                if (dx * dx + dz * dz < reach * reach) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Every tree as planted, hidden or not (kind, world matrix): a test aid.</summary>
+        public IEnumerable<(TreeKind kind, Matrix4x4 m)> Planted()
+        {
+            foreach (var t in tiles) foreach (var m in t.all) yield return (t.kind, m);
+        }
+
+        /// <summary>The trees a camera near enough to draw every tree would submit now (kind, world matrix): a test aid.</summary>
+        public IEnumerable<(TreeKind kind, Matrix4x4 m)> Drawable()
+        {
+            foreach (var t in tiles) foreach (var m in t.m) yield return (t.kind, m);
         }
 
         void OnEnable() => RenderPipelineManager.beginCameraRendering += Submit;

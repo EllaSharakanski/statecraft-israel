@@ -12,11 +12,12 @@ const main: { page: Page; key: Parameters<typeof t>[1] }[] = [
 const more: { page: Page; key: Parameters<typeof t>[1] }[] = [
   { page: 'play', key: 'nav.play' },
   { page: 'history/sources', key: 'nav.sources' },
+  { page: 'history/approach', key: 'nav.approach' },
   { page: 'press', key: 'nav.press' },
   { page: 'contribute', key: 'nav.contribute' },
   { page: 'privacy', key: 'nav.privacy' },
 ];
-const current = (p: Page) => (p === page || (p === 'history' && page === 'history/sources') ? 'page' : undefined);
+const current = (p: Page) => (p === page || (p === 'history' && page.startsWith('history/')) ? 'page' : undefined);
 const other = otherLang(lang);
 ---
 <header class="site-header">

@@ -121,6 +121,28 @@ public class UnitShowcaseTests
         Object.DestroyImmediate(tex);
     }
 
+    /// <summary>Figures round 1 (refs #197): the uniform reads darker than the sunlit ground and warm brown, as promo 03's
+    /// figures do (figure/ground luminance about 0.45 there; 0.68-0.82 with the old khaki, 0.50-0.57 now, on the editor
+    /// renders), and the slope base is trodden earth, not a dark disc. Measured on the paint as drawn: the middle shade row
+    /// (Shade at 0.5, with its wash), Rec. 709 weights. The old khaki was 0.39-0.52 there and red/green 1.13-1.21.</summary>
+    [Test]
+    public void TheUniformIsDarkAndWarmAndTheBaseIsEarth()
+    {
+        static float Luma(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+        foreach (var slot in new[] { UnitPalette.Shirt, UnitPalette.ShirtFaded, UnitPalette.Trousers, UnitPalette.SlouchHat })
+        {
+            var c = UnitPalette.Shade(slot, 0.5f);
+            Assert.Less(Luma(c), 0.35f, $"slot {slot}: dark enough to stand out against the ground");
+            Assert.Greater(c.r / c.g, 1.24f, $"slot {slot}: warm brown, not olive khaki");
+        }
+        Assert.Less(Luma(UnitPalette.Shade(UnitPalette.Trousers, 0.5f)), Luma(UnitPalette.Shade(UnitPalette.Shirt, 0.5f)), "the trousers read darker than the shirt");
+        Assert.Greater(Luma(UnitPalette.Shade(UnitPalette.Dust, 0.5f)), 1.5f * Luma(UnitPalette.Shade(UnitPalette.Shirt, 0.5f)), "the base is earth, well lighter than the figure");
+        Assert.Greater(Luma(UnitPalette.Shade(UnitPalette.Dust, 0.5f)), Luma(UnitPalette.Shade(UnitPalette.Deck, 0.5f)) + 0.1f, "not the old dark deck-grey disc");
+        var disc = UnitShowcase.BaseMesh("base");
+        Assert.IsTrue(disc.uv.All(uv => Mathf.Abs(uv.x - UnitPalette.U(UnitPalette.Dust)) < 1e-4f), "the base is painted in the dust");
+        Object.DestroyImmediate(disc);
+    }
+
     [Test]
     public void FlightHoldsItsStillPhaseAndKeepsItsAltitude()
     {
@@ -159,6 +181,32 @@ public class UnitShowcaseTests
         list.Add(paint); list.Add(paint.GetTexture("_BaseMap"));
         Assert.IsTrue(list.All(o => o != null));
         return list;
+    }
+
+    /// <summary>Issue #249: the showcase trio leaves out the kit trees under its boots, and its toggle gives them back.</summary>
+    [Test]
+    public void TheShowcaseTrioStandsClearOfTheTrees()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var map = Object.FindFirstObjectByType<MapScene>();
+        map.Build();
+        try
+        {
+            var veg = map.GetComponentInChildren<Statecraft.Game.Map.Kits.VegetationLayer>(true);
+            Assert.IsNotNull(veg, "the kits and their trees are on");
+            var root = UnitShowcase.Spawn(map, still: true);
+            var feet = Enumerable.Range(0, 3).Select(i => root.transform.Find("Rifleman" + i).position).Select(p => new Vector2(p.x, p.z)).ToList();
+            bool Under(Statecraft.Game.Map.Kits.TreeKind k, Matrix4x4 m)
+            {
+                var p = m.GetColumn(3); float reach = UnitShowcase.FootRadiusM + Statecraft.Game.Map.Kits.VegetationLayer.CrownRadius(k, m);
+                return feet.Any(f => (f - new Vector2(p.x, p.z)).sqrMagnitude < reach * reach);
+            }
+            Assert.IsFalse(veg.Drawable().Any(t => Under(t.kind, t.m)), "no drawn tree reaches the trio's boots");
+            Assert.AreEqual(veg.Planted().Count(t => Under(t.kind, t.m)), veg.Hidden, "only the trio's trees are left out");
+            VisualToggles.Set(UnitShowcase.ToggleName, false);
+            Assert.AreEqual(0, veg.Hidden, "the showcase off gives them back");
+        }
+        finally { if (VisualToggles.Names.Contains(UnitShowcase.ToggleName)) VisualToggles.Set(UnitShowcase.ToggleName, true); Object.DestroyImmediate(map.gameObject); }
     }
 
     [Test]

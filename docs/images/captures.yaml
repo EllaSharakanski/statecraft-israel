@@ -13,8 +13,17 @@
 #     build: main abc1234      # optional; defaults to the build above
 #     date: 2026-10-13         # optional; defaults to the date above
 # A build-*.mp4 or .webm that is not listed there fails the site's build.
-build: main 47eac52
+build: main f93fd5e
 date: 2026-10-13
+video:
+  files: [build-gameplay.webm, build-gameplay.mp4]
+  title: { en: "Real gameplay: 22 to 29 May 1948", he: "משחק אמיתי: 22 עד 29 במאי 1948" }
+  description:
+    en: "About 11 seconds of real play, recorded from the game's own browser build: a pan across Tel Aviv, Jaffa and the coastal plain, a click on a hex that opens its panel, the One Army decision, and End Turn."
+    he: "כ־11 שניות של משחק אמיתי, שהוקלטו מגרסת הדפדפן של המשחק עצמו: מעבר על תל אביב, יפו ומישור החוף, לחיצה על משושה שפותחת את הלוח שלו, ההחלטה על צבא אחד, וסיום תור."
+  alt:
+    en: "22 to 29 May 1948: the camera pans across Tel Aviv's white blocks, Jaffa and the coastal plain; a click on a hex opens its panel; the player answers the One Army event card and ends the turn, and the date moves to 29 May."
+    he: "22 עד 29 במאי 1948: המצלמה עוברת על הבתים הלבנים של תל אביב, על יפו ועל מישור החוף; לחיצה על משושה פותחת את הלוח שלו; השחקן עונה על כרטיס האירוע \"צבא אחד\" ומסיים את התור, והתאריך מתקדם ל־29 במאי."
 images:
   - file: build-m3-city.jpg
     title: { en: "Tel Aviv’s white blocks and Jaffa", he: "הבתים הלבנים של תל אביב, ויפו" }
