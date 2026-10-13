@@ -151,34 +151,30 @@ rules:
   commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
   artist: Teddy Brauner
   note: no explicit US status template on the Commons page
-- glob: promo/ref/people/David_Remez.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg
-  status: owner-verify
-  commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
-  artist: Israeli GPO photographer
-  note: no explicit US status template on the Commons page
+- glob: promo/ref/people/David_Remez_CCBY_1950.jpg
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Boris Carmi
 - glob: unity/Assets/UI/Portraits/remez.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:David_Remez_(cropped).jpg
-  status: owner-verify
-  commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
-  artist: Israeli GPO photographer
-  note: no explicit US status template on the Commons page
-- glob: promo/ref/people/Yitzhak-Meir_Levin.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg
-  status: owner-verify
-  commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
-  artist: Théodore Brauner
-  note: no explicit US status template on the Commons page
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Boris Carmi
+- glob: promo/ref/people/Yitzhak-Meir_Levin_CCBY_1949.jpg
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Benno Rothenberg
 - glob: unity/Assets/UI/Portraits/levin.jpg
-  licence: Public-Domain
-  source: https://commons.wikimedia.org/wiki/File:Yitzhak_Meir_Levin.jpg
-  status: owner-verify
-  commons: Public domain; PD-Israel, PD-Israel/en, PD-Israel/layout, PD-Layout, PD-old-warning-text
-  artist: Théodore Brauner
-  note: no explicit US status template on the Commons page
+  licence: CC-BY-4.0
+  source: https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg
+  status: verified
+  commons: CC BY 4.0; Cc-by-4.0, Cc-by-layout
+  artist: Benno Rothenberg
 - glob: promo/ref/people/Zalman_Shazar_USGov_1966.jpg
   licence: Public-Domain
   source: https://commons.wikimedia.org/wiki/File:President_Lyndon_B._Johnson_with_President_Zalman_Shazar_of_Israel.jpg

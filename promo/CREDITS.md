@@ -8,8 +8,7 @@ not final game art. Steam requires disclosure of AI-generated marketing assets.
 ## Likeness references (Wikimedia Commons; licence checked by API on 2026-10-09)
 Public domain: David Ben-Gurion (D597-087), Eliezer Kaplan, Moshe Sharett (Portrait), Haim-Moshe Shapira
 (Moshe_Shapira.jpg), Yitzhak Gruenbaum (1948), Pinchas Rosen, Aharon Zisling, Mordechai Bentov,
-Bechor-Shalom Sheetrit (Shitreet), Yehuda Leib Maimon, Peretz Bernstein, David Remez (cropped),
-Yitzhak Meir Levin.
+Bechor-Shalom Sheetrit (Shitreet), Yehuda Leib Maimon, Peretz Bernstein.
 CC0: "Moshe Dayan met mgr. A.C. Ramselaar (cropped).jpg" (1962).
 
 ## In-game portraits from US-safe sources (licence checked on 2026-10-11)
@@ -72,3 +71,13 @@ Rain-gauge data: Israel Meteorological Service (השירות המטאורולו�
 1948 settlements (tools/README.md has no settlement wording; this is the source note of
 content/map/settlements_1948.yaml): coordinates from the Wikipedia API (prop=coordinates); founding years from the
 cited article's text. Each settlement's source URLs and check dates are listed in that file.
+- David Remez: crop of Boris Carmi / Meitar Collection / National Library of Israel, 1950, CC BY 4.0
+  (attribution in NOTICE):
+  https://commons.wikimedia.org/wiki/File:David_Remez_(997009452176205171).jpg
+  Replaces the earlier Government Press Office photograph (PD-Israel only, no US status). Human likeness check by the
+  maintainer still needed.
+- Yitzhak-Meir Levin: crop of Benno Rothenberg / Meitar Collection / National Library of Israel, 1949, CC BY 4.0
+  (attribution in NOTICE):
+  https://commons.wikimedia.org/wiki/File:Yitzhak-Meir_Levin_(997008137163805171).jpg
+  Crop of the bearded man at the desk on the right of a two-person photograph; the Commons title names him.
+  Replaces the earlier Government Press Office photograph. Human likeness check by the maintainer still needed.
