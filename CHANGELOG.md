@@ -285,6 +285,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "The Jews of Iraq" cites two primary sources for its asset freeze and its count of those waiting to fly: the Israeli
+  letter to the Palestine Conciliation Commission of 19 March 1951 and FRUS 1951, vol. V, doc. 340. Its English Wikipedia
+  source puts the first flights a year late (#135) but stays, because it alone covers the transit camps' crowding. Text,
+  dates and effects are unchanged (refs #135).
 - In the two-row HUD (a window narrower than about square), a button in the event column or the info panel hidden under an
   open screen could still take the keyboard focus once the 1950 build buttons were live. The covered panels are now
   disabled as well as hidden, also when the window narrows under an open screen, and a panel hidden by the start screen
