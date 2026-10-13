@@ -123,10 +123,12 @@ namespace Statecraft.Game.Map.Units
             // The trio: three riflemen in a loose triangle facing the camera's side of south-west, around the hex's centre.
             var centre = HexCentreNear(map, TrioAt.lon, TrioAt.lat);
             var looks = Trio;
+            var holes = new List<(Vector2 centre, float radius)>();
             for (int i = 0; i < looks.Length; i++)
             {
                 var (type, hat, pose, faded, offset, heading) = looks[i];
                 var p = Stand(map, centre + new Vector3(offset.x, 0, offset.y) * TrioSpread * hex);
+                holes.Add(TreeHole(p));
                 Piece(root.transform, $"Rifleman{i}", type, () => Built(UnitModels.Rifleman(hat, pose, faded, $"Rifleman1948-{i}")),
                     paint, p, Quaternion.Euler(0, heading, 0), FigureScale);
             }
@@ -153,8 +155,30 @@ namespace Statecraft.Game.Map.Units
             Piece(root.transform, "Corvette1948", CorvetteType, () => Built(UnitModels.Corvette("CorvetteK20")), paint, ship,
                 Quaternion.Euler(0, ShipHeadingDegrees, 0), ShipScale);
 
-            assets.OnTeardown(VisualToggles.Register(ToggleName, on => { if (root != null) root.SetActive(on); }));
+            HideTrees(map, ToggleName, holes);
+            assets.OnTeardown(() => HideTrees(map, ToggleName, NoHoles));
+            assets.OnTeardown(VisualToggles.Register(ToggleName, on =>
+            {
+                if (root != null) root.SetActive(on);
+                HideTrees(map, ToggleName, on ? holes : NoHoles);
+            }));
             return root;
+        }
+
+        static readonly IReadOnlyList<(Vector2 centre, float radius)> NoHoles = Array.Empty<(Vector2, float)>();
+
+        /// <summary>The ground a figure standing at <paramref name="feet"/> keeps free of kit trees (issue #249): its boots'
+        /// radius, which is also its base's (<see cref="AddBase"/>). Its legs, body and rifle are far above every crown.</summary>
+        public static (Vector2 centre, float radius) TreeHole(Vector3 feet) => (new Vector2(feet.x, feet.z), FootRadiusM);
+
+        /// <summary>Leaves out the map's kit trees under <paramref name="holes"/> for <paramref name="owner"/> (an empty list
+        /// gives them back), at draw time (Kits.VegetationLayer.Hide), so the kits' layout never changes. A map without kits
+        /// has no trees to hide.</summary>
+        internal static void HideTrees(MapScene map, string owner, IReadOnlyList<(Vector2 centre, float radius)> holes)
+        {
+            if (map == null) return;
+            var veg = map.GetComponentInChildren<Kits.VegetationLayer>(true);
+            if (veg != null) veg.Hide(owner, holes);
         }
 
         /// <summary>One unit model: the authored prefab for <paramref name="type"/> when there is one (the art hook),

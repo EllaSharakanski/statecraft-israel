@@ -8,6 +8,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- The website (`site/`, refs #393): a static Astro site in English (`/en/`) and Hebrew (`/he/`, right to left) with Home, Play, History, Sources, Media, Devlog, Contributors, How we make it, Press, Contribute and Privacy. Every image and video carries a visible label (in-engine capture with build and date, AI-generated concept art, or AI cinematic promo, not gameplay); the History and Sources pages show the events and sources from `content/` as they are. The in-engine images are the README's screenshots, read from `docs/images/build-*.jpg` and described in `docs/images/captures.yaml`, so retaking them updates the site. The cinematic trailer is hosted as one 720p H.264 encode, shown behind a click with captions in its own labelled section after the gameplay; a real gameplay clip listed in `captures.yaml` becomes the home page's muted hero loop, with a pause button. Self-hosted fonts and images, no analytics, no cookies and nothing loaded from another site. A `Site` workflow builds and checks it on pull requests; deploying to GitHub Pages waits for the owner.
 - The GDD v0.1 loop switch (`systems.loop` in eras.yaml, default `legacy`), its state (cities, units, objectives and score,
   hashed only when set) and save schema 2, which names its ruleset: a game refuses a save made under another ruleset with a
   message to start a new game. The real game is unchanged and the goldens do not move; a new `mvp-slice` golden pins the
@@ -195,6 +196,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
+  next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
   surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a
   wave's size), and sparse whitecaps on the streaks' bright side, close up only. All three sit behind a new `seatexture`
@@ -284,6 +287,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Map: kit orchard trees no longer grow through the unit figures' boots and bases. The trees under each figure drawn now
+  are left out at draw time and come back when the figure goes (a later date, or the "units" toggle off, so plain
+  screenshot checkpoints keep every tree); the kits' layout does not change (fixes #249).
+- "The Jews of Iraq" cites two primary sources for its asset freeze and its count of those waiting to fly: the Israeli
+  letter to the Palestine Conciliation Commission of 19 March 1951 and FRUS 1951, vol. V, doc. 340. Its English Wikipedia
+  source puts the first flights a year late (#135) but stays, because it alone covers the transit camps' crowding. Text,
+  dates and effects are unchanged (refs #135).
 - In the two-row HUD (a window narrower than about square), a button in the event column or the info panel hidden under an
   open screen could still take the keyboard focus once the 1950 build buttons were live. The covered panels are now
   disabled as well as hidden, also when the window narrows under an open screen, and a panel hidden by the start screen
