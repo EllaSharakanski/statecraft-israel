@@ -105,7 +105,9 @@ to make room; the right-hand column still bounds it above the minimap.
     - `ten_days`: two soldiers keeping watch from an armoured car during the capture of Lydda airport (NLI, 10 July
       1948, in the window; Boris Carmi). The airport itself is not in the frame. It replaces the near-portrait of one
       named woman, which the portrait rule does not allow under CC BY. The 82nd Battalion series of the same day is
-      tagged "Meitar Collection (review needed)" on Commons and was not used.
+      tagged "Meitar Collection (review needed)" on Commons and was not used. (Correction, 2026-10-13: that tag is a
+      Commons sorting backlog, not a licence review. 8 of the 20 Meitar photos we ship carry it; all 20 have the same
+      CC BY 4.0 licence and VRTS ticket 2021092910005788, with no deletion request.)
     - All three are CC BY 4.0 (Meitar Collection, VRTS ticket 2021092910005788), read through the Commons API, with the
       SHA-1 recorded. Contact sheet: `.superpowers/handover-2026-10-11/promo/eventimg-images/new-picks.png`.
   - **Dropped:** `sinai_withdrawal` now shows the prime minister's portrait. Its window is 31 December 1948 to 3 January
