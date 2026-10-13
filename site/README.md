@@ -23,6 +23,7 @@ npm run preview    # http://localhost:4321/statecraft-israel/en/
 - `src/lib/media.ts`: every image and video the site shows, with its label. The images are read from `docs/images/` and `promo/final/` and converted to AVIF and WebP at build time; they are not copied into `site/`.
 - `docs/images/captures.yaml`: the in-engine screenshots. The site's hero and in-engine gallery are the README's `docs/images/build-*.jpg`, described by this file (build, date, title and alt text in both languages; the first entry is the hero). The build fails if a screenshot has no entry or an entry has no file.
 - `src/lib/repo.ts`: reads `content/events/`, `ASSETS.yaml` and the event photographs' mapping at build time. The History and Sources pages show that content as it is.
+- `scripts/press-kit.mjs`: the Press page's two downloads, written to `dist/downloads/` at every build and never committed: a zip of the in-engine screenshots from `captures.yaml`, and a zip of the AI concept art in `promo/final/` with "AI concept art" in every file name. Each holds a README.txt with the label, licence and provenance of every image, taken from `ASSETS.yaml`.
 - `src/data/contributors.yaml`: the Contributors grid. Photos go in `src/assets/contributors/`, each with an `ASSETS.yaml` row and the person's consent. Never a GitHub avatar, never a generated image of a person.
 
 ## The gameplay clip

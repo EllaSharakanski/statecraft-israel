@@ -10,10 +10,14 @@
 //  7. the contributors page puts each person from contributors.yaml in their group (team, historians and sensitivity
 //     reviewers, past contributors, with years), and leaves out a group with no one in it. SITE_CONTRIBUTORS, as in
 //     the build, points at a fixture instead (site/scripts/fixtures/contributors.yaml has one of each).
+//  8. the Press page's two zips (scripts/press-kit.mjs) exist, hold exactly the expected files and a README that names
+//     each of them, keep concept art out of the screenshots, carry "AI concept art" in every concept file name, and
+//     are linked from the Press page in both languages.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
+import { plan, zipEntries, zipRead, CONCEPT_TAG } from './press-kit.mjs';
 
 const dist = path.resolve(process.argv[2] ?? 'dist');
 const problems = [];
@@ -163,9 +167,40 @@ for (const lang of ['en', 'he']) {
   }
 }
 
+// 8. The press downloads.
+const [shotsZip, artZip] = plan();
+for (const z of [shotsZip, artZip]) {
+  const file = path.join(dist, 'downloads', z.zip);
+  if (!fs.existsSync(file) || fs.statSync(file).size === 0) { problems.push(`downloads/${z.zip}: missing or empty`); continue; }
+  const buf = fs.readFileSync(file);
+  let entries;
+  try { entries = zipEntries(buf); } catch (e) { problems.push(`downloads/${z.zip}: not a readable zip (${e.message})`); continue; }
+  const names = entries.map((e) => e.name);
+  const want = [`${z.dir}/README.txt`, ...z.entries.map((e) => `${z.dir}/${e.name}`)].sort();
+  if (JSON.stringify([...names].sort()) !== JSON.stringify(want)) problems.push(`downloads/${z.zip}: holds ${names.join(', ')}; expected ${want.join(', ')}`);
+  if (z.entries.length === 0) problems.push(`downloads/${z.zip}: no images`);
+  for (const e of entries) if (e.size === 0) problems.push(`downloads/${z.zip}: ${e.name} is empty`);
+  const readme = entries.find((e) => e.name.endsWith('/README.txt'));
+  const text = readme ? zipRead(buf, readme).toString('utf8') : '';
+  for (const e of z.entries) if (!text.includes(e.name)) problems.push(`downloads/${z.zip}: README.txt does not list ${e.name}`);
+  if (z === artZip) {
+    if (!text.includes('AI-generated concept art')) problems.push(`downloads/${z.zip}: README.txt does not say the images are AI-generated concept art`);
+    for (const e of z.entries) if (!e.name.includes(CONCEPT_TAG)) problems.push(`downloads/${z.zip}: ${e.name} lacks "${CONCEPT_TAG}" in its name`);
+  } else {
+    if (!text.includes('In-engine capture') || !text.includes('CC BY 4.0')) problems.push(`downloads/${z.zip}: README.txt lacks the label or the licence`);
+    for (const n of names) if (/concept|hero|social|trailer|cinematic|\.(mp4|webm|png)$/i.test(n)) problems.push(`downloads/${z.zip}: ${n} is not an in-engine screenshot`);
+  }
+  for (const lang of ['en', 'he']) {
+    const page = path.join(dist, lang, 'press', 'index.html');
+    if (!fs.existsSync(page) || !new RegExp(`href="[^"]*/downloads/${z.zip.replace(/\./g, '\\.')}"`).test(fs.readFileSync(page, 'utf8'))) {
+      problems.push(`${lang}/press/index.html: no link to downloads/${z.zip}`);
+    }
+  }
+}
+
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`check-site: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds)`);
+console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips)`);
