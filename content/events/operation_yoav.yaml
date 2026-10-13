@@ -30,4 +30,7 @@ options:
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
   - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
+  - { url: "https://documents.un.org/api/symbol/access?s=S/1042&l=en&t=pdf", checked: 2026-10-14 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-210876/", checked: 2026-10-14 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d705", checked: 2026-10-14 }
 status: sensitivity-reviewed

@@ -26,5 +26,7 @@ options:
       - { target: intl_standing, delta: -0.05 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
-  - { url: "https://he.wikipedia.org/wiki/הבחירות_לאספה_המכוננת", checked: 2026-10-10 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d362", checked: 2026-10-14 }
+  - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d389", checked: 2026-10-14 }
+  - { url: "https://www.un.org/unispal/document/auto-insert-210639/", checked: 2026-10-14 }
 status: fact-checked
