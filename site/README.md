@@ -20,9 +20,16 @@ npm run preview    # http://localhost:4321/statecraft-israel/en/
 - `src/pages/[lang]/`: one file per page; each renders both languages.
 - `src/i18n/ui.ts`: interface strings in both languages. The build fails if a Hebrew string is missing.
 - `src/content/<lang>/*.md`: longer page text. `src/content/devlog/<lang>/`: devlog posts, the same file name in both languages.
-- `src/lib/media.ts`: every image and video the site shows, with its label. The images themselves are read from `docs/images/` and `promo/final/` and converted to AVIF and WebP at build time; they are not copied into `site/`.
+- `src/lib/media.ts`: every image and video the site shows, with its label. The images are read from `docs/images/` and `promo/final/` and converted to AVIF and WebP at build time; they are not copied into `site/`.
+- `docs/images/captures.yaml`: the in-engine screenshots. The site's hero and in-engine gallery are the README's `docs/images/build-*.jpg`, described by this file (build, date, title and alt text in both languages; the first entry is the hero). The build fails if a screenshot has no entry or an entry has no file.
 - `src/lib/repo.ts`: reads `content/events/`, `ASSETS.yaml` and the event photographs' mapping at build time. The History and Sources pages show that content as it is.
 - `src/data/contributors.yaml`: the Contributors grid. Photos go in `src/assets/contributors/`, each with an `ASSETS.yaml` row and the person's consent. Never a GitHub avatar, never a generated image of a person.
+
+## Refreshing the screenshots
+
+The site always shows the README's screenshots. To refresh both, retake `docs/images/build-*.jpg` (same file names), then set `build` and `date` in `docs/images/captures.yaml`; the labels read "In-engine capture — <build>, <date>". A new screenshot needs an entry with its alt text in both languages.
+
+Visual changes are about to land: new towns with a much better Tel Aviv (#339), warmer land (#392) and the tilt-shift change that keeps far towns readable (#390). Once they are merged, the README screenshots get retaken once and the site picks them up through `captures.yaml`, with no change under `site/`.
 
 ## Labels
 

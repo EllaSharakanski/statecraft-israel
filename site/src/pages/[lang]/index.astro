@@ -5,14 +5,18 @@ import Figure from '../../components/Figure.astro';
 import VideoFacade from '../../components/VideoFacade.astro';
 import MediaLabel from '../../components/MediaLabel.astro';
 import { type Lang, languages, href, t, REPO, formatDate, asset } from '../../i18n/ui';
-import { engine, flythrough } from '../../lib/media';
+import { captures, capture, currentBuild, engine, flythrough } from '../../lib/media';
 import { posts } from '../../lib/devlog';
 
 export const getStaticPaths = () => languages.map((lang) => ({ params: { lang } }));
 const lang = Astro.params.lang as Lang;
 const he = lang === 'he';
 
-const [heroShot, cabinet, why, topdown] = engine;
+const heroShot = captures[0];
+const mapShot = capture('build-m3-map.jpg');
+const cabinet = capture('build-m3-cabinet.jpg');
+const why = capture('build-m3-why.jpg');
+const topdown = engine.find((e) => e.id === 'm2-topdown')!;
 // The hero is a real screenshot of the build (the LCP image): preloaded as AVIF, never lazy.
 const heroWidths = [800, 1200, 1568];
 const heroSizes = '100vw';
@@ -62,7 +66,7 @@ const features = [
       : 'Appoint and replace real ministers such as David Ben-Gurion, Eliezer Kaplan and Moshe Sharett, inside a real coalition. The portraits are public-domain or CC0 photographs.',
   },
   {
-    item: heroShot, crop: '100% 0%',
+    item: mapShot, crop: '100% 0%',
     title: he ? 'החלטות אמיתיות במועדן האמיתי' : 'Real decisions at their real dates',
     text: he
       ? 'ההפוגה הראשונה, פרשת אלטלנה ורצח ברנדוט מגיעים במועדם, ולכל אירוע יש מקורות. בעמוד ההיסטוריה מופיעים כל האירועים שבמשחק, עם המקורות שלהם.'
@@ -85,11 +89,11 @@ const features = [
 ];
 
 const works = he
-  ? ['תורות מ־15 במאי 1948 ועד סוף 1951.', 'מסך הממשלה עם מינויים.', 'מסך התקציב.', 'מסך הביטחון עם סולם ההסלמה וגיוס המילואים.', 'אירועים היסטוריים עם מקורות, ממלחמת 1948 ועד משבר המטבע הזר של 1951.', 'לוח "למה?".', 'שמירה אוטומטית וטעינה.', 'גרסת הדפדפן (WebGL), שבונים מקוד המקור.']
-  : ['Turns from 15 May 1948 to the end of 1951.', 'The Cabinet with appointments.', 'The Budget screen.', 'The Defence screen with the escalation ladder and reserve call-up.', 'Sourced historical events from the 1948 war through the 1951 foreign-currency crisis.', 'The “Why?” panel.', 'Autosave and load.', 'The browser (WebGL) build, built from source.'];
+  ? ['תורות מ־15 במאי 1948 ועד סוף 1951.', 'מסך הפתיחה.', 'מפת 1948: עיירות, כפרים ומאהלי בדואים, מסילות ודרכים, ואזורי שביתת הנשק וקוויה מ־1949, מתאריך כל הסכם.', 'החטיבות של 1948, טייסת 101 וספינות חיל הים הראשונות, כאסימונים במיקומים המתועדים שלהם. הם עוד לא מקבלים פקודות.', 'מסך הממשלה עם מינויים.', 'מסך התקציב.', 'מסך הביטחון עם סולם ההסלמה וגיוס המילואים.', 'אירועים היסטוריים עם מקורות, ממלחמת 1948 ועד משבר המטבע הזר של 1951, ולרובם צילום ארכיון.', 'לוח "למה?".', 'שמירה אוטומטית וטעינה.', 'גרסת הדפדפן (WebGL), שבונים מקוד המקור.']
+  : ['Turns from 15 May 1948 to the end of 1951.', 'The start screen.', 'The 1948 map: towns, villages and Bedouin camps, railways and roads, and the 1949 armistice zones and lines from each agreement’s date.', 'The 1948 brigades, 101 Squadron and the first navy ships as tokens at their sourced positions. They take no orders yet.', 'The Cabinet with appointments.', 'The Budget screen.', 'The Defence screen with the escalation ladder and reserve call-up.', 'Sourced historical events from the 1948 war through the 1951 foreign-currency crisis, most with an archival photograph.', 'The “Why?” panel.', 'Autosave and load.', 'The browser (WebGL) build, built from source.'];
 const missing = he
-  ? ['האמנות שבתמונות הקונספט. היישובים והעצים הם עדיין אמנות זמנית.', 'דיפלומטיה.', 'מצב מלחמה.', 'כל מה שאחרי 1951.', 'גרסה מתארחת שאפשר לשחק בה בלחיצה אחת.']
-  : ['The art in the concept images. Settlements and trees are still placeholder art.', 'Diplomacy.', 'War mode.', 'Anything after 1951.', 'A hosted build you can play with one click.'];
+  ? ['האמנות שבתמונות הקונספט. היישובים והעצים הם עדיין אמנות זמנית.', 'כל מה שחדש ב־GDD: חודש לכל תור, יחידות שמאמנים ומפקדים עליהן, ערים עם דיור ותעסוקה, בנייה, קרבות ושלוש המטרות.', 'דיפלומטיה.', 'כל מה שאחרי 1951.', 'גרסה מתארחת שאפשר לשחק בה בלחיצה אחת.']
+  : ['The art in the concept images. Settlements and trees are still placeholder art.', 'Everything new in the GDD: one month per turn, units you train and command, cities with housing and jobs, construction, combat and the three objectives.', 'Diplomacy.', 'Anything after 1951.', 'A hosted build you can play with one click.'];
 ---
 <Layout lang={lang} page="" jsonLd={jsonLd}
   preload={[{ srcset: heroAvif.srcSet.attribute, sizes: heroSizes, type: 'image/avif' }]}>
@@ -100,7 +104,7 @@ const missing = he
         <img src={heroWebp.src} srcset={heroWebp.srcSet.attribute} sizes={heroSizes} width={heroShot.src.width}
           height={heroShot.src.height} alt={heroShot.alt[lang]} fetchpriority="high" loading="eager" decoding="sync" />
       </picture>
-      <figcaption class="hero-label"><MediaLabel lang={lang} kind="engine" build="build.m3" /></figcaption>
+      <figcaption class="hero-label"><MediaLabel lang={lang} kind="engine" build={currentBuild} /></figcaption>
     </figure>
     <div class="hero-copy">
       <div class="wrap">

@@ -2,9 +2,9 @@
 // honesty rules in reports/Strategy game websites.md: in-engine capture (with build and date), concept art
 // (AI-generated) and cinematic promo (AI-generated, not gameplay). Provenance of the source files: ASSETS.yaml.
 import type { ImageMetadata } from 'astro';
-import buildMap from '../../../docs/images/build-m3-map.jpg';
-import buildCabinet from '../../../docs/images/build-m3-cabinet.jpg';
-import buildWhy from '../../../docs/images/build-m3-why.jpg';
+import fs from 'node:fs';
+import path from 'node:path';
+import YAML from 'yaml';
 import m2Topdown from '../../../promo/final/10-m2-topdown.png';
 import keyArt from '../../../promo/final/01-key-art.png';
 import mapDiorama from '../../../promo/final/02-map-diorama.png';
@@ -16,7 +16,8 @@ import erasTelAviv from '../../../promo/final/07-eras-tel-aviv.png';
 import defense1955 from '../../../promo/final/08-defense-1955.png';
 import flythroughPoster from '../assets/media/flythrough-m2-poster.jpg';
 import trailerPoster from '../assets/media/cinematic-trailer-1-poster.jpg';
-import type { Lang } from '../i18n/ui';
+import { type Lang, formatDate } from '../i18n/ui';
+import { repoRoot } from './repo';
 
 export type Kind = 'engine' | 'concept' | 'cinematic';
 type Text = Record<Lang, string>;
@@ -25,43 +26,53 @@ export interface MediaImage {
   id: string;
   kind: Kind;
   src: ImageMetadata;
-  /** Which build, for in-engine captures (an i18n key). */
-  build?: 'build.m3' | 'build.m2';
+  /** Which build and when, for in-engine captures, in each language ("main 4abb64f, 13 October 2026"). */
+  build?: Text;
   title: Text;
   alt: Text;
+  /** An AI-generated part of a real screenshot (the start screen's painting), said beside the picture. */
+  aiPart?: Text;
   /** AI likenesses of real people (docs/CONTENT_POLICY.md section 4). */
   likeness?: boolean;
   /** Path of the source file in the repository. */
   file: string;
 }
 
+// The README's screenshots are the site's in-engine images: docs/images/build-*.jpg, described by
+// docs/images/captures.yaml. Retaking them updates the site; nothing is copied into site/.
+const shotFiles = import.meta.glob<{ default: ImageMetadata }>('../../../docs/images/build-*.jpg', { eager: true });
+const shotByName = new Map(Object.entries(shotFiles).map(([p, m]) => [p.split('/').pop()!, m.default]));
+interface CaptureEntry { file: string; title: Text; alt: Text; ai_part?: Text }
+const manifest = YAML.parse(fs.readFileSync(path.join(repoRoot, 'docs/images/captures.yaml'), 'utf8')) as {
+  build: string; date: string | Date; images: CaptureEntry[];
+};
+const captureDate = manifest.date instanceof Date ? manifest.date.toISOString().slice(0, 10) : String(manifest.date);
+export const currentBuild: Text = {
+  en: `${manifest.build}, ${formatDate('en', captureDate)}`,
+  he: `${manifest.build}, ${formatDate('he', captureDate)}`,
+};
+for (const name of shotByName.keys()) {
+  if (!manifest.images.some((e) => e.file === name)) throw new Error(`media: docs/images/${name} has no entry in docs/images/captures.yaml`);
+}
+
+/** The current build's screenshots, in the manifest's order. The first is the home page's hero. */
+export const captures: MediaImage[] = manifest.images.map((e) => {
+  const src = shotByName.get(e.file);
+  if (!src) throw new Error(`media: docs/images/captures.yaml names ${e.file}, which is not in docs/images/`);
+  return { id: e.file.replace(/\.jpg$/, ''), kind: 'engine', src, build: currentBuild, title: e.title, alt: e.alt, aiPart: e.ai_part, file: `docs/images/${e.file}` };
+});
+export const capture = (file: string) => {
+  const c = captures.find((x) => x.file === `docs/images/${file}`);
+  if (!c) throw new Error(`media: no capture ${file} in docs/images/captures.yaml`);
+  return c;
+};
+
+const m2Build: Text = { en: 'M2 map build, 10 October 2026', he: 'גרסת המפה של M2, 10 באוקטובר 2026' };
+
 export const engine: MediaImage[] = [
+  ...captures,
   {
-    id: 'build-m3-map', kind: 'engine', src: buildMap, build: 'build.m3', file: 'docs/images/build-m3-map.jpg',
-    title: { en: 'The map, the top bar and an event card', he: 'המפה, הסרגל העליון וכרטיס אירוע' },
-    alt: {
-      en: 'The current build: the coastal plain around Tel Aviv, Jaffa, Lod, Ramla and Rehovot with hex lines, settlement models, groves, railways and roads. The top bar shows the year 1948, the treasury and other indicators; an event card titled One Army asks the Minister of Defense, David Ben-Gurion, to decide.',
-      he: 'הגרסה הנוכחית: מישור החוף סביב תל אביב, יפו, לוד, רמלה ורחובות, עם רשת משושים, דגמי יישובים, מטעים, מסילות ודרכים. בסרגל העליון השנה 1948, הקופה ומדדים נוספים; כרטיס אירוע בשם "צבא אחד" מבקש משר הביטחון, דוד בן־גוריון, להכריע.',
-    },
-  },
-  {
-    id: 'build-m3-cabinet', kind: 'engine', src: buildCabinet, build: 'build.m3', file: 'docs/images/build-m3-cabinet.jpg',
-    title: { en: 'The Cabinet screen', he: 'מסך הממשלה' },
-    alt: {
-      en: 'The current build: the Cabinet screen listing the Provisional Government’s ministers with their portraits.',
-      he: 'הגרסה הנוכחית: מסך הממשלה, ובו שרי הממשלה הזמנית ותמונותיהם.',
-    },
-  },
-  {
-    id: 'build-m3-why', kind: 'engine', src: buildWhy, build: 'build.m3', file: 'docs/images/build-m3-why.jpg',
-    title: { en: 'The “Why?” panel', he: 'לוח "למה?"' },
-    alt: {
-      en: 'The current build: the Why panel, which lists what changed in a turn and the cause of each change.',
-      he: 'הגרסה הנוכחית: לוח "למה?", שמפרט מה השתנה בתור ומה גרם לכל שינוי.',
-    },
-  },
-  {
-    id: 'm2-topdown', kind: 'engine', src: m2Topdown, build: 'build.m2', file: 'promo/final/10-m2-topdown.png',
+    id: 'm2-topdown', kind: 'engine', src: m2Topdown, build: m2Build, file: 'promo/final/10-m2-topdown.png',
     title: { en: 'The whole map from above', he: 'כל המפה ממבט על' },
     alt: {
       en: 'An in-engine top-down view of the M2 map: the country’s terrain from the Galilee to the Negev, built from elevation data, with the hex grid.',
@@ -141,7 +152,7 @@ export interface MediaVideo {
   id: string;
   kind: Kind;
   poster: ImageMetadata;
-  build?: 'build.m2';
+  build?: Text;
   title: Text;
   description: Text;
   /** Files under public/, best first. Empty when the video is watched elsewhere (link). */
@@ -154,7 +165,7 @@ export interface MediaVideo {
 }
 
 export const flythrough: MediaVideo = {
-  id: 'flythrough-m2', kind: 'engine', poster: flythroughPoster, build: 'build.m2',
+  id: 'flythrough-m2', kind: 'engine', poster: flythroughPoster, build: m2Build,
   title: { en: 'A flight over the M2 map', he: 'טיסה מעל מפת M2' },
   description: {
     en: 'Eight seconds recorded in the engine: the camera flies north over the terrain map, from Beersheba and the Negev past Jerusalem and Tel Aviv to Haifa. No interface and no sound.',

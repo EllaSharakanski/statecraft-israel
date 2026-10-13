@@ -19,6 +19,7 @@ const full = await getImage({ src: item.src, width: Math.min(item.src.width, 240
   <div class="media-frame">
     <MediaLabel lang={lang} kind={item.kind} build={item.build} />
     {item.kind !== 'engine' && <span class="ai-mark" aria-hidden="true">AI</span>}
+    {item.aiPart && <span class="ai-mark" aria-hidden="true">AI</span>}
     <Picture src={item.src} alt={item.alt[lang]} formats={['avif']} fallbackFormat="webp" widths={usable} sizes={sizes}
       quality={78} loading={eager ? 'eager' : 'lazy'} decoding={eager ? 'sync' : 'async'}
       fetchpriority={eager ? 'high' : undefined} style={objectPosition ? `object-position:${objectPosition}` : undefined} />
@@ -28,6 +29,7 @@ const full = await getImage({ src: item.src, width: Math.min(item.src.width, 240
       <strong>{item.title[lang]}</strong>
       {item.kind === 'concept' && <> · {t(lang, 'label.concept.target')}</>}
       {item.likeness && <> · {t(lang, 'label.likeness')}</>}
+      {item.aiPart && <> · <span class="ai-part">{item.aiPart[lang]}</span></>}
       {' · '}<a href={full.src}>{t(lang, 'figure.full')}</a>
     </figcaption>
   )}

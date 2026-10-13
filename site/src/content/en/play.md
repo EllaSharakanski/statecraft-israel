@@ -11,7 +11,7 @@ The exact commands, the tests and the browser check are in [BUILDING.md](https:/
 
 ## What you can play
 
-Turns from 15 May 1948 to the end of 1951: the Cabinet, the Budget and Defence screens, sourced events at their real dates, the “Why?” panel, and autosave. Settlements and trees are still placeholder art, and there is no diplomacy or war mode yet.
+Turns from 15 May 1948 to the end of 1951: the start screen, the 1948 map with its towns, villages, railways, roads and armistice lines, the Cabinet, the Budget and Defence screens, sourced events at their real dates, the “Why?” panel, and autosave. Settlements and trees are still placeholder art. There is no diplomacy yet, and none of the GDD’s new systems (monthly turns, units you command, cities, construction, combat) are in the build.
 
 ## For contributors: putting the build on this site
 

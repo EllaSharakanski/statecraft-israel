@@ -4,7 +4,8 @@ import { getImage } from 'astro:assets';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { type Lang, type Page, dir, href, asset, ogLocale, otherLang, t } from '../i18n/ui';
-import ogSource from '../../../docs/images/build-m3-map.jpg';
+import { captures } from '../lib/media';
+const ogSource = captures[0].src;
 
 interface Props {
   lang: Lang;
@@ -28,9 +29,7 @@ const alternates = [
 ];
 // The social card is a real screenshot of the build, never concept art.
 const og = await getImage({ src: ogSource, width: 1200, height: 630, fit: 'cover', format: 'jpg', quality: 82 });
-const ogAlt = lang === 'he'
-  ? 'צילום מסך אמיתי מהגרסה הנוכחית של המשחק: מפת מישור החוף, הסרגל העליון וכרטיס אירוע.'
-  : 'A real screenshot of the current build: the coastal-plain map, the top bar and an event card.';
+const ogAlt = captures[0].alt[lang];
 
 const fontFaces = `
 @font-face { font-family: 'EB Garamond'; font-weight: 400; font-style: normal; font-display: swap; src: url('${asset('fonts/EBGaramond-Regular.latin.woff2')}') format('woff2'); }

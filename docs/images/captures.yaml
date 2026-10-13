@@ -1,0 +1,35 @@
+# The in-engine screenshots in this folder (build-*.jpg), as the website shows them. site/src/lib/media.ts reads this
+# file and the pictures at build time, so retaking the README screenshots updates the site at its next build.
+# When the screenshots are retaken: replace the files, then set `build` and `date` below (the label reads
+# "In-engine capture — <build>, <date>"). A new build-*.jpg needs an entry here, and an entry needs its file: the site's
+# build fails otherwise. The first entry is the home page's hero image.
+# `ai_part` names any AI-generated part of a real screenshot, shown with the picture (the start screen's painting).
+build: main 4abb64f
+date: 2026-10-13
+images:
+  - file: build-m3-city.jpg
+    title: { en: "Tel Aviv and Jaffa", he: "תל אביב ויפו" }
+    alt:
+      en: "The current build: a close-up of Tel Aviv and Jaffa with its harbour, towns and villages, groves, railways, and the Mandate sub-district borders. The top bar shows 22 May 1948."
+      he: "הגרסה הנוכחית: תקריב של תל אביב ויפו ונמלה, עיירות וכפרים, מטעים, מסילות ברזל וגבולות נפות המנדט. בסרגל העליון התאריך 22 במאי 1948."
+  - file: build-m3-map.jpg
+    title: { en: "The map, the top bar and an event card", he: "המפה, הסרגל העליון וכרטיס אירוע" }
+    alt:
+      en: "The current build, 22 May 1948: the coastal plain from Tel Aviv and Jaffa to Jerusalem with towns and villages, groves, railways and roads, brigade tokens and an aircraft, the top bar, and the One Army event card with an archival photograph."
+      he: "הגרסה הנוכחית, 22 במאי 1948: מישור החוף מתל אביב ויפו ועד ירושלים, עם עיירות וכפרים, מטעים, מסילות ודרכים, אסימוני חטיבות ומטוס, הסרגל העליון, וכרטיס האירוע \"צבא אחד\" עם צילום ארכיון."
+  - file: build-m3-start.jpg
+    title: { en: "The start screen", he: "מסך הפתיחה" }
+    alt:
+      en: "The current build: the start screen, with two lines of the Declaration of Independence in Hebrew and English over an AI-generated painting of the 14 May 1948 ceremony."
+      he: "הגרסה הנוכחית: מסך הפתיחה, ובו שתי שורות ממגילת העצמאות בעברית ובאנגלית, על רקע ציור של טקס 14 במאי 1948 שנוצר בבינה מלאכותית."
+    ai_part: { en: "The painting behind the text is AI-generated, with no identifiable person.", he: "הציור שמאחורי הטקסט נוצר בבינה מלאכותית, ואין בו אדם שאפשר לזהות." }
+  - file: build-m3-cabinet.jpg
+    title: { en: "The Cabinet screen", he: "מסך הממשלה" }
+    alt:
+      en: "The current build: the Cabinet screen, with the Provisional State Council as a half circle of seats and the ministers' portrait cards."
+      he: "הגרסה הנוכחית: מסך הממשלה, ובו מועצת המדינה הזמנית כחצי עיגול של מושבים וכרטיסי השרים עם תמונותיהם."
+  - file: build-m3-why.jpg
+    title: { en: "The “Why?” panel", he: "לוח \"למה?\"" }
+    alt:
+      en: "The current build: the Why panel, which lists what changed in a turn and the cause of each change."
+      he: "הגרסה הנוכחית: לוח \"למה?\", שמפרט מה השתנה בתור ומה גרם לכל שינוי."

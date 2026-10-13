@@ -42,8 +42,6 @@ const en = {
   'label.archival': 'Archival photograph',
   'label.likeness': 'Shows AI likenesses of real people. Not a photograph.',
 
-  'build.m3': 'build 0.1.0 (M3), 11 October 2026',
-  'build.m2': 'M2 map build, 10 October 2026',
 
   'video.play': 'Play video',
   'video.nosound': 'No sound',
@@ -105,8 +103,6 @@ const he: Dict = {
   'label.archival': 'צילום ארכיון',
   'label.likeness': 'מופיעות בה דמויות של אנשים אמיתיים שנוצרו בבינה מלאכותית. זה אינו צילום.',
 
-  'build.m3': 'גרסה 0.1.0 (M3), 11 באוקטובר 2026',
-  'build.m2': 'גרסת המפה של M2, 10 באוקטובר 2026',
 
   'video.play': 'הפעלת הווידאו',
   'video.nosound': 'ללא קול',
