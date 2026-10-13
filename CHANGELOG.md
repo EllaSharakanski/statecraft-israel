@@ -302,6 +302,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "Operation Yoav" now dates the attack on the supply convoy to 15 October 1948, not 14 October, as Israel's own reply in
+  the Acting Mediator's report S/1042 and the IDF account of the operation both give it. The rest of the card is
+  unchanged (refs #442).
 - Six society events (austerity, clothing rationing, the transit-camp schools, the Law of Return, the transit camps and
   closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
   published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
