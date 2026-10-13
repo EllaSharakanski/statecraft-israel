@@ -196,10 +196,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ### Changed
 - Sea round 2 (refs #388). The sea has texture at the gameplay and overview zooms, where it used to read as a flat
-  surface: slow wind streaks, ripples from the waves' slope towards the camera, and sparse whitecaps on the streaks'
-  bright side. All three sit behind a new `seatexture` visual toggle. The glint is stronger close up, the white surf line
-  is at least 1.5 pixels wide at every zoom, the beach is wider (900 m) and paler, and the water's haze starts at 120 km
-  so the overview's sea pales towards the horizon. The water shader is the only shader changed.
+  surface: slow wind streaks, ripples from the waves' slope towards the camera (faded out as a pixel grows towards a
+  wave's size), and sparse whitecaps on the streaks' bright side, close up only. All three sit behind a new `seatexture`
+  visual toggle. The glint is stronger close up, the white surf line is at least 1.5 pixels wide at every zoom, the beach
+  is wider (900 m) and paler, and the water's haze starts at 120 km, so the overview's sea pales towards the horizon. The
+  water shader is the only shader changed. A slow pan and zoom at the overview showed no crawl.
 - Map: a boundary between two regions of the same border style (two Mandate sub-districts) draws one band of the promo's
   width, centred on the edge, instead of two full bands side by side; the Mandate frontier and a primary-secondary edge
   keep the full band. Far off (a band under about 4 px, the overview) a band is a thin line of its colour, not a white

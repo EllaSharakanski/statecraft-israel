@@ -111,12 +111,16 @@ static const float ScSwashM = 180.0, ScSurfM = 900.0, ScBreakerSpacingM = 300.0,
 // diorama02). Three terms, all behind the "seatexture" toggle (_ScSeaTexture), so the profile prices them together and
 // the seam test (SettlementTests.TheSeaBeyondTheEdgeMatchesTheTerrainSea) pins them off; its step test
 // (TheFarSeaTextureHasNoStepAtTheMapEdge) checks the edge with them on.
-// - The mottle: wind streaks, a slow gradient-noise brightness variation, ScMottleCellM cells stretched ScMottleStretch
-//   times along the wind, with a finer octave, +-ScMottleGain, on the open Mediterranean (not the shallows, the surf or
-//   the rift lakes). It is what the overview sees.
-// - The ripple: the waves' slope towards or away from the camera, as their sky reflection, +-ScRippleGain under a 50 m
-//   pixel (the tilted normal: swell and chop); from 90 m the swell's own slope, +-ScRippleFarGain, gone by 450 m before it
-//   could alias (the overview's fine sparkle).
+// - The mottle: wind streaks, a slow gradient-noise brightness variation, ScMottleCellM cells, 3x narrower across the
+//   wind (ScMottleStretch: 833 m), with a finer octave (2.7x: about 309 m), +-ScMottleGain, on the open Mediterranean (not
+//   the shallows, the surf or the rift lakes). It is what the overview sees. Neither octave is faded by the footprint.
+// - The ripple: the waves' slope towards or away from the camera, as their sky reflection. Under a 50 m pixel it uses the
+//   tilted normal (swell and chop), +-ScRippleGain, faded out over 50-90 m (the 170 m chop's limit is 85 m). From 90 m it
+//   uses the 700 m swell's own slope, +-ScRippleFarGain, faded over 250-450 m, so it is still at half strength at the
+//   swell's 350 m limit, and at 84-100% at diorama02's 190-300 m pixels (2.3-3.7 px a swell cell).
+//   Review of #402: a slow pan and zoom at diorama02 (motion-compensated, against main) showed no crawl. In focus, the
+//   texture moves coherently (a residual of 19% of its fine texture; main 38%). In the far band, under the tilt-shift,
+//   what is left is under one 8-bit level.
 // - Whitecaps: a fleck in some ScFleckCellM cells on the streaks' bright side (none in the troughs), its brightness the
 //   share of the pixel it covers; gone by an 80 m pixel.
 float _ScSeaTexture;                                             // 1 = on, 0 = off (the "seatexture" toggle)
