@@ -49,6 +49,9 @@ public class BorderTests
     {
         var c = MapBorders.Encode(300, BorderStyle.Secondary);
         Assert.AreEqual((44, 1, 2, 255), ((int)c.r, (int)c.g, (int)c.b, (int)c.a));
+        // Shared edges ride above the style in b, and only border edges can be shared.
+        var shared = MapBorders.Encode(300, BorderStyle.Primary, 0b100011, 0b110001);
+        Assert.AreEqual((1 | 0b100001 << 2, 0xC0 | 0b100011), ((int)shared.b, (int)shared.a));
         Assert.AreEqual(RegionLayer.MaxId, MapBorders.Encode(RegionLayer.MaxId, BorderStyle.None).r + 256 * MapBorders.Encode(RegionLayer.MaxId, BorderStyle.None).g);
     }
 
@@ -377,6 +380,53 @@ public class BorderTests
         Assert.Greater(pm, sm, "the primary band is the heavier");
     }
 
+    /// <summary>The proof's checker blocks with every block in one region, styled by <paramref name="style"/> from its
+    /// checker parity (true: the proof's primary blocks): for the shared-edge test below.</summary>
+    static RegionLayer Blocks(MapScene map, System.Func<bool, BorderStyle> style)
+    {
+        var regions = new Dictionary<(int q, int r), int>(); var styles = new Dictionary<int, BorderStyle>();
+        foreach (var h in map.Hexes.hexes)
+        {
+            if (!h.land) continue;
+            var (bq, br) = BorderProof.Block(h.q, h.r);
+            int id = 1 + (bq + 64) + 128 * br;
+            regions[(h.q, h.r)] = id;
+            styles[id] = style(((bq + br) & 1) == 0);
+        }
+        return new RegionLayer("blocks (test)", regions, styles);
+    }
+
+    /// <summary>Promo 03 draws one blue band where a region meets another, never two side by side. Two primary regions
+    /// (two sub-districts) share their edge: each side draws part of the band, so the boundary is one band of the promo's
+    /// width, centred on the edge (about 8 px at gameplay03), not the double band (about 16 px) of two full bands. A
+    /// primary region against one of style none (the Mandate frontier against "outside") keeps its full band on its own
+    /// side, and nothing is drawn on the other. Measured at gameplay03's distance on the proof's coastal-plain edge.</summary>
+    [UnityTest]
+    public IEnumerator ASharedEdgeDrawsOneCentredBandAndTheFrontierKeepsTheFullBand()
+    {
+        var (map, cam, rig) = Open();
+        yield return null;
+        RenderSample.TiltShift(false);
+        BorderProof.Show(map);
+        var (inner, outer) = ProofEdge(map, PromoPose.Gameplay03.Lon, PromoPose.Gameplay03.Lat, "coastal_plain");
+        LookAtEdge(map, rig, inner);
+        float Total(List<Walk> walks, int sign) => Median(walks.Select(w => Read(w, sign, Blueness, 0.45f).WidthPx).ToList());
+
+        MapBorders.Use(Blocks(map, _ => BorderStyle.Primary));
+        var shared = WalkEdge(map, cam, inner, outer, 9, 1920, 1080);
+        float sIn = Total(shared, -1), sOut = Total(shared, +1);
+        MapBorders.Use(Blocks(map, primary => primary ? BorderStyle.Primary : BorderStyle.None));
+        var frontier = WalkEdge(map, cam, inner, outer, 9, 1920, 1080);
+        float fIn = Total(frontier, -1), fOut = Total(frontier, +1);
+        TestContext.WriteLine($"edge {inner}-{outer}: shared {sIn:0.0} + {sOut:0.0} = {sIn + sOut:0.0} px; frontier {fIn:0.0} + {fOut:0.0} px");
+        Assert.That(sIn + sOut, Is.InRange(6.5f, 11f), "a shared edge: one band of the promo's width (about 8 px), not two");
+        Assert.LessOrEqual(Mathf.Abs(sIn + sOut - fIn), 1.5f, "the shared band is as wide as one full band");
+        Assert.Greater(Mathf.Min(sIn, sOut), 2f, "the shared band lies on both sides of the edge");
+        Assert.LessOrEqual(Mathf.Abs(sIn - sOut), 2f, "the shared band is centred on the edge");
+        Assert.That(fIn, Is.InRange(6f, 11f), "the frontier keeps the full band on the region's side");
+        Assert.Less(fOut, 1f, "nothing is drawn beyond the frontier");
+    }
+
     /// <summary>Review M6: the early-out (pixels beyond any band's reach fetch nothing) is exact: with it switched off
     /// (_ScBorders.z) the proof renders pixel for pixel the same, at both promo poses.</summary>
     [UnityTest]
@@ -487,6 +537,20 @@ public class BorderTests
         float share = Changed(on, off, 0.06f);
         TestContext.WriteLine($"diorama02: {share:P2} of pixels changed by the proof's outlines");
         Assert.That(share, Is.InRange(0.01f, 0.15f));
+        // A far band is a thin line of its colour, not a white one (the light stripe turns into the colour under about
+        // 4 px): of the pixels the primary (blue) bands change, few are near-white, and on average they gain in blueness.
+        int changed = 0, white = 0; float gain = 0f;
+        for (int i = 0; i < on.Pixels.Length; i++)
+        {
+            Color a = on.Pixels[i], b = off.Pixels[i];
+            if (Mathf.Max(Mathf.Abs(a.r - b.r), Mathf.Max(Mathf.Abs(a.g - b.g), Mathf.Abs(a.b - b.b))) <= 0.06f || Blueness(a) <= Blueness(b)) continue;
+            changed++; gain += Blueness(a) - Blueness(b);
+            if (Mathf.Min(a.r, Mathf.Min(a.g, a.b)) > 0.80f) white++;
+        }
+        float whiteShare = white / (float)Mathf.Max(changed, 1), meanGain = gain / Mathf.Max(changed, 1);
+        TestContext.WriteLine($"diorama02: {changed} bluer pixels, {whiteShare:P1} near-white, mean blueness gain {meanGain:0.000}");
+        Assert.Less(whiteShare, FarWhiteShare, "far bands read as the region's colour, not white");
+        Assert.Greater(meanGain, FarBluenessGain, "far primary bands read blue");
     }
 
     /// <summary>The same layer and pose give the same pixels (no time, no randomness in the borders). The pattern is shown
@@ -512,6 +576,9 @@ public class BorderTests
         }
         finally { UnityEditor.ShaderUtil.allowAsyncCompilation = async; }
     }
+
+    /// <summary>Bounds for the overview's colour (AtTheOverviewTheBandsAreThin), set from its log.</summary>
+    const float FarWhiteShare = 0.08f, FarBluenessGain = 0.30f;
 
     static float Median(List<float> v) { var s = v.OrderBy(x => x).ToList(); return s[s.Count / 2]; }
 }
