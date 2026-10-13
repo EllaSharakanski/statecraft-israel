@@ -371,8 +371,10 @@ public class StartScreenTests
             NoneReachable("under the start screen");
             ui.Press("start-continue");
             yield return null; yield return null;
-            // The waiting event's card opens in the middle (decision cards): its options are in reach, the panels under its
-            // backdrop are not; Hide gives them back.
+            // The waiting event's card opens in the middle (decision cards) and takes the focus (review S1); its options are
+            // in reach, the panels under its backdrop are not; Hide gives them back.
+            yield return null;
+            Assert.AreSame(ui.Root.Q("event-card"), ui.Root.panel.focusController.focusedElement, "the event card has the focus once the screen closes");
             Assert.IsTrue(ui.Root.Q("event-options").Q<Button>().canGrabFocus, "the event's options are in reach once the screen closes");
             Assert.IsFalse(build.canGrabFocus, "the info panel waits under the decision card's backdrop");
             card.Collapse();

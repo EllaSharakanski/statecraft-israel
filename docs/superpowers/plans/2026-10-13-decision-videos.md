@@ -152,7 +152,7 @@ phase 0)" (`Refs #106, #41`) and comment the branch on it.
 - `docs/event-images.md`.
 - `EventImageCatalog.cs`: the memory comment.
 - `strings.en.yaml` and `strings.he.yaml`: `event.hide`, `event.reopen`.
-- `docs/oss/DECISIONS.md`, a new ticked line:
+- `docs/oss/DECISIONS.md`, a new ticked line (moved to its own docs PR, #449, after review):
   > - [x] D-V AI video clips in the game: Veo 3.1 (through ElevenLabs) and Seedance 2.0 (through Dreamina).
   > Decided (owner, 2026-10-13): "no need to check, just use them". D-D found that Dreamina's terms restrict commercial
   > use, and D5 covered images only; the owner accepts this.

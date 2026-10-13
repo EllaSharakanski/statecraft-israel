@@ -166,8 +166,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .right-column { position: absolute; right: 16px; top: 112px; bottom: 16px; width: 480px; }
 .right-gap { flex-grow: 1; flex-shrink: 0; min-height: 16px; }
 /* The decision layer: the room under the bar, top per HUD tier as the column's. While an event is open (event-open on the
-   root) its backdrop dims the map and takes the pointer, so map clicks and drags stop at it, and ScreenNav.DisableCovered
-   takes the panels under it out of Tab's reach; the card sits in the middle. Hide collapses the card to the "Decision
+   root) the map is blocked: the backdrop dims it and takes the pointer, so map clicks and drags stop at it, and
+   ScreenNav.DisableCovered takes the panels under it out of Tab's reach; the top bar stays usable. The card sits in the
+   middle. Hide collapses the card to the "Decision
    waiting" button at the layer's top right (EventCardPresenter), which takes no more room than itself. */
 .event-layer { position: absolute; left: 16px; right: 16px; top: 112px; bottom: 16px; justify-content: center; align-items: center; }
 .event-scrim { display: none; position: absolute; left: -16px; right: -16px; top: -16px; bottom: -16px; background-color: rgba(5, 9, 18, 0.55); }
@@ -182,6 +183,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    never the option buttons. */
 .event-card { width: 1040px; max-width: 100%; max-height: 100%; flex-shrink: 1; min-height: 0; overflow: hidden; padding: 16px 40px 10px 40px; }
 .hud-two-row .event-card { padding-left: 16px; padding-right: 16px; }
+/* The card takes the keyboard focus when an event opens (EventCardPresenter.FocusCard): a lighter gold edge says so. */
+.event-card:focus { border-color: var(--gold-light); }
 .event-card > * { flex-shrink: 0; }
 .event-card > .event-scroll { flex-shrink: 1; min-height: 48px; }
 #event-options { flex-shrink: 0; }
@@ -270,7 +273,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .screen .row.grow > .grow { min-height: 0; flex-shrink: 1; }
 
 /* The toast sits in the map's free top-left corner, above the info panel: opaque, and never over an open screen's title or
-   the event column (B7). */
+   the minimap column (B7). */
 .toast {
     display: none; position: absolute; left: 16px; width: 520px; top: 112px; -unity-text-align: middle-center; white-space: normal;
     background-color: var(--navy-solid); border-color: var(--gold); border-width: 1.5px;
@@ -290,12 +293,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .why-group { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); color: var(--gold); letter-spacing: 1px; margin-top: 10px; border-bottom-width: 1px; border-color: rgba(196, 160, 92, 0.25); }
 .why-line { white-space: normal; padding-left: 12px; }
 
-/* Wide screens (Cabinet and Defence, laid out as promo/final/04 and 08): from the left edge to the event column, over the
+/* Wide screens (Cabinet and Defence, laid out as promo/final/04 and 08): from the left edge to the minimap column, over the
    info panel (an opaque reading screen; the info panel is about a hex, not needed while reading a screen). The event card
    and the minimap stay in view (UiLayoutTests). */
 .screen-wide { left: 16px; bottom: 100px; }
 /* While a wide screen is open the toast's corner (B7) is under it, so the toast moves to the strip the wide screen leaves
-   free at the bottom, between the window's left edge and the event column: opaque, clear of the screen and the column
+   free at the bottom, between the window's left edge and the minimap column: opaque, clear of the screen and the column
    (PromoHudTests.TheToastIsOpaqueAndClearOfTheScreens). Two lines fit. */
 .wide-screen-open .toast { top: auto; bottom: 16px; left: 16px; right: 512px; width: auto; padding: 6px 12px; }
 /* The info panel under an open wide screen is hidden (ScreenNav sets wide-screen-open): no focus, no clicks, no updates. */
@@ -414,7 +417,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Square and narrower windows: a slimmer side column leaves room for two columns of cards. */
 .hud-two-row .cabinet-side { width: 250px; }
 .hud-two-row .pm-card .card-plate { height: 210px; }
-/* #210: in the two-row (narrow) HUD every screen takes the full width under the bar. While one is open the event column
+/* #210: in the two-row (narrow) HUD every screen takes the full width under the bar. While one is open the minimap column
    and the info panel under it are hidden (no focus, no clicks), and the toast takes the strip below the screen. */
 .hud-two-row .screen { left: 16px; right: 16px; bottom: 100px; }
 .hud-two-row.screen-open .right-column, .hud-two-row.screen-open .info-panel { display: none; }

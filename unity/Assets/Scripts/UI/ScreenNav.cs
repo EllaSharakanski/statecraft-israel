@@ -40,8 +40,18 @@ namespace Statecraft.Game.UI
             r.Q("top-bar")?.SetEnabled(!start);
             r.Q("right-column")?.SetEnabled(!(start || full || modal));
             r.Q("info-panel")?.SetEnabled(!(start || full || modal || r.ClassListContains(WideOpenClass)));
-            r.Q("event-layer")?.SetEnabled(!(start || screen));
+            var layer = r.Q("event-layer");
+            if (layer != null)
+            {
+                bool was = layer.enabledSelf, now = !(start || screen);
+                layer.SetEnabled(now);
+                if (!was && now) (layer.userData as System.Action)?.Invoke();   // EventCardPresenter: the open card takes the focus
+            }
         }
+
+        /// <summary>Asks to be told, synchronously, whenever the decision layer comes out from under the start screen or a
+        /// screen (DisableCovered enables it again); null stops it.</summary>
+        public static void OnUncovered(VisualElement layer, System.Action? action) => layer.userData = action;
 
         /// <summary>Asks to be told, synchronously, whenever <paramref name="screen"/> is opened (a presenter that skips
         /// rendering while its screen is hidden catches up then).</summary>

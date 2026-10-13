@@ -26,7 +26,7 @@ public class DecisionCardTests
         public readonly VisualElement Root; public readonly SimBridge Bridge; public readonly ScreenNav Nav; public readonly EventCardPresenter Card;
         readonly GameObject go; readonly PanelSettings ps; readonly RenderTexture rt; readonly List<System.IDisposable> owned = new List<System.IDisposable>();
 
-        public Rig(int w, int h, string eventId)
+        public Rig(int w, int h, string eventId, bool photos = false)
         {
             rt = new RenderTexture(w, h, 0);
             ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -43,7 +43,8 @@ public class DecisionCardTests
             owned.Add(new HudPresenter(Root, Bridge, Text));
             Nav = new ScreenNav(Root); owned.Add(Nav);
             owned.Add(new InfoPanelPresenter(Root, Bridge, Text, C.SettlementHexes.ToDictionary(x => x.Id, x => x.Id)));
-            Card = new EventCardPresenter(Root, Bridge, Text, null); owned.Add(Card);
+            Card = new EventCardPresenter(Root, Bridge, Text, null,
+                photos ? AssetDatabase.LoadAssetAtPath<EventImageCatalog>("Assets/Resources/EventImageCatalog.asset") : null); owned.Add(Card);
         }
 
         public void Dispose()
@@ -199,21 +200,106 @@ public class DecisionCardTests
         }
     }
 
+    /// <summary>The longest refusal a toast shows, three to four lines in the toast's width.</summary>
+    const string LongToast = "Not done: Not enough attention (need 4.0, have 2.0)\nNot done: No more than 2 map actions in one turn\n"
+        + "Not done: The Knesset must approve it: the coalition holds 46 of 120 seats\nYour game was saved, but the browser refused the autosave";
+
+    /// <summary>The toast moves to the top middle while the card is open: over the photograph, clear of its CC BY credit,
+    /// the title and the options, with the real photographs, a long refusal, and on the windows where the card fills the
+    /// layer (21:9 and a short laptop window) as well as the one-row and two-row HUDs.</summary>
     [UnityTest]
-    public IEnumerator TheToastClearsTheOpenCardsOptions()
+    public IEnumerator TheToastClearsTheOpenCardsCreditTitleAndOptions()
     {
-        foreach (var (w, h) in Tiers)
-        {
-            using var r = new Rig(w, h, "law_of_return");
-            yield return Frames(4);
-            var toast = r.Root.Q<Label>("toast");
-            toast.text = "Not done: Not enough attention (need 4.0, have 2.0)";
-            toast.style.display = DisplayStyle.Flex;
-            yield return Frames(3);
-            var t = toast.worldBound;
-            Assert.IsFalse(t.Overlaps(r.Root.Q("event-options").worldBound), $"{w}x{h}: the toast {t} covers the options");
-            Assert.IsFalse(t.Overlaps(r.Root.Q("event-title").worldBound), $"{w}x{h}: the toast {t} covers the title");
-            Assert.Greater(r.Root.Q("root").IndexOf(toast), r.Root.Q("root").IndexOf(r.Root.Q("event-layer")), "the toast is drawn above the layer");
-        }
+        foreach (var (w, h) in new[] { (1920, 1080), (960, 1080), (2560, 1080), (1366, 657) })
+            foreach (var ev in new[] { "law_of_return", "operation_hiram" })   // a short text; the tallest card
+            {
+                using var r = new Rig(w, h, ev, photos: true);
+                yield return Frames(5);
+                var where = $"{w}x{h} {ev}";
+                Assert.IsTrue(r.Card.PhotoAlt != null, $"{where}: precondition: the photograph shows");
+                var toast = r.Root.Q<Label>("toast");
+                toast.text = LongToast;
+                toast.style.display = DisplayStyle.Flex;
+                yield return Frames(3);
+                var t = toast.worldBound;
+                foreach (var name in new[] { "event-photo-credit", "event-title", "event-options", "event-hide" })
+                    Assert.IsFalse(t.Overlaps(r.Root.Q(name).worldBound), $"{where}: the toast {t} covers {name} {r.Root.Q(name).worldBound}");
+                Assert.Greater(r.Root.Q("root").IndexOf(toast), r.Root.Q("root").IndexOf(r.Root.Q("event-layer")), "the toast is drawn above the layer");
+            }
+    }
+
+    /// <summary>Review S1: the card takes the focus when the start screen closes, and when a screen that covered it closes,
+    /// whether the event was open before the screen or arrived under it; a new session (New Game, a load) forgets what
+    /// was collapsed (N5).</summary>
+    [UnityTest]
+    public IEnumerator TheCardTakesTheFocusWhenItsCoverCloses()
+    {
+        using var r = new Rig(1920, 1080, "law_of_return");
+        yield return Frames(4);
+        r.Nav.Open("cabinet");
+        yield return Frames(3);
+        Assert.AreNotSame(r.CardElement, r.Focused, "precondition: covered");
+        r.Nav.Open(null);
+        yield return Frames(3);
+        Assert.AreSame(r.CardElement, r.Focused, "closing Cabinet gives the open card the focus");
+
+        // An event that arrives while a screen is open takes the focus when it closes.
+        r.Nav.Open("budget");
+        yield return Frames(2);
+        r.Bridge.Replace(Pending("hula_drainage"));
+        yield return Frames(3);
+        Assert.AreNotSame(r.CardElement, r.Focused, "precondition: covered when it arrived");
+        r.Nav.Close();
+        yield return Frames(3);
+        Assert.AreEqual("hula_drainage", r.Card.Shown?.Id);
+        Assert.AreSame(r.CardElement, r.Focused, "the event that arrived under Budget has the focus once Budget closes");
+
+        // The start screen, as at boot: shown over an open card, then closed.
+        r.Hud.AddToClassList(StartScreenPresenter.OpenClass);
+        ScreenNav.DisableCovered(r.Root);
+        r.Root.Q<Button>("end-turn").Focus();   // what the start screen's own button stands for
+        yield return Frames(3);
+        r.Hud.RemoveFromClassList(StartScreenPresenter.OpenClass);
+        ScreenNav.DisableCovered(r.Root);
+        yield return Frames(3);
+        Assert.AreSame(r.CardElement, r.Focused, "closing the start screen gives the open card the focus");
+
+        // N5: a collapsed card, then a new session with the same event: it opens.
+        r.Card.Collapse();
+        yield return Frames(2);
+        Assert.IsTrue(r.Card.Collapsed);
+        r.Bridge.Replace(Pending("hula_drainage"));
+        yield return Frames(3);
+        Assert.IsFalse(r.Card.Collapsed, "a new session forgets the collapse");
+        Assert.AreSame(r.CardElement, r.Focused, "and the card has the focus");
+    }
+
+    /// <summary>N1 and N2: Hide with the pointer leaves no focus fill on "Decision waiting" (PointerBlur's rule), with the
+    /// keyboard it moves the focus there; Escape on the open card is Hide, and does nothing under a screen.</summary>
+    [UnityTest]
+    public IEnumerator HideByPointerLeavesNoFocusAndEscapeHides()
+    {
+        using var r = new Rig(1920, 1080, "law_of_return");
+        yield return Frames(4);
+        using (var down = PointerDownEvent.GetPooled()) { down.target = r.Hide; r.Hide.SendEvent(down); }
+        r.Card.Collapse();   // what the click's Clickable does next
+        yield return Frames(3);
+        Assert.IsTrue(r.Card.Collapsed);
+        Assert.AreNotSame(r.Waiting, r.Focused, "a pointer Hide leaves Decision waiting unfocused");
+        Press(r.Waiting);
+        yield return Frames(3);
+        Assert.IsFalse(r.Card.Collapsed);
+
+        using (var cancel = NavigationCancelEvent.GetPooled()) { cancel.target = r.CardElement; r.CardElement.SendEvent(cancel); }
+        yield return Frames(3);
+        Assert.IsTrue(r.Card.Collapsed, "Escape on the open card hides it");
+        Assert.AreSame(r.Waiting, r.Focused, "and, from the keyboard, Decision waiting has the focus");
+        Assert.IsFalse(r.Card.Escape(), "Escape on a collapsed card does nothing");
+        Press(r.Waiting);
+        yield return Frames(2);
+        r.Nav.Open("why");
+        yield return Frames(2);
+        Assert.IsFalse(r.Card.Escape(), "under a screen Escape is the screen's");
+        Assert.IsFalse(r.Card.Collapsed);
     }
 }

@@ -558,10 +558,11 @@ public class UiLayoutTests
         if (!TextFits(credit)) problems.Add($"{where}: the credit '{credit.text}' does not fit its strip {credit.contentRect}");
     }
 
-    /// <summary>Review I6 and the re-review's ultrawide finding: on a short window (logically under
-    /// EventCardPresenter.ScrollFallbackHeight) a photograph is either shown whole with its credit, the body scrolling for
-    /// it as it may there, or dropped rather than squeezed (PhotoAlt is null); the credit is never cut and the card stays in
-    /// the decision layer with its options inside it. An ultrawide 2560x1080 window shows photographs.</summary>
+    /// <summary>Review I6 and the re-review's ultrawide finding, for the 16:9 header: on a short window (logically under
+    /// EventCardPresenter.ScrollFallbackHeight) a photograph is either shown with its whole credit (the header shorter,
+    /// cropped, the body not scrolling) or dropped rather than squeezed (PhotoAlt is null); the credit is never cut and the
+    /// card stays in the decision layer with its options and Hide inside it. An ultrawide 2560x1080 window shows
+    /// photographs.</summary>
     [UnityTest]
     public IEnumerator AShortWindowShowsThePhotographWholeOrDropsIt()
     {

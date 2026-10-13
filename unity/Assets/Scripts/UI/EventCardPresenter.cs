@@ -32,7 +32,14 @@ namespace Statecraft.Game.UI
         readonly EventImageCatalog? photos;
         readonly VisualElement band, head, scroll, options, layer, hudRoot; readonly Label credit;
         readonly Button hide, reopen;
-        readonly System.Action onHide, onReopen;
+        readonly System.Action onHide, onReopen, onUncovered;
+        readonly EventCallback<PointerDownEvent> onHidePointer;
+        readonly EventCallback<NavigationSubmitEvent> onHideSubmit;
+        readonly EventCallback<NavigationCancelEvent> onCancel;
+        /// <summary>The last Hide came from the pointer (PointerBlur's rule: no focus fill left behind for a mouse click).</summary>
+        bool hideByPointer;
+        /// <summary>The session the card last showed: a new one (New Game, a load) forgets what was collapsed or focused.</summary>
+        GameSession? session;
         /// <summary>The event the player collapsed the card on (Hide), or null; a different event opens the card again.</summary>
         string? collapsedFor;
         /// <summary>The event whose first option last took the focus, so an event already open never takes it again.</summary>
@@ -52,8 +59,20 @@ namespace Statecraft.Game.UI
             hide = card.Q<Button>("event-hide"); reopen = layer.Q<Button>("event-reopen");
             hide.text = text["event.hide"]; reopen.text = text["event.reopen"];
             onHide = Collapse; onReopen = Reopen;
+            onUncovered = () => { focusedFor = null; if (Shown != null && !Collapsed) FocusCard(Shown.Id, force: true); };
+            onHidePointer = _ => hideByPointer = true;
+            onHideSubmit = _ => hideByPointer = false;
+            onCancel = e => { if (Escape()) e.StopPropagation(); };
             hide.clicked += onHide; reopen.clicked += onReopen;
-            card.focusable = true; card.tabIndex = 0;   // the card takes the focus itself (FocusCard); it has no :focus style
+            card.focusable = true; card.tabIndex = 0;   // the card takes the focus itself (FocusCard); Statecraft.uss .event-card:focus
+            // Hide with the pointer leaves no focus fill on "Decision waiting" (PointerBlur's rule); with the keyboard it moves there.
+            hide.RegisterCallback<PointerDownEvent>(onHidePointer, TrickleDown.TrickleDown);
+            hide.RegisterCallback<NavigationSubmitEvent>(onHideSubmit, TrickleDown.TrickleDown);
+            // Escape on the open card is Hide (GameRoot also polls the key when nothing has the focus: Escape()).
+            card.RegisterCallback<NavigationCancelEvent>(onCancel);
+            // A start screen or a screen that covered the layer has closed (ScreenNav.DisableCovered): the open card takes
+            // the focus it could not take under it.
+            ScreenNav.OnUncovered(layer, onUncovered);
             foreach (var e in new[] { band, credit, head, scroll, options }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.RegisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.RegisterCallback<GeometryChangedEvent>(OnCardGeometry);
@@ -66,6 +85,9 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render;
             hide.clicked -= onHide; reopen.clicked -= onReopen;
+            hide.UnregisterCallback(onHidePointer, TrickleDown.TrickleDown); hide.UnregisterCallback(onHideSubmit, TrickleDown.TrickleDown);
+            card.UnregisterCallback(onCancel);
+            ScreenNav.OnUncovered(layer, null);
             foreach (var e in new[] { band, credit, head, scroll, options }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.UnregisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.UnregisterCallback<GeometryChangedEvent>(OnCardGeometry);
@@ -84,7 +106,19 @@ namespace Statecraft.Game.UI
             if (Shown == null) return;
             collapsedFor = Shown.Id;
             Render();
+            if (hideByPointer) { hideByPointer = false; return; }
             reopen.Focus();
+            // Tried again once styles resolve: the button was hidden a moment ago and may not take it yet.
+            reopen.schedule.Execute(() => { if (Collapsed && reopen.focusController?.focusedElement != reopen) reopen.Focus(); });
+        }
+
+        /// <summary>Escape: Hide, when the card is open and in reach. True when it did.</summary>
+        public bool Escape()
+        {
+            if (Shown == null || Collapsed || !layer.enabledInHierarchy) return false;
+            hideByPointer = false;
+            Collapse();
+            return true;
         }
 
         /// <summary>"Decision waiting": the card opens again and takes the focus.</summary>
@@ -104,6 +138,7 @@ namespace Statecraft.Game.UI
             var open = pending.Where(e => bridge.QueuedLike(new ChooseEventOption(e.Id, "")) == null).ToList();
             Shown = open.FirstOrDefault();
             if (Shown == null) collapsedFor = null;
+            if (bridge.Session != session) { session = bridge.Session; collapsedFor = null; focusedFor = null; }
             var shown = Shown != null && !Collapsed;
             card.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
             card.SetEnabled(shown);   // a child of an undisplayed element can still take the focus (#400): a collapsed card's options must not
@@ -140,21 +175,25 @@ namespace Statecraft.Game.UI
                 options.Add(b);
             }
             card.Q<Label>("event-count").text = open.Count > 1 ? text.Format("event.more", open.Count - 1) : "";
-            if (shown && focusedFor != e.Id) FocusCard(e.Id);
+            if (shown && focusedFor != e.Id) FocusCard(e.Id, force: false);
         }
 
         /// <summary>A newly shown event puts the keyboard focus on the card (keyboard play, #41): the next Tab reaches its
-        /// first option, and no option is lit before the player picks. Not when the layer is out of reach (the start screen or
-        /// a screen covers it). It is tried again once styles resolve, as a still-hidden card cannot take it.</summary>
-        void FocusCard(string id)
+        /// first option, and no option is lit before the player picks. Not while the layer is out of reach (the start screen
+        /// or a screen covers it): then nothing is recorded, and the card takes the focus when the cover closes
+        /// (onUncovered, <paramref name="force"/>). It is tried again once styles resolve, as a still-hidden card cannot take
+        /// it; that retry takes it from nothing, or, when forced, from whatever the closing cover left focused.</summary>
+        void FocusCard(string id, bool force)
         {
             if (!layer.enabledInHierarchy) return;
             focusedFor = id;
             card.Focus();
             card.schedule.Execute(() =>
             {
-                if (Shown?.Id == id && !Collapsed && layer.enabledInHierarchy && card.panel != null
-                    && card.focusController?.focusedElement == null) card.Focus();
+                if (Shown?.Id != id || Collapsed) return;
+                if (!layer.enabledInHierarchy) { if (focusedFor == id) focusedFor = null; return; }   // covered meanwhile: try again when uncovered
+                var now = card.focusController?.focusedElement;
+                if (card.panel != null && now != card && (force || now == null)) card.Focus();
             });
         }
 
@@ -178,8 +217,9 @@ namespace Statecraft.Game.UI
             ApplyMediaHeight();
         }
 
-        /// <summary>The logical window height below which the event body may scroll (UiLayoutTests, playtest 2 P2-3: from
-        /// 990 up, the body and the options fit without scrolling).</summary>
+        /// <summary>The playtest 2 P2-3 line (UiLayoutTests): in a window at least this tall (logically) the body and the
+        /// options of every event fit without scrolling. The media header gives way first on every window
+        /// (ApplyMediaHeight), so below it the body scrolls only once the photograph is dropped.</summary>
         public const float ScrollFallbackHeight = 990f;
 
         /// <summary>The media header's height: 16:9 of the card's content width (the stylesheet's 540 px until the card is laid
