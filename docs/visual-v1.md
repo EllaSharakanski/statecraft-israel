@@ -1435,8 +1435,12 @@ Round 1's land read as yellow-olive. It also lost most of its field lines, becau
 an 18 m hedge or a 30 m track away inside a 79 x 105 m texel. Round 2 changes only the colours and the bake; the shader,
 the texture's size and format, the trees and the sea are untouched.
 - **Ground colour.** The land's colours in `tools/land_bake.py` (`SRGB`) and the plain, valley, lowland, hill and mountain
-  colours in `MapPalette.Ground` move toward promo 03's ground: less green, more blue. Promo 03's open ground, between its
-  trees and away from its towns, measures sRGB (169, 135, 107) at luma >= 0.4: B/R 0.63, G/R 0.80. The desert is unchanged.
+  colours in `MapPalette.Ground` move toward promo 03's ground, (177, 144, 114) in the ground crop below: less green, more
+  blue, at its hue (28.6 degrees). The hill colours (soil, hillgrass, stone, and MapPalette's hills and mountains) are an
+  orange brown at 22-25 degrees, saturation 0.24-0.34. With round 2's first values (soil at 8 degrees and saturation 0.26;
+  stone, dust and fallow at about 18) the Judean hills read rose (review of #392): a red hue at low saturation. At 28.6
+  degrees they rendered at 34, yellower than promo 03's hills (26) and the video's (28), and diorama02 lost promo 02's
+  browns, about (208, 144, 112) and (176, 112, 80). The brightness (luma) of each colour is kept. The desert is unchanged.
 - **Fields.** Hedges and tree lines are `HEDGE_HALF_M` 75 m either side of a parcel edge. Farm tracks are `TRACK_HALF_M`
   70 m either side of a block edge. Each line is chosen once per edge, so the parcels on both sides draw it. The crops are
   further apart in luma: a darker green, darker ploughland, paler stubble and fallow.
@@ -1449,21 +1453,23 @@ the texture's size and format, the trees and the sea are untouched.
 - **Bake.** About 30 s. Two runs give byte-identical PNGs. `test_the_committed_texture_is_the_bake` passes. The land weight
   mean is 0.192 (round 1: 0.171), because the garrigue's weight rose.
 
-Measured: WebGL `?shot` at main `4abb64f`, then the branch on it, art-log rows `lc-r2-main` and `land-round2`. The ground
-crop is gameplay03's land (x 0.36-0.88, y 0.30-0.82), pixels at luma >= 0.4. The towns' tan walls and their ground tint
-are in it and unchanged, so it moves less than the ground does.
+Measured: WebGL `?shot` at main `4abb64f`, then the branch on it, art-log rows `lc-r2-main` and `land-round2-fix5`. The
+ground crop is gameplay03's land (x 0.36-0.88, y 0.30-0.82), pixels at luma >= 0.4. The towns' tan walls and their ground
+tint are in it and unchanged, so it moves less than the ground does. The Judean hills are `-extraPose
+judea30:35.10:31.85:30000:10` (editor, web tier): the median hue of their pixels at luma >= 0.25.
 
 | | main | round 2 | promo |
 |---|---|---|---|
-| gameplay03 saturation / contrast / warmth | 0.447 / 0.181 / 0.070 | 0.421 / 0.178 / 0.057 | 0.38 / 0.203 / 0.064 |
-| gameplay03 palette distance | 0.435 | **0.371** | - |
-| diorama02 saturation / contrast / warmth | 0.414 / 0.184 / 0.113 | 0.403 / 0.183 / 0.107 | 0.43 / 0.200 / 0.145 |
-| diorama02 palette distance | 0.563 | 0.563 | - |
-| gameplay03 ground crop (sRGB) | (166, 148, 99) | (169, 142, 108) | (177, 144, 114) |
+| gameplay03 saturation / contrast / warmth | 0.447 / 0.181 / 0.070 | 0.429 / 0.178 / 0.062 | 0.38 / 0.203 / 0.064 |
+| gameplay03 palette distance | 0.435 | **0.378** | - |
+| diorama02 saturation / contrast / warmth | 0.414 / 0.184 / 0.113 | 0.406 / 0.183 / 0.109 | 0.43 / 0.200 / 0.145 |
+| diorama02 palette distance | 0.5633 | 0.5643 | - |
+| gameplay03 ground crop (sRGB) | (166, 148, 99) | (169, 143, 106) | (177, 144, 114) |
+| judea30 hill hue (degrees) | 39.8 | 30.5 | 26 (promo 03), 28 (video 0:21) |
 
-The bars hold: diorama02 warmth 0.107 is inside [0.087, 0.145], and its saturation is under 0.48. gameplay03 warmth
-falls 0.006 below the promo; it was 0.006 above it. Every ground channel is now within 8 levels of the promo's (it was
-within 15).
+The bars hold: diorama02 warmth 0.109 is inside [0.087, 0.145], and its saturation is under 0.48. diorama02's palette
+distance is 0.001 above main's; promo 02's browns (about (208, 144, 112)) are what the hills' hue trades against.
+Every ground channel is within 8 levels of the promo's (it was within 15).
 
 Frame time: headless, main and the branch back to back under one exclusive lock, 3 rounds, rotated. The load average was
 about 6 from other sessions, so the absolute times are inflated. The table gives medians over the rounds, in ms:
@@ -1473,7 +1479,7 @@ about 6 from other sessions, so the absolute times are inflated. The table gives
 | gameplay03 | 8.13 / 8.05 | 8.05 / 7.81 | 5.09 / 4.97 |
 | diorama02 | 19.49 / 19.71 | 19.08 / 19.45 | 12.36 / 12.72 |
 
-Every difference is within about 0.4 ms, which is also how far `none` moves between the two builds. The shader and the
+Every difference is within about 0.4 ms, which is also how far `none` moves between the two builds. The review fix (the hill hues) changes only colours: the same texture size and format, no shader, so these numbers and the boot below stand. The shader and the
 texture's size are the same. diorama02's p95 is 21-22 ms on main and on the branch alike, under that load.
 
 Boot: `headed.py boot --runs 3 --cpu 4`, 3 rounds interleaved, 9 cold loads each, medians:
@@ -1487,8 +1493,7 @@ The goldens and the smoke run are unchanged: `GOLDEN OK 1950 71e9904d...`, `GOLD
 `SMOKE OK 5 turns 1948-06-19 d3fdd459...`. The tree count is unchanged (7,814).
 
 Still different from the promo: the trees and bushes, so far only painted in the bake (promo 03's land is 27% dark trees
-and shadow; ours is 10%). The grade's teal shadows also give the shaded hill flanks a rose cast, where the promo's shadows
-are warm brown.
+and shadow; ours is 10%). The grade's shadows are cool, where the promo's are warm brown (#391).
 
 ## Open items for the art track
 Each item below was ruled to the art track (controller, rank 10). None blocks landing the branch.

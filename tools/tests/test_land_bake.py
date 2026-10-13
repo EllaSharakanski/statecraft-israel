@@ -31,7 +31,9 @@ def test_field_lines_are_wide_enough_for_the_texture(name, size_m, step_m, monke
     # Land round 2: round 1's 18 m hedges and 30 m tracks were averaged away in the texture's 79 x 105 m texel. A line's
     # own samples are those that change when its half width is 0; runs of them along east-west rows cross the lines at
     # their angles (and the blocks' wobble stretches them by up to about 20% either way), so the median run measures the
-    # line across: at least 1.5 texels. (Tracks lie only on some 5.2 km block edges, so they need the larger ground.)
+    # line across: at least 1.5 texels of the texel's 79 m (east-west) side; across its 105 m north-south side that is about
+    # 1.2 texels, as only east-west rows are sampled. (Tracks lie only on some 5.2 km block edges, so they need the larger
+    # ground.)
     x, y = np.meshgrid(np.arange(0, size_m[0], step_m), np.arange(0, size_m[1], step_m))
     zero, one = np.zeros_like(x), np.ones_like(x)
     with_lines, _ = lb.paint_samples(x, y, one, zero, zero, zero + 50.0, zero)

@@ -64,11 +64,16 @@ BUSH_SHADOW = (0.966, -0.259)    # east-south-east: away from the sun (MapLighti
 VERTICAL_EXAGGERATION = tb.VERTICAL_EXAGGERATION
 PALETTE_BRIGHTNESS, PALETTE_MAX = 1.107, 0.95   # MapPalette.Brightness and MaxChannel: the land sits in the biome palette
 SRGB = {  # the land's colours (sRGB, before PALETTE_BRIGHTNESS), sampled from promo/final/03's ground and tuned on renders.
-    # Land round 2: warm sand and dry grass rather than yellow-olive (promo 03's ground between its trees renders about
-    # (177, 144, 114), round 1's (166, 148, 99)), and a wider spread between the crops, so the parcels read at 30-60 km.
-    "green": (0.42, 0.48, 0.28), "ochre": (0.82, 0.62, 0.50), "plough": (0.55, 0.41, 0.32), "fallow": (0.78, 0.64, 0.58),
-    "grass": (0.61, 0.525, 0.445), "orchard": (0.50, 0.42, 0.31), "hedge": (0.24, 0.23, 0.15), "dust": (0.88, 0.72, 0.65),
-    "soil": (0.69, 0.535, 0.51), "hillgrass": (0.64, 0.545, 0.47), "stone": (0.80, 0.69, 0.64), "scrub": (0.27, 0.25, 0.18),
+    # Land round 2: warm sand and dry grass rather than yellow-olive, and a wider spread between the crops, so the parcels
+    # read at 30-60 km. The ground colours sit at promo 03's ground hue, about 28.6 degrees (its ground between the trees
+    # renders about (177, 144, 114)); review of #392: soil at 8 degrees and saturation 0.26, and stone, dust and fallow at
+    # about 18, read rose. The hill colours (soil, hillgrass, stone, and MapPalette's hills and mountains) are an orange
+    # brown at 22-25 degrees and saturation 0.24-0.34: rose is a red hue at low saturation, promo 03's hills and promo 02's
+    # browns (about (208, 144, 112) and (176, 112, 80)) are warmer and fuller; at 28.6 the Judean hills rendered at 34,
+    # yellower than promo 03's (26) and the video's (28), and diorama02 lost promo 02's browns.
+    "green": (0.42, 0.48, 0.28), "ochre": (0.802, 0.63, 0.483), "plough": (0.533, 0.416, 0.31), "fallow": (0.761, 0.651, 0.559),
+    "grass": (0.62, 0.525, 0.445), "orchard": (0.50, 0.42, 0.31), "hedge": (0.24, 0.23, 0.15), "dust": (0.858, 0.732, 0.626),
+    "soil": (0.689, 0.54, 0.455), "hillgrass": (0.653, 0.542, 0.463), "stone": (0.812, 0.689, 0.617), "scrub": (0.27, 0.25, 0.18),
 }
 
 
