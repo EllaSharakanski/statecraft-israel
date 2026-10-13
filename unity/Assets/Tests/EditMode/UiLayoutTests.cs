@@ -522,6 +522,8 @@ public class UiLayoutTests
         if (Mathf.Abs((c.xMin - l.xMin) - (l.xMax - c.xMax)) > 1f) problems.Add($"{where}: the card {c} is not centred in the layer {l}");
         if (c.width > CardMaxWidth + 1.5f) problems.Add($"{where}: the card is {c.width:0} px wide, over {CardMaxWidth}");
         if (c.yMin < bar.worldBound.yMax - 0.5f) problems.Add($"{where}: the card {c} starts over the top bar {bar.worldBound}");
+        var hide = root.Q("event-hide").worldBound;
+        if (!Inside(hide, c)) problems.Add($"{where}: Hide {hide} is cut off by the card {c}");
         var band = root.Q("event-photo");
         if (band.resolvedStyle.display == DisplayStyle.Flex && c.height < l.height - 1f)
         {

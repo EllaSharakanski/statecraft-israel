@@ -30,7 +30,7 @@ namespace Statecraft.Game.UI
 
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly EventImageCatalog? photos;
-        readonly VisualElement band, head, scroll, options, layer, hudRoot; readonly Label credit;
+        readonly VisualElement band, head, scroll, options, foot, layer, hudRoot; readonly Label credit;
         readonly Button hide, reopen;
         readonly System.Action onHide, onReopen;
         /// <summary>The event the player collapsed the card on (Hide), or null; a different event opens the card again.</summary>
@@ -47,14 +47,14 @@ namespace Statecraft.Game.UI
             // photograph back when the window grows. A hidden element keeps its old layout, so a band shown again at the
             // size it was dropped at gets no geometry event of its own; the head below it always moves, so it checks too.
             head = card.Q<VisualElement>(className: "event-head");
-            scroll = card.Q<VisualElement>("event-scroll"); options = card.Q<VisualElement>("event-options");
+            scroll = card.Q<VisualElement>("event-scroll"); options = card.Q<VisualElement>("event-options"); foot = card.Q<VisualElement>("event-foot");
             layer = card.parent; hudRoot = root.Q("root") ?? root;
             hide = card.Q<Button>("event-hide"); reopen = layer.Q<Button>("event-reopen");
             hide.text = text["event.hide"]; reopen.text = text["event.reopen"];
             onHide = Collapse; onReopen = Reopen;
             hide.clicked += onHide; reopen.clicked += onReopen;
             card.focusable = true; card.tabIndex = 0;   // the card takes the focus itself (FocusCard); it has no :focus style
-            foreach (var e in new[] { band, credit, head, scroll, options }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            foreach (var e in new[] { band, credit, head, scroll, options, foot }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.RegisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.RegisterCallback<GeometryChangedEvent>(OnCardGeometry);
             bridge.Changed += Render;
@@ -66,7 +66,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= Render;
             hide.clicked -= onHide; reopen.clicked -= onReopen;
-            foreach (var e in new[] { band, credit, head, scroll, options }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
+            foreach (var e in new[] { band, credit, head, scroll, options, foot }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.UnregisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.UnregisterCallback<GeometryChangedEvent>(OnCardGeometry);
             card.Q<VisualElement>("event-options")?.Clear(); card.style.display = DisplayStyle.None;
@@ -247,10 +247,12 @@ namespace Statecraft.Game.UI
             if (float.IsNaN(h) || float.IsNaN(needs)) return;
             if (h < needs - 0.5f) { SetPhotoShown(false); return; }
             // On a short window the band hardly shrinks (ApplyPhotoFloor), and Yoga does not hand the body's leftover
-            // shortfall back to it once the body is at its minimum. So when the options would be cut, the band is trimmed
-            // by that much, and dropped if that leaves it short of PhotoNeeds. It only ever shrinks, so this converges.
+            // shortfall back to it once the body is at its minimum. So when the options or the foot under them (the count
+            // and Hide) would be cut, the band is trimmed by that much, and dropped if that leaves it short of PhotoNeeds. It
+            // only ever shrinks, so this converges.
             if (!ShortWindow) return;
-            var over = options.worldBound.yMax - card.worldBound.yMax;
+            var cs = card.resolvedStyle;
+            var over = foot.worldBound.yMax - (card.worldBound.yMax - cs.paddingBottom - cs.borderBottomWidth);
             if (float.IsNaN(over) || over <= 0.5f) return;
             var target = h - over - 1f;
             if (target < needs) SetPhotoShown(false);
