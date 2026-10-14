@@ -49,6 +49,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It is kept for a later accessibility layer: no screen reader reads a runtime tooltip yet. A resumed game now shows
   the same changes as before the reload on all six meters: `GameSession` keeps the step before the last
   (`BeforeLast`), so Immigration's change survives a load too. Not part of the state or the save: no golden moves.
+- A Hebrew UI preview, asked for by hand: "?lang=he" in the page URL or "-lang he" on the desktop command line (#193).
+  The UI loads `strings.he.yaml`, sets every text in Frank Ruhl Libre through the advanced text generator, gives each
+  text the direction of its own words (dates, money and names are still English, #55), and mirrors the layout: rows,
+  bars, the hemicycle, the option signs and End Turn's hourglass. English stays the default and has no visible switch.
+  A long Budget office name now wraps in its column, so no row is wider than the screen.
 - Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
   short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
   burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds
