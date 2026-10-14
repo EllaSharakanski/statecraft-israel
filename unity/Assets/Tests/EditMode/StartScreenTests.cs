@@ -358,6 +358,27 @@ public class StartScreenTests
         Assert.IsTrue(rig.Ui.Q<Button>("end-turn").canGrabFocus, "the HUD is back");
     }
 
+    /// <summary>#41 M1: closed from the keyboard (New Game with no save, or Continue), the screen gives the focus to End Turn
+    /// rather than to nothing, so the next Tab or Enter goes on from the top bar.</summary>
+    [UnityTest]
+    public IEnumerator ClosingItFromTheKeyboardFocusesEndTurn()
+    {
+        foreach (var save in new[] { false, true })
+        {
+            using var rig = new Rig(save ? WithSave(TempStore(), 1) : TempStore());
+            yield return null; yield return null;
+            var name = save ? "start-continue" : "start-new-game";
+            var button = rig.Ui.Q<Button>(name);
+            button.Focus();
+            yield return null;
+            Assert.AreSame(button, rig.Ui.Root.focusController?.focusedElement, name + ": precondition, focused");
+            rig.Ui.Press(name);
+            yield return null; yield return null; yield return null;
+            Assert.IsFalse(rig.Start.IsOpen, name + ": closed");
+            Assert.AreSame(rig.Ui.Q<Button>("end-turn"), rig.Ui.Root.focusController?.focusedElement, name + ": End Turn has the focus");
+        }
+    }
+
     /// <summary>#400: a turn-1 save keeps the build buttons disabled anyway, so the test above cannot see them. With a save
     /// from after August 1950, a selected hex and an event waiting, the build buttons and the event's options are live, and
     /// still none of them takes the focus under the start screen.

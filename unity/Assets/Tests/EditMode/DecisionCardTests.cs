@@ -302,4 +302,32 @@ public class DecisionCardTests
         Assert.IsFalse(r.Card.Escape(), "under a screen Escape is the screen's");
         Assert.IsFalse(r.Card.Collapsed);
     }
+
+    /// <summary>#41 M1: Escape from a screen over an open card gives the card the focus (not the screen's button), and the
+    /// last open event answered from the keyboard gives it to End Turn, so the next Enter or Tab goes on from there.</summary>
+    [UnityTest]
+    public IEnumerator AnsweringTheLastEventByKeyboardFocusesEndTurn()
+    {
+        using var r = new Rig(1920, 1080, "law_of_return");
+        yield return Frames(4);
+        r.Nav.Open("budget");
+        yield return Frames(3);
+        var reset = r.Root.Q<Button>("budget-reset");
+        reset.Focus();
+        yield return Frames(2);
+        Assert.AreSame(reset, r.Focused, "precondition: a control on the screen has the focus");
+        using (var cancel = NavigationCancelEvent.GetPooled()) { cancel.target = reset; reset.SendEvent(cancel); }
+        yield return Frames(3);
+        Assert.IsNull(r.Nav.Current);
+        Assert.AreSame(r.CardElement, r.Focused, "the open card takes the focus when the screen over it closes");
+
+        var option = r.FirstOption;
+        option.Focus();
+        yield return Frames(2);
+        Assert.AreSame(option, r.Focused, "precondition: an option has the focus");
+        Press(option);
+        yield return Frames(3);
+        Assert.IsNull(r.Card.Shown, "the only event is answered");
+        Assert.AreSame(r.Root.Q<Button>("end-turn"), r.Focused, "End Turn has the focus");
+    }
 }
