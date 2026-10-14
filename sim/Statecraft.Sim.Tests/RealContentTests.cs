@@ -303,10 +303,12 @@ public class RealContentTests
         Assert.Equal("weizmann", Offices.Holder(C, "president", new DateTime(1950, 1, 1))!.Id);
         Assert.Null(Offices.Holder(C, "president", new DateTime(1949, 2, 16)));
         var maimon = C.People.Single(p => p.Id == "maimon");
+        // Knesset position records run both Second Government terms to 8 October 1951 (#457).
         foreach (var office in new[] { "religions_minister", "war_victims_minister" })
         {
-            Assert.Equal(new DateTime(1951, 2, 14), maimon.Offices.Single(t => t.Office == office && t.From == new DateTime(1950, 11, 1)).To);
-            Assert.Null(Offices.Holder(C, office, new DateTime(1951, 3, 1)));
+            Assert.Equal(new DateTime(1951, 10, 8), maimon.Offices.Single(t => t.Office == office && t.From == new DateTime(1950, 11, 1)).To);
+            Assert.Equal("maimon", Offices.Holder(C, office, new DateTime(1951, 3, 1))!.Id);
+            Assert.Equal("maimon", Offices.Holder(C, office, new DateTime(1951, 10, 7))!.Id);
         }
     }
 
