@@ -40,6 +40,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   a click, Enter or Space skips it, and Esc skips them all. A counterfactual option, a delegated answer, a refused order
   and Deport get none, and there is none in automated runs. The Horev clip waits for the owner's sensitivity review
   before a shareable build. Presentation only: no golden moves.
+- Top bar (refs #398): each meter's tooltip holds its value and the change since last turn in words, for example
+  "Treasury: IL 18.6 million, down IL 1.4 million since last turn", with captions from the strings (English and Hebrew).
+  It is kept for a later accessibility layer: no screen reader reads a runtime tooltip yet. A resumed game now shows
+  the same changes as before the reload on all six meters: `GameSession` keeps the step before the last
+  (`BeforeLast`), so Immigration's change survives a load too. Not part of the state or the save: no golden moves.
 - Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
   short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
   burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds
