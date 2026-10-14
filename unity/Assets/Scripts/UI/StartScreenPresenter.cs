@@ -50,6 +50,7 @@ namespace Statecraft.Game.UI
         readonly EventCallback<NavigationCancelEvent> onCancel;
         readonly EventCallback<GeometryChangedEvent> onGeometry;
         readonly Action onContinue, onNewGame, onStarted;
+        readonly PressSource presses;
 
         /// <summary>Continue is offered: the session continues the autosave.</summary>
         public bool Resumed { get; private set; }
@@ -81,6 +82,7 @@ namespace Statecraft.Game.UI
             onGeometry = _ => Fit();
             screen.RegisterCallback(onGeometry);
             panel.RegisterCallback(onGeometry);                // the panel's height decides where it goes
+            presses = new PressSource(screen);
         }
 
         public bool IsOpen => hudRoot.ClassListContains(OpenClass);
@@ -101,15 +103,22 @@ namespace Statecraft.Game.UI
             shownChanged?.Invoke(true);
         }
 
-        /// <summary>Hides the screen; the game is on the map. Safe to call when it is not open.</summary>
-        public void Close()
+        /// <summary>Hides the screen; the game is on the map. Safe to call when it is not open. Closed from the keyboard, the
+        /// focus goes to End Turn (#41 M1), unless a decision card is open: the card takes it (EventCardPresenter).</summary>
+        public void Close() => Hide(giveFocus: true);
+
+        void Hide(bool giveFocus)
         {
             if (!IsOpen) return;
             recording?.Stop();
             hudRoot.RemoveFromClassList(OpenClass);
             ScreenNav.DisableCovered(hudRoot);
             var focused = screen.focusController?.focusedElement as VisualElement;
-            if (focused != null && screen.Contains(focused)) focused.Blur();
+            if (focused != null && screen.Contains(focused))
+            {
+                focused.Blur();
+                if (giveFocus && presses.ByKeyboard && !hudRoot.ClassListContains(EventCardPresenter.OpenClass)) FocusReturn.To(hudRoot.Q<Button>("end-turn"));
+            }
             shownChanged?.Invoke(false);
         }
 
@@ -167,7 +176,8 @@ namespace Statecraft.Game.UI
 
         public void Dispose()
         {
-            Close();
+            Hide(giveFocus: false);
+            presses.Dispose();
             continueButton.clicked -= onContinue;
             newGameButton.clicked -= onNewGame;
             newGame.Started -= onStarted;

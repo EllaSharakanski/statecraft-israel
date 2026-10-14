@@ -14,6 +14,7 @@
     --up: rgb(126, 196, 120);
     --down: rgb(222, 120, 104);
     --focus: rgb(120, 98, 58);       /* keyboard focus fill: >= 3:1 against --navy-deep (WCAG 2.4.13) */
+    --focus-ink: rgb(255, 252, 244); /* text on the focus fill: 5.7:1 on it (ink is 4.6, gold-light 3.7; #41 M3) */
 }
 
 .root {
@@ -60,7 +61,7 @@
 }
 Button:hover { border-color: var(--gold); background-color: var(--navy-raised); }
 /* Keyboard focus shows as a bright gold edge (navigation with Tab and the arrow keys). */
-Button:focus { border-color: var(--gold-light); background-color: var(--focus); }
+Button:focus { border-color: var(--gold-light); background-color: var(--focus); color: var(--focus-ink); }
 Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4); background-color: var(--navy-deep); }
 /* A screen button stays transparent around its disc in every state. */
 .nav-button:disabled, .nav-button:focus { background-color: rgba(0, 0, 0, 0); border-width: 0; }
@@ -361,8 +362,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .seat-selected { border-color: var(--gold-light); background-color: var(--navy-raised); }
 .seat-vacant .card-name { color: var(--ink-dim); }
 .appointed { color: var(--gold); }
-/* A keyboard-focused card takes the warm focus fill (Button:focus); its dim and gold text turn ink to stay legible on it. */
-.seat:focus .card-name, .seat:focus .card-office, .seat:focus .card-party, .seat:focus .card-stat-name, .seat:focus .card-initials { color: var(--ink); }
+/* A keyboard-focused card takes the warm focus fill (Button:focus); its dim and gold text turn light to stay legible on it. */
+.seat:focus .card-name, .seat:focus .card-office, .seat:focus .card-party, .seat:focus .card-stat-name, .seat:focus .card-stat-value,
+.seat:focus .card-initials { color: var(--focus-ink); }
 
 /* The Cabinet: the Prime Minister's card and the appointment list at the side; the house and the cards in the main column. */
 .cabinet-side { width: 300px; flex-shrink: 0; margin-right: 14px; }
@@ -375,10 +377,18 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .pm-card .card-stat { height: 26px; padding: 0 16px; }
 .pm-card .card-stat-name { font-size: 16px; width: 96px; }
 .pm-card .ui-bar { height: 10px; }
-#cabinet-pick { flex-shrink: 1; min-height: 0; }
+/* On a short window (1568x752 is 997 logical px tall) the side column is full. The orders line wraps and is never
+   squeezed; the candidate list keeps its heading and two rows (220 px), and the Prime Minister's portrait gives way,
+   down to the card's text. On a shorter one (32:9 is 764 px) CabinetPresenter.FitPick lowers the list's floor to the room
+   left (#41 M7). */
+.pm-card { flex-shrink: 1; min-height: 160px; }
+.pm-card > * { flex-shrink: 0; }
+.pm-card .card-plate { flex-shrink: 1; min-height: 0; }
+#cabinet-pick { flex-grow: 1; flex-shrink: 1; min-height: 220px; }
+#cabinet-status { white-space: normal; flex-shrink: 0; }
 /* The Appoint heading wraps rather than run past the 300 px side column (B5; PromoHudTests.TheAppointHeadingHasRoom). */
 #cabinet-pick-title { white-space: normal; }
-.pm-offices { flex-direction: row; flex-wrap: wrap; margin: -2px 0 8px 0; }
+.pm-offices { flex-direction: row; flex-wrap: wrap; margin: -2px 0 8px 0; flex-shrink: 0; }
 .pm-office { font-size: 15px; padding: 3px 10px; margin: 0 6px 4px 0; border-color: rgba(196, 160, 92, 0.6); }
 .cabinet-house {
     flex-direction: row; flex-wrap: wrap; align-items: center; flex-shrink: 0; margin: 0 5px 8px 5px; padding: 10px 14px;
@@ -422,8 +432,13 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .rung { flex-direction: row; align-items: center; padding: 8px 10px; margin: 2px 0; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); background-color: rgba(255, 255, 255, 0.03); }
 .rung-name { white-space: normal; font-size: 18px; flex-shrink: 1; min-width: 0; }
 .rung-turn { font-size: 15px; margin-left: 8px; flex-shrink: 0; }
+/* The turn length is a lighter muted than --ink-dim: 15 px text loses about a fifth of its contrast to anti-aliasing, and
+   ink-dim's 5.0:1 on a plain rung measured 4.0 to 4.2:1 (#41 re-check). This is 6.3:1, still quieter than ink. */
+.rung .rung-turn { color: rgb(190, 184, 170); }
 .rung-current { border-color: var(--gold-light); background-color: rgba(196, 160, 92, 0.20); }
 .rung-current .rung-name { color: var(--gold-light); }
+/* The muted turn length is 3.3:1 on the lit rung; ink is 6.4:1 (#41 M4). */
+.rung-current .rung-turn { color: var(--ink); }
 /* The level an order will move to at End Turn: a dashed-looking ink edge, distinct from the lit current level. */
 .rung-target { border-color: var(--ink); border-left-width: 3px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; }
 .big-figure { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 44px; color: var(--ink); padding: 0; margin: 0 0 4px 0; }

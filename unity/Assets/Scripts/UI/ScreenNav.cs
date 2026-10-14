@@ -96,11 +96,17 @@ namespace Statecraft.Game.UI
             DisableCovered(root);
         }
 
-        /// <summary>Closes the open screen (Escape); false when none was open.</summary>
+        /// <summary>Closes the open screen (Escape); false when none was open. When the focus was on the screen's contents it
+        /// goes to the screen's top-bar button, so the next Tab carries on from there (#41 M1); an open decision card
+        /// takes it instead (EventCardPresenter, when its cover closes).</summary>
         public bool Close()
         {
             if (Current == null) return false;
+            var screen = root.Q<VisualElement>("screen-" + Current); var button = root.Q<Button>("nav-" + Current);
+            var focused = root.panel?.focusController?.focusedElement as VisualElement;
+            var inside = focused != null && (focused == screen || screen.Contains(focused));
             Open(null);
+            if (inside && !(root.Q("root") ?? root).ClassListContains(EventCardPresenter.ModalClass)) FocusReturn.To(button);
             return true;
         }
 
