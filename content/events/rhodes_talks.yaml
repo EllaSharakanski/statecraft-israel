@@ -30,4 +30,6 @@ sources:
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d362", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d389", checked: 2026-10-14 }
   - { url: "https://www.un.org/unispal/document/auto-insert-210639/", checked: 2026-10-14 }
+  # Hansard, 11 May 1949: the British statement of 8 January 1949 dates the RAF clash to the morning of 7 January.
+  - { url: "https://api.parliament.uk/historic-hansard/commons/1949/may/11/israel-attacked-british-aircraft", checked: 2026-10-14 }
 status: fact-checked

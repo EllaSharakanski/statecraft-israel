@@ -22,4 +22,6 @@ sources:
   - { url: "https://he.wikipedia.org/wiki/ועדת_פרומקין", checked: 2026-10-14 }
   - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250034.pdf", checked: 2026-10-14 }
   - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250129.pdf", checked: 2026-10-14 }
+  # JTA, 13 June 1950: the commission's report was completed on 9 May, after 101 witnesses at 33 sessions.
+  - { url: "https://www.jta.org/archive/inquiry-commission-on-religious-education-in-camps-publishes-report-exonerates-govt", checked: 2026-10-14 }
 status: fact-checked

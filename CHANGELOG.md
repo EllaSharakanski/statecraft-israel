@@ -330,6 +330,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Yehuda Leib Maimon holds Religions and War Victims to 8 October 1951, not 14 February 1951: the Knesset position
   records run both Second Government terms to the Third Government, and the plenum of 17 July 1951 has him answering as
   Minister of Religions (refs #457). The two offices are no longer vacant from February 1951. No golden moves.
+- Six 1948-1950 cards cite more primary sources in place of Wikipedia. "The Second Truce" drops Wikipedia: the UN's
+  published text of resolution 54 gives the 7-1-3 vote, and the IDF accounts and the Knesset's War of Independence
+  summary date the truce from 19:00 on 18 July to Operation Yoav on 15 October. "Operation Yoav" drops the "1948
+  Arab-Israeli War" article, as the Knesset summary dates Beersheba to 21 October. "The Ten Days" adds the IDF account
+  of Operation Danny, the Knesset summary and the Palmach archive's pages for Allon and Rabin. "Rationing Clothes and
+  Shoes" cites the JTA's reports of the merchants' strike in place of the "1950 in Israel" article. "Talks at Rhodes"
+  adds Hansard for the RAF clash of 7 January 1949, and "Education in the Immigrant Camps" adds the JTA's report of
+  the commission's findings, completed on 9 May 1950. Wikipedia stays only for lines these sources do not cover. Text,
+  dates and effects are unchanged (refs #442).
 - Contradictions flagged in #457 and #442 that cannot move a golden. YAML comments: the Provisional State Council last
   met on 10 February 1949, not 3 February; the 120-seat ordinance passed on 18 November 1948 and the 25 January vote
   was fixed on 25 November 1948 (Harpaz, Kesher 61); the 57-36 vote of 8 August 1950 was for the coalition's motion,
