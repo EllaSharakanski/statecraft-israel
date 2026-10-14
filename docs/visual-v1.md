@@ -7,6 +7,21 @@ it east to west wherever the view is wider than the map. In the player, which ru
 shift by up to a few hundred metres from its pose. The controller accepted this (owner-delegated). The other poses do
 not move.
 
+## Art direction (owner ruling, 14 October 2026)
+
+The owner ruled "this is the art direction" on four references (Slack, #visual-design-art-techart, 14 October 2026):
+
+- demo2 shot T29, "26 May 1948: one army": the coast-to-Jordan diorama, units on white ring bases, Arab armour with
+  flags (`promo/demo2/out/demo2-final-16x9.mp4`, about 1:11);
+- demo2 shot L14, "Latrun is captured by the enemy": a low-angle close-up of the fortress (same file, about 0:32);
+- demo2 shot D15, "20 May: Degania stops the Syrian tanks": a close-up at the kibbutz gate (same file, about 0:36);
+- `promo/final/03-gameplay-1936.png`.
+
+The shot ids are those of `promo/demo2/SHOTLIST-v2.md` and `shots-v2.py`; demo2's files are local to the promo work and
+not in the repository. Two rules from that thread: lock the visual language before more models are made ("it's a
+question of visual language, not quality"), and the next step is a vertical slice of a few terrain hexes with the
+models on them. New models and visual PRs are judged against these four references.
+
 ## How to measure
 - Frame time: `?vprofile` (WebGL) or `-vprofile` (desktop player, quits when done), always under
   `uv run tools/machine_lock.py --exclusive --wait-unity -- ...` (no other Unity job on the machine). Per pose, every
