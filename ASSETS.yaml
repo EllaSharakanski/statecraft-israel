@@ -212,6 +212,81 @@ rules:
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
     status: verified
+  # --- Decision-card illustration loops: silent AI clips behind the Illustration switch (docs/event-videos.md; owner ruling D-V) ---
+  # Made by tools/encode_event_videos.py from promo shots that are not in the repository (path and SHA-256 per row in
+  # unity/Assets/Resources/EventVideos/event-videos.yaml). Rights: owner ruling D-V, 2026-10-13 (docs/oss/DECISIONS.md, merged in #449):
+  # "no need to check, just use them"; it covers free, commercial and paid builds and accepts the Dreamina restriction (D-D).
+  - glob: "unity/Assets/StreamingAssets/video/latrun_proposal.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 (ElevenLabs), from a GPT Image 2.5 still, generated 2026-10-12 (promo shot L14, promo/demo2/clips-v2/L14.mp4, not in the repository; sha256 f1e6c57c01ee4665c4e3948172c749973a2d335f83c65f8d8522f6f72706751b); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the latrun_proposal card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/first_truce.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot K03a, promo/demo3/clips/K03a.mp4, not in the repository; sha256 75156139ee81c1d6962d593e3f55a4f9233d9d2a0955b1d1dff5e7dc62431dcd); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the first_truce card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/jerusalem_ceasefire.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot K03b, promo/demo3/clips/K03b.mp4, not in the repository; sha256 a6a63909bd06e13a263de2d340552f6e5ee66d7b1f567335df7bc469c152f691); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the jerusalem_ceasefire card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/operation_yoav.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot W04a, promo/demo3/clips/W04a.mp4, not in the repository; sha256 26bf28dae5b96170057a5b4b894eff2d80c5f81503d53f4affad228055393d91); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the operation_yoav card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14). SENSITIVE: the clip needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-videos.yaml; Build.cs -shareable refuses until then)."
+  - glob: "unity/Assets/StreamingAssets/video/maabarot_policy.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot W05a, promo/demo3/clips/W05a.mp4, not in the repository; sha256 b3cd6cf07004c80ee89bf679ac89608ae6edd594a172b36b566a239e983bfecc); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the maabarot_policy card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/frumkin_commission.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot W05b, promo/demo3/clips/W05b.mp4, not in the repository; sha256 ea1b9fdce8f9499dec68a3d3cc61195e5ccea0156229e8fcd51f5abc44354461); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the frumkin_commission card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/law_of_return.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot K04a, promo/demo3/clips/K04a.mp4, not in the repository; sha256 5bb6e584eb57771bef155f4dcf2be847d1a8f50302b8dbffd30723806ab4a2b9); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the law_of_return card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/hula_drainage.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot W06, promo/demo3/clips/W06.mp4, not in the repository; sha256 39ea857ef8927780bb6fa874df72ef38450bb7f11e1b9b786f5db20cbecce379); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the hula_drainage card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/austerity_1949.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Seedance 2.0 (Dreamina); the Dreamina AI badge is kept, generated 2026-10-12 (promo shot A09, promo/demo2/clips/A09.mp4, not in the repository; sha256 79ab0b07145177d9899e1c39136e5e04c3f7ca8f0a310a7c905042fab1dc6cd2); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the austerity_1949 card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/iraqi_exodus.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Seedance 2.0 (Dreamina); the Dreamina AI badge is kept, generated 2026-10-12 (promo shot A07, promo/demo2/clips/A07.mp4, not in the repository; sha256 8b3fc06d8a7836e82896a9fd09a3b874dbfdd7f9eca9e7be63f70202630af783); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the iraqi_exodus card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14)."
+  - glob: "unity/Assets/StreamingAssets/video/ten_days.mp4"
+    licence: CC0-1.0
+    ai_generated: true
+    source: "Veo 3.1 (ElevenLabs), from a GPT Image 2.5 still, generated 2026-10-13 (promo shot J09, promo/demo2/clips-v2/J09.mp4, not in the repository; sha256 7a1242da163d3fae432889643a64abf7fd9eff73d700cad978d30c0c32b6c571); re-encoded 2026-10-14 by tools/encode_event_videos.py: 960x540, 24 fps, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png at the top left; nothing else changed"
+    status: verified
+    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13): the generator terms were not checked, by the owner's choice. Shown on the ten_days card behind the Illustration switch, labelled 'AI-generated illustration', never in place of the archival photograph. No identifiable real person (frames checked 2026-10-14). SENSITIVE: the clip needs the owner's sensitivity review before a shareable build may carry it (sensitivity_reviewed in event-videos.yaml; Build.cs -shareable refuses until then)."
+  - glob: "tools/event_videos/ai-bug.png"
+    licence: CC-BY-4.0
+    ai_generated: true
+    source: "The burned-in label 'AI-generated · נוצר בבינה מלאכותית' of the decision-card clips, rendered by tools/encode_event_videos.py --make-bug in Chrome for Testing from HTML written by an AI coding agent on 2026-10-14, set in EB Garamond and Frank Ruhl Libre (OFL, unity/Assets/UI/Fonts)"
+    status: verified
   # --- Event-card header photographs: real archival photos, never AI (docs/event-images.md; owner rulings 2026-10-11) ---
   # Licences and artists re-read from each Commons file page on 2026-10-11; CC BY 4.0 credits are the licensor's credit
   # line from the page's licence template. The mapping and alt texts: unity/Assets/UI/EventImages/event-images.yaml.

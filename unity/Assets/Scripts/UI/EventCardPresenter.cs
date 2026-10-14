@@ -31,7 +31,7 @@ namespace Statecraft.Game.UI
         readonly VisualElement card; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly EventImageCatalog? photos;
         readonly VisualElement band, head, scroll, options, layer, hudRoot; readonly Label credit;
-        readonly Button hide, reopen;
+        readonly Button hide, reopen, illustrationSwitch;
         readonly System.Action onHide, onReopen, onUncovered;
         readonly EventCallback<PointerDownEvent> onHidePointer;
         readonly EventCallback<NavigationSubmitEvent> onHideSubmit;
@@ -40,14 +40,27 @@ namespace Statecraft.Game.UI
         bool hideByPointer;
         /// <summary>The session the card last showed: a new one (New Game, a load) forgets what was collapsed or focused.</summary>
         GameSession? session;
+        readonly CardVideo? video; readonly System.Func<string, EventVideoMapping.Row?>? clipFor;
+        /// <summary>The shown event's clip URL and its alt text, or null (none, video off, or it failed this session).</summary>
+        string? clip, clipAlt;
+        /// <summary>The player chose Illustration: kept for the session (not saved), so later cards open on their clip too.</summary>
+        bool illustration;
+        /// <summary>Events whose clip failed this session: they show the photograph and no switch.</summary>
+        readonly System.Collections.Generic.HashSet<string> failed = new System.Collections.Generic.HashSet<string>();
+        readonly System.Action onSwitch;
         /// <summary>The event the player collapsed the card on (Hide), or null; a different event opens the card again.</summary>
         string? collapsedFor;
         /// <summary>The event whose first option last took the focus, so an event already open never takes it again.</summary>
         string? focusedFor;
         float appliedWidth = float.NaN;
 
-        public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits, EventImageCatalog? photos = null)
+        /// <param name="video">The illustration loop's player, or null when video is off (CardVideo.ForcedOff): then the
+        /// card never offers the Illustration switch.</param>
+        /// <param name="clipFor">An event's clip (event-videos.yaml), or null when it has none.</param>
+        public EventCardPresenter(VisualElement root, SimBridge bridge, UiText text, PortraitCatalog? portraits, EventImageCatalog? photos = null,
+            CardVideo? video = null, System.Func<string, EventVideoMapping.Row?>? clipFor = null)
         {
+            this.video = clipFor == null ? null : video; this.clipFor = clipFor;
             card = root.Q<VisualElement>("event-card"); this.bridge = bridge; this.text = text; this.portraits = portraits; this.photos = photos;
             band = card.Q<VisualElement>("event-photo"); credit = card.Q<Label>("event-photo-credit");
             // The band and its credit settle the drop (FitPhoto); the column, which only the window sizes, brings a dropped
@@ -73,6 +86,9 @@ namespace Statecraft.Game.UI
             // A start screen or a screen that covered the layer has closed (ScreenNav.DisableCovered): the open card takes
             // the focus it could not take under it.
             ScreenNav.OnUncovered(layer, onUncovered);
+            illustrationSwitch = card.Q<Button>("event-illustration");
+            onSwitch = () => { illustration = !illustration; ApplyIllustration(); };
+            illustrationSwitch.clicked += onSwitch;
             foreach (var e in new[] { band, credit, head, scroll, options }) e.RegisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.RegisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.RegisterCallback<GeometryChangedEvent>(OnCardGeometry);
@@ -88,6 +104,8 @@ namespace Statecraft.Game.UI
             hide.UnregisterCallback(onHidePointer, TrickleDown.TrickleDown); hide.UnregisterCallback(onHideSubmit, TrickleDown.TrickleDown);
             card.UnregisterCallback(onCancel);
             ScreenNav.OnUncovered(layer, null);
+            illustrationSwitch.clicked -= onSwitch;
+            video?.Stop();
             foreach (var e in new[] { band, credit, head, scroll, options }) e.UnregisterCallback<GeometryChangedEvent>(OnPhotoGeometry);
             layer.UnregisterCallback<GeometryChangedEvent>(OnColumnGeometry);
             card.UnregisterCallback<GeometryChangedEvent>(OnCardGeometry);
@@ -145,12 +163,15 @@ namespace Statecraft.Game.UI
             reopen.style.display = Collapsed ? DisplayStyle.Flex : DisplayStyle.None;
             hudRoot.EnableInClassList(OpenClass, shown);
             ScreenNav.DisableCovered(hudRoot);
-            if (Shown == null) { ShowPhoto(null); return; }
+            if (Shown == null || Collapsed) video?.Stop();
+            if (Shown == null) { clip = null; clipAlt = null; ShowPhoto(null); return; }
             var e = Shown;
             var date = EventSystem.FillDate(e, s.Date);
             var holder = e.Office == "" ? null : Cabinet.Holder(c, s, e.Office, date);
             // The header photograph when the event has one; otherwise the minister's portrait plate (the fallback).
             var photo = photos?.Find(e.Id);
+            var row = video != null && photo != null && !failed.Contains(e.Id) ? clipFor!(e.Id) : null;
+            clip = row == null ? null : CardVideo.Url(row.File); clipAlt = row?.Alt;
             ShowPhoto(photo);
             var image = card.Q<VisualElement>("event-image");
             var entry = photo == null ? portraits?.Find(holder?.Id) : null;
@@ -215,7 +236,36 @@ namespace Statecraft.Game.UI
             band.tooltip = photo?.alt ?? "";
             PhotoAlt = photo?.alt;
             ApplyMediaHeight();
+            ApplyIllustration();
         }
+
+        /// <summary>The Illustration switch: shown only when the event has a clip and its photograph shows (the clip is never
+        /// the only picture of a real event). On, the header plays the clip, labelled "AI-generated illustration" in place
+        /// of the photograph's credit; off, or when the clip fails, the photograph and its credit come back.</summary>
+        void ApplyIllustration()
+        {
+            var offered = clip != null && PhotoAlt != null && !Collapsed;
+            illustrationSwitch.style.display = offered ? DisplayStyle.Flex : DisplayStyle.None;
+            if (offered && illustration)
+            {
+                illustrationSwitch.text = text["event.photo"];
+                credit.text = text["event.ai_label"];
+                band.tooltip = clipAlt ?? "";
+                if (video!.Current != clip) { var id = Shown!.Id; video.Play(clip!, band, _ => { failed.Add(id); Render(); }); }
+                else video.ShowIn(band);
+                return;
+            }
+            illustrationSwitch.text = text["event.illustration"];
+            if (video?.Current != null)
+            {
+                video.Stop();
+                if (current != null && PhotoAlt != null) band.style.backgroundImage = new StyleBackground(current.Value.image);
+            }
+            if (current != null) { credit.text = current.Value.credit; if (PhotoAlt != null) band.tooltip = current.Value.alt; }
+        }
+
+        /// <summary>True while the header plays the event's clip (or is preparing it).</summary>
+        public bool IllustrationShown => video?.Current != null;
 
         /// <summary>The playtest 2 P2-3 line (UiLayoutTests): in a window at least this tall (logically) the body and the
         /// options of every event fit without scrolling. The media header gives way first on every window
