@@ -65,7 +65,7 @@ them from a seed (default 1948) in Historical mode until `until:`, and `Scenario
 scripted command passes. A command the sim rejects fails the test with the date, the order and the reason, and a step that never runs
 fails too. To add one: write the file, run `STATECRAFT_UPDATE_GOLDEN=1 dotnet test sim/Statecraft.sln --filter ScenarioTests` (it adds the
 manifest line and the snapshot), then run the tests plain. A scenario that moves is re-pinned with the hash goldens by the same
-command; its snapshot diff in the PR shows what moved, and the commit message says why. Two ship: `cautious` and `reckless`. They stay in 1948, before any change a
+command; its snapshot diff in the PR shows what moved, and the commit message says why. Two play the real content: `cautious` and `reckless`. They stay in 1948, before any change a
 later era makes, so they move only when a 1948 rule or event does.
 
 **MVP goldens (GDD v0.1, before cutover).** `mvp-slice` plays `MvpSlice.Load`, the real content with the loop switch on and
@@ -108,7 +108,7 @@ goldens (playtest 2 changed every line's casing with no hash change). They are s
 `FinalWaveTests.AReloadedSaveReproducesTheLastTurnsCauses` checks a reloaded save gives the same last-turn Causes, and
 `TheGoldenRunsCausesAreTheSameInEveryCulture` runs the 1952 golden under de-DE and ar-SA against the invariant culture.
 
-Each golden hash is pinned in `sim/Statecraft.Sim.Tests/golden/manifest.txt` (`hash1950`, `hash1952`, `smoke5`). The .NET tests
+Each golden hash is pinned in `sim/Statecraft.Sim.Tests/golden/manifest.txt` (`hash1950`, `hash1952`, `smoke5`, and the scenario and MVP lines above). The .NET tests
 compare against it. These places must agree with it, and `GoldenManifestTests` fails naming the one that does not:
 - `sim/Statecraft.Sim/GoldenRun.cs`, which Unity code and players compare against (the update command rewrites it);
 - this file, `docs/RELEASING.md` and `tools/web_check.py`'s usage example (by hand).
@@ -120,7 +120,8 @@ compare against it. These places must agree with it, and `GoldenManifestTests` f
 
 Verified on .NET, Unity editor Mono, a macOS IL2CPP player (Apple clang, no `-ffp-contract=off` needed) and a WebGL
 IL2CPP player in Chrome (M3 Task 22). The platform checks below used the prior `73590e32` 1952 baseline. The issue #2
-content correction has been rechecked on .NET only; Unity/WebGL/macOS revalidation is still needed.
+content correction has since been rechecked on .NET, in the Unity EditMode tests and in WebGL (see below and
+`docs/visual-v1.md`); macOS revalidation is still needed.
 
 Re-checked at the M3 merge candidate (2026-10-11, commit a099655):
 - macOS IL2CPP player (`Build.Mac`, then `-batchmode -nographics -golden`): **exit 0**, printing
