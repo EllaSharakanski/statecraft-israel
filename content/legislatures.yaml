@@ -11,8 +11,11 @@ legislatures:
     from: 1948-05-15
     to: 1949-02-14
     size: 37
-    budget_approval: false
-    open_questions: [budget_approval]
+    # The Law and Administration Ordinance, 1948, section 5, has the Provisional Government's budget fixed by an
+    # ordinance of the council. The council adopted the January 1949 Budget Ordinance unanimously (sitting 33, 30
+    # December 1948, printed page 20) and the January-March 1949 Budget Ordinance 21-1 (sitting 38, 27 January 1949,
+    # printed page 11). research_notes/budget-approval-1948-56.md (#3).
+    budget_approval: true
     seats:
       mapai: 10
       mapam: 3
@@ -35,6 +38,10 @@ legislatures:
       - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_258580.pdf", checked: 2026-10-14 }
       - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_KnessetDates", checked: 2026-10-14 }
       - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250172.pdf", checked: 2026-10-14 }
+      # budget_approval.
+      - { url: "https://fs.knesset.gov.il/0/law/0_lsr_312670.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_250001.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_250006.pdf", checked: 2026-10-14 }
     status: fact-checked
   - id: first_knesset
     body: Constituent Assembly (First Knesset)
@@ -46,8 +53,9 @@ legislatures:
     # as published in Sefer HaChukim 73 and 74.
     to: 1951-08-20
     size: 120
+    # The 1949/50 Budget Law passed 60-25 (sitting 74, 31 August 1949, printed page 1508) and the 1950/51 Budget Law
+    # 44-25 (sitting 159, 29 June 1950, printed page 1977). research_notes/budget-approval-1948-56.md (#3).
     budget_approval: true
-    open_questions: [budget_approval]
     seats:
       mapai: 46
       mapam: 19
@@ -72,6 +80,9 @@ legislatures:
       - { url: "https://fs.knesset.gov.il/1/law/1_lsr_208021.PDF", checked: 2026-10-14 }
       - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250280.pdf", checked: 2026-10-14 }
       - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250609.pdf", checked: 2026-10-14 }
+      # budget_approval.
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250028.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250044.pdf", checked: 2026-10-14 }
     status: fact-checked
   - id: second_knesset
     body: Second Knesset
@@ -82,8 +93,9 @@ legislatures:
     # service to 15/08/1955 and his Third Knesset service from 15/08/1955).
     to: 1955-08-15
     size: 120
+    # The 1951/52 Budget Law passed 50-38 (sitting 37, 31 December 1951, printed page 878) and the 1952/53 Budget Law
+    # 48-36 (sitting 75, 1 April 1952, printed page 1858). research_notes/budget-approval-1948-56.md (#3).
     budget_approval: true
-    open_questions: [budget_approval]
     # Election results, identical in the Knesset's Second Knesset page, its faction records on 20 August 1951, IDI and JVL.
     # The United Religious Front ran as four lists (Hapoel HaMizrachi, Mizrachi, Agudat Yisrael, Poalei Agudat Yisrael).
     seats:
@@ -113,6 +125,9 @@ legislatures:
       # The end date (to: 1955-08-15).
       - { url: "https://he.wikipedia.org/wiki/הכנסת_השלישית", checked: 2026-10-11 }
       - { url: "https://oknesset.org/members/268.html", checked: 2026-10-11 }
+      # budget_approval.
+      - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250393.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250298.pdf", checked: 2026-10-14 }
     status: fact-checked
   - id: third_knesset
     body: Third Knesset
@@ -122,6 +137,9 @@ legislatures:
     # and Mapam are the two parts of the 1951 Mapam list, which split.
     from: 1955-08-15
     size: 120
+    # The 1956/57 Budget Law passed 53-24, 5 abstaining (sitting 111, 22 March 1956, printed page 1612).
+    # research_notes/budget-approval-1948-56.md (#3). Open: the 1956/57 law is read, but this Knesset sat until 1959
+    # and its 1957-59 budget laws are not.
     budget_approval: true
     open_questions: [budget_approval]
     # Election results, identical in the IDI table and the Jewish Virtual Library table (which cites the Knesset).
@@ -144,4 +162,6 @@ legislatures:
       - { url: "https://www.jewishvirtuallibrary.org/elections-to-the-3rd-knesset-july-1955", checked: 2026-10-11 }
       - { url: "https://oknesset.org/members/268.html", checked: 2026-10-11 }
       - { url: "https://he.wikipedia.org/wiki/הכנסת_השלישית", checked: 2026-10-11 }
+      # budget_approval.
+      - { url: "https://fs.knesset.gov.il/3/Plenum/3_ptm_251023.pdf", checked: 2026-10-14 }
     status: fact-checked
