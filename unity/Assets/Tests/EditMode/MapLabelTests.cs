@@ -805,18 +805,12 @@ public class MapLabelTests
     /// (#322): quiet runs give about 115-130 us, the worst loaded full runs averaged 193-216 us, and a refresh made 3x
     /// slower gives about 350 us or more.</summary>
     [UnityTest]
-    public IEnumerator RefreshWhileTheCameraMovesIsCheap() => Cheap(false);
-
-    /// <summary>The same with the unit tokens to keep clear of (the game's path), under the same limit.</summary>
-    [UnityTest]
-    public IEnumerator RefreshWhileTheCameraMovesIsCheapWithTheUnits() => Cheap(true);
-
-    IEnumerator Cheap(bool units)
+    public IEnumerator RefreshWhileTheCameraMovesIsCheap()
     {
         const int Sweeps = 5, Steps = 240;
         const double LimitUs = 300.0;   // editor Mono
         var hd = new HdPanel(cam);
-        var labels = Labels(hd, units);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam);
         try
         {
             yield return Settle(labels);
@@ -841,9 +835,51 @@ public class MapLabelTests
             }
             double best = medians.Min();
             TestContext.WriteLine(System.FormattableString.Invariant(
-                $"LABELS refresh moving units={units} median_us={best:0} sweeps_us={string.Join(",", medians.Select(m => m.ToString("0", System.Globalization.CultureInfo.InvariantCulture)))} moved={moved}"));
+                $"LABELS refresh moving median_us={best:0} sweeps_us={string.Join(",", medians.Select(m => m.ToString("0", System.Globalization.CultureInfo.InvariantCulture)))} moved={moved}"));
             Assert.Greater(moved, Sweeps * Steps / 2, "the refreshes did work: Tel Aviv's pill moved");
             Assert.Less(best, LimitUs, $"median refresh of the quickest sweep under {LimitUs} us (editor Mono)");
+        }
+        finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Keeping clear of the unit tokens (#197) costs little next to placing the pills: one presenter, whose
+    /// keep-clear list is switched between the units in play and none, runs interleaved sweeps (off, on, off, on, ...) of
+    /// 240 refreshes along the same camera path; the median refresh with the units is at most 1.25 times the median without,
+    /// both taken from the same run, so the machine's load cancels out (the absolute bound stays on the test above).</summary>
+    [UnityTest]
+    public IEnumerator KeepingClearOfTheUnitsIsCheap()
+    {
+        const int Pairs = 5, Steps = 240;
+        const double MaxRatio = 1.25;
+        var layer = StartUnits();
+        bool on = false;
+        var hd = new HdPanel(cam);
+        var labels = new MapLabelsPresenter(hd.Root, map, cam, keepClear: () => on ? layer.KeepClear : System.Array.Empty<Bounds[]>());
+        try
+        {
+            yield return Settle(labels);
+            var times = new double[Steps];
+            var off = new System.Collections.Generic.List<double>(); var with = new System.Collections.Generic.List<double>();
+            var watch = new System.Diagnostics.Stopwatch();
+            for (int s = 0; s < 2 * Pairs; s++)
+            {
+                on = s % 2 == 1;
+                for (int i = 0; i < Steps; i++)
+                {
+                    SweepStep(i);
+                    watch.Restart(); labels.Refresh(); watch.Stop();
+                    times[i] = watch.Elapsed.TotalMilliseconds * 1000.0;
+                }
+                System.Array.Sort(times);
+                (on ? with : off).Add((times[Steps / 2 - 1] + times[Steps / 2]) / 2.0);
+            }
+            Assert.Greater(layer.KeepClear.Count, 0, "the units were on the map");
+            double Median(System.Collections.Generic.List<double> xs) { xs.Sort(); return xs.Count % 2 == 1 ? xs[xs.Count / 2] : (xs[xs.Count / 2 - 1] + xs[xs.Count / 2]) / 2.0; }
+            double mOff = Median(off), mOn = Median(with);
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            TestContext.WriteLine(System.FormattableString.Invariant(
+                $"LABELS keep-clear cost off_us={mOff:0} on_us={mOn:0} ratio={mOn / mOff:0.00} off={string.Join(",", off.Select(m => m.ToString("0", inv)))} on={string.Join(",", with.Select(m => m.ToString("0", inv)))}"));
+            Assert.LessOrEqual(mOn, MaxRatio * mOff, $"keeping clear of the units: {mOn:0} us against {mOff:0} us without them");
         }
         finally { labels.Dispose(); hd.Dispose(); }
     }
