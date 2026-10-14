@@ -162,6 +162,58 @@ public class HebrewUiTests
             Assert.IsFalse(ui.Q<Hemicycle>("cabinet-hemicycle").Mirrored, "English again: the mark does not stick");
     }
 
+    // --- The Budget rows --------------------------------------------------------------------------------------------
+
+    /// <summary>No Budget row is wider than the screen, in either language, at the widest and the narrowest window: the
+    /// office name wraps in its column (in Hebrew a row with a Hebrew phrase inside an English office was wider than the
+    /// screen at 1920x1080, and the screen scrolled sideways).</summary>
+    [UnityTest]
+    public IEnumerator NoBudgetRowIsWiderThanItsScreen(
+        [Values(UiLanguage.Hebrew, UiLanguage.English)] string language, [Values(1920, 390)] int width)
+    {
+        int height = width == 1920 ? 1080 : 844;
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(width, height, 0);
+        var ps = Object.Instantiate(doc.panelSettings);
+        ps.targetTexture = rt;
+        doc.panelSettings = ps;
+        try
+        {
+            var game = Object.FindFirstObjectByType<GameRoot>();
+            game.Store = new SaveStore(saveDir);
+            game.Language = language;
+            game.Begin(Inputs, 0);
+            UiTestKit.Press(Ui.Q<Button>("nav-budget"));
+            for (int i = 0; i < 4; i++) yield return null;             // layout needs a few passes
+            var list = Ui.Q<ScrollView>("budget-rows");
+            var room = list.contentViewport.layout.width;
+            Assert.Greater(room, 100f, "the Budget screen is open");
+            var rows = list.contentContainer.Children().ToList();
+            Assert.Greater(rows.Count, 3);
+            foreach (var row in rows)
+            {
+                Assert.LessOrEqual(row.layout.width, room + 0.5f, $"{language} {width}: '{row[0].name}' is wider than the screen");
+                foreach (var part in row.Children())
+                {
+                    Assert.LessOrEqual(part.layout.xMax, row.layout.width + 0.5f, $"{language} {width}: '{part.name}' runs past its row's end");
+                    Assert.GreaterOrEqual(part.layout.xMin, -0.5f, $"{language} {width}: '{part.name}' runs past its row's start");
+                }
+            }
+            Assert.LessOrEqual(list.contentContainer.layout.width, room + 0.5f, $"{language} {width}: the rows scroll sideways");
+            // The control: without the wrapping class the long Hebrew row is wider than the screen at 1920 (so this test can fail).
+            if (language == UiLanguage.Hebrew && width == 1920)
+            {
+                foreach (var row in rows) row[0].RemoveFromClassList("budget-office");
+                for (int i = 0; i < 4; i++) yield return null;
+                Assert.IsTrue(rows.Any(r => r.layout.width > room + 0.5f || r.Children().Any(x => x.layout.xMin < -0.5f || x.layout.xMax > r.layout.width + 0.5f)),
+                    "control: without the class a row overflows (in Hebrew the row runs right to left, so it spills past the start)");
+            }
+        }
+        finally { doc.panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+    }
+
     // --- The face ---------------------------------------------------------------------------------------------------
 
     /// <summary>With .lang-he on the root every text element of Game.uxml resolves Frank Ruhl Libre and the advanced

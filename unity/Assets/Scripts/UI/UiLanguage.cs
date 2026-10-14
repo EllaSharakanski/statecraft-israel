@@ -26,6 +26,14 @@ namespace Statecraft.Game.UI
             return i >= 0 && i + 1 < args.Length && args[i + 1] == Hebrew ? Hebrew : English;
         }
 
+        /// <summary>Whether <paramref name="e"/> is inside the Hebrew UI (an ancestor carries <see cref="HebrewClass"/>): code
+        /// that paints a sign at one side of an element puts it on the other side there.</summary>
+        public static bool Within(UnityEngine.UIElements.VisualElement? e)
+        {
+            for (; e != null; e = e.parent) if (e.ClassListContains(HebrewClass)) return true;
+            return false;
+        }
+
         public static string Requested() =>
             Requested(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
     }

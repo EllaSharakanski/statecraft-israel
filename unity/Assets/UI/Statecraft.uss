@@ -446,6 +446,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .defence-budget { flex-direction: row; align-items: center; }
 .budget-title { margin: 0 18px 0 0; }
 .budget-share { margin-left: 16px; font-size: 18px; }
+/* A Budget row's office name wraps within the room its buttons leave, so no row is wider than the screen (the
+   longest, "Minister of Education and Culture (no office until 10 March 1949)", in either language). */
+.budget-office { white-space: normal; flex-shrink: 1; min-width: 0; }
 /* A wide screen's header wraps its subtitle under the title when the window is narrow. */
 /* Square and narrower windows: a slimmer side column leaves room for two columns of cards. */
 .hud-two-row .cabinet-side { width: 250px; }
@@ -615,5 +618,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .lang-he .rung-turn { margin-left: 0; margin-right: 8px; }
 .lang-he .budget-title { margin: 0 0 0 18px; }
 .lang-he .budget-share { margin-left: 0; margin-right: 16px; }
+/* The option's round sign and End Turn's hourglass are painted on the right in Hebrew (EventCardPresenter, HudPresenter). */
+.lang-he .event-option { padding: 5px 46px 5px 12px; }
+.lang-he .end-turn { padding: 4px 40px 4px 14px; }
 /* A bar fills from the right: the whole bar is flipped, so its fill and its mark (placed from the left in code) follow. */
 .lang-he .ui-bar { scale: -1 1; }
