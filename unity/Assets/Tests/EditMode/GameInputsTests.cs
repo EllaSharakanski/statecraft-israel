@@ -331,7 +331,7 @@ public class GameInputsTests
             GameInputs.WithBuildId("/Applications/Statecraft.app/Contents/Resources/Data/StreamingAssets/video/a.mp4", "0123abcd"));
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator EveryFetchCarriesTheBuildIdRetriesIncluded()
     {
         var site = StagedSite();
