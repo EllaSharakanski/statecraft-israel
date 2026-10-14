@@ -34,7 +34,12 @@ public class ReferencePlayerTests
         var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
         var training = Simulation.Step(Mvp, s, ReferencePlayer.Commands(Mvp, s)).State;
         Assert.Single(training.Cohorts);
+        training.Treasury = 100;   // only the cohort in training holds it back: Money, Attention and free civilians are there
+        training.Attention = 10;
+        Assert.True(training.Cities["tel_aviv"].Civilians > training.Cities["tel_aviv"].Employed);
         Assert.DoesNotContain(ReferencePlayer.Commands(Mvp, training), x => x is Train);
+        training.Cohorts.Clear();
+        Assert.Contains(ReferencePlayer.Commands(Mvp, training), x => x is Train);
         var trained = s.Clone();
         trained.Units.Add(1, new Unit(1, "halutz", -3, 19));
         Assert.DoesNotContain(ReferencePlayer.Commands(Mvp, trained), x => x is Train);

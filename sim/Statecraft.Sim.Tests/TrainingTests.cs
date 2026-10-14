@@ -90,6 +90,19 @@ public class TrainingTests
         Assert.Empty(Step(c, s, new Train("town_a", "recruit", 2)).Rejected);   // IL 1.0m is affordable
     }
 
+    // R-TRAIN-001: refused only when the Treasury holds less than the cost, so a Treasury of exactly the cost pays it.
+    [Fact]
+    public void ATreasuryOfExactlyTheCostPaysIt()
+    {
+        var c = Town();
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        s.Treasury = 1.5;
+        var after = s.Clone();
+        Assert.Null(Training.Start(c, after, "town_a", "recruit", 3, new List<Cause>()));
+        Assert.Equal(0, after.Treasury);
+        Assert.Single(after.Cohorts);
+    }
+
     // R-TRAIN-001, R-TRAIN-002
     [Fact]
     public void TheLegacyLoopRefusesBothOrdersAndRefundsAttention()
@@ -120,6 +133,22 @@ public class TrainingTests
         var never = Step(c, Step(c, s).State).State;
         Assert.Equal(never.Treasury - 1.0, cancelled.State.Treasury, 9);
         Assert.Contains(cancelled.Why, x => x.System == "city" && x.Message == "Town A: 4 groups left pioneer training; the Money spent is not returned");
+    }
+
+    /// <summary>R-TRAIN-002 on its own, without the turn's housing step (which would house returned refugees and hide where
+    /// the people went): they come back as civilians without work, not as refugees.</summary>
+    // R-TRAIN-002
+    [Fact]
+    public void CancelledPeopleComeBackAsCiviliansWithoutWorkNotAsRefugees()
+    {
+        var c = Town();
+        var s = Step(c, Simulation.NewGame(c, 1, Mode.Historical), new Train("town_a", "recruit", 3)).State;
+        var before = s.Cities["town_a"];
+        var after = s.Clone();
+        Assert.Null(Training.Cancel(c, after, Assert.Single(s.Cohorts.Keys), new List<Cause>()));
+        var city = after.Cities["town_a"];
+        Assert.Equal((before.Civilians + 3, before.Employed, before.Refugees, before.Recruits), (city.Civilians, city.Employed, city.Refugees, city.Recruits));
+        Assert.Equal(s.Treasury, after.Treasury);
     }
 
     // R-TRAIN-002
@@ -180,7 +209,7 @@ public class TrainingTests
         Assert.Empty(s.Units);   // a recruit is a count until Phase 5
     }
 
-    /// <summary>The timing rule (D-A6, plan Task 4.3): the turn a cohort is ordered in is its first training turn, so a cohort
+    /// <summary>The timing rule, the plan's reading of D-A6 (Task 4.3) and not part of the owner's ruling: the turn a cohort is ordered in is its first training turn, so a cohort
     /// ordered on turn T with training_turns 3 is done at the end of turn T+2. The other reading (done at the end of T+3) is a
     /// one-line change: the TurnsLeft a cohort opens with in Training.Start.</summary>
     // R-TRAIN-001, R-TRAIN-003

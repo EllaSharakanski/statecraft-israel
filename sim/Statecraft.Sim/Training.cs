@@ -43,11 +43,12 @@ namespace Statecraft.Sim
                 return $"Training costs {PlayerText.Money(c, "treasury", cost)} and the Treasury holds {PlayerText.Money(c, "treasury", s.Treasury)}";
             s.Treasury -= cost;
             // PLACEHOLDER (owner question, #377): trainees leave the civilians, and housing (R-CITY-004) counts civilians only,
-            // so their places are free for waiting refugees while they train.
+            // so their places are free for waiting refugees while they train. Social cohesion (R-CITY-005) also moves: its
+            // employed share is employed over civilians, so it rises when civilians without work leave for training.
             s.Cities[city] = x.WithCounts(x.Civilians - count, x.Employed, x.Refugees);
             var id = s.NextId++;
-            // The turn of the order is the first training turn: with training_turns 3, an order on turn T is done at the end of
-            // T+2 (TrainingTests.ACohortOrderedOnTurnTWithThreeTurnsFinishesAtTheEndOfTurnTPlusTwo). For "done at the end of
+            // The plan's reading of D-A6, not part of the owner's ruling: the turn of the order is the first training turn, so
+            // with training_turns 3 an order on turn T is done at the end of T+2 (TrainingTests.ACohortOrderedOnTurnTWithThreeTurnsFinishesAtTheEndOfTurnTPlusTwo). For "done at the end of
             // T+3", open the cohort with type.TrainingTurns + 1 here; nothing else changes.
             s.Cohorts.Add(id, new Cohort(id, type.Id, city, count, type.TrainingTurns));
             why.Add(new Cause("city", city, -count, $"{name}: {Groups(count)} began {Course(type.Facility)}, cost {PlayerText.Money(c, "treasury", cost)}"));

@@ -41,3 +41,5 @@ As a player of the MVP, I want to send Tel Aviv's civilians without work to basi
 - The placeholder values (training turns, cost per group, the two Attention costs) wait for the owner.
 - Whether training may borrow from the Treasury, as map actions do. This PR refuses it.
 - Whether people in training, and recruits, take up the city's housing. Housing counts civilians only (R-CITY-004), so a group in training frees a place that a waiting refugee then takes.
+- Whether the turn of the order counts as a training turn. This is the plan's reading of D-A6, not part of the owner's ruling. The other reading adds a turn.
+- Social cohesion's employed share rises while civilians without work are in training, because they leave the civilians (R-CITY-005).
