@@ -145,9 +145,10 @@ public class RealContentTests
     [Fact]
     public void OpenQuestionsAreExactlyTheKnownOnes()
     {
-        // #3: research_notes/budget-approval-1948-56.md answers budget_approval for every legislature of 1948-56.
+        // #3: research_notes/budget-approval-1948-56.md answers budget_approval for the council and the First and Second
+        // Knessets. The Third Knesset's stays open: its 1956/57 law is read, its 1957-59 laws are not.
         var open = C.Legislatures.SelectMany(l => l.OpenQuestions.Select(q => $"{l.Id}.{q}")).OrderBy(x => x).ToArray();
-        Assert.Empty(open);
+        Assert.Equal(new[] { "third_knesset.budget_approval" }, open);
     }
 
     [Fact]

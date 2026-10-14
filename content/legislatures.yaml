@@ -138,8 +138,10 @@ legislatures:
     from: 1955-08-15
     size: 120
     # The 1956/57 Budget Law passed 53-24, 5 abstaining (sitting 111, 22 March 1956, printed page 1612).
-    # research_notes/budget-approval-1948-56.md (#3).
+    # research_notes/budget-approval-1948-56.md (#3). Open: the 1956/57 law is read, but this Knesset sat until 1959
+    # and its 1957-59 budget laws are not.
     budget_approval: true
+    open_questions: [budget_approval]
     # Election results, identical in the IDI table and the Jewish Virtual Library table (which cites the Knesset).
     # IDI and JVL name the lists "National Religious Front" and "United Religious Front"; it is the same list.
     seats:

@@ -328,12 +328,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   on 27 March 1950 and proposed transit housing two weeks later (Kachansky, Yad Ben-Zvi 1987). Wikipedia's March date
   is kept in the event's comment. In the golden run the card first shows on 27 May 1950 with either date, so no golden
   moves (refs #442).
-- The Provisional State Council now approves the budget (`budget_approval: true`, refs #3): it fixed the budget by
-  ordinance under the Law and Administration Ordinance, and adopted the January 1949 Budget Ordinance unanimously and the
-  January-March 1949 ordinance 21-1, from the protocols in `research_notes/budget-approval-1948-56.md`. A budget
-  submitted before 14 February 1949 is now put to the council's vote, as the Knessets' already are. The `budget_approval`
-  open questions on the council and the First, Second and Third Knessets are closed, each with its protocol sources. No
-  golden moves: the historical runs and the scenarios submit no budget.
+- A player's budget before the First Knesset now goes to the Provisional State Council's vote (`budget_approval: true`,
+  refs #3), the same mechanic every Knesset already uses. The council fixed the budget by ordinance under the Law and
+  Administration Ordinance, and adopted the January 1949 Budget Ordinance unanimously and the January-March 1949
+  ordinance 21-1, from the protocols in `research_notes/budget-approval-1948-56.md`. The `budget_approval` open questions
+  on the council and the First and Second Knessets are closed, each with its protocol sources. The Third Knesset's stays
+  open: its 1956/57 law is read, its 1957-59 laws are not. No golden moves: the historical runs and the scenarios submit
+  no budget.
 - The Provisional State Council's window opens on 15 May 1948, the end of the Mandate, as the Declaration of
   Independence (clause 12) and the Knesset's dates table give it, not 14 May (refs #457). The game starts on 15 May, so
   nothing in play changes and no golden moves.
