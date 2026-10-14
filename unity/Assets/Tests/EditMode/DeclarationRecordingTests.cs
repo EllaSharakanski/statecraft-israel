@@ -41,7 +41,14 @@ public class DeclarationRecordingTests
         public readonly List<string> Urls = new List<string>();
         public Action<AudioClip?, string?>? Pending;
         public int Aborts;
-        public Action Start(string url, Action<AudioClip?, string?> done) { Urls.Add(url); Pending = done; return () => Aborts++; }
+        public ulong Bytes;
+        sealed class Request : DeclarationRecording.IRequest
+        {
+            readonly FakeFetch f; public Request(FakeFetch f) { this.f = f; }
+            public ulong Bytes => f.Bytes;
+            public void Abort() => f.Aborts++;
+        }
+        public DeclarationRecording.IRequest Start(string url, Action<AudioClip?, string?> done) { Urls.Add(url); Pending = done; Bytes = 0; return new Request(this); }
         public AudioClip Answer()
         {
             var clip = AudioClip.Create("fake", 4800, 1, 48000, false);
@@ -76,6 +83,8 @@ public class DeclarationRecordingTests
         public bool Captions => Ui.Root.Q("start-caption").style.display.value == DisplayStyle.Flex;
         public void Press() => UiTestKit.Press(Listen);
         public void Ticks(int ms) { for (int t = 0; t < ms; t += 200) Recording.Tick(); }
+        /// <summary>Ticks while the fetch keeps receiving a few bytes each time (a slow link).</summary>
+        public void TicksReceiving(int ms) { for (int t = 0; t < ms; t += 200) { Fetch.Bytes += 4000; Recording.Tick(); } }
         public void Dispose() { Recording.Dispose(); Ui.Dispose(); }
     }
 
@@ -177,13 +186,50 @@ public class DeclarationRecordingTests
     }
 
     [Test]
-    public void ASlowFetchTimesOutAndAStuckStartToo()
+    public void ASlowLinkThatKeepsReceivingIsNotCutOff()
     {
         using var r = new Rig();
         r.Press();
-        r.Ticks(DeclarationRecording.LoadTimeoutMs - 200);
-        Assert.AreEqual(DeclarationRecording.Phase.Loading, r.Recording.State, "still within the load timeout");
-        LogAssert.Expect(LogType.Warning, new Regex("^RECORDING failed .*timed out loading"));
+        r.TicksReceiving(30000);                          // 30 s at 20 kB/s: far past the stall limit, but never stalled
+        Assert.AreEqual(DeclarationRecording.Phase.Loading, r.Recording.State, "still receiving: still loading");
+        Assert.AreEqual(0, r.Fetch.Aborts);
+        LogAssert.Expect(LogType.Log, new Regex("^RECORDING playing "));
+        r.Fetch.Answer();                                 // it arrives; decoding has its own budget from now
+        r.Ticks(200);
+        Assert.AreEqual(DeclarationRecording.Phase.Playing, r.Recording.State);
+        r.Recording.Stop();
+
+        r.Press();                                        // a link that never stops trickling meets the overall cap
+        LogAssert.Expect(LogType.Warning, new Regex("^RECORDING failed .*not loaded after 60000 ms"));
+        r.TicksReceiving(DeclarationRecording.LoadCapMs);
+        Assert.AreEqual(DeclarationRecording.Phase.Idle, r.Recording.State);
+        Assert.AreEqual(1, r.Said.Count);
+    }
+
+    [Test]
+    public void ADecodeHasItsOwnBudgetFromTheFileArriving()
+    {
+        using var r = new Rig();
+        r.Out.Decoded = false;
+        r.Press();
+        r.TicksReceiving(7800);                           // the file lands late
+        r.Fetch.Answer();
+        r.Ticks(DeclarationRecording.DecodeTimeoutMs - 200);
+        Assert.AreEqual(DeclarationRecording.Phase.Loading, r.Recording.State, "a late file still gets the whole decode budget");
+        LogAssert.Expect(LogType.Warning, new Regex("^RECORDING failed .*timed out decoding"));
+        r.Ticks(200);
+        Assert.AreEqual(DeclarationRecording.Phase.Idle, r.Recording.State);
+    }
+
+    [Test]
+    public void AStalledFetchTimesOutAndAStuckStartToo()
+    {
+        using var r = new Rig();
+        r.Press();
+        r.TicksReceiving(1000);
+        r.Ticks(DeclarationRecording.StallTimeoutMs - 200);
+        Assert.AreEqual(DeclarationRecording.Phase.Loading, r.Recording.State, "still within the stall limit");
+        LogAssert.Expect(LogType.Warning, new Regex("^RECORDING failed .*no data for 8000 ms"));
         r.Ticks(200);
         Assert.AreEqual(DeclarationRecording.Phase.Idle, r.Recording.State);
         Assert.AreEqual(1, r.Fetch.Aborts, "the request is aborted");

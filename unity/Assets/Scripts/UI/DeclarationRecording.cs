@@ -23,14 +23,24 @@ namespace Statecraft.Game.UI
         public const string File = "audio/declaration-1948-isa-00113hj.wav";
         public const string Sha256 = "24e7bc48f5d0134bbe28f0f81b3668235398e3a4bfd83d54aa8650aeae2da370";
 
-        /// <summary>How long the fetch may take (the file is 1.8 MB), and how long after Play the audio may take to start,
-        /// before the press ends with "start.recording_failed".</summary>
-        public const int LoadTimeoutMs = 8000, StartTimeoutMs = 3000;
+        /// <summary>The limits before a press ends with "start.recording_failed". The fetch fails when no byte has arrived for
+        /// StallTimeoutMs (a slow link that is still receiving is never cut off), or in any case after LoadCapMs (the 1.8 MB
+        /// file takes about 60 s at 250 kbit/s). Decoding has its own budget, DecodeTimeoutMs from the moment the file has
+        /// arrived; the audio then has StartTimeoutMs after Play to start.</summary>
+        public const int StallTimeoutMs = 8000, LoadCapMs = 60000, DecodeTimeoutMs = 5000, StartTimeoutMs = 3000;
         const int WatchMs = 200;
 
+        /// <summary>A fetch under way: the bytes received so far, and a call that aborts it (after which its done callback is
+        /// not called).</summary>
+        public interface IRequest
+        {
+            ulong Bytes { get; }
+            void Abort();
+        }
+
         /// <summary>Fetches <paramref name="url"/> as a clip and calls <paramref name="done"/> once, with the clip or with
-        /// an error (never both); returns a call that aborts it (after which <paramref name="done"/> is not called).</summary>
-        public delegate Action Fetch(string url, Action<AudioClip?, string?> done);
+        /// an error (never both).</summary>
+        public delegate IRequest Fetch(string url, Action<AudioClip?, string?> done);
 
         /// <summary>Where the clip plays. The game's is an AudioSource on its own GameObject (SourceOutput).</summary>
         public interface IOutput : IDisposable
@@ -49,8 +59,8 @@ namespace Statecraft.Game.UI
 
         readonly Button button; readonly VisualElement caption, row; readonly UiText text;
         readonly Action onPress; readonly Action<string> say; readonly Fetch fetch; readonly IOutput output;
-        AudioClip? clip; Action? abort; IVisualElementScheduledItem? timer;
-        bool heard, started; int waitedMs, generation;
+        AudioClip? clip; IRequest? request; IVisualElementScheduledItem? timer;
+        bool heard, started; int waitedMs, stalledMs, generation; ulong bytesSeen;
 
         /// <summary>Idle; Loading from the press until the audio is heard; Playing while it is heard.</summary>
         public Phase State { get; private set; }
@@ -89,18 +99,19 @@ namespace Statecraft.Game.UI
             if (Playing) { Stop(); return; }
             State = Phase.Loading;
             button.text = text["start.loading"];
-            waitedMs = 0; heard = false; started = false;
+            waitedMs = 0; stalledMs = 0; bytesSeen = 0; heard = false; started = false;
             timer = button.schedule.Execute(Tick).Every(WatchMs).StartingIn(WatchMs);
             var mine = ++generation;
-            abort = fetch(Url(), (c, error) =>
+            request = fetch(Url(), (c, error) =>
             {
                 if (mine != generation || State != Phase.Loading) { Release(c); return; }   // stopped, or pressed again, meanwhile
-                abort = null;
+                request = null;
                 if (c == null) { Fail("fetch: " + error); return; }
                 clip = c;
+                waitedMs = 0;   // the decode budget starts now
                 Begin();
             });
-            if (State != Phase.Loading || clip != null) abort = null;   // the fetch answered at once
+            if (State != Phase.Loading || clip != null) request = null;   // the fetch answered at once
         }
 
         /// <summary>Plays the fetched clip once its data is ready (Tick tries again until then).</summary>
@@ -130,11 +141,18 @@ namespace Statecraft.Game.UI
         {
             if (!Playing) return;
             waitedMs += WatchMs;
-            if (clip == null) { if (waitedMs >= LoadTimeoutMs) Fail("timed out loading"); return; }
+            if (clip == null)
+            {
+                var bytes = request?.Bytes ?? 0;
+                if (bytes > bytesSeen) { bytesSeen = bytes; stalledMs = 0; } else stalledMs += WatchMs;
+                if (stalledMs >= StallTimeoutMs) Fail($"no data for {StallTimeoutMs} ms");
+                else if (waitedMs >= LoadCapMs) Fail($"not loaded after {LoadCapMs} ms");
+                return;
+            }
             if (!started)
             {
                 Begin();
-                if (Playing && !started && waitedMs >= LoadTimeoutMs) Fail("timed out decoding");
+                if (Playing && !started && waitedMs >= DecodeTimeoutMs) Fail("timed out decoding");
                 return;
             }
             if (!heard)
@@ -158,7 +176,7 @@ namespace Statecraft.Game.UI
         public void Stop()
         {
             generation++;
-            var a = abort; abort = null; a?.Invoke();
+            var r = request; request = null; r?.Abort();
             timer?.Pause(); timer = null;
             output.Stop();
             Release(clip); clip = null;
@@ -182,11 +200,24 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>The game's fetch: UnityWebRequestMultimedia from StreamingAssets, as WAV.</summary>
-        static Action WebFetch(string url, Action<AudioClip?, string?> done)
+        static IRequest WebFetch(string url, Action<AudioClip?, string?> done) => new WebRequest(url, done);
+
+        sealed class WebRequest : IRequest
         {
-            var request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV);
-            bool aborted = false, finished = false;
-            request.SendWebRequest().completed += _ =>
+            readonly UnityWebRequest request;
+            bool aborted, finished;
+
+            public WebRequest(string url, Action<AudioClip?, string?> done)
+            {
+                request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.WAV);
+                request.SendWebRequest().completed += _ => Done(done);
+            }
+
+            public ulong Bytes => finished ? 0 : request.downloadedBytes;
+
+            public void Abort() { if (aborted || finished) return; aborted = true; request.Abort(); }
+
+            void Done(Action<AudioClip?, string?> done)
             {
                 finished = true;
                 AudioClip? c = null; string? error = null;
@@ -202,8 +233,7 @@ namespace Statecraft.Game.UI
                 }
                 request.Dispose();
                 if (!aborted) done(c, error);
-            };
-            return () => { if (aborted || finished) return; aborted = true; request.Abort(); };
+            }
         }
 
         /// <summary>An AudioSource on its own GameObject, made at the first Play.</summary>

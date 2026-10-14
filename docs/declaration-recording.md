@@ -8,8 +8,9 @@ ceremony of 14 May 1948. The owner asked for it; the rights basis and its open q
 
 - **Item:** Israel State Archives, ISA-Collections-Recordings-00113hj, «העתק מן המקור של הקלטת ההכרזה על הקמת מדינת
   ישראל, כולל טקס החתימה» (a copy from the original recording of the declaration, with the signing ceremony).
-  - The archive's own description says it was «הוקלט ע"י ראלף הלינגר בעל אולפן רדיו דוקטור» (recorded by Ralph
-    Hellinger, owner of the Radio Doctor studio). Its catalogue link is
+  - The archive's own description, read on 2026-10-13 from the description of its YouTube upload below (saved by
+    yt-dlp in the download's `.info.json`), says it was «הוקלט ע"י ראלף הלינגר בעל אולפן רדיו דוקטור» (recorded by Ralph
+    Hellinger, owner of the Radio Doctor studio). The same description gives the catalogue link
     http://www.archives.gov.il/archives/#/Archive/0b07170680034d89/File/0b07170681096567.
   - The English Wikipedia article "Recording of the Israeli Declaration of Independence" (revision 1306487371)
     describes it as the archive's CD of the Kol Yisrael radio broadcast, "related to Hans and Ralf Hellinger from the
@@ -69,8 +70,12 @@ ceremony of 14 May 1948. The owner asked for it; the rights basis and its open q
 - **Pressing it:**
   - While the file loads, the button reads "Loading the recording…". Pressing it again cancels.
   - When the audio is actually heard, the button becomes "Stop the recording" and the captions show.
-  - If the fetch fails, takes more than 8 s, or the audio has not started 3 s after it was asked to play, the press
-    ends with the message "The recording could not be played."
+  - The press ends with the message "The recording could not be played." when:
+    - the fetch fails;
+    - no data arrives for 8 s (a slow link that keeps receiving is never cut off);
+    - the file has not arrived after 60 s in all;
+    - it is not decoded within 5 s of arriving;
+    - or the audio has not started 3 s after it was asked to play.
   - The end of the clip is when it was playing and now is not, so a slow first start never cancels itself.
   - Stopping releases the clip.
 - **When it plays:**

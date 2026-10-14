@@ -172,6 +172,8 @@ public class StartScreenTests
         public void Dispose() { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
     }
 
+    sealed class NoAnswer : DeclarationRecording.IRequest { public ulong Bytes => 0; public void Abort() { } }
+
     /// <summary>The start the way GameRoot makes it: GameStart.Begin over the store, the toast, New Game and the screen.</summary>
     sealed class Rig : IDisposable
     {
@@ -191,7 +193,7 @@ public class StartScreenTests
             NewGame = new NewGamePresenter(Ui.Root, Bridge, store, Toast, Text, () => 5UL);
             GameStart.Autosave(Bridge, store, Text);
             Ui.Root.Q("root").RemoveFromClassList("loading");
-            Recording = new DeclarationRecording(Ui.Root, Text, Toast.Show, (url, done) => () => { });   // a fetch that never answers
+            Recording = new DeclarationRecording(Ui.Root, Text, Toast.Show, (url, done) => new NoAnswer());   // a fetch that never answers
             Start = new StartScreenPresenter(Ui.Root, NewGame, resumed, Shown.Add, Recording);
             Start.Show();
         }
