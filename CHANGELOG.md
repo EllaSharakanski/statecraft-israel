@@ -413,6 +413,17 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   there was no agreement to give the Irgun part of the arms for Jerusalem, against the Irgun's account that he agreed.
   "Altalena Affair" stays for the dispersal of the Irgun units in the IDF. Text, dates, options and effects are
   unchanged (refs #442).
+- Seven more 1948-1950 cards cite primary sources. "Electing the Constituent Assembly" drops both Wikipedia articles:
+  the Provisional State Council's minutes of its 25th sitting (the 16 to 14 vote for 120 seats) and of 18 November 1948
+  (the ordinance adopted: proportional, one district), Harpaz for the curfew, and the CBS table from the Central Elections
+  Committee for the 86.9% turnout. "The First Truce" cites Resolution 50 and S/834 in place of the Resolution 50 article;
+  "One Army" cites the Knesset's law record and the council's minutes of 23 June 1948 in place of "1948 in Israel";
+  "Jerusalem" cites the Mediator's progress report and the JTA in place of "Dov Yosef", and its comment records that the
+  report dates the demilitarisation proposal to 3 July against 26 July in the JVL. "The Ten Days", "The Mediator
+  Assassinated" (the council's minutes of 23 September 1948, the JTA, the Knesset's law record) and "Education in the
+  Immigrant Camps" (the Knesset of 17 January 1950, the JTA) add sources and keep Wikipedia for the lines they do not
+  cover; the commission's first session on 25 January still rests on Hebrew Wikipedia, against the JTA's hearings from
+  2 February. Text, dates, options and effects are unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
