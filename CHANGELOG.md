@@ -430,6 +430,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The art checkpoint's close checks (`hero06judea`, `hero06negev`) are shot with the settlement trees off, as the haze
   already was: one tree's crown had filled `hero06judea`, so it no longer showed the ground it is there to check
   (audit 2026-10-13). The game itself is unchanged.
+- Settlement names keep clear of the unit tokens in normal play (refs #197). The Tel Aviv name no longer sits on the
+  Kiryati Brigade's badge and figures at the gameplay zoom: a token standing in a town counts as part of it, so the
+  name hangs just above the brigade, and a name keeps clear of any other token as it does of a panel. Presentation
+  only: no golden moves.
 - The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
   `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
   The pixels are unchanged.

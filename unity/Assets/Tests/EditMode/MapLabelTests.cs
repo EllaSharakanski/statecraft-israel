@@ -505,6 +505,75 @@ public class MapLabelTests
         finally { inset.Dispose(); labels.Dispose(); hd.Dispose(); }
     }
 
+    /// <summary>Issue #197 (audit 2026-10-13, webunits-gameplay03): in normal play at the gameplay03 pose (its yaw, with
+    /// the game's top-bar inset) the Tel Aviv pill keeps clear of the Kiryati Brigade standing in Tel Aviv: it overlaps
+    /// neither the brigade's badge nor its figures, and it still hangs above the town (over its kit's width, not beside
+    /// it); no shown pill overlaps any token's badge. The rectangles are measured
+    /// independently of the presenter: the badge plate's corners as it faces the camera, the figures' renderer bounds,
+    /// both through the camera's pixels.</summary>
+    [UnityTest]
+    public IEnumerator PillsKeepClearOfTheUnitTokens()
+    {
+        var content = Statecraft.Sim.ContentLoader.Load(Statecraft.Game.Paths.Content);
+        var units = Statecraft.Game.Map.Units.UnitData.Parse(File.ReadAllText(Path.Combine(Statecraft.Game.Paths.Content, "map", Statecraft.Game.Map.Units.UnitData.DefaultFileName)));
+        var layer = Statecraft.Game.Map.Units.UnitLayer.Create(map, units, content.Hexes, still: true);
+        layer.Show(content, Statecraft.Sim.Simulation.NewGame(content, Statecraft.Sim.GoldenRun.Seed, Statecraft.Sim.Mode.Historical));
+        HdPanel hd = new HdPanel(cam);   // typed, not var: the local functions below capture it
+        var labels = new MapLabelsPresenter(hd.Root, map, cam, keepClear: () => layer.KeepClear);
+        var inset = new TopBarInset(hd.Root, rig);
+        try
+        {
+            var pose = PromoPose.Gameplay03;
+            rig.LookAt = map.Frame.ToWorld(pose.Lon, pose.Lat, 0); rig.Distance = pose.Distance; rig.Yaw = pose.Yaw; rig.Apply();
+            yield return null;
+            inset.Update();
+            yield return Settle(labels);
+            var tokens = GameObject.Find(Statecraft.Game.Map.Units.UnitLayer.RootName).transform.Find("Tokens");
+            Rect Hull(System.Collections.Generic.IEnumerable<Vector3> points)
+            {
+                float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+                foreach (var w in points)
+                {
+                    var p = hd.ToPanel(w, out bool inFront); Assert.IsTrue(inFront);
+                    x0 = Mathf.Min(x0, p.x); y0 = Mathf.Min(y0, p.y); x1 = Mathf.Max(x1, p.x); y1 = Mathf.Max(y1, p.y);
+                }
+                return Rect.MinMaxRect(x0, y0, x1, y1);
+            }
+            Rect BadgeRect(Transform token)
+            {
+                var badge = token.Find("Badge"); var turn = cam.transform.rotation;   // the plate faces the camera as it renders
+                float half = Statecraft.Game.Map.Units.UnitBadge.SizeM / 2f;
+                return Hull(new[] { new Vector3(-half, -half, 0), new Vector3(half, -half, 0), new Vector3(-half, half, 0), new Vector3(half, half, 0) }
+                    .Select(c => badge.position + turn * c));
+            }
+            Rect FiguresRect(Transform token) => Hull(token.GetComponentsInChildren<Renderer>().Where(r => r.name.StartsWith("Rifleman"))
+                .SelectMany(r => { var b = r.bounds; return Enumerable.Range(0, 8).Select(c => new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y, (c & 4) == 0 ? b.min.z : b.max.z)); }));
+
+            var kiryati = layer.Tokens.Single(t => t.Token.Unit.Id == "kiryati");
+            Assert.AreEqual("Tel Aviv", kiryati.Token.Anchor.Place, "the brigade stands in Tel Aviv on the first turn");
+            var token = tokens.Find("kiryati");
+            Rect badgeRect = BadgeRect(token), figuresRect = FiguresRect(token);
+            var tlv = labels.Slots.Single(s => s.name == "slot-tel_aviv");
+            Assert.IsTrue(Shown(tlv), "Tel Aviv is named at gameplay03");
+            var pill = tlv.Q<Label>().worldBound;
+            TestContext.WriteLine($"gameplay03: Tel Aviv pill {pill}, Kiryati badge {badgeRect}, figures {figuresRect}");
+            Assert.IsFalse(pill.Overlaps(badgeRect), $"the Tel Aviv pill {pill} overlaps the Kiryati badge {badgeRect}");
+            Assert.IsFalse(pill.Overlaps(figuresRect), $"the Tel Aviv pill {pill} overlaps the Kiryati figures {figuresRect}");
+            var kit = KitRectOf(hd, "tel_aviv");
+            Assert.LessOrEqual(pill.yMax, kit.yMin + 1f, $"the pill {pill} still hangs above Tel Aviv's kit {kit}");
+            Assert.IsTrue(pill.center.x >= kit.xMin && pill.center.x <= kit.xMax, $"over the town, not beside it: pill {pill}, kit {kit}");
+            var badges = layer.Tokens.Select(t => (id: t.Token.Unit.Id, rect: BadgeRect(tokens.Find(t.Token.Unit.Id)))).ToList();
+            foreach (var slot in labels.Slots.Concat(labels.LocalitySlots).Where(Shown))
+                foreach (var (id, rect) in badges)
+                    Assert.IsFalse(slot.Q<Label>().worldBound.Overlaps(rect), $"{slot.name} {slot.Q<Label>().worldBound} overlaps {id}'s badge {rect}");
+
+            VisualToggles.Set(Statecraft.Game.Map.Units.UnitLayer.ToggleName, false);   // the units off: the names need not keep clear
+            labels.Refresh(); yield return null;
+            Assert.AreEqual(0, layer.KeepClear.Count, "a hidden layer asks no pill to keep clear");
+        }
+        finally { inset.Dispose(); labels.Dispose(); hd.Dispose(); }
+    }
+
     static readonly string[] Occluders = { "top-bar", "info-panel", "minimap" };
 
     /// <summary>Marker tops on screen and not under a panel, in panel coordinates (independent of the presenter).</summary>
