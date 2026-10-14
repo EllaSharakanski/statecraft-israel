@@ -256,6 +256,18 @@
             <ui:ScrollView name="why-rows" class="grow" />
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
+        <!-- The End Turn outcome clip (OutcomePresenter): the historical order the player gave, as a 3.5 s silent clip in the
+             middle, captioned as the order; a click, Enter or Space skips it, Esc skips them all. After the screens, so it
+             is drawn over them (an open screen is also closed when a clip starts); only the start screen and the toast come
+             later. -->
+        <ui:VisualElement name="outcome-layer" class="outcome-layer">
+            <ui:VisualElement name="outcome-frame" class="panel outcome-frame" picking-mode="Ignore">
+                <ui:VisualElement name="outcome-media" class="outcome-media" picking-mode="Ignore"><ui:Label name="outcome-label" class="outcome-label" picking-mode="Ignore" /></ui:VisualElement>
+                <ui:Label name="outcome-caption" class="title outcome-caption" picking-mode="Ignore" />
+                <ui:Label name="outcome-hint" class="muted outcome-hint" picking-mode="Ignore" />
+                <Statecraft.Game.UI.UiFrame filigree="true" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <!-- The start screen (StartScreenPresenter): shown over the started game before its first turn (never in automated
              runs). The painting is AI-generated concept art (ASSETS.yaml), with no identifiable person. The two quotations
              are the Declaration of the Establishment of the State of Israel, word for word: the official Hebrew (Iton

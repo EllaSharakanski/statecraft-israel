@@ -48,6 +48,7 @@ namespace Statecraft.Game.UI
         ScreenNav? nav;
         StartScreenPresenter? start;
         EventCardPresenter? card;
+        OutcomePresenter? outcomes;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -147,9 +148,14 @@ namespace Statecraft.Game.UI
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             // The Illustration switch's silent loops (event-videos.yaml, Resources): none in the automated runs (CardVideo.ForcedOff).
             var video = CardVideo.ForcedOff() ? null : Own(new CardVideo());
-            var clips = video == null ? null : EventVideoMapping.Load().ToDictionary(r => r.Event);
+            var mapping = video == null ? default : EventVideoMapping.LoadBoth();
+            var clips = video == null ? null : mapping.clips.ToDictionary(r => r.Event);
             card = Own(new EventCardPresenter(root, bridge, text, portraits, EventImageCatalog.Load(), video,
                 clips == null ? null : id => clips.TryGetValue(id, out var r) ? r : null));   // event photos: Resources, no scene field
+            // The End Turn outcome clips (decision videos, phase 3): none in the automated runs (no video there). Their own
+            // player, so the card's loop never takes it; an open screen closes when one starts.
+            outcomes = video == null ? null : Own(new OutcomePresenter(root, bridge, text, Own(new CardVideo()), mapping.outcomes,
+                () => card?.Render(), () => nav?.Close()));
             Own(new DefencePresenter(root, bridge, text, portraits));
             Own(new BudgetPresenter(root, bridge, text));
             Own(new WhyPresenter(root, bridge, text));
@@ -199,7 +205,8 @@ namespace Statecraft.Game.UI
                 Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
-            Func<Vector2, bool> overUi = p => UiPointer.IsOverUi(root.panel, p, Screen.height);
+            // An outcome clip holds the pointer while it shows and in the frame it closes (the skipping click selects no hex).
+            Func<Vector2, bool> overUi = p => outcomes?.HoldsThePointer == true || UiPointer.IsOverUi(root.panel, p, Screen.height);
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
             var oldBounds = cameraController.Bounds;
@@ -308,7 +315,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; nav = null; start = null; card = null; rig = null; drawn = null; units = null; logCamera = false;
+            minimap = null; labels = null; nav = null; start = null; card = null; outcomes = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -364,7 +371,7 @@ namespace Statecraft.Game.UI
             // Game request (StartScreenPresenter.Escape; idempotent too).
             // With nothing else to close, Escape on the open decision card is Hide (EventCardPresenter.Escape; the card itself
             // takes the Cancel event when it has the focus).
-            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { bool done = start?.Escape() == true; done |= nav?.Close() == true; if (!done && document.rootVisualElement.focusController?.focusedElement == null) card?.Escape(); }
+            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { bool done = outcomes?.SkipAll() == true || outcomes?.ClosedThisFrame == true; done |= start?.Escape() == true; done |= nav?.Close() == true; if (!done && document.rootVisualElement.focusController?.focusedElement == null) card?.Escape(); }
             SyncMinimap();
             if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
             loggedDistance = rig.Distance; loggedYaw = rig.Yaw;
