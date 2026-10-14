@@ -404,7 +404,8 @@ public class CameraInputTests
         Assert.AreEqual(1f, CameraController.WheelEventNotches(-4.000244140625f, CameraController.WheelPixels), 1e-5, "macOS tick");
         Assert.AreEqual(-2f, CameraController.WheelEventNotches(8.00048828125f, CameraController.WheelPixels), 1e-5,
             "an accelerated macOS tick is two");
-        Assert.AreEqual(0f, CameraController.WheelEventNotches(0f, CameraController.WheelPixels));
+        foreach (var mode in new[] { CameraController.WheelPixels, CameraController.WheelLines, CameraController.WheelPages })
+            Assert.AreEqual(float.PositiveInfinity, 1f / CameraController.WheelEventNotches(0f, mode), $"0 in mode {mode} is +0, not -0");
     }
 
     [Test]
@@ -438,7 +439,10 @@ public class CameraInputTests
                 Assert.AreEqual(before * Mathf.Pow(0.9f, px / 100f), rig.Distance, 1f, $"{px} px");
             }
             var held = rig.Distance;
-            CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, 1f, 0, false, new Vector2(50, 0)), 0.016f, Map);
+            var swipe = new[] { -0.5f, -2f, -8f, -8f, -4f, -1f, -100f };   // a swipe and a mouse notch, over the panel
+            var overPanel = CameraController.WheelNotches(swipe, new int[swipe.Length], swipe.Length);
+            Assert.Greater(overPanel, 1f);
+            CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, overPanel, 0, false, new Vector2(50, 0)), 0.016f, Map);
             Assert.AreEqual(held, rig.Distance, 1e-3, "no zoom over a panel");
         }
         finally { Object.DestroyImmediate(go); }

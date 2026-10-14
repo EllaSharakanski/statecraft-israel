@@ -44,9 +44,12 @@ namespace Statecraft.Game.Map
 
         /// <summary>The DOM WheelEvent deltaMode values.</summary>
         public const int WheelPixels = 0, WheelLines = 1, WheelPages = 2;
-        /// <summary>Wheel pixels in one notch: Chrome and Safari on Windows send 100 px a mouse notch.</summary>
+        /// <summary>Wheel pixels in one notch: Chrome and Edge on Windows send 100 px a mouse notch at 100% page zoom. The
+        /// browser divides wheel pixels by the page zoom (Ctrl/Cmd +), and devicePixelRatio mixes that zoom with the
+        /// display's scale, so the page cannot undo it: at 125% page zoom a notch is 80 px, 8%.</summary>
         public const float PixelsPerNotch = 100f;
-        /// <summary>Lines in one notch: Firefox sends a mouse notch as three lines when a page asks for lines.</summary>
+        /// <summary>Lines in one notch: Firefox sends a mouse notch as three lines (WheelInput.jslib asks for the mode first,
+        /// so Firefox keeps lines; otherwise it would send three line heights in pixels).</summary>
         public const float LinesPerNotch = 3f;
         /// <summary>One mouse tick on macOS, in pixels, in Chrome and Safari (Cocoa's 0.1000061 lines times 40 px). A delta
         /// that is a whole number of these is a mouse, not a trackpad (the test MapLibre and Mapbox GL use).</summary>
@@ -128,13 +131,14 @@ namespace Statecraft.Game.Map
         /// events.</summary>
         public static float WheelEventNotches(float deltaY, int deltaMode)
         {
+            if (deltaY == 0f) return 0f;   // not -0: a stray zero event is no zoom, either way
             switch (deltaMode)
             {
                 case WheelLines: return -deltaY / LinesPerNotch;
                 case WheelPages: return -deltaY;
             }
             double ticks = deltaY / MacWheelTick;
-            if (deltaY != 0f && ticks == Math.Round(ticks)) return (float)-ticks;
+            if (ticks == Math.Round(ticks)) return (float)-ticks;
             return -deltaY / PixelsPerNotch;
         }
 

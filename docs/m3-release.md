@@ -182,9 +182,24 @@ Differences and notes:
   itself (`WheelInput.jslib` queues each event's `deltaY` and `deltaMode`, and `CameraController.WheelEventNotches`
   scales them): three lines or one page is a notch, a whole number of macOS mouse ticks (4.000244140625 px, the value
   Chrome and Safari send on a Mac) is a notch a tick, and other pixels count 100 to the notch. The same swipe now zooms
-  1.08 notches (10.8%) over 31 frames, never more than 0.08 in a frame, and a 100 px or three-line notch before or after
-  it zooms 10%. Still to be tried by hand: a Mac trackpad and a Mac mouse in Chrome and Safari, and a mouse on Linux,
-  where a notch may be fewer than 100 px and so zoom less than 10%.
+  1.08 notches (10.8%) over 30 or 31 frames, never more than 0.15 in a frame, and a 100 px or three-line notch before or
+  after it zooms 10%. `uv run tools/headed.py wheel` repeats these cases in Chrome, and
+  `pytest tools/tests/test_headed.py --headed` checks them.
+
+  Firefox 88 and later report a mouse notch in lines only to a script that reads `deltaMode` before `deltaY`, and in
+  pixels (three line heights) otherwise; Unity's own handler reads `deltaY` first. So the listener
+  sits on `window` in the capture phase, ahead of Unity's handler, and reads the mode first; Firefox then keeps the
+  notch in lines for both. Not measured: Playwright's Firefox does not start on this Mac (headless: "Failed to launch
+  the browser process"; headed and with a persistent profile: no window within 60 s).
+
+  Known limits of counting pixels: the browser divides wheel pixels by the page zoom (Ctrl or Cmd +), and
+  `devicePixelRatio` mixes that zoom with the display's scale, so the page cannot undo it. At 125% page zoom a 100 px
+  notch is 80 px (8%), and at 110% a Mac mouse tick is 3.64 px, not a whole tick, so 3.6%. A mouse whose notch is not
+  100 px zooms in proportion too. Playwright's and CDP's synthetic 100 px wheel arrives in Chrome as 200 px (seen in
+  the page, `devicePixelRatio` 1), so it zooms two steps (19%) where `main` gave one; WebKit's arrives as 100 px. Still
+  to be tried by hand: a Mac trackpad and a Mac mouse in Chrome and Safari, a mouse in Firefox (Windows, Linux, Mac),
+  Chrome or Edge on Windows at 125% and 150% display scale (one notch), and a mouse on Linux, where a notch may be fewer
+  than 100 px.
 - **Aborted requests in Chrome.** At each start Chrome lists about 30 of the 51 content files (and the map files) as
   `net::ERR_ABORTED` in its network log. The files arrive whole: both browsers log the same `BOOT OK content` hash and
   the goldens pass. WebKit lists none. Not a console error, so it is left as it is.
