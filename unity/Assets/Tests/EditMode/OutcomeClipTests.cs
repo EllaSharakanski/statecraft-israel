@@ -229,6 +229,29 @@ public class OutcomeClipTests
         }
     }
 
+    /// <summary>The outcome code subscribes to TurnEnded before the autosave (as in GameRoot). A throw anywhere in it is
+    /// caught there, so the turn is still saved.</summary>
+    [Test]
+    public void AThrowInTheOutcomeCodeNeverSkipsTheAutosave()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "statecraft-outcome-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SaveStore(dir);
+            using var r = new Rig(new[] { "maabarot_policy" });
+            using var save = GameStart.Autosave(r.Bridge, store, Text);
+            r.Outcomes.BeforeTurn = () => throw new InvalidOperationException("outcome failure");
+            r.Order("maabarot_policy", "maabarot");
+            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("outcome failure"));
+            r.Bridge.EndTurn();
+            Assert.IsTrue(File.Exists(store.AutosavePath), "the turn was saved");
+            Assert.IsNotEmpty(File.ReadAllText(store.AutosavePath));
+            Assert.IsNull(r.Outcomes.Showing);
+            Assert.IsFalse(r.Open, "nothing is left half open");
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
     /// <summary>The build gate reads the outcome clips from the mapping (Build.GatedClips, used by RefuseUnlessShareable):
     /// the sensitive, unreviewed Horev clip refuses a shareable build.</summary>
     [Test]

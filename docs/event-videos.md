@@ -17,7 +17,7 @@ moments.md`, the "Full plan"; plan: `docs/superpowers/plans/2026-10-13-decision-
 - **Silent.** The clips have no audio stream (`tools/encode_event_videos.py` refuses one).
 - **Opt-in.** A card's loop plays only after the player presses the switch, so it needs no separate pause button and no
   reduced-motion setting. Pressing the switch again stops it. (The outcome clips below play at End Turn without a
-  switch, once, for 3.5 s, and any key or click skips them.)
+  switch, once, for 3.5 s: a click, Enter or Space skips one, and Esc skips them all.)
   - The choice holds for the session: later cards open on their clip until the player switches back.
   - It is not saved, and every launch starts on the photograph.
 - **Deport never gets any video** (GDD owner ruling 1). `EventVideoMapping.Problems` refuses a row for an event with a

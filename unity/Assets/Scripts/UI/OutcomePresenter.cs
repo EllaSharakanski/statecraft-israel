@@ -73,7 +73,17 @@ namespace Statecraft.Game.UI
             layer.Q<Label>("outcome-hint").text = text["outcome.skip"];
             layer.Q<Label>("outcome-label").text = text["event.ai_label"];
             layer.focusable = true; layer.tabIndex = 0;
-            onTurn = Turn;
+            onTurn = rejected =>
+            {
+                // Guarded as a whole: nothing in the outcome code may throw out of TurnEnded, whose later handlers
+                // include the turn's autosave (GameStart.Autosave subscribes after this presenter).
+                try { Turn(rejected); }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogException(e);
+                    try { queue.Clear(); video.Stop(); Close(); } catch (Exception again) { UnityEngine.Debug.LogException(again); }
+                }
+            };
             onPointer = e => { Skip(); e.StopPropagation(); };
             onSubmit = e => { Skip(); e.StopPropagation(); };
             onCancel = e => { SkipAll(); e.StopPropagation(); };
@@ -94,8 +104,12 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>The turn just run: queue the clip of every historical order it applied, then play the first.</summary>
+        /// <summary>Test seam: runs at the start of each turn's handling (a test throws from it).</summary>
+        internal Action? BeforeTurn;
+
         void Turn(IReadOnlyList<Rejection> rejected)
         {
+            BeforeTurn?.Invoke();
             var c = bridge.Content; var s = bridge.State;
             foreach (var order in bridge.LastBatch.OfType<ChooseEventOption>())
             {
