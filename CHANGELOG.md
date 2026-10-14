@@ -217,6 +217,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   unchanged (#390). Presentation only (#458).
 - The `mvp-slice` golden is re-pinned (`0451920a` to `f6931e24`): the slice now has its city and the GDD turn, and the
   reference player fills the jobs (GDD Phase 1 PR 3, refs #376). The legacy goldens do not move.
+- The hills carry a loose, uneven scatter of single olives and low scrub between the olive clumps, like promo 03's hills
+  (refs #34): over the wet hill country where the land use is garrigue and terraces, outside the groves, the towns'
+  footprints and the hex-edge midpoints. The olives already planted stay where they are; the map has about 20,000 trees
+  instead of 8,400.
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
