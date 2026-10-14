@@ -334,6 +334,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- Four 1948 localities corrected against the Village Statistics 1945 scan (#200): Ijzim is 2,970, not 4,280 (the
+  transcription's "Ijzim (Nazareth subdistrict)" is 'Ilut, a different village); Ilar's Wikidata item is the place's
+  main item, "Illar, Tulkarm"; Beit Nuba's row reads 'Ajanjul; Zakariya's article is now Zekharia. The rows stay
+  `owner_verify`. The map's localities are outside the content hash, so no golden moves.
 - "The Altalena" also cites the Provisional State Council's sixth sitting, 24 June 1948: the council approved the
   government's action against the Irgun's arms ship 24 to 4, with 5 abstaining, and a committee to secure a single army.
   Source rows and comments only (refs #442).
