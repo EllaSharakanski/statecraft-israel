@@ -146,9 +146,9 @@ namespace Statecraft.Game.UI
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
             bool hebrew = text["ui.lang"] == UiLanguage.Hebrew;
-            // Hebrew: the Hebrew face, the advanced text generator and the mirrored rows (.lang-he), paragraphs right to left.
-            root.EnableInClassList(UiLanguage.HebrewClass, hebrew);
-            root.languageDirection = hebrew ? LanguageDirection.RTL : LanguageDirection.Inherit;
+            // Hebrew: the Hebrew face, the advanced text generator and the mirrored rows (.lang-he); each text's paragraph
+            // direction comes from its own text (UiDirection, made below once the presenters have rendered).
+            (root.Q("root") ?? root).EnableInClassList(UiLanguage.HebrewClass, hebrew);   // on .root, whose face it replaces
 
             // The toast first: the autosave (below) must report a failed write after the toast has shown the turn's refusals.
             var toast = Own(new ToastPresenter(root, bridge, text));
@@ -269,6 +269,7 @@ namespace Statecraft.Game.UI
                 start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }, recording));
                 start.Show();
             }
+            if (hebrew) Own(new UiDirection(root, bridge));
             root.Q("root")?.RemoveFromClassList("loading");                // ready: the bar, panels and screens may show (P2-1)
             DiagLog.BootPhase("screens ready");
 

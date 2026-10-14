@@ -74,24 +74,60 @@ public class HebrewUiTests
     public void TheGameIsEnglishUnlessHebrewIsAskedFor()
     {
         var game = Boot(null);                                         // the test run's command line has no "-lang he"
-        Assert.IsFalse(Ui.ClassListContains(UiLanguage.HebrewClass));
-        Assert.AreEqual(LanguageDirection.Inherit, Ui.languageDirection);
+        Assert.IsFalse(Ui.Q("root").ClassListContains(UiLanguage.HebrewClass));
         Assert.AreEqual(En.Format("hud.turn", game.Bridge!.State.Turn), Ui.Q<Label>("turn").text);
+        Assert.IsTrue(Ui.Query<TextElement>().ToList().All(t => t.ClassListContains("start-he") || t.languageDirection == LanguageDirection.Inherit),
+            "English sets no paragraph direction");
     }
 
     [Test]
     public void AskedForHebrewTheGameLoadsTheHebrewStringsAndMarksTheRoot()
     {
         var game = Boot(UiLanguage.Hebrew);
-        Assert.IsTrue(Ui.ClassListContains(UiLanguage.HebrewClass));
-        Assert.AreEqual(LanguageDirection.RTL, Ui.languageDirection);
+        Assert.IsTrue(Ui.Q("root").ClassListContains(UiLanguage.HebrewClass));
         Assert.AreEqual(He.Format("hud.turn", game.Bridge!.State.Turn), Ui.Q<Label>("turn").text);
         StringAssert.Contains("תור", Ui.Q<Label>("turn").text);
-        // Starting again in English takes the mark off (New Game restarts through Begin).
+        // Starting again in English takes the mark and every direction off (New Game restarts through Begin).
         game.Language = UiLanguage.English;
         game.Begin(Inputs, 0);
-        Assert.IsFalse(Ui.ClassListContains(UiLanguage.HebrewClass));
-        Assert.AreEqual(LanguageDirection.Inherit, Ui.languageDirection);
+        Assert.IsFalse(Ui.Q("root").ClassListContains(UiLanguage.HebrewClass));
+        Assert.AreEqual(En.Format("hud.turn", game.Bridge!.State.Turn), Ui.Q<Label>("turn").text);
+        Assert.IsTrue(Ui.Query<TextElement>().ToList().All(t => t.ClassListContains("start-he") || t.languageDirection == LanguageDirection.Inherit));
+    }
+
+    // --- The direction ----------------------------------------------------------------------------------------------
+
+    [Test]
+    public void ATextIsRightToLeftWhenItsFirstLetterIsHebrew()
+    {
+        foreach (var s in new[] { "תור 1", "5  מלחמה כוללת", "קואליציה: 30 מתוך 37", "‏…אנו", "العربية" })
+            Assert.IsTrue(UiDirection.RightToLeft(s), s);
+        foreach (var s in new[] { "15 May 1948", "IL 20.0m", "+5%", "-5%", "30%", "", "David Ben-Gurion", "Mapai :מפלגה", "$40.0m", "1948" })
+            Assert.IsFalse(UiDirection.RightToLeft(s), s);
+        Assert.IsFalse(UiDirection.RightToLeft(null));
+    }
+
+    /// <summary>In Hebrew each text takes its paragraph direction from its own words: the Hebrew strings right to left, the
+    /// English date and the numbers left to right (so "15 May 1948" is not reordered), and a text that changes follows.</summary>
+    [Test]
+    public void InHebrewEachTextTakesItsDirectionFromItsOwnWords()
+    {
+        var game = Boot(UiLanguage.Hebrew);
+        Assert.AreEqual(LanguageDirection.RTL, Ui.Q<Label>("turn").languageDirection, "turn: Hebrew");
+        Assert.AreEqual(LanguageDirection.LTR, Ui.Q<Label>("date").languageDirection, "the date is still English (#55)");
+        Assert.AreEqual(LanguageDirection.LTR, Ui.Q<Label>("year").languageDirection, "digits alone");
+        foreach (var t in Ui.Query<TextElement>().ToList().Where(t => !t.ClassListContains("start-he")))
+            Assert.AreEqual(UiDirection.RightToLeft(t.text) ? LanguageDirection.RTL : LanguageDirection.LTR, t.languageDirection, $"'{t.name}': {t.text}");
+        // A text that changes takes its new direction at once.
+        var turn = Ui.Q<Label>("turn");
+        turn.text = "Turn 7";
+        Assert.AreEqual(LanguageDirection.LTR, turn.languageDirection);
+        turn.text = "תור 7";
+        Assert.AreEqual(LanguageDirection.RTL, turn.languageDirection);
+        // After a turn the texts the turn rewrote keep the direction of their new words.
+        game.Bridge!.EndTurn();
+        Assert.AreEqual(LanguageDirection.RTL, turn.languageDirection, turn.text);
+        Assert.AreEqual(LanguageDirection.LTR, Ui.Q<Label>("date").languageDirection, Ui.Q<Label>("date").text);
     }
 
     // --- The house ---------------------------------------------------------------------------------------------------
