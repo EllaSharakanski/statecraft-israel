@@ -272,6 +272,8 @@ public class KeyboardFocusTests
             var inner = screenEl.worldBound;
             var bottom = inner.yMax - s.borderBottomWidth - s.paddingBottom;
             var r = status.worldBound;
+            var sizes = $"side {side.height:0}, card {p.Q<VisualElement>("seat-" + CabinetPresenter.PrimeMinister).worldBound.height:0}, offices {p.Q<VisualElement>("cabinet-pm-offices").worldBound.height:0}, pick {p.Q<VisualElement>("cabinet-pick").worldBound.height:0}, status {r.height:0}";
+            where += $" ({sizes})";
             Assert.LessOrEqual(r.xMax, side.xMax + 0.5f, $"{where}: the orders line {r} runs out of the side column {side}");
             Assert.LessOrEqual(r.yMax, bottom + 0.5f, $"{where}: the orders line {r} runs below the screen's content ({bottom:0})");
             var width = status.contentRect.width;
