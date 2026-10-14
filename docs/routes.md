@@ -210,8 +210,10 @@ measurement in `docs/units.md`:
     Median at gameplay03: 4 px on main, 9 px here (bound 6); at close30 (30 km): 7 px on main, 19 px here (bound 12).
     The core stands a median 0.19 luma over the ground (main 0.15).
   - It stays under the railway (680 m, dark ballast and bright rails) and the region borders (saturated blue).
-  - The corridor kits keep clear of grows with the width (half of 420 m plus 100 m), so a few lots and trees beside the
-    roads move off them.
+  - The kits' corridor along a road stays 250 m either side of the line, as on main: half the 420 m width plus
+    `RoadCorridorMarginM` (40 m, other routes keep 100 m). The road's outer 22% is its soft edge, so lots and crowns
+    still keep about 130 m from the visible dirt. With 100 m (a 310 m corridor) the kits lost Jerusalem's Haram
+    al-Sharif landmarks and Beersheba's houses (`TownCensusTests`).
 - The railway is a cool grey stone ballast bed with darker shoulders, dark sleepers every 100 m and two bright steel
   rails, after promo 03 and the video's 0:21 close-up (refs #35, `.superpowers/borders-routes-r1/PLAN.md` R1 and R2).
   - A rail is 0.036 of the 680 m bed, about 0.7 px at gameplay03, so its box filter left it faint: averaged along the
@@ -288,7 +290,7 @@ does (#320, docs/visual-v1.md).
 
 **Kits keep off the routes** (settlement kits and trees, #179).
 - `MapScene` reads the routes before building the kits, and hands `KitLayer.Build` every route's corridor
-  (`RouteLayer.Corridors`): half the drawn width plus `CorridorMarginM` (100 m).
+  (`RouteLayer.Corridors`): half the drawn width plus `CorridorMarginM` (100 m; 40 m for roads, `RoadCorridorMarginM`).
 - `KitGround.OnRoute` (a 2 km segment grid) keeps building lots, landmarks and tree crowns out of these corridors.
   B9 still keeps trees out of building lots.
 - Every route gets its corridor, whatever its date: the kits are built once, not per date, so the Burma Road's corridor

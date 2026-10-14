@@ -76,12 +76,17 @@ namespace Statecraft.Game.Map.Routes
         /// <summary>Clearance (m) beyond a ribbon's drawn half-width that kit buildings and trees keep from it, so a lot's or
         /// crown's edge never touches the soft edge of the road or the ballast.</summary>
         public const float CorridorMarginM = 100f;
+        /// <summary>The roads' clearance (m) beyond their drawn half-width: 40 m, so their corridor stays the 250 m half-width
+        /// it had when roads were 300 m wide. A wider corridor pushed town kits off the roads that run through the towns
+        /// (Jerusalem's Haram al-Sharif, Beersheba's houses: TownCensusTests). The road's outer 22% is its soft edge, so a
+        /// lot or crown still keeps about 130 m from the visible dirt.</summary>
+        public const float RoadCorridorMarginM = 40f;
 
         /// <summary>Every route's line (world x, z) with the half-width kits must keep clear of: half the drawn width plus
-        /// <see cref="CorridorMarginM"/>. All routes, whatever their window: the kits are built once, not per date, so a route
-        /// that appears later (the Burma Road) has its corridor from the start.</summary>
+        /// <see cref="CorridorMarginM"/> (<see cref="RoadCorridorMarginM"/> for roads). All routes, whatever their window: the
+        /// kits are built once, not per date, so a route that appears later (the Burma Road) has its corridor from the start.</summary>
         public static List<(List<Vector2> line, float halfWidth)> Corridors(GeoFrame frame, IEnumerable<RoutePath> routes) =>
-            routes.Select(r => (World(frame, r), WidthOf(r.Kind) / 2f + CorridorMarginM)).ToList();
+            routes.Select(r => (World(frame, r), WidthOf(r.Kind) / 2f + (r.Kind == RoutePaths.Road ? RoadCorridorMarginM : CorridorMarginM))).ToList();
 
         public static float WidthOf(string kind) => kind switch
         {

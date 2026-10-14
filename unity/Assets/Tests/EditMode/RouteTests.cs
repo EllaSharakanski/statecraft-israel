@@ -471,6 +471,11 @@ public class RouteTests
             // Plus one segment per unit clearing (a unit token in a town: docs/units.md, "Placement").
             Assert.AreEqual(corridors.Sum(c => c.line.Count - 1) + map.UnitClearings.Count, map.KitStats.CorridorSegments, "the map hands every route to the kits");
             Assert.IsTrue(routes.Any(r => r.Id == "burma_road"), "the dated Burma Road keeps its corridor from the start");
+            // Every corridor clears its drawn ribbon by at least the roads' margin, and the roads' stays main's 250 m (so the
+            // wider road moves no town kit).
+            for (int i = 0; i < routes.Count; i++)
+                Assert.GreaterOrEqual(corridors[i].halfWidth, RouteLayer.WidthOf(routes[i].Kind) / 2f + RouteLayer.RoadCorridorMarginM, routes[i].Id);
+            Assert.AreEqual(250f, RouteLayer.RoadWidthM / 2f + RouteLayer.RoadCorridorMarginM, "the roads' kit corridor");
 
             // The same placement the map runs, with the same corridors.
             var g = new Statecraft.Game.Map.Kits.KitGround(map.Terrain, map.Frame, map.Hexes, HeightmapLoader.Load(Paths.StreamingMap).meta.elev_min_m);
