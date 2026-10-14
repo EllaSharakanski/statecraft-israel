@@ -201,12 +201,15 @@ Differences and notes:
   Firefox 88 and later report a mouse notch in lines only to a script that reads `deltaMode` before `deltaY`, and in
   pixels (three line heights) otherwise; Unity's own handler reads `deltaY` first. So the listener sits on `window` in
   the capture phase, ahead of Unity's handler, and reads the mode first; Firefox then keeps the notch in lines for
-  both. Not measured: Playwright's Firefox does not start on this Mac (headless: "Failed to launch the browser
+  both. That listener is what handles Firefox; the 50 px rule is only a backstop in case a notch still arrives in
+  pixels. Not measured: Playwright's Firefox does not start on this Mac (headless: "Failed to launch the browser
   process"; headed and with a persistent profile: no window within 60 s). Were the notch to arrive in pixels after
-  all, three line heights of 50 px or more would still be one notch, and less than that (a small font) proportional.
+  all, three line heights of 50 px or more would still be one notch. With a default font of 14 px or less, three line
+  heights come to about 48 px, so such a notch would zoom about 0.48 of a step: too little, never too much.
 
   Known limits: a mouse notch below 50 px that is not a whole macOS tick counts in proportion, for instance a Mac mouse
-  tick at 110% page zoom (3.64 px, 3.6%) or a notch at a page zoom of 200% or more. Still to be tried by hand: a Mac
+  tick at 110% page zoom (3.64 px, 3.6%), a notch at a page zoom of 200% or more, or a Firefox notch in pixels with a
+  default font of 14 px or less (about 48 px, 0.48 of a step). Still to be tried by hand: a Mac
   trackpad (including fast flicks) and a Mac mouse in Chrome and Safari, a mouse in Firefox (Windows, Linux, Mac),
   Chrome or Edge on Windows at 125% and 150% display scale (one notch), and a mouse on Linux.
 - **Aborted requests in Chrome.** At each start Chrome lists about 30 of the 51 content files (and the map files) as
