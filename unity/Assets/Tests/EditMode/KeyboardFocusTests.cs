@@ -217,7 +217,9 @@ public class KeyboardFocusTests
         }
     }
 
-    /// <summary>M4: on the lit (current) escalation rung both the rung's name and its turn length are at least 4.5:1.</summary>
+    /// <summary>M4: on the lit (current) escalation rung both the rung's name and its turn length are at least 4.5:1; on
+    /// every plain rung the 15 px turn length is at least 5.5:1 computed, the margin anti-aliasing takes from it (ink-dim's
+    /// 5.0:1 measured 4.0 to 4.2:1).</summary>
     [UnityTest]
     public IEnumerator TheLitRungsTextIsAtLeastFourPointFiveToOne()
     {
@@ -235,6 +237,14 @@ public class KeyboardFocusTests
             var label = p.Q<Label>($"rung-{bridge.State.Rung}-{part}");
             var ratio = Ratio(label.resolvedStyle.color, back);
             Assert.GreaterOrEqual(ratio, 4.5f, $"the lit rung's {part} '{label.text}' is {ratio:0.00}:1");
+        }
+        for (int n = 1; n <= 5; n++)
+        {
+            if (n == bridge.State.Rung) continue;
+            var plain = p.Q<VisualElement>("rung-" + n);
+            var turn = p.Q<Label>($"rung-{n}-turn");
+            var ratio = Ratio(turn.resolvedStyle.color, Backdrop(plain));
+            Assert.GreaterOrEqual(ratio, 5.5f, $"rung {n}'s turn '{turn.text}' is {ratio:0.00}:1");
         }
     }
 
@@ -305,8 +315,11 @@ public class KeyboardFocusTests
             Assert.IsNotNull(entry, "precondition: the Prime Minister has a portrait");
             var portrait = p.Q<VisualElement>("seat-" + CabinetPresenter.PrimeMinister + "-portrait");
             var box = portrait.layout.size;
-            var expected = PortraitFraming.PositionYPercent(entry!.Value.image.width, entry.Value.image.height, box.x, box.y, entry.Value.focusY);
-            Assert.AreEqual(expected, portrait.style.backgroundPositionY.value.offset.value, 0.5f, $"{where}: the portrait is framed for its {box} box");
+            if (box.y >= 1f)   // at 764 the portrait has given way entirely: nothing to frame
+            {
+                var expected = PortraitFraming.PositionYPercent(entry!.Value.image.width, entry.Value.image.height, box.x, box.y, entry.Value.focusY);
+                Assert.AreEqual(expected, portrait.style.backgroundPositionY.value.offset.value, 0.5f, $"{where}: the portrait is framed for its {box} box");
+            }
         }
     }
 }

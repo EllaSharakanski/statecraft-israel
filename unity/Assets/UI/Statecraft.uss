@@ -432,6 +432,9 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .rung { flex-direction: row; align-items: center; padding: 8px 10px; margin: 2px 0; border-left-width: 3px; border-color: rgba(0, 0, 0, 0); background-color: rgba(255, 255, 255, 0.03); }
 .rung-name { white-space: normal; font-size: 18px; flex-shrink: 1; min-width: 0; }
 .rung-turn { font-size: 15px; margin-left: 8px; flex-shrink: 0; }
+/* The turn length is a lighter muted than --ink-dim: 15 px text loses about a fifth of its contrast to anti-aliasing, and
+   ink-dim's 5.0:1 on a plain rung measured 4.0 to 4.2:1 (#41 re-check). This is 6.3:1, still quieter than ink. */
+.rung .rung-turn { color: rgb(190, 184, 170); }
 .rung-current { border-color: var(--gold-light); background-color: rgba(196, 160, 92, 0.20); }
 .rung-current .rung-name { color: var(--gold-light); }
 /* The muted turn length is 3.3:1 on the lit rung; ink is 6.4:1 (#41 M4). */

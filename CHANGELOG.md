@@ -376,10 +376,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Keyboard play, small fixes from the accessibility audit (refs #41): a Budget + or - keeps the focus on its button, as
   the rows are now updated in place (H2). Closing the start screen, answering the last open event and Escape from a
   screen no longer leave nothing focused: the focus goes to End Turn, End Turn, and the screen's top-bar button (M1).
-  Text on the keyboard focus fill is a warm near-white, 5.7:1 where the gold was 3.7:1 (M3), and the lit escalation
-  rung's turn line is ink, 6.4:1 where it was 3.3:1 (M4). The Cabinet's "Ordered:" line wraps, and on short windows the
-  Prime Minister's portrait gives way, framed again for its new height, so the candidate list keeps two rows (M7).
-  Presentation only: no golden moves.
+  Text on the keyboard focus fill is a warm near-white, 5.7:1 where the gold was 3.7:1 (M3). The lit escalation rung's
+  turn line is ink, 6.4:1 where it was 3.3:1, and the plain rungs' a lighter muted, 6.3:1 where it was 5.0:1 (M4). The
+  Cabinet's "Ordered:" line wraps, and on short windows the Prime Minister's portrait gives way, framed again for its new
+  height, so the candidate list keeps two rows; at 32:9 the list's floor follows the room left (M7). Presentation only:
+  no golden moves.
 - "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
   No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
 - Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of
