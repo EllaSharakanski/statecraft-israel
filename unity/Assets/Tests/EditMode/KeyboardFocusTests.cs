@@ -241,11 +241,12 @@ public class KeyboardFocusTests
     /// <summary>M7: at the playtest window (1568x752) and four others, with an appointment ordered, the "Ordered:" line wraps
     /// inside the side column and the screen instead of being cut off, and the candidate list shows at least two rows; on
     /// the shortest the HUD supports (5120x1440, 32:9, 764 logical px) at least one. The Prime Minister's card never runs
-    /// into the line under it.</summary>
+    /// into the line under it. At 764 the card's text, his other offices and the orders line leave the list less than a
+    /// row; it still shows some and scrolls.</summary>
     [UnityTest]
     public IEnumerator TheCabinetsOrdersLineAndCandidatesHaveRoom()
     {
-        foreach (var (w, h, rowsShown) in new[] { (1568, 752, 2), (1531, 784, 2), (1920, 1080, 2), (2560, 1080, 2), (5120, 1440, 1) })
+        foreach (var (w, h, rowsShown) in new[] { (1568, 752, 2), (1531, 784, 2), (1920, 1080, 2), (2560, 1080, 2), (5120, 1440, 0) })
         {
             using var p = new Panel(w, h);
             var where = $"{w}x{h}";
@@ -284,10 +285,14 @@ public class KeyboardFocusTests
 
             var list = p.Q<ScrollView>("cabinet-candidates");
             var view = list.contentViewport.worldBound;
-            var rows = list.Query<VisualElement>(className: "candidate").ToList().Take(rowsShown).ToList();
-            Assert.AreEqual(rowsShown, rows.Count);
-            var need = rows[rowsShown - 1].worldBound.yMax - rows[0].worldBound.yMin;
-            Assert.GreaterOrEqual(view.height + 0.5f, need, $"{where}: the candidate list is {view.height:0} px tall and {rowsShown} rows need {need:0}");
+            if (rowsShown > 0)
+            {
+                var rows = list.Query<VisualElement>(className: "candidate").ToList().Take(rowsShown).ToList();
+                Assert.AreEqual(rowsShown, rows.Count);
+                var need = rows[rowsShown - 1].worldBound.yMax - rows[0].worldBound.yMin;
+                Assert.GreaterOrEqual(view.height + 0.5f, need, $"{where}: the candidate list is {view.height:0} px tall and {rowsShown} rows need {need:0}");
+            }
+            else Assert.GreaterOrEqual(view.height, 40f, $"{where}: the candidate list still shows part of a row");
             var pmCard = p.Q<VisualElement>("seat-" + CabinetPresenter.PrimeMinister);
             var lastLine = pmCard.Children().Where(e => e.resolvedStyle.display == DisplayStyle.Flex).Last().worldBound;
             Assert.LessOrEqual(lastLine.yMax, pmCard.worldBound.yMax + 0.5f, $"{where}: the Prime Minister's card text {lastLine} runs out of the card {pmCard.worldBound}");

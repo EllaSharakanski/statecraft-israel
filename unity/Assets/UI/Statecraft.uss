@@ -378,12 +378,13 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .pm-card .card-stat-name { font-size: 16px; width: 96px; }
 .pm-card .ui-bar { height: 10px; }
 /* On a short window (1568x752 is 997 logical px tall) the side column is full. The orders line wraps and is never
-   squeezed; the candidate list keeps 34% of the column (two rows down to 2560x1080, 935 px; one at 32:9, 764 px), and
-   below that the Prime Minister's portrait gives way, down to the card's text (#41 M7). */
+   squeezed; the candidate list keeps its heading and two rows (220 px), and the Prime Minister's portrait gives way,
+   down to the card's text. On a shorter one (32:9 is 764 px) CabinetPresenter.FitPick lowers the list's floor to the room
+   left (#41 M7). */
 .pm-card { flex-shrink: 1; min-height: 160px; }
 .pm-card > * { flex-shrink: 0; }
 .pm-card .card-plate { flex-shrink: 1; min-height: 0; }
-#cabinet-pick { flex-grow: 1; flex-shrink: 1; min-height: 34%; }
+#cabinet-pick { flex-grow: 1; flex-shrink: 1; min-height: 220px; }
 #cabinet-status { white-space: normal; flex-shrink: 0; }
 /* The Appoint heading wraps rather than run past the 300 px side column (B5; PromoHudTests.TheAppointHeadingHasRoom). */
 #cabinet-pick-title { white-space: normal; }
