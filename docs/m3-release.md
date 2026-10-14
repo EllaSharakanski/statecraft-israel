@@ -143,18 +143,47 @@ Differences and notes:
 - **Firefox does not start here.** Playwright's Firefox 157.0 build exits with "Could not find profile folder" headless,
   and fails to start headed, on macOS 27.0.1, so this Mac has no Firefox result. The Windows result above is the Firefox
   evidence so far.
-- **Wheel in lines.** A wheel event in lines (`deltaMode` 1, three lines, as Firefox reports a mouse notch on some
-  systems), sent to the canvas by script, zooms the camera by 0.16% in Chrome and 0.32% in WebKit instead of 10%: Unity
-  passes the raw `deltaY` and `deltaMode` to the player, and the zoom treats three lines like three pixels. A real
-  browser may never send this: Firefox turns line deltas into pixels when a page reads `deltaY` before `deltaMode`, and
-  Unity's handler does. Only a real mouse wheel in Firefox on Windows or Linux can settle it.
+- **Wheel in lines: no bug (T41).** The first run had three lines (`deltaMode` 1, sent to the canvas by script) zoom
+  0.16% in Chrome and 0.32% in WebKit instead of 10%. That came from the order of the test, not from the line mode.
+  Unity's web player hands the browser's raw `deltaY` and `deltaMode` to its engine code (the wheel handler in
+  `*.framework.js` copies both), and the engine counts the smallest wheel delta it has seen since the page loaded as one
+  notch, whatever the mode. C# sees only the result in `Mouse.scroll`; the Input System package only turns the engine's
+  scaling on or off (`scrollDeltaBehavior`, left at `UniformAcrossAllPlatforms`). Measured on the same build, each case
+  from a fresh page, events sent to the canvas by script, the same in Chrome and WebKit:
+
+  | Wheel events, in order | Zoom from each, in notches (one notch is 10%) |
+  |---|---|
+  | 3 lines | 1 |
+  | 1 line, or 1 page, or 3 px | 1 |
+  | 3 lines, 3 lines (also 10 s apart) | 1, 1 |
+  | 100 px, 3 lines | 1, 0.03 |
+  | 3 lines, 100 px | 1, 3 (33, clamped) |
+  | 100 px, 50 px, 100 px | 1, 0.5, 2 |
+  | 100 px, 200 px, 100 px | 1, 2, 1 |
+  | 0.5 px, 4 px, 100 px | 1, 3, 3 (8 and 200, clamped) |
+
+  So a mouse that always sends three lines a notch zooms 10% a notch, as one that sends 100 px does. The earlier run
+  sent a 100 px notch first (in Chrome, Playwright's 100 px notch counts as 200: a 100 px event after it zooms half a
+  notch), so the three lines after it counted as 3/100 (3/200 in Chrome). Nothing in the game's code was changed for
+  this.
+
+  What the measurements do show is a different risk, not tested here with real hardware: one small delta sets the notch
+  for the rest of the session. A touchpad that sends a delta of a pixel or less (as touchpads can, in fractions) makes
+  every later delta several notches, so each frame of a swipe, or each mouse notch after it, zooms the clamped 27%
+  (three notches). Chaiky3's Windows touchpad gave 10% steps, so it did not happen there. A Mac trackpad in Chrome or
+  Safari, and a touchpad followed by a mouse, are still to be tried by hand.
 - **Aborted requests in Chrome.** At each start Chrome lists about 30 of the 51 content files (and the map files) as
   `net::ERR_ABORTED` in its network log. The files arrive whole: both browsers log the same `BOOT OK content` hash and
   the goldens pass. WebKit lists none. Not a console error, so it is left as it is.
+- **Known warnings, nothing to fix.** On every load Chrome logs six "WebGL: INVALID_ENUM: getInternalformatParameter"
+  warnings and, until the first click, "The AudioContext was not allowed to start"; WebKit logs one "WebGL: non-portable
+  extension enabled: WEBGL_polygon_mode". With the aborted requests above, these are the expected console noise of this
+  build: none is an error, and the game runs the same with them.
 - Input in these runs is synthetic (Playwright's mouse, wheel and keys), not a physical mouse or touchpad.
 
 Still open: Safari itself (only its engine was run here), Firefox on a Mac, Chrome and Edge on Windows, a real mouse wheel
-in Firefox, and the two-upload itch.io save test below. Each needs the owner's machines or the project's itch.io account.
+in Firefox, a touchpad (above), and the two-upload itch.io save test below. Each needs the owner's machines or the
+project's itch.io account.
 
 ## OWNER STEP: sensitivity review before any shared build
 Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,
