@@ -321,6 +321,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "Transit Camps" opens on 1 April 1950, not 1 March: Eshkol raised the camps' crisis at the Jewish Agency executive
+  on 27 March 1950 and proposed transit housing two weeks later (Kachansky, Yad Ben-Zvi 1987). Wikipedia's March date
+  is kept in the event's comment. In the golden run the card first shows on 27 May 1950 with either date, so no golden
+  moves (refs #442).
 - The Provisional State Council's window opens on 15 May 1948, the end of the Mandate, as the Declaration of
   Independence (clause 12) and the Knesset's dates table give it, not 14 May (refs #457). The game starts on 15 May, so
   nothing in play changes and no golden moves.

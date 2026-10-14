@@ -4,11 +4,11 @@ title: Transit Camps
 text: 'The immigrant camps, which house and feed new arrivals free of charge, are overflowing. Levi Eshkol of the Jewish Agency Settlement Department proposes transit camps near towns and work, where residents earn their own living. {prime_minister} must decide.'
 anchor: hard
 office: prime_minister
-# Eshkol proposed replacing the camps in March 1950 (en.wiki; Kachansky, below, has him raise the crisis at the Agency
-# executive on 27 March 1950 and propose the solution two weeks later); the word ma'abarot first appears in his letter
-# of 21 April 1950 (he.wiki, citing CZA S15/4175). The first transit camp, Kesalon, opened in May 1950 (Kachansky,
+# Eshkol raised the camps' crisis at the Jewish Agency executive on 27 March 1950 and proposed transit housing two weeks
+# later, in April (Kachansky, below), so the card opens on 1 April 1950. [C] en.wiki has him propose it in March 1950.
+# The word ma'abarot first appears in his letter of 21 April 1950 (he.wiki, citing CZA S15/4175). The first transit camp, Kesalon, opened in May 1950 (Kachansky,
 # quoting Davar of 23 May 1950).
-from: 1950-03-01
+from: 1950-04-01
 to: 1950-06-01
 options:
   - id: maabarot
