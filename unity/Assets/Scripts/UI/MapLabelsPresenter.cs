@@ -33,8 +33,10 @@ namespace Statecraft.Game.UI
     /// (OccluderNames: the top bar, the info panel, the minimap and its map-layer caption, the event card), does not
     /// overlap an already placed pill (its last laid-out size plus MarginPx), covers at most MaxKitCover of its own kit's
     /// rectangle and of every other visible kit's, and is more than twice as far from every other visible marker's top as
-    /// from its own kit, plus MarginPx, so no name reads as a neighbour's. A city whose spots all crowd a neighbour keeps
-    /// the first that is clear of panels, pills and its own kit. A pill hidden in the last refresh needs HysteresisPx more
+    /// from its own kit (the kit alone, not the tokens on it), plus MarginPx, so no name reads as a neighbour's. A city
+    /// that finds no such spot never loses its name: it takes, in this order, the first spot round its kit alone that
+    /// still reads as its own (over a unit token if need be), then the first clear of panels, pills, tokens and its own
+    /// kit, then the first clear of panels, pills and its own kit. A pill hidden in the last refresh needs HysteresisPx more
     /// room to come back, so it does not blink at a threshold. Refresh allocates nothing. The dense Tel Aviv - Lod cluster
     /// keeps M2's anchor classes. The kits' bounds are read once, when the presenter is created (a later MapScene.Build
     /// needs a new presenter; GameRoot makes one per Begin).
@@ -44,7 +46,7 @@ namespace Statecraft.Game.UI
     /// spot that overlaps one, grown by MarginPx, does not fit, as a spot under a panel does not. A token that stands on a
     /// settlement's kit (its rectangle overlaps the kit's) counts as part of it for the spots: they are placed round the
     /// kit and that token together, so a town's name hangs just above the brigade standing in it rather than beside the
-    /// whole town. A token is no settlement's marker, so it never hides a marker the way a panel does. The rectangles are
+    /// whole town; how far the name is from its own town is still measured from the kit alone. A token is no settlement's marker, so it never hides a marker the way a panel does. The rectangles are
     /// re-read when the camera moves and whenever the layer hands over a new list (the tokens were rebuilt, or the "units"
     /// toggle changed).
     ///
@@ -363,14 +365,17 @@ namespace Statecraft.Game.UI
                     {
                         float extra = it.ShownLast ? 0f : HysteresisPx;
                         var home = SpotRect(it.First, it.KitPanel, it.TopPanel, size);   // where the USS anchor class draws it
-                        bool found = TryPlace(it, size, home, it.First, extra, true, ref shift);
+                        bool found = TryPlace(it, size, home, it.First, extra, true, true, ref shift);
                         for (int k = 0; !found && k < Fallbacks.Length; k++)
-                            if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, true, ref shift);
-                        if (!found && it.IsCity)
+                            if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, true, true, ref shift);
+                        // A city keeps its name (review of #518): next round its kit alone, still reading as its own but
+                        // over a token if need be; then clear of the tokens but not of its neighbours; last, neither.
+                        for (int pass = 0; !found && it.IsCity && pass < 3; pass++)
                         {
-                            found = TryPlace(it, size, home, it.First, extra, false, ref shift);
+                            bool neighbours = pass == 0, avoidTokens = pass == 1;
+                            found = TryPlace(it, size, home, it.First, extra, neighbours, avoidTokens, ref shift);
                             for (int k = 0; !found && k < Fallbacks.Length; k++)
-                                if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, false, ref shift);
+                                if (Fallbacks[k] != it.First) found = TryPlace(it, size, home, Fallbacks[k], extra, neighbours, avoidTokens, ref shift);
                         }
                         shown = found;
                     }
@@ -382,20 +387,21 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>Whether the pill fits at <paramref name="spot"/>; if so records it as placed and sets the shift from
-        /// its USS anchor's rectangle <paramref name="home"/>.</summary>
-        bool TryPlace(Item it, Vector2 size, Rect home, Spot spot, float extra, bool clearOfNeighbours, ref Vector2 shift)
+        /// its USS anchor's rectangle <paramref name="home"/>. With <paramref name="clearOfTokens"/> the spot is placed
+        /// round the kit and the tokens on it and keeps clear of every token; without, round the kit alone.</summary>
+        bool TryPlace(Item it, Vector2 size, Rect home, Spot spot, float extra, bool clearOfNeighbours, bool clearOfTokens, ref Vector2 shift)
         {
-            var r = SpotRect(spot, it.Around, it.TopPanel, size);
+            var r = SpotRect(spot, clearOfTokens ? it.Around : it.KitPanel, it.TopPanel, size);
             float m = MarginPx + extra;
             var grown = new Rect(r.x - m, r.y - m, r.width + 2f * m, r.height + 2f * m);
             if (r.xMin < layerRect.xMin || r.yMin < layerRect.yMin || r.xMax > layerRect.xMax || r.yMax > layerRect.yMax) return false;
             for (int i = 0; i < occluderRects.Count; i++) if (occluderRects[i].Overlaps(r)) return false;
-            for (int i = 0; i < keepClearRects.Count; i++) if (keepClearRects[i].Overlaps(grown)) return false;
+            if (clearOfTokens) for (int i = 0; i < keepClearRects.Count; i++) if (keepClearRects[i].Overlaps(grown)) return false;
             for (int i = 0; i < placed.Count; i++) if (placed[i].Overlaps(grown)) return false;
             if (Cover(r, it.KitPanel) > MaxKitCover) return false;
             if (clearOfNeighbours)
             {
-                float need = 2f * Gap(r, it.Around) + MarginPx + extra;
+                float need = 2f * Gap(r, it.KitPanel) + MarginPx + extra;   // owned by the town itself, never by the tokens on it
                 for (int i = 0; i < items.Count; i++)
                 {
                     var other = items[i];

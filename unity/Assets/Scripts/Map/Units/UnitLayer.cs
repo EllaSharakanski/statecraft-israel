@@ -50,7 +50,7 @@ namespace Statecraft.Game.Map.Units
         /// pieces (the figures on their bases, a parked aircraft, the ship; not a flying aircraft, which moves) and its
         /// badge, which MapLabelsPresenter projects to one screen rectangle, so no pill sits on a token or between its badge
         /// and its figures. A new list whenever the tokens are rebuilt, and empty while the "units" toggle hides the layer.</summary>
-        public IReadOnlyList<Bounds[]> KeepClear => gameObject.activeSelf ? keepClear : (IReadOnlyList<Bounds[]>)Array.Empty<Bounds[]>();
+        public IReadOnlyList<Bounds[]> KeepClear => gameObject.activeInHierarchy ? keepClear : (IReadOnlyList<Bounds[]>)Array.Empty<Bounds[]>();
         /// <summary>The selected unit's id, or null.</summary>
         public string? Selected { get; private set; }
 
@@ -255,15 +255,22 @@ namespace Statecraft.Game.Map.Units
         }
 
         /// <summary>A token's keep-clear boxes: the bounds of its pieces that stand still (a flying aircraft is left out)
-        /// and a cube of the badge's width round the badge's centre, which holds the plate however it is turned.</summary>
+        /// and a cube of the badge's width round the badge's centre, which holds the plate however it is turned. The pieces'
+        /// bounds come from their meshes and transforms, not Renderer.bounds, which is empty while the layer is inactive (the
+        /// "units" toggle off when the tokens are built; review of #518).</summary>
         static Bounds[] KeepClearOf(Transform token, Vector3 badgeCentre)
         {
             var boxes = new List<Bounds> { new Bounds(badgeCentre, Vector3.one * UnitBadge.SizeM) };
             bool any = false; var pieces = default(Bounds);
-            foreach (var r in token.GetComponentsInChildren<Renderer>())
+            foreach (var f in token.GetComponentsInChildren<MeshFilter>(true))
             {
-                if (r.GetComponentInParent<UnitBadge>() != null || r.GetComponentInParent<ShowcaseFlight>() != null) continue;
-                if (any) pieces.Encapsulate(r.bounds); else { pieces = r.bounds; any = true; }
+                if (f.sharedMesh == null || f.GetComponentInParent<UnitBadge>(true) != null || f.GetComponentInParent<ShowcaseFlight>(true) != null) continue;
+                var b = f.sharedMesh.bounds; var m = f.transform.localToWorldMatrix;
+                for (int c = 0; c < 8; c++)
+                {
+                    var w = m.MultiplyPoint3x4(new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y, (c & 4) == 0 ? b.min.z : b.max.z));
+                    if (any) pieces.Encapsulate(w); else { pieces = new Bounds(w, Vector3.zero); any = true; }
+                }
             }
             if (any) boxes.Add(pieces);
             return boxes.ToArray();
