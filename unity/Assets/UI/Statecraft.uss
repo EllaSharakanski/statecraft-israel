@@ -213,6 +213,13 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     display: none; height: 540px; min-height: 0; flex-shrink: 1000; margin-bottom: 4px; overflow: hidden;
     justify-content: flex-end; background-size: cover; background-color: var(--navy-deep); border-width: 1px; border-color: var(--gold);
 }
+/* The Illustration switch (decision videos): over the media header's top right corner (the card's padding plus 8 px; it
+   is the card's last child, for the focus order); hidden unless the event has a clip (EventCardPresenter.ApplyIllustration). */
+.hud-two-row .event-illustration { right: 24px; }
+.event-illustration {
+    display: none; position: absolute; top: 24px; right: 48px; margin: 0; padding: 3px 14px; font-size: 17px; -unity-text-align: middle-center;
+    background-color: rgba(5, 9, 18, 0.88); border-color: var(--gold); color: var(--gold-light);
+}
 .event-photo-credit {
     flex-shrink: 0; font-size: 13px; white-space: normal; -unity-text-align: middle-center; margin: 0; padding: 2px 8px 3px 8px;
     color: var(--ink); background-color: rgba(5, 9, 18, 0.92); -unity-font-style: italic;   /* 0.92: blending is linear, so less reads grey */

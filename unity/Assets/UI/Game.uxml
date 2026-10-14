@@ -116,8 +116,9 @@
             <ui:VisualElement name="event-scrim" class="event-scrim" />
             <ui:VisualElement name="event-card" class="panel event-card">
                 <!-- The 16:9 media header: an archival photograph of the event (EventImageCatalog), framed in gold, with its
-                     credit line as a caption strip along its bottom edge. Events without one show the minister's portrait in
-                     the head instead. -->
+                     credit line as a caption strip along its bottom edge, and, for an event with a clip, the Illustration
+                     switch in its top corner (a silent AI-generated loop, labelled so in place of the credit). Events without
+                     a photograph show the minister's portrait in the head instead. -->
                 <ui:VisualElement name="event-photo" class="event-photo"><ui:Label name="event-photo-credit" class="event-photo-credit" /></ui:VisualElement>
                 <!-- A portrait-shaped thumbnail beside the heading, framed on the face (playtest 2, P2-3 and P2-5). -->
                 <ui:VisualElement class="event-head">
@@ -137,6 +138,9 @@
                     <ui:Label name="event-count" class="muted event-count" />
                     <ui:Button name="event-hide" class="event-hide" />
                 </ui:VisualElement>
+                <!-- The Illustration switch, drawn over the media header's top right corner, last in the card so Tab reaches it
+                     after the options and Hide (#41). -->
+                <ui:Button name="event-illustration" class="event-illustration" />
                 <Statecraft.Game.UI.UiFrame filigree="true" />
             </ui:VisualElement>
             <ui:Button name="event-reopen" class="event-reopen" />
