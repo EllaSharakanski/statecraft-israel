@@ -32,6 +32,9 @@ sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
   - { url: "https://documents.un.org/api/symbol/access?s=S/1042&l=en&t=pdf", checked: 2026-10-14 }
   - { url: "https://www.un.org/unispal/document/auto-insert-210876/", checked: 2026-10-14 }
+  # Ben-Gurion's diary, 6 October 1948 (Ben-Gurion Archives): the cabinet adopted his proposal to break a road through
+  # to the Negev by force, 8 in favour.
+  - { url: "https://bengurionarchive.bgu.ac.il/node/10786", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d705", checked: 2026-10-14 }
   # IDF account, republished by the Jewish Virtual Library.
   - { url: "https://jewishvirtuallibrary.org/jsource/History/Yoav.html", checked: 2026-10-14 }

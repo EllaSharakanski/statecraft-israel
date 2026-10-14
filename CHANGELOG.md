@@ -371,6 +371,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
   published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
   Text, dates and effects are unchanged (refs #442).
+- Four more cards cite primary and scholarly sources in place of Wikipedia. "Operation Hiram" adds the Acting
+  Mediator's report S/1071 (the Arab Liberation Army's positions near Manara from the night of 21-22 October; its
+  refusal to withdraw on 28 October), Ben-Gurion's diary for 22-31 October 1948, the Ministry of Defense's Izkor page on
+  Sheikh Abd and the Knesset's War of Independence summary. "Operation Yoav" adds Ben-Gurion's diary for the cabinet
+  vote of 6 October 1948. "Transit Camps" adds the Central Zionist Archives and Miriam Kachansky's Yad Ben-Zvi study
+  (Eshkol's proposal; Kesalon in May 1950). "Closing the Ministry of Rationing" drops Wikipedia: the Knesset's review of
+  the First Knesset records the crisis in Mapai. The comment on "Austerity" now says the rationing plan was presented to
+  the Knesset on 26 April 1949, already decided by the cabinet, citing the plenum and the JTA. Wikipedia stays only for
+  lines these sources do not cover. Text, dates and effects are unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
