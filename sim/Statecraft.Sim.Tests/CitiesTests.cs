@@ -75,4 +75,111 @@ public class CitiesTests
         Assert.Contains("\nwork tel_aviv job 85\n", text);
         Assert.Equal(g.State.Hash(), GameSession.Load(Mvp, text, out _).State.Hash());
     }
+
+    // ---- the turn (TurnResolver): production, housing then Social cohesion, arrivals (spec section 2.3, D-A6) ----
+
+    static GameState With(GameState s, string city, int civilians, int employed, int refugees)
+    {
+        var x = s.Clone();
+        x.Cities[city] = x.Cities[city].WithCounts(civilians, employed, refugees);
+        return x;
+    }
+
+    // R-CITY-002
+    [Fact]
+    public void ProductionPaysPerEmployedGroup()
+    {
+        var c = Town();
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        var paid = Step(c, s).State.Treasury - Step(c, With(s, "town_a", 10, 0, 0)).State.Treasury;
+        Assert.Equal(6 * 1.2 * SimTime.YearFraction(TurnLength.Week), paid, 9);   // the fixture's first turn is a week
+    }
+
+    // R-CITY-004
+    [Fact]
+    public void RefugeesAreHousedOnlyUpToCapacity()
+    {
+        var c = Town();
+        var s = With(Simulation.NewGame(c, 1, Mode.Historical), "town_a", 10, 6, 5);
+        var city = Step(c, s).State.Cities["town_a"];   // the first week brings under one unit of arrivals
+        Assert.Equal((12, 6, 3), (city.Civilians, city.Employed, city.Refugees));
+    }
+
+    // R-CITY-003, R-CITY-004 (D-A6: arrivals come after housing, so they are housed on the next turn)
+    [Fact]
+    public void ATurnsArrivalsAreHousedOnTheNextTurn()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        var one = Step(Mvp, s).State;
+        var arrived = one.Cities["tel_aviv"].Refugees;
+        Assert.True(arrived > 0);
+        Assert.Equal(100, one.Cities["tel_aviv"].Civilians);   // housing for 20 more was free, but it ran before they came
+        var two = Step(Mvp, one).State.Cities["tel_aviv"];
+        Assert.Equal(100 + Math.Min(arrived, 20), two.Civilians);
+    }
+
+    // R-CITY-003
+    [Fact]
+    public void ArrivalsOverTheWholeRunEqualTheFloorOfTheTotal()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        var start = s.Date;
+        int People(GameState x) => x.Cities["tel_aviv"].Civilians + x.Cities["tel_aviv"].Refugees;
+        var before = People(s);
+        for (int i = 0; i < 20; i++)
+        {
+            var next = Step(Mvp, s).State;
+            Assert.Equal(Cities.ArrivedUnits(Mvp, s.Date, next.Date, 1000), People(next) - People(s));
+            s = next;
+        }
+        var total = PopulationSystem.Arrivals(Mvp, start, s.Date).OrderBy(kv => kv.Key, StringComparer.Ordinal).Sum(kv => kv.Value);
+        Assert.Equal((int)Math.Floor(total / 1000), People(s) - before);
+    }
+
+    // R-CITY-005
+    [Fact]
+    public void CohesionFallsWhenRefugeesWaitAndRisesWhenTheyAreHousedAndEmployed()
+    {
+        var c = Town();
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Equal(0.5 * 1 + 0.5 * 0.6, s.Cohesion, 12);                       // all housed, 6 of 10 employed
+        var waiting = Step(c, With(s, "town_a", 10, 6, 10)).State;               // 2 housed: 12 of 20 housed, 6 of 12 employed
+        Assert.Equal(0.5 * 0.6 + 0.5 * 0.5, waiting.Cohesion, 12);
+        var working = Step(c, waiting, new AssignWorkers("town_a", "job", 12)).State;
+        Assert.Equal(0.5 * 0.6 + 0.5 * 1, working.Cohesion, 12);
+        Assert.True(waiting.Cohesion < s.Cohesion && working.Cohesion > waiting.Cohesion);
+    }
+
+    /// <summary>Social cohesion is a placeholder while D-C1 is open (maintainer ruling, 2026-10-14): no effect, morale,
+    /// threshold or display reads it. Two states that differ only in it step to the same state, and no code outside the
+    /// city rules and the state names it.</summary>
+    // R-CITY-005
+    [Fact]
+    public void CohesionFeedsNothingElse()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        for (int i = 0; i < 3; i++) s = Step(Mvp, s).State;
+        var other = s.Clone();
+        other.Cohesion = 1 - s.Cohesion;
+        Assert.NotEqual(s.Hash(), other.Hash());
+        Assert.Equal(Step(Mvp, s).State.Describe(), Step(Mvp, other).State.Describe());
+        var repo = System.IO.Directory.GetParent(RealContentTests.ContentRoot())!.FullName;
+        var readers = new[] { "sim/Statecraft.Sim", "sim/Statecraft.Cli", "unity/Assets" }
+            .Select(d => System.IO.Path.Combine(repo, d)).Where(System.IO.Directory.Exists)
+            .SelectMany(d => System.IO.Directory.GetFiles(d, "*.cs", System.IO.SearchOption.AllDirectories))
+            .Where(f => System.Text.RegularExpressions.Regex.IsMatch(System.IO.File.ReadAllText(f), @"\bCohesion\b"))
+            .Select(f => System.IO.Path.GetFileName(f)).OrderBy(f => f, StringComparer.Ordinal);
+        Assert.Equal(new[] { "Cities.cs", "GameState.cs" }, readers);
+    }
+
+    [Fact]
+    public void TheResolverDoesNotRunInTheLegacyLoop()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
+        s = Step(c, s).State;
+        Assert.Empty(s.Cities);
+        Assert.Equal(0, s.Cohesion);
+        Assert.DoesNotContain("coh=", s.Describe());
+    }
 }

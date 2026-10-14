@@ -63,6 +63,7 @@ namespace Statecraft.Sim
             var adjusted = next != SimTime.Advance(s.Date, len);
             var days = (next - s.Date).Days;
             var yf = adjusted ? days / 365.0 : SimTime.YearFraction(len);
+            TurnResolver.Resolve(c, s, next, yf, why);   // the GDD v0.1 loop only; the legacy loop goes straight on
             EffectsSystem.Apply(c, s, why);
             PopulationSystem.Apply(c, s, next, yf, why);
             EconomySystem.Apply(c, s, yf, why);
