@@ -69,11 +69,14 @@ command; its snapshot diff in the PR shows what moved, and the commit message sa
 later era makes, so they move only when a 1948 rule or event does.
 
 **MVP goldens (GDD v0.1, before cutover).** `mvp-slice` plays `MvpSlice.Load`, the real content with the loop switch on and
-monthly turns (spec 2026-10-12 section 2.1, R-LOOP-003), from the golden seed in Historical mode with `HistoricalAI` until
-`MvpGolden.Until` (15 January 1949, eight monthly turns). `MvpGoldenTests` checks it against the manifest line `mvp-slice` and the
+monthly turns (spec 2026-10-12 section 2.1, R-LOOP-003), from the golden seed in Historical mode with the reference player until
+`MvpGolden.Until` (15 January 1949, eight monthly turns). The reference player (`Statecraft.Sim.Reference.ReferencePlayer`, decision
+D-A7) is a stated test policy, not game AI and not history: `HistoricalAI`'s orders, then each city's jobs filled. No game mode or UI
+reaches it (`ReferencePlayerTests`). `MvpGoldenTests` checks it against the manifest line `mvp-slice` and the
 snapshot `golden/mvp-slice.txt`, and the update command re-pins it like the others. It is not shown in this file's table or in
 `tools/web_check.py`, because the players run only the legacy goldens until cutover. A Phase 1 PR that adds a GDD rule the slice
-exercises moves it, re-pins it and says why; the legacy goldens never move for it.
+exercises moves it, re-pins it and says why; the legacy goldens never move for it. A scenario with `content: mvp` plays the
+same slice instead of the real content: `scenario-mvp-absorb-first` (GDD Phase 1 PR 3) fills Tel Aviv's jobs on the first turn.
 
 `Scenario` and `MvpGolden` live in `Statecraft.Sim` next to `GoldenRun`, so Unity, which gets only `Statecraft.Sim.dll` and
 `YamlDotNet.dll` from `tools/build_sim_for_unity.sh`, can play the same runs (#394). The scenario files, the manifest and the
@@ -184,3 +187,4 @@ The hash reads the state keys, so it never sees a record outside its window. An 
 | playtest 1 E fix 1 | 1950 | `71e9904d` | 1948 war-period events revised after review: windows open on the turn before each decision, Yoav becomes the Hebron-hills decision, follow-ups use `requires`, Bernadotte's shared standing hit, security deltas halved, the elections a one-option card in January, two events added (Jerusalem cease-fire, Rhodes talks); still ends 1950-02-27, turn 35 |
 | playtest 1 E fix 1 | 1952 | `73590e32` | same; still ends 1952-02-27, turn 43 |
 | Issue #2 | 1952 | `62f8ec61` | sourced Yosef food-supply/rationing responsibility from 8 October 1951 replaces a vacancy and changes late-1951 rationing competence; 1950 and five-turn smoke unchanged |
+| GDD Phase 1 PR 3 | mvp-slice | `f6931e24` | the slice gains its city (placeholder values) and the GDD turn: Money from jobs, housing, Social cohesion and arrivals, with the reference player filling the jobs (was `0451920a`); the legacy goldens do not move |

@@ -231,6 +231,8 @@ Two bands, blurred by a half-resolution render-graph pass (`TiltShiftFeature` on
 - the focus sits at the middle of the map area below the top bar;
 - the blur weakens to 35% between 60 km and the 250 km overview.
 - since issue #390, the far (top) band is lighter at the gameplay zoom (see "Issue #390" below).
+- since issue #458 (the owner's ruling of 2026-10-14), the near (bottom) band is lighter at the gameplay zoom and about
+  gone at the overview (see "Issue #458" below).
 
 URP's far-only Gaussian DoF is retired. Toggle: `tiltshift`; the URL flag `notiltshift` (desktop: `-notiltshift`) boots with
 it off.
@@ -721,7 +723,7 @@ beyond budget + the larger spread.
 | Boot | `BOOT map_build_ms median=432 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3563 runs=3 cpu=1`<br>`BOOT map_build_ms median=1751 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6797 runs=3 cpu=4`<br>`BOOT map_build_ms median=426 runs=3 cpu=1`<br>`BOOT first_frame_ms median=3477 runs=3 cpu=1`<br>`BOOT map_build_ms median=1746 runs=3 cpu=4`<br>`BOOT first_frame_ms median=6696 runs=3 cpu=4` (Step 1, then final) | — | each within max(300 ms, 50%) of its Task 1 baseline (443 / 3547; 1813 / 6963 ms); both runs exit 0 |
 | Shadows | 1 cascade, 2048, hard | 4 cascades, 2048, soft | `-shadows` at diorama02: Step 1 headless 10.32 - 7.36 = **2.96 ms** (spread 0.32: over 2.82), headed 2.90 (0.41: within), DPR 2 4.99 (0.23); final headless 2.89 (0.41: within 2.91), headed 2.92 (0.29: **over** 2.79), DPR 2 4.80. A 1024 build measured 2.84 (headless, spread 0.09), 2.94 (headed) and 5.03 (DPR 2): (1024 lines, headless: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.08 spread_ms=0.09 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.24 spread_ms=0.03 median_p95_ms=9.00`<br>headed: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=10.20 spread_ms=0.28 median_p95_ms=11.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=7.26 spread_ms=0.13 median_p95_ms=9.00`<br>DPR 2: `PROFILE summary visual=all pose=diorama02 runs=3 median_avg_ms=18.34 spread_ms=0.21 median_p95_ms=19.00`<br>`PROFILE summary visual=-shadows pose=diorama02 runs=3 median_avg_ms=13.31 spread_ms=0.10 median_p95_ms=14.00`): the map's resolution is not the cost (the caster pass redraws the whole map's geometry at the overview), so 1024 would blur the relief for nothing. **2048 kept; the overrun (about 0.1-0.4 ms beyond budget + spread at the 250 km overview only) is named here.** gameplay03: 0.33 ms final |
 | Tilt-shift | downsample 2 | downsample 2 | `-tiltshift` cost: Step 1 headless 0.09 / 0.09 ms (gameplay03 / diorama02), final headless 0.03 / -0.04, DPR 2 0.29 / -0.04: far under 1.5 ms |
-| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19). Owner's ruling (2026-10-13, issue #390): the bands stay as they are, except that the far band is lighter at the gameplay zoom ("Issue #390"); the bottom band is not changed |
+| Tilt-shift bottom band | unchanged (HalfWidth 0.13 / Feather 0.17) | same | final gameplay03 shot against `?notiltshift`, gradient energy per 1% row band (columns 30-80%): fully blurred (ratio <= 0.05-0.09) from under the bar to about 26% and from about 78-83% to the bottom, so the bottom band is 17-22% against the promo's ~15%. The 2-7 point gap is the one Task 3 offered the owner (bottom-only 0.16 / 0.19). Owner's ruling (2026-10-13, issue #390): the bands stay as they are, except that the far band is lighter at the gameplay zoom ("Issue #390"); the bottom band is not changed. Owner's ruling (2026-10-14, issue #458): the bottom band's height stays, but it is lighter at the gameplay zoom and about gone at the overview ("Issue #458") |
 | Bloom | off (was the URP template's 0.25 above 1) | off | rendered on both tiers at both poses it changed at most 2/255 of any pixel (mean 0.25/255 at diorama02, warmth +0.0003, measured with a temporary `bloom` toggle, commit `8d45a93`, removed in fix round 1 once bloom shipped off); `-bloom` cost Step 1 headless 0.37 ms (diorama02), headed 0.18, macOS 0.17 / 0.13. Off in the pipeline profile (`Settings/SampleSceneProfile`), which keeps its Neutral tonemapper (the stripping guarantee, GradeTests) |
 | SSAO | none | off (was on) | metre radius cannot reach km relief; baked AO replaces it (Tasks 5-6) |
 | Grade, vignette, haze, grid, water, labels | on | on | Step 1 headless costs (gameplay03 / diorama02, ms): grade -0.02 / 0.27, haze 0.08 / 0.11, grid 0.07 / -0.14, water 0.04 / 0.14, labels -0.14 / -0.02; final headless: grade 0.00 / -0.03, haze -0.03 / -0.10, grid 0.00 / -0.01, water -0.05 / -0.06, labels -0.01 / 0.01; all within budget. The grid, unmeasured on a quiet machine since Task 8, costs nothing measurable |
@@ -2353,6 +2355,49 @@ the biggest gap to promo 03. Measured with its crops and poses: editor renders (
   strength is 1 and the frame is pixel-identical, so it is the extra uniform read and compare per tilt-shift pixel or
   build-to-build noise, within the tilt-shift's 1.5 ms budget.
 
+## Issue #458: a lighter near tilt-shift band, by distance
+- **Owner's ruling (2026-10-14).** The near (bottom) band should match promo 03: less blur at the gameplay zoom and almost
+  none at the overview. The far band stays as ruled for #390 (`FarGameplayStrength` 0.35). This replaces the 2026-10-13
+  note above that the bottom band is not changed.
+- **The gap** (the 2026-10-13 audit, `.superpowers/audit-2026-10-13/renders/measure.py`): mean |Laplacian| of the luma
+  in rows 80-95% from the top, columns 30-75%, on the WebGL `?shot`. Main had 0.0056 at gameplay03 against promo 03's
+  0.021, and 0.0064 at diorama02 against promo 02's 0.077: the near band drew in full at every distance.
+- **What changed.** `TiltShift.NearStrength(distance)` scales the near band's radius and its blend, as `FarStrength` does
+  the far band's: `NearGameplayStrength` (0.75) up to 150 km (`NearLightBelowM`, the far band's breakpoint), falling to 0
+  at the 250 km overview. One global, `_ScTiltShiftNear`, set with the others in `TiltShift.Apply`; no new keyword or
+  variant. The band's height (HalfWidth 0.13, Feather 0.17) is unchanged.
+- **Why 0.75, not 0.35-0.5.** The ruling's brief guessed 0.35-0.5. The half-resolution copy the blur composites is softer
+  than the frame on its own, so the blend, not the radius, sets most of the measure. A model of the pass in numpy, checked
+  against main (it gives 0.0050 for main's 0.0056), puts 0.4 at about 0.046 (twice promo 03's sharpness), 0.5 at 0.039, 0.7
+  at 0.024, 0.75 at 0.021 and 0.8 at 0.018. Scaling the radius alone cannot reach the target: a zero radius at full blend
+  still measures only 0.023. 0.75 is the value that matches promo 03.
+- **Measured** (WebGL `?shot`, main `88787ab` against the branch, same machine):
+
+  | pose | main | branch | promo | target |
+  |---|---|---|---|---|
+  | gameplay03 | 0.0056 | **0.0195** | 0.021 (promo 03) | 0.015-0.025 |
+  | diorama02 | 0.0064 | **0.0575** | 0.077 (promo 02) | at least 0.05 |
+
+  diorama02's `?notiltshift` shot measures 0.0575 too: the overview's foreground is now as sharp as the frame. Above the
+  focus, main and the branch differ less than two `?shot` runs of main do (gameplay03: 7346 pixels more than 2 levels
+  apart against 14749 run to run, all on the animated sea), so the far band is unchanged.
+- **Tests.** `TheNearBandIsGentleAtTheGameplayZoomAndGoneAtTheOverview` covers the curve. At the gameplay pose the near
+  band now keeps 30-80% of its gradient energy (`TheBottomBlurs...`, `TheFarBandStaysReadable...`; it kept about 20-25%
+  before), and `TheDioramaKeepsTheFarBandAndASharpForeground` asks for at least 95% of the near band at diorama02 (main:
+  33%) with the far band still at most 30%. Measured: near 0.37 / 0.39 (Mobile / PC, no bar), 0.41 at 60 km
+  and 0.35 at 120 km under the web bar, 1.00 at diorama02; far unchanged (0.71, 0.68, 0.20). Mutants killed: a shader
+  that ignores `_ScTiltShiftNear` (near 0.19-0.33: the three render tests) and the near strength applied to both bands
+  (far 0.34 at 60 km, 1.00 at diorama02: three render tests); the C# curve held at 1, or not reaching 0 at the
+  overview, fails the unit test.
+- **Quality fallback.** Unchanged: `TiltShift.Draws` still needs `!FallbackOff`, so the fallback's last step still turns
+  both bands off (`QualityFallbackTests` pass). The pass draws as before whenever the tilt-shift is on, even where the near
+  band is 0, so frame time does not depend on the new strength.
+- **Fill rate.** Headed `?vprofile` at DPR 2 (`headed.py profile --dpr 2`), main, branch, branch, main under one
+  `machine_lock.py --exclusive --wait-unity`, 2026-10-14. The machine was loaded by other sessions (load 6-13), so the
+  spreads are 1.5-7 ms. diorama02 `all`: main 41.81 / 33.81 ms, branch 41.09 / 39.46; `none`: main 28.02 / 23.97, branch
+  26.36 / 24.83. gameplay03 `all`: main 11.95 / 13.99, branch 13.27 / 12.40. The branch sits inside main's range in
+  every row: within noise, as expected for one more uniform in an unchanged pass.
+
 ## HUD round 1: the info panel and the gilt trim (#398, #397)
 
 Art-track gap 4, first step. The gap list and the later steps (the minimap and settlement badges; the top bar and card
@@ -2421,3 +2466,40 @@ branch (avg ms, then p95):
 The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In round 1, gameplay03 `all` was disturbed
 for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
 up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.
+
+## Issue #391: the terrain shader's frame-time cliff (warm land shade, not shipped)
+#391 asked for the shaded hill ground to read warm brown, as promo 03's does (about (67, 53, 46)), rather than olive-grey.
+The look was solved; the cost was not, so nothing shipped. What was measured is a constraint on any future addition to
+`StatecraftTerrain.hlsl`.
+
+**Diagnosis (main, editor, Mobile tier).** On bare terrain (kits, trees, routes, borders and tilt-shift off) the shaded
+ground at `hills12a` (35.05, 31.76, 12 km) measured (71, 62, 55): hue 27 degrees, G/R 0.87. Most of the olive cast in the
+full frame comes from tree crowns and kit shadows, which belong to vegetation round 2 (#34). The grade's split toning
+cannot fix the ground's part: every shadow-colour candidate also moved the sea at gameplay03 by 4-18/255.
+
+**The look that worked.** Scaling green by 0.87 and blue by 0.76 against red, weighted by 1 - smoothstep(0, 1, N.L) for the
+fixed sun, gave on bare terrain: hue 24.0 / 25.7 / 27.0 degrees and G/R 0.845 / 0.847 / 0.838 at hills12a, judea30 and
+gameplay03, sea drift 0.00-0.01/255, palette distance 0.463 -> 0.454 (gameplay03) and 0.581 -> 0.558 (diorama02), and
+WebGL diorama02 warmth 0.121 -> 0.127. Baked into `terrain_bake.png`'s R (unread at run time) it cost 120 KB of
+`data.unity3d` under LZ4.
+
+**The cost.** Headless `?vprofile`, 1920x1080, DPR 1, interleaved under `--exclusive`, median avg ms, main `7040351`:
+
+| Shader change | `all` gameplay03 | `none` gameplay03 | `all` diorama02 | `none` diorama02 |
+|---|---|---|---|---|
+| main | 8.23-8.42 | 4.98-5.07 | 19.3-21.6 | 12.6-13.2 |
+| no-op function call (control) | 8.05 | 4.86 | 22.55 | 14.67 |
+| `GetMainLight()`, dot, smoothstep, lerp | 14.96 | 13.23 | 21.4 | 16.8 |
+| `_MainLightPosition` uniform, dot, smoothstep, lerp | 12.59 | 11.71 | 25.26 | 17.46 |
+| baked mask: `bake.r` kept, one constant lerp | 14.87 | 12.55 | 22.09 | 17.35 |
+| baked mask used at once, AO sampled after it | 16.72 | 13.72 | 21.22 | 18.06 |
+
+Every variant that adds work to the function costs 4-8 ms at gameplay03, and as much with every visual toggle off as on:
+the toggles do not remove shader code. The no-op control matches main, so the build and the call itself are free.
+
+**Constraint.** Treat the terrain fragment shader as at a cliff: one extra lerp of a value already in a register cost as
+much as per-pixel lighting. The likely cause is register pressure or occupancy in the WebGL (ANGLE/Metal) compile of the
+whole function, not the arithmetic, as #195 found for the water (3 ms from its size alone). Shortening a value's live
+range did not help. Before adding anything to `StatecraftTerrain.hlsl`, profile it as above against main; prefer changing
+baked data the shader already reads in its existing operations (land colours in `tools/land_bake.py`, `MapPalette`), or
+moving work out of the function as #195 did.

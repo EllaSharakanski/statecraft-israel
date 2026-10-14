@@ -35,4 +35,13 @@ sources:
   - { url: "https://en.wikipedia.org/wiki/1948_in_Israel", checked: 2026-10-10 }
   - { url: "https://unispal.un.org/pdfs/AB14D4AAFC4E1BB985256204004F55FA.pdf", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d486", checked: 2026-10-14 }
+  # IDF account, republished by the Jewish Virtual Library: Operation Danny, 9-18 July, to relieve Jerusalem; Lod airport
+  # taken.
+  - { url: "https://jewishvirtuallibrary.org/jsource/History/Danny.html", checked: 2026-10-14 }
+  # The Knesset's summary of the War of Independence: fighting resumed on 8 July; Dani took Ramle and Lydda with the
+  # airport.
+  - { url: "https://m.knesset.gov.il/About/Occasion/Documents/IndependenceWar.pdf", checked: 2026-10-14 }
+  # Palmach veterans' archive pages: Allon commanded Operation Dani; Rabin was his deputy on the central front.
+  - { url: "https://palmach.org.il/veterans/veteranpage/?itemId=84187", checked: 2026-10-14 }
+  - { url: "https://www.palmach.org.il/veterans/veteranpage/?itemId=85256", checked: 2026-10-14 }
 status: sensitivity-reviewed

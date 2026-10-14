@@ -7,8 +7,8 @@ tags: [security, war-casualties]
 office: defense_minister
 # Approved at the cabinet session of 6 October 1948; launched after a supply convoy was fired on as it passed Egyptian
 # positions on 15 October (Israel's reply in S/1042; the IDF account); English Wikipedia gives 14 October. 15-22 October
-# 1948; Beersheba taken by the Negev Brigade on 21 October; cease-fire 22 October
-# (en.wiki "Operation Yoav", "1948 Arab-Israeli War"). At the end Allon asked to push into the Hebron hills and the Jericho
+# 1948; Beersheba taken by the Negev Brigade on 21 October; cease-fire 22 October (en.wiki "Operation Yoav"; the IDF
+# account; the Knesset's war summary; FRUS doc. 705). At the end Allon asked to push into the Hebron hills and the Jericho
 # valley; Ben-Gurion refused, mainly fearing British involvement (en.wiki "Operation Yoav"). This card is that decision
 # (yoav_hebron in notes section 7). The window is the operation, 15-22 October; on the monthly grid of the second truce
 # the card comes on 17 October, and the turn it opens covers Allon's request.
@@ -30,10 +30,14 @@ options:
       - { target: intl_standing, delta: -0.08 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Yoav", checked: 2026-10-10 }
-  - { url: "https://en.wikipedia.org/wiki/1948_Arab–Israeli_War", checked: 2026-10-10 }
   - { url: "https://documents.un.org/api/symbol/access?s=S/1042&l=en&t=pdf", checked: 2026-10-14 }
   - { url: "https://www.un.org/unispal/document/auto-insert-210876/", checked: 2026-10-14 }
+  # Ben-Gurion's diary, 6 October 1948 (Ben-Gurion Archives): the cabinet adopted his proposal to break a road through
+  # to the Negev by force, 8 in favour.
+  - { url: "https://bengurionarchive.bgu.ac.il/node/10786", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1948v05p2/d705", checked: 2026-10-14 }
   # IDF account, republished by the Jewish Virtual Library.
   - { url: "https://jewishvirtuallibrary.org/jsource/History/Yoav.html", checked: 2026-10-14 }
+  # The Knesset's summary of the War of Independence: Yoav, 15-22 October 1948; Beersheba taken on 21 October.
+  - { url: "https://m.knesset.gov.il/About/Occasion/Documents/IndependenceWar.pdf", checked: 2026-10-14 }
 status: sensitivity-reviewed
