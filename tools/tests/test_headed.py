@@ -102,6 +102,8 @@ def test_the_pad_swipe_is_many_small_deltas():
     assert len(swipe) == 31 and all(-8 <= d <= -0.5 for d in swipe)
     assert headed.ideal_notches("pad") == pytest.approx(1.082, abs=1e-3)
     assert headed.ideal_notches("lines3") == 1 and headed.ideal_notches("out_px100") == -1
+    assert headed.ideal_notches("px200") == 1 and headed.ideal_notches("px150") == 1 and headed.ideal_notches("cdp100") == 1
+    assert headed.ideal_notches("px49") == pytest.approx(0.49)
 
 
 def test_gesture_notches_reads_the_camera_log():
@@ -128,3 +130,8 @@ def test_wheel_zoom_follows_a_swipe_and_keeps_a_notch_at_one_step():
     assert r["pad,out_px100"]["out_px100"][0] == pytest.approx(-1, abs=0.02)
     assert r["pad,out_lines3"]["out_lines3"][0] == pytest.approx(-1, abs=0.02)
     assert r["pad,px100@panel"] == {"pad": (0.0, 0.0), "px100": (0.0, 0.0)}
+    for label in ("cdp100", "pad,cdp100"):   # Chrome's own 100 px notch, which arrives as 200 px: one step, not two
+        assert r[label]["cdp100"][0] == pytest.approx(1, abs=0.02), label
+    assert r["px150,px200,px49"]["px150"][0] == pytest.approx(1, abs=0.02)
+    assert r["px150,px200,px49"]["px200"][0] == pytest.approx(1, abs=0.02)
+    assert r["px150,px200,px49"]["px49"][0] == pytest.approx(0.49, abs=0.02)

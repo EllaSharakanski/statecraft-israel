@@ -44,9 +44,8 @@ namespace Statecraft.Game.Map
 
         /// <summary>The DOM WheelEvent deltaMode values.</summary>
         public const int WheelPixels = 0, WheelLines = 1, WheelPages = 2;
-        /// <summary>Wheel pixels in one notch: Chrome and Edge on Windows send 100 px a mouse notch at 100% page zoom. The
-        /// browser divides wheel pixels by the page zoom (Ctrl/Cmd +), and devicePixelRatio mixes that zoom with the
-        /// display's scale, so the page cannot undo it: at 125% page zoom a notch is 80 px, 8%.</summary>
+        /// <summary>Touchpad pixels in one notch (events below MouseNotchMinPixels): a 100 px swipe zooms as far as one
+        /// mouse notch.</summary>
         public const float PixelsPerNotch = 100f;
         /// <summary>Lines in one notch: Firefox sends a mouse notch as three lines (WheelInput.jslib asks for the mode first,
         /// so Firefox keeps lines; otherwise it would send three line heights in pixels).</summary>
@@ -54,6 +53,13 @@ namespace Statecraft.Game.Map
         /// <summary>One mouse tick on macOS, in pixels, in Chrome and Safari (Cocoa's 0.1000061 lines times 40 px). A delta
         /// that is a whole number of these is a mouse, not a trackpad (the test MapLibre and Mapbox GL use).</summary>
         public const double MacWheelTick = 4.000244140625;
+        /// <summary>A pixel wheel event this big or bigger is one mouse notch, whatever its size (#528 review). A discrete
+        /// wheel sends one event a notch: 100 px in Chrome and Edge on Windows, 120, 125 or 150 px with display scaling,
+        /// 80 px at 125% page zoom, and 200 px from Chrome's synthetic (CDP and Playwright) wheel. A touchpad sends many
+        /// small events: 0.5 to 8 px in the measured swipe, and a fast flick's biggest events are a few tens of pixels.
+        /// Those below this count in proportion, 100 px to the notch; one above it counts as one notch, never more, so a
+        /// flick cannot jump to the clamp either way.</summary>
+        public const float MouseNotchMinPixels = 50f;
 
         /// <summary>Answers "is the pointer over the UI?" for a screen position (y up). Null = never.</summary>
         public Func<Vector2, bool>? IsOverUi;
@@ -126,9 +132,10 @@ namespace Statecraft.Game.Map
 #endif
 
         /// <summary>One wheel event in notches, positive = in (a DOM deltaY below zero). Lines and pages are counted by the
-        /// notch (three lines, one page). Pixels are a mouse when they are whole macOS ticks, one notch a tick; otherwise
-        /// they count 100 to the notch, so a touchpad zooms by how far the fingers move and nothing is learned between
-        /// events.</summary>
+        /// notch (three lines, one page). A pixel event is one notch when it is MouseNotchMinPixels or more, or a whole
+        /// number of macOS mouse ticks (an accelerated tick, several ticks' worth, is still one physical notch);
+        /// otherwise it counts 100 to the notch, so a touchpad zooms by how far the fingers move. Nothing is learned
+        /// between events.</summary>
         public static float WheelEventNotches(float deltaY, int deltaMode)
         {
             if (deltaY == 0f) return 0f;   // not -0: a stray zero event is no zoom, either way
@@ -138,7 +145,7 @@ namespace Statecraft.Game.Map
                 case WheelPages: return -deltaY;
             }
             double ticks = deltaY / MacWheelTick;
-            if (ticks == Math.Round(ticks)) return (float)-ticks;
+            if (Mathf.Abs(deltaY) >= MouseNotchMinPixels || ticks == Math.Round(ticks)) return deltaY < 0f ? 1f : -1f;
             return -deltaY / PixelsPerNotch;
         }
 

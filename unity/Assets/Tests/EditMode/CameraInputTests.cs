@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game.Map;
@@ -402,10 +403,38 @@ public class CameraInputTests
         Assert.AreEqual(1f, CameraController.WheelEventNotches(-3f, CameraController.WheelLines), 1e-5, "3 lines");
         Assert.AreEqual(1f, CameraController.WheelEventNotches(-1f, CameraController.WheelPages), 1e-5, "1 page");
         Assert.AreEqual(1f, CameraController.WheelEventNotches(-4.000244140625f, CameraController.WheelPixels), 1e-5, "macOS tick");
-        Assert.AreEqual(-2f, CameraController.WheelEventNotches(8.00048828125f, CameraController.WheelPixels), 1e-5,
-            "an accelerated macOS tick is two");
+        Assert.AreEqual(-1f, CameraController.WheelEventNotches(8.00048828125f, CameraController.WheelPixels), 1e-5,
+            "an accelerated macOS tick (two ticks' worth) is still one notch");
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-13 * 4.000244140625f, CameraController.WheelPixels), 1e-5,
+            "a fast-spun macOS tick above the threshold is one notch");
         foreach (var mode in new[] { CameraController.WheelPixels, CameraController.WheelLines, CameraController.WheelPages })
             Assert.AreEqual(float.PositiveInfinity, 1f / CameraController.WheelEventNotches(0f, mode), $"0 in mode {mode} is +0, not -0");
+    }
+
+    /// <summary>#528 review: one discrete pixel notch is one step whatever its size. Chrome's synthetic 100 px notch
+    /// arrives as 200 px, and display scaling or page zoom gives 80, 120, 125 or 150 px; every pixel event of
+    /// MouseNotchMinPixels (50) or more is exactly one notch in its direction (DOM deltaY below zero = in = positive).</summary>
+    [Test]
+    public void APixelNotchIsOneStepWhateverItsSize()
+    {
+        foreach (var px in new[] { 50f, 80f, 100f, 120f, 125f, 150f, 200f, 360f })
+        {
+            Assert.AreEqual(1f, CameraController.WheelEventNotches(-px, CameraController.WheelPixels), 1e-6, $"-{px} px is one notch in");
+            Assert.AreEqual(-1f, CameraController.WheelEventNotches(px, CameraController.WheelPixels), 1e-6, $"+{px} px is one notch out");
+        }
+        Assert.AreEqual(CameraController.MouseNotchMinPixels, 50f, "the threshold these cases assume");
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-50f, CameraController.WheelPixels), 1e-6, "at the threshold: a notch");
+        Assert.AreEqual(0.4999f, CameraController.WheelEventNotches(-49.99f, CameraController.WheelPixels), 1e-5, "just below: proportional");
+        Assert.AreEqual(-0.49f, CameraController.WheelEventNotches(49f, CameraController.WheelPixels), 1e-6);
+        Assert.AreEqual(2f, CameraController.WheelEventNotches(-6f, CameraController.WheelLines), 1e-6, "lines stay as they were: 6 are 2 notches");
+        var rig = NewRig();
+        try
+        {
+            rig.Distance = 120000f;
+            CameraController.Step(rig, new CameraInput { Zoom = CameraController.WheelNotches(new[] { -200f }, new[] { 0 }, 1) }, 0.016f, Map);
+            Assert.AreEqual(108000f, rig.Distance, 1f, "Chrome's synthetic 200 px notch zooms 10%");
+        }
+        finally { Object.DestroyImmediate(rig.gameObject); }
     }
 
     [Test]
@@ -420,7 +449,12 @@ public class CameraInputTests
         Assert.AreEqual(-swipe.Sum() / 100f, CameraController.WheelNotches(swipe, modes, swipe.Length), 1e-5);
         Assert.AreEqual(1f, CameraController.WheelNotches(new[] { -100f }, new[] { 0 }, 1), 1e-5);
         Assert.AreEqual(1f, CameraController.WheelNotches(new[] { -3f }, new[] { CameraController.WheelLines }, 1), 1e-5);
-        Assert.AreEqual(0.5f, CameraController.WheelNotches(new[] { -50f, -100f }, new[] { 0, 0 }, 1), 1e-5, "only count events");
+        Assert.AreEqual(0.4f, CameraController.WheelNotches(new[] { -40f, -100f }, new[] { 0, 0 }, 1), 1e-5, "only count events");
+        // The swipe the browser runs use (tools/headed.py pad_swipe: a ramp, a hold, momentum decaying 12% an event).
+        var pad = new List<float> { -0.5f, -1, -2, -4, -6, -8, -8, -8, -8, -8 };
+        for (int k = 1; 8 * Mathf.Pow(0.88f, k) >= 0.5f; k++) pad.Add(-(float)System.Math.Round(8 * System.Math.Pow(0.88, k), 2));
+        Assert.AreEqual(31, pad.Count);
+        Assert.AreEqual(1.082f, CameraController.WheelNotches(pad.ToArray(), new int[pad.Count], pad.Count), 1e-3, "108.2 px is 1.08 notches");
     }
 
     [Test]

@@ -61,12 +61,15 @@ def pad_swipe() -> list[float]:
 
 # Each gesture: (deltaY list, deltaMode, ms between events). out_ = the same zooming out.
 GESTURES = {"pad": (pad_swipe(), 0, 16), "px100": ([-100.0], 0, 0), "lines3": ([-3.0], 1, 0),
-            "out_px100": ([100.0], 0, 0), "out_lines3": ([3.0], 1, 0)}
+            "out_px100": ([100.0], 0, 0), "out_lines3": ([3.0], 1, 0), "px150": ([-150.0], 0, 0), "px200": ([-200.0], 0, 0),
+            "px49": ([-49.0], 0, 0)}
 # (label, [(gesture, where)]): each case runs on a fresh page.
 WHEEL_CASES = [("pad", [("pad", "map")]), ("px100,pad", [("px100", "map"), ("pad", "map")]),
                ("lines3,pad", [("lines3", "map"), ("pad", "map")]),
                ("pad,out_px100", [("pad", "map"), ("out_px100", "map")]), ("pad,out_lines3", [("pad", "map"), ("out_lines3", "map")]),
-               ("pad,px100@panel", [("pad", "panel"), ("px100", "panel")]), ("cdp100", [("cdp100", "map")])]
+               ("pad,px100@panel", [("pad", "panel"), ("px100", "panel")]), ("cdp100", [("cdp100", "map")]),
+               ("pad,cdp100", [("pad", "map"), ("cdp100", "map")]),
+               ("px150,px200,px49", [("px150", "map"), ("px200", "map"), ("px49", "map")])]
 WHEEL_STREAM = """async ([x, y, deltas, mode, gap]) => { const c = document.querySelector('canvas');
     for (const d of deltas) { c.dispatchEvent(new WheelEvent('wheel', {deltaY: d, deltaMode: mode, clientX: x, clientY: y,
         bubbles: true, cancelable: true})); if (gap) await new Promise(r => setTimeout(r, gap)); } }"""
@@ -76,10 +79,18 @@ WHEEL_SEEN_SCRIPT = """window.__wheelSeen = []; window.addEventListener('wheel',
 CAMERA = re.compile(r"^CAMERA distance=(\d+)")
 
 
+MOUSE_NOTCH_MIN_PX = 50   # CameraController.MouseNotchMinPixels
+
+
 def ideal_notches(gesture: str) -> float:
-    """What the gesture should zoom, in notches: pixels / 100, lines / 3 (positive = in)."""
+    """What the gesture should zoom, in notches (positive = in): lines / 3; a pixel event of 50 px or more is one notch;
+    smaller pixels count 100 to the notch. (Chrome's trusted 100 px notch, cdp100, arrives as 200 px: one notch.)"""
+    if gesture == "cdp100":
+        return 1.0
     deltas, mode, _ = GESTURES[gesture]
-    return -sum(deltas) / (3 if mode == 1 else 100)
+    if mode == 1:
+        return -sum(deltas) / 3
+    return sum(-math.copysign(1, d) if abs(d) >= MOUSE_NOTCH_MIN_PX else -d / 100 for d in deltas)
 
 
 def gesture_notches(d0: float, distances: list[float]) -> tuple[float, float]:
@@ -399,7 +410,7 @@ async def wheel(args):
                 total, largest = gesture_notches(d0, frames)
                 out.append((gesture, total, largest, seen))
                 print(f"WHEEL {label} | {gesture}@{where}: {total:+.2f} notches over {len(frames)} frames, largest frame {largest:.2f}"
-                      + (f" (ideal {ideal_notches(gesture):+.2f})" if gesture in GESTURES else f" (seen {seen})"))
+                      + f" (ideal {ideal_notches(gesture):+.2f})" + (f" (seen {seen})" if gesture == "cdp100" else ""))
             results[label] = out
     return results
 
