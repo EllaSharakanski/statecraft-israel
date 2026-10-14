@@ -45,6 +45,12 @@ sources:
   # Weinstein (Revisionists) and Pinkas (Mizrachi) had asked whether 20% for Jerusalem was agreed and whether the
   # dispute was over the other 80%. This is the government's account; the Etzel account above differs.
   - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_249973.pdf", checked: 2026-10-14 }
+  # Provisional State Council, sixth sitting, 24 June 1948 (Knesset minutes), the end of that debate and the documented
+  # outcome of enforcing the order: by roll call the council approved the government's action in preventing the Irgun
+  # from bringing in arms without the state's authority, as an attack on the state's sovereignty and a breach of the
+  # Irgun's written undertaking of 1 June 1948 (24 for, 4 against, 5 abstaining, 4 absent); and it approved a
+  # committee of ministers and council members to secure a single army under one authority (22 for, 8 abstaining).
+  - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_249974.pdf", checked: 2026-10-14 }
   # The same statement and reply, as Ben-Gurion republished them in his collected speeches (Bahilahem Israel, 1951), on
   # Project Ben-Yehuda: a readable copy if the Knesset PDF does not open.
   - { url: "https://benyehuda.org/read/56639", checked: 2026-10-14 }
