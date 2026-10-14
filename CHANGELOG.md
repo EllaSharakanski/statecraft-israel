@@ -204,6 +204,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- The map's near (bottom) tilt-shift band is lighter, as on promo 03: gently soft at the play zoom and almost none at the
+  wide overview, where the foreground is now sharp as on promo 02. On the owner's ruling of 2026-10-14; the far band is
+  unchanged (#390). Presentation only (#458).
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
