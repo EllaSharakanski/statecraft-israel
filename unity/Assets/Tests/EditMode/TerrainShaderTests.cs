@@ -187,7 +187,10 @@ public class TerrainShaderTests
     /// <summary>Rendered at the country-wide pose: the haze moves the far (top) band more than the near (bottom) band, across
     /// the full width. Task 6 sampled only the land column x 0.45..0.6, because then only the land carried haze and the far
     /// band's sea and border skirt hid the effect (full width: far 0.023, near 0.026). Since Task 7 the sea on both sides
-    /// takes the water haze, so the full width is measured again (Task 7 fix round 1).</summary>
+    /// takes the water haze, so the full width is measured again (Task 7 fix round 1). Since issue #36 the outer columns
+    /// are the frame and the table, not the skirt, so the bands are the board's columns, 0.3-0.7 of the width, as in
+    /// TheHazeStartsBeyondTheNearestDioramaLandAndGrowsWithDistance (at this pose the far band's board edges lie at about
+    /// 0.28 and 0.72, a margin of 0.02).</summary>
     [UnityTest]
     public IEnumerator TheHazeThickensWithDistance()
     {
@@ -197,7 +200,7 @@ public class TerrainShaderTests
         PromoPose.Diorama02.Apply(rig, map.Frame); rig.TopInset = 0; rig.Apply();
         VisualToggles.Set("haze", false); var clear = RenderSample.Render(cam, 480, 270);
         VisualToggles.Set("haze", true); var hazy = RenderSample.Render(cam, 480, 270);
-        const float x0 = 0f, x1 = 1f;
+        const float x0 = 0.3f, x1 = 0.7f;
         float far = Mathf.Abs(hazy.MeanLuma(x0, 0.8f, x1, 0.95f) - clear.MeanLuma(x0, 0.8f, x1, 0.95f));
         float near = Mathf.Abs(hazy.MeanLuma(x0, 0.05f, x1, 0.2f) - clear.MeanLuma(x0, 0.05f, x1, 0.2f));
         TestContext.WriteLine($"haze shift far {far:0.000}, near {near:0.000}");
@@ -208,7 +211,8 @@ public class TerrainShaderTests
     /// about 205 km away) is inside the haze's start distance and barely moves; the middle and far bands move more and
     /// more. Since issue #36 the outer columns of the view are the frame and the dark table, whose luma any haze moves
     /// several times more than the sand's (full width, near band 0.024), so the bands are the board's columns, 0.3-0.7 of
-    /// the width, which hold the sea and the land in every band at this pose.</summary>
+    /// the width, which hold the sea and the land in every band at this pose (the far band's board edges lie at about
+    /// 0.28 and 0.72: a pose change that narrows the board at the top must revisit these columns).</summary>
     [UnityTest]
     public IEnumerator TheHazeStartsBeyondTheNearestDioramaLandAndGrowsWithDistance()
     {

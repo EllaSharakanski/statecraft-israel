@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 /// <summary>Issue #174 (integration bug B11): panning past the terrain's edge filled the view with flat fills and a hard
-/// seam. Two causes: the look-at clamp let the view run off the map onto the border skirt (a flat slab), and at the high
+/// seam. Two causes: the look-at clamp let the view run off the map onto the border skirt (a flat slab; since #36 the frame), and at the high
 /// north-east corner (the ground about 6 km up at 3x relief) the hero-zoom camera, 4.6 km above the look-at plane y = 0,
 /// sat inside the hills and showed only haze. Rendered at the worst pan pose: the hero zoom pushed into each corner of the
 /// map, through the same CameraController.Step the game runs every frame, with the bounds and ground GameRoot gives it.</summary>
@@ -96,7 +96,12 @@ public class MapEdgeTests
     }
 
     /// <summary>Issue #36: the frame and table show at the overview, where the view is wider than the map (diorama02, fitted
-    /// by the same CameraController.Step the game runs), on both sides of the board; at gameplay03 they draw no pixel.</summary>
+    /// by the same CameraController.Step the game runs), on both sides of the board; at gameplay03 they draw no pixel. The
+    /// render is 16:9 (W x H), which the split at 100 km assumes: wider windows show the frame from nearer (32:9 from about
+    /// 53 km). What each half covers: the overview half fails if the frame does not draw (renderer off, nothing written);
+    /// the gameplay half only shows that the frame stays out of gameplay03's view, about 17 km off every edge, so a frame
+    /// raised above the ground's top or reaching into the map is caught by PanningIntoACornerShowsNoSkirtSeamOrFlatFill and
+    /// MapSceneTests.TheFrameRimsTheMapAndTheTableLiesBeyond instead.</summary>
     [UnityTest]
     public IEnumerator TheFrameShowsAtTheOverviewOnly()
     {

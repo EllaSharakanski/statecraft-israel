@@ -211,6 +211,9 @@ public class MapSceneTests
             var c = (verts[tris[k]] + verts[tris[k + 1]] + verts[tris[k + 2]]) / 3;
             Assert.IsFalse(c.x > 1f && c.x < size.x - 1f && c.z > 1f && c.z < size.z - 1f, $"frame triangle over the terrain at {c}");
         }
+        // Nor any vertex (review S3: a bevel inset 100 m into the map keeps every centroid outside the 1 m margin).
+        foreach (var v in verts)
+            Assert.IsFalse(v.x > 0.5f && v.x < size.x - 0.5f && v.z > 0.5f && v.z < size.z - 0.5f, $"frame vertex over the terrain at {v}");
         // Inside the camera's fit (#174): between the terrain's lowest and highest points.
         float top = CameraController.GroundTopOf(map.Terrain);
         foreach (var v in verts)
@@ -254,7 +257,10 @@ public class MapSceneTests
             ("east", v => Mathf.Abs(v.x - size.x) < 0.5f, v => v.z, t => new Vector2(size.x, t)) })
         {
             var line = System.Array.FindAll(ring0, v => onEdge(v)); System.Array.Sort(line, (p, q) => along(p).CompareTo(along(q)));
-            float worst = 0; float worstAt = 0;
+            // Review S3: with no vertex on the edge line the loop below checked nothing and passed. One inner vertex per
+            // heightmap sample, and every sample but the last bracketed by two of them.
+            Assert.GreaterOrEqual(line.Length, res, $"{name} edge: the frame's inner vertices lie on the map's edge");
+            float worst = 0; float worstAt = 0; int checkedSamples = 0;
             for (int i = 0; i < res; i++)
             {
                 float t = (name == "south" || name == "north" ? size.x : size.z) * i / (res - 1);
@@ -266,14 +272,17 @@ public class MapSceneTests
                 float terrain = data.GetInterpolatedHeight(p2.x / size.x, p2.y / size.z);
                 float d = Mathf.Abs(Mathf.Lerp(a0.y, a1.y, f) - terrain);
                 if (d > worst) { worst = d; worstAt = t; }
+                checkedSamples++;
             }
+            Assert.GreaterOrEqual(checkedSamples, res - 1, $"{name} edge: samples checked");
             TestContext.WriteLine($"{name} edge: largest gap to the terrain {worst:0.00} m (at {worstAt:0} m)");
             Assert.Less(worst, 0.5f, $"{name} edge: a sliver of {worst:0.00} m at {worstAt:0} m along it");
         }
     }
 
     /// <summary>Renders the real scene (Map.unity's light, rig and post-processing) looking at <paramref name="look"/> and
-    /// returns the pixel colour of each world point.</summary>
+    /// returns the pixel colour of each world point: with <paramref name="radius"/> over 0, the darkest pixel of the
+    /// (2 radius + 1)-square around it when <paramref name="darkest"/>, else that square's mean.</summary>
     static System.Collections.IEnumerator RenderAt(Vector3 look, float distance, Vector3[] points, Color[] colours, int radius = 0, bool darkest = false)
     {
         var cam = Camera.main; var rig = cam.GetComponent<CameraRig>();
@@ -290,14 +299,15 @@ public class MapSceneTests
             for (int i = 0; i < points.Length; i++)
             {
                 var p = cam.WorldToScreenPoint(points[i]);   // while the camera still renders into the texture
-                var best = tex.GetPixel((int)p.x, (int)p.y);
+                var best = tex.GetPixel((int)p.x, (int)p.y); var sum = Color.clear;
                 for (int dx = -radius; dx <= radius; dx++)
                     for (int dy = -radius; dy <= radius; dy++)
                     {
                         var c = tex.GetPixel((int)p.x + dx, (int)p.y + dy);
                         if (darkest && c.r + c.g + c.b < best.r + best.g + best.b) best = c;
+                        sum += c;
                     }
-                colours[i] = best;
+                colours[i] = darkest ? best : sum / ((2 * radius + 1) * (2 * radius + 1));
             }
         }
         finally
@@ -319,16 +329,19 @@ public class MapSceneTests
         EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
         var map = Object.FindFirstObjectByType<MapScene>();
         map.Build();
-        // The frame's crown (its rounded top's flat, MapBuilder.BuildFrame's profile) and a point on the table 15 km out.
+        // The middle of the frame's crown (its rounded top's flat, 0.3-0.7 of its width: MapBuilder.BuildFrame's profile), at
+        // its own height (sea level in world y, plus the frame's rise and crown: review S2), and a point on the table 15 km
+        // out, at world y 0. Each is the mean of a 5 x 5 pixel patch (about 0.4 km at 90 km, well inside the crown's 2.4 km).
+        float seaY = (0f - Meta.elev_min_m) * MapBuilder.VerticalExaggeration;
         float crown = MapBuilder.FrameBevelM + 0.5f * MapBuilder.FrameWidthM, past = 15000f;
-        float topY = map.Frame.ToWorld(34.95, 31.95, 0).y + MapBuilder.FrameRiseM + MapBuilder.FrameCrownM;
+        float topY = seaY + MapBuilder.FrameRiseM + MapBuilder.FrameCrownM;
         foreach (var (name, lat, lon, outward) in new[] { ("east", 31.95, 35.9, Vector3.right), ("south", 29.45, 34.6, Vector3.back), ("west", 32.0, 34.2, Vector3.left), ("north (the sea off Tyre)", 33.35, 34.9, Vector3.forward) })
         {
             var edge = map.Frame.ToWorld(lon, lat, 0); edge.y = map.Terrain.SampleHeight(edge);
             var table = edge + outward * past; table.y = 0f;
             var top = edge + outward * crown; top.y = topY;
             var colours = new Color[2];
-            yield return RenderAt(edge, 90000f, new[] { table, top }, colours, 1);
+            yield return RenderAt(edge, 90000f, new[] { table, top }, colours, 2);
             Color t = colours[0], f = colours[1];
             TestContext.WriteLine($"{name}: table {t}, frame {f}");
             Assert.IsTrue(t.r > t.g && t.g > t.b, $"{name}: warm wood, rendered {t}");

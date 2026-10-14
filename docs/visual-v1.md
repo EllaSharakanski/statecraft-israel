@@ -1654,10 +1654,11 @@ Each item below was ruled to the art track (controller, rank 10). None blocks la
    skirt. The earlier line saying a lower-chroma colour is the next candidate is withdrawn.
    **Done in #36 (frame round the map).** The skirt is gone: the board ends in a bevel (cut earth where the edge stands
    above the frame, the frame's lip where the sea and the low coast meet it), a walnut frame and a dark wooden table
-   (`MapBuilder.BuildFrame`, `MapFrame.shader`). The table takes 0.4 of the land's haze; the full haze lifted it to a
-   flat khaki. WebGL diorama02 against main (c2774ecc, with #502's olives): saturation 0.405 -> 0.363, contrast 0.173 -> 0.209
-   (promo 0.200), warmth 0.118 -> 0.133 (bar 0.087-0.145). gameplay03 and both hero shots: no land pixel moves by more than 3/255; 11 sea pixels
-   of gameplay03 move by up to 13/255 (the water's own clock, unpinned in the player). The sea no longer runs past the map's west edge, so the sea-seam tests went with the skirt.
+   (`MapBuilder.BuildFrame`, `MapFrame.shader`). The frame and table read the haze at sea level or higher (at world y 0 the
+   rift boost made it 1.6x), and the table takes 0.4 of that; the full haze lifted it to a flat khaki. WebGL diorama02
+   against main (c2774ecc, with #502's olives): saturation 0.405 -> 0.359, contrast 0.173 -> 0.222 (promo 0.200), warmth
+   0.118 -> 0.129 (bar 0.087-0.145). gameplay03 and both hero shots: no land pixel moves by more than 3/255; 1 sea pixel
+   of gameplay03 moves by up to 13/255 (the water's own clock, unpinned in the player). The sea no longer runs past the map's west edge, so the sea-seam tests went with the skirt.
 2. **Settlement markers float.** At the web shadow texel (about 100 m at 60 km with a 2048 map) the markers (symbolic
    scale, 300-700 m) show long detached shadows, so they look as if they hover. Set the sun's shadow bias (depth and normal
    bias) at kit scale: offsets of about 100-150 m at that texel. Do not just turn marker shadows off.

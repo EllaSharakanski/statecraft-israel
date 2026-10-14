@@ -98,9 +98,12 @@ Shader "Statecraft/MapFrame"
                 Light sun = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 float ndl = saturate(dot(n, sun.direction));
                 half3 lit = albedo * (SampleSH(n) + sun.color * ndl * sun.shadowAttenuation);
-                // The table takes TableHaze of the land's haze: it lies under the board's lamp, dark as in promo 02, where the
-                // full haze lifted it to a flat khaki.
-                float h = _ScHaze.a * ScHazeAmount(i.positionWS) * (kind > 0.75 ? TableHaze : 1.0);
+                // The haze is the land's aerial haze, read at sea level or higher: the table lies at world y 0 (the Dead Sea's
+                // floor) and the frame's outer face runs down to it, and ScHazeAmount's rift boost (up to 1.6x below the
+                // rift's top) belongs to the Jordan rift, not to furniture past the map's edge (review S1). The table then
+                // takes TableHaze of that: it lies under the board's lamp, dark as in promo 02.
+                float3 hazeAt = float3(i.positionWS.x, max(i.positionWS.y, _ScMap.z), i.positionWS.z);
+                float h = _ScHaze.a * ScHazeAmount(hazeAt) * (kind > 0.75 ? TableHaze : 1.0);
                 return half4(lerp(lit, _ScHaze.rgb, h), 1.0);
             }
             ENDHLSL

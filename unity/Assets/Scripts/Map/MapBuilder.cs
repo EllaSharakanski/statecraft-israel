@@ -272,7 +272,8 @@ namespace Statecraft.Game.Map
                     Quad(v0, v1, v2, v3, n);
                 }
             }
-            var mesh = assets.Own(new Mesh { name = "MapFrame", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 });
+            // About 16.5k vertices at the 2049 heightmap: 16-bit indices, unless a finer heightmap needs more.
+            var mesh = assets.Own(new Mesh { name = "MapFrame", indexFormat = verts.Count > 65535 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16 });
             mesh.SetVertices(verts); mesh.SetColors(colours); mesh.SetUVs(0, uvs);
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateNormals(); mesh.RecalculateBounds();

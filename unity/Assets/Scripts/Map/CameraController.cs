@@ -20,8 +20,9 @@ namespace Statecraft.Game.Map
     /// While the pointer is over the UI (IsOverUi, wired by the scene) the wheel and the drag belong to the UI; keyboard pan
     /// and orbit still move the camera (plan amendment A4). Pan speed scales with
     /// distance, zoom is clamped to [MinDistance, MaxDistance], and the view stays on the map (issue #174): the look-at
-    /// point is held far enough inside the map that the visible ground does not leave it, so the frame round the map (issue #36) never
-    /// shows at gameplay zoom. Where the view is wider than the map (the overview), it is centred on the map instead.
+    /// point is held far enough inside the map that the visible ground does not leave it, so the frame round the map (issue #36) shows
+    /// nowhere the view is no wider than the map. Where the view is wider than the map, it is centred on the map instead
+    /// and the frame shows at its sides: at 16:9 from about 106 km (yaw 0), at 32:9 from about 53 km, never in portrait.
     /// Given the ground's height (Ground), the camera also never sinks into the terrain (MinClearanceShare).</summary>
     [RequireComponent(typeof(CameraRig))]
     public sealed class CameraController : MonoBehaviour
