@@ -145,8 +145,21 @@ public class RealContentTests
     [Fact]
     public void OpenQuestionsAreExactlyTheKnownOnes()
     {
+        // #3: research_notes/budget-approval-1948-56.md answers budget_approval for every legislature of 1948-56.
         var open = C.Legislatures.SelectMany(l => l.OpenQuestions.Select(q => $"{l.Id}.{q}")).OrderBy(x => x).ToArray();
-        Assert.Equal(new[] { "first_knesset.budget_approval", "provisional_state_council.budget_approval", "second_knesset.budget_approval", "third_knesset.budget_approval" }, open);
+        Assert.Empty(open);
+    }
+
+    [Fact]
+    public void TheProvisionalStateCouncilApprovedTheBudget()
+    {
+        // #3: the council adopted the January 1949 Budget Ordinance unanimously (sitting 33, 30 December 1948) and the
+        // January-March 1949 Budget Ordinance 21-1 (sitting 38, 27 January 1949).
+        var council = C.Legislatures.Single(l => l.Id == "provisional_state_council");
+        Assert.True(council.BudgetApproval);
+        foreach (var url in new[] { "https://fs.knesset.gov.il/0/law/0_lsr_312670.pdf", "https://fs.knesset.gov.il/0/Plenum/0_ptm_250001.pdf", "https://fs.knesset.gov.il/0/Plenum/0_ptm_250006.pdf" })
+            Assert.Contains(council.Sources, s => s.Url == url);
+        Assert.True(PoliticsSystem.BudgetNeedsVote(C, new DateTime(1948, 6, 1)));
     }
 
     [Fact]
