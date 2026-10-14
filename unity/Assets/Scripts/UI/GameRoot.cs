@@ -246,7 +246,7 @@ namespace Statecraft.Game.UI
             if (startScreen && newGame != null)
             {
                 var cam = cameraController;
-                var recording = Own(new DeclarationRecording(root, text, off: CardVideo.ForcedOff()));   // no audio in automated runs
+                var recording = Own(new DeclarationRecording(root, text, toast.Show));   // never built in automated runs (Skipped)
                 start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }, recording));
                 start.Show();
             }

@@ -16,11 +16,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   goldens (`Statecraft.Sim.Reference`, D-A7) is test policy that no game mode or UI reaches. New scenario golden
   `scenario-mvp-absorb-first`. The real game is unchanged: `hash1950`, `hash1952`, `smoke5` and the two 1948 scenarios do
   not move.
-- The start screen can play David Ben-Gurion's reading of the sentence that proclaims the state, from the Kol Yisrael
-  broadcast of 14 May 1948 (Israel State Archives). It plays only from a "Play the recording" button, over the still
-  painting, with the words as Hebrew and English captions and the credit "Recording: Israel State Archives" on screen;
-  never on its own, never on Continue or New Game, and not in automated runs. The file ships as received from the
-  archive and is fetched only when asked for, so boot is unchanged.
+- The start screen can play David Ben-Gurion's reading of the sentence that proclaims the state, from the recording
+  of the ceremony of 14 May 1948 (Israel State Archives). It plays only from a "Play the recording" button, over the
+  still painting. The declaration's own Hebrew and English words show as captions once the audio is heard, and the
+  credit "Recording: Ralph Hellinger, Israel State Archives" is on screen. It never plays on its own, never on Continue
+  or New Game, and not in automated runs. A slow or failed load says so. The file is a cut of the archive's own upload,
+  decoded to WAV with no other processing (1.8 MB), and fetched only when asked for.
 - Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
   short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
   burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds

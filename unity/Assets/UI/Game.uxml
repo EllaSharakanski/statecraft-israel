@@ -277,15 +277,15 @@
                          only from this button, over the still painting, with its words as captions above the panel. -->
                     <ui:VisualElement name="start-recording" class="start-recording">
                         <ui:Button name="start-listen" class="start-listen" />
-                        <ui:Label name="start-recording-credit" text="Recording: Israel State Archives" class="start-recording-credit" />
+                        <ui:Label name="start-recording-credit" text="Recording: Ralph Hellinger, Israel State Archives" class="start-recording-credit" />
                     </ui:VisualElement>
                     <ui:VisualElement name="start-actions" class="start-actions">
                         <ui:Button name="start-continue" text="Continue" class="start-button" />
                         <ui:Button name="start-new-game" text="New Game" class="start-button" />
                     </ui:VisualElement>
                     <ui:VisualElement name="start-caption" class="start-caption" picking-mode="Ignore">
-                        <ui:Label name="start-caption-he" text="אנו מכריזים בזאת על הקמת מדינה יהודית בארץ ישראל, היא מדינת ישראל" class="start-he start-caption-he" language-direction="RTL" picking-mode="Ignore" />
-                        <ui:Label name="start-caption-en" text="We hereby declare the establishment of a Jewish state in Eretz-Israel, to be known as the State of Israel." class="start-caption-en" picking-mode="Ignore" />
+                        <ui:Label name="start-caption-he" text="…אנו מכריזים בזאת על הקמת מדינה יהודית בארץ־ישראל, היא מדינת ישראל." class="start-he start-caption-he" language-direction="RTL" picking-mode="Ignore" />
+                        <ui:Label name="start-caption-en" text="…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL." class="start-caption-en" picking-mode="Ignore" />
                     </ui:VisualElement>
                     <Statecraft.Game.UI.UiFrame />
                 </ui:VisualElement>

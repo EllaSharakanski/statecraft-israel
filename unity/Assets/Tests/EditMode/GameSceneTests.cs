@@ -78,6 +78,17 @@ public class GameSceneTests
         Assert.IsNull(GameObject.Find("EventSystem"), "UI Toolkit reads the Input System directly; an EventSystem would take over");
     }
 
+    /// <summary>The game as automated runs boot it (no start screen): no DeclarationRecording is built, so the
+    /// "Play the recording" row keeps the stylesheet's display: none and its button is never set up.</summary>
+    [Test]
+    public void WithoutTheStartScreenThereIsNoRecording()
+    {
+        Boot();
+        Assert.AreEqual(StyleKeyword.Null, Ui.Q("start-recording").style.display.keyword, "nothing shows the row");
+        Assert.AreEqual("", Ui.Q<Button>("start-listen").text, "the button was never set up");
+        Assert.AreEqual(StyleKeyword.Null, Ui.Q("start-caption").style.display.keyword);
+    }
+
     [Test]
     public void TheGameStartsInTheSceneOnceTheInputsAreLoaded()
     {

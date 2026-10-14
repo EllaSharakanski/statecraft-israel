@@ -54,6 +54,9 @@ public class StartScreenTests
         ("start-en-proclamation", "…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.", "en.txt"),
         ("start-he-date", "בעיר תל־אביב, היום הזה, ערב שבת, ה׳ אייר תש״ח, 14 במאי 1948.", "he.txt"),
         ("start-en-date", "IN THE CITY OF TEL-AVIV, ON THIS SABBATH EVE, THE 5TH DAY OF IYAR, 5708 (14TH MAY, 1948).", "en.txt"),
+        // The recording's captions (DeclarationRecording): the sentence Ben-Gurion is heard reading.
+        ("start-caption-he", "…אנו מכריזים בזאת על הקמת מדינה יהודית בארץ־ישראל, היא מדינת ישראל.", "he.txt"),
+        ("start-caption-en", "…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.", "en.txt"),
     };
 
     [Test]
@@ -188,7 +191,7 @@ public class StartScreenTests
             NewGame = new NewGamePresenter(Ui.Root, Bridge, store, Toast, Text, () => 5UL);
             GameStart.Autosave(Bridge, store, Text);
             Ui.Root.Q("root").RemoveFromClassList("loading");
-            Recording = new DeclarationRecording(Ui.Root, Text, off: false);
+            Recording = new DeclarationRecording(Ui.Root, Text, Toast.Show, (url, done) => () => { });   // a fetch that never answers
             Start = new StartScreenPresenter(Ui.Root, NewGame, resumed, Shown.Add, Recording);
             Start.Show();
         }
@@ -210,7 +213,6 @@ public class StartScreenTests
     [Test]
     public void TheRecordingPlaysOnlyFromItsButtonAndStopsWhenTheScreenCloses()
     {
-        LogAssert.ignoreFailingMessages = true;   // the edit-mode audio fetch may log; the screen is what is checked
         var store = WithSave(TempStore(), 2);
         using (var rig = new Rig(store))
         {
@@ -346,6 +348,7 @@ public class StartScreenTests
         }
         Assert.AreEqual("start-new-game", seen[0], "Tab moves from Continue to New Game: " + string.Join(", ", seen));
         Assert.IsTrue(seen.All(n => n == "start-continue" || n == "start-new-game" || n == "start-listen"), "Tab stays on the screen's buttons: " + string.Join(", ", seen));
+        CollectionAssert.Contains(seen, "start-listen", "Tab reaches the recording's button: " + string.Join(", ", seen));
         rig.Ui.Press("start-continue");
         yield return null; yield return null;
         Assert.AreEqual(DisplayStyle.Flex, rig.Ui.Root.Q("top-bar").resolvedStyle.display);
