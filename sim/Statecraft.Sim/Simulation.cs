@@ -16,6 +16,7 @@ namespace Statecraft.Sim
             EffectsSystem.Init(c, s);
             EconomySystem.Init(c, s);
             PopulationSystem.Init(c, s);
+            Cities.Init(c, s);
             SecuritySystem.Init(c, s, why);
             AttentionSystem.Refill(c, s);
             EventSystem.Trigger(c, s, why);
@@ -46,6 +47,8 @@ namespace Statecraft.Sim
             foreach (var cmd in commands)
             {
                 if (!AttentionSystem.IsCommandKind(cmd.Kind)) { rejected.Add(new Rejection(cmd, "That order is not known")); continue; }
+                // A GDD order has no price in the legacy rules: refuse it before charging (R-CITY-001).
+                if (AttentionSystem.IsGddKind(cmd.Kind) && !c.IsGdd) { rejected.Add(new Rejection(cmd, "That order is not available in this game")); continue; }
                 var before = s.Attention;
                 var error = AttentionSystem.TrySpend(c, s, cmd.Kind, priceRung) ?? Execute(c, s, cmd, why);
                 if (error != null) { s.Attention = before; rejected.Add(new Rejection(cmd, error)); }
@@ -134,6 +137,8 @@ namespace Statecraft.Sim
                     return Cabinet.Appoint(c, s, a.Office, a.Person, why);
                 case MapAction m:
                     return MapActions.Apply(c, s, m.Action, m.Q, m.R, why);
+                case AssignWorkers w:
+                    return Cities.Assign(c, s, w.City, w.Role, w.Count, why);
                 case SecurityOrder o:
                     // long arithmetic: an extreme delta clamps to the ladder's end instead of wrapping around.
                     SecuritySystem.SetRung(c, s, (int)Math.Max(1L, Math.Min(5L, (long)s.Rung + o.Delta)), why);
