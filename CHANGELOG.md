@@ -336,6 +336,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Fixed
 - "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
   No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
+- Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of
+  18 October 1948 (S/1042) puts the Negev fighting on 15 October, against S/1357's 14 October. "Talks at Rhodes":
+  Israel's reply to the British protest (JTA, 19 January 1949) agrees with the British statement that the RAF planes
+  were shot down on 7 January. "Jerusalem": the Mediator's report of 12 July (S/888) has the demilitarisation proposal
+  made in early July, and Shertok read Israel's rejection to the Provisional State Council on 29 July, before the
+  proclamation of 2 August. "Electing the Constituent Assembly": the minutes' Hebrew date confirms the 25th sitting on
+  4 November 1948 (the Knesset's database has a Saturday, 6 November), and CBS's figures give turnout 86.88%, so 86.9%,
+  not 87.0%. "The Mediator Assassinated": the Official Gazette dates the ordinance 23 September and prints it on
+  29 September. Comments and source rows only; text, dates, options and effects are unchanged (refs #442).
 - Four 1948 localities corrected against the Village Statistics 1945 scan (#200): Ijzim is 2,970, not 4,280 (the
   transcription's "Ijzim (Nazareth subdistrict)" is 'Ilut, a different village); Ilar's Wikidata item is the place's
   main item, "Illar, Tulkarm"; Beit Nuba's row reads 'Ajanjul; Zakariya's article is now Zekharia. The rows stay
