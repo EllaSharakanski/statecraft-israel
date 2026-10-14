@@ -224,7 +224,8 @@ namespace Statecraft.Game.UI
             var mini = minimap = Own(new MinimapPresenter(root, map.Hexes));
             bool hebrew = text["ui.lang"] == "he";   // today's name in the UI's language (review M6)
             labels = Own(new MapLabelsPresenter(root, map, cameraController.GetComponent<Camera>(), null,
-                p => MapLabelsPresenter.TipOf(p, n => text.Format("map.today", n), text["map.mixed"], hebrew)));
+                p => MapLabelsPresenter.TipOf(p, n => text.Format("map.today", n), text["map.mixed"], hebrew),
+                () => unitLayer != null ? unitLayer.KeepClear : null));   // the names keep clear of the unit tokens (issue #197)
             mini.Clicked += (lon, lat) => { camRig.LookAt = map.Frame.ToWorld(lon, lat, 0); cameraController.Settle(); SyncMinimap(); labels?.Refresh(); };   // the click may come after LateUpdate (review M6)
             Action onChanged = RenderPlacementsIfChanged;
             bridge.Changed += onChanged;
