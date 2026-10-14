@@ -321,6 +321,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Provisional Government, the first three governments, the Provisional State Council and the First and Second
+  Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
+  sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second
+  Knessets, and the Official Gazette notice of the 1949 results. Wikipedia stays only for the council's party split, the
+  Provisional Government's smaller coalition groups and lines the YAML comments cite it for. Values are unchanged
+  (refs #457).
 - The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
   `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
   The pixels are unchanged.
