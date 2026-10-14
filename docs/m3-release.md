@@ -9,8 +9,9 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
   `Build/814d5f9032ce4b5847cf75e492700bbb.loader.js`, so a browser that cached an earlier build cannot mix its files into
   this one. The build's `index.html` names them; nothing else may assume a name. `index.html` keeps its fixed name and
   a browser may show a cached copy of it (no host this project uses is known to forbid that), so the page asks the
-  server for its current copy (`fetch` with `cache: "no-store"`) and loads the files that copy names. The StreamingAssets
-  files keep their names; the player adds the build's id to every URL it fetches them by (`?b=<Application.buildGUID>`,
+  server for its current copy (`fetch` with `cache: "reload"`, which also stores that copy for the next visit) and loads the files that copy names. The StreamingAssets
+  files (`content/`, `map/`, `video/` and the start screen's recording) keep their names; the player adds the build's
+  id to every URL it fetches them by (`?b=<Application.buildGUID>`,
   `GameInputs.WithBuildId`), so a browser cannot serve one build's cached content to another.
 - **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -shareable -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses while any sensitive event is not sensitivity-reviewed, and when the build's `event-photos.json` is missing, says the build was not `-shareable`, or lists an unreviewed sensitive event photograph). Never zip by hand.
 - **After building:** drop the build's rewrites of the settings with

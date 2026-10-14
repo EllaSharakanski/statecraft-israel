@@ -37,6 +37,12 @@ GitHub Releases page (and, from M4, on itch.io). Steps 1–3 are a normal pull r
    belong to it: never refer to them by a fixed name. Unity empties `Build/` on each build; `package_release.py` zips
    only the `Build/` files `index.html` names (it prints `LEFT OUT Build/<name>` for any other) and refuses the folder
    when one of them is missing.
+
+   With `webGLDataCaching: 1`, Unity's loader also keeps each build's `.data` in the browser's IndexedDB (UnityCache),
+   keyed by its URL. Its clean-up drops entries made under another `productVersion` (`bundleVersion`), and otherwise
+   trims the least recently used above 1 GiB (`MaximumCacheSize=1073741824` in the 6000.3 loader). With hashed names,
+   every build with the same `bundleVersion` adds one more `.data` there until that cap; the version bump in step 2
+   clears them at each release.
 6. **Tag and publish (owner):**
 
    ```bash

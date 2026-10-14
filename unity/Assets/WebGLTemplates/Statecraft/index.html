@@ -46,8 +46,9 @@
       };
       // Issue #437: the Build/ files are named by their content hash, and this page names its build's files. A browser may
       // show this page from its cache after a newer build replaced them (a server that sends no Cache-Control, such as
-      // python3 -m http.server, lets it), so ask the server for the current page and load the files that one names. When
-      // that fails (file://, offline, or not this template), keep this page's own names.
+      // python3 -m http.server, lets it), so ask the server for the current page and load the files that one names. The
+      // fetch skips the cache and stores the copy it gets ("reload"), so the next visit runs the current page. When it
+      // fails (file://, offline, or not this template), keep this page's own names.
       var FRESH_KEYS = ["loaderUrl", "dataUrl", "frameworkUrl", "workerUrl", "codeUrl", "symbolsUrl"];
       function useCurrentPage(html) {
         var found = {};
@@ -80,7 +81,7 @@
         };
         document.body.appendChild(script);
       }
-      fetch(location.href.split("#")[0], { cache: "no-store" })
+      fetch(location.href.split("#")[0], { cache: "reload" })
         .then(function (r) { return r.ok ? r.text() : ""; })
         .then(useCurrentPage)
         .catch(function () {})

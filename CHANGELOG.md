@@ -426,7 +426,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Cache-Control, such as `python3 -m http.server`, allows it), and it then named the previous build's files, which are
   gone: the start failed with "Unknown data format". The page now asks the server for its current copy and loads the
   files that copy names, keeping its own names only when it cannot (offline, `file://`). Refs #437.
-- The files the browser build fetches from StreamingAssets (the content, the heightmap and the event clips) keep fixed
+- The files the browser build fetches from StreamingAssets (the content, the heightmap, the event clips and the start
+  screen's recording) keep fixed
   names, so a returning browser could pair new code with the previous build's cached content. Every such URL now
   carries the build's id (`?b=<Application.buildGUID>`), so each build fetches its own copies; desktop file paths are
   unchanged. Refs #437.
