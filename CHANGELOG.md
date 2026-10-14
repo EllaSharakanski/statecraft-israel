@@ -321,6 +321,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Provisional State Council's window opens on 15 May 1948, the end of the Mandate, as the Declaration of
+  Independence (clause 12) and the Knesset's dates table give it, not 14 May (refs #457). The game starts on 15 May, so
+  nothing in play changes and no golden moves.
+- The Rhodes talks card no longer says Israel accepted the cease-fire on 7 January: by 6 January both Egypt and Israel
+  had notified the Acting Mediator of their acceptance (S/1187, FRUS 1949 vol. VI doc. 362), and the cease-fire took
+  effect at 1200 GMT on 7 January (refs #457). Text only; no golden moves.
+- Yehuda Leib Maimon holds Religions and War Victims to 8 October 1951, not 14 February 1951: the Knesset position
+  records run both Second Government terms to the Third Government, and the plenum of 17 July 1951 has him answering as
+  Minister of Religions (refs #457). The two offices are no longer vacant from February 1951. No golden moves.
 - Contradictions flagged in #457 and #442 that cannot move a golden. YAML comments: the Provisional State Council last
   met on 10 February 1949, not 3 February; the 120-seat ordinance passed on 18 November 1948 and the 25 January vote
   was fixed on 25 November 1948 (Harpaz, Kesher 61); the 57-36 vote of 8 August 1950 was for the coalition's motion,
