@@ -69,9 +69,7 @@ public class GameInputsTests
     {
         var site = StagedSite();
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        var start = Time.realtimeSinceStartup;
-        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
+        yield return Await(fetch);
         var fetched = fetch.GetResult();
         var disk = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
         CollectionAssert.AreEqual(disk.Map.HeightmapR16z, fetched.Map.HeightmapR16z);
@@ -90,9 +88,7 @@ public class GameInputsTests
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        var start = Time.realtimeSinceStartup;
-        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
+        yield return Await(fetch);
         var ex = Assert.Throws<IOException>(() => fetch.GetResult());
         StringAssert.StartsWith("people.yaml: ", ex.Message);
         Directory.Delete(site, true);
@@ -104,9 +100,7 @@ public class GameInputsTests
         var site = StagedSite();
         File.Delete(Path.Combine(site, "content", "people.yaml"));
         var fetch = GameInputs.FetchAsync(new System.Uri(site).AbsoluteUri.TrimEnd('/')).GetAwaiter();
-        var start = Time.realtimeSinceStartup;
-        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f) yield return null;
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
+        yield return Await(fetch);
         Assert.Throws<IOException>(() => fetch.GetResult());
         Assert.AreEqual(0, GameInputs.OpenRequests, "requests still in flight after a failed fetch were not disposed");
         Directory.Delete(site, true);
@@ -184,18 +178,62 @@ public class GameInputsTests
         public void Dispose() => listener.Stop();
     }
 
-    /// <summary>Waits up to 60 s for a fetch. A batch-mode editor runs the player loop (which resumes
-    /// Awaitable.NextFrameAsync) only now and then while idle: a retry's 0.5 s backoff measured 57 s over 2 frames. Each
-    /// tick queues a player-loop update, as a player runs one every frame.</summary>
-    static IEnumerator Await(Awaitable<GameInputs>.Awaiter fetch)
+    /// <summary>Seconds a fetch may go without progress before it counts as hung. Not a limit on the whole fetch: under
+    /// heavy load (several Unity batch runs, load average 46-97) fetches that pass when run alone failed a fixed 60 s limit
+    /// on the whole fetch (issue #503), while a hang shows as no request finishing, retrying or starting for a long time.</summary>
+    const float StallSeconds = 60f;
+
+    /// <summary>Waits for a fetch for as long as it makes progress: it fails only when GameInputs.OpenRequests (requests
+    /// started and not yet released) has not changed for StallSeconds. The manifest's request is released and every file's
+    /// started, then each file's request is released as the fetch takes it (a retry releases one and starts another), so
+    /// the count keeps moving while the fetch works.
+    /// A batch-mode editor runs the player loop (which resumes Awaitable.NextFrameAsync) only now and then while idle: a
+    /// retry's 0.5 s backoff measured 57 s over 2 frames. Each tick queues a player-loop update, as a player runs one
+    /// every frame.</summary>
+    static IEnumerator Await(Awaitable<GameInputs>.Awaiter fetch) =>
+        WaitWhileProgressing(() => fetch.IsCompleted, () => GameInputs.OpenRequests, StallSeconds, () => Time.realtimeSinceStartup, "fetch");
+
+    /// <summary>Yields until <paramref name="done"/>; throws a TimeoutException once <paramref name="progress"/> has not
+    /// changed for <paramref name="stallSeconds"/> by <paramref name="clock"/>. No limit on the total time.</summary>
+    static IEnumerator WaitWhileProgressing(Func<bool> done, Func<int> progress, float stallSeconds, Func<float> clock, string what)
     {
-        var start = Time.realtimeSinceStartup;
-        while (!fetch.IsCompleted && Time.realtimeSinceStartup - start < 60f)
+        var last = progress();
+        var since = clock();
+        while (!done())
         {
+            var now = progress();
+            if (now != last) { last = now; since = clock(); }
+            else if (clock() - since >= stallSeconds)
+                throw new TimeoutException($"{what} made no progress for {stallSeconds} seconds (progress stayed at {last})");
             UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
             yield return null;
         }
-        Assert.IsTrue(fetch.IsCompleted, "fetch did not finish within 60 seconds");
+    }
+
+    /// <summary>Runs a wait to its end in one go (the fake operations below need no frames).</summary>
+    static void RunToEnd(IEnumerator wait) { while (wait.MoveNext()) { } }
+
+    [Test]
+    public void TheFetchWaitFailsWhenProgressStopsButNotWhenItIsSlow()
+    {
+        // A fake clock: each check of the operation takes one second. The stall limit is 5 s.
+        var t = 0f;
+        Func<float> clock = () => t;
+
+        // A hang: nothing ever changes. It fails once the 5 s pass, not before.
+        var hang = Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => 7, 5f, clock, "hung op")));
+        StringAssert.StartsWith("hung op made no progress for 5 seconds", hang.Message);
+        Assert.That(t, Is.InRange(5f, 6f));
+
+        // Slow but working: a step every 4 s, done after 120 s in all (twice the old fixed 60 s limit). It passes.
+        t = 0f;
+        Assert.DoesNotThrow(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return t > 120f; }, () => (int)(t / 4f), 5f, clock, "slow op")));
+        Assert.That(t, Is.GreaterThan(120f));
+
+        // Progress that stops part way still fails, the stall measured from the last step (at 40 s).
+        t = 0f;
+        Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => (int)(Math.Min(t, 40f) / 4f), 5f, clock, "stalled op")));
+        Assert.That(t, Is.InRange(45f, 46f));
     }
 
     /// <summary>Fetches the staged site through a FlakySite with these faults and checks the result is the disk's
