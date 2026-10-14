@@ -422,6 +422,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   newer one (the startup failure "InternalError: too much recursion" without a hard refresh). Found by @Chaiky3 (#437,
   reported in #43). `tools/package_release.py` now zips exactly the `Build/` files the build's `index.html` names, and
   refuses a folder that is missing one.
+- The browser page itself can still come from the browser's cache after an update (a server that sends no
+  Cache-Control, such as `python3 -m http.server`, allows it), and it then named the previous build's files, which are
+  gone: the start failed with "Unknown data format". The page now asks the server for its current copy and loads the
+  files that copy names, keeping its own names only when it cannot (offline, `file://`). Refs #437.
 - The Provisional Government, the first three governments, the Provisional State Council and the First and Second
   Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
   sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second
