@@ -12,6 +12,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   15 May 1948, the United Nations from 24 October 1945, the state offices from 14 May 1948. Yaakov Dori's chief-of-staff
   term is split at 14 May 1948 into a new `haganah_chief_of_staff` office and `chief_of_staff`. A Founding start holds the
   same records and the goldens are unchanged. `rationing` and `rationing_feeds` stay windowless (their office begins in 1949).
+- Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
+  short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
+  burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds
+  for the session. Clips stream from StreamingAssets only when asked for, so boot is unchanged, and video is off in every
+  automated run. A clip that fails puts the photograph back. Deport never gets any video. The two clips on war-casualty
+  events wait for the owner's sensitivity review before a shareable build. Presentation only: no golden moves.
 - Portrait for Dov Yosef (refs #6): a Meitar Collection photograph (Benno Rothenberg, National Library of Israel, 1949) under CC BY 4.0, cropped, with its credit in `NOTICE`, on the extended `commons_licences.py` path from #30. Likeness check and the NLI confirmation before a paid release stay with the maintainer. Unity not run.
 - Portraits for Remez and Levin (refs #30): Government Press Office photographs, which Commons marks PD-Israel only, are replaced by Meitar Collection photographs (National Library of Israel, 1950 and 1949) under CC BY 4.0, cropped, with per-photo credits in `NOTICE`. `scripts/oss/commons_licences.py` now records an explicit Cc-by-4.0 file as `CC-BY-4.0` and marks it verified only with a named artist and a `NOTICE` entry; public domain, CC0 and the PD-Israel-only refusal are unchanged. Likeness check and the NLI confirmation before a paid release stay with the maintainer. Unity not run.
 - The website (`site/`, refs #393): a static Astro site in English (`/en/`) and Hebrew (`/he/`, right to left) with Home, Play, History, Sources, Media, Devlog, Contributors, How we make it, Press, Contribute and Privacy. Every image and video carries a visible label (in-engine capture with build and date, AI-generated concept art, or AI cinematic promo, not gameplay); the History and Sources pages show the events and sources from `content/` as they are. The in-engine images are the README's screenshots, read from `docs/images/build-*.jpg` and described in `docs/images/captures.yaml`, so retaking them updates the site. The cinematic trailer is hosted as one 720p H.264 encode, shown behind a click with captions in its own labelled section after the gameplay; a real gameplay clip listed in `captures.yaml` becomes the home page's muted hero loop, with a pause button. Self-hosted fonts and images, no analytics, no cookies and nothing loaded from another site. A `Site` workflow builds and checks it on pull requests; deploying to GitHub Pages waits for the owner.
@@ -204,6 +210,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ### Changed
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
+- Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
+  upper storey, deep windows and more roof rooms. The old towns' and villages' houses step back (the top storey a smaller
+  block on the lower roof), have roof rooms and grey-buff limestone walls under lime roofs. Domes stay on hill houses only,
+  fewer (old towns 22% to 8%, hill villages 7%; plain villages none, as their mud-brick houses had flat roofs) and low.
+  Every house stands where it did: same lots, trees and building count (docs/visual-v1.md, "Settlement quick wins").
 - HUD round 1, the info panel and the trim (promo look, refs #398). Before a hex is chosen, the info panel is a one-line
   hint, not an empty block. A hex's facts (region, settlements, 1948 localities, placements) are rows with a gold sign,
   with no yields and no land-use name. When both map actions are refused for the same reason, the reason shows once,
@@ -212,6 +223,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Map: the unit figures' uniforms are darker and warmer, so a trio stands out against the sunlit ground as promo 03's
   does instead of khaki on khaki; a figure's slope base is painted trodden earth instead of a dark grey disc. A
   readability choice at map scale; the sourced kit is unchanged (refs #197).
+- The decision card opens in the middle of the screen (decision cards, 2026-10-13): up to 1040 px wide, with a 16:9 media
+  header that shows the event's archival photograph at up to 960x540 (the 24 photographs re-cropped from the same originals
+  to 16:9). While it is open the map is blocked: a dim backdrop takes map clicks, and the info panel and the minimap are
+  out of reach, while the top bar stays usable. Hide (or Escape) collapses it to a "Decision waiting" button that brings
+  it back, and a new event opens it again with the keyboard focus on the card (Tab reaches the options; none is lit before
+  the player picks). Any open screen hides it until it closes. Presentation only: no golden moves.
 - The scenario runner (`Scenario`) and the `mvp-slice` golden's player (`MvpGolden`) move from the tests into `Statecraft.Sim`,
   next to `GoldenRun`, so Unity can play those goldens too (step 1 of #394). Same code, same hashes; no golden moves.
 - The map's railways and roads are placed from a bake at boot instead of being built (refs #321), as the water's
@@ -308,6 +325,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
+  `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
+  The pixels are unchanged.
 - "Operation Yoav" now dates the attack on the supply convoy to 15 October 1948, not 14 October, as Israel's own reply in
   the Acting Mediator's report S/1042 and the IDF account of the operation both give it. The rest of the card is
   unchanged (refs #442).
