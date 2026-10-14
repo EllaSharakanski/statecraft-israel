@@ -4,7 +4,8 @@ title: Rationing Clothes and Shoes
 text: 'Prices on the black market are climbing. {rationing_minister} proposes extending rationing to clothing and footwear and fighting the black market.'
 anchor: hard
 office: rationing_minister
-# Extended on 31 July 1950; retailers' strike 1-14 August; no-confidence motion defeated 57-36 on 8 August.
+# Extended on 31 July 1950; retailers' strike 1-14 August. On 8 August the Knesset passed the coalition parties' motion,
+# which Ben-Gurion made a question of confidence, 57-36; the opposition motions failed (plenum, 1_ptm_250242).
 from: 1950-07-01
 to: 1950-09-01
 options:

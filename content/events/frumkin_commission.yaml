@@ -9,7 +9,7 @@ from: 1950-01-01
 to: 1950-05-09
 options:
   - id: inquiry
-    text: Appoint a commission of inquiry and move camp education to the Education Ministry
+    text: Appoint a commission of inquiry and move camp education from the Culture Department to the Education Department
     historical: true
     recommended: true
     effects:
