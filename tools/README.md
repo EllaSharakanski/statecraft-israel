@@ -27,7 +27,9 @@ Offline data tools (uv inline-script Python). Run from the repo root.
 - `web_check.py` serves a WebGL build on http://localhost and opens it in headless Chrome for Testing (Playwright's
   cache; macOS only, arm64 or x64); it passes when the console shows the expected lines (`GOLDEN OK ...`, `SMOKE OK ...`).
 - `package_release.py` zips a Brotli WebGL build for sharing (`unity/Builds/statecraft-m3-web.zip`) and refuses
-  (exit 1) until every sensitive event is `sensitivity-reviewed` (docs/m3-release.md).
+  (exit 1) until every sensitive event is `sensitivity-reviewed` (docs/m3-release.md). The files under `Build/` are
+  named by their content hash (issue #437); it reads their names from the build's `index.html`, zips only those and
+  refuses a build that is missing one.
 - `preview_map.py` renders the geography check image `tools/.cache/map-preview.png`.
 - `terrain_bake.py` writes `unity/Assets/Textures/Map/terrain_bake.png` (AO, curvature, sky-view), `ao.png` (the AO
   alone, imported uncompressed) and `coast.png`

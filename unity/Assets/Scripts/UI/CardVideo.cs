@@ -36,8 +36,8 @@ namespace Statecraft.Game.UI
         public static bool ForcedOff() =>
             ForcedOff(Application.absoluteURL, Environment.GetCommandLineArgs(), Application.platform == RuntimePlatform.WebGLPlayer);
 
-        /// <summary>The clip's URL in the build's StreamingAssets/video folder.</summary>
-        public static string Url(string file) => Application.streamingAssetsPath + "/video/" + file;
+        /// <summary>The clip's URL in the build's StreamingAssets/video folder, with the build's id on the web (issue #437).</summary>
+        public static string Url(string file) => Boot.GameInputs.WithBuildId(Application.streamingAssetsPath + "/video/" + file, Application.buildGUID);
 
         /// <summary>The URL playing (or being prepared), or null.</summary>
         public string? Current { get; private set; }

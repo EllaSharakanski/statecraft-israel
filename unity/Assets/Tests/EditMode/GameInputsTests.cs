@@ -117,6 +117,8 @@ public class GameInputsTests
         readonly string root;
         readonly Dictionary<string, (string fault, int times)> faults;
         readonly ConcurrentDictionary<string, int> hits = new ConcurrentDictionary<string, int>();
+        /// <summary>Every request target as sent, query included (e.g. "/content/people.yaml?b=..."), in arrival order.</summary>
+        public readonly ConcurrentQueue<string> Targets = new ConcurrentQueue<string>();
         public readonly string BaseUrl;
 
         public FlakySite(string root, Dictionary<string, (string fault, int times)> faults)
@@ -154,6 +156,7 @@ public class GameInputsTests
                     head.Add(one[0]);
                 }
                 var target = System.Text.Encoding.ASCII.GetString(head.ToArray()).Split(' ')[1];
+                Targets.Enqueue(target);
                 var rel = Uri.UnescapeDataString(target.Split('?')[0].TrimStart('/'));
                 var n = hits.AddOrUpdate(rel, 1, (_, v) => v + 1);
                 if (faults.TryGetValue(rel, out var f) && n <= f.times)
@@ -306,6 +309,45 @@ public class GameInputsTests
                 StringAssert.EndsWith($"after {GameInputs.MaxAttempts} attempts", ex.Message);
                 Assert.AreEqual(GameInputs.MaxAttempts, server.Hits("content/events/israel_bonds.yaml"));
                 Assert.AreEqual(0, GameInputs.OpenRequests, "requests still in flight after a failed fetch were not disposed");
+            }
+        }
+        finally { Directory.Delete(site, true); }
+    }
+
+    /// <summary>Issue #437: StreamingAssets keep fixed names, so a returning browser could pair a new build's code with the
+    /// previous build's cached content files. Every URL the player fetches carries the build's id; a file path (desktop,
+    /// the editor) or an empty id is left alone.</summary>
+    [Test]
+    public void TheBuildIdGoesOnHttpUrlsOnly()
+    {
+        Assert.AreEqual("http://localhost:8000/StreamingAssets/content/people.yaml?b=0123abcd",
+            GameInputs.WithBuildId("http://localhost:8000/StreamingAssets/content/people.yaml", "0123abcd"));
+        Assert.AreEqual("https://html.itch.zone/html/1/StreamingAssets/video/a.mp4?b=0123abcd",
+            GameInputs.WithBuildId("https://html.itch.zone/html/1/StreamingAssets/video/a.mp4", "0123abcd"));
+        Assert.AreEqual("http://x/a.yaml?v=1&b=0123abcd", GameInputs.WithBuildId("http://x/a.yaml?v=1", "0123abcd"));
+        Assert.AreEqual("http://x/a.yaml", GameInputs.WithBuildId("http://x/a.yaml", ""));
+        Assert.AreEqual("file:///tmp/site/content/people.yaml", GameInputs.WithBuildId("file:///tmp/site/content/people.yaml", "0123abcd"));
+        Assert.AreEqual("/Applications/Statecraft.app/Contents/Resources/Data/StreamingAssets/video/a.mp4",
+            GameInputs.WithBuildId("/Applications/Statecraft.app/Contents/Resources/Data/StreamingAssets/video/a.mp4", "0123abcd"));
+    }
+
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
+    public IEnumerator EveryFetchCarriesTheBuildIdRetriesIncluded()
+    {
+        var site = StagedSite();
+        try
+        {
+            var faults = new Dictionary<string, (string, int)> { ["content/people.yaml"] = ("503", 1) };
+            using (var server = new FlakySite(site, faults))
+            {
+                var fetch = GameInputs.FetchAsync(server.BaseUrl, "0123abcd").GetAwaiter();
+                yield return Await(fetch);
+                fetch.GetResult();
+                var targets = server.Targets.ToArray();
+                var manifest = ContentManifest.Collect(Paths.Content);
+                Assert.AreEqual(manifest.Count + 4, targets.Length);   // the manifest, every file, heightmap.json and .r16z, one retry
+                foreach (var t in targets) StringAssert.EndsWith("?b=0123abcd", t);
+                Assert.AreEqual(2, server.Hits("content/people.yaml"));
             }
         }
         finally { Directory.Delete(site, true); }

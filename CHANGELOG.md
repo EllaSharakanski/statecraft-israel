@@ -417,6 +417,20 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   to the Education Department, both already in the Education Ministry. Moshe Sharett's birth date is 16 October 1894,
   from the Knesset member pages (Wikipedia gave 15 October); the sim reads `born` only to validate content. The items
   that would move a golden wait for the GDD rebaseline (#315).
+- The browser build names the files under `Build/` by their content hash (Unity's Name Files As Hashes), so the names
+  change with every build and a browser that cached an earlier build can no longer mix its loader, code or data into a
+  newer one (the startup failure "InternalError: too much recursion" without a hard refresh). Found by @Chaiky3 (#437,
+  reported in #43). `tools/package_release.py` now zips exactly the `Build/` files the build's `index.html` names, and
+  refuses a folder that is missing one.
+- The browser page itself can still come from the browser's cache after an update (a server that sends no
+  Cache-Control, such as `python3 -m http.server`, allows it), and it then named the previous build's files, which are
+  gone: the start failed with "Unknown data format". The page now asks the server for its current copy and loads the
+  files that copy names, keeping its own names only when it cannot (offline, `file://`). Refs #437.
+- The files the browser build fetches from StreamingAssets (the content, the heightmap, the event clips and the start
+  screen's recording) keep fixed
+  names, so a returning browser could pair new code with the previous build's cached content. Every such URL now
+  carries the build's id (`?b=<Application.buildGUID>`), so each build fetches its own copies; desktop file paths are
+  unchanged. Refs #437.
 - The Provisional Government, the first three governments, the Provisional State Council and the First and Second
   Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
   sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second

@@ -86,11 +86,11 @@ namespace Statecraft.Game.UI
             caption.style.display = DisplayStyle.None;
         }
 
-        /// <summary>The URL the button fetches.</summary>
+        /// <summary>The URL the button fetches, with the build's id on the web (issue #437).</summary>
         public static string Url()
         {
             var url = Application.streamingAssetsPath + "/" + File;
-            return url.Contains("://") ? url : "file://" + url;
+            return url.Contains("://") ? Boot.GameInputs.WithBuildId(url, Application.buildGUID) : "file://" + url;
         }
 
         /// <summary>The button: play; or, while loading or playing, stop.</summary>
