@@ -8,6 +8,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- GDD v0.1 Phase 1, training (refs #377), behind the `systems.loop` switch: `Train` sends a city's civilians without work
+  to basic training in a military camp (recruits, a count) or pioneer training in a Hakhshara (halutzim, movable units at
+  the city's hex), paid from the Treasury without borrowing; `CancelTraining` returns the people but not the Money (D-A3).
+  Cohorts progress as step 4 of the GDD turn (D-A6) (R-TRAIN-001 to R-TRAIN-003). One camp and one Hakhshara at the start
+  is a labelled design assumption (D-D5); training turns, costs and Attention costs are placeholders in `MvpSlice.Overlay`,
+  never under `content/`. `mvp-slice` moves (the reference player trains one halutz group); the legacy goldens and
+  `scenario-mvp-absorb-first` do not.
 - The records that only make sense in a state now carry dates (refs #80): three policies, three effects and nine actors from
   15 May 1948, the United Nations from 24 October 1945, the state offices from 14 May 1948. Yaakov Dori's chief-of-staff
   term is split at 14 May 1948 into a new `haganah_chief_of_staff` office and `chief_of_staff`. A Founding start holds the
@@ -221,6 +228,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   unchanged (#390). Presentation only (#458).
 - The `mvp-slice` golden is re-pinned (`0451920a` to `f6931e24`): the slice now has its city and the GDD turn, and the
   reference player fills the jobs (GDD Phase 1 PR 3, refs #376). The legacy goldens do not move.
+- The hills carry a loose, uneven scatter of single olives and low scrub between the olive clumps, like promo 03's hills
+  (refs #34): over the wet hill country where the land use is garrigue and terraces, outside the groves, the towns'
+  footprints and the hex-edge midpoints. The olives already planted stay where they are; the map has about 20,000 trees
+  instead of 8,400.
+- Map roads read as wide, pale dirt tracks at the gameplay zoom, as in promo 03 (refs #35): 420 m wide (was 300 m), cream
+  dirt varied in patches, softer verges. The pale band is a median 9 px at gameplay03 (was 4) and 19 px at 30 km (was
+  7). The route ribbons are re-baked; no route was added.
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
@@ -263,6 +277,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   brighter, so they stand out at the gameplay zoom; the sleepers run every 100 m, a fine texture instead of a coarse ladder; the
   ballast is a cooler stone grey; roads have darker worn verges, so they read on pale ground. No mesh, data or boot change
   (refs #35).
+- The Unity sim build helper is now `uv run tools/build_sim_for_unity.py`, usable on Windows, macOS and Linux without
+  a shell. It preserves the Release publish and required DLL checks. `tools/build_sim_for_unity.sh` stays as a thin
+  wrapper that runs the Python script.
 - Land round 2 (refs #33): the ground's colours move from yellow-olive and gold to promo 03's warm dry ground, in the
   biome palette and the land-use bake. Hedges, tree lines and farm tracks are drawn about 150 m wide, so the fields read
   at the gameplay zoom. The hills get round bushes with a soft shadow, a stronger garrigue and clearer terraces. It is a
@@ -338,6 +355,21 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
+  No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
+- Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of
+  18 October 1948 (S/1042) puts the Negev fighting on 15 October, against S/1357's 14 October. "Talks at Rhodes":
+  Israel's reply to the British protest (JTA, 19 January 1949) agrees with the British statement that the RAF planes
+  were shot down on 7 January. "Jerusalem": the Mediator's report of 12 July (S/888) has the demilitarisation proposal
+  made in early July, and Shertok read Israel's rejection to the Provisional State Council on 29 July, before the
+  proclamation of 2 August. "Electing the Constituent Assembly": the minutes' Hebrew date confirms the 25th sitting on
+  4 November 1948 (the Knesset's database has a Saturday, 6 November), and CBS's figures give turnout 86.88%, so 86.9%,
+  not 87.0%. "The Mediator Assassinated": the Official Gazette dates the ordinance 23 September and prints it on
+  29 September. Comments and source rows only; text, dates, options and effects are unchanged (refs #442).
+- Four 1948 localities corrected against the Village Statistics 1945 scan (#200): Ijzim is 2,970, not 4,280 (the
+  transcription's "Ijzim (Nazareth subdistrict)" is 'Ilut, a different village); Ilar's Wikidata item is the place's
+  main item, "Illar, Tulkarm"; Beit Nuba's row reads 'Ajanjul; Zakariya's article is now Zekharia. The rows stay
+  `owner_verify`. The map's localities are outside the content hash, so no golden moves.
 - "The Altalena" also cites the Provisional State Council's sixth sitting, 24 June 1948: the council approved the
   government's action against the Irgun's arms ship 24 to 4, with 5 abstaining, and a committee to secure a single army.
   Source rows and comments only (refs #442).
@@ -417,6 +449,35 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   there was no agreement to give the Irgun part of the arms for Jerusalem, against the Irgun's account that he agreed.
   "Altalena Affair" stays for the dispersal of the Irgun units in the IDF. Text, dates, options and effects are
   unchanged (refs #442).
+- Seven more 1948-1950 cards cite primary sources. "Electing the Constituent Assembly" drops both Wikipedia articles:
+  the Provisional State Council's minutes of its 25th sitting (the 16 to 14 vote for 120 seats) and of 18 November 1948
+  (the ordinance adopted: proportional, one district), Harpaz for the curfew, and the CBS table from the Central Elections
+  Committee for the 86.9% turnout. "The First Truce" cites Resolution 50 and S/834 in place of the Resolution 50 article;
+  "One Army" cites the Knesset's law record and the council's minutes of 23 June 1948 in place of "1948 in Israel";
+  "Jerusalem" cites the Mediator's progress report and the JTA in place of "Dov Yosef", and its comment records that the
+  report dates the demilitarisation proposal to 3 July against 26 July in the JVL. "The Ten Days", "The Mediator
+  Assassinated" (the council's minutes of 23 September 1948, the JTA, the Knesset's law record) and "Education in the
+  Immigrant Camps" (the Knesset of 17 January 1950, the JTA) add sources and keep Wikipedia for the lines they do not
+  cover; the commission's first session on 25 January still rests on Hebrew Wikipedia, against the JTA's hearings from
+  2 February. Text, dates, options and effects are unchanged (refs #442).
+- Four cards from 1948 and 1951 cite primary sources. "Operation Horev" drops its Wikipedia article for the IDF
+  Archives' page on the operation (22 December to 7 January, Allon, five brigades), Security Council resolution 66 and
+  the Egyptian-Israeli cease-fire agreement (S/1225). "A Claim on Germany" drops its Wikipedia article for Sharett's
+  statement to the Knesset of 13 March 1951, which reads the note into the record, FRUS 1951 and the JTA; FRUS and the
+  Knesset date the note to 12 March. "Israel Bonds" adds the Knesset's vote of 27 February 1951, the law record, the JTA
+  and Israel Bonds' own history, and keeps Wikipedia for the 25 million dollar goal; its comment records that the JTA
+  has the sale starting across the United States before the 10 May rally. "Foreign Currency Runs Out" adds FRUS and the
+  JTA and keeps Wikipedia for the banks' and oil companies' refusal of credit. Text, dates, options and effects are
+  unchanged (refs #442).
+- "The Mediator Assassinated" drops two Wikipedia articles ("Folke Bernadotte" and "Prevention of Terror Ordinance")
+  for Bunche's cable of 17 September 1948 (S/1004, the murder in Katamon) and Israel's report to the Security Council
+  (S/1315: the regulations of 20 September, the ordinance of 23 September, the leaders' arrest on 29 September); its
+  comment records that S/1315 has 82 arrests outside Jerusalem against Ben-Gurion's 62 in the Tel Aviv district.
+  "Talks at Rhodes" adds the Acting Mediator's report of 6 January 1949 (S/1187), "Operation Yoav" the IDF History
+  Department's study of the Hebron hills, "Education in the Immigrant Camps" Levitan's study of the Frumkin
+  commission, "Foreign Currency Runs Out" FRUS 1951, "The Jews of Iraq" the JTA on the freeze of March 1951, and
+  "Austerity" a comment on the Knesset sitting of 26 April 1949; each keeps Wikipedia for the lines these do not cover.
+  Text, dates, options and effects are unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
