@@ -2518,3 +2518,61 @@ whole function, not the arithmetic, as #195 found for the water (3 ms from its s
 range did not help. Before adding anything to `StatecraftTerrain.hlsl`, profile it as above against main; prefer changing
 baked data the shader already reads in its existing operations (land colours in `tools/land_bake.py`, `MapPalette`), or
 moving work out of the function as #195 did.
+
+## Issue #321: boot headroom, the biome colours from a bake
+
+The budget is `map_build_ms` at `--cpu 4` within 2720 ms (Task 1's 1813 ms plus 50%). After #502's hill scatter, main
+measured about 30 ms under it on a quiet machine and over it under load.
+
+**Where the map build goes.** Main `72e2aee`, `tools/headed.py boot --runs 3 --cpu 4`, two rounds under one
+`machine_lock --exclusive` (machine load 4.5-7), median dt of each phase in ms. The branch adds three `?bootlog` markers
+(`terrain object created`, `units placed`, `kit buildings built`) that split the old phases, so its rows are the same
+work in finer pieces.
+
+| phase | main | branch | what it is |
+|---|---|---|---|
+| heightmap decoded | 190-193 | 190-192 | r16z decode (counted from its start) |
+| hexes parsed | 12 | 10-12 | |
+| localities parsed | 81-83 | 78-79 | the baked TSV (#291) |
+| terrain heights set | 1386-1395 | 1390-1400 | `new TerrainData` (about 195 ms, #320's diag) and `SetHeights` |
+| terrain object created | (in the next row) | 82-88 | `Terrain.CreateTerrainGameObject` (the collider) and the layer |
+| biome texture baked | 438-442 | 38-41 | main: the blend of 1024 x 1024 texels; branch: the bake read, the tint, the upload |
+| border skirt | 35-36 | 34-35 | |
+| terrain water | 17-19 | 19-21 | the bake (#320) |
+| settlements placed | 7 | 7-8 | |
+| units placed | (in kits built) | 354-357 | route YAML read and corridors, footprints, unit data and spots |
+| kit buildings built | (in kits built) | 253-260 | `SettlementKits.Build` and the kit meshes |
+| kits built | 812-828 | 216-221 | main: all three rows above; branch: the trees (`Vegetation.Plant`, `VegetationLayer.Init`) |
+| routes built | 47 | 44-46 | the ribbon bake (#436) |
+| map built | 14-15 | 14 | |
+| **map_build_ms** (median of 3) | **3050 / 3073** | **2745 / 2761** | |
+
+The three largest: `terrain heights set` (about 1390 ms, 46%), the kits phase (about 820 ms: units placed 355, kit
+buildings 255, trees 220) and the biome texture (about 440 ms). `first_frame_ms`: main 11225 / 11162, branch
+10821 / 10929.
+
+**The change.** `MapBuilder.BiomePixels` (the BiomeBlender weights of every texel over `MapPalette.Ground`) is baked by
+Editor `BiomeColourBake` into `unity/Assets/Resources/Map/BiomeColours.bytes` (3 MB: "SCB1", version, resolution, a
+check of the frame, hex size, blend radius, palette and every hex's centre and biome, then RGB). `MapScene` reads it
+through `BiomeColourFile.Load`; a bake for other inputs is refused with a warning and the colours are blended at load as
+before. The ground tint, the texture and its mipmaps are made as before, from the same texels:
+`BiomeColourBakeTests.TheMapGetsTheSameGroundFromTheBake` compares every texel handed to the tint with and without the
+bake. `tools/tests/test_biome_colour_bake.py` recomputes the header's check in CI. Re-bake with
+`-executeMethod Statecraft.Game.EditorTools.BiomeColourBake.Bake` after changing `hexes.json`, the heightmap's bounds,
+the palette or the blend.
+
+The biome phase went from about 440 ms to 120 ms (82-88 terrain object, 38-41 the rest); the map build from 3050-3073 to
+2745-2761 ms, about 310 ms less. At this load both are over 2720 ms; on the quieter machine where main measured about
+2690 ms, the same cut leaves about 340 ms of headroom.
+
+**What is left, by expected saving at `--cpu 4`:**
+- `terrain heights set` (about 1390 ms): ship the TerrainData as an asset instead of `SetHeights` at boot. Up to about
+  1.2 s, but the riskiest: the asset must be copied before the map owns and destroys it, its LOD data must load without
+  a recompute, and the build grows by about 8 MB before compression. Prototype and measure before planning further.
+- `units placed` (about 355 ms): not yet split. Likely the two YAML reads (route paths, units) and the unit spots; a
+  baked runtime form, as #291 did for the localities, would save most of the parse. Low to medium risk, no visible
+  change.
+- The kits (about 255 + 220 ms): bake the kit meshes and tree matrices from their inputs (settlements, localities,
+  population, routes, unit clearings, the `?kitscale` flags fall back). About 300-400 ms, medium risk (many inputs).
+  Without a bake, the hill scatter's per-cell checks could be reordered for 10-20 ms with the same trees.
+- `heightmap decoded` (about 190 ms): smaller, untested.

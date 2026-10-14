@@ -208,6 +208,11 @@ rules:
     source: "tools/land_bake.py (issue #33): the land-use colour and weight (procedural field parcels with farm tracks, garrigue, terraces and scrub) placed by: slope and water from the Copernicus DEM-derived heightmap (Copernicus-DEM); rainfall from CHELSA V2.1 bio12 (CC0-1.0) bias-corrected by the IMS station normals of content/map/precip_stations.json (data.gov.il dataset 481, IMS-data.gov.il, decision D6); content/map/hexes.json biomes (this project's own content, CC-BY-SA-4.0); and the town coordinates of content/map/settlements_1948.yaml (Wikipedia API, CC-BY-SA-4.0) for the citrus belt. Procedural, not AI-generated; attribution in NOTICE"
     status: owner-verify
     note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
+  - glob: "unity/Assets/Resources/Map/BiomeColours.bytes"
+    licence: CC-BY-SA-4.0
+    source: "The biome ground colours (issue #321), baked by Editor BiomeColourBake from content/map/hexes.json (this project's own content) and the heightmap's bounds (unity/Assets/StreamingAssets/map/heightmap.json) in the MapPalette.Ground colours; no new facts; attribution in NOTICE"
+    status: owner-verify
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM and coordinate inputs."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
