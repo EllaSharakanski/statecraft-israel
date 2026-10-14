@@ -321,6 +321,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "The Altalena" also cites the Provisional State Council's sixth sitting, 24 June 1948: the council approved the
+  government's action against the Irgun's arms ship 24 to 4, with 5 abstaining, and a committee to secure a single army.
+  Source rows and comments only (refs #442).
 - "Transit Camps" opens on 1 April 1950, not 1 March: Eshkol raised the camps' crisis at the Jewish Agency executive
   on 27 March 1950 and proposed transit housing two weeks later (Kachansky, Yad Ben-Zvi 1987). Wikipedia's March date
   is kept in the event's comment. In the golden run the card first shows on 27 May 1950 with either date, so no golden
