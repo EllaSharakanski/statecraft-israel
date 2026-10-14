@@ -1,8 +1,10 @@
 #nullable enable
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Statecraft.Game;
 using Statecraft.Game.Boot;
@@ -87,12 +89,24 @@ public class HebrewUiTests
         Assert.IsTrue(Ui.Q("root").ClassListContains(UiLanguage.HebrewClass));
         Assert.AreEqual(He.Format("hud.turn", game.Bridge!.State.Turn), Ui.Q<Label>("turn").text);
         StringAssert.Contains("תור", Ui.Q<Label>("turn").text);
-        // Starting again in English takes the mark and every direction off (New Game restarts through Begin).
+        // New Game in Hebrew disposes the old UiDirection and makes a new one; the start screen's Hebrew lines stay right to
+        // left through it (neither takes theirs off nor sets it).
+        game.Begin(Inputs, 0);
+        TheDeclarationStaysRightToLeft("a Hebrew restart");
+        // Starting again in English takes the mark and every other direction off (New Game restarts through Begin).
         game.Language = UiLanguage.English;
         game.Begin(Inputs, 0);
         Assert.IsFalse(Ui.Q("root").ClassListContains(UiLanguage.HebrewClass));
         Assert.AreEqual(En.Format("hud.turn", game.Bridge!.State.Turn), Ui.Q<Label>("turn").text);
         Assert.IsTrue(Ui.Query<TextElement>().ToList().All(t => t.ClassListContains("start-he") || t.languageDirection == LanguageDirection.Inherit));
+        TheDeclarationStaysRightToLeft("an English restart");
+    }
+
+    static void TheDeclarationStaysRightToLeft(string after)
+    {
+        var lines = Ui.Query<TextElement>(className: "start-he").ToList();
+        Assert.IsNotEmpty(lines, "Game.uxml's Hebrew start lines");
+        foreach (var t in lines) Assert.AreEqual(LanguageDirection.RTL, t.languageDirection, $"after {after}: '{t.name}'");
     }
 
     // --- The direction ----------------------------------------------------------------------------------------------
@@ -128,6 +142,68 @@ public class HebrewUiTests
         game.Bridge!.EndTurn();
         Assert.AreEqual(LanguageDirection.RTL, turn.languageDirection, turn.text);
         Assert.AreEqual(LanguageDirection.LTR, Ui.Q<Label>("date").languageDirection, Ui.Q<Label>("date").text);
+    }
+
+    /// <summary>Many texts a presenter builds after boot get their words before they are on the panel (new Label(text)), so
+    /// no text change reaches UiDirection: they take their direction when it walks the tree again, on the next frame after
+    /// a submit, a click or a turn. Here: a label added before a submit, one added before a click, and the Why rows End
+    /// Turn rebuilds (Hebrew headers, English lines).</summary>
+    [UnityTest]
+    public IEnumerator InHebrewTextsBuiltAfterBootTakeTheirDirectionAfterASubmitAClickOrATurn()
+    {
+        var restore = OnTexture(1920, 1080);
+        try
+        {
+            var game = Object.FindFirstObjectByType<GameRoot>();
+            game.Store = new SaveStore(saveDir);
+            game.Language = UiLanguage.Hebrew;
+            game.Begin(Inputs, 0);
+            for (int i = 0; i < 2; i++) yield return null;
+
+            // A submit and a click: a label added with its words already set has no direction until the next frame.
+            var submitted = new Label(He["budget.vacant"]);
+            Ui.Q("root").Add(submitted);
+            Assert.AreEqual(LanguageDirection.Inherit, submitted.languageDirection);
+            using (var e = NavigationSubmitEvent.GetPooled()) { e.target = submitted; submitted.SendEvent(e); }
+            for (int i = 0; i < 2; i++) yield return null;
+            Directed(new TextElement[] { submitted }, "a submit");
+            var clicked = new Label("15 May 1948");
+            Ui.Q("root").Add(clicked);
+            Assert.AreEqual(LanguageDirection.Inherit, clicked.languageDirection);
+            using (var e = ClickEvent.GetPooled()) { e.target = clicked; clicked.SendEvent(e); }
+            for (int i = 0; i < 2; i++) yield return null;
+            Directed(new TextElement[] { clicked }, "a click");
+
+            // A turn: End Turn rebuilds the Why rows.
+            game.Bridge!.EndTurn();
+            var built = Ui.Q<ScrollView>("why-rows").contentContainer.Query<TextElement>().ToList();
+            Assert.IsTrue(built.All(t => t.languageDirection == LanguageDirection.Inherit), "the new rows have no direction before the next frame");
+            for (int i = 0; i < 2; i++) yield return null;
+            Directed(built, "a turn");
+            Assert.IsTrue(built.Any(t => t.languageDirection == LanguageDirection.RTL) && built.Any(t => t.languageDirection == LanguageDirection.LTR),
+                "the rows mix Hebrew (the headers) and English (the lines, #55)");
+        }
+        finally { restore(); }
+    }
+
+    static void Directed(IList<TextElement> texts, string after)
+    {
+        Assert.IsNotEmpty(texts, after);
+        foreach (var t in texts)
+            Assert.AreEqual(UiDirection.RightToLeft(t.text) ? LanguageDirection.RTL : LanguageDirection.LTR, t.languageDirection, $"after {after}: '{t.name}': {t.text}");
+    }
+
+    /// <summary>Opens the map scene with its panel drawn into a texture of this size; the action it returns puts the panel back.</summary>
+    static Action OnTexture(int width, int height)
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        var rt = new RenderTexture(width, height, 0);
+        var ps = Object.Instantiate(doc.panelSettings);
+        ps.targetTexture = rt;
+        doc.panelSettings = ps;
+        return () => { doc.panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); };
     }
 
     // --- The house ---------------------------------------------------------------------------------------------------
@@ -171,14 +247,7 @@ public class HebrewUiTests
     public IEnumerator NoBudgetRowIsWiderThanItsScreen(
         [Values(UiLanguage.Hebrew, UiLanguage.English)] string language, [Values(1920, 390)] int width)
     {
-        int height = width == 1920 ? 1080 : 844;
-        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
-        Object.FindFirstObjectByType<MapScene>().Build(Inputs.Map);
-        var doc = Object.FindFirstObjectByType<UIDocument>();
-        var rt = new RenderTexture(width, height, 0);
-        var ps = Object.Instantiate(doc.panelSettings);
-        ps.targetTexture = rt;
-        doc.panelSettings = ps;
+        var restore = OnTexture(width, width == 1920 ? 1080 : 844);
         try
         {
             var game = Object.FindFirstObjectByType<GameRoot>();
@@ -211,13 +280,22 @@ public class HebrewUiTests
                     "control: without the class a row overflows (in Hebrew the row runs right to left, so it spills past the start)");
             }
         }
-        finally { doc.panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
+        finally { restore(); }
     }
 
     // --- The face ---------------------------------------------------------------------------------------------------
 
+    /// <summary>The classes a rule of Statecraft.uss sets in EB Garamond (".year", ".why-group"); type selectors are left out.</summary>
+    static string[] GaramondClasses()
+    {
+        var uss = Regex.Replace(File.ReadAllText(UiPaths.Folder + "/Statecraft.uss"), @"/\*.*?\*/", "", RegexOptions.Singleline);
+        return Regex.Matches(uss, @"([^{}]+)\{([^{}]*)\}").Cast<Match>().Where(m => m.Groups[2].Value.Contains("EBGaramond"))
+            .SelectMany(m => Regex.Matches(m.Groups[1].Value, @"\.([\w-]+)").Cast<Match>().Select(c => c.Groups[1].Value)).Distinct().ToArray();
+    }
+
     /// <summary>With .lang-he on the root every text element of Game.uxml resolves Frank Ruhl Libre and the advanced
-    /// generator, whatever rule styles it; without it (the control) the same elements resolve EB Garamond.</summary>
+    /// generator, whatever rule styles it; without it (the control) the same elements resolve EB Garamond. So do labels
+    /// with the classes only presenters add (the Why headers, the person cards, the map labels).</summary>
     [UnityTest]
     public IEnumerator InHebrewEveryTextIsSetInTheHebrewFaceThroughTheAdvancedGenerator()
     {
@@ -239,6 +317,15 @@ public class HebrewUiTests
             {
                 var d = e.resolvedStyle.unityFontDefinition;
                 return d.fontAsset != null ? d.fontAsset.sourceFontFile : d.font;
+            }
+            // A class a rule sets in EB Garamond that no element of Game.uxml carries is added at runtime: a label carries it.
+            var classes = GaramondClasses();
+            Assert.Contains("why-group", classes, "the rules are read");
+            foreach (var c in classes.Where(c => root.Q(className: c) == null))
+            {
+                var l = new Label("א") { name = "runtime-" + c };
+                l.AddToClassList(c);
+                root.Add(l);
             }
             // The start screen's Hebrew lines are Hebrew in both languages (the Declaration's own text).
             var texts = root.Query<TextElement>().ToList().Where(e => !e.ClassListContains("start-he")).ToList();
