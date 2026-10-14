@@ -437,6 +437,29 @@ public class CameraInputTests
         finally { Object.DestroyImmediate(rig.gameObject); }
     }
 
+    /// <summary>#528 review: a fast trackpad flick can send events of 50 to 100 px, which MouseNotchMinPixels counts as a
+    /// whole notch each, up to twice their length. The over-count is bounded per frame by Gather's clamp: one 60 px event
+    /// is one notch (proportional would be 0.6), and five in one frame are five notches, clamped to three (27%).</summary>
+    [Test]
+    public void A60PxFlickEventIsOneNotchAndAFrameOfThemIsClampedToThree()
+    {
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-60f, CameraController.WheelPixels), 1e-6, "one 60 px event");
+        var frame = new[] { -60f, -60f, -60f, -60f, -60f };
+        Assert.AreEqual(5f, CameraController.WheelNotches(frame, new int[frame.Length], frame.Length), 1e-6, "before the clamp");
+        var c = NewController(out var go);
+        try
+        {
+            var inp = c.Gather(Vector2.zero, Vector2.zero, CameraController.WheelNotches(frame, new int[frame.Length], frame.Length), 0, false,
+                new Vector2(500, 0));
+            Assert.AreEqual(3f, inp.Zoom, 1e-6, "clamped to three notches a frame");
+            var rig = go.GetComponent<CameraRig>();
+            rig.Distance = 120000f;
+            CameraController.Step(rig, inp, 0.016f, Map);
+            Assert.AreEqual(120000f * 0.729f, rig.Distance, 1f, "27.1% in that frame, no more");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     [Test]
     public void TouchpadPixelsZoomInProportionAndNothingIsLearned()
     {
