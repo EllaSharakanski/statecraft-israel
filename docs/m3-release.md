@@ -5,6 +5,9 @@ start of M4, as a private Draft (owner ruling, 2026-10-10); their sections below
 
 ## What ships
 - **Folder and zip:** `unity/Builds/Web-brotli/` uses Brotli compression with no decompression fallback. It is zipped as `unity/Builds/statecraft-m3-web.zip`, with `index.html` at the zip root. Both are build output and are not committed.
+- **File names:** the files under `Build/` are named by their content hash (issue #437), for example
+  `Build/814d5f9032ce4b5847cf75e492700bbb.loader.js`, so a browser that cached an earlier build cannot mix its files into
+  this one. The build's `index.html` names them; nothing else may assume a name.
 - **Built by:** `"$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression brotli -shareable -logFile "$PWD/unity-build-web-br.log"`, then `python3 tools/package_release.py` (it zips the folder, `index.html` at the root, and refuses while any sensitive event is not sensitivity-reviewed, and when the build's `event-photos.json` is missing, says the build was not `-shareable`, or lists an unreviewed sensitive event photograph). Never zip by hand.
 - **After building:** drop the build's rewrites of the settings with
   `git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset` (as in `dev-setup.md`), so no
@@ -270,7 +273,10 @@ Published at: (owner fills in)
      Re-uploading the same build is enough to isolate the changed upload URL. Record both upload/build IDs. Confirm B has
      a different upload URL but the same actual game-frame origin. If its origin differs, record that separately: this
      fixed-folder test cannot prove persistence between origins, because IndexedDB is origin-scoped.
-  4. Open B with a hard reload. **Pass** only if date, turn and full state hash match the baseline. Copy the complete
+  4. First open B with a normal load, not a hard reload (issue #437: a returning player's browser has A cached). It must
+     start and print `GAME OK`, and DevTools' Network panel must show the `Build/` file names that B's `index.html`
+     names, not A's. Record the result, and any `BOOT FAIL` line, as a separate row. Then open B with a hard reload.
+     **Pass** only if date, turn and full state hash match the baseline. Copy the complete
      `GAME OK` line, the old `TURN` line and any load warning/error. A date/turn match alone is not a pass. Reload B once
      more and check the same tuple, so a one-time replay is not mistaken for a durable save.
   5. If B starts again on 15 May 1948, or the state hash differs with unchanged content, record fail with both build IDs,
@@ -299,6 +305,7 @@ Result: not run on itch.io (owner step).
 | State hash after | pending |
 | Full TURN / GAME OK lines and warnings | pending |
 | Reload B result | pending |
+| B opened without a hard reload: `GAME OK`, and B's `Build/` names (issue #437) | pending |
 | Pass / fail and fallback issue if needed | pending |
 
 Review basis: `unity/Assets/Scripts/SaveStore.cs` fixes the WebGL directory; `sim/Statecraft.Sim/SaveGame.cs` records the

@@ -417,6 +417,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   to the Education Department, both already in the Education Ministry. Moshe Sharett's birth date is 16 October 1894,
   from the Knesset member pages (Wikipedia gave 15 October); the sim reads `born` only to validate content. The items
   that would move a golden wait for the GDD rebaseline (#315).
+- The browser build names the files under `Build/` by their content hash (Unity's Name Files As Hashes), so the names
+  change with every build and a browser that cached an earlier build can no longer mix its loader, code or data into a
+  newer one (the startup failure "InternalError: too much recursion" without a hard refresh). Found by @Chaiky3 (#437,
+  reported in #43). `tools/package_release.py` now zips exactly the `Build/` files the build's `index.html` names, and
+  refuses a folder that is missing one.
 - The Provisional Government, the first three governments, the Provisional State Council and the First and Second
   Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
   sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second
