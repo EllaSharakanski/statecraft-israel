@@ -23,11 +23,9 @@ namespace Statecraft.Game.UI
         public IReadOnlyList<Command> LastBatch { get; private set; } = Array.Empty<Command>();
         /// <summary>The game date when the last turn's orders were given (the date before that turn ran).</summary>
         public DateTime LastBatchDate { get; private set; }
-        /// <summary>The step before Session.Last (null until two turns have run), for "change since last turn".</summary>
-        public StepResult? BeforeLast { get; private set; }
-        /// <summary>Whether a turn has run through this bridge since its session began or was replaced. A loaded save starts
-        /// false although its replay set Session.Previous: the top bar shows no change until a turn passes (#398).</summary>
-        public bool TurnPlayed { get; private set; }
+        /// <summary>The step before Session.Last (null until two turns have run), for "change since last turn". The session
+        /// keeps it, so a loaded save has it from its replay (#398).</summary>
+        public StepResult? BeforeLast => Session.BeforeLast;
         /// <summary>Raised after every change the screens show: an order queued or withdrawn, a turn, a load.</summary>
         public event Action? Changed;
         /// <summary>Raised after End Turn with the orders the simulation refused (possibly none).</summary>
@@ -120,7 +118,6 @@ namespace Statecraft.Game.UI
         public StepResult EndTurn()
         {
             StepResult r;
-            var before = Session.Last;
             var batch = queue.ToList();
             var date = State.Date;
             try { r = step(Session, batch); }
@@ -137,9 +134,7 @@ namespace Statecraft.Game.UI
                 TurnEnded?.Invoke(failed.Rejected);
                 return failed;
             }
-            BeforeLast = before;
             LastBatch = batch; LastBatchDate = date;
-            TurnPlayed = true;
             queue.Clear();
             Changed?.Invoke();
             TurnEnded?.Invoke(r.Rejected);
@@ -150,8 +145,7 @@ namespace Statecraft.Game.UI
         public void Replace(GameSession session)
         {
             Session = session ?? throw new ArgumentNullException(nameof(session));
-            BeforeLast = null; LastBatch = Array.Empty<Command>();
-            TurnPlayed = false;
+            LastBatch = Array.Empty<Command>();
             queue.Clear();
             Changed?.Invoke();
         }

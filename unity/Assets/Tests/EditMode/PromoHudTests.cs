@@ -167,17 +167,18 @@ public class PromoHudTests
                 hud = new HudPresenter(root, bridge, Text);
                 bridge.EndTurn();                                       // real changes on every meter that moved
                 for (int i = 0; i < 6; i++) yield return null;
-                if (w == 1920 && h == 1080)
+                if ((w, h) == (1920, 1080) || (w, h) == (2560, 1080))
                 {
-                    // Review P1: with typical (turn-1) values at 16:9 the bar has room for the promo's sizes.
-                    Assert.IsTrue(root.Q("top-bar").ClassListContains(HudPresenter.RoomyClass), "1920x1080: roomy with typical values");
+                    // Review P1: with typical (turn-1) values at 16:9, and at 21:9 (#398), the bar has room for the promo's sizes.
+                    var at = $"{w}x{h}";
+                    Assert.IsTrue(root.Q("top-bar").ClassListContains(HudPresenter.RoomyClass), at + ": roomy with typical values");
                     foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
-                        Assert.GreaterOrEqual(icon.worldBound.width, 36f, $"1920x1080: the {icon.Glyph} icon is promo-sized");
+                        Assert.GreaterOrEqual(icon.worldBound.width, 36f, $"{at}: the {icon.Glyph} icon is promo-sized");
                     foreach (var v in root.Q("meters").Query<Label>(className: "meter-value").ToList())
-                        Assert.GreaterOrEqual(v.resolvedStyle.fontSize, 24f, $"1920x1080: '{v.text}' is promo-sized");
+                        Assert.GreaterOrEqual(v.resolvedStyle.fontSize, 24f, $"{at}: '{v.text}' is promo-sized");
                     // Integration bug B8: on the roomy bar every caption keeps one line, as in the promo.
                     foreach (var c in root.Q("meters").Query<Label>(className: "meter-name").ToList().Where(c => c.name != "security-level"))
-                        Assert.Less(c.worldBound.height, c.resolvedStyle.fontSize * 2f, $"1920x1080: '{c.text}' wraps");
+                        Assert.Less(c.worldBound.height, c.resolvedStyle.fontSize * 2f, $"{at}: '{c.text}' wraps");
                 }
                 // The widest realistic changes, formatted as HudModel formats them, and the widest date line.
                 foreach (var (name, delta) in new[] { ("treasury", PlayerText.MoneyChange(C, "treasury", -12.4)), ("immigration", Text.Format("hud.delta_people", 12345.0)),
