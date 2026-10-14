@@ -231,7 +231,7 @@ namespace Statecraft.Game.Map
                     var tint = System.Diagnostics.Stopwatch.StartNew();
                     Kits.SettlementKits.PaintGround(px, res, frame, painted, hexSizeM);
                     Debug.Log(FormattableString.Invariant($"KITS ground_tint_ms={tint.Elapsed.TotalMilliseconds:0.0} places={painted.Count}"));
-                } : null);
+                } : null, bakedBiome: true);   // the biome colours from their bake (issue #321: boot time)
             terrainGo.transform.SetParent(transform, true);
             Terrain = terrainGo.GetComponent<Terrain>();
             var size = Terrain.terrainData.size;
@@ -269,6 +269,7 @@ namespace Statecraft.Game.Map
                 }
             }
             UnitClearings = clearings;
+            DiagLog.BootPhase("units placed");   // issue #321: the routes' corridors, the footprints and the unit spots
             if (kitsOn)
             {
                 // ?kitscale=, ?housescale=, ?treescale= in the WebGL player: the same layout at another symbolic scale (city

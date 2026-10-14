@@ -58,7 +58,12 @@ namespace Statecraft.Game.Map
         /// <see cref="BiomeTextureResolution"/> square over the map) before they are uploaded, so the settlement kits can tint
         /// the ground of their footprints (art spike) at no cost per frame.</summary>
         public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial,
-            Action<Color32[], int, GeoFrame> paintGround)
+            Action<Color32[], int, GeoFrame> paintGround) => Build(meta, heights, hexFile, terrainMaterial, paintGround, false);
+
+        /// <summary>As Build; with <paramref name="bakedBiome"/> the biome colours are read from their bake
+        /// (BiomeColourFile, issue #321: boot time) when it was made from these inputs, else blended here.</summary>
+        public static GameObject Build(HeightmapMeta meta, float[,] heights, HexFile hexFile, Material terrainMaterial,
+            Action<Color32[], int, GeoFrame> paintGround, bool bakedBiome)
         {
             if (meta == null) throw new ArgumentNullException(nameof(meta));
             if (heights == null) throw new ArgumentNullException(nameof(heights));
@@ -84,7 +89,8 @@ namespace Statecraft.Game.Map
             terrain.basemapDistance = NoBasemapDistanceM;
             data.terrainLayers = new[] { NeutralLayer(assets) };   // one layer, one pass: the graph paints from the biome texture
             data.alphamapResolution = 16;
-            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets, paintGround), assets);
+            Boot.DiagLog.BootPhase("terrain object created");   // issue #321: splits the terrain object from the biome colours
+            MapShaderGlobals.Apply(terrain, meta, hexFile.hex_size_km * 1000f, BakeBiomeTexture(frame, hexFile, assets, paintGround, bakedBiome), assets);
             Boot.DiagLog.BootPhase("biome texture baked");
             MapBorders.Apply(hexFile, assets);   // region borders: none drawn until a layer is given (MapBorders.Use)
             return terrainGo;
@@ -137,12 +143,27 @@ namespace Statecraft.Game.Map
 
         /// <summary>The ground colour of every point, blended from the biomes of nearby hex centres (BiomeBlender) in the
         /// MapPalette.Ground colours, baked once into an sRGB texture over the whole map (texel row 0 = south) that the
-        /// terrain shader samples as _ScBiomeTex. Owned by the map.</summary>
-        static Texture2D BakeBiomeTexture(GeoFrame frame, HexFile hexes, MapRuntimeAssets assets, Action<Color32[], int, GeoFrame> paint)
+        /// terrain shader samples as _ScBiomeTex. Owned by the map. With <paramref name="baked"/> the colours come from
+        /// BiomeColourFile when it matches these inputs.</summary>
+        static Texture2D BakeBiomeTexture(GeoFrame frame, HexFile hexes, MapRuntimeAssets assets, Action<Color32[], int, GeoFrame> paint, bool baked)
+        {
+            int res = BiomeTextureResolution;
+            var tex = assets.Own(new Texture2D(res, res, TextureFormat.RGBA32, true, false)
+                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear });
+            var px = baked ? BiomeColourFile.Load(frame, hexes) : null;
+            px ??= BiomePixels(frame, hexes);
+            paint?.Invoke(px, res, frame);
+            tex.SetPixels32(px); tex.Apply(true, true);   // no CPU copy: nothing reads the pixels back (about 5.6 MB on the heap)
+            return tex;
+        }
+
+        /// <summary>The biome colour texels (<see cref="BiomeTextureResolution"/> square, row 0 = south) before the ground
+        /// tint: every texel centre's BiomeBlender weights over the MapPalette.Ground colours. Editor BiomeColourBake bakes
+        /// them (BiomeColourFile).</summary>
+        public static Color32[] BiomePixels(GeoFrame frame, HexFile hexes)
         {
             var names = new List<string>(Biome.Keys);
-            var colours = new Color[names.Count];
-            for (int i = 0; i < names.Count; i++) colours[i] = MapPalette.Ground[names[i]];
+            var colours = BiomeLayerColours();
             var centres = new List<Vector2>(hexes.hexes.Length); var layerOf = new List<int>(hexes.hexes.Length);
             foreach (var h in hexes.hexes)
             {
@@ -150,8 +171,6 @@ namespace Statecraft.Game.Map
             }
             var blender = new BiomeBlender(centres, layerOf, hexes.hex_size_km * 1000f, names.Count);
             int res = BiomeTextureResolution;
-            var tex = assets.Own(new Texture2D(res, res, TextureFormat.RGBA32, true, false)
-                { name = "BiomeColour", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear });
             var px = new Color32[res * res]; var wts = new float[names.Count];
             for (int y = 0; y < res; y++)
                 for (int x = 0; x < res; x++)
@@ -162,9 +181,17 @@ namespace Statecraft.Game.Map
                     c.a = 1f;
                     px[y * res + x] = c;
                 }
-            paint?.Invoke(px, res, frame);
-            tex.SetPixels32(px); tex.Apply(true, true);   // no CPU copy: nothing reads the pixels back (about 5.6 MB on the heap)
-            return tex;
+            return px;
+        }
+
+        /// <summary>The ground colour of each biome layer, in the order of <see cref="BiomeColours"/>' keys (the blend's
+        /// layer indices).</summary>
+        public static Color[] BiomeLayerColours()
+        {
+            var names = new List<string>(Biome.Keys);
+            var colours = new Color[names.Count];
+            for (int i = 0; i < names.Count; i++) colours[i] = MapPalette.Ground[names[i]];
+            return colours;
         }
 
         /// <summary>A heightmap sample this close to 0 m is sea (tools/dem_to_heightmap.py writes open sea as exactly 0 m).</summary>
