@@ -19,7 +19,7 @@ office: prime_minister
 # proclamation of Lehi and the Fatherland Front as terrorist organisations in the Official Gazette that day;
 # Ben-Gurion told the council the cabinet approved them in principle on the Saturday night, 18 September; JTA's
 # bulletins of 20 and 21 September, without datelines, have them promulgated and then signed), the Prevention of
-# Terrorism Ordinance No. 33 on 23 September (the council's minutes, used here, have it adopted on 23 September by 34
+# Terrorism Ordinance No. 33 (its number as the Official Gazette prints it, below) on 23 September (the council's minutes, used here, have it adopted on 23 September by 34
 # votes; S/1315 has the council re-enact the regulations as an ordinance that day; the Knesset's law database dates its
 # publication 29 September; en.wiki "Lehi" says three days after). The IDF gave the Jerusalem Irgun 24 hours to disband
 # from 12:00 on 20 September (daat.ac.il [S]; Ben-Gurion read the ultimatum to the council on 23 September and said the
@@ -56,6 +56,9 @@ sources:
   # the morning of Monday 20 September, 24 hours from 12:00, and the Irgun's acceptance. The council then adopted the
   # Prevention of Terrorism Ordinance by 34 votes. This is the government's account.
   - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_249987.pdf", checked: 2026-10-14 }
+  # The ordinance as published in the Official Gazette (Iton Rishmi 1948, Supplement A, p. 73; the Knesset's copy):
+  # "Prevention of Terrorism Ordinance No. 33 of 5708-1948", enacted by the Provisional State Council.
+  - { url: "https://fs.knesset.gov.il/0/law/0_lsr_312695.pdf", checked: 2026-10-14 }
   # The Knesset's law database (OData): the Prevention of Terrorism Ordinance, 5708-1948, publication date 29 September 1948.
   - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_IsraelLaw(2000941)", checked: 2026-10-14 }
   # The Mediator's progress report, dated 16 September 1948 (A/648): the conclusions and proposals of his second plan.

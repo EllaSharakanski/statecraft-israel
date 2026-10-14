@@ -334,6 +334,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
+  No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
 - Four 1948 localities corrected against the Village Statistics 1945 scan (#200): Ijzim is 2,970, not 4,280 (the
   transcription's "Ijzim (Nazareth subdistrict)" is 'Ilut, a different village); Ilar's Wikidata item is the place's
   main item, "Illar, Tulkarm"; Beit Nuba's row reads 'Ajanjul; Zakariya's article is now Zekharia. The rows stay
