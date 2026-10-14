@@ -27,14 +27,18 @@ legislatures:
       yemenite_association: 1
     sources:
       - { url: "https://en.wikipedia.org/wiki/Provisional_State_Council", checked: 2026-10-09 }
+      - { url: "https://fs.knesset.gov.il/0/Plenum/0_ptm_258580.pdf", checked: 2026-10-14 }
+      - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_KnessetDates", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250172.pdf", checked: 2026-10-14 }
     status: fact-checked
   - id: first_knesset
     body: Constituent Assembly (First Knesset)
-    # The Knesset article gives "20 January" for the election, which conflicts; the election article (25 January 1949) is the source used.
+    # en.wiki's Knesset article gives "20 January" for the election, which conflicts; the Knesset's First Knesset page gives 25 January 1949, which is used.
     elected: 1949-01-25
     from: 1949-02-14
     # Sat until the Second Knesset convened. The government resigned on 14 February 1951; in April 1951 the Knesset
-    # passed the Transition to the Second Knesset Law and fixed the election for 30 July 1951 (he.wiki First Knesset).
+    # passed the Transition to the Second Knesset Law (4 April) and the law fixing the election for 30 July 1951 (12 April),
+    # as published in Sefer HaChukim 73 and 74.
     to: 1951-08-20
     size: 120
     budget_approval: true
@@ -53,14 +57,21 @@ legislatures:
       wizo: 1
       yemenite_association: 1
     sources:
-      - { url: "https://en.wikipedia.org/wiki/1949_Israeli_Constituent_Assembly_election", checked: 2026-10-09 }
-      - { url: "https://en.wikipedia.org/wiki/Knesset", checked: 2026-10-09 }
-      - { url: "https://he.wikipedia.org/wiki/הכנסת_הראשונה", checked: 2026-10-10 }
+      - { url: "https://web.archive.org/web/20160303211859/http://www.knesset.gov.il/history/eng/eng_hist1_s.htm", checked: 2026-10-14 }
+      - { url: "https://www.gov.il/BlobFolder/guide/election-committee-history/en/history_election-dates_knesset1-results.pdf", checked: 2026-10-14 }
+      - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_KnessetDates", checked: 2026-10-14 }
+      - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=KnessetNum%20eq%201", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250172.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250266.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/law/1_lsr_208917.PDF", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/law/1_lsr_208021.PDF", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/Plenum/1_ptm_250280.pdf", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250609.pdf", checked: 2026-10-14 }
     status: fact-checked
   - id: second_knesset
     body: Second Knesset
     elected: 1951-07-30
-    # Convening date from he.wiki only (single source; not confirmed elsewhere).
+    # Convening date from the Knesset's session dates (KNS_KnessetDates) and the record of the first sitting, 20 August 1951.
     from: 1951-08-20
     # Sat until the Third Knesset convened on 15 August 1955 (he.wiki; Open Knesset lists Efrati's Second Knesset
     # service to 15/08/1955 and his Third Knesset service from 15/08/1955).
@@ -68,8 +79,8 @@ legislatures:
     size: 120
     budget_approval: true
     open_questions: [budget_approval]
-    # Election results, identical in en.wiki, IDI and JVL. The United Religious Front ran as four lists (Hapoel
-    # HaMizrachi, Mizrachi, Agudat Yisrael, Poalei Agudat Yisrael). he.wiki's composition table reflects later mergers.
+    # Election results, identical in the Knesset's Second Knesset page, its faction records on 20 August 1951, IDI and JVL.
+    # The United Religious Front ran as four lists (Hapoel HaMizrachi, Mizrachi, Agudat Yisrael, Poalei Agudat Yisrael).
     seats:
       mapai: 45
       general_zionists: 20
@@ -87,10 +98,13 @@ legislatures:
       yemenite_association: 1
       agriculture_and_development: 1
     sources:
-      - { url: "https://en.wikipedia.org/wiki/1951_Israeli_legislative_election", checked: 2026-10-10 }
       - { url: "https://en.idi.org.il/israeli-elections-and-parties/elections/1951/", checked: 2026-10-10 }
       - { url: "https://www.jewishvirtuallibrary.org/elections-to-the-2nd-knesset-july-1951", checked: 2026-10-10 }
-      - { url: "https://he.wikipedia.org/wiki/הכנסת_השנייה", checked: 2026-10-10 }
+      - { url: "https://web.archive.org/web/20160522174905/https://www.knesset.gov.il/history/eng/eng_hist2_s.htm", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/1/law/1_lsr_208021.PDF", checked: 2026-10-14 }
+      - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_KnessetDates", checked: 2026-10-14 }
+      - { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=KnessetNum%20eq%202", checked: 2026-10-14 }
+      - { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_250609.pdf", checked: 2026-10-14 }
       # The end date (to: 1955-08-15).
       - { url: "https://he.wikipedia.org/wiki/הכנסת_השלישית", checked: 2026-10-11 }
       - { url: "https://oknesset.org/members/268.html", checked: 2026-10-11 }
