@@ -333,6 +333,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - "Operation Yoav" now dates the attack on the supply convoy to 15 October 1948, not 14 October, as Israel's own reply in
   the Acting Mediator's report S/1042 and the IDF account of the operation both give it. The rest of the card is
   unchanged (refs #442).
+- The office terms of the people in office from 1948 to early 1952 (the Provisional Government, the first three
+  governments, President Weizmann and the deputy ministers) now cite the Knesset's position records and, for the
+  presidency, the Knesset sittings that elected and mourned Weizmann, in place of Wikipedia. Wikipedia stays for
+  Ben-Gurion's 1951 Education term, Maimon's Second Government terms, Shapira's and Levin's United Religious Front
+  party in the Second Government, Lavon's rationing term and the Chiefs of Staff. No value changed (refs #457).
 - Six society events (austerity, clothing rationing, the transit-camp schools, the Law of Return, the transit camps and
   closing the Ministry of Rationing) now cite the Knesset records: plenum minutes for 1949-1951, the Law of Return as
   published in Sefer HaChukim, and the Knesset position data. Wikipedia stays only for lines no Knesset record covers.
