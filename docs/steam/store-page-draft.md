@@ -78,8 +78,9 @@ still in development. Which of the two the page leads with depends on open decis
 > **What it is not**
 >
 > An early prototype, built in the open. The settlements and trees on the map are still placeholder art. There is no
-> diplomacy, no sound and nothing after 1951. Images on this page captioned "concept art" show the look we are working
-> towards, not the current build.
+> diplomacy, no music and nothing after 1951. The only audio is the archival 1948 recording of David Ben-Gurion
+> reading the Declaration on the start screen (Israel State Archives). Images on this page captioned "concept art"
+> show the look we are working towards, not the current build.
 >
 > The game deals with war, terror and the Holocaust as historical events. It is an independent project, not affiliated
 > with or endorsed by the State of Israel or any person depicted.
@@ -94,7 +95,10 @@ Notes on this text:
 - The current build's Cabinet screen and the GDD's "Minister selection TBD" are not the same thing. The text claims
   only the first.
 - The GDD says "Liberation War". README.md says "the 1948 war". The draft uses README.md's term **[confirm]**.
-- "No sound" is true today (README.md, "Sound: none yet"). Drop it if sound ships.
+- The audio sentence is worded to stay true whether or not PR #465 has merged: #465 adds the Israel State Archives
+  recording of the Declaration to the start screen, behind a "Play the recording" button. README.md still says
+  "Sound: none yet" and changes with that PR. If #465 does not ship, cut the sentence about the recording; if music
+  or other sound ships, rewrite both.
 - Historian review is planned for M4 and has not happened, so the text does not mention historians.
 
 ## 3. About this game, Hebrew (DRAFT, needs a native-speaker review)
@@ -147,8 +151,9 @@ Only" **[confirm]**.
 >
 > **מה עוד אין**
 >
-> זה אב־טיפוס מוקדם שנבנה בקוד פתוח. היישובים והעצים במפה הם עדיין אמנות זמנית. אין דיפלומטיה, אין סאונד ואין דבר
-> אחרי 1951. תמונות בעמוד הזה שמסומנות "אמנות קונספט" מציגות את המראה שאליו אנחנו שואפים, ולא את הגרסה הנוכחית.
+> זה אב־טיפוס מוקדם שנבנה בקוד פתוח. היישובים והעצים במפה הם עדיין אמנות זמנית. אין דיפלומטיה, אין מוזיקה ואין דבר
+> אחרי 1951. הקול היחיד במשחק הוא ההקלטה הארכיונית מ־1948 של דוד בן־גוריון קורא את ההכרזה, במסך הפתיחה (ארכיון
+> המדינה). תמונות בעמוד הזה שמסומנות "אמנות קונספט" מציגות את המראה שאליו אנחנו שואפים, ולא את הגרסה הנוכחית.
 >
 > המשחק עוסק במלחמה, בטרור ובשואה כאירועים היסטוריים. זה פרויקט עצמאי, ואין לו קשר למדינת ישראל או לאדם כלשהו
 > המופיע בו, והם אינם תומכים בו.
@@ -173,7 +178,8 @@ fills that placeholder and accounts for decisions D-M (music) and D-V (video cli
 > Each loop is labelled as AI-generated on screen and in the picture itself, shows no recognisable real person, and
 > plays only if you press the switch. Event and content text was drafted with AI and every fact in it is checked by a
 > person against its cited source. The code was written with AI coding agents and goes through tests and review. The
-> game has no music or sound. The portraits and the event photographs are archival photographs, not AI images, and
+> game has no music. Its only audio is the archival 1948 recording of David Ben-Gurion reading the Declaration on the
+> start screen (Israel State Archives), which is not AI. The portraits and the event photographs are archival photographs, not AI images, and
 > the terrain is built from real elevation data. The game does not generate content with AI while you play.
 >
 > **On this store page.** The capsule art and the images captioned "concept art" were made with AI image tools. They
@@ -192,7 +198,7 @@ What each statement rests on:
 | Clips are silent, opt-in, labelled twice, no recognisable real person | [docs/event-videos.md](../event-videos.md) | Enforced by the encoder and the build. The clips on `ten_days` and `operation_yoav` are marked sensitive and a shareable build refuses them until the owner signs them off |
 | Text drafted with AI, each fact checked by a person | README.md "AI use"; CONTENT_POLICY section 2, rule 6 | Stated project rule |
 | Code written with AI agents | README.md "AI use" | Steam's form is about content players see, not tools, so this sentence is optional |
-| No music or sound in the game | README.md "Sound: none yet"; no audio file is tracked in the repository | True on 14 October 2026 |
+| No music; the only audio is the archival recording on the start screen, not AI | PR #465 (the Israel State Archives recording of the Declaration, behind a "Play the recording" button); README.md "Sound: none yet" until that PR merges | Open PR on 14 October 2026. Check the recording's ASSETS.yaml row once it merges; cut the recording sentence if it does not ship |
 | Portraits and event photographs are not AI | LICENSING.md, NOTICE | Portrait rights are a separate open decision (D-P) |
 | Nothing generated live | README.md, docs/ai-disclosure.md | "Keep the statement only while it remains true" (RELEASING.md) |
 | Capsule art and concept art are AI | `promo/final/01` to `08` in ASSETS.yaml: ElevenLabs Image API (GPT Image 2.5, Nano Banana Pro) | Rows `owner-verify`; D5 found redistribution allowed |
@@ -216,8 +222,10 @@ Facts this draft could not settle. Each is flagged above instead of being assert
    build's content.
 3. **Hebrew text in the game.** The Hebrew interface strings exist but are not enabled. The repository does not
    record whether they were translated with AI. If Hebrew ships, the disclosure and the language list both change.
-4. **Sound.** If music or sound is added before release (issue #39), the "no music or sound" sentence goes and the
-   source of the audio is disclosed.
+4. **Sound.** The text names one piece of audio: the Israel State Archives recording of the Declaration on the start
+   screen (PR #465, open when this was written). Confirm it shipped and how its ASSETS.yaml row records the rights.
+   If music or other sound is added before release (issue #39), the "no music" sentence goes and the source of that
+   audio is disclosed.
 5. **Demo2's voices and score.** This draft did not read the production files under `promo/`. "AI video, voice and
    music tools" comes from the report, which says demo2 uses ElevenLabs premade voices and ElevenLabs Music. Confirm
    against the final cut.
@@ -297,7 +305,7 @@ No AI image can go in a screenshot slot: not `promo/final/01` to `08`, and not `
 | Slot | Asset | State |
 | --- | --- | --- |
 | Trailer 1: gameplay, from the real build | None | **No asset.** The 1920 x 1080, 60 fps capture and cut are the pending trailer part of issue #45. The report recommends 30 to 60 seconds with gameplay in the first 5 seconds. `docs/images/build-gameplay.mp4` (1920 x 1080, about 11 s, real gameplay, commit f93fd5e) shows the kind of footage but is too short to be the trailer |
-| Trailer 2: "Cinematic teaser (AI-generated, not gameplay)", category General / Cinematic | `promo/demo2/out/demo2-final-16x9.mp4` or `promo/demo2/out/demo2v2-16x9-ending1951.mp4` | **Conditional.** Music is cleared by D-M. Still needed: the owner's amendment to RELEASING.md's "real build only" trailer rule, and a cut that stays inside 1948 to 1951. The report says one demo2 act is set in 1956; the file names show both a 1951 and a 1956 ending. Which file is the final cut was not checked |
+| Trailer 2: "Cinematic teaser (AI-generated, not gameplay)", category General / Cinematic | The final demo2 cut (in progress) | **Conditional.** Music is cleared by D-M. Still needed: the owner's amendment to RELEASING.md's "real build only" trailer rule, and the final cut itself, which is being re-cut and has no file to name yet |
 | Not for Steam | `site/public/media/promo-trailer-720p.mp4` (demo 1, the README trailer) | Excluded by the report and by issue #424: it shows the AI ministers as a game screen and quotes a living person |
 | Not assessed | `promo/demo3/out/demo3.mp4` | A third promo video exists locally. The report does not cover it, so this draft places it nowhere |
 
@@ -323,7 +331,7 @@ No AI image can go in a screenshot slot: not `promo/final/01` to `08`, and not `
 3. **Whether the page may open before the release gates.** RELEASING.md's checklist says to finish the gates first.
    Opening earlier is an amendment the owner records.
 4. **Whether an AI cinematic may be the second trailer.** RELEASING.md says trailers come from the real build only.
-   Demo2 needs a recorded amendment, and a choice of cut.
+   Demo2 needs a recorded amendment, and its final cut.
 5. **D-P, the portraits.** Open. It blocks `promo/final/04` and `08`, and it bears on Steam's requirement that the
    developer holds rights to everything shown, including the in-game portraits still marked `owner-verify`.
 6. **D-D, the start-screen painting.** Open. It decides whether the painting can ship in a paid build.
