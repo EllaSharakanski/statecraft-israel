@@ -42,6 +42,9 @@ options:
     effects:
       - { target: intl_standing, delta: -0.05 }   # the killing itself, shared by both options (notes section 6)
       - { target: security, delta: 0.01 }
+      # Owner decision of 15 October 2026 (Q-EFX-3, "Add a real cost"; #375): a cost in another resource, a design value:
+      # mass arrests and a forced disbandment strain cohesion.
+      - { target: morale, delta: -0.02 }
   - id: investigate_only
     # Game assumption: the notes name no advocate for this option.
     text: Ease the crackdown and leave the killing to the investigation

@@ -12,8 +12,8 @@ public class WarEvents1948Tests
     static readonly DateTime EgyptArmistice = new DateTime(1949, 2, 24);
 
     /// <summary>The longest time, in months, from one card of the historical run to the next, up to the Egyptian armistice
-    /// card. Controller ruling, fix round 1, I7, restated in months (owner decision, 15 October 2026, #567): the ruling
-    /// allowed 4 empty weekly turns, so at most 2 months from card to card (one empty monthly turn).</summary>
+    /// card. Controller ruling, fix round 1, I7, restated in months: owner decision of 15 October 2026 (Q-CUT-8, "6 months,
+    /// 2 in wartime", #375).</summary>
     const int MaxMonthsBetweenCards = 2;
 
     static DateTime D(int y, int m, int d) => new DateTime(y, m, d);

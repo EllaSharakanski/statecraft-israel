@@ -21,6 +21,9 @@ options:
     recommended: true
     effects:
       - { target: intl_standing, delta: 0 }
+      # Owner decision of 15 October 2026 (Q-EFX-3, "Add a real cost"; #375): a cost in another resource, a design value,
+      # not a claim about public opinion in March 1951 and not a moral judgement of either answer.
+      - { target: morale, delta: -0.02 }
   - id: refuse
     text: Refuse any dealings with Germany
     effects:
