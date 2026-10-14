@@ -197,14 +197,14 @@ people:
   - id: sharett
     name: Moshe Sharett
     name_he: משה שרת
-    # en.wiki gives 15 October 1894; the Knesset member pages (English and Hebrew) give 16 October. Not changed;
-    # flagged in issue #457.
-    born: 1894-10-15
+    # The Knesset member pages (English and Hebrew) give 16 October 1894; en.wiki gives 15 October. The official record
+    # is kept (docs/CONTENT_POLICY.md, section 1; issue #457).
+    born: 1894-10-16
     died: 1965-07-07
     biography_sources:
       name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2114)", checked: 2026-10-14 }]
-      born: [{ url: "https://en.wikipedia.org/wiki/Moshe_Sharett", checked: 2026-10-11 }]
-      died: [{ url: "https://web.archive.org/web/20170930230904/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=672", checked: 2026-10-14 }]
+      born: &sharett_mk [{ url: "https://web.archive.org/web/20170930230904/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=672", checked: 2026-10-14 }]
+      died: *sharett_mk
     living: false
     party: mapai
     competence: 8

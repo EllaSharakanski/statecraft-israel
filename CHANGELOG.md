@@ -325,8 +325,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   met on 10 February 1949, not 3 February; the 120-seat ordinance passed on 18 November 1948 and the 25 January vote
   was fixed on 25 November 1948 (Harpaz, Kesher 61); the 57-36 vote of 8 August 1950 was for the coalition's motion,
   not against a no-confidence motion. The Frumkin inquiry option now moves camp education from the Culture Department
-  to the Education Department, both already in the Education Ministry. The items that would move a golden wait for the
-  GDD rebaseline (#315).
+  to the Education Department, both already in the Education Ministry. Moshe Sharett's birth date is 16 October 1894,
+  from the Knesset member pages (Wikipedia gave 15 October); the sim reads `born` only to validate content. The items
+  that would move a golden wait for the GDD rebaseline (#315).
 - The Provisional Government, the first three governments, the Provisional State Council and the First and Second
   Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
   sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second
