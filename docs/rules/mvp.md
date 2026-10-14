@@ -28,7 +28,7 @@ R-CITY-001: `AssignWorkers(city, role, n)` sets how many of the city's civilians
 
 R-CITY-002: Each turn every city's employed units add `employed * income_per_job_per_year * the turn's share of a year` to the Treasury.
 
-R-CITY-003: Arrivals from the CBS series (`aliyah.yaml`) become refugees in the rules' `arrivals_city`. The units that arrive in a turn are `floor(people arrived since the start by its end / people_per_unit)` minus the same at its start, so a run never loses or double-counts a unit.
+R-CITY-003: Arrivals from the CBS series (`aliyah.yaml`) become refugees in the rules' `arrivals_city`. Let `P(t)` be the people the series brings from the first era's start to the date `t`, summed over the origin groups in ordinal order. A turn from date `d` to date `e` adds `floor(P(e) / people_per_unit) - floor(P(d) / people_per_unit)` refugees. `people_per_unit` is the same in every era (the loader refuses an era that changes it), so over any run of turns the refugees added are `floor(P(end) / people_per_unit) - floor(P(start) / people_per_unit)`: no unit is lost or counted twice. Before cutover the legacy population (`GameState.Population`) also counts the same arrivals; the two are separate views of the same people until Phase 3 makes arrivals counts.
 
 R-CITY-004: Each turn, `min(refugees, max(0, housing_capacity - civilians))` of a city's refugees become civilians without a job. The cap is a placeholder while overflow (D-D1) is open.
 

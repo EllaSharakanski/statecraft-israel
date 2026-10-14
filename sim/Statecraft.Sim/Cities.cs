@@ -71,7 +71,8 @@ namespace Statecraft.Sim
         }
 
         /// <summary>R-CITY-003 (D-A5): the turn's immigrants (the CBS series, aliyah.yaml) arrive as refugees in the mvp
-        /// arrivals_city, in whole units.</summary>
+        /// arrivals_city, in whole units. Before cutover PopulationSystem still adds the same people to GameState.Population,
+        /// the head count the legacy economy reads: two views of one group until Phase 3 makes arrivals counts (spec section 6).</summary>
         public static void Arrive(Content c, GameState s, MvpRules r, DateTime next, List<Cause> why)
         {
             var units = ArrivedUnits(c, s.Date, next, r.PeoplePerUnit);

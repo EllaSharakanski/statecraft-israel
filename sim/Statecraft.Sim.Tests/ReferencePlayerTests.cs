@@ -6,7 +6,7 @@ using Statecraft.Sim;
 using Statecraft.Sim.Reference;
 
 /// <summary>The reference player (D-A7, #456): the GDD goldens' test policy. It ships in Statecraft.Sim so Unity can replay the
-/// goldens (#394), but no game mode or UI may reach it (maintainer ruling, 2026-10-14).</summary>
+/// goldens (#394), but no game mode or UI may reach it (controller decision on PR 3, 2026-10-14).</summary>
 public class ReferencePlayerTests
 {
     static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
@@ -33,6 +33,15 @@ public class ReferencePlayerTests
         var tired = s.Clone();
         tired.Attention = 0;
         Assert.Empty(ReferencePlayer.Commands(Mvp, tired));
+    }
+
+    [Fact]
+    public void ItFillsNoMoreJobsThanThereAreCivilians()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        s.Cities["tel_aviv"] = s.Cities["tel_aviv"].WithCounts(50, 40, 0);   // 90 jobs, 50 civilians
+        var assign = Assert.IsType<AssignWorkers>(ReferencePlayer.Commands(Mvp, s).Last());
+        Assert.Equal(50, assign.Count);
     }
 
     [Fact]

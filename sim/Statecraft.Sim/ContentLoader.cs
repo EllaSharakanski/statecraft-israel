@@ -880,6 +880,10 @@ namespace Statecraft.Sim
             {
                 var m = r.Mvp ?? throw new ContentException(file, "mvp", "required when eras.yaml systems.loop is gdd");
                 if (m.PeoplePerUnit < 1) throw new ContentException(file, "mvp.people_per_unit", "must be >= 1");
+                // Arrivals are counted from the game's start in units of one size (R-CITY-003): another size in a later era
+                // would lose or double-count units at its boundary.
+                if (m.PeoplePerUnit != c.Rules.Mvp!.PeoplePerUnit)
+                    throw new ContentException(file, "mvp.people_per_unit", "must be the same in every era (arrivals are counted in one unit size)");
                 if (!(m.IncomePerJobPerYear >= 0 && IsFinite(m.IncomePerJobPerYear))) throw new ContentException(file, "mvp.income_per_job_per_year", "must be a finite number >= 0");
                 Unit(file, "mvp.cohesion_housing_weight", m.CohesionHousingWeight);
                 Unit(file, "mvp.cohesion_jobs_weight", m.CohesionJobsWeight);

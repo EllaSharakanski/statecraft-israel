@@ -11,7 +11,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - GDD v0.1 Phase 1, one city (refs #376), behind the `systems.loop` switch: Tel Aviv with housing, jobs, civilians and
   refugees as counts; `AssignWorkers` (Attention, refused in the legacy loop); and a `TurnResolver` that runs, in the
   approved order (D-A6), Money from jobs, housing, Social cohesion and arrivals from the CBS series as refugees, housed on
-  the next turn (R-CITY-001 to R-CITY-005). Every balance value is a placeholder in `MvpSlice.Overlay`, never under
+  the next turn (R-CITY-001 to R-CITY-005); `people_per_unit` must be the same in every era. Every balance value is a placeholder in `MvpSlice.Overlay`, never under
   `content/`; Social cohesion feeds nothing else and is not shown while D-C1 is open. The reference player for the GDD
   goldens (`Statecraft.Sim.Reference`, D-A7) is test policy that no game mode or UI reaches. New scenario golden
   `scenario-mvp-absorb-first`. The real game is unchanged: `hash1950`, `hash1952`, `smoke5` and the two 1948 scenarios do

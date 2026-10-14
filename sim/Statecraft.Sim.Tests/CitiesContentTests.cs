@@ -106,6 +106,34 @@ public class CitiesContentTests
         Assert.Contains("missing file", ex.Message);
     }
 
+    /// <summary>Arrivals are counted from the game's start in units of one size (R-CITY-003), so an era may not change it.</summary>
+    [Fact]
+    public void PeoplePerUnitIsTheSameInEveryEra()
+    {
+        var o = Fixture.Gdd(new Dictionary<string, string> { ["eras.yaml"] = @"
+eras:
+  - id: founding
+    name: The Founding
+    from: 1948-05-15
+    to: 1950-01-01
+    systems: { loop: gdd }
+  - id: later
+    name: Later
+    from: 1950-01-01
+    to: 1957-01-01
+    systems: { loop: gdd }
+" });
+        var dir = Fixture.Write(o);
+        Directory.CreateDirectory(Path.Combine(dir, "rules"));
+        File.WriteAllText(Path.Combine(dir, "rules", "later.yaml"), "mvp: { income_per_job_per_year: 2.4 }\n");
+        Assert.Equal(2.4, ContentLoader.Load(dir).EraRules["later"].Mvp!.IncomePerJobPerYear);   // other mvp values may change by era
+        File.WriteAllText(Path.Combine(dir, "rules", "later.yaml"), "mvp: { people_per_unit: 20 }\n");
+        var ex = Assert.Throws<ContentException>(() => ContentLoader.Load(dir));
+        Assert.Equal("rules/later.yaml", ex.File);
+        Assert.Equal("mvp.people_per_unit", ex.Field);
+        Assert.Contains("must be the same in every era", ex.Message);
+    }
+
     [Fact]
     public void ASettlementWithoutANameIsALoadError()
     {

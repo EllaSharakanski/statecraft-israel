@@ -136,6 +136,21 @@ public class CitiesTests
         Assert.Equal((int)Math.Floor(total / 1000), People(s) - before);
     }
 
+    /// <summary>Before cutover the same arrivals are in two views: the legacy head count by origin (GameState.Population, which
+    /// the legacy economy reads) and the city's refugees. This pins that overlap so Phase 3, which makes arrivals counts, has
+    /// to change it on purpose.</summary>
+    // R-CITY-003
+    [Fact]
+    public void BeforeCutoverArrivalsAreInTheLegacyHeadCountToo()
+    {
+        var c = Town();
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        for (int i = 0; i < 20; i++) s = Step(c, s).State;
+        var people = PopulationSystem.Arrivals(c, c.Eras[0].From, s.Date).Values.Sum();
+        Assert.Equal(Cities.ArrivedUnits(c, c.Eras[0].From, s.Date, 10), s.Cities["town_a"].Refugees + s.Cities["town_a"].Civilians - 10);
+        Assert.True(s.Population["europe"] >= people, "the legacy head count also holds every arrival");
+    }
+
     // R-CITY-005
     [Fact]
     public void CohesionFallsWhenRefugeesWaitAndRisesWhenTheyAreHousedAndEmployed()
@@ -150,7 +165,40 @@ public class CitiesTests
         Assert.True(waiting.Cohesion < s.Cohesion && working.Cohesion > waiting.Cohesion);
     }
 
-    /// <summary>Social cohesion is a placeholder while D-C1 is open (maintainer ruling, 2026-10-14): no effect, morale,
+    /// <summary>The GDD fixture's town with cohesion weights 0.8 on housing and 0.2 on jobs (fixture values), so a change in
+    /// either share shows apart from the other.</summary>
+    static Content Unequal() => ContentLoader.Load(Fixture.Write(Fixture.Gdd(new Dictionary<string, string>
+    {
+        ["cities.yaml"] = "cities:\n  - { id: town_a, housing_capacity: 12, job_slots: 20, civilians: 10, employed: 6, facilities: [] }\n",
+        ["rules.yaml"] = Fixture.Files["rules.yaml"].Replace("map_action: 1 }", "map_action: 1, assign_workers: 1 }")
+            + Fixture.GddRules.Replace("cohesion_housing_weight: 0.5", "cohesion_housing_weight: 0.8").Replace("cohesion_jobs_weight: 0.5", "cohesion_jobs_weight: 0.2"),
+    })));
+
+    // R-CITY-005
+    [Fact]
+    public void UnequalWeightsWeighTheHousedAndEmployedSharesApart()
+    {
+        var c = Unequal();
+        var s = Simulation.NewGame(c, 1, Mode.Historical);
+        Assert.Equal(0.8 * 1 + 0.2 * 0.6, s.Cohesion, 12);                       // all housed, 6 of 10 employed
+        var working = Step(c, s, new AssignWorkers("town_a", "job", 10)).State;  // all housed, all employed
+        Assert.Equal(1.0, working.Cohesion, 12);
+    }
+
+    /// <summary>D-A6: housing comes before Social cohesion in the turn, so cohesion reads the counts after this turn's housing.
+    /// Read before housing, the same state would give 0.8 * 10/20 + 0.2 * 6/10 = 0.52.</summary>
+    // R-CITY-004, R-CITY-005
+    [Fact]
+    public void CohesionReadsTheCountsAfterThisTurnsHousing()
+    {
+        var c = Unequal();
+        var s = With(Simulation.NewGame(c, 1, Mode.Historical), "town_a", 10, 6, 10);
+        var after = Step(c, s).State;                                             // 2 housed: 12 of 20 housed, 6 of 12 employed
+        Assert.Equal((12, 8), (after.Cities["town_a"].Civilians, after.Cities["town_a"].Refugees));
+        Assert.Equal(0.8 * 0.6 + 0.2 * 0.5, after.Cohesion, 12);
+    }
+
+    /// <summary>Social cohesion is a labelled placeholder while D-C1 is open (an owner question on #375): no effect, morale,
     /// threshold or display reads it. Two states that differ only in it step to the same state, and no code outside the
     /// city rules and the state names it.</summary>
     // R-CITY-005
