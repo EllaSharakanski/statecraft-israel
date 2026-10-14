@@ -384,6 +384,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   the First Knesset records the crisis in Mapai. The comment on "Austerity" now says the rationing plan was presented to
   the Knesset on 26 April 1949, already decided by the cabinet, citing the plenum and the JTA. Wikipedia stays only for
   lines these sources do not cover. Text, dates and effects are unchanged (refs #442).
+- "The Altalena" cites the Provisional State Council's minutes of 23 June 1948 (Ben-Gurion's statement and reply, also
+  on Project Ben-Yehuda), the Ministry of Defense's Izkor page on the Altalena monument and the Ministry of Education's
+  page on Rabin in place of the "1948 in Israel" article. The source comments record that Ben-Gurion told the council
+  there was no agreement to give the Irgun part of the arms for Jerusalem, against the Irgun's account that he agreed.
+  "Altalena Affair" stays for the dispersal of the Irgun units in the IDF. Text, dates, options and effects are
+  unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
