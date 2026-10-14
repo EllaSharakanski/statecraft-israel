@@ -139,6 +139,9 @@ namespace Statecraft.Game.UI
             delta.text = m.Delta;
             delta.EnableInClassList("delta-up", m.Sign > 0);
             delta.EnableInClassList("delta-down", m.Sign < 0);
+            // For screen readers, the meter in words under its own caption (#398).
+            var element = root.Q<VisualElement>("meter-" + meter);
+            element.tooltip = HudModel.Spoken(text, element.Q<Label>(className: "meter-name").text, m);
         }
 
         public void Render()

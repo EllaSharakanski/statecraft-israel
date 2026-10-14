@@ -25,6 +25,9 @@ namespace Statecraft.Game.UI
         public DateTime LastBatchDate { get; private set; }
         /// <summary>The step before Session.Last (null until two turns have run), for "change since last turn".</summary>
         public StepResult? BeforeLast { get; private set; }
+        /// <summary>Whether a turn has run through this bridge since its session began or was replaced. A loaded save starts
+        /// false although its replay set Session.Previous: the top bar shows no change until a turn passes (#398).</summary>
+        public bool TurnPlayed { get; private set; }
         /// <summary>Raised after every change the screens show: an order queued or withdrawn, a turn, a load.</summary>
         public event Action? Changed;
         /// <summary>Raised after End Turn with the orders the simulation refused (possibly none).</summary>
@@ -136,6 +139,7 @@ namespace Statecraft.Game.UI
             }
             BeforeLast = before;
             LastBatch = batch; LastBatchDate = date;
+            TurnPlayed = true;
             queue.Clear();
             Changed?.Invoke();
             TurnEnded?.Invoke(r.Rejected);
@@ -147,6 +151,7 @@ namespace Statecraft.Game.UI
         {
             Session = session ?? throw new ArgumentNullException(nameof(session));
             BeforeLast = null; LastBatch = Array.Empty<Command>();
+            TurnPlayed = false;
             queue.Clear();
             Changed?.Invoke();
         }

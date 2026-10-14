@@ -136,14 +136,16 @@ public class PromoHudTests
     [UnityTest]
     public IEnumerator EveryWindowShapeFitsTheBarAfterATurn()
     {
-        // (window, icons, stacked changes, two rows): 16:9 fullscreen; a 16:9 window; a 16:10 MacBook browser (~1911
-        // logical); 16:10 fullscreen (~1821) keeps the icons on the stacked bar; 4:3 and 5:4 drop them; square and narrower wrap.
-        foreach (var (w, h, icons, narrow, twoRow) in new[] { (1920, 1080, true, false, false), (1280, 720, true, false, false),
-                                                              (1366, 768, true, false, false), (1760, 1000, true, false, false),
-                                                              (1920, 1200, true, true, false), (1440, 900, true, true, false),
-                                                              (1024, 768, false, true, false), (1280, 1024, false, true, false),
-                                                              (1024, 1024, false, true, true), (960, 1080, false, true, true),
-                                                              (800, 1000, false, true, true) })
+        // (window, icons, stacked changes, two rows, three rows): 16:9 fullscreen; a 16:9 window; a 16:10 MacBook browser
+        // (~1911 logical); 21:9 ultrawide (~2217); 16:10 fullscreen (~1821) keeps the icons on the stacked bar; 4:3 and 5:4
+        // drop them; square and narrower wrap; a phone upright (390x844, ~790) takes three rows (#398).
+        foreach (var (w, h, icons, narrow, twoRow, threeRow) in new[] { (1920, 1080, true, false, false, false), (1280, 720, true, false, false, false),
+                                                              (1366, 768, true, false, false, false), (1760, 1000, true, false, false, false),
+                                                              (2560, 1080, true, false, false, false),
+                                                              (1920, 1200, true, true, false, false), (1440, 900, true, true, false, false),
+                                                              (1024, 768, false, true, false, false), (1280, 1024, false, true, false, false),
+                                                              (1024, 1024, false, true, true, false), (960, 1080, false, true, true, false),
+                                                              (800, 1000, false, true, true, false), (390, 844, false, true, true, true) })
         {
             var rt = new RenderTexture(w, h, 0);
             var ps = Object.Instantiate(AssetDatabase.LoadAssetAtPath<PanelSettings>(UiPaths.Panel));
@@ -194,6 +196,7 @@ public class PromoHudTests
                 Assert.AreEqual(!icons, bar.ClassListContains(HudPresenter.CompactClass), where + ": compact (no icons)");
                 Assert.AreEqual(narrow, root.Q("root").ClassListContains(HudPresenter.NarrowClass), where + ": narrow");
                 Assert.AreEqual(twoRow, root.Q("root").ClassListContains(HudPresenter.TwoRowClass), where + ": two rows");
+                Assert.AreEqual(threeRow, root.Q("root").ClassListContains(HudPresenter.ThreeRowClass), where + ": three rows");
                 foreach (var icon in root.Q("meters").Query<UiIcon>().ToList())
                     Assert.AreEqual(icons ? DisplayStyle.Flex : DisplayStyle.None, icon.resolvedStyle.display, $"{where}: {icon.Glyph}");
                 var badge = root.Q(className: "date-box");

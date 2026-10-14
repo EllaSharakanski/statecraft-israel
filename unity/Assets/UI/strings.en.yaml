@@ -9,6 +9,12 @@ hud.attention: "Attention {0:0.0} of {1:0.0}"
 hud.people: "{0:N0}"
 hud.level: "Level {0} of 5"
 hud.delta_people: "{0:+#,##0;-#,##0}"
+# A top-bar meter in words, for screen readers (HudModel.Spoken): {0} the caption, {1} the value, {2} the change without
+# its sign. Money in words: {0} the sign and the currency prefix from content ("IL ", "-IL ", "$"), {1} the millions.
+hud.say: "{0} {1}"
+hud.say_up: "{0} {1}, up {2} this turn"
+hud.say_down: "{0} {1}, down {2} this turn"
+hud.say_million: "{0}{1:0.0} million"
 toast.refused: "Not done: {0}"
 event.office: "{0}: {1}"
 event.more: "{0} more decision(s) waiting"
