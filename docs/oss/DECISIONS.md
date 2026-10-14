@@ -47,3 +47,7 @@ in a web release depends on them.
 - [x] O8 Windows backend. Decided (owner, 2026-10-14): first "use the best windows build type" (IL2CPP, which Unity builds only on Windows), then, with O7, the Mac build option above: Windows is built with Mono from the Mac. IL2CPP for Windows would need a Windows PC.
 - [x] O10 What launches. Decided (owner, 2026-10-14): "steam features at luanch are fully working 1948-1956 mvp that looks like demo2", then, asked whether 1956 was meant: "1956 was meant loosely and launch stays at 1948–51". The launch is a fully working MVP from 15 May 1948 to January 1952 that looks like demo2. The GDD's MVP is unchanged, and so is the pause on 1952-56. The answer names no Steam-only feature (Auto-Cloud, achievements, a Deck review).
 - [x] O12 Build records. Decided (owner, 2026-10-14): "build records will leave in a seperate repo". They go in a separate repository, which the owner creates.
+
+## Game design
+
+- [x] G1 The Burma Road in the MVP (issue #531). Decided (owner, 2026-10-14, given to the coordinator and announced by the owner in the project's Slack): the Burma Road is in the MVP, as in Amir's MVP definition ("Establishing infrastructure: yeshuvim, railroad of haifa tel aviv and burma road"). It joins objective 3 in `docs/GDD.md` beside the Tel-Aviv to Haifa railway. Its sourced opening date, 7 December 1948, is in #384.
