@@ -8,6 +8,13 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- GDD v0.1 Phase 1, training (refs #377), behind the `systems.loop` switch: `Train` sends a city's civilians without work
+  to basic training in a military camp (recruits, a count) or pioneer training in a Hakhshara (halutzim, movable units at
+  the city's hex), paid from the Treasury without borrowing; `CancelTraining` returns the people but not the Money (D-A3).
+  Cohorts progress as step 4 of the GDD turn (D-A6) (R-TRAIN-001 to R-TRAIN-003). One camp and one Hakhshara at the start
+  is a labelled design assumption (D-D5); training turns, costs and Attention costs are placeholders in `MvpSlice.Overlay`,
+  never under `content/`. `mvp-slice` moves (the reference player trains one halutz group); the legacy goldens and
+  `scenario-mvp-absorb-first` do not.
 - GDD v0.1 Phase 1, one city (refs #376), behind the `systems.loop` switch: Tel Aviv with housing, jobs, civilians and
   refugees as counts; `AssignWorkers` (Attention, refused in the legacy loop); and a `TurnResolver` that runs, in the
   approved order (D-A6), Money from jobs, housing, Social cohesion and arrivals from the CBS series as refugees, housed on
