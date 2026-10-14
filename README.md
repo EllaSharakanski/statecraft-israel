@@ -2,7 +2,7 @@
 
 https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 
-<p align="center"><em>The cinematic trailer (1:23, with sound), made with AI video tools from our concept art; it is not in-game footage.</em></p>
+<p align="center"><em>The cinematic trailer (1:23, with sound), made with AI video tools and AI music (ElevenLabs Music) from our concept art; it is not in-game footage.</em></p>
 
 # Statecraft: Israel
 
@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/56571db8-446b-444b-8db9-fce57dac53a7
 **A turn-based grand-strategy game about governing Israel. You are the prime minister on 15 May 1948. The ministers are the real ones, the map is real, and every historical fact comes with a source.**
 
 > [!NOTE]
-> This is an independent open-source project. A commercial edition is planned. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
+> This is an independent open-source project. The game is free and non-commercial. It is not affiliated with or endorsed by Firaxis, 2K, the State of Israel or any person depicted. The game deals with war, terror and the Holocaust as historical events. Its framing is Israeli, every fact cites a source, and no quotes are invented. See [Historical content](#history-sources-and-accuracy).
 
 ##### [Report a bug](https://github.com/eyalgolan/statecraft-israel/issues/new?template=bug_report.yml) | [Report a historical error](https://github.com/eyalgolan/statecraft-israel/issues/new?template=historical_accuracy.yml) | [Discussions](https://github.com/eyalgolan/statecraft-israel/discussions) | [Changelog](CHANGELOG.md)
 
