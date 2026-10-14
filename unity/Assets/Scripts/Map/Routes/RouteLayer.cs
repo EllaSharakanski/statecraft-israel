@@ -12,8 +12,8 @@ namespace Statecraft.Game.Map.Routes
     /// shows only while the game date is inside its window (RoutePath.From/To; review C1: the Burma Road from 14 June
     /// 1948): routes are grouped by window, one ribbon pair per group, and <see cref="ShowAt"/> switches the groups. A
     /// steam train on the Jaffa–Jerusalem line is a showcase, never normal play (review I1, <see cref="ModeFor"/>). Widths are symbolic, measured on the
-    /// promo's gameplay frame like the settlements and units (docs/routes.md): a road about 8 px and the railway about
-    /// 16 px wide at 1920 px (the soft edges take about a sixth of the railway's width, so its bed is drawn 680 m), so they read at the gameplay zoom as the promo draws them. Registers the "routes" (ribbons)
+    /// promo's gameplay frame like the settlements and units (docs/routes.md): a road's pale core about 8 px and the railway
+    /// about 16 px wide at 1920 px (the soft edges take about a sixth of the railway's width, so its bed is drawn 680 m), so they read at the gameplay zoom as the promo draws them. Registers the "routes" (ribbons)
     /// and "train" visual toggles, so the frame profile prices each. Pure geometry from the data: the same file gives the
     /// same meshes, vertex for vertex.</summary>
     public static class RouteLayer
@@ -22,8 +22,10 @@ namespace Statecraft.Game.Map.Routes
         public const string RailMaterialResource = "Routes/Rail", RoadMaterialResource = "Routes/Road";
         public const string Folder = "Assets/Resources/Routes";
 
-        /// <summary>Full ribbon widths (m), soft edges included (the shader fades the outer 16-30%).</summary>
-        public const float RailWidthM = 680f, RoadWidthM = 300f, TrackWidthM = 200f;
+        /// <summary>Full ribbon widths (m), soft edges included (the shader fades the outer 16-30%). A road is 420 m: its pale
+        /// core, inside the verges, is about 280 m, about 8 px at the gameplay zoom, as promo 03's dirt tracks (at 300 m the
+        /// core was about 4 px, a thin line between dark verges); still well under the railway's bed.</summary>
+        public const float RailWidthM = 680f, RoadWidthM = 420f, TrackWidthM = 200f;
         /// <summary>Spacing (m) of the ribbon's cross-sections along its line: under the heightmap's 211 m N-S spacing, so
         /// every terrain row gets a section; about 3 px at the gameplay zoom.</summary>
         public const float StepM = 120f;
