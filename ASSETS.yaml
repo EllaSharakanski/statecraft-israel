@@ -212,6 +212,13 @@ rules:
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
     status: verified
+  # --- Ben-Gurion's 1948 recording on the start screen (docs/declaration-recording.md; owner rulings 2026-10-13/14) ---
+  - glob: "unity/Assets/StreamingAssets/audio/declaration-1948-isa-00113hj.wav"
+    licence: Israel State Archives terms of use
+    source: "Israel State Archives, item ISA-Collections-Recordings-00113hj (catalogue file טס-169/21, rights field «גנזך המדינה»): 'העתק מן המקור של הקלטת ההכרזה על הקמת מדינת ישראל, כולל טקס החתימה', the Kol Yisrael broadcast of 14 May 1948 recorded by Ralph Hellinger of Radio Doctor, as published by the archive on its own YouTube channel (https://www.youtube.com/watch?v=K5Q6Mrv4fGw, uploaded 2023-05-22). The excerpt 468.01-477.30 s, David Ben-Gurion reading «אנו מכריזים בזאת על הקמת מדינה יהודית בארץ ישראל, היא מדינת ישראל», cut at those points and otherwise unchanged: 48 kHz, 24-bit stereo WAV, 9.29 s, sha256 2b949e12f1d33d6f2dd6509aeceeac318857396174c579286c04fbc8dbf65e1d (pinned in DeclarationRecording.Sha256 and its test). Shipped byte for byte; the browser decodes it, Unity does not re-encode it"
+    status: owner-verify
+    credit: "Recording: Israel State Archives"
+    note: "Played only from the start screen's 'Play the recording' button, over the still painting, with EN/HE captions and the credit on screen; never automatic. Open questions for the owner: (1) the recordist's own copyright claim in the 1980s (CA 474/86, ע\"א 474/86) is moot in Israel, where the 50-year term for the recording ended in 1998; (2) its US status is uncertain (a URAA-restored term is possible); (3) the ISA's English terms-of-use page says reuse is free 'except commercial', while the Hebrew page says 'including commercial'. The licence forbids altering the work; the only change is the cut, and the file is shipped as received."
   # --- Decision-card illustration loops: silent AI clips behind the Illustration switch (docs/event-videos.md; owner ruling D-V) ---
   # Made by tools/encode_event_videos.py from promo shots that are not in the repository (path and SHA-256 per row in
   # unity/Assets/Resources/EventVideos/event-videos.yaml). Rights: owner ruling D-V, 2026-10-13 (docs/oss/DECISIONS.md, merged in #449):

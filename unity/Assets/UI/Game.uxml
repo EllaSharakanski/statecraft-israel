@@ -273,9 +273,19 @@
                     <ui:Label name="start-he-date" text="בעיר תל־אביב, היום הזה, ערב שבת, ה׳ אייר תש״ח, 14 במאי 1948." class="start-he start-he-date" language-direction="RTL" />
                     <ui:Label name="start-en-date" text="IN THE CITY OF TEL-AVIV, ON THIS SABBATH EVE, THE 5TH DAY OF IYAR, 5708 (14TH MAY, 1948)." class="start-en" />
                     <ui:Label name="start-source" text="From the Declaration of the Establishment of the State of Israel (Official Gazette No. 1, 14 May 1948) and its official English translation. Painting: AI-generated." class="start-source" />
+                    <!-- Ben-Gurion's reading of the proclaiming sentence, Kol Yisrael, 14 May 1948 (DeclarationRecording): it plays
+                         only from this button, over the still painting, with its words as captions above the panel. -->
+                    <ui:VisualElement name="start-recording" class="start-recording">
+                        <ui:Button name="start-listen" class="start-listen" />
+                        <ui:Label name="start-recording-credit" text="Recording: Israel State Archives" class="start-recording-credit" />
+                    </ui:VisualElement>
                     <ui:VisualElement name="start-actions" class="start-actions">
                         <ui:Button name="start-continue" text="Continue" class="start-button" />
                         <ui:Button name="start-new-game" text="New Game" class="start-button" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="start-caption" class="start-caption" picking-mode="Ignore">
+                        <ui:Label name="start-caption-he" text="אנו מכריזים בזאת על הקמת מדינה יהודית בארץ ישראל, היא מדינת ישראל" class="start-he start-caption-he" language-direction="RTL" picking-mode="Ignore" />
+                        <ui:Label name="start-caption-en" text="We hereby declare the establishment of a Jewish state in Eretz-Israel, to be known as the State of Israel." class="start-caption-en" picking-mode="Ignore" />
                     </ui:VisualElement>
                     <Statecraft.Game.UI.UiFrame />
                 </ui:VisualElement>
