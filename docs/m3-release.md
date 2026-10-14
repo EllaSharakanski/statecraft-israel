@@ -175,11 +175,16 @@ Differences and notes:
   notch), so the three lines after it counted as 3/100 (3/200 in Chrome). Nothing in the game's code was changed for
   this.
 
-  What the measurements do show is a different risk, not tested here with real hardware: one small delta sets the notch
-  for the rest of the session. A touchpad that sends a delta of a pixel or less (as touchpads can, in fractions) makes
-  every later delta several notches, so each frame of a swipe, or each mouse notch after it, zooms the clamped 27%
-  (three notches). Chaiky3's Windows touchpad gave 10% steps, so it did not happen there. A Mac trackpad in Chrome or
-  Safari, and a touchpad followed by a mouse, are still to be tried by hand.
+  What the measurements did show is a different risk: one small delta sets the notch for the rest of the session.
+  **Fixed (T45).** A scripted swipe of 31 events, 0.5 to 8 px about 16 ms apart (108 px in all, a trackpad's ramp and
+  momentum), zoomed 95% (28 notches, three a frame, stopped by the 6 km limit) in Chrome and WebKit, on its own or after a
+  mouse notch; after it, one 100 px notch out zoomed three notches. The camera now counts the browser's wheel events
+  itself (`WheelInput.jslib` queues each event's `deltaY` and `deltaMode`, and `CameraController.WheelEventNotches`
+  scales them): three lines or one page is a notch, a whole number of macOS mouse ticks (4.000244140625 px, the value
+  Chrome and Safari send on a Mac) is a notch a tick, and other pixels count 100 to the notch. The same swipe now zooms
+  1.08 notches (10.8%) over 31 frames, never more than 0.08 in a frame, and a 100 px or three-line notch before or after
+  it zooms 10%. Still to be tried by hand: a Mac trackpad and a Mac mouse in Chrome and Safari, and a mouse on Linux,
+  where a notch may be fewer than 100 px and so zoom less than 10%.
 - **Aborted requests in Chrome.** At each start Chrome lists about 30 of the 51 content files (and the map files) as
   `net::ERR_ABORTED` in its network log. The files arrive whole: both browsers log the same `BOOT OK content` hash and
   the goldens pass. WebKit lists none. Not a console error, so it is left as it is.
@@ -190,8 +195,8 @@ Differences and notes:
 - Input in these runs is synthetic (Playwright's mouse, wheel and keys), not a physical mouse or touchpad.
 
 Still open: Safari itself (only its engine was run here), Firefox on a Mac, Chrome and Edge on Windows, a real mouse wheel
-in Firefox, a touchpad (above), and the two-upload itch.io save test below. Each needs the owner's machines or the
-project's itch.io account.
+in Firefox, a real touchpad and a Mac mouse (above), and the two-upload itch.io save test below. Each needs the owner's
+machines or the project's itch.io account.
 
 ## OWNER STEP: sensitivity review before any shared build
 Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,

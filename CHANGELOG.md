@@ -397,6 +397,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Keyboard focus that lands on something scrolled out of view, such as a Cabinet card below the first row or a
   candidate far down the list, now scrolls its list to it (accessibility audit H1, refs #41). Focus that follows a mouse
   press leaves the list where it is. Presentation only: no golden moves.
+- Wheel zoom in the web build: one small wheel delta, such as a touchpad's half pixel, made every later frame zoom 27%,
+  since Unity's player takes the smallest delta it has seen as one notch. The camera now counts the browser's wheel
+  events itself (`WheelInput.jslib`): a touchpad zooms by how far the fingers move, and a mouse notch (100 px, three
+  lines, one page, or a macOS tick) is still 10% (refs #43).
 - "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
   No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
 - Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of

@@ -42,6 +42,16 @@ namespace Statecraft.Game.Map
         /// nothing changes. The promo and close-check poses all keep more (hero06judea, the least, 24%).</summary>
         public const float MinClearanceShare = 0.2f;
 
+        /// <summary>The DOM WheelEvent deltaMode values.</summary>
+        public const int WheelPixels = 0, WheelLines = 1, WheelPages = 2;
+        /// <summary>Wheel pixels in one notch: Chrome and Safari on Windows send 100 px a mouse notch.</summary>
+        public const float PixelsPerNotch = 100f;
+        /// <summary>Lines in one notch: Firefox sends a mouse notch as three lines when a page asks for lines.</summary>
+        public const float LinesPerNotch = 3f;
+        /// <summary>One mouse tick on macOS, in pixels, in Chrome and Safari (Cocoa's 0.1000061 lines times 40 px). A delta
+        /// that is a whole number of these is a mouse, not a trackpad (the test MapLibre and Mapbox GL use).</summary>
+        public const double MacWheelTick = 4.000244140625;
+
         /// <summary>Answers "is the pointer over the UI?" for a screen position (y up). Null = never.</summary>
         public Func<Vector2, bool>? IsOverUi;
         /// <summary>The map rectangle on the ground (x, z), in world metres; the view is kept inside it (Step).</summary>
@@ -59,6 +69,8 @@ namespace Statecraft.Game.Map
 
         void OnEnable()
         {
+            DrainWheel();   // events from while the camera was off (a menu) are not a zoom
+
             var map = InputSystem.actions?.FindActionMap("Camera", throwIfNotFound: true);
             if (map == null) return;
             pan = map.FindAction("Pan", true); dragPan = map.FindAction("DragPan", true);
@@ -75,13 +87,64 @@ namespace Statecraft.Game.Map
             if (pan == null || dragPan == null || zoom == null || orbit == null) return;
             Vector2? pointer = Pointer.current != null ? Pointer.current.position.ReadValue() : (Vector2?)null;
             var down = Mouse.current != null && Mouse.current.rightButton.isPressed;
-            Step(rig, Gather(pan.ReadValue<Vector2>(), dragPan.ReadValue<Vector2>(), zoom.ReadValue<float>(),
+            Step(rig, Gather(pan.ReadValue<Vector2>(), dragPan.ReadValue<Vector2>(), WheelOr(zoom.ReadValue<float>()),
                 orbit.ReadValue<float>(), down, pointer), ClampDt(Time.unscaledDeltaTime), Bounds, Ground, GroundTop);
         }
 
         /// <summary>Fits the rig's current pose with no input (review B-m3: a minimap jump goes through the same view fit and
         /// ground clearance as panning, so no frame shows the map's frame or the inside of a hill).</summary>
         public void Settle() => Step(GetComponent<CameraRig>(), default, 0f, Bounds, Ground, GroundTop);
+
+        /// <summary>The frame's wheel in notches. In WebGL, from the browser's own events (WheelInput.jslib): Unity's player
+        /// takes the smallest delta it has seen since the page loaded as one notch, whatever the mode, so a touchpad's
+        /// 0.5 px event made every later frame zoom the clamped three notches (issue #43, T45). Elsewhere, the action's value.</summary>
+        float WheelOr(float actionValue)
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            float total = 0f; int n;
+            while ((n = StatecraftWheelDrain(wheelDeltas, wheelModes, wheelDeltas.Length)) > 0)
+                total += WheelNotches(wheelDeltas, wheelModes, n);
+            return total;
+#else
+            return actionValue;
+#endif
+        }
+
+        void DrainWheel()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            while (StatecraftWheelDrain(wheelDeltas, wheelModes, wheelDeltas.Length) > 0) { }
+#endif
+        }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        readonly float[] wheelDeltas = new float[64]; readonly int[] wheelModes = new int[64];
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern int StatecraftWheelDrain(float[] deltaY, int[] mode, int capacity);
+#endif
+
+        /// <summary>One wheel event in notches, positive = in (a DOM deltaY below zero). Lines and pages are counted by the
+        /// notch (three lines, one page). Pixels are a mouse when they are whole macOS ticks, one notch a tick; otherwise
+        /// they count 100 to the notch, so a touchpad zooms by how far the fingers move and nothing is learned between
+        /// events.</summary>
+        public static float WheelEventNotches(float deltaY, int deltaMode)
+        {
+            switch (deltaMode)
+            {
+                case WheelLines: return -deltaY / LinesPerNotch;
+                case WheelPages: return -deltaY;
+            }
+            double ticks = deltaY / MacWheelTick;
+            if (deltaY != 0f && ticks == Math.Round(ticks)) return (float)-ticks;
+            return -deltaY / PixelsPerNotch;
+        }
+
+        /// <summary>The first <paramref name="count"/> wheel events in notches (their sum; Gather clamps the frame).</summary>
+        public static float WheelNotches(float[] deltaY, int[] deltaMode, int count)
+        {
+            float total = 0f;
+            for (int i = 0; i < count; i++) total += WheelEventNotches(deltaY[i], deltaMode[i]);
+            return total;
+        }
 
         public static float ClampDt(float dt) => Mathf.Min(dt, MaxFrameSeconds);
 
@@ -96,8 +159,8 @@ namespace Statecraft.Game.Map
             return new CameraInput
             {
                 Pan = panValue, DragPan = dragValue,
-                // The Input System's default scroll behaviour (UniformAcrossAllPlatforms) gives 1 per notch on every platform
-                // (measured in headed Chrome on WebGL, Task 24: a 100 px notch -> 1.0); clamp bursts.
+                // Notches: on desktop the Input System's default scroll behaviour (UniformAcrossAllPlatforms) gives 1 per
+                // notch; in WebGL WheelOr counts the browser's events (#43). Clamp bursts.
                 Zoom = Mathf.Clamp(zoomRaw, -3f, 3f),
                 Orbit = orbitValue, OverUi = over, DragFromUi = dragFromUi,
             };

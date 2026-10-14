@@ -391,6 +391,59 @@ public class CameraInputTests
         finally { Object.DestroyImmediate(go); }
     }
 
+    /// <summary>Issue #43 (T45): in WebGL the zoom counts the browser's wheel events itself. Unity's player took the smallest
+    /// delta seen since load as one notch, so one 0.5 px touchpad event made every later frame zoom the clamped 27%. A
+    /// mouse notch is still one step: 100 px, three lines, one page, or a macOS mouse tick (4.000244140625 px).</summary>
+    [Test]
+    public void AMouseNotchIsOneStepInEveryMode()
+    {
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-100f, CameraController.WheelPixels), 1e-5, "100 px up");
+        Assert.AreEqual(-1f, CameraController.WheelEventNotches(100f, CameraController.WheelPixels), 1e-5, "100 px down");
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-3f, CameraController.WheelLines), 1e-5, "3 lines");
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-1f, CameraController.WheelPages), 1e-5, "1 page");
+        Assert.AreEqual(1f, CameraController.WheelEventNotches(-4.000244140625f, CameraController.WheelPixels), 1e-5, "macOS tick");
+        Assert.AreEqual(-2f, CameraController.WheelEventNotches(8.00048828125f, CameraController.WheelPixels), 1e-5,
+            "an accelerated macOS tick is two");
+        Assert.AreEqual(0f, CameraController.WheelEventNotches(0f, CameraController.WheelPixels));
+    }
+
+    [Test]
+    public void TouchpadPixelsZoomInProportionAndNothingIsLearned()
+    {
+        Assert.AreEqual(0.005f, CameraController.WheelEventNotches(-0.5f, CameraController.WheelPixels), 1e-6);
+        Assert.AreEqual(0.04f, CameraController.WheelEventNotches(-4f, CameraController.WheelPixels), 1e-6, "4 px is not a tick");
+        Assert.AreEqual(0.07f, CameraController.WheelEventNotches(-7f, CameraController.WheelPixels), 1e-6);
+        // A swipe of many small deltas, then a mouse notch: the swipe zooms by its length, and the notch is still one step.
+        var swipe = new float[] { -0.5f, -1, -2, -4, -6, -8, -8, -8, -6.2f, -4.8f, -3.1f, -1.4f, -0.6f };
+        var modes = new int[swipe.Length];
+        Assert.AreEqual(-swipe.Sum() / 100f, CameraController.WheelNotches(swipe, modes, swipe.Length), 1e-5);
+        Assert.AreEqual(1f, CameraController.WheelNotches(new[] { -100f }, new[] { 0 }, 1), 1e-5);
+        Assert.AreEqual(1f, CameraController.WheelNotches(new[] { -3f }, new[] { CameraController.WheelLines }, 1), 1e-5);
+        Assert.AreEqual(0.5f, CameraController.WheelNotches(new[] { -50f, -100f }, new[] { 0, 0 }, 1), 1e-5, "only count events");
+    }
+
+    [Test]
+    public void ATouchpadSwipeZoomsSmoothlyAndStaysOffPanels()
+    {
+        var c = NewController(out var go);
+        try
+        {
+            var rig = go.GetComponent<CameraRig>();
+            rig.Distance = 120000f;
+            foreach (var px in new[] { 0.5f, 2f, 8f, 8f, 4f, 1f })   // one frame's events each
+            {
+                var before = rig.Distance;
+                var notches = CameraController.WheelNotches(new[] { -px }, new[] { 0 }, 1);
+                CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, notches, 0, false, new Vector2(500, 0)), 0.016f, Map);
+                Assert.AreEqual(before * Mathf.Pow(0.9f, px / 100f), rig.Distance, 1f, $"{px} px");
+            }
+            var held = rig.Distance;
+            CameraController.Step(rig, c.Gather(Vector2.zero, Vector2.zero, 1f, 0, false, new Vector2(50, 0)), 0.016f, Map);
+            Assert.AreEqual(held, rig.Distance, 1e-3, "no zoom over a panel");
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     /// <summary>Task 24 review M3: zooming in then out by the same notches returns to the same distance.</summary>
     [Test]
     public void ZoomingInThenOutReturnsToTheStart()
