@@ -2421,3 +2421,40 @@ branch (avg ms, then p95):
 The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In round 1, gameplay03 `all` was disturbed
 for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
 up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.
+
+## Issue #391: the terrain shader's frame-time cliff (warm land shade, not shipped)
+#391 asked for the shaded hill ground to read warm brown, as promo 03's does (about (67, 53, 46)), rather than olive-grey.
+The look was solved; the cost was not, so nothing shipped. What was measured is a constraint on any future addition to
+`StatecraftTerrain.hlsl`.
+
+**Diagnosis (main, editor, Mobile tier).** On bare terrain (kits, trees, routes, borders and tilt-shift off) the shaded
+ground at `hills12a` (35.05, 31.76, 12 km) measured (71, 62, 55): hue 27 degrees, G/R 0.87. Most of the olive cast in the
+full frame comes from tree crowns and kit shadows, which belong to vegetation round 2 (#34). The grade's split toning
+cannot fix the ground's part: every shadow-colour candidate also moved the sea at gameplay03 by 4-18/255.
+
+**The look that worked.** Scaling green by 0.87 and blue by 0.76 against red, weighted by 1 - smoothstep(0, 1, N.L) for the
+fixed sun, gave on bare terrain: hue 24.0 / 25.7 / 27.0 degrees and G/R 0.845 / 0.847 / 0.838 at hills12a, judea30 and
+gameplay03, sea drift 0.00-0.01/255, palette distance 0.463 -> 0.454 (gameplay03) and 0.581 -> 0.558 (diorama02), and
+WebGL diorama02 warmth 0.121 -> 0.127. Baked into `terrain_bake.png`'s R (unread at run time) it cost 120 KB of
+`data.unity3d` under LZ4.
+
+**The cost.** Headless `?vprofile`, 1920x1080, DPR 1, interleaved under `--exclusive`, median avg ms, main `7040351`:
+
+| Shader change | `all` gameplay03 | `none` gameplay03 | `all` diorama02 | `none` diorama02 |
+|---|---|---|---|---|
+| main | 8.23-8.42 | 4.98-5.07 | 19.3-21.6 | 12.6-13.2 |
+| no-op function call (control) | 8.05 | 4.86 | 22.55 | 14.67 |
+| `GetMainLight()`, dot, smoothstep, lerp | 14.96 | 13.23 | 21.4 | 16.8 |
+| `_MainLightPosition` uniform, dot, smoothstep, lerp | 12.59 | 11.71 | 25.26 | 17.46 |
+| baked mask: `bake.r` kept, one constant lerp | 14.87 | 12.55 | 22.09 | 17.35 |
+| baked mask used at once, AO sampled after it | 16.72 | 13.72 | 21.22 | 18.06 |
+
+Every variant that adds work to the function costs 4-8 ms at gameplay03, and as much with every visual toggle off as on:
+the toggles do not remove shader code. The no-op control matches main, so the build and the call itself are free.
+
+**Constraint.** Treat the terrain fragment shader as at a cliff: one extra lerp of a value already in a register cost as
+much as per-pixel lighting. The likely cause is register pressure or occupancy in the WebGL (ANGLE/Metal) compile of the
+whole function, not the arithmetic, as #195 found for the water (3 ms from its size alone). Shortening a value's live
+range did not help. Before adding anything to `StatecraftTerrain.hlsl`, profile it as above against main; prefer changing
+baked data the shader already reads in its existing operations (land colours in `tools/land_bake.py`, `MapPalette`), or
+moving work out of the function as #195 did.
