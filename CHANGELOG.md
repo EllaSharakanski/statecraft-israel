@@ -421,6 +421,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   records and member pages (Internet Archive copies) and, for Weizmann and Shazar, the President's Office pages, in
   place of Wikipedia. Wikipedia stays only where those records give no value or a different one. No value changed
   (refs #457).
+- The art checkpoint's close checks (`hero06judea`, `hero06negev`) are shot with the settlement trees off, as the haze
+  already was: one tree's crown had filled `hero06judea`, so it no longer showed the ground it is there to check
+  (audit 2026-10-13). The game itself is unchanged.
 - The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
   `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
   The pixels are unchanged.
