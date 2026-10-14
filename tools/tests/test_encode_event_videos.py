@@ -16,7 +16,9 @@ def test_every_row_names_a_promo_shot_by_sha256_and_is_marked_ai():
     assert len(rows) >= 10
     for r in rows:
         assert r["source"].startswith("promo/") and len(r["source_sha256"]) == 64
-        assert r["file"] == r["event"] + ".mp4" and r["ai_generated"] is True
+        assert r["file"] == r["event"] + ("-outcome.mp4" if "option" in r else ".mp4") and r["ai_generated"] is True
+        if "option" in r:   # an outcome clip keeps a recorded 3.5 s window of its shot
+            assert r["frames"] == 84 and r["start_frame"] >= 0
         assert (ev.OUT / r["file"]).is_file()
 
 
@@ -61,3 +63,9 @@ def test_a_source_with_the_wrong_sha256_is_refused(tmp_path, capsys, monkeypatch
     assert ev.main(["--root", str(tmp_path), "--out", str(tmp_path / "out")]) == 1
     assert "SHA-256 MISMATCH" in capsys.readouterr().out
     assert not (tmp_path / "out").exists() or not any((tmp_path / "out").iterdir())
+
+
+def test_an_outcome_row_cuts_its_recorded_window_and_decimates_a_dreamina_shot():
+    graph = ev.filter_graph({"start_frame": 5, "frames": 84, "decimate": True})
+    assert graph.startswith("[0:v]mpdecimate") and "trim=start_frame=5:end_frame=89" in graph
+    assert "trim" not in ev.filter_graph() and "mpdecimate" not in ev.filter_graph(), "the card loops are cut as before"

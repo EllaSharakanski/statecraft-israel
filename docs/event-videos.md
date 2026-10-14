@@ -28,11 +28,36 @@ moments.md`, the "Full plan"; plan: `docs/superpowers/plans/2026-10-13-decision-
 - **Rights:** owner ruling D-V (`docs/oss/DECISIONS.md`, merged in #449), "no need to check, just use them". Every clip has an
   `ASSETS.yaml` row with `ai_generated: true`, the generator and the date, and those rows feed `docs/ai-disclosure.md`.
 
+## Outcome clips at End Turn (phase 3)
+
+When a turn runs, every event the player answered with its **historical** option, if the turn applied the order and the
+event has an outcome clip, plays that clip once, in the middle of the screen, before the game goes on (`OutcomePresenter`).
+
+- **Only for an order.** A clip plays only for the historical option the player chose. A delegated answer gets none,
+  and so does a counterfactual option (there is no footage of what did not happen). `EventVideoMapping.OutcomeProblems`
+  refuses a row for a non-historical option, and any row that involves Deport.
+- **3.5 s, silent.** The caption is worded as the order, "Your order: …", because the clip illustrates the order and
+  does not show its outcome.
+  - A click, Enter or Space skips the clip. Esc skips all of the turn's clips.
+  - While one plays, the decision card, the top bar and the panels wait.
+- **The steadiest window.** AI shots often morph in their first frames, so each clip keeps the steadiest 3.5 s of its
+  shot, not the first 3.5 s. "Steadiest" means the least frame-to-frame change, and above all no sudden jump in it. The
+  search is `tools/encode_event_videos.py --steadiest`, and the row records `start_frame` and `frames` so the cut
+  reproduces. The 60 fps Dreamina files repeat frames, so they are decimated first (`decimate: true`).
+- **The clips:**
+  - first_truce / accept: A02, a convoy on a hill road at dusk;
+  - maabarot_policy / maabarot: A08, a transit camp;
+  - hula_drainage / continue_works: W08, the drained valley;
+  - law_of_return / enact: K04b, a ship entering Haifa bay;
+  - operation_horev / launch: A05, jeeps and an armoured carrier crossing the Negev. This one is sensitive and not yet
+    reviewed, so a shareable build refuses it. Its vehicles (jeeps, a tracked carrier) match the 8th Brigade's tanks,
+    jeeps and APCs (en.wikipedia "8th Armored Brigade (Israel)", checked 2026-10-14), and it shows no flag or marking.
+
 ## Where things are
 
 | What | Where |
 |---|---|
-| The mapping: event, file, promo shot and its SHA-256, generator, date, alt text, sensitivity flags | `unity/Assets/Resources/EventVideos/event-videos.yaml` |
+| The mapping: event (and, for an outcome, option and window), file, promo shot and its SHA-256, generator, date, alt text, sensitivity flags | `unity/Assets/Resources/EventVideos/event-videos.yaml` |
 | The clips (960x540 H.264, about 0.4 to 1.5 MB each) | `unity/Assets/StreamingAssets/video/<event>.mp4` |
 | The encode, pinned, and the burned-in label | `tools/encode_event_videos.py`, `tools/event_videos/ai-bug.png` |
 | The player: one lazy VideoPlayer playing a URL into one 960x540 RenderTexture | `CardVideo` |

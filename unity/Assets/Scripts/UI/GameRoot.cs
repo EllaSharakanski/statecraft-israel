@@ -48,6 +48,7 @@ namespace Statecraft.Game.UI
         ScreenNav? nav;
         StartScreenPresenter? start;
         EventCardPresenter? card;
+        OutcomePresenter? outcomes;
         CameraRig? rig;
         List<(string, int, int, DateTime)>? drawn;
 
@@ -150,6 +151,8 @@ namespace Statecraft.Game.UI
             var clips = video == null ? null : EventVideoMapping.Load().ToDictionary(r => r.Event);
             card = Own(new EventCardPresenter(root, bridge, text, portraits, EventImageCatalog.Load(), video,
                 clips == null ? null : id => clips.TryGetValue(id, out var r) ? r : null));   // event photos: Resources, no scene field
+            // The End Turn outcome clips (decision videos, phase 3): none in the automated runs (no video there).
+            outcomes = video == null ? null : Own(new OutcomePresenter(root, bridge, text, video, EventVideoMapping.LoadOutcomes(), () => card?.Render()));
             Own(new DefencePresenter(root, bridge, text, portraits));
             Own(new BudgetPresenter(root, bridge, text));
             Own(new WhyPresenter(root, bridge, text));
@@ -308,7 +311,7 @@ namespace Statecraft.Game.UI
             StopAllCoroutines();
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
-            minimap = null; labels = null; nav = null; start = null; card = null; rig = null; drawn = null; units = null; logCamera = false;
+            minimap = null; labels = null; nav = null; start = null; card = null; outcomes = null; rig = null; drawn = null; units = null; logCamera = false;
             // A ?profile run cut short (a stopped coroutine never reaches its restore line) must not leave the terrain at the
             // profile's pixel error (Task 24 review M1). Nothing else changes it, so restoring is always right.
             if (map != null && map.Terrain != null) map.Terrain.heightmapPixelError = MapBuilder.TerrainPixelError;
@@ -364,7 +367,7 @@ namespace Statecraft.Game.UI
             // Game request (StartScreenPresenter.Escape; idempotent too).
             // With nothing else to close, Escape on the open decision card is Hide (EventCardPresenter.Escape; the card itself
             // takes the Cancel event when it has the focus).
-            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { bool done = start?.Escape() == true; done |= nav?.Close() == true; if (!done && document.rootVisualElement.focusController?.focusedElement == null) card?.Escape(); }
+            if (UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true) { bool done = outcomes?.SkipAll() == true || outcomes?.ClosedThisFrame == true; done |= start?.Escape() == true; done |= nav?.Close() == true; if (!done && document.rootVisualElement.focusController?.focusedElement == null) card?.Escape(); }
             SyncMinimap();
             if (!logCamera || rig == null || (rig.Distance == loggedDistance && rig.Yaw == loggedYaw)) return;
             loggedDistance = rig.Distance; loggedYaw = rig.Yaw;

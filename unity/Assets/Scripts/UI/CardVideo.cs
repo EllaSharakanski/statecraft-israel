@@ -18,7 +18,7 @@ namespace Statecraft.Game.UI
         public const long PrepareTimeoutMs = 8000;
 
         GameObject? go; VideoPlayer? player; RenderTexture? rt;
-        VisualElement? target; Action<string>? onFail; IVisualElementScheduledItem? timeout;
+        VisualElement? target; Action<string>? onFail; Action? onEnded; IVisualElementScheduledItem? timeout;
 
         /// <summary>Video is off in the automated runs (the smoke run, the golden check, the shot, frame and pixel-error
         /// profiles, the unit showcase and the border proof), so their captures and checks never depend on decoding: the
@@ -44,13 +44,16 @@ namespace Statecraft.Game.UI
         public bool Showing { get; private set; }
 
         /// <summary>Plays <paramref name="url"/> into <paramref name="header"/>'s background; <paramref name="failed"/> is told
-        /// (once) if it fails or times out. The header keeps whatever it shows until the first frame is ready.</summary>
-        public void Play(string url, VisualElement header, Action<string> failed)
+        /// (once) if it fails or times out. The header keeps whatever it shows until the first frame is ready. A card's
+        /// illustration loops; an outcome clip (<paramref name="loop"/> false) plays once and then tells
+        /// <paramref name="ended"/>.</summary>
+        public void Play(string url, VisualElement header, Action<string> failed, bool loop = true, Action? ended = null)
         {
             Stop();
             Ensure();
-            target = header; onFail = failed; Current = url;
-            player!.url = url;
+            target = header; onFail = failed; onEnded = loop ? null : ended; Current = url;
+            player!.isLooping = loop;
+            player.url = url;
             player.Prepare();
             timeout = header.schedule.Execute(() => { if (Current == url && !Showing) Fail("not ready after " + PrepareTimeoutMs + " ms"); }).StartingIn(PrepareTimeoutMs);
         }
@@ -68,7 +71,7 @@ namespace Statecraft.Game.UI
         {
             timeout?.Pause(); timeout = null;
             if (player != null) { player.Stop(); player.url = ""; }
-            target = null; onFail = null; Current = null; Showing = false;
+            target = null; onFail = null; onEnded = null; Current = null; Showing = false;
         }
 
         public void Dispose()
@@ -96,6 +99,7 @@ namespace Statecraft.Game.UI
             player.skipOnDrop = true;
             player.waitForFirstFrame = true;
             player.prepareCompleted += OnPrepared;
+            player.loopPointReached += _ => { var told = onEnded; if (told == null) return; Stop(); told(); };   // a once-only clip ended
             player.errorReceived += OnError;
         }
 

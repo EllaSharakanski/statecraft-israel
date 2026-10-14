@@ -35,15 +35,16 @@ namespace Statecraft.Game.UI
             bool start = r.ClassListContains(StartScreenPresenter.OpenClass);
             bool screen = r.ClassListContains(ScreenOpenClass);
             bool full = screen && r.ClassListContains(HudPresenter.TwoRowClass);
-            bool modal = r.ClassListContains(EventCardPresenter.OpenClass) && !start && !screen;
+            bool outcome = r.ClassListContains(OutcomePresenter.OpenClass);   // an End Turn outcome clip covers all but itself
+            bool modal = r.ClassListContains(EventCardPresenter.OpenClass) && !start && !screen && !outcome;
             r.EnableInClassList(EventCardPresenter.ModalClass, modal);
-            r.Q("top-bar")?.SetEnabled(!start);
-            r.Q("right-column")?.SetEnabled(!(start || full || modal));
-            r.Q("info-panel")?.SetEnabled(!(start || full || modal || r.ClassListContains(WideOpenClass)));
+            r.Q("top-bar")?.SetEnabled(!(start || outcome));
+            r.Q("right-column")?.SetEnabled(!(start || full || modal || outcome));
+            r.Q("info-panel")?.SetEnabled(!(start || full || modal || outcome || r.ClassListContains(WideOpenClass)));
             var layer = r.Q("event-layer");
             if (layer != null)
             {
-                bool was = layer.enabledSelf, now = !(start || screen);
+                bool was = layer.enabledSelf, now = !(start || screen || outcome);
                 layer.SetEnabled(now);
                 if (!was && now) (layer.userData as System.Action)?.Invoke();   // EventCardPresenter: the open card takes the focus
             }

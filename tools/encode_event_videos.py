@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["pillow==12.3.0", "pyyaml==6.0.3", "websockets==15.0.1"]
+# dependencies = ["pillow==12.3.0", "pyyaml==6.0.3", "websockets==15.0.1", "numpy==2.5.3"]
 # ///
 """Makes the decision cards' silent illustration loops (unity/Assets/StreamingAssets/video/<file>) from the promo shots
 listed in unity/Assets/Resources/EventVideos/event-videos.yaml (decision videos, owner ruling 2026-10-13; docs/event-videos.md).
@@ -45,22 +45,55 @@ LABEL_EN, LABEL_HE = "AI-generated", "נוצר בבינה מלאכותית"
 
 
 def load_rows(mapping: Path = MAPPING) -> list[dict]:
-    return yaml.safe_load(mapping.read_text(encoding="utf-8"))["clips"]
+    """The card loops (clips) and the End Turn outcome clips (outcomes), in that order."""
+    doc = yaml.safe_load(mapping.read_text(encoding="utf-8"))
+    return doc["clips"] + doc.get("outcomes", [])
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def filter_graph() -> str:
-    """Scale the shot, then lay the label over its top left corner."""
-    return (f"[0:v]scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,crop={WIDTH}:{HEIGHT},fps={FPS},setsar=1[v];"
+def filter_graph(row: dict | None = None) -> str:
+    """Scale the shot, then lay the label over its top left corner. An outcome row may also ask for:
+    decimate: drop the repeated frames of a 60 fps Dreamina shot first, so its 24 unique frames a second play evenly;
+    start_frame and frames: keep only that window, in frames at 24 fps (the steadiest 3.5 s, chosen by
+    tools/encode_event_videos.py's steadiest(); the row records it so the cut reproduces)."""
+    row = row or {}
+    pre = "mpdecimate=hi=64:lo=32:frac=0.1,setpts=N/24/TB," if row.get("decimate") else ""
+    cut = ""
+    if "start_frame" in row:
+        s, n = int(row["start_frame"]), int(row["frames"])
+        cut = f",trim=start_frame={s}:end_frame={s + n},setpts=PTS-STARTPTS"
+    return (f"[0:v]{pre}scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,crop={WIDTH}:{HEIGHT},fps={FPS}{cut},setsar=1[v];"
             f"[v][1:v]overlay={SAFE_X}:{SAFE_Y}:format=auto[out]")
 
 
-def encode_command(src: Path, dst: Path, bug: Path = BUG) -> list[str]:
+def steadiest(src: Path, seconds: float = 3.5, decimate: bool = False) -> tuple[int, dict]:
+    """The start frame (at 24 fps) of the steadiest window of the shot: the least frame-to-frame change and above all
+    no sudden jump in it (a morph, a warp or a cut is a jump in the change), as score = mean change + 3 x largest jump +
+    spread. Returns the frame and the window's numbers."""
+    import numpy as np
+    w, h = 192, 108
+    pre = "mpdecimate=hi=64:lo=32:frac=0.1,setpts=N/24/TB," if decimate else ""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(src), "-vf", f"{pre}fps={FPS},scale={w}:{h},format=gray",
+                          "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    fr = np.frombuffer(raw, np.uint8).reshape(-1, h, w).astype(np.float32)
+    d = np.abs(np.diff(fr, axis=0)).mean(axis=(1, 2))
+    jumps = np.abs(np.diff(d))
+    n = int(round(seconds * FPS))
+    best = None
+    for s in range(0, len(fr) - n + 1):
+        seg, j = d[s:s + n - 1], jumps[s:s + n - 2]
+        score = float(seg.mean() + 3 * j.max() + seg.std())
+        if best is None or score < best[0]:
+            best = (score, s, float(seg.mean()), float(j.max()))
+    return best[1], {"score": round(best[0], 2), "mean_change": round(best[2], 2), "max_jump": round(best[3], 2)}
+
+
+def encode_command(src: Path, dst: Path, bug: Path = BUG, row: dict | None = None) -> list[str]:
     return ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(src), "-i", str(bug),
-            "-filter_complex", filter_graph(), "-map", "[out]", *FFMPEG_VIDEO, str(dst)]
+            "-filter_complex", filter_graph(row), "-map", "[out]", *FFMPEG_VIDEO, str(dst)]
 
 
 def probe(path: Path) -> dict:
@@ -129,11 +162,16 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", action="append", default=[], help="event id (repeatable); default all rows")
     ap.add_argument("--make-bug", action="store_true", help="remake the burned-in label and stop")
+    ap.add_argument("--steadiest", type=Path, help="print the steadiest 3.5 s window of this shot and stop")
+    ap.add_argument("--decimate", action="store_true", help="with --steadiest: the shot is a 60 fps Dreamina file")
     ap.add_argument("--out", type=Path, default=OUT)
     ap.add_argument("--root", type=Path, default=REPO, help="the checkout whose promo/ holds the source shots")
     a = ap.parse_args(argv)
     if a.make_bug:
         print(make_bug()); return 0
+    if a.steadiest:
+        start, numbers = steadiest(a.steadiest, decimate=a.decimate)
+        print(json.dumps({"start_frame": start, "start_s": round(start / FPS, 3), "frames": int(round(3.5 * FPS)), **numbers})); return 0
     if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
         print("ffmpeg and ffprobe are needed"); return 2
     rows = [r for r in load_rows() if not a.only or r["event"] in a.only]
@@ -149,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
         with tempfile.TemporaryDirectory() as tmp:   # the promo shot is read from a copy, never in place
             src = Path(tmp) / "src.mp4"
             shutil.copyfile(a.root / r["source"], src)
-            subprocess.run(encode_command(src, dst), check=True)
+            subprocess.run(encode_command(src, dst, row=r), check=True)
         bad = problems(dst)
         if bad:
             print(f"BAD {dst}: {'; '.join(bad)}"); return 1

@@ -29,6 +29,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   credit "Recording: Ralph Hellinger, Israel State Archives" is on screen. It never plays on its own, never on Continue
   or New Game, and not in automated runs. A slow or failed load says so. The file is a cut of the archive's own upload,
   decoded to WAV with no other processing (1.8 MB), and fetched only when asked for.
+- Decision videos, phase 3: outcome clips at End Turn. When the player has ordered the historical option of one of five
+  events (the First Truce, the transit camps, the Hula works, the Law of Return, Operation Horev) and the turn applies it,
+  a 3.5 s silent AI-generated clip plays once, captioned "Your order: ...". A click, Enter or Space skips it, and Esc
+  skips them all. A counterfactual option, a delegated answer and Deport get none, and there is none in automated runs.
+  The Horev clip waits for the owner's sensitivity review before a shareable build. Presentation only: no golden moves.
 - Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
   short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
   burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds

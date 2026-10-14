@@ -123,7 +123,8 @@ namespace Statecraft.Game.EditorTools
             try
             {
                 var mapping = EventImageMapping.Parse(File.ReadAllText(EventImageMapping.Path));
-                var clips = EventVideoMapping.Parse(File.ReadAllText(EventVideoMapping.Path));   // fails closed: a missing file is a refusal
+                var videos = File.ReadAllText(EventVideoMapping.Path);   // fails closed: a missing file is a refusal
+                var clips = EventVideoMapping.Parse(videos).Concat(EventVideoMapping.ParseOutcomes(videos)).ToList();   // the card loops and the outcome clips
                 refusal = GateRefusal(args, Statecraft.Sim.ContentLoader.Load(Paths.Content), photos, File.Exists(EventImageImport.CatalogPath), mapping, clips);
             }
             catch (Exception e) when (e is IOException || e is InvalidOperationException || e is UnauthorizedAccessException)
