@@ -426,6 +426,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Cache-Control, such as `python3 -m http.server`, allows it), and it then named the previous build's files, which are
   gone: the start failed with "Unknown data format". The page now asks the server for its current copy and loads the
   files that copy names, keeping its own names only when it cannot (offline, `file://`). Refs #437.
+- The files the browser build fetches from StreamingAssets (the content, the heightmap and the event clips) keep fixed
+  names, so a returning browser could pair new code with the previous build's cached content. Every such URL now
+  carries the build's id (`?b=<Application.buildGUID>`), so each build fetches its own copies; desktop file paths are
+  unchanged. Refs #437.
 - The Provisional Government, the first three governments, the Provisional State Council and the First and Second
   Knessets now cite the Knesset's records: its position, faction and session data, the plenum minutes of each opening
   sitting and confidence vote, the 1951 transition and election-day laws, its make-up pages for the First and Second
