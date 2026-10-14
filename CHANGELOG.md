@@ -327,6 +327,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Knessets, and the Official Gazette notice of the 1949 results. Wikipedia stays only for the council's party split, the
   Provisional Government's smaller coalition groups and lines the YAML comments cite it for. Values are unchanged
   (refs #457).
+- The Hebrew names and birth and death dates of the people in office from 1948 to 1952 now cite the Knesset's person
+  records and member pages (Internet Archive copies) and, for Weizmann and Shazar, the President's Office pages, in
+  place of Wikipedia. Wikipedia stays only where those records give no value or a different one. No value changed
+  (refs #457).
 - The Unity build has no compiler warnings again. The panel trim's corner ornament no longer uses
   `MeshWriteData.uvRegion`, which Unity 6000.3 marks obsolete (CS0618); the renderer now maps texture coordinates itself.
   The pixels are unchanged.

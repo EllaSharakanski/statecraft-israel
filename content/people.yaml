@@ -16,7 +16,10 @@
 # fetched with license check (promo/CREDITS.md). Deputy ministers (Efrati, Shari, Kahana) and Kaplan's Deputy Prime
 # Minister title are historical-only titles (offices.yaml `historical_only: true`); sources in research_notes/M3 content
 # 1950-51/deputy-titles.md. portrait.focus_y: the face centre's height as a share of the picture (0 top, 1 bottom),
-# measured on each picture; the event card keeps it in view (playtest 2, P2-5).
+# measured on each picture; the event card keeps it in view (playtest 2, P2-5). For people in office from 1948 to 1952,
+# the Hebrew name cites the Knesset's person record (KNS_Person) and birth and death dates cite the Knesset member pages
+# (Internet Archive copies, as the live pages return a bot challenge) or the President's Office pages. Wikipedia stays
+# only for a value those records do not give or give differently (issue #457).
 people:
   - id: ben_gurion
     name: David Ben-Gurion
@@ -24,9 +27,9 @@ people:
     born: 1886-10-16
     died: 1973-12-01
     biography_sources:
-      name_he: &bg_bio [{ url: "https://en.wikipedia.org/wiki/David_Ben-Gurion", checked: 2026-10-11 }]
-      born: *bg_bio
-      died: [{ url: "https://en.wikipedia.org/wiki/David_Ben-Gurion", checked: 2026-10-11 }, { url: "https://m.knesset.gov.il/EN/About/Pages/bg.aspx", checked: 2026-10-11 }]
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2198)", checked: 2026-10-14 }]
+      born: [&bg_mk { url: "https://web.archive.org/web/20181229220523/http://www.knesset.gov.il:80/mk/eng/mk_eng.asp?mk_individual_id_t=684", checked: 2026-10-14 }]
+      died: [*bg_mk, { url: "https://m.knesset.gov.il/EN/About/Pages/bg.aspx", checked: 2026-10-11 }]
     living: false
     party: mapai
     competence: 9
@@ -43,7 +46,7 @@ people:
           - &gov0_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%200", checked: 2026-10-14 }
           - &gov1_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%201", checked: 2026-10-14 }
           - &gov2_k { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%202", checked: 2026-10-14 }
-          - &gov3 { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%203", checked: 2026-10-12 }
+          - &gov3 { url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_PersonToPosition?$filter=GovernmentNum%20eq%203", checked: 2026-10-14 }
       - { office: defense_minister, from: 1948-05-14, to: 1952-12-24, sources: *bg_1948 }
       # Fourth Government. He resigned on 7 December 1953 and en.wiki shows Sharett acting from then; the Knesset
       # records and he.wiki keep him in both offices until the Fifth Government took office on 26 January 1954, which is
@@ -131,8 +134,8 @@ people:
     born: 1901-02-26
     died: 1964-01-16
     biography_sources:
-      name_he: &zisling_bio [{ url: "https://en.wikipedia.org/wiki/Aharon_Zisling", checked: 2026-10-11 }]
-      born: *zisling_bio
+      name_he: [{ url: "https://en.wikipedia.org/wiki/Aharon_Zisling", checked: 2026-10-11 }]
+      born: &zisling_bio [{ url: "https://web.archive.org/web/20160718173624/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=590", checked: 2026-10-14 }]
       died: *zisling_bio
     living: false
     party: mapam
@@ -152,9 +155,9 @@ people:
     # Died in office on 13 July 1952.
     died: 1952-07-13
     biography_sources:
-      name_he: &kaplan_bio [{ url: "https://en.wikipedia.org/wiki/Eliezer_Kaplan", checked: 2026-10-11 }]
-      born: *kaplan_bio
-      died: [{ url: "https://en.wikipedia.org/wiki/Eliezer_Kaplan", checked: 2026-10-11 }, { url: "https://he.wikipedia.org/wiki/אליעזר_קפלן", checked: 2026-10-11 }]
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2590)", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/Eliezer_Kaplan", checked: 2026-10-11 }]
+      died: [{ url: "https://web.archive.org/web/20170930230605/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=606", checked: 2026-10-14 }]
     party: mapai
     competence: 8
     loyalty: 9
@@ -194,12 +197,14 @@ people:
   - id: sharett
     name: Moshe Sharett
     name_he: משה שרת
+    # en.wiki gives 15 October 1894; the Knesset member pages (English and Hebrew) give 16 October. Not changed;
+    # flagged in issue #457.
     born: 1894-10-15
     died: 1965-07-07
     biography_sources:
-      name_he: &sharett_bio [{ url: "https://en.wikipedia.org/wiki/Moshe_Sharett", checked: 2026-10-11 }]
-      born: *sharett_bio
-      died: *sharett_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2114)", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/Moshe_Sharett", checked: 2026-10-11 }]
+      died: [{ url: "https://web.archive.org/web/20170930230904/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=672", checked: 2026-10-14 }]
     living: false
     party: mapai
     competence: 8
@@ -234,9 +239,9 @@ people:
     born: 1902-03-26
     died: 1970-07-16
     biography_sources:
-      name_he: &shapira_bio [{ url: "https://en.wikipedia.org/wiki/Haim-Moshe_Shapira", checked: 2026-10-11 }]
-      born: *shapira_bio
-      died: *shapira_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2661)", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/Haim-Moshe_Shapira", checked: 2026-10-11 }]
+      died: [{ url: "https://web.archive.org/web/20170930230323/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=663", checked: 2026-10-14 }]
     living: false
     party: hapoel_hamizrachi
     competence: 7
@@ -281,8 +286,8 @@ people:
     born: 1879-11-24
     died: 1970-09-07
     biography_sources:
-      name_he: &gruenbaum_bio [{ url: "https://en.wikipedia.org/wiki/Yitzhak_Gruenbaum", checked: 2026-10-11 }]
-      born: *gruenbaum_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(5904)", checked: 2026-10-14 }]
+      born: &gruenbaum_bio [{ url: "https://en.wikipedia.org/wiki/Yitzhak_Gruenbaum", checked: 2026-10-11 }]
       died: *gruenbaum_bio
     living: false
     party: independent
@@ -298,8 +303,8 @@ people:
     born: 1887-05-01
     died: 1978-05-03
     biography_sources:
-      name_he: &rosen_bio [{ url: "https://en.wikipedia.org/wiki/Pinchas_Rosen", checked: 2026-10-11 }]
-      born: *rosen_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2600)", checked: 2026-10-14 }]
+      born: &rosen_bio [{ url: "https://web.archive.org/web/20170930225813/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=615", checked: 2026-10-14 }]
       died: *rosen_bio
     living: false
     party: new_aliyah
@@ -327,8 +332,8 @@ people:
     born: 1900-03-28
     died: 1985-01-18
     biography_sources:
-      name_he: &bentov_bio [{ url: "https://en.wikipedia.org/wiki/Mordechai_Bentov", checked: 2026-10-11 }]
-      born: *bentov_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2210)", checked: 2026-10-14 }]
+      born: &bentov_bio [{ url: "https://web.archive.org/web/20170930230726/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=305", checked: 2026-10-14 }]
       died: *bentov_bio
     living: false
     party: mapam
@@ -347,7 +352,7 @@ people:
     biography_sources:
       name_he: &sheetrit_bio [{ url: "https://en.wikipedia.org/wiki/Bechor-Shalom_Sheetrit", checked: 2026-10-11 }]
       born: *sheetrit_bio
-      died: *sheetrit_bio
+      died: [{ url: "https://web.archive.org/web/20170930230854/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=643", checked: 2026-10-14 }]
     living: false
     party: sephardim
     competence: 7
@@ -374,9 +379,9 @@ people:
     born: 1875-12-11
     died: 1962-07-10
     biography_sources:
-      name_he: &maimon_bio [{ url: "https://en.wikipedia.org/wiki/Yehuda_Leib_Maimon", checked: 2026-10-11 }]
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2460)", checked: 2026-10-14 }]
       born: [{ url: "https://he.wikipedia.org/wiki/יהודה_לייב_פישמן_מימון", checked: 2026-10-11 }]
-      died: *maimon_bio
+      died: [{ url: "https://web.archive.org/web/20170930193508/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=503", checked: 2026-10-14 }]
     living: false
     party: mizrachi
     competence: 6
@@ -402,8 +407,8 @@ people:
     born: 1890-06-12
     died: 1971-03-21
     biography_sources:
-      name_he: &bernstein_bio [{ url: "https://en.wikipedia.org/wiki/Peretz_Bernstein", checked: 2026-10-11 }]
-      born: *bernstein_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2223)", checked: 2026-10-14 }]
+      born: &bernstein_bio [{ url: "https://web.archive.org/web/20170930225642/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=318", checked: 2026-10-14 }]
       died: *bernstein_bio
     living: false
     party: general_zionists
@@ -431,9 +436,9 @@ people:
     name_he: דוד רמז
     born: 1886-05-23
     biography_sources:
-      name_he: &remez_bio [{ url: "https://en.wikipedia.org/wiki/David_Remez", checked: 2026-10-11 }]
-      born: *remez_bio
-      died: *remez_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2613)", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/David_Remez", checked: 2026-10-11 }]
+      died: [{ url: "https://web.archive.org/web/20170930225823/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=628", checked: 2026-10-14 }]
     living: false
     # Died in office on 19 May 1951 (research notes 1c).
     died: 1951-05-19
@@ -452,8 +457,8 @@ people:
     born: 1893-01-30
     died: 1971-08-07
     biography_sources:
-      name_he: &levin_bio [{ url: "https://en.wikipedia.org/wiki/Yitzhak-Meir_Levin", checked: 2026-10-11 }]
-      born: *levin_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2427)", checked: 2026-10-14 }]
+      born: &levin_bio [{ url: "https://web.archive.org/web/20170930225733/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=477", checked: 2026-10-14 }]
       died: *levin_bio
     living: false
     party: agudat_yisrael
@@ -475,8 +480,8 @@ people:
     born: 1899-05-27
     died: 1980-01-07
     biography_sources:
-      name_he: &dov_yosef_bio [{ url: "https://en.wikipedia.org/wiki/Dov_Yosef", checked: 2026-10-11 }]
-      born: *dov_yosef_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2375)", checked: 2026-10-14 }]
+      born: &dov_yosef_bio [{ url: "https://web.archive.org/web/20160304084213/https://www.knesset.gov.il/mk/eng/mk_eng.asp?mk_individual_id_t=188", checked: 2026-10-14 }]
       died: *dov_yosef_bio
     portrait: { file: promo/ref/people/Dov_Yosef_CCBY_1949.jpg, license: CC BY 4.0, source: "https://commons.wikimedia.org/wiki/File:Dov_Yosef_(997008137381905171).jpg", focus_y: 0.36 }
     living: false
@@ -523,12 +528,13 @@ people:
   - id: shazar
     name: Zalman Shazar
     name_he: זלמן שז"ר
+    # The President's Office page gives 24 November 1889; the Knesset member page gives 22 December 1889 (issue #457).
     born: 1889-11-24
     died: 1974-10-05
     biography_sources:
-      name_he: &shazar_bio [{ url: "https://en.wikipedia.org/wiki/Zalman_Shazar", checked: 2026-10-11 }]
-      born: *shazar_bio
-      died: *shazar_bio
+      name_he: [{ url: "https://en.wikipedia.org/wiki/Zalman_Shazar", checked: 2026-10-11 }]
+      born: [&shazar_pres { url: "https://web.archive.org/web/20160522045213/http://www.president.gov.il:80/Presidency_In_Israel/Presidents_Of_Israel/Pages/ZalmanShazar.aspx", checked: 2026-10-14 }]
+      died: [*shazar_pres, { url: "https://web.archive.org/web/20170930193513/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=681", checked: 2026-10-14 }]
     living: false
     party: mapai
     competence: 7
@@ -545,8 +551,8 @@ people:
     born: 1898-05-03
     died: 1978-12-08
     biography_sources:
-      name_he: &golda_meir_bio [{ url: "https://en.wikipedia.org/wiki/Golda_Meir", checked: 2026-10-11 }]
-      born: *golda_meir_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2448)", checked: 2026-10-14 }]
+      born: &golda_meir_bio [{ url: "https://web.archive.org/web/20170930230625/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=685", checked: 2026-10-14 }]
       died: *golda_meir_bio
     living: false
     party: mapai
@@ -569,8 +575,8 @@ people:
     born: 1904-07-12
     died: 1976-01-24
     biography_sources:
-      name_he: &lavon_bio [{ url: "https://en.wikipedia.org/wiki/Pinhas_Lavon", checked: 2026-10-11 }]
-      born: *lavon_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2416)", checked: 2026-10-14 }]
+      born: &lavon_bio [{ url: "https://web.archive.org/web/20170930230514/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=468", checked: 2026-10-14 }]
       died: *lavon_bio
     living: false
     party: mapai
@@ -603,9 +609,9 @@ people:
     born: 1901-09-18
     died: 1974-12-18
     biography_sources:
-      name_he: &geri_bio [{ url: "https://en.wikipedia.org/wiki/Yaakov_Geri", checked: 2026-10-11 }]
-      born: *geri_bio
-      died: *geri_bio
+      name_he: [&geri_mk { url: "https://web.archive.org/web/20160303225240/http://www.knesset.gov.il/mk/heb/mk.asp?mk_individual_id_t=698", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/Yaakov_Geri", checked: 2026-10-11 }]
+      died: [*geri_mk]
     living: false
     # Not a Knesset member. en.wiki gives no party; he.wiki lists him under Mapai (research notes 1c). He sat for no
     # list, so no party is set.
@@ -621,8 +627,8 @@ people:
     born: 1895-10-25
     died: 1969-02-26
     biography_sources:
-      name_he: &eshkol_bio [{ url: "https://en.wikipedia.org/wiki/Levi_Eshkol", checked: 2026-10-11 }]
-      born: *eshkol_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2173)", checked: 2026-10-14 }]
+      born: &eshkol_bio [{ url: "https://web.archive.org/web/20171029075653/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=683", checked: 2026-10-14 }]
       died: *eshkol_bio
     living: false
     party: mapai
@@ -650,7 +656,7 @@ people:
     biography_sources:
       name_he: &dinur_bio [{ url: "https://en.wikipedia.org/wiki/Ben-Zion_Dinur", checked: 2026-10-11 }]
       born: *dinur_bio
-      died: *dinur_bio
+      died: [{ url: "https://web.archive.org/web/20160718170544/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=363", checked: 2026-10-14 }]
     living: false
     # Not a Knesset member in the Third Government (a former Mapai MK; he.wiki lists him under Mapai), so no party is set.
     party: ""
@@ -668,8 +674,8 @@ people:
     born: 1909-01-31
     died: 1999-10-15
     biography_sources:
-      name_he: &burg_bio [{ url: "https://en.wikipedia.org/wiki/Yosef_Burg", checked: 2026-10-11 }]
-      born: *burg_bio
+      name_he: [{ url: "https://en.wikipedia.org/wiki/Yosef_Burg", checked: 2026-10-11 }]
+      born: &burg_bio [{ url: "https://web.archive.org/web/20160817032354/http://www.knesset.gov.il/mk/heb/mk.asp?mk_individual_id_t=288", checked: 2026-10-14 }]
       died: *burg_bio
     living: false
     party: hapoel_hamizrachi
@@ -692,9 +698,9 @@ people:
     born: 1895-12-05
     died: 1952-08-14
     biography_sources:
-      name_he: &pinkas_bio [{ url: "https://en.wikipedia.org/wiki/David-Zvi_Pinkas", checked: 2026-10-11 }]
-      born: *pinkas_bio
-      died: *pinkas_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2546)", checked: 2026-10-14 }]
+      born: [{ url: "https://en.wikipedia.org/wiki/David-Zvi_Pinkas", checked: 2026-10-11 }]
+      died: [{ url: "https://web.archive.org/web/20170930193308/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=571", checked: 2026-10-14 }]
     living: false
     party: mizrachi
     competence: 6
@@ -709,8 +715,8 @@ people:
     born: 1888-03-19
     died: 1961-04-30
     biography_sources:
-      name_he: &naftali_bio [{ url: "https://en.wikipedia.org/wiki/Peretz_Naftali", checked: 2026-10-11 }]
-      born: *naftali_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2493)", checked: 2026-10-14 }]
+      born: &naftali_bio [{ url: "https://web.archive.org/web/20170930230828/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=529", checked: 2026-10-14 }]
       died: *naftali_bio
     living: false
     party: mapai
@@ -950,9 +956,9 @@ people:
     born: 1874-11-27
     died: 1952-11-09
     biography_sources:
-      name_he: &weizmann_bio [{ url: "https://en.wikipedia.org/wiki/Chaim_Weizmann", checked: 2026-10-11 }]
-      born: *weizmann_bio
-      died: *weizmann_bio
+      name_he: [&weizmann_pres { url: "https://web.archive.org/web/20160622202111/http://www.president.gov.il:80/Presidency_In_Israel/Presidents_Of_Israel/Pages/ChaimWeizmann.aspx", checked: 2026-10-14 }]
+      born: [*weizmann_pres]
+      died: [*weizmann_pres, { url: "https://fs.knesset.gov.il/2/Plenum/2_ptm_254868.doc", checked: 2026-10-14 }]
     living: false
     party: ""
     competence: 8
@@ -1013,8 +1019,8 @@ people:
     born: 1917-03-20
     died: 1984-06-28
     biography_sources:
-      name_he: &yadin_bio [{ url: "https://en.wikipedia.org/wiki/Yigal_Yadin", checked: 2026-10-11 }]
-      born: *yadin_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2369)", checked: 2026-10-14 }]
+      born: &yadin_bio [{ url: "https://web.archive.org/web/20160823140111/http://knesset.gov.il/mk/eng/mk_eng.asp?mk_individual_id_t=184", checked: 2026-10-14 }]
       died: *yadin_bio
     living: false
     competence: 8
@@ -1062,8 +1068,8 @@ people:
     born: 1897-02-19
     died: 1975-02-08
     biography_sources:
-      name_he: &efrati_bio [{ url: "https://en.wikipedia.org/wiki/Yosef_Efrati", checked: 2026-10-11 }]
-      born: *efrati_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2161)", checked: 2026-10-14 }]
+      born: &efrati_bio [{ url: "https://web.archive.org/web/20170930230117/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=268", checked: 2026-10-14 }]
       died: *efrati_bio
     living: false
     party: mapai
@@ -1093,8 +1099,8 @@ people:
     born: 1903-04-07
     died: 1989-07-06
     biography_sources:
-      name_he: &shari_bio [{ url: "https://en.wikipedia.org/wiki/Reuven_Shari", checked: 2026-10-11 }]
-      born: *shari_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2666)", checked: 2026-10-14 }]
+      born: &shari_bio [{ url: "https://web.archive.org/web/20170930230328/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=669", checked: 2026-10-14 }]
       died: *shari_bio
     living: false
     party: mapai
@@ -1118,8 +1124,8 @@ people:
     born: 1910-05-31
     died: 1991-08-20
     biography_sources:
-      name_he: &kahana_bio [{ url: "https://en.wikipedia.org/wiki/Kalman_Kahana", checked: 2026-10-11 }]
-      born: *kahana_bio
+      name_he: [{ url: "https://knesset.gov.il/Odata/ParliamentInfo.svc/KNS_Person(2404)", checked: 2026-10-14 }]
+      born: &kahana_bio [{ url: "https://web.archive.org/web/20170930225718/http://www.knesset.gov.il:80/mk/heb/mk.asp?mk_individual_id_t=456", checked: 2026-10-14 }]
       died: *kahana_bio
     living: false
     party: poalei_agudat_yisrael

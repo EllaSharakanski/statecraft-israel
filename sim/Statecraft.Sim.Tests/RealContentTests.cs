@@ -56,7 +56,7 @@ public class RealContentTests
             Assert.All(p.BiographySources[key], source =>
             {
                 Assert.True(Uri.TryCreate(source.Url, UriKind.Absolute, out var uri) && (uri.Scheme == "https" || uri.Scheme == "http"));
-                Assert.Equal(new DateTime(2026, 10, 11), source.Checked);
+                Assert.True(source.Checked >= new DateTime(2026, 10, 11), $"{key}: {source.Url} checked before the 11 October review");
             });
         }
     }
