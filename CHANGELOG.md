@@ -20,6 +20,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   is a labelled design assumption (D-D5); training turns, costs and Attention costs are placeholders in `MvpSlice.Overlay`,
   never under `content/`. `mvp-slice` moves (the reference player trains one halutz group); the legacy goldens and
   `scenario-mvp-absorb-first` do not.
+- The records that only make sense in a state now carry dates (refs #80): three policies, three effects and nine actors from
+  15 May 1948, the United Nations from 24 October 1945, the state offices from 14 May 1948. Yaakov Dori's chief-of-staff
+  term is split at 14 May 1948 into a new `haganah_chief_of_staff` office and `chief_of_staff`. A Founding start holds the
+  same records and the goldens are unchanged. `rationing` and `rationing_feeds` stay windowless (their office begins in 1949).
 - GDD v0.1 Phase 1, one city (refs #376), behind the `systems.loop` switch: Tel Aviv with housing, jobs, civilians and
   refugees as counts; `AssignWorkers` (Attention, refused in the legacy loop); and a `TurnResolver` that runs, in the
   approved order (D-A6), Money from jobs, housing, Social cohesion and arrivals from the CBS series as refugees, housed on
