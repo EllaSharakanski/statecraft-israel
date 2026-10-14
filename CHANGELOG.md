@@ -8,6 +8,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Added
+- GDD v0.1 Phase 1, one city (refs #376), behind the `systems.loop` switch: Tel Aviv with housing, jobs, civilians and
+  refugees as counts; `AssignWorkers` (Attention, refused in the legacy loop); and a `TurnResolver` that runs, in the
+  approved order (D-A6), Money from jobs, housing, Social cohesion and arrivals from the CBS series as refugees, housed on
+  the next turn (R-CITY-001 to R-CITY-005); `people_per_unit` must be the same in every era. Every balance value is a placeholder in `MvpSlice.Overlay`, never under
+  `content/`; Social cohesion feeds nothing else and is not shown while D-C1 is open. The reference player for the GDD
+  goldens (`Statecraft.Sim.Reference`, D-A7) is test policy that no game mode or UI reaches. New scenario golden
+  `scenario-mvp-absorb-first`. The real game is unchanged: `hash1950`, `hash1952`, `smoke5` and the two 1948 scenarios do
+  not move.
 - Decision videos, phase 2 (#434 follow-up). On 11 decision cards an Illustration switch over the photograph plays a
   short, silent AI-generated loop. It is labelled "AI-generated illustration" in place of the credit and carries a small
   burned-in bilingual label. The photograph always shows first; nothing plays until the player asks, and the choice holds
@@ -207,6 +215,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The map's near (bottom) tilt-shift band is lighter, as on promo 03: gently soft at the play zoom and almost none at the
   wide overview, where the foreground is now sharp as on promo 02. On the owner's ruling of 2026-10-14; the far band is
   unchanged (#390). Presentation only (#458).
+- The `mvp-slice` golden is re-pinned (`0451920a` to `f6931e24`): the slice now has its city and the GDD turn, and the
+  reference player fills the jobs (GDD Phase 1 PR 3, refs #376). The legacy goldens do not move.
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
