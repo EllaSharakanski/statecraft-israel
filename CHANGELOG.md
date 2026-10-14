@@ -7,6 +7,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+- Map: the Tripo model-dressing wiring and its EditMode tests (`BuildingPreview`, `PreviewProps`, `?previewscale`), split part A of #507: no models ship here, so the game is unchanged when they are absent (refs #507).
+
 ### Added
 - The map's frame (refs #36, promo 02): at the overview the board now ends in a walnut frame on a dark wooden table,
   with a bevel of cut earth where the relief stands above the frame and the frame's lip where the sea and low coast meet

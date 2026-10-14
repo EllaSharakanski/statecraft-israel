@@ -18,6 +18,12 @@ public class UnitShowcaseTests
         UnitModels.AviaS199("v"), UnitModels.S199Propeller("q"),
     };
 
+    // These tests check the code-built models, so the authored-model hook (Resources/Units/Authored/) is held at
+    // "none" here and given back afterwards: when the authored riflemen land, they must not leak into these tests.
+    System.Func<string, GameObject> authored;
+    [SetUp] public void CodeBuiltOnly() { authored = UnitShowcase.AuthoredModel; UnitShowcase.AuthoredModel = _ => null; }
+    [TearDown] public void RestoreAuthored() => UnitShowcase.AuthoredModel = authored;
+
     [Test]
     public void ShowcaseIsAskedForOnlyByUnits()
     {
