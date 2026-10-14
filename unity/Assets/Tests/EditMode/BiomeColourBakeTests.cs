@@ -39,7 +39,9 @@ public class BiomeColourBakeTests
     public void ABakeFromOtherInputsIsRefused()
     {
         var (meta, _, hexes, frame) = Inputs();
-        var bytes = AssetDatabase.LoadAssetAtPath<TextAsset>(BiomeColourFile.AssetPath).bytes;
+        var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(BiomeColourFile.AssetPath);
+        Assert.IsNotNull(asset, BiomeColourFile.AssetPath);
+        var bytes = asset.bytes;
         var px = new Color32[MapBuilder.BiomeTextureResolution * MapBuilder.BiomeTextureResolution];
         Assert.IsTrue(BiomeColourFile.TryRead(bytes, frame, hexes, px, out var why), why);
 
@@ -50,6 +52,9 @@ public class BiomeColourBakeTests
         var wider = new GeoFrame(meta.lon0, meta.lon1, meta.lat0, meta.lat1, frame.WidthM + 1f, frame.LengthM);
         Assert.IsFalse(BiomeColourFile.TryRead(bytes, wider, hexes, px, out why), "another frame");
         Assert.IsFalse(BiomeColourFile.TryRead(new byte[12], frame, hexes, px, out why), "short");
+        var cut = new byte[bytes.Length - 3]; System.Array.Copy(bytes, cut, cut.Length);   // a whole header, a texel short
+        Assert.IsFalse(BiomeColourFile.TryRead(cut, frame, hexes, px, out why), "truncated");
+        StringAssert.Contains("truncated", why);
         var flipped = (byte[])bytes.Clone(); flipped[0] ^= 1;
         Assert.IsFalse(BiomeColourFile.TryRead(flipped, frame, hexes, px, out why), "not a bake");
     }

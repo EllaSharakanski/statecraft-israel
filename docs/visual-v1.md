@@ -2552,12 +2552,15 @@ buildings 255, trees 220) and the biome texture (about 440 ms). `first_frame_ms`
 10821 / 10929.
 
 **The change.** `MapBuilder.BiomePixels` (the BiomeBlender weights of every texel over `MapPalette.Ground`) is baked by
-Editor `BiomeColourBake` into `unity/Assets/Resources/Map/BiomeColours.bytes` (3 MB: "SCB1", version, resolution, a
+Editor `BiomeColourBake` into `unity/Assets/Resources/Map/BiomeColours.bytes` (3 MB raw, 71 KB under Brotli -q 11, and
+155 KB more `.data` in a `-compression disabled` build, whose `.data` is LZ4: "SCB1", version, resolution, a
 check of the frame, hex size, blend radius, palette and every hex's centre and biome, then RGB). `MapScene` reads it
 through `BiomeColourFile.Load`; a bake for other inputs is refused with a warning and the colours are blended at load as
 before. The ground tint, the texture and its mipmaps are made as before, from the same texels:
 `BiomeColourBakeTests.TheMapGetsTheSameGroundFromTheBake` compares every texel handed to the tint with and without the
-bake. `tools/tests/test_biome_colour_bake.py` recomputes the header's check in CI. Re-bake with
+bake. `tools/tests/test_biome_colour_bake.py` recomputes the header's check in CI, re-blends the texels with a numpy
+port (within 1 per channel: 7 of 3,145,728 channels differ by 1, at x.5 roundings) and pins a fingerprint of the C# that
+makes them, so an edit to the blend fails CI until it is re-baked (review of #529). Re-bake with
 `-executeMethod Statecraft.Game.EditorTools.BiomeColourBake.Bake` after changing `hexes.json`, the heightmap's bounds,
 the palette or the blend.
 

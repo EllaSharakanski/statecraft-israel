@@ -210,9 +210,9 @@ rules:
     note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of textures derived from DEM, CHELSA, IMS and coordinate inputs."
   - glob: "unity/Assets/Resources/Map/BiomeColours.bytes"
     licence: CC-BY-SA-4.0
-    source: "The biome ground colours (issue #321), baked by Editor BiomeColourBake from content/map/hexes.json (this project's own content) and the heightmap's bounds (unity/Assets/StreamingAssets/map/heightmap.json) in the MapPalette.Ground colours; no new facts; attribution in NOTICE"
+    source: "The biome ground colours (issue #321, #529), baked by Editor BiomeColourBake from the biomes and centres of content/map/hexes.json, the heightmap's bounds (unity/Assets/StreamingAssets/map/heightmap.json) and this project's MapPalette.Ground colours. The biomes are derived by tools/hexgrid.py from the Copernicus DEM GLO-30-derived heightmap (Copernicus-DEM), CHELSA V2.1 bio12 rainfall (CC0-1.0) and the IMS station normals of content/map/precip_stations.json (data.gov.il dataset 481, decision D6); no new facts; attribution in NOTICE"
     status: owner-verify
-    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM and coordinate inputs."
+    note: "Decision D13 (docs/oss/DECISIONS.md): the owner rules the licence of data derived from DEM, CHELSA, IMS and coordinate inputs; CC-BY-SA-4.0 is recorded until then."
   - glob: "unity/Assets/Textures/*"
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
