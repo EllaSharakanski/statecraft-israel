@@ -335,7 +335,9 @@ namespace Statecraft.Game.Map
 
         /// <summary>BuildWaterMesh's geometry as heightmap samples: each vertex is sample (x, y) packed as x | y << 16, and
         /// the triangles index them (three a triangle, facing up). Baked into terrain_water.bytes (WaterMeshBytes) so a
-        /// player only places the vertices (issue #195: boot time).</summary>
+        /// player only places the vertices (issue #195: boot time). The bake has no version: a change to this method (or to
+        /// TerrainSize, WaterMeshBytes) needs a re-bake (TerrainWaterBake.Bake) and a re-pin of PINNED_CODE in
+        /// tools/tests/test_terrain_water_bake.py, which fails until then (issue #535).</summary>
         public static (int[] grid, int[] indices) WaterMeshGrid(int res, Vector3 size, float[,] heights, float elevMinM)
         {
             int cells = res - 1;

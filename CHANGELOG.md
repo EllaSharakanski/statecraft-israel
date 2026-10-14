@@ -241,6 +241,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- CI checks the water and route-ribbon bakes against the code that makes them (#535), as it does the biome colours'
+  (#529): a pinned fingerprint of `MapBuilder.WaterMeshGrid` and of `RouteLayer.Plan` and `Derive`, and a numpy port of
+  the water mesh. Doc comments in `MapBuilder`, `RouteLayer` and `RouteRibbonFile` point to the checks. No change in the
+  game.
 - The map's biome colours are read from a bake at boot instead of being blended (refs #321), as the routes' ribbons
   and the water's mesh are. The map looks the same: the bake holds the same texels, and a stale or missing bake is
   refused with a warning and the colours are blended at load as before. The map build takes about 310 ms less at
