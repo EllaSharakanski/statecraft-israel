@@ -182,6 +182,9 @@ public class GameInputsTests
     /// heavy load (several Unity batch runs, load average 46-97) fetches that pass when run alone failed a fixed 60 s limit
     /// on the whole fetch (issue #503), while a hang shows as no request finishing, retrying or starting for a long time.</summary>
     const float StallSeconds = 60f;
+    /// <summary>A generous cap on the whole wait, ten times the stall limit: a fetch that keeps changing its open requests
+    /// but never finishes (a retry loop) still fails instead of hanging the EditMode run.</summary>
+    const float CapSeconds = 600f;
 
     /// <summary>Waits for a fetch for as long as it makes progress: it fails only when GameInputs.OpenRequests (requests
     /// started and not yet released) has not changed for StallSeconds. The manifest's request is released and every file's
@@ -191,17 +194,21 @@ public class GameInputsTests
     /// retry's 0.5 s backoff measured 57 s over 2 frames. Each tick queues a player-loop update, as a player runs one
     /// every frame.</summary>
     static IEnumerator Await(Awaitable<GameInputs>.Awaiter fetch) =>
-        WaitWhileProgressing(() => fetch.IsCompleted, () => GameInputs.OpenRequests, StallSeconds, () => Time.realtimeSinceStartup, "fetch");
+        WaitWhileProgressing(() => fetch.IsCompleted, () => GameInputs.OpenRequests, StallSeconds, CapSeconds, () => Time.realtimeSinceStartup, "fetch");
 
     /// <summary>Yields until <paramref name="done"/>; throws a TimeoutException once <paramref name="progress"/> has not
-    /// changed for <paramref name="stallSeconds"/> by <paramref name="clock"/>. No limit on the total time.</summary>
-    static IEnumerator WaitWhileProgressing(Func<bool> done, Func<int> progress, float stallSeconds, Func<float> clock, string what)
+    /// changed for <paramref name="stallSeconds"/> by <paramref name="clock"/>, or once <paramref name="capSeconds"/> have
+    /// passed in all however it moves.</summary>
+    static IEnumerator WaitWhileProgressing(Func<bool> done, Func<int> progress, float stallSeconds, float capSeconds, Func<float> clock, string what)
     {
         var last = progress();
-        var since = clock();
+        var start = clock();
+        var since = start;
         while (!done())
         {
             var now = progress();
+            if (clock() - start >= capSeconds)
+                throw new TimeoutException($"{what} did not finish within {capSeconds} seconds although it kept making progress");
             if (now != last) { last = now; since = clock(); }
             else if (clock() - since >= stallSeconds)
                 throw new TimeoutException($"{what} made no progress for {stallSeconds} seconds (progress stayed at {last})");
@@ -221,19 +228,25 @@ public class GameInputsTests
         Func<float> clock = () => t;
 
         // A hang: nothing ever changes. It fails once the 5 s pass, not before.
-        var hang = Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => 7, 5f, clock, "hung op")));
+        var hang = Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => 7, 5f, 1000f, clock, "hung op")));
         StringAssert.StartsWith("hung op made no progress for 5 seconds", hang.Message);
         Assert.That(t, Is.InRange(5f, 6f));
 
         // Slow but working: a step every 4 s, done after 120 s in all (twice the old fixed 60 s limit). It passes.
         t = 0f;
-        Assert.DoesNotThrow(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return t > 120f; }, () => (int)(t / 4f), 5f, clock, "slow op")));
+        Assert.DoesNotThrow(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return t > 120f; }, () => (int)(t / 4f), 5f, 1000f, clock, "slow op")));
         Assert.That(t, Is.GreaterThan(120f));
 
         // Progress that stops part way still fails, the stall measured from the last step (at 40 s).
         t = 0f;
-        Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => (int)(Math.Min(t, 40f) / 4f), 5f, clock, "stalled op")));
+        Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => (int)(Math.Min(t, 40f) / 4f), 5f, 1000f, clock, "stalled op")));
         Assert.That(t, Is.InRange(45f, 46f));
+
+        // Steady progress that never finishes (a retry loop) still fails, at the overall cap (here 200 s).
+        t = 0f;
+        var loop = Assert.Throws<TimeoutException>(() => RunToEnd(WaitWhileProgressing(() => { t += 1f; return false; }, () => (int)(t / 4f), 5f, 200f, clock, "looping op")));
+        StringAssert.StartsWith("looping op did not finish within 200 seconds", loop.Message);
+        Assert.That(t, Is.InRange(200f, 201f));
     }
 
     /// <summary>Fetches the staged site through a FlakySite with these faults and checks the result is the disk's
