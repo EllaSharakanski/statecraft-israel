@@ -14,7 +14,7 @@
     --up: rgb(126, 196, 120);
     --down: rgb(222, 120, 104);
     --focus: rgb(120, 98, 58);       /* keyboard focus fill: >= 3:1 against --navy-deep (WCAG 2.4.13) */
-    --focus-ink: rgb(253, 246, 228); /* text on the focus fill: 5.4:1 on it (ink is 4.6, gold-light 3.7; #41 M3) */
+    --focus-ink: rgb(255, 252, 244); /* text on the focus fill: 5.7:1 on it (ink is 4.6, gold-light 3.7; #41 M3) */
 }
 
 .root {
