@@ -40,7 +40,13 @@ sources:
   # winter's drought, estimated to have cost 20 to 30 million dollars; and the New York Times, that the government had
   # cut import licences and refused to extend expired but unused credits.
   - { url: "https://www.jta.org/archive/u-s-credits-will-check-foreign-currency-crisis-in-israel", checked: 2026-10-14 }
+  # FRUS 1951 v.V doc 515, Kopper to McGhee, 22 October 1951: Israel's reserves nil and about 15 million dollars needed
+  # to clear arrears; Israeli officials did not think the government's credit yet seriously impaired, though the banks'
+  # attitude showed widespread concern; Manufacturers Trust and National City had formed a consortium and were viewing
+  # favourably a loan of upwards of 10 million dollars to Israel.
+  - { url: "https://history.state.gov/historicaldocuments/frus1951v05/d515", checked: 2026-10-14 }
   # Kept for one line of the comment above: that foreign banks and oil companies refused to expand credit at the end of
-  # 1951. The FRUS and JTA sources here do not say so.
+  # 1951. The FRUS and JTA sources here do not say so, and the article's footnote, Seidman (Southern California
+  # Interdisciplinary Law Journal 18, 2008), was read and does not say so either.
   - { url: "https://en.wikipedia.org/wiki/Austerity_in_Israel", checked: 2026-10-10 }
 status: fact-checked
