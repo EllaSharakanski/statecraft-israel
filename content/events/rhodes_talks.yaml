@@ -26,10 +26,18 @@ options:
     effects:
       - { target: intl_standing, delta: -0.05 }
 sources:
+  # Kept for one side of the RAF clash [C] in the comment above: it gives 6 January, against the British statement's
+  # 7 January (Hansard, below). The other lines rest on the UN and FRUS sources.
   - { url: "https://en.wikipedia.org/wiki/Operation_Horev", checked: 2026-10-10 }
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d362", checked: 2026-10-14 }
   - { url: "https://history.state.gov/historicaldocuments/frus1949v06/d389", checked: 2026-10-14 }
   - { url: "https://www.un.org/unispal/document/auto-insert-210639/", checked: 2026-10-14 }
+  # S/1187, the Acting Mediator's report of 6 January 1949 on the cease-fire agreement in the Negev: Egypt and the
+  # Provisional Government of Israel notified his representatives in Cairo and Tel Aviv of their unconditional
+  # acceptance of a cease-fire to be followed immediately by direct negotiations under UN chairmanship; Israel's
+  # acceptance reached him on 6 January; communication delays had the cease-fire fixed at 1200 hours on 7 January 1949
+  # (the scan blots part of that line).
+  - { url: "https://documents.un.org/api/symbol/access?s=S/1187&l=en&t=pdf", checked: 2026-10-14 }
   # Hansard, 11 May 1949: the British statement of 8 January 1949 dates the RAF clash to the morning of 7 January.
   - { url: "https://api.parliament.uk/historic-hansard/commons/1949/may/11/israel-attacked-british-aircraft", checked: 2026-10-14 }
 status: fact-checked

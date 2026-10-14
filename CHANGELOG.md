@@ -437,6 +437,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   has the sale starting across the United States before the 10 May rally. "Foreign Currency Runs Out" adds FRUS and the
   JTA and keeps Wikipedia for the banks' and oil companies' refusal of credit. Text, dates, options and effects are
   unchanged (refs #442).
+- "The Mediator Assassinated" drops two Wikipedia articles ("Folke Bernadotte" and "Prevention of Terror Ordinance")
+  for Bunche's cable of 17 September 1948 (S/1004, the murder in Katamon) and Israel's report to the Security Council
+  (S/1315: the regulations of 20 September, the ordinance of 23 September, the leaders' arrest on 29 September); its
+  comment records that S/1315 has 82 arrests outside Jerusalem against Ben-Gurion's 62 in the Tel Aviv district.
+  "Talks at Rhodes" adds the Acting Mediator's report of 6 January 1949 (S/1187), "Operation Yoav" the IDF History
+  Department's study of the Hebron hills, "Education in the Immigrant Camps" Levitan's study of the Frumkin
+  commission, "Foreign Currency Runs Out" FRUS 1951, "The Jews of Iraq" the JTA on the freeze of March 1951, and
+  "Austerity" a comment on the Knesset sitting of 26 April 1949; each keeps Wikipedia for the lines these do not cover.
+  Text, dates, options and effects are unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
