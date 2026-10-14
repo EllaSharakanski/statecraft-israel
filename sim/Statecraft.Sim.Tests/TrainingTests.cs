@@ -180,6 +180,29 @@ public class TrainingTests
         Assert.Empty(s.Units);   // a recruit is a count until Phase 5
     }
 
+    /// <summary>The timing rule (D-A6, plan Task 4.3): the turn a cohort is ordered in is its first training turn, so a cohort
+    /// ordered on turn T with training_turns 3 is done at the end of turn T+2. The other reading (done at the end of T+3) is a
+    /// one-line change: the TurnsLeft a cohort opens with in Training.Start.</summary>
+    // R-TRAIN-001, R-TRAIN-003
+    [Fact]
+    public void ACohortOrderedOnTurnTWithThreeTurnsFinishesAtTheEndOfTurnTPlusTwo()
+    {
+        Assert.Equal(3, Mvp.UnitTypes.Single(t => t.Id == "recruit").TrainingTurns);
+        var start = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        var t0 = Step(Mvp, start, new Train("tel_aviv", "recruit", 2)).State;   // the end of turn T
+        var t1 = Step(Mvp, t0).State;                                            // the end of turn T+1
+        var t2 = Step(Mvp, t1).State;                                            // the end of turn T+2
+        Assert.Single(t1.Cohorts);
+        Assert.Equal(0, t1.Cities["tel_aviv"].Recruits);
+        Assert.Empty(t2.Cohorts);
+        Assert.Equal(2, t2.Cities["tel_aviv"].Recruits);
+
+        var u0 = Step(Mvp, start, new Train("tel_aviv", "halutz", 2)).State;     // halutz: 4 turns, done at the end of T+3
+        var u2 = Step(Mvp, Step(Mvp, u0).State).State;
+        Assert.Empty(u2.Units);
+        Assert.Equal(2, Step(Mvp, u2).State.Units.Count);
+    }
+
     // R-TRAIN-003
     [Fact]
     public void AHalutzCohortBecomesUnitsWithConsecutiveIdsAtTheCitysHex()
