@@ -381,6 +381,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Cabinet's "Ordered:" line wraps, and on short windows the Prime Minister's portrait gives way, framed again for its new
   height, so the candidate list keeps two rows; at 32:9 the list's floor follows the room left (M7). Presentation only:
   no golden moves.
+- Keyboard focus that lands on something scrolled out of view, such as a Cabinet card below the first row or a
+  candidate far down the list, now scrolls its list to it (accessibility audit H1, refs #41). Focus that follows a mouse
+  press leaves the list where it is. Presentation only: no golden moves.
 - "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
   No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
 - Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of
