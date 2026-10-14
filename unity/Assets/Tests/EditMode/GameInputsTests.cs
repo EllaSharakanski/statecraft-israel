@@ -191,9 +191,9 @@ public class GameInputsTests
     const int FetchTestTimeoutMs = (int)(CapSeconds * 1000) + 60_000;
 
     /// <summary>Waits for a fetch for as long as it makes progress: it fails when GameInputs.OpenRequests (requests
-    /// started and not yet released) has not changed for StallSeconds, or once CapSeconds have passed in all. The manifest's request is released and every file's
-    /// started, then each file's request is released as the fetch takes it (a retry releases one and starts another), so
-    /// the count keeps moving while the fetch works.
+    /// started and not yet released) has not changed for StallSeconds, or once CapSeconds have passed in all. The
+    /// manifest's request is released and every file's started, then each file's request is released as the fetch takes
+    /// it (a retry releases one and starts another), so the count keeps moving while the fetch works.
     /// A batch-mode editor runs the player loop (which resumes Awaitable.NextFrameAsync) only now and then while idle: a
     /// retry's 0.5 s backoff measured 57 s over 2 frames. Each tick queues a player-loop update, as a player runs one
     /// every frame.</summary>
