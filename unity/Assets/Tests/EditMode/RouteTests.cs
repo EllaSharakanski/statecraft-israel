@@ -78,7 +78,7 @@ public class RouteTests
     {
         EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
+        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("MapFrame"));
         map.Build();
         return map;
     }
@@ -387,7 +387,7 @@ public class RouteTests
 
         EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
+        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("MapFrame"));
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap);
         inputs.RoutesYaml = "";
         UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("route_paths_1948.yaml: missing"));
@@ -420,7 +420,7 @@ public class RouteTests
 
         EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
         var map = new GameObject("MapScene").AddComponent<MapScene>();
-        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("BorderLand"));
+        map.Configure(Load("Terrain"), Load("SettlementMarker"), Load("HexSelection"), Load("Sea"), Load("MapFrame"));
         var inputs = Statecraft.Game.Boot.GameInputs.MapFromDisk(Paths.Content, Paths.StreamingMap);
         Assert.IsTrue(inputs.RoutesYaml.Contains("from: '1948-06-14'"));
         inputs.RoutesYaml = inputs.RoutesYaml.Replace("from: '1948-06-14'", "from: '0000'");

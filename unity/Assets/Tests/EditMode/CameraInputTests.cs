@@ -196,7 +196,7 @@ public class CameraInputTests
     }
 
     /// <summary>Issue #174: panning past a corner at gameplay zoom stops where the view's edges meet the map's, at every
-    /// yaw and with the top bar's inset, so the border skirt never shows. (The look-at clamp alone left 3/4 of the view on it.)</summary>
+    /// yaw and with the top bar's inset, so nothing past the map's edge (since #36 the frame) shows. (The look-at clamp alone left 3/4 of the view on it.)</summary>
     [Test]
     public void PanningPastACornerKeepsTheViewOnTheMap()
     {
