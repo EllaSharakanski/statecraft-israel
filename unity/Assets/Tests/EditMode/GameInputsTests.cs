@@ -64,7 +64,7 @@ public class GameInputsTests
         return site;
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator FetchingOverUrlsLoadsTheSameContentAsTheDisk()
     {
         var site = StagedSite();
@@ -82,7 +82,7 @@ public class GameInputsTests
         Directory.Delete(site, true);
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator AMissingFileNamesTheFile()
     {
         var site = StagedSite();
@@ -94,7 +94,7 @@ public class GameInputsTests
         Directory.Delete(site, true);
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator AFailedFetchLeavesNoRequestOpen()
     {
         var site = StagedSite();
@@ -185,11 +185,15 @@ public class GameInputsTests
     /// <summary>A generous cap on the whole wait, ten times the stall limit: a fetch that keeps changing its open requests
     /// but never finishes (a retry loop) still fails instead of hanging the EditMode run.</summary>
     const float CapSeconds = 600f;
+    /// <summary>The Unity Test Framework's own limit for each test that waits on a fetch, in milliseconds: the cap plus a
+    /// minute. Without it UTF stops a [UnityTest] after its default 180 s, before a slow fetch that is still making
+    /// progress reaches the cap, and with a bare timeout message instead of the wait's own.</summary>
+    const int FetchTestTimeoutMs = (int)(CapSeconds * 1000) + 60_000;
 
-    /// <summary>Waits for a fetch for as long as it makes progress: it fails only when GameInputs.OpenRequests (requests
-    /// started and not yet released) has not changed for StallSeconds. The manifest's request is released and every file's
-    /// started, then each file's request is released as the fetch takes it (a retry releases one and starts another), so
-    /// the count keeps moving while the fetch works.
+    /// <summary>Waits for a fetch for as long as it makes progress: it fails when GameInputs.OpenRequests (requests
+    /// started and not yet released) has not changed for StallSeconds, or once CapSeconds have passed in all. The
+    /// manifest's request is released and every file's started, then each file's request is released as the fetch takes
+    /// it (a retry releases one and starts another), so the count keeps moving while the fetch works.
     /// A batch-mode editor runs the player loop (which resumes Awaitable.NextFrameAsync) only now and then while idle: a
     /// retry's 0.5 s backoff measured 57 s over 2 frames. Each tick queues a player-loop update, as a player runs one
     /// every frame.</summary>
@@ -272,12 +276,12 @@ public class GameInputsTests
         finally { Directory.Delete(site, true); }
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator DroppedConnectionsAreRetried() =>
         FetchesTheDiskContentDespite(new Dictionary<string, (string, int)> { ["content/events/israel_bonds.yaml"] = ("drop", 2) },
             server => Assert.AreEqual(3, server.Hits("content/events/israel_bonds.yaml")));
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator AServerErrorIsRetried() =>
         FetchesTheDiskContentDespite(new Dictionary<string, (string, int)> { ["content/people.yaml"] = ("503", 1), ["map/heightmap.r16z"] = ("500", 2) },
             server =>
@@ -286,7 +290,7 @@ public class GameInputsTests
                 Assert.AreEqual(3, server.Hits("map/heightmap.r16z"));
             });
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator AConnectionThatKeepsDroppingFailsNamingTheFileWithNothingLeftOpen()
     {
         var site = StagedSite();
@@ -320,7 +324,7 @@ public class GameInputsTests
         CollectionAssert.AreEqual(new[] { 0.5f, 1f, 2f }, new[] { GameInputs.Backoff(1), GameInputs.Backoff(2), GameInputs.Backoff(3) });
     }
 
-    [UnityTest]
+    [UnityTest, Timeout(FetchTestTimeoutMs)]
     public IEnumerator ANotFoundFileIsNotRetried()
     {
         var site = StagedSite();
