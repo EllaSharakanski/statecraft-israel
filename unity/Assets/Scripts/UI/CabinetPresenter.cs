@@ -27,7 +27,8 @@ namespace Statecraft.Game.UI
         public static readonly Color CoalitionColour = new Color32(92, 138, 200, 255), OppositionColour = new Color32(186, 180, 168, 255);
 
         readonly VisualElement screen; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
-        readonly Button pmCard; readonly System.Action onPm;
+        readonly Button pmCard; readonly System.Action onPm; readonly EventCallback<GeometryChangedEvent> onPmGeometry;
+        string? pmId;
         readonly ScrollView list, candidates; readonly VisualElement pmOffices, chips; readonly Hemicycle hemicycle;
         readonly Dictionary<string, Button> cards = new Dictionary<string, Button>();
         List<string> cardOrder = new List<string>(), pmOrder = new List<string>();
@@ -44,6 +45,8 @@ namespace Statecraft.Game.UI
             hemicycle = screen.Q<Hemicycle>("cabinet-hemicycle");
             onPm = () => Select(PrimeMinister);
             pmCard.clicked += onPm;
+            onPmGeometry = _ => FramePm();
+            pmCard.RegisterCallback(onPmGeometry);
             screen.Q<Label>("cabinet-house-unit").text = text["cabinet.members_unit"];
             bridge.Changed += OnChanged;
             ScreenNav.OnOpened(screen, () => { if (dirty) Render(); });
@@ -55,6 +58,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= OnChanged;
             pmCard.clicked -= onPm;
+            pmCard.UnregisterCallback(onPmGeometry);
             if (screen.userData is System.Action) screen.userData = null;
             list.Clear(); candidates.Clear(); pmOffices.Clear(); chips.Clear(); PersonCard.Clear(pmCard);
             cards.Clear(); rows.Clear(); cardOrder.Clear(); pmOrder.Clear(); pickFor = null; chipsFor = "";
@@ -120,6 +124,8 @@ namespace Statecraft.Game.UI
                 var offices = pm == null ? pmSeat.Office.Title
                     : string.Join(text["card.offices_separator"], lineup.Where(x => x.Office.Id == PrimeMinister || HeldByPm(x)).Select(x => x.Office.Title));
                 PersonCard.Fill(pmCard, "seat-" + PrimeMinister, c, s, pm, offices, pmSeat.Appointed, text, portraits, PmPortrait, partyLabel: true);
+                pmId = pm?.Id;
+                FramePm();
             }
             var pmHeld = lineup.Where(HeldByPm).ToList();
             if (!pmHeld.Select(x => x.Office.Id).SequenceEqual(pmOrder))
@@ -164,6 +170,17 @@ namespace Statecraft.Game.UI
             var queued = bridge.Queued.OfType<Appoint>().Select(a =>
                 text.Format("cabinet.queued", c.People.First(p => p.Id == a.Person).Name, c.Offices.First(o => o.Id == a.Office).Title));
             screen.Q<Label>("cabinet-status").text = string.Join("\n", queued);
+        }
+
+        /// <summary>The Prime Minister's portrait gives way on a short window (Statecraft.uss, #41 M7), so its framing follows
+        /// the box it has now and the face stays in view.</summary>
+        void FramePm()
+        {
+            var portrait = pmCard.Q("seat-" + PrimeMinister + "-portrait");
+            var entry = portraits?.Find(pmId);
+            if (portrait == null || entry == null) return;
+            var size = portrait.layout.size;
+            PersonCard.Frame(portrait, entry.Value, float.IsNaN(size.x) || size.x <= 0 || size.y <= 0 ? PmPortrait : size);
         }
 
         /// <summary>One card per holder: an office with several holders today (#277: Minister without Portfolio) gets a card for

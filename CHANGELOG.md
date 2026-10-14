@@ -378,7 +378,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   screen no longer leave nothing focused: the focus goes to End Turn, End Turn, and the screen's top-bar button (M1).
   Text on the keyboard focus fill is a warm near-white, 5.7:1 where the gold was 3.7:1 (M3), and the lit escalation
   rung's turn line is ink, 6.4:1 where it was 3.3:1 (M4). The Cabinet's "Ordered:" line wraps, and on short windows the
-  Prime Minister's portrait gives way so the candidate list keeps two rows (M7). Presentation only: no golden moves.
+  Prime Minister's portrait gives way, framed again for its new height, so the candidate list keeps two rows (M7).
+  Presentation only: no golden moves.
 - "The Mediator Assassinated" cites the Official Gazette text of the Prevention of Terrorism Ordinance for its number,
   No. 33 of 1948, which no source on the card gave. Comment and source row only (refs #442).
 - Five recorded contradictions settled from primary sources. "The Second Truce": the Acting Mediator's report of

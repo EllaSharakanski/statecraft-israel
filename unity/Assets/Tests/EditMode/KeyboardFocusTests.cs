@@ -245,7 +245,9 @@ public class KeyboardFocusTests
             for (int i = 0; i < 20 && !(p.Root.Q("top-bar").worldBound.width > 0); i++) yield return null;
             var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
             p.Owned.Add(new HudPresenter(p.Root, bridge, Text));
-            var cabinet = new CabinetPresenter(p.Root, bridge, Text, null); p.Owned.Add(cabinet);
+            var portraits = AssetDatabase.LoadAssetAtPath<PortraitCatalog>("Assets/UI/Portraits/PortraitCatalog.asset");
+            Assert.IsNotNull(portraits, "the portrait catalogue");
+            var cabinet = new CabinetPresenter(p.Root, bridge, Text, portraits); p.Owned.Add(cabinet);
             var nav = new ScreenNav(p.Root); p.Owned.Add(nav);
             nav.Open("cabinet");
             cabinet.Select("finance_minister");
@@ -278,6 +280,15 @@ public class KeyboardFocusTests
             var two = rows[1].worldBound.yMax - rows[0].worldBound.yMin;
             Assert.GreaterOrEqual(view.height + 0.5f, two, $"{where}: the candidate list is {view.height:0} px tall and two rows need {two:0}");
             Assert.LessOrEqual(view.yMax, r.yMin + 0.5f, $"{where}: the list runs into the orders line");
+
+            // A portrait that gave way is framed for the box it has, so the face stays in view.
+            var pm = Cabinet.Holder(C, bridge.State, CabinetPresenter.PrimeMinister)!;
+            var entry = portraits.Find(pm.Id);
+            Assert.IsNotNull(entry, "precondition: the Prime Minister has a portrait");
+            var portrait = p.Q<VisualElement>("seat-" + CabinetPresenter.PrimeMinister + "-portrait");
+            var box = portrait.layout.size;
+            var expected = PortraitFraming.PositionYPercent(entry!.Value.image.width, entry.Value.image.height, box.x, box.y, entry.Value.focusY);
+            Assert.AreEqual(expected, portrait.style.backgroundPositionY.value.offset.value, 0.5f, $"{where}: the portrait is framed for its {box} box");
         }
     }
 }
