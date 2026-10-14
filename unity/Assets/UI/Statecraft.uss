@@ -563,3 +563,14 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .start-caption-en { font-size: 19px; color: var(--ink); white-space: normal; -unity-text-align: middle-center; margin: 4px 0 0 0; }
 /* New Game's prompt (the toast) shows at the top of the start screen, clear of the panel. */
 .start-open .toast { top: 24px; left: 25%; right: 25%; width: auto; }
+
+/* --- The Hebrew UI (#193; UiLanguage, "?lang=he") -------------------------------------------------------------------
+   GameRoot puts .lang-he on the root. Every text is then set in Frank Ruhl Libre (EB Garamond has no Hebrew; one weight,
+   so headings lose the semi-bold) through the advanced text generator, which orders right-to-left text and the numbers
+   in it. Each rule above that names EB Garamond is listed here; HebrewUiTests fails for one that is missed. */
+.lang-he, .lang-he .title, .lang-he .button, .lang-he Button, .lang-he .year, .lang-he .end-turn, .lang-he .draft,
+.lang-he .why-group, .lang-he .section-title, .lang-he .card-initials, .lang-he .card-name, .lang-he .house-size,
+.lang-he .big-figure, .lang-he .map-label, .lang-he .map-label-tooltip, .lang-he .start-title, .lang-he .start-button {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/FrankRuhlLibre/FrankRuhlLibre-Medium.ttf");
+    -unity-text-generator: advanced;
+}
