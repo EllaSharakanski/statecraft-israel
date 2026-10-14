@@ -646,7 +646,7 @@ Each phase is shippable on its own and needs nothing from a later one.
 Each is a question with its options and what each costs. Recommended defaults are marked; the owner decides.
 
 **O1. Which platforms at the first public release?**
-- **Decided (owner, 2026-10-14), with O7:** "ok lets do it - windows, mac and linux". Windows, macOS and Linux.
+- **Decided (owner, 2026-10-14), with O7:** "ok lets do it - windows, mac and linux". Windows, macOS and Linux, built on the Mac (O7).
 - (a) Windows only. Cost: no Apple account; the Mac audience waits.
 - (b) Windows and macOS. Cost: the Apple Developer Program (99 USD a year) and notarization work; required for Mac on Steam.
 - (c) Also native Linux. Cost: another build and test target; Deck already runs Windows builds through Proton.
@@ -691,7 +691,7 @@ Each is a question with its options and what each costs. Recommended defaults ar
 - Recommended: (a), or at least freeze the desktop names now.
 
 **O7. CI or local builds?**
-- **Decided (owner, 2026-10-14):** cloud builds on GitHub Actions for Windows, macOS and Linux, against the recommendation above. Whether a Personal licence may be activated on CI machines (6.2) is checked before the workflow runs.
+- **Decided (owner, 2026-10-14):** (a), local builds on the Mac. The owner first chose cloud builds; Unity's pages then ruled that out for a Personal licence (see O7 in `docs/oss/DECISIONS.md` for the quotes, including Editor Software Terms §2.5), and the owner chose "Build on this Mac". GitHub runners run only the licence-free player golden check (6.3).
 - (a) Local on the owner's Mac (recommended). Cost: the owner's machine time; the release depends on that Mac.
 - (b) GitHub Actions with GameCI and a Personal `.ulf`. Cost: no money; a route Unity does not document for Personal;
   the owner's Unity password in GitHub secrets; no runs on fork PRs.
@@ -701,7 +701,7 @@ Each is a question with its options and what each costs. Recommended defaults ar
 - Add-on, any option: the licence-free player golden job (6.3). Cost: none.
 
 **O8. Windows backend?**
-- **Decided (owner, 2026-10-14):** "use the best windows build type". (b) IL2CPP, built on a GitHub Windows runner rather than a Windows PC.
+- **Decided (owner, 2026-10-14):** first "use the best windows build type" (b), then, with O7's local builds, (a) Mono built on the Mac. IL2CPP would need a Windows PC.
 - (a) Mono, built on the Mac. Cost: the Windows Build Support (Mono) module; a Windows machine only to run the check.
 - (b) IL2CPP, built on a Windows PC. Cost: a Windows machine with Visual Studio C++ tools; a second build host.
 

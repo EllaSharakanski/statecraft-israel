@@ -229,9 +229,8 @@ Facts this draft could not settle. Each is flagged above instead of being assert
 5. **Demo2's voices and score.** This draft did not read the production files under `promo/`. "AI video, voice and
    music tools" comes from the report, which says demo2 uses ElevenLabs premade voices and ElevenLabs Music. Confirm
    against the final cut.
-6. **The demo 1 score's source.** `docs/ai-disclosure.md` and LICENSING.md still say the owner is to confirm the
-   source of the cinematic trailer's music. D-M settles the licence, not that note. It matters only for the website
-   and README, since demo 1 stays off Steam.
+6. **The demo 1 score's source.** Settled (owner, 2026-10-14): the cinematic trailer's music is AI-generated, made
+   with ElevenLabs Music, and D-M covers its licence (#521 records it). Demo 1 stays off Steam.
 7. **What image 01 shows.** Its generation logs under `promo/` are named `keyart_2026`, which suggests the key art
    shows the country in 2026. The report clears 01 for the capsules but rules out 02, 06 and 07 for showing years
    outside 1948 to 1951. The owner should look at 01 with the launch-content rule in mind.
@@ -244,7 +243,7 @@ Facts this draft could not settle. Each is flagged above instead of being assert
 10. **"1948 war" or "Liberation War"** in English, and **"מלחמת השחרור" or "מלחמת העצמאות"** in Hebrew.
 11. **The Hebrew wording** listed at the end of section 3, and the whole Hebrew text, by a native speaker.
 12. **Platform.** The game ships only as a browser (WebGL) build today. The owner decided on 14 October 2026 (O1, O7) that
-    release builds are made on GitHub Actions for Windows, macOS and Linux. None exists yet, so the draft names no platform.
+    release builds are made on the owner's Mac for Windows, macOS and Linux. None exists yet, so the draft names no platform.
 13. **The store text is itself AI-drafted.** Sections 1 to 3 were written by an AI agent for the owner to edit. Whether
     that needs a line in the disclosure is the owner's call once the text is final.
 
@@ -339,7 +338,7 @@ No AI image can go in a screenshot slot: not `promo/final/01` to `08`, and not `
    developer holds rights to everything shown, including the in-game portraits still marked `owner-verify`.
 6. **D-D, the start-screen painting.** Open. It decides whether the painting can ship in a paid build.
 7. **Free or paid.** Decided (owner, 2026-10-14, O2): "free". The Steam setup is "This is a free product". README.md
-   and TRADEMARK.md still say a commercial edition is planned; that wording is being confirmed with the owner separately.
+   and TRADEMARK.md say the game is free and non-commercial (#521).
 8. **Languages.** English only, or Hebrew listed as "Game Support Only" as the report suggests, given that Hebrew is
    not enabled in the build.
 9. **Desktop build.** Needed for a Steam release, not for the page. The plan is
