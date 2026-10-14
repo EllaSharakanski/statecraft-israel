@@ -28,7 +28,7 @@ namespace Statecraft.Game.UI
 
         readonly VisualElement screen; readonly SimBridge bridge; readonly UiText text; readonly PortraitCatalog? portraits;
         readonly Button pmCard; readonly System.Action onPm; readonly EventCallback<GeometryChangedEvent> onPmGeometry;
-        string? pmId;
+        string? pmId; VisualElement? pmPortrait;
         readonly ScrollView list, candidates; readonly VisualElement pmOffices, chips; readonly Hemicycle hemicycle;
         readonly Dictionary<string, Button> cards = new Dictionary<string, Button>();
         List<string> cardOrder = new List<string>(), pmOrder = new List<string>();
@@ -46,7 +46,6 @@ namespace Statecraft.Game.UI
             onPm = () => Select(PrimeMinister);
             pmCard.clicked += onPm;
             onPmGeometry = _ => FramePm();
-            pmCard.RegisterCallback(onPmGeometry);
             screen.Q<Label>("cabinet-house-unit").text = text["cabinet.members_unit"];
             bridge.Changed += OnChanged;
             ScreenNav.OnOpened(screen, () => { if (dirty) Render(); });
@@ -58,7 +57,7 @@ namespace Statecraft.Game.UI
         {
             bridge.Changed -= OnChanged;
             pmCard.clicked -= onPm;
-            pmCard.UnregisterCallback(onPmGeometry);
+            pmPortrait?.UnregisterCallback(onPmGeometry); pmPortrait = null;
             if (screen.userData is System.Action) screen.userData = null;
             list.Clear(); candidates.Clear(); pmOffices.Clear(); chips.Clear(); PersonCard.Clear(pmCard);
             cards.Clear(); rows.Clear(); cardOrder.Clear(); pmOrder.Clear(); pickFor = null; chipsFor = "";
@@ -173,10 +172,17 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>The Prime Minister's portrait gives way on a short window (Statecraft.uss, #41 M7), so its framing follows
-        /// the box it has now and the face stays in view.</summary>
+        /// the box it has now and the face stays in view. It listens on the portrait itself: the box also changes when the
+        /// card's text gains or loses a line inside a card of the same height.</summary>
         void FramePm()
         {
             var portrait = pmCard.Q("seat-" + PrimeMinister + "-portrait");
+            if (portrait != pmPortrait)
+            {
+                pmPortrait?.UnregisterCallback(onPmGeometry);
+                pmPortrait = portrait;
+                pmPortrait?.RegisterCallback(onPmGeometry);
+            }
             var entry = portraits?.Find(pmId);
             if (portrait == null || entry == null) return;
             var size = portrait.layout.size;

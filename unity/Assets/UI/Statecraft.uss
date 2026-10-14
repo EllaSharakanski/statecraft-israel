@@ -363,7 +363,8 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .seat-vacant .card-name { color: var(--ink-dim); }
 .appointed { color: var(--gold); }
 /* A keyboard-focused card takes the warm focus fill (Button:focus); its dim and gold text turn light to stay legible on it. */
-.seat:focus .card-name, .seat:focus .card-office, .seat:focus .card-party, .seat:focus .card-stat-name, .seat:focus .card-initials { color: var(--focus-ink); }
+.seat:focus .card-name, .seat:focus .card-office, .seat:focus .card-party, .seat:focus .card-stat-name, .seat:focus .card-stat-value,
+.seat:focus .card-initials { color: var(--focus-ink); }
 
 /* The Cabinet: the Prime Minister's card and the appointment list at the side; the house and the cards in the main column. */
 .cabinet-side { width: 300px; flex-shrink: 0; margin-right: 14px; }
@@ -376,12 +377,14 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .pm-card .card-stat { height: 26px; padding: 0 16px; }
 .pm-card .card-stat-name { font-size: 16px; width: 96px; }
 .pm-card .ui-bar { height: 10px; }
-/* On a short window (1568x752 is 997 logical px tall) the side column is full: the Prime Minister's portrait gives way
-   first, so the candidate list keeps two rows, and the orders line wraps and is never squeezed (#41 M7). */
-.pm-card { flex-shrink: 1; }
+/* On a short window (1568x752 is 997 logical px tall) the side column is full. The orders line wraps and is never
+   squeezed; the Prime Minister's portrait gives way first (the card's weight is four times the list's), so the candidate
+   list keeps two rows; on the shortest (32:9, 764 px) the list goes down to its heading and one row and the card to its
+   text (#41 M7). */
+.pm-card { flex-shrink: 4; min-height: 170px; }
 .pm-card > * { flex-shrink: 0; }
 .pm-card .card-plate { flex-shrink: 1; min-height: 0; }
-#cabinet-pick { flex-shrink: 1; min-height: 220px; }
+#cabinet-pick { flex-grow: 1; flex-shrink: 1; flex-basis: 220px; min-height: 100px; }
 #cabinet-status { white-space: normal; flex-shrink: 0; }
 /* The Appoint heading wraps rather than run past the 300 px side column (B5; PromoHudTests.TheAppointHeadingHasRoom). */
 #cabinet-pick-title { white-space: normal; }

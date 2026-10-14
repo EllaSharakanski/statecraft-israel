@@ -379,6 +379,31 @@ public class StartScreenTests
         }
     }
 
+    /// <summary>#41 M1: closed with the mouse, the screen hands no focus on (PointerBlur's rule: a click leaves no focus
+    /// fill behind), so End Turn is not lit.</summary>
+    [UnityTest]
+    public IEnumerator ClosingItWithThePointerFocusesNothing()
+    {
+        using var rig = new Rig(TempStore());
+        yield return null; yield return null;
+        PressWithPointer(rig.Ui.Q<Button>("start-new-game"));
+        yield return null; yield return null; yield return null;
+        Assert.IsFalse(rig.Start.IsOpen, "precondition: the click closed the screen");
+        Assert.AreNotSame(rig.Ui.Q<Button>("end-turn"), rig.Ui.Root.focusController?.focusedElement, "End Turn is not lit by a mouse click");
+    }
+
+    /// <summary>A mouse press as the player makes it: pointer down (which also gives the button the focus), then the
+    /// button's Clickable fires `clicked` on pointer up. UiTestKit.Press is the keyboard's Submit instead.</summary>
+    static void PressWithPointer(Button b)
+    {
+        b.Focus();
+        using (var down = PointerDownEvent.GetPooled()) { down.target = b; b.SendEvent(down); }
+        using var click = ClickEvent.GetPooled();
+        click.target = b;
+        typeof(Clickable).GetMethod("Invoke", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic,
+            null, new[] { typeof(EventBase) }, null)!.Invoke(b.clickable, new object[] { click });
+    }
+
     /// <summary>#400: a turn-1 save keeps the build buttons disabled anyway, so the test above cannot see them. With a save
     /// from after August 1950, a selected hex and an event waiting, the build buttons and the event's options are live, and
     /// still none of them takes the focus under the start screen.

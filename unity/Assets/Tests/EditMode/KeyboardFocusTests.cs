@@ -161,8 +161,13 @@ public class KeyboardFocusTests
         return under.gamma;
     }
 
-    /// <summary>M3: the label of every kind of button is at least 4.5:1 on the keyboard focus fill, the gold ones (End Turn,
-    /// Decision waiting, the Illustration switch) included, and a focused Cabinet card's text too.</summary>
+    /// <summary>Computed contrast the focus-fill text must reach: 4.5:1 plus a margin, because anti-aliasing on the canvas
+    /// takes about 0.4 off (ink at 4.60:1 computed measured 4.16 to 4.21:1 on the audit's captures).</summary>
+    const float FocusTextRatio = 5f;
+
+    /// <summary>M3: the label of every kind of button is at least 4.5:1 on the keyboard focus fill, with margin
+    /// (FocusTextRatio), the gold ones (End Turn, Decision waiting, the Illustration switch) included, and every text on a
+    /// focused Cabinet card too, its stat numbers included.</summary>
     [UnityTest]
     public IEnumerator TextOnTheFocusFillIsAtLeastFourPointFiveToOne()
     {
@@ -189,7 +194,7 @@ public class KeyboardFocusTests
             var fill = b.resolvedStyle.backgroundColor;
             Assert.AreEqual(1f, fill.a, 0.001f, b.name + ": the focus fill is opaque");
             var ratio = Ratio(b.resolvedStyle.color, fill);
-            Assert.GreaterOrEqual(ratio, 4.5f, $"{b.name}: its label is {ratio:0.00}:1 on the focus fill");
+            Assert.GreaterOrEqual(ratio, FocusTextRatio, $"{b.name}: its label is {ratio:0.00}:1 on the focus fill");
         }
 
         var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
@@ -207,7 +212,7 @@ public class KeyboardFocusTests
                                                                           && l.GetFirstAncestorOfType<VisualElement>()?.ClassListContains("card-plate") != true))
             {
                 var ratio = Ratio(label.resolvedStyle.color, fill);
-                Assert.GreaterOrEqual(ratio, 4.5f, $"{name}: '{label.text}' is {ratio:0.00}:1 on the focus fill");
+                Assert.GreaterOrEqual(ratio, FocusTextRatio, $"{name}: '{label.text}' is {ratio:0.00}:1 on the focus fill");
             }
         }
     }
@@ -233,12 +238,14 @@ public class KeyboardFocusTests
         }
     }
 
-    /// <summary>M7: at the playtest window (1568x752) and two others, with an appointment ordered, the "Ordered:" line wraps
-    /// inside the side column and the screen instead of being cut off, and the candidate list shows at least two rows.</summary>
+    /// <summary>M7: at the playtest window (1568x752) and four others, with an appointment ordered, the "Ordered:" line wraps
+    /// inside the side column and the screen instead of being cut off, and the candidate list shows at least two rows; on
+    /// the shortest the HUD supports (5120x1440, 32:9, 764 logical px) at least one. The Prime Minister's card never runs
+    /// into the line under it.</summary>
     [UnityTest]
     public IEnumerator TheCabinetsOrdersLineAndCandidatesHaveRoom()
     {
-        foreach (var (w, h) in new[] { (1568, 752), (1531, 784), (1920, 1080) })
+        foreach (var (w, h, rowsShown) in new[] { (1568, 752, 2), (1531, 784, 2), (1920, 1080, 2), (2560, 1080, 2), (5120, 1440, 1) })
         {
             using var p = new Panel(w, h);
             var where = $"{w}x{h}";
@@ -275,10 +282,14 @@ public class KeyboardFocusTests
 
             var list = p.Q<ScrollView>("cabinet-candidates");
             var view = list.contentViewport.worldBound;
-            var rows = list.Query<VisualElement>(className: "candidate").ToList().Take(2).ToList();
-            Assert.AreEqual(2, rows.Count);
-            var two = rows[1].worldBound.yMax - rows[0].worldBound.yMin;
-            Assert.GreaterOrEqual(view.height + 0.5f, two, $"{where}: the candidate list is {view.height:0} px tall and two rows need {two:0}");
+            var rows = list.Query<VisualElement>(className: "candidate").ToList().Take(rowsShown).ToList();
+            Assert.AreEqual(rowsShown, rows.Count);
+            var need = rows[rowsShown - 1].worldBound.yMax - rows[0].worldBound.yMin;
+            Assert.GreaterOrEqual(view.height + 0.5f, need, $"{where}: the candidate list is {view.height:0} px tall and {rowsShown} rows need {need:0}");
+            var pmCard = p.Q<VisualElement>("seat-" + CabinetPresenter.PrimeMinister);
+            var lastLine = pmCard.Children().Where(e => e.resolvedStyle.display == DisplayStyle.Flex).Last().worldBound;
+            Assert.LessOrEqual(lastLine.yMax, pmCard.worldBound.yMax + 0.5f, $"{where}: the Prime Minister's card text {lastLine} runs out of the card {pmCard.worldBound}");
+            Assert.LessOrEqual(pmCard.worldBound.yMax, p.Q<VisualElement>("cabinet-pm-offices").worldBound.yMin + 0.5f, $"{where}: the card runs into his other offices");
             Assert.LessOrEqual(view.yMax, r.yMin + 0.5f, $"{where}: the list runs into the orders line");
 
             // A portrait that gave way is framed for the box it has, so the face stays in view.

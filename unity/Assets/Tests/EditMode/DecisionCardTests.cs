@@ -303,6 +303,31 @@ public class DecisionCardTests
         Assert.IsFalse(r.Card.Collapsed);
     }
 
+    /// <summary>#41 M1: the last open event answered with the mouse hands no focus on (PointerBlur's rule), so End Turn is
+    /// not lit.</summary>
+    [UnityTest]
+    public IEnumerator AnsweringTheLastEventWithThePointerFocusesNothing()
+    {
+        using var r = new Rig(1920, 1080, "law_of_return");
+        yield return Frames(4);
+        PressWithPointer(r.FirstOption);
+        yield return Frames(3);
+        Assert.IsNull(r.Card.Shown, "precondition: the click answered the only event");
+        Assert.AreNotSame(r.Root.Q<Button>("end-turn"), r.Focused, "End Turn is not lit by a mouse click");
+    }
+
+    /// <summary>A mouse press as the player makes it: pointer down (which also gives the button the focus), then the
+    /// button's Clickable fires `clicked` on pointer up. UiTestKit.Press is the keyboard's Submit instead.</summary>
+    static void PressWithPointer(Button b)
+    {
+        b.Focus();
+        using (var down = PointerDownEvent.GetPooled()) { down.target = b; b.SendEvent(down); }
+        using var click = ClickEvent.GetPooled();
+        click.target = b;
+        typeof(Clickable).GetMethod("Invoke", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic,
+            null, new[] { typeof(EventBase) }, null)!.Invoke(b.clickable, new object[] { click });
+    }
+
     /// <summary>#41 M1: Escape from a screen over an open card gives the card the focus (not the screen's button), and the
     /// last open event answered from the keyboard gives it to End Turn, so the next Enter or Tab goes on from there.</summary>
     [UnityTest]
