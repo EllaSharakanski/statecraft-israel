@@ -298,6 +298,16 @@ public class RealContentTests
     }
 
     [Fact]
+    public void TheTransitCampCardOpensInTheMonthEshkolProposedTheCamps()
+    {
+        // Kachansky, "The Ma'abarot" (Yad Ben-Zvi, 1987): Eshkol raised the camps' crisis at the Jewish Agency executive on
+        // 27 March 1950 and proposed transit housing two weeks later, so in April; the card opens at the start of that
+        // month (#442). Wikipedia's "March 1950" is recorded in the event's comment.
+        var e = C.Events.Single(x => x.Id == "maabarot_policy");
+        Assert.Equal(new DateTime(1950, 4, 1), e.From);
+    }
+
+    [Fact]
     public void PresidencyAndMaimonsTermsEnd()
     {
         Assert.Equal("weizmann", Offices.Holder(C, "president", new DateTime(1950, 1, 1))!.Id);
