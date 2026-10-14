@@ -108,7 +108,9 @@ namespace Statecraft.Game.Map.Routes
         }
 
         /// <summary>The ribbons Build draws, in its order: the windows in the order they open, and in each the rail, then the
-        /// roads, where the window has any. The bake (RouteRibbonFile) stores its meshes in this order.</summary>
+        /// roads, where the window has any. The bake (RouteRibbonFile) stores its meshes in this order. A change to it, to
+        /// Derive or to what Derive calls needs a re-bake (RouteRibbonBake.Bake) and a bump of RouteRibbonFile.Version
+        /// (tools/tests/test_route_ribbon_bake.py fails until then, issue #535).</summary>
         public static List<RibbonPlan> Plan(IReadOnlyList<RoutePath> routes)
         {
             var plans = new List<RibbonPlan>();
@@ -121,7 +123,8 @@ namespace Statecraft.Game.Map.Routes
             return plans;
         }
 
-        /// <summary>A plan's ribbon, derived from the terrain (what the bake stores).</summary>
+        /// <summary>A plan's ribbon, derived from the terrain (what the bake stores). A change to it or to what it calls
+        /// (World, Geometry and their helpers) needs a re-bake and a bump of RouteRibbonFile.Version (see Plan).</summary>
         public static RibbonGeometry Derive(RibbonPlan plan, GeoFrame frame, TerrainData data, Vector3 origin) =>
             Geometry(plan.Routes.Select(r => (r.Id, World(frame, r), WidthOf(r.Kind))), data, origin, plan.RailGrade);
 
