@@ -1,13 +1,14 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: rhodes_talks
 title: Talks at Rhodes
-text: 'Egypt announced on 6 January that it will negotiate, and Israel accepted the cease-fire on 7 January. The talks are to open at Rhodes. {foreign_minister} must decide whether Israel sends a delegation.'
+text: 'By 6 January Egypt and Israel had both accepted a cease-fire followed by direct talks under UN chairmanship, and the cease-fire took effect on 7 January. The talks are to open at Rhodes. {foreign_minister} must decide whether Israel sends a delegation.'
 anchor: hard
 tags: [security]
 office: foreign_minister
-# Egypt announced on 6 January 1949 that it would negotiate; Israel accepted the cease-fire on 7 January (en.wiki
-# "Operation Horev"); the Rhodes talks opened on 13 January 1949 (FRUS 1949 vol. VI doc. 389). The RAF clash of 7 January [C]
-# (6 January on en.wiki "Operation Horev") is left out of the text. Research notes facts-1948.md section 9 (aftermath).
+# Bunche reported on 6 January 1949 (S/1187) that Egypt and Israel had notified their unconditional acceptance of a
+# cease-fire followed by direct negotiations; the cease-fire took effect at 1200 GMT on 7 January (FRUS 1949 vol. VI
+# doc. 362; the Rhodes cease-fire agreement of 24 January confirms the time, UNISPAL). The Rhodes talks opened on 13
+# January 1949 (FRUS 1949 vol. VI doc. 389). The RAF clash of 7 January [C] (6 January on en.wiki "Operation Horev") is left out of the text. Research notes facts-1948.md section 9 (aftermath).
 # Only a player who launched Operation Horev sees this card (the cease-fire it names ends that operation).
 from: 1949-01-09
 to: 1949-01-13

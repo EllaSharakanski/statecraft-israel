@@ -321,6 +321,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- The Rhodes talks card no longer says Israel accepted the cease-fire on 7 January: by 6 January both Egypt and Israel
+  had notified the Acting Mediator of their acceptance (S/1187, FRUS 1949 vol. VI doc. 362), and the cease-fire took
+  effect at 1200 GMT on 7 January (refs #457). Text only; no golden moves.
 - Yehuda Leib Maimon holds Religions and War Victims to 8 October 1951, not 14 February 1951: the Knesset position
   records run both Second Government terms to the Third Government, and the plenum of 17 July 1951 has him answering as
   Minister of Religions (refs #457). The two offices are no longer vacant from February 1951. No golden moves.
