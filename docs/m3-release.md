@@ -105,7 +105,56 @@ Each step below passed:
 | (d) IndexedDB | Database `/idbfs`, store `FILE_DATA`, keys `/idbfs/statecraft-saves` and `/idbfs/statecraft-saves/autosave.txt`. No `JS_FileSystem_Sync` deprecation message. |
 | (e) A private browser context (`Target.createBrowserContext`) | The game starts (a new game) and plays a turn. A second private context starts a new game again; no persistence is expected there. |
 
-Firefox is not installed on the development Mac, so the Firefox check is open.
+Firefox is not installed on the development Mac. A Firefox result from a contributor, and the WebKit check, are in the
+next section.
+
+## Other browsers (#43), 2026-10-14
+Build: main `04bf7cb`, WebGL, `-compression disabled`, served with web_check's handler on `http://localhost`. Mac: Apple
+M5 Pro, macOS 27.0.1. Chromium ran through `tools/web_check.py` as it is. WebKit and Firefox are Playwright's builds
+(Playwright 1.64.0, from `~/Library/Caches/ms-playwright`): Playwright's WebKit is the engine Safari uses, not Safari
+itself, and its Firefox is a patched Firefox. Chromium in the headed run is the same Chrome for Testing, driven by
+Playwright. The headed run is scripted: it starts a new game, zooms with the wheel, orbits with Q, plays four
+turns answering each event with its first option, opens Cabinet, Budget, Defence and Why? and closes each with Escape,
+turns on the First Truce card's Illustration, then reloads the page and restarts the browser on the same profile.
+
+| | Chrome for Testing 149.0.7827.55 | WebKit 27.2 (Playwright) | Firefox 157.0 (Playwright) |
+|---|---|---|---|
+| `golden&smoke=5` | PASS: both goldens and the smoke value from `docs/determinism.md`. 11 s for the whole `web_check` run; in a Playwright run of the same check the goldens arrive 5.5 s after the page opens, the smoke line at 9.3 s | PASS, headless. Goldens at 10.3 s, smoke at 19.3 s | Not run: the browser does not start on macOS 27 (below) |
+| WebGL renderer | ANGLE Metal, Apple M5 Pro | "Apple GPU" | - |
+| Start screen, map, HUD, panels, fonts | Correct | Same as Chromium; the screenshots match apart from the small difference in camera angle left by the Q orbit | - |
+| Hebrew lines on the start screen | Right to left, correct | Same (Unity draws the text, so the browser does not lay it out) | - |
+| Wheel, one notch (100 px) | 120000 m to 108000 m (10%) | Same | - |
+| Wheel over a panel | No zoom | No zoom | - |
+| Q held 0.6 s | Orbits to yaw 323.5 | Orbits to yaw 323.7 | - |
+| Mouse clicks: New Game, End Turn, options, the four screens, Continue | All work | All work | - |
+| Event card video (`first_truce.mp4`) | `VIDEO playing`, the clip shows | `VIDEO playing`, the clip shows | - |
+| Audio | The game has no sound (the card clips are silent), so there is nothing to play. Chrome warns "The AudioContext was not allowed to start" until the first click | No warning | - |
+| Save: four turns, then reload, then Continue | Same date, turn and hash (turn 4, 1948-06-12) | Same | - |
+| Save: browser closed and restarted on the same profile | Same date, turn and hash | Same | - |
+| IndexedDB databases | `/idbfs`, `UnityCache` | `/idbfs`, `UnityCache` | - |
+| Console warnings | Six "WebGL: INVALID_ENUM: getInternalformatParameter" per load; the AudioContext warning above | One "WebGL: non-portable extension enabled: WEBGL_polygon_mode" per load | - |
+| Console errors | None | None | - |
+
+Contributor result (Chaiky3, in #43): **Firefox 157.0, Windows 11 at 125% scale, main `fa10633`: pass.** It loads and
+renders, the start screen's Hebrew shows, a touchpad zoom step is 10%, and Continue after a reload returns to the same
+turn. Without a hard refresh Firefox mixed cached files from an older build ("too much recursion"); that is #437.
+
+Differences and notes:
+- **Firefox does not start here.** Playwright's Firefox 157.0 build exits with "Could not find profile folder" headless,
+  and fails to start headed, on macOS 27.0.1, so this Mac has no Firefox result. The Windows result above is the Firefox
+  evidence so far.
+- **Wheel in lines.** A wheel event in lines (`deltaMode` 1, three lines, as Firefox reports a mouse notch on some
+  systems), sent to the canvas by script, zooms the camera by 0.16% in Chrome and 0.32% in WebKit instead of 10%: Unity
+  passes the raw `deltaY` and `deltaMode` to the player, and the zoom treats three lines like three pixels. A real
+  browser may never send this: Firefox turns line deltas into pixels when a page reads `deltaY` before `deltaMode`, and
+  Unity's handler does. Only a real mouse wheel in Firefox on Windows or Linux can settle it.
+- **Aborted requests in Chrome.** At each start Chrome lists about 30 of the 51 content files (and the map files) as
+  `net::ERR_ABORTED` in its network log. The files arrive whole: both browsers log the same `BOOT OK content` hash and
+  the goldens pass. WebKit lists none. Not a console error, so it is left as it is.
+- Input in these runs is synthetic (Playwright's mouse, wheel and keys), not a physical mouse or touchpad.
+
+Still open: Safari itself (only its engine was run here), Firefox on a Mac, Chrome and Edge on Windows, a real mouse wheel
+in Firefox, and the two-upload itch.io save test below. Each needs the owner's machines or the project's itch.io account.
 
 ## OWNER STEP: sensitivity review before any shared build
 Spec section 5.5 requires a recorded sensitivity review for events with sensitive tags (holocaust, terror, massacre,
