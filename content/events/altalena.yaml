@@ -30,7 +30,6 @@ options:
     text: Grant both requests, arming Irgun battalions inside the IDF
     effects:
       - { target: security, delta: -0.025 }
-      - { target: morale, delta: 0.02 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Altalena_Affair", checked: 2026-10-10 }
   # The Irgun's own account (Etzel history): Begin's two requests, the fifth for Jerusalem and the rest for the IDF battalions.

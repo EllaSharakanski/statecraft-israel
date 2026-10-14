@@ -10,9 +10,10 @@ office: prime_minister
 # July). End date [C]: 8 July (en.wiki "1948 Arab-Israeli War") vs 9 July (JVL/IDF, he.wiki; the Mediator's report S/888
 # and his progress report); both agree Egypt renewed fighting on 8 July (JTA reports the Defense Ministry's account of an
 # Egyptian attack the day before the truce ended; see ten_days.yaml). Research notes facts-1948.md section 1.
-# By design, accepting leaves the security level at 5 (full war, weekly turns); do not "fix" it to 4. The truce lasted
-# four weeks: at level 4 the turns would be monthly from 5 June, and the Ten Days and the second truce would both reach the
-# player on 5 August, after the fact. The Defence screen shows full war during the truce as a result.
+# Accepting leaves the security level at 5 (full war). On monthly turns the level no longer sets the turn length.
+# The card comes on 15 June, five days after the acceptance of 10 June: no monthly turn date falls between the
+# resolution of 29 May and the acceptance, and the owner accepted the delay (owner decision, 15 October 2026, #567;
+# docs/superpowers/specs/2026-10-14-event-timing-monthly.md).
 from: 1948-06-01
 to: 1948-06-11
 options:

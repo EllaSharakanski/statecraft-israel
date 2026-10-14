@@ -10,8 +10,8 @@ office: defense_minister
 # 1948; Beersheba taken by the Negev Brigade on 21 October; cease-fire 22 October (en.wiki "Operation Yoav"; the IDF
 # account; the Knesset's war summary; FRUS doc. 705). At the end Allon asked to push into the Hebron hills and the Jericho
 # valley; Ben-Gurion refused, mainly fearing British involvement (en.wiki "Operation Yoav"). This card is that decision
-# (yoav_hebron in notes section 7). The window is the operation, 15-22 October; on the monthly grid of the second truce
-# the card comes on 17 October, and the turn it opens covers Allon's request.
+# (yoav_hebron in notes section 7). The window is the operation, 15-22 October; on monthly turns the card comes on
+# 15 October, and the turn it opens covers Allon's request.
 from: 1948-10-15
 to: 1948-10-23
 options:

@@ -11,9 +11,9 @@ office: prime_minister
 # a primary source, is used. The text names offices whose 1948 holders are on the diary's list without a question mark:
 # Finance (Kaplan), Justice (Rosen) and Immigration (Shapira); with player appointments it names the appointees.
 # On 29 September he told the General Staff an attack was possible but not at this time [S]. Research notes section 13a.
-# The window opens on 17 September, the turn date before the vote on the monthly grid of the second truce (game timing).
+# The window opens on 15 September, the monthly turn date before the vote (game timing).
 # Only a player who complied with the second truce sees this card (it is about breaking the truce).
-from: 1948-09-17
+from: 1948-09-15
 to: 1948-09-27
 requires: { event: second_truce, option: comply }
 options:

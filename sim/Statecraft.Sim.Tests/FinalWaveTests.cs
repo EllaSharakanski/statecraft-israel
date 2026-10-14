@@ -18,6 +18,11 @@ public class FinalWaveTests
     static readonly string[] SensitiveEvents =
         { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "reparations_claim", "ten_days" };
 
+    /// <summary>Sensitive events whose card text changed after the owner's sign-off (D11) and wait for the owner's re-review:
+    /// the event re-timing for monthly turns rewrote them as decisions during or after the fact (owner decision, 15 October
+    /// 2026, #567). Until the owner sets them back to sensitivity-reviewed, a shareable build is refused.</summary>
+    public static readonly string[] AwaitingReReview = { "bernadotte_assassination", "operation_hiram", "ten_days" };
+
     [Fact]
     public void TheSensitiveEventsArePinned()
     {
@@ -38,7 +43,8 @@ public class FinalWaveTests
     [Fact]
     public void AShareableBuildNeedsEverySensitiveEventReviewed()
     {
-        Assert.Empty(ReleaseGate.SensitiveUnreviewed(Real));   // the owner signed off all seven on 2026-10-10 (docs/oss/DECISIONS.md D11)
+        // The owner signed off all seven on 2026-10-10 (docs/oss/DECISIONS.md D11); three were rewritten since and wait.
+        Assert.Equal(AwaitingReReview, ReleaseGate.SensitiveUnreviewed(Real).OrderBy(x => x, StringComparer.Ordinal).ToArray());
         var reviewed = Fixture.Write(events: new Dictionary<string, string>
         {
             ["a.yaml"] = "id: a\ntitle: A\ntext: x\nfrom: 1948-06-01\ntags: [terror]\noptions:\n  - id: o\n    text: O\nstatus: sensitivity-reviewed\n",

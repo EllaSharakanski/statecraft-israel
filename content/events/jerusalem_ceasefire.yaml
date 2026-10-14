@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: jerusalem_ceasefire
 title: Cease-fire in Jerusalem
-text: 'Talks began on 28 November between Dayan and Abdullah el-Tell on a full cease-fire for the Jerusalem area, with UN observers present. {prime_minister} must decide whether Israel signs it at Government House.'
+text: 'After talks that began on 28 November, Dayan and Abdullah el-Tell signed a full cease-fire for the Jerusalem area at Government House on 30 November, with UN observers present. {prime_minister} must decide whether Israel keeps to it.'
 anchor: hard
 tags: [security]
 office: prime_minister
@@ -9,14 +9,17 @@ office: prime_minister
 # talks began on 28 November (UN press release [S]). On 23 December el-Tell apparently received new orders and avoided
 # further talks (FRUS d844 [S]). Partial releases of prisoners followed [S]. Research notes facts-1948.md section 13b.
 # Only a player who put Jerusalem under military government sees this card. The gating is a design inference, not in the
-# notes: with a demilitarised city there would be no IDF commander to sign. The card comes on 28 November, when the talks
-# began; it states the talks, not their outcome (re-review N1).
-from: 1948-11-28
-to: 1948-12-01
+# notes: with a demilitarised city there would be no IDF commander to sign. The card is a decision after the fact
+# (owner decision, 15 October 2026, #567;
+# docs/superpowers/specs/2026-10-14-event-timing-monthly.md):
+# no monthly turn date falls between the talks and the signing, so the window opens on 30 November and ends on
+# 15 December, and the text states the signing.
+from: 1948-11-30
+to: 1948-12-16
 requires: { event: jerusalem_military_government, option: military_government }
 options:
-  - id: sign
-    text: Sign the Jerusalem cease-fire
+  - id: keep
+    text: Keep to the Jerusalem cease-fire
     historical: true
     recommended: true
     effects:
@@ -24,7 +27,7 @@ options:
   - id: hold_out
     # The alternative named in the notes (section 13b). Game assumption: no one is recorded arguing for it; its effects are
     # design values.
-    text: Hold out for the Old City and the Latrun road
+    text: Press on for the Old City and the Latrun road
     effects:
       - { target: security, delta: -0.015 }
       - { target: intl_standing, delta: -0.03 }

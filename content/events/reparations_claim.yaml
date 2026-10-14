@@ -20,7 +20,7 @@ options:
     historical: true
     recommended: true
     effects:
-      - { target: intl_standing, delta: 0.02 }
+      - { target: intl_standing, delta: 0 }
   - id: refuse
     text: Refuse any dealings with Germany
     effects:

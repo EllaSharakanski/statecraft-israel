@@ -7,6 +7,17 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+### Changed
+- Event timing for monthly turns (refs #382; lands with the GDD cutover, Phase 2 PR 1; owner decisions of 15 October 2026
+  on #567): six war-period windows open on the monthly turn date before their decision (`idf_founding`,
+  `jerusalem_military_government`, `latrun_proposal`, `operation_horev`, `elections_1949`; `operation_horev` also lets
+  `sinai_withdrawal` and `rhodes_talks` fire again). `ten_days`, `bernadotte_assassination`, `operation_hiram`,
+  `jerusalem_ceasefire` and `sinai_withdrawal` are rewritten as decisions during or after the fact; Hiram loses its
+  "protest to the UN" option. The three rewritten sensitive events go back to `fact-checked` for the owner's re-review.
+  Sensitive events may no longer raise food, morale or international standing either (Q-EFX-2): the gains in `altalena`,
+  `bernadotte_assassination` and `reparations_claim` are removed. The event-gap ruling is restated in months. Every
+  golden moves; the cutover re-pins them once.
+
 ### Added
 - Two-colour borders (refs #196, owner rulings 2026-10-14): from 11 June 1948 the map colours areas by side, as promo 03 does:
   the Israeli side in a deeper blue, the other side orange-red, and a dashed grey for contested ground (only for the days an

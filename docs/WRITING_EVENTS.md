@@ -74,8 +74,9 @@ Write plain description. Do not put words in anyone's mouth: no invented quotes
 Tags are free-form, but these four are sensitive (checked without regard to case): `holocaust`, `terror`, `massacre`,
 `war-casualties`. An event with any of them:
 
-- cannot give a positive `treasury` or `fx_reserves` delta in any option (the loader refuses: it would reward the
-  atrocity);
+- cannot give a positive delta to any resource in any option: `treasury`, `fx_reserves`, `food_supply`, `morale`
+  (standing for Social cohesion) or `intl_standing` (standing for International Support). The loader refuses: it would
+  reward the atrocity. Owner decision of 15 October 2026 (Q-EFX-2, "Extend it"); until then the rule covered money only;
 - needs `status: sensitivity-reviewed` before any build is shared. That status is set by the maintainer, not by you.
   Submit it as `fact-checked`. `Statecraft.Cli --release-gate`, the `-shareable` build and `tools/package_release.py`
   refuse to release while any sensitive event is not `sensitivity-reviewed`, and a test requires every sensitive event
@@ -193,7 +194,7 @@ Errors are printed as `file: field: message`. These are the messages you are mos
 | `at most one option can be historical` | Two options have `historical: true`. |
 | `hard anchor needs a historical option` | `anchor: hard` and no option is `historical`. |
 | `unknown target` | An effect `target` is neither an indicator nor `treasury` or `fx_reserves`. |
-| `sensitive events cannot reward` | A sensitive-tagged event with a positive `treasury` or `fx_reserves` delta. |
+| `sensitive events cannot reward` | A sensitive-tagged event with a positive `treasury`, `fx_reserves`, `food_supply`, `morale` or `intl_standing` delta. |
 | `must be 1-5` | `set_rung` outside 1 to 5. |
 | `unknown policy` | `set_policy` names a policy that does not exist. |
 | `must be a list` | A list field (such as `tags:`) written with no value. |
