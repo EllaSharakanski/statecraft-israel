@@ -20,8 +20,8 @@ namespace Statecraft.Game.Map
     /// While the pointer is over the UI (IsOverUi, wired by the scene) the wheel and the drag belong to the UI; keyboard pan
     /// and orbit still move the camera (plan amendment A4). Pan speed scales with
     /// distance, zoom is clamped to [MinDistance, MaxDistance], and the view stays on the map (issue #174): the look-at
-    /// point is held far enough inside the map that the visible ground does not leave it, so the border skirt never fills
-    /// the view at gameplay zoom. Where the view is wider than the map (the overview), it is centred on the map instead.
+    /// point is held far enough inside the map that the visible ground does not leave it, so the frame round the map (issue #36) never
+    /// shows at gameplay zoom. Where the view is wider than the map (the overview), it is centred on the map instead.
     /// Given the ground's height (Ground), the camera also never sinks into the terrain (MinClearanceShare).</summary>
     [RequireComponent(typeof(CameraRig))]
     public sealed class CameraController : MonoBehaviour
@@ -47,7 +47,7 @@ namespace Statecraft.Game.Map
         public Rect Bounds = new Rect(0, 0, float.MaxValue, float.MaxValue);
         /// <summary>The ground's world height at a point (x, z), or null for none (the camera then keeps to y = 0).</summary>
         public Func<Vector2, float>? Ground;
-        /// <summary>The highest the ground (and the border skirt, which holds the edge's height) reaches in world y: with it,
+        /// <summary>The highest the ground (and the frame round the map, which stays below it) reaches in world y: with it,
         /// ViewFootprint bounds the near side of the view tightly. ShadowFit.GroundY (the default) means flat ground.</summary>
         public float GroundTop = ShadowFit.GroundY;
 
@@ -79,7 +79,7 @@ namespace Statecraft.Game.Map
         }
 
         /// <summary>Fits the rig's current pose with no input (review B-m3: a minimap jump goes through the same view fit and
-        /// ground clearance as panning, so no frame shows the skirt or the inside of a hill).</summary>
+        /// ground clearance as panning, so no frame shows the map's frame or the inside of a hill).</summary>
         public void Settle() => Step(GetComponent<CameraRig>(), default, 0f, Bounds, Ground, GroundTop);
 
         public static float ClampDt(float dt) => Mathf.Min(dt, MaxFrameSeconds);
@@ -137,8 +137,8 @@ namespace Statecraft.Game.Map
             rig.Apply();
         }
 
-        /// <summary>The terrain's world height at (x, z), clamped to its edge outside it (the border skirt holds the edge's
-        /// height near the map, so the camera keeps clear of it too).</summary>
+        /// <summary>The terrain's world height at (x, z), clamped to its edge outside it (the camera keeps clear of the
+        /// edge's height past the map too).</summary>
         public static Func<Vector2, float> GroundOf(Terrain terrain)
         {
             var origin = terrain.transform.position; var size = terrain.terrainData.size;
@@ -159,8 +159,8 @@ namespace Statecraft.Game.Map
         /// <summary>Corners of the visible map area in viewport units: the top inset's band is covered by the UI.</summary>
         static readonly Vector2[] FootprintCorners = { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
 
-        /// <summary>The terrain's highest world y (TerrainData.bounds holds the heightmap's actual range); the border skirt
-        /// never rises above its edge, so this bounds it too.</summary>
+        /// <summary>The terrain's highest world y (TerrainData.bounds holds the heightmap's actual range); the frame round
+        /// the map (issue #36) stays below it, so this bounds it too.</summary>
         public static float GroundTopOf(Terrain terrain) => terrain.transform.position.y + terrain.terrainData.bounds.max.y;
 
         /// <summary>The ground the rig's camera shows, as offsets (x, z) from the look-at point. Every ground point the view
