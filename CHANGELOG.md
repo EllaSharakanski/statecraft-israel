@@ -428,6 +428,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   Immigrant Camps" (the Knesset of 17 January 1950, the JTA) add sources and keep Wikipedia for the lines they do not
   cover; the commission's first session on 25 January still rests on Hebrew Wikipedia, against the JTA's hearings from
   2 February. Text, dates, options and effects are unchanged (refs #442).
+- Four cards from 1948 and 1951 cite primary sources. "Operation Horev" drops its Wikipedia article for the IDF
+  Archives' page on the operation (22 December to 7 January, Allon, five brigades), Security Council resolution 66 and
+  the Egyptian-Israeli cease-fire agreement (S/1225). "A Claim on Germany" drops its Wikipedia article for Sharett's
+  statement to the Knesset of 13 March 1951, which reads the note into the record, FRUS 1951 and the JTA; FRUS and the
+  Knesset date the note to 12 March. "Israel Bonds" adds the Knesset's vote of 27 February 1951, the law record, the JTA
+  and Israel Bonds' own history, and keeps Wikipedia for the 25 million dollar goal; its comment records that the JTA
+  has the sale starting across the United States before the 10 May rally. "Foreign Currency Runs Out" adds FRUS and the
+  JTA and keeps Wikipedia for the banks' and oil companies' refusal of credit. Text, dates, options and effects are
+  unchanged (refs #442).
 - The four armistice cards cite the signed texts (Avalon Project) and the Acting Mediator's cables to the Security
   Council (S/1264, S/1296, S/1302, S/1353) in place of Wikipedia. "Electing the Constituent Assembly" adds Harpaz's
   study in Kesher 61, the CBS registration date, the IDI results page and the Official Gazette's notice of the results.
