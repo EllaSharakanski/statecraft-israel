@@ -246,7 +246,8 @@ namespace Statecraft.Game.UI
             if (startScreen && newGame != null)
             {
                 var cam = cameraController;
-                start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }));
+                var recording = Own(new DeclarationRecording(root, text, toast.Show));   // never built in automated runs (Skipped)
+                start = Own(new StartScreenPresenter(root, newGame, resumed, shown => { if (cam != null) cam.enabled = !shown; }, recording));
                 start.Show();
             }
             root.Q("root")?.RemoveFromClassList("loading");                // ready: the bar, panels and screens may show (P2-1)

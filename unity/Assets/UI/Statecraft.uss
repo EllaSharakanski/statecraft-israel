@@ -523,5 +523,17 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf");
     font-size: 24px; min-width: 220px; margin: 4px 10px; padding: 8px 24px; -unity-text-align: middle-center;
 }
+/* The recording (DeclarationRecording): a quiet button and its credit under the source line; while it plays, its words as
+   captions in a dark strip just above the panel, over the painting (the panel is the strip's positioned parent, so the
+   strip follows it in every layout). */
+.start-recording { display: none; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 8px; }
+.start-listen { font-size: 18px; padding: 4px 16px; margin: 2px 10px; -unity-text-align: middle-center; }
+.start-recording-credit { font-size: 15px; color: var(--ink-dim); margin: 2px 6px; }
+.start-caption {
+    display: none; position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 12px; padding: 8px 20px 10px 20px;
+    align-items: center; background-color: rgba(9, 14, 26, 0.88); border-radius: 3px;
+}
+.start-caption-he { font-size: 30px; margin: 0; }
+.start-caption-en { font-size: 19px; color: var(--ink); white-space: normal; -unity-text-align: middle-center; margin: 4px 0 0 0; }
 /* New Game's prompt (the toast) shows at the top of the start screen, clear of the panel. */
 .start-open .toast { top: 24px; left: 25%; right: 25%; width: auto; }

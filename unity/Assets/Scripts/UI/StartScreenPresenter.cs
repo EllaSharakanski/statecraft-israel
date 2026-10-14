@@ -54,8 +54,14 @@ namespace Statecraft.Game.UI
         /// <summary>Continue is offered: the session continues the autosave.</summary>
         public bool Resumed { get; private set; }
 
-        public StartScreenPresenter(VisualElement root, NewGamePresenter newGame, bool resumed, Action<bool>? shownChanged = null)
+        readonly DeclarationRecording? recording;
+
+        /// <param name="recording">The "Play the recording" button's player (null in tests that do not need it); the screen
+        /// stops it when it closes.</param>
+        public StartScreenPresenter(VisualElement root, NewGamePresenter newGame, bool resumed, Action<bool>? shownChanged = null,
+            DeclarationRecording? recording = null)
         {
+            this.recording = recording;
             this.newGame = newGame; this.shownChanged = shownChanged; Resumed = resumed;
             hudRoot = root.Q("root") ?? root;
             screen = root.Q<VisualElement>("start-screen");
@@ -99,6 +105,7 @@ namespace Statecraft.Game.UI
         public void Close()
         {
             if (!IsOpen) return;
+            recording?.Stop();
             hudRoot.RemoveFromClassList(OpenClass);
             ScreenNav.DisableCovered(hudRoot);
             var focused = screen.focusController?.focusedElement as VisualElement;

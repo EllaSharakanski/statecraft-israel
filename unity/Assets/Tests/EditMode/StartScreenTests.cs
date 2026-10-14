@@ -54,6 +54,9 @@ public class StartScreenTests
         ("start-en-proclamation", "…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.", "en.txt"),
         ("start-he-date", "בעיר תל־אביב, היום הזה, ערב שבת, ה׳ אייר תש״ח, 14 במאי 1948.", "he.txt"),
         ("start-en-date", "IN THE CITY OF TEL-AVIV, ON THIS SABBATH EVE, THE 5TH DAY OF IYAR, 5708 (14TH MAY, 1948).", "en.txt"),
+        // The recording's captions (DeclarationRecording): the sentence Ben-Gurion is heard reading.
+        ("start-caption-he", "…אנו מכריזים בזאת על הקמת מדינה יהודית בארץ־ישראל, היא מדינת ישראל.", "he.txt"),
+        ("start-caption-en", "…HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.", "en.txt"),
     };
 
     [Test]
@@ -169,6 +172,8 @@ public class StartScreenTests
         public void Dispose() { Object.DestroyImmediate(go); Object.DestroyImmediate(ps); rt.Release(); Object.DestroyImmediate(rt); }
     }
 
+    sealed class NoAnswer : DeclarationRecording.IRequest { public ulong Bytes => 0; public void Abort() { } }
+
     /// <summary>The start the way GameRoot makes it: GameStart.Begin over the store, the toast, New Game and the screen.</summary>
     sealed class Rig : IDisposable
     {
@@ -177,6 +182,7 @@ public class StartScreenTests
         public readonly ToastPresenter Toast;
         public readonly NewGamePresenter NewGame;
         public readonly StartScreenPresenter Start;
+        public readonly DeclarationRecording Recording;
         public readonly List<bool> Shown = new List<bool>();
 
         public Rig(SaveStore store)
@@ -187,12 +193,13 @@ public class StartScreenTests
             NewGame = new NewGamePresenter(Ui.Root, Bridge, store, Toast, Text, () => 5UL);
             GameStart.Autosave(Bridge, store, Text);
             Ui.Root.Q("root").RemoveFromClassList("loading");
-            Start = new StartScreenPresenter(Ui.Root, NewGame, resumed, Shown.Add);
+            Recording = new DeclarationRecording(Ui.Root, Text, Toast.Show, (url, done) => new NoAnswer());   // a fetch that never answers
+            Start = new StartScreenPresenter(Ui.Root, NewGame, resumed, Shown.Add, Recording);
             Start.Show();
         }
 
         public bool ContinueShown => Ui.Q<Button>("start-continue").style.display.value == DisplayStyle.Flex;
-        public void Dispose() { Start.Dispose(); NewGame.Dispose(); Toast.Dispose(); Ui.Dispose(); }
+        public void Dispose() { Start.Dispose(); Recording.Dispose(); NewGame.Dispose(); Toast.Dispose(); Ui.Dispose(); }
     }
 
     static SaveStore WithSave(SaveStore store, int turns)
@@ -201,6 +208,30 @@ public class StartScreenTests
         for (int i = 0; i < turns; i++) played.EndTurn();
         store.WriteAutosave(played.Session.Save.Write());
         return store;
+    }
+
+    /// <summary>Ben-Gurion's recording (docs/declaration-recording.md) plays only from its own button: never when the screen
+    /// opens, never on Continue or New Game; the screen closing stops it.</summary>
+    [Test]
+    public void TheRecordingPlaysOnlyFromItsButtonAndStopsWhenTheScreenCloses()
+    {
+        var store = WithSave(TempStore(), 2);
+        using (var rig = new Rig(store))
+        {
+            Assert.IsFalse(rig.Recording.Playing, "nothing plays when the screen opens");
+            rig.Ui.Press("start-new-game");                                // arms the confirmation
+            Assert.IsFalse(rig.Recording.Playing, "New Game does not play it");
+            rig.Ui.Press("start-continue");                                // withdraws and closes
+            Assert.IsFalse(rig.Recording.Playing, "Continue does not play it");
+        }
+        using (var rig = new Rig(WithSave(TempStore(), 2)))
+        {
+            rig.Ui.Press("start-listen");
+            Assert.IsTrue(rig.Recording.Playing, "its button plays it");
+            rig.Ui.Press("start-continue");
+            Assert.IsFalse(rig.Start.IsOpen);
+            Assert.IsFalse(rig.Recording.Playing, "closing the screen stops it");
+        }
     }
 
     [Test]
@@ -308,7 +339,7 @@ public class StartScreenTests
         var cont = rig.Ui.Q<Button>("start-continue");
         cont.Focus();
         Assert.AreSame(cont, rig.Ui.Root.focusController?.focusedElement, "Continue has the focus");
-        // Tab walks the two buttons only.
+        // Tab walks the screen's buttons only: Continue, New Game and the recording's button.
         var seen = new List<string>();
         for (int i = 0; i < 4; i++)
         {
@@ -318,7 +349,8 @@ public class StartScreenTests
             seen.Add((rig.Ui.Root.focusController.focusedElement as VisualElement)?.name ?? "none");
         }
         Assert.AreEqual("start-new-game", seen[0], "Tab moves from Continue to New Game: " + string.Join(", ", seen));
-        Assert.IsTrue(seen.All(n => n == "start-continue" || n == "start-new-game"), "Tab stays on the two buttons: " + string.Join(", ", seen));
+        Assert.IsTrue(seen.All(n => n == "start-continue" || n == "start-new-game" || n == "start-listen"), "Tab stays on the screen's buttons: " + string.Join(", ", seen));
+        CollectionAssert.Contains(seen, "start-listen", "Tab reaches the recording's button: " + string.Join(", ", seen));
         rig.Ui.Press("start-continue");
         yield return null; yield return null;
         Assert.AreEqual(DisplayStyle.Flex, rig.Ui.Root.Q("top-bar").resolvedStyle.display);

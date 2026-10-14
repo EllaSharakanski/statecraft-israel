@@ -212,6 +212,13 @@ rules:
     licence: Copernicus-DEM
     source: "tools/terrain_bake.py from the Copernicus DEM GLO-30-derived heightmap (unity/Assets/StreamingAssets/map/heightmap.*): AO, curvature, sky-view (Map/terrain_bake.png), coast distance (Map/coast.png) and the AO copy (Map/ao.png); the terrain water's mesh samples (Map/terrain_water.bytes, Editor TerrainWaterBake from the same heightmap); attribution in NOTICE"
     status: verified
+  # --- Ben-Gurion's 1948 recording on the start screen (docs/declaration-recording.md; docs/oss/DECISIONS.md D-R) ---
+  - glob: "unity/Assets/StreamingAssets/audio/declaration-1948-isa-00113hj.wav"
+    licence: Israel State Archives terms of use
+    source: "Israel State Archives, item ISA-Collections-Recordings-00113hj, 'העתק מן המקור של הקלטת ההכרזה על הקמת מדינת ישראל, כולל טקס החתימה', recorded by Ralph Hellinger of Radio Doctor (the archive's description), as published on the archive's YouTube channel (https://www.youtube.com/watch?v=K5Q6Mrv4fGw, uploaded 2023-05-22). Downloaded 2026-10-13 as format 251 (Opus 48 kHz stereo in WebM, 22,845,078 B, sha256 0d464f4ad06181364fe5bed86baeabb741429965c83694456be0db1261878cb8). The excerpt 468.01-477.30 s, David Ben-Gurion reading «אנו מכריזים בזאת על הקמת מדינה יהודית בארץ־ישראל, היא מדינת ישראל», cut by ffmpeg stream copy (its 465 Opus packets are the download's, byte for byte; Ogg, 147,033 B, sha256 1e3d01c89b674cffad0658b6d4f87c6503debb37af0757be4c16b25f668b29a2), then decoded to 16-bit PCM WAV with no other processing (the commands are in docs/declaration-recording.md): 48 kHz stereo, 9.29 s, 1,784,396 B, sha256 24e7bc48f5d0134bbe28f0f81b3668235398e3a4bfd83d54aa8650aeae2da370 (pinned in DeclarationRecording.Sha256 and its test)"
+    status: owner-verify
+    credit: "Recording: Ralph Hellinger, Israel State Archives"
+    note: "Played only from the start screen's 'Play the recording' button, over the still painting, with the declaration's own Hebrew and English text as captions and the credit on screen; never automatic. Rights basis and open questions: docs/oss/DECISIONS.md D-R (the terms' commercial clause, a copy taken from the archive's YouTube channel, the creator's rights, the US status)."
   # --- Decision-card illustration loops: silent AI clips behind the Illustration switch (docs/event-videos.md; owner ruling D-V) ---
   # Made by tools/encode_event_videos.py from promo shots that are not in the repository (path and SHA-256 per row in
   # unity/Assets/Resources/EventVideos/event-videos.yaml). Rights: owner ruling D-V, 2026-10-13 (docs/oss/DECISIONS.md, merged in #449):
