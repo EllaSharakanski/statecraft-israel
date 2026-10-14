@@ -5,11 +5,13 @@ text: 'The Provisional State Council has set the Constituent Assembly at 120 sea
 anchor: hard
 office: prime_minister
 # The Declaration of Independence required elected institutions by 1 October 1948; the vote was postponed twice because
-# of the war (the dates of those decisions are a gap). 5 November 1948: the Provisional State Council set the assembly at
-# 120 seats with nationwide PR (en.wiki and he.wiki election pages). Registration date [C]: 8 November 1948 (CBS,
-# population.yaml; en.wiki and he.wiki election pages) vs "8 or 11" (en.wiki "1948 in Israel"); it ran under a seven-hour
-# curfew (he.wiki). The vote: 25 January 1949, turnout 86.9% (en.wiki). When 25 January was fixed is a gap; the card
-# comes on 23 January, by when the date was set. Research notes sections 10 and 11.
+# of the war (the dates of those decisions are a gap). 18 November 1948: the Provisional State Council approved the
+# election ordinance's final text at its 27th sitting, setting the assembly at 120 seats (Harpaz, Kesher 61, p. 187;
+# en.wiki and he.wiki give 5 November); nationwide PR (en.wiki and he.wiki election pages). Registration date [C]:
+# 8 November 1948 (CBS, population.yaml; en.wiki and he.wiki election pages) vs "8 or 11" (en.wiki "1948 in Israel");
+# it ran under a seven-hour curfew (he.wiki). The vote: 25 January 1949, turnout 86.9% (en.wiki). 25 January was fixed
+# on 25 November 1948 (Harpaz, p. 187); the card comes on 23 January, by when the date was set. Research notes sections
+# 10 and 11.
 # One option (review I3): legislatures.yaml fixes the election and the First Knesset's sitting, so a "postpone" option
 # could not change anything. The window opens on 17 January, so the card comes in the week of the vote.
 from: 1949-01-17
