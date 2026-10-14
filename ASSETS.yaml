@@ -295,12 +295,6 @@ rules:
     source: "The burned-in label 'AI-generated · נוצר בבינה מלאכותית' of the decision-card clips, rendered by tools/encode_event_videos.py --make-bug in Chrome for Testing from HTML written by an AI coding agent on 2026-10-14, set in EB Garamond and Frank Ruhl Libre (OFL, unity/Assets/UI/Fonts)"
     status: verified
   # --- Decision outcome clips: played once at End Turn for the historical order (docs/event-videos.md; owner ruling D-V) ---
-  - glob: "unity/Assets/StreamingAssets/video/first_truce-outcome.mp4"
-    licence: CC0-1.0
-    ai_generated: true
-    source: "Seedance 2.0 (Dreamina); the Dreamina AI badge is kept, generated 2026-10-12 (promo shot A02, promo/demo2/clips/A02.mp4, not in the repository; sha256 965b51a4dc33449d657e5db7f20526df8f090b1cad8163f76656900b6793040f); cut and re-encoded 2026-10-14 by tools/encode_event_videos.py: the steadiest 3.5 s (frames 5-88 at 24 fps, duplicate frames of the 60 fps file dropped first (decimate)), 960x540, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png; nothing else changed"
-    status: verified
-    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13, merged in #449): the generator terms were not checked, by the owner's choice. Played once at End Turn when the player ordered the historical option (first_truce: accept), captioned as the order, skippable; never for a counterfactual option or Deport. No identifiable real person (frames checked 2026-10-14)."
   - glob: "unity/Assets/StreamingAssets/video/maabarot_policy-outcome.mp4"
     licence: CC0-1.0
     ai_generated: true
@@ -313,12 +307,6 @@ rules:
     source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot W08, promo/demo3/clips/W08.mp4, not in the repository; sha256 818de9680bfc193d3b13cd51cc24ab4a66e2ef5a3da3aae21e512faba8ea75a3); cut and re-encoded 2026-10-14 by tools/encode_event_videos.py: the steadiest 3.5 s (frames 12-95 at 24 fps), 960x540, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png; nothing else changed"
     status: verified
     note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13, merged in #449): the generator terms were not checked, by the owner's choice. Played once at End Turn when the player ordered the historical option (hula_drainage: continue_works), captioned as the order, skippable; never for a counterfactual option or Deport. No identifiable real person (frames checked 2026-10-14)."
-  - glob: "unity/Assets/StreamingAssets/video/law_of_return-outcome.mp4"
-    licence: CC0-1.0
-    ai_generated: true
-    source: "Veo 3.1 Fast (ElevenLabs), generated 2026-10-12 (promo shot K04b, promo/demo3/clips/K04b.mp4, not in the repository; sha256 70f296e075ac6f39c9b4ca3ce44d13116140a3708d7061d21c174f1a04ee0bb6); cut and re-encoded 2026-10-14 by tools/encode_event_videos.py: the steadiest 3.5 s (frames 11-94 at 24 fps), 960x540, H.264 CRF 28, no audio, with the burned-in label tools/event_videos/ai-bug.png; nothing else changed"
-    status: verified
-    note: "Decision D1: AI-only output CC0 / no rights claimed. Owner ruling D-V (2026-10-13, merged in #449): the generator terms were not checked, by the owner's choice. Played once at End Turn when the player ordered the historical option (law_of_return: enact), captioned as the order, skippable; never for a counterfactual option or Deport. No identifiable real person (frames checked 2026-10-14)."
   - glob: "unity/Assets/StreamingAssets/video/operation_horev-outcome.mp4"
     licence: CC0-1.0
     ai_generated: true

@@ -21,6 +21,8 @@ namespace Statecraft.Game.UI
         /// <summary>The orders the last turn ran with (empty until a turn has run, and after a refused batch): what the player
         /// chose, as against what the turn delegated (OutcomePresenter plays a clip only for a choice).</summary>
         public IReadOnlyList<Command> LastBatch { get; private set; } = Array.Empty<Command>();
+        /// <summary>The game date when the last turn's orders were given (the date before that turn ran).</summary>
+        public DateTime LastBatchDate { get; private set; }
         /// <summary>The step before Session.Last (null until two turns have run), for "change since last turn".</summary>
         public StepResult? BeforeLast { get; private set; }
         /// <summary>Raised after every change the screens show: an order queued or withdrawn, a turn, a load.</summary>
@@ -117,6 +119,7 @@ namespace Statecraft.Game.UI
             StepResult r;
             var before = Session.Last;
             var batch = queue.ToList();
+            var date = State.Date;
             try { r = step(Session, batch); }
             catch (Exception e)   // any exception (M3 final review M7): never leave a queue that fails on every End Turn
             {
@@ -132,7 +135,7 @@ namespace Statecraft.Game.UI
                 return failed;
             }
             BeforeLast = before;
-            LastBatch = batch;
+            LastBatch = batch; LastBatchDate = date;
             queue.Clear();
             Changed?.Invoke();
             TurnEnded?.Invoke(r.Rejected);

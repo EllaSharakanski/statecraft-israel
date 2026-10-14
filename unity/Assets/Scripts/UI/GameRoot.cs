@@ -148,11 +148,14 @@ namespace Statecraft.Game.UI
             if (DiagLog.Nav) Own(new NavEventLog(root));                   // ?navlog: every UI pointer/submit event (playtest 2, P2-4)
             // The Illustration switch's silent loops (event-videos.yaml, Resources): none in the automated runs (CardVideo.ForcedOff).
             var video = CardVideo.ForcedOff() ? null : Own(new CardVideo());
-            var clips = video == null ? null : EventVideoMapping.Load().ToDictionary(r => r.Event);
+            var mapping = video == null ? default : EventVideoMapping.LoadBoth();
+            var clips = video == null ? null : mapping.clips.ToDictionary(r => r.Event);
             card = Own(new EventCardPresenter(root, bridge, text, portraits, EventImageCatalog.Load(), video,
                 clips == null ? null : id => clips.TryGetValue(id, out var r) ? r : null));   // event photos: Resources, no scene field
-            // The End Turn outcome clips (decision videos, phase 3): none in the automated runs (no video there).
-            outcomes = video == null ? null : Own(new OutcomePresenter(root, bridge, text, video, EventVideoMapping.LoadOutcomes(), () => card?.Render()));
+            // The End Turn outcome clips (decision videos, phase 3): none in the automated runs (no video there). Their own
+            // player, so the card's loop never takes it; an open screen closes when one starts.
+            outcomes = video == null ? null : Own(new OutcomePresenter(root, bridge, text, Own(new CardVideo()), mapping.outcomes,
+                () => card?.Render(), () => nav?.Close()));
             Own(new DefencePresenter(root, bridge, text, portraits));
             Own(new BudgetPresenter(root, bridge, text));
             Own(new WhyPresenter(root, bridge, text));
@@ -202,7 +205,8 @@ namespace Statecraft.Game.UI
                 Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
-            Func<Vector2, bool> overUi = p => UiPointer.IsOverUi(root.panel, p, Screen.height);
+            // An outcome clip holds the pointer while it shows and in the frame it closes (the skipping click selects no hex).
+            Func<Vector2, bool> overUi = p => outcomes?.HoldsThePointer == true || UiPointer.IsOverUi(root.panel, p, Screen.height);
             var terrain = map.Terrain;
             var size = terrain.terrainData.size;
             var oldBounds = cameraController.Bounds;

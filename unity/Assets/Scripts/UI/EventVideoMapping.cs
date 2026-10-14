@@ -71,10 +71,15 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>The shipped outcome clips, or none when the mapping is missing.</summary>
-        public static IReadOnlyList<Row> LoadOutcomes()
+        public static IReadOnlyList<Row> LoadOutcomes() => LoadBoth().outcomes;
+
+        /// <summary>The shipped card loops and outcome clips from one read of the mapping (none when it is missing).</summary>
+        public static (IReadOnlyList<Row> clips, IReadOnlyList<Row> outcomes) LoadBoth()
         {
             var asset = Resources.Load<TextAsset>(ResourcePath);
-            return asset == null ? Array.Empty<Row>() : ParseOutcomes(asset.text);
+            if (asset == null) return (Array.Empty<Row>(), Array.Empty<Row>());
+            var doc = ParseDoc(asset.text);
+            return (doc.Clips, doc.Outcomes);
         }
 
         /// <summary>Every problem with the outcome rows: an unknown event or option, a repeated event, an option that is not

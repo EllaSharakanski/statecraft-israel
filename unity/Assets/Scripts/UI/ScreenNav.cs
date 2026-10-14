@@ -27,8 +27,10 @@ namespace Statecraft.Game.UI
         /// open screen covers the decision layer (it sits where the card does), and in the two-row HUD also the minimap
         /// column and the info panel; a wide screen covers the info panel; the open decision card's backdrop
         /// (EventCardPresenter.OpenClass, with no start screen or screen over it: ModalClass, set here) covers the minimap
-        /// column and the info panel. Called wherever one of those classes changes (StartScreenPresenter, Open,
-        /// HudPresenter's tier, EventCardPresenter), so no caller re-enables a panel another still covers.</summary>
+        /// column and the info panel; an End Turn outcome clip (OutcomePresenter.OpenClass) covers the top bar, the minimap
+        /// column, the info panel and the decision layer. Called wherever one of those classes changes (StartScreenPresenter,
+        /// Open, HudPresenter's tier, EventCardPresenter, OutcomePresenter), so no caller re-enables a panel another still
+        /// covers.</summary>
         public static void DisableCovered(VisualElement root)
         {
             var r = root.Q("root") ?? root;
@@ -50,8 +52,8 @@ namespace Statecraft.Game.UI
             }
         }
 
-        /// <summary>Asks to be told, synchronously, whenever the decision layer comes out from under the start screen or a
-        /// screen (DisableCovered enables it again); null stops it.</summary>
+        /// <summary>Asks to be told, synchronously, whenever the decision layer comes out from under the start screen, a
+        /// screen or an outcome clip (DisableCovered enables it again); null stops it.</summary>
         public static void OnUncovered(VisualElement layer, System.Action? action) => layer.userData = action;
 
         /// <summary>Asks to be told, synchronously, whenever <paramref name="screen"/> is opened (a presenter that skips

@@ -6,11 +6,13 @@ using UnityEngine.Video;
 
 namespace Statecraft.Game.UI
 {
-    /// <summary>The decision card's silent illustration loop (decision videos, 2026-10-13): one VideoPlayer, made the first
-    /// time a clip is asked for (never at boot), playing a clip from StreamingAssets by URL (the only source the Web player
-    /// takes) into one reused 960x540 RenderTexture, which the media header shows as its background. Muted (the clips have
-    /// no audio track), looping. A clip that fails (errorReceived) or is not prepared within PrepareTimeoutMs is stopped and
-    /// reported once, and the card shows the photograph again. Presentation only.</summary>
+    /// <summary>A silent clip player (decision videos, 2026-10-13): one VideoPlayer, made the first time a clip is asked for
+    /// (never at boot), playing a clip from StreamingAssets by URL (the only source the Web player takes) into one reused
+    /// 960x540 RenderTexture, which the target element shows as its background. The decision card has one, for its looping
+    /// illustration; the End Turn outcome clips have their own (OutcomePresenter), which plays each clip once. No audio is
+    /// output (the clips have no audio track). A clip that fails (errorReceived) or is not prepared within its timeout is
+    /// stopped and reported once. The texture is cleared at each Play, so a new clip never opens on the last frame of the
+    /// previous one. Presentation only.</summary>
     public sealed class CardVideo : IDisposable
     {
         public const int Width = 960, Height = 540;
@@ -47,15 +49,18 @@ namespace Statecraft.Game.UI
         /// (once) if it fails or times out. The header keeps whatever it shows until the first frame is ready. A card's
         /// illustration loops; an outcome clip (<paramref name="loop"/> false) plays once and then tells
         /// <paramref name="ended"/>.</summary>
-        public void Play(string url, VisualElement header, Action<string> failed, bool loop = true, Action? ended = null)
+        /// <param name="prepareTimeoutMs">How long it may take to be ready (default PrepareTimeoutMs).</param>
+        public void Play(string url, VisualElement header, Action<string> failed, bool loop = true, Action? ended = null,
+            long prepareTimeoutMs = PrepareTimeoutMs)
         {
             Stop();
             Ensure();
+            var was = RenderTexture.active; RenderTexture.active = rt; GL.Clear(false, true, Color.black); RenderTexture.active = was;
             target = header; onFail = failed; onEnded = loop ? null : ended; Current = url;
             player!.isLooping = loop;
             player.url = url;
             player.Prepare();
-            timeout = header.schedule.Execute(() => { if (Current == url && !Showing) Fail("not ready after " + PrepareTimeoutMs + " ms"); }).StartingIn(PrepareTimeoutMs);
+            timeout = header.schedule.Execute(() => { if (Current == url && !Showing) Fail("not ready after " + prepareTimeoutMs + " ms"); }).StartingIn(prepareTimeoutMs);
         }
 
         /// <summary>Puts the playing clip back on <paramref name="header"/>'s background (after the card reset it to the

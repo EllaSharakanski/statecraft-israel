@@ -89,6 +89,21 @@ public class GameSceneTests
         Assert.AreEqual(StyleKeyword.Null, Ui.Q("start-caption").style.display.keyword);
     }
 
+    /// <summary>The booted game (video on in an edit-mode run): the End Turn outcome clips have their own player, so the
+    /// decision card's Render can never stop or replace one (review of #466, finding 1).</summary>
+    [Test]
+    public void TheOutcomeClipsHaveTheirOwnPlayer()
+    {
+        var root = Boot();
+        Assert.IsFalse(CardVideo.ForcedOff(), "precondition: an edit-mode run has video");
+        object? Field(object o, string name) => o.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(o);
+        var outcomes = Field(root, "outcomes"); var card = Field(root, "card");
+        Assert.IsNotNull(outcomes); Assert.IsNotNull(card);
+        var outcomePlayer = Field(outcomes!, "video"); var cardPlayer = Field(card!, "video");
+        Assert.IsNotNull(outcomePlayer); Assert.IsNotNull(cardPlayer);
+        Assert.AreNotSame(cardPlayer, outcomePlayer);
+    }
+
     [Test]
     public void TheGameStartsInTheSceneOnceTheInputsAreLoaded()
     {
