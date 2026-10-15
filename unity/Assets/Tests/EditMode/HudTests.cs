@@ -220,8 +220,9 @@ public class HudTests
         using var ui = new UiTestKit();
         var bridge = NewBridge();
         new ToastPresenter(ui.Root, bridge, Text);
+        LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("unknown policy 'curfew'"));   // the id: log only (#622)
         Assert.IsNotNull(bridge.Queue(new SetPolicy("curfew", 1)));
-        Assert.AreEqual("Not done: Unknown policy 'curfew'", ui.Q<Label>("toast").text);
+        Assert.AreEqual("Not done: Unknown policy", ui.Q<Label>("toast").text);
         Assert.AreEqual(DisplayStyle.Flex, ui.Q<Label>("toast").style.display.value);
         Assert.IsNull(bridge.Queue(new SecurityOrder(-1)));
         Assert.AreEqual(DisplayStyle.None, ui.Q<Label>("toast").style.display.value);
@@ -294,6 +295,27 @@ public class HudTests
         Assert.AreEqual(0, bridge.State.Turn);
     }
 
+    /// <summary>#622: a refusal names the kind of thing and never shows the content id or the exception's message, in
+    /// either language; both stay in the log for a bug report.</summary>
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ARefusalShowsNoIdOrExceptionTextInEitherLanguage(bool hebrew)
+    {
+        var text = hebrew ? UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.StringsHebrew).text, "strings.he.yaml") : Text;
+        LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("unknown policy 'curfew'"));
+        var unknown = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), text).Queue(new SetPolicy("curfew", 1));
+        Assert.AreEqual(text.Format("order.unknown", "policy"), unknown);
+        StringAssert.DoesNotContain("curfew", unknown);
+
+        LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("stack detail 42"));
+        var failing = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), text,
+            (s, cmds) => throw new System.InvalidOperationException("stack detail 42"));
+        Assert.IsNull(failing.Queue(new SecurityOrder(-1)));
+        var reason = failing.EndTurn().Rejected.Single().Reason;
+        Assert.AreEqual(text["order.failed"], reason);
+        StringAssert.DoesNotContain("stack detail", reason);
+    }
+
     /// <summary>Any exception from the sim (not only ArgumentException; final review M7) keeps the state, clears the queue
     /// and shows the reason: End Turn can never soft-lock. An unexpected kind is also logged in full.</summary>
     [TestCase(typeof(System.ArgumentException))]
@@ -318,7 +340,7 @@ public class HudTests
         Assert.AreEqual(0, bridge.Queued.Count);
         Assert.IsNull(bridge.BeforeLast);
         Assert.AreSame(order, seen![0].Command);
-        Assert.AreEqual("Not done: The turn could not run: boom", ui.Q<Label>("toast").text);
+        Assert.AreEqual("Not done: The turn could not run", ui.Q<Label>("toast").text);   // "boom": the log only (#622)
     }
 
     /// <summary>Playtest 1, item 11: pressing the open screen's button closes it, every time, with every presenter
@@ -436,18 +458,18 @@ public class HudTests
             Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(line, @"\{\d+:[^}]*\}%"), "percent format in strings.en.yaml: " + line);
     }
 
-    /// <summary>Fix round 1, M3: the top-bar captions are the content names in title case (a deliberate casing for
-    /// captions); Immigration and Public Support are UI quantities with no content name.</summary>
+    /// <summary>Fix round 1, M3: the top-bar captions are the content names. Since #622 they are in the sentence case the
+    /// content and the rest of the strings use, so a caption is the content name as written (it was Title Case before);
+    /// Immigration and Public support are UI quantities with no content name.</summary>
     [Test]
-    public void TopBarCaptionsAreTheContentNamesInTitleCase()
+    public void TopBarCaptionsAreTheContentNames()
     {
         using var ui = new UiTestKit();
         string Caption(string meter) => ui.Q<VisualElement>(meter).Q<Label>(className: "meter-name").text;
-        string Title(string name) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
-        Assert.AreEqual(Title(PlayerText.Target(C, "treasury")), Caption("meter-treasury"));
-        Assert.AreEqual(Title(PlayerText.Target(C, "security")), Caption("meter-security"));
-        Assert.AreEqual(Title(PlayerText.Target(C, "intl_standing")), Caption("meter-standing"));
-        Assert.AreEqual(Title(PlayerText.Target(C, "fx_reserves")), Caption("meter-fx"));
+        Assert.AreEqual(PlayerText.Target(C, "treasury"), Caption("meter-treasury"));
+        Assert.AreEqual(PlayerText.Target(C, "security"), Caption("meter-security"));
+        Assert.AreEqual(PlayerText.Target(C, "intl_standing"), Caption("meter-standing"));
+        Assert.AreEqual(PlayerText.Target(C, "fx_reserves"), Caption("meter-fx"));
     }
 
     /// <summary>Fix round 2 (R2-3, playtest 1 item 11): two Submit events on the Defence button within one frame (a
@@ -516,7 +538,7 @@ public class HudTests
         var bridge = NewBridge();
         var hud = new HudPresenter(ui.Root, bridge, Text);
         Assert.AreEqual("Treasury: IL 20.0 million", ui.Q<VisualElement>("meter-treasury").tooltip);           // turn 0: no change
-        Assert.AreEqual("Foreign Currency: $40.0 million", ui.Q<VisualElement>("meter-fx").tooltip);
+        Assert.AreEqual("Foreign currency: $40.0 million", ui.Q<VisualElement>("meter-fx").tooltip);
         Assert.AreEqual("Security: 30%", ui.Q<VisualElement>("meter-security").tooltip);
         bridge.EndTurn();
         var prev = bridge.Session.Previous!; var now = bridge.State;
@@ -528,9 +550,9 @@ public class HudTests
         var net = System.Math.Round(now.Treasury - now.Debt, 1, System.MidpointRounding.AwayFromZero);
         Assert.Greater(net, 0, "the test expects a positive net position after one turn");
         Assert.AreEqual(Inv($"Treasury: IL {net:0.0} million, down IL 1.4 million since last turn"), ui.Q<VisualElement>("meter-treasury").tooltip);
-        Assert.AreEqual(Inv($"Foreign Currency: ${now.FxReserves:0.0} million, up $2.0 million since last turn"), ui.Q<VisualElement>("meter-fx").tooltip);
+        Assert.AreEqual(Inv($"Foreign currency: ${now.FxReserves:0.0} million, up $2.0 million since last turn"), ui.Q<VisualElement>("meter-fx").tooltip);
         Assert.AreEqual($"Security: {ui.Q<Label>("security-value").text}, up 5 points since last turn", ui.Q<VisualElement>("meter-security").tooltip);
-        Assert.AreEqual($"International Standing: {ui.Q<Label>("standing-value").text}, down 1 point since last turn", ui.Q<VisualElement>("meter-standing").tooltip);
+        Assert.AreEqual($"International standing: {ui.Q<Label>("standing-value").text}, down 1 point since last turn", ui.Q<VisualElement>("meter-standing").tooltip);
         // Immigration after one turn has no change yet (it needs two turns of arrivals): the caption and the count only.
         Assert.AreEqual($"Immigration: {ui.Q<Label>("immigration-value").text}", ui.Q<VisualElement>("meter-immigration").tooltip);
         // Every tooltip agrees with the meter's shown change: "up" with a gain, "down" with a loss, neither without one.
