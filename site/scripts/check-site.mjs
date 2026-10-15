@@ -15,11 +15,18 @@
 //     (and "AI likeness, not a photograph" in 04 and 08, which the README's first line names), and
 //     are linked from the Press page in both languages.
 //  9. the history approach page exists in both languages, links to the two documents it restates, and History links to it.
+// 10. no page publishes a game portrait whose ASSETS.portraits.yaml row is not verified (the owner-verify GPO
+//     photographs are hidden for now: owner, 15 October 2026, decision D-P), the Cabinet page exists in both languages,
+//     and Golda Meir's Hebrew card uses the feminine title (title_he_form, #661);
+// 11. no page shows an in-engine picture or video that site/src/data/people-in-images.yaml does not clear. A check cannot
+//     see inside a screenshot, so that file records, checked by hand, the real people visible in each one; a screenshot
+//     of a hidden portrait (the Cabinet screen) is held back here.
 // Run after `astro build` (npm run build does both). Exit 1 with one line per problem.
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { plan, zipEntries, zipRead, CONCEPT_TAG, LIKENESS_TAG } from './press-kit.mjs';
+import { imageRules } from './people-in-images.mjs';
 
 const dist = path.resolve(process.argv[2] ?? 'dist');
 const problems = [];
@@ -219,9 +226,80 @@ for (const lang of ['en', 'he']) {
   if (!fs.existsSync(index) || !fs.readFileSync(index, 'utf8').includes(`/${lang}/history/approach/"`)) fail(index, 'no link to history/approach/');
 }
 
+// 10. Unverified portraits are never published. A built image keeps its source name (kaplan.<hash>_<hash>.avif), so
+// a page naming /_astro/<id>.<...> for an unverified <id>.jpg publishes it. SITE_PORTRAITS points at a fixture instead.
+{
+  const rows = YAML.parse(fs.readFileSync(process.env.SITE_PORTRAITS ?? path.resolve(dist, '..', '..', 'ASSETS.portraits.yaml'), 'utf8')).rules ?? [];
+  const dir = 'unity/Assets/UI/Portraits/';
+  const hidden = rows.filter((r) => r.glob.startsWith(dir) && r.status !== 'verified').map((r) => r.glob.slice(dir.length).replace(/\.jpg$/, ''));
+  if (!rows.some((r) => r.glob.startsWith(dir))) problems.push('ASSETS.portraits.yaml: no game portrait rows found');
+  for (const f of pages) {
+    const html = fs.readFileSync(f, 'utf8');
+    for (const id of hidden) if (new RegExp(`/_astro/${id}\\.[A-Za-z0-9_-]+\\.(?:avif|webp|jpe?g|png)`).test(html)) fail(f, `publishes the unverified portrait ${id}.jpg (ASSETS.portraits.yaml status is not verified)`);
+  }
+  for (const lang of ['en', 'he']) if (!fs.existsSync(path.join(dist, lang, 'cabinet', 'index.html'))) problems.push(`${lang}/cabinet/index.html: missing`);
+  // The two plates: a person whose game portrait is held back (its ASSETS.portraits.yaml row is not verified) gets
+  // "Portrait awaiting a licence check"; a person with no portrait at all keeps "No public-domain portrait yet".
+  {
+    const peopleDoc = YAML.parse(fs.readFileSync(path.resolve(dist, '..', '..', 'content', 'people.yaml'), 'utf8')).people;
+    const withPortrait = new Set(peopleDoc.filter((x) => x.portrait).map((x) => x.id));
+    const held = new Set(hidden);
+    const texts = { en: { held: 'Portrait awaiting a licence check', none: 'No public-domain portrait yet' }, he: { held: 'הצילום ממתין לבדיקת רישיון', none: 'אין עדיין צילום בנחלת הכלל' } };
+    let seen = { held: 0, none: 0 };
+    for (const lang of ['en', 'he']) {
+      const page = path.join(dist, lang, 'cabinet', 'index.html');
+      if (!fs.existsSync(page)) continue;
+      const html = fs.readFileSync(page, 'utf8');
+      for (const m of html.matchAll(/<article class="minister"[^>]*\sid="([a-z_]+)"[\s\S]*?<\/article>/g)) {
+        const [card, id] = m;
+        const plate = card.match(/data-plate="(\w+)"/)?.[1];
+        const want = held.has(id) ? 'held' : withPortrait.has(id) ? null : 'none';
+        if (plate !== (want ?? undefined)) { fail(page, `${id}: plate ${plate ?? 'none shown'}, expected ${want ?? 'the portrait'}`); continue; }
+        if (want && !card.includes(texts[lang][want])) fail(page, `${id}: the ${want} plate does not say "${texts[lang][want]}"`);
+        if (want) seen[want]++;
+      }
+    }
+    if (held.size && !seen.held) problems.push('cabinet: no "awaiting a licence check" plate found, though some portraits are held back');
+    if (!seen.none) problems.push('cabinet: no "no portrait yet" plate found');
+  }
+  // The feminine Hebrew title (#661, title_he_form: feminine): Golda Meir's card reads שרת העבודה, never שר העבודה.
+  const heCab = path.join(dist, 'he', 'cabinet', 'index.html');
+  if (fs.existsSync(heCab)) {
+    const html = fs.readFileSync(heCab, 'utf8');
+    const at = html.indexOf('id="golda_meir"');
+    const card = at < 0 ? '' : html.slice(at, html.indexOf('</article>', at));
+    if (!card) fail(heCab, 'no card for golda_meir');
+    else if (!card.includes('שרת העבודה') || /שר העבודה/.test(card)) fail(heCab, 'Golda Meir\'s card does not read שרת העבודה (title_he_form: feminine)');
+  }
+}
+
+// 11. In-engine pictures and videos: every file in docs/images/ (the README's screenshots, the hero, the gameplay clip)
+// and every file people-in-images.yaml lists must be cleared before a page names it. A built file keeps its source name
+// (/_astro/<stem>.<hash>...), and a public/ file keeps its path.
+{
+  const repo = path.resolve(dist, '..', '..');
+  const people = imageRules(repo, process.env.SITE_PEOPLE_IN_IMAGES);
+  const candidates = new Set([...people.listed.keys()]);
+  for (const n of fs.readdirSync(path.join(repo, 'docs/images'))) if (/\.(jpe?g|png|webp|mp4|webm)$/.test(n)) candidates.add(`docs/images/${n}`);
+  const blocked = [...candidates].map((f) => [f, people.why(f)]).filter(([, w]) => w);
+  for (const f of pages) {
+    const html = fs.readFileSync(f, 'utf8');
+    for (const [file, why] of blocked) {
+      const base = path.basename(file);
+      const stem = base.replace(/\.[^.]+$/, '');
+      const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // A picture is re-encoded (any image extension); a video keeps its own extension.
+      const ext = /\.(mp4|webm)$/.test(base) ? base.split('.').pop() : '(?:avif|webp|jpe?g|png)';
+      const built = new RegExp(`/_astro/${esc(stem)}\\.[A-Za-z0-9_-]+\\.${ext}(?![a-z0-9])`);
+      const direct = file.startsWith('site/public/') ? html.includes(`/${file.slice('site/public/'.length)}`) : false;
+      if (built.test(html) || direct) fail(f, `shows ${file}: ${why}`);
+    }
+  }
+}
+
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`check-site: ${problems.length} problem(s)`);
   process.exit(1);
 }
-console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips, history approach page)`);
+console.log(`check-site: ${pages.length} pages OK (both languages, labels on every image and video, nothing from other origins, devlog RSS feeds, contributors groups, press zips, history approach page, no unverified portraits, cabinet page, in-engine pictures cleared for the people in them)`);
