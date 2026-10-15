@@ -2698,6 +2698,66 @@ The fix's diorama02 `all` p95 (33, 34) is back at or under main's (35, 36). In r
 for both branch builds in the same stretch: spreads 1.36 and 1.68 against main's 0.01, and the old branch's `none` was
 up too. Round 2 is clean, with all three at p95 18. `golden&smoke=5` is unchanged on the fix build.
 
+## HUD round 2, part 1: the minimap (#398)
+
+The owner chose all three round-2 pieces (2026-10-14), one PR each: the minimap, the left icon column, the top bar. This is
+the minimap, against promo 03's (T54: "the minimap is a pixelated hex strip").
+- The picture is a bake, `tools/minimap_bake.py` -> `unity/Assets/Resources/Map/MinimapRelief.png` (256 x 1024, powers of two so it is block-compressed on the GPU,
+  mipmapped, trilinear): a hill shade of the heightmap (heights averaged over 3 x 3 samples, x12, lit from the north-west)
+  over the biome colour bake and the land use (softened, a third parchment), the sea from `coast.png` (dark navy, a lighter
+  band within 6 km of the shore, a thin pale line at the edge), and land outside Mandatory Palestine greyed with a gold rim.
+  It replaces the 128-pixel point-filtered strip that `MinimapPresenter.Paint` drew at boot, so boot loses that loop and
+  nothing is drawn per frame. `tools/tests/test_minimap_bake.py` re-bakes it in CI and compares the pixels.
+- Promo 03's three round buttons, beside the picture: zoom all the way out (the camera's `MaxDistance`, over the middle
+  of the map), show or hide the settlement names (the `labels` switch), show or hide the borders and their caption (the
+  `borders` switch). A switched-off layer dims its button. The picture stays mouse-only (accessibility audit B1d); the
+  buttons take Tab after End Turn.
+- The panel is 222 x 380 (was 160 x 340): the picture 133 x 356, the buttons 50 px.
+
+Measured on the WebGL `?shot` frames at 1920x1080 against promo 03's minimap (T54's definitions; the picture resized to
+300 px tall first; land is every pixel that is not blue-dominant):
+
+| | promo 03 | main gameplay03 | branch gameplay03 | branch diorama02 |
+|---|---|---|---|---|
+| panel, share of the frame | 4.97% | 2.62% | 4.07% | 4.07% |
+| picture, share of the frame | 3.11% | 1.80% | 2.30% | 2.30% |
+| land luma, contrast (std) | 0.467, 0.109 | 0.609, 0.078 | 0.492, 0.098 | 0.497, 0.106 |
+| land p10-p90 | 0.260 | 0.163 | 0.259 | 0.271 |
+| land relief (mean abs Laplacian) | 0.063 | 0.024 | 0.069 | 0.074 |
+| land saturation | 0.327 | 0.353 | 0.277 | 0.275 |
+| dE to promo: land, sea | 0, 0 | 17.2, 27.4 | 3.3, 2.4 | 3.7, 2.6 |
+
+The picture is still taller and narrower than promo 03's, which crops the country; the minimap shows all of it. The
+promo's region tints (orange and blue by side) are not in the bake: the two-colour borders (#555) change by date.
+
+Frame time, `?vprofile` headless 1920x1080 DPR 1, and boot (`headed.py boot --runs 3`), one `machine_lock.py
+--exclusive` slot, main df17ac6f first, then the branch (median avg ms, spread):
+
+| | main | branch |
+|---|---|---|
+| gameplay03 all / none | 8.39 (0.09) / 7.18 (0.10) | 8.38 (0.06) / 7.11 (0.03) |
+| diorama02 all / none | 15.96 (0.48) / 11.41 (0.09) | 16.52 (0.73) / 11.99 (0.10) |
+| boot map_build / first_frame, cpu 1 | 565 / 3924 ms | 563 / 3917 ms |
+
+That first pair was not interleaved. The re-run (one `--exclusive` slot, 10 minutes; both builds with a temporary,
+uncommitted FrameProfile patch that measures only `all` and `none`, in the order base, branch, branch, base; two
+diagnostic branch builds; a headed DPR 2 pair) shows no cost:
+
+| run (order) | diorama02 all | diorama02 none | gameplay03 all | gameplay03 none |
+|---|---|---|---|---|
+| 1 main | 16.64 (0.48) | 11.83 (0.29) | 8.60 (0.61) | 7.12 (0.28) |
+| 2 branch | 16.46 (2.90) | 11.81 (1.21) | 9.92 (0.08) | 8.19 (0.09) |
+| 3 branch | 15.59 (0.44) | 11.24 (0.07) | 8.37 (0.09) | 7.08 (0.05) |
+| 4 main | 15.45 (0.33) | 11.23 (0.06) | 8.25 (0.07) | 7.07 (0.09) |
+| 5 branch, picture without mipmaps | 15.39 (0.42) | 11.20 (0.06) | 8.30 (0.03) | 7.01 (0.03) |
+| 6 branch, main's 160 x 340 panel, no buttons | 15.42 (0.37) | 11.19 (0.15) | 8.30 (0.07) | 7.07 (0.02) |
+| DPR 2 headed, main | 33.73 (0.15) | 27.90 (0.15) | 19.71 (0.94) | 18.33 (0.56) |
+| DPR 2 headed, branch | 33.49 (0.05) | 27.86 (0.10) | 19.34 (0.29) | 17.81 (0.02) |
+
+Runs in the same position agree within 0.1 ms (1 and 2; 3 and 4), and the 0.6 ms step follows the position in the slot,
+not the build: the machine was slower early in the slot (run 2's gameplay03 is the same drift). The variants that remove
+the mipmaps or the larger panel and its buttons cost the same as the branch. The first pair's +0.56 ms was this drift.
+
 ## Issue #391: the terrain shader's frame-time cliff (warm land shade, not shipped)
 #391 asked for the shaded hill ground to read warm brown, as promo 03's does (about (67, 53, 46)), rather than olive-grey.
 The look was solved; the cost was not, so nothing shipped. What was measured is a constraint on any future addition to
