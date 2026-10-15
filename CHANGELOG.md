@@ -493,6 +493,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - Map roads read as wide, pale dirt tracks at the gameplay zoom, as in promo 03 (refs #35): 420 m wide (was 300 m), cream
   dirt varied in patches, softer verges. The pale band is a median 9 px at gameplay03 (was 4) and 19 px at 30 km (was
   7). The route ribbons are re-baked; no route was added.
+- The map's colour grade is retuned towards promo 03 (refs #38, #391): crisper, with more contrast and darker shadows,
+  near-neutral split toning and slightly less saturation, so the land keeps main's warmth and reads tan rather than rose;
+  the vignette stays as it was. At the gameplay pose the land's contrast comes to the promo's; the sea stays blue, a little
+  darker than promo 03's (the owner's decision), and the border stripe stays near the owner's blue. Presentation only.
 - The trees are warm olive-brown instead of bright green, like the groves in promo 03 (refs #34): citrus groves, olive
   crowns, palms and cypresses. Only the leaf colours change; the fruit, meshes and frame cost are the same.
 - Map: settlement quick wins (refs #31). The White City's blocks are lime white, with a solid-parapet balcony on each
