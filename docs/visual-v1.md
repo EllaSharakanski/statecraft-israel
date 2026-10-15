@@ -2758,6 +2758,48 @@ Runs in the same position agree within 0.1 ms (1 and 2; 3 and 4), and the 0.6 ms
 not the build: the machine was slower early in the slot (run 2's gameplay03 is the same drift). The variants that remove
 the mipmaps or the larger panel and its buttons cost the same as the branch. The first pair's +0.56 ms was this drift.
 
+## HUD round 2, part 2: the left icon column (#398)
+
+Promo 03 and T29 have a column of round icons at the left edge under the bar. This step moves the four screens' buttons
+(Cabinet, Budget, Defence, Why?) there from the top bar. It adds no action and no second copy of a button.
+- Icon-only, as in the promo. Each button keeps its name as its text, because the event log and the strings read it, but
+  draws it clear; the name is also its tooltip, and `HoverTip` (from #584) shows it beside the disc on hover and on focus.
+- The column comes before the top bar in Game.uxml, so Tab still runs Cabinet, Budget, Defence, Why?, New Game, End
+  Turn. It is covered where the top bar is (the start screen, an outcome clip) and stays usable under the decision card,
+  as the top bar does: the card's backdrop starts at its right edge. The card stays centred in the window.
+- The screens, the wide screens, the narrow HUD's full-width screens and the toast start right of the column (84 px), so
+  a screen never hides the button that closes it. The toast is 460 px wide (was 520), to stay clear of the screens.
+- The Hebrew UI mirrors rows, not the screen's corners (#550): the column stays at the left, as the minimap stays at the
+  right and the info panel at the left.
+- The top bar now holds New Game and End Turn. Its height and its tiers are part 3.
+
+Measured on the WebGL `?shot` frames at 1920x1080. The discs are found as the navy fill in the left 5% of the frame,
+between 7% and 47% of its height:
+
+| frame | discs | disc width, share of height | pitch | left edge, share of width | first disc's top |
+|---|---|---|---|---|---|
+| promo 03 | 5 | 5.21% | 6.32% | 0.87% | 12.1% |
+| demo2 T29 | 5 | 5.56% | 6.30% | 0.31% | 12.1% |
+| branch gameplay03 (EN, HE, diorama02 the same) | 4 | 4.72% | 6.30% | 0.94% | 10.8% |
+
+Frame time (`?vprofile` with the same temporary all/none-only FrameProfile patch on both builds, headless 1920x1080, then a
+headed DPR 2 pair) and boot (`headed.py boot --runs 3`), one `--exclusive` slot of 8 minutes, interleaved base, branch,
+branch, base. Base is #584's head 916cbad. Median avg ms (spread):
+
+| | base | branch | branch | base |
+|---|---|---|---|---|
+| gameplay03 all | 8.16 (0.05) | 8.21 (0.08) | 8.18 (0.01) | 8.21 (0.04) |
+| gameplay03 none | 7.02 (0.04) | 6.97 (0.04) | 7.02 (0.03) | 6.98 (0.03) |
+| diorama02 all | 15.49 (0.40) | 15.55 (0.43) | 15.61 (0.36) | 15.46 (0.43) |
+| diorama02 none | 11.08 (0.08) | 10.73 (0.09) | 10.74 (0.17) | 11.16 (0.05) |
+| boot map_build / first_frame, cpu 1 | 533 / 3877 ms | 530 / 3866 ms | 532 / 3862 ms | 528 / 3852 ms |
+
+DPR 2 headed, base then branch (spread): gameplay03 all 19.14 (0.29) / 19.09 (0.19), none 17.81 (0.03) / 17.84 (0.05);
+diorama02 all 33.79 (0.21) / 33.81 (0.25), none 27.91 (0.04) / 27.87 (0.01). The column costs nothing measurable.
+Diorama02 `none` is 0.35-0.4 ms lower on the branch in both positions, outside the spreads; at DPR 2 the same cell is
+equal (27.91 / 27.87). It is not explained (the branch draws four fewer captioned buttons in the bar, but that is not
+measured on its own), so it is not claimed as a gain.
+
 ## Issue #391: the terrain shader's frame-time cliff (warm land shade, not shipped)
 #391 asked for the shaded hill ground to read warm brown, as promo 03's does (about (67, 53, 46)), rather than olive-grey.
 The look was solved; the cost was not, so nothing shipped. What was measured is a constraint on any future addition to
