@@ -41,7 +41,7 @@ The game design of record is now [docs/GDD.md](docs/GDD.md) (12 October 2026): m
 ## What it looks like today
 
 <p align="center">
-  <img src="docs/images/build-gameplay.webp" alt="Real gameplay, 22 to 29 May 1948: a pan across Tel Aviv, Jaffa and the coastal plain, a click on a hex that opens its panel, the One Army decision, and End Turn moving the date to 29 May" width="820">
+  <img src="docs/images/build-gameplay.webp" alt="Real gameplay, 22 to 29 May 1948: a pan across Tel Aviv, Jaffa and the coastal plain, a click on a hex that opens its panel, the One Army decision, and End turn moving the date to 29 May" width="820">
   <br><em>Real gameplay, build 0.1.0, 2026-10-13, commit f93fd5e.</em>
 </p>
 <p align="center">
@@ -171,7 +171,7 @@ You need Unity **6000.3.25f1 (6.3 LTS)** with Web Build Support; the exact versi
 
 This project is built with heavy AI assistance, disclosed here using itch.io's categories:
 - **Code:** written with AI coding agents and reviewed through tests and review gates.
-- **Graphics:** the concept and promo images in `promo/` are AI-generated, as is the start screen's painting, and the web page's tab icon was drawn with AI help. The game's terrain comes from real elevation data. The portraits are public-domain, CC0 or CC BY 4.0 photographs (credited in NOTICE), and the event cards use archival photographs; on some cards an Illustration switch plays a short, silent AI-generated loop, and a few historical orders show a short AI-generated clip at End Turn, both labelled as such.
+- **Graphics:** the concept and promo images in `promo/` are AI-generated, as is the start screen's painting, and the web page's tab icon was drawn with AI help. The game's terrain comes from real elevation data. The portraits are public-domain, CC0 or CC BY 4.0 photographs (credited in NOTICE), and the event cards use archival photographs; on some cards an Illustration switch plays a short, silent AI-generated loop, and a few historical orders show a short AI-generated clip at End turn, both labelled as such.
 - **Text:** event and content text was drafted with AI, and every fact is checked against the cited source.
 - **Sound:** no AI sound. The start screen can play the original 1948 recording of Ben-Gurion reading the Declaration (Israel State Archives).
 
