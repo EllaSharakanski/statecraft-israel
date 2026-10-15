@@ -4,8 +4,8 @@ using System.Linq;
 using Statecraft.Sim;
 
 /// <summary>The GDD slice's city data (Phase 1 PR 3, Task 3.1): cities.yaml, unit_types.yaml and the mvp: rules block. The
-/// loader reads and requires them only when systems.loop is gdd; their values are placeholders in MvpSlice.Overlay or test
-/// fixtures, never under content/ (controller ruling 2).</summary>
+/// loader reads and requires them only when systems.loop is gdd. The real values are labelled design values in content/
+/// (Q-CUT-1, R-LOOP-005, DesignValuesTests); the fixtures' are test values.</summary>
 public class CitiesContentTests
 {
     static Content Load(Dictionary<string, string>? extra = null) => ContentLoader.Load(Fixture.Write(Fixture.Gdd(extra)));
@@ -28,17 +28,18 @@ public class CitiesContentTests
     [Fact]
     public void TheLegacyLoopReadsNoCityData()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string>   // a legacy fixture with city files next to it
+            { ["cities.yaml"] = Fixture.GddCities, ["unit_types.yaml"] = Fixture.GddUnitTypes }));
         Assert.Empty(c.Cities);
         Assert.Empty(c.UnitTypes);
         Assert.Null(c.RulesAt(c.Eras[0].From).Mvp);
-        Assert.Equal("Tel Aviv", c.SettlementNames["tel_aviv"]);   // names are read in both loops: refusals and causes name places
+        Assert.Equal("Town A", c.SettlementNames["town_a"]);   // names are read in both loops: refusals and causes name places
     }
 
     [Fact]
-    public void TheSliceHasTelAvivFromTheOverlay()
+    public void TheRealGameHasTelAviv()
     {
-        var c = MvpSlice.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
         Assert.Equal("tel_aviv", Assert.Single(c.Cities).Id);
         Assert.Equal("tel_aviv", c.RulesAt(c.Eras[0].From).Mvp!.ArrivalsCity);
         Assert.True(c.Rules.AttentionCost.ContainsKey("assign_workers"));
@@ -46,22 +47,6 @@ public class CitiesContentTests
         Assert.Equal(new[] { ("recruit", "military_camp"), ("halutz", "hakhshara") },
                      c.UnitTypes.Where(t => t.Facility != "").Select(t => (t.Id, t.Facility)));
         Assert.True(c.Rules.AttentionCost.ContainsKey("train") && c.Rules.AttentionCost.ContainsKey("cancel_training"));
-    }
-
-    [Fact]
-    public void NoBalanceValueIsUnderContent()
-    {
-        var root = RealContentTests.ContentRoot();
-        Assert.False(File.Exists(Path.Combine(root, "cities.yaml")));
-        Assert.False(File.Exists(Path.Combine(root, "unit_types.yaml")));
-        var overrides = Directory.Exists(Path.Combine(root, "rules")) ? Directory.GetFiles(Path.Combine(root, "rules"), "*.yaml") : new string[0];
-        foreach (var f in new[] { "rules.yaml" }.Concat(overrides.Select(x => "rules/" + Path.GetFileName(x))))
-        {
-            var text = File.ReadAllText(Path.Combine(root, f));
-            Assert.DoesNotContain("mvp:", text);
-            Assert.DoesNotContain("assign_workers", text);
-            Assert.DoesNotMatch(@"\btrain:|cancel_training|training_turns|training_cost", text);
-        }
     }
 
     const string City = "  - { id: town_a, housing_capacity: 12, job_slots: 8, civilians: 10, employed: 6, facilities: [] }\n";

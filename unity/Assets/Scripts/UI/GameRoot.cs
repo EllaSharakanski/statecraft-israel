@@ -175,12 +175,11 @@ namespace Statecraft.Game.UI
             var text = Strings();
             var store = Store ?? SaveStore.ForPlatform();
             var notes = new List<string>();
-            // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave. A slice game (?mvp=1,
-            // #380) is fresh too: the autosave was made with other rules, so it is neither read nor set aside.
+            // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave.
             bool resumed;
             var session = smoke > 0
                 ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, out resumed, fresh: true)
-                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed, fresh: inputs.Slice);
+                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed);
             DiagLog.BootPhase($"session started (turn {session.State.Turn}, replayed)");
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
@@ -207,8 +206,9 @@ namespace Statecraft.Game.UI
             // or by the first card if it comes sooner. A Continue with a decision waiting builds the card under the start
             // screen, which asks for the photograph only when the screen closes (issue #592). One value says whether the
             // screen goes up (below) and whether the card waits for it: a card waiting under no screen would never show its photo.
-            // A smoke run has no New Game, and a slice game's (?mvp=1, #380) would be dead: neither shows the start screen.
-            bool showsStart = startScreen && smoke == 0 && !inputs.Slice;
+            // A smoke run has no New Game, so it shows no start screen. Since the GDD cutover every new game opens on a card
+            // (One Army, 15 May 1948), so a new game's card waits under the screen too.
+            bool showsStart = startScreen && smoke == 0;
             EventPhotos.ScheduleOn(root);
             card = Own(new EventCardPresenter(root, bridge, text, portraits, null, video,
                 clips == null ? null : id => clips.TryGetValue(id, out var r) ? r : null, EventPhotos.Get,
@@ -268,18 +268,14 @@ namespace Statecraft.Game.UI
             var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav: nav,
                 selectedUnit: () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null,
                 regions: regions, localitiesAt: localitiesAt));
-            // A smoke or slice session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
-            // A smoke run gets no New Game at all: no file is ever deleted, no path has to be right on every platform, and the
-            // scripted run never presses it. A slice game (?mvp=1) hides the button and takes it out of the Tab order, and its
-            // presenter refuses every press (slice: true), so even a press that reaches it deletes nothing.
+            // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
+            // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
+            // right on every platform, and the scripted run never presses it.
             NewGamePresenter? newGame = null;
-            var newGameButton = root.Q<Button>("new-game");
-            newGameButton.style.display = inputs.Slice ? DisplayStyle.None : StyleKeyword.Null;
-            newGameButton.focusable = !inputs.Slice;
             if (smoke == 0)
             {
-                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed, slice: inputs.Slice));
-                if (!inputs.Slice) Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
+                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
+                Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
             // An outcome clip holds the pointer while it shows and in the frame it closes (the skipping click selects no hex).
@@ -405,6 +401,10 @@ namespace Statecraft.Game.UI
         void Shutdown()
         {
             StopAllCoroutines();
+            // The card first: disposing the start screen uncovers the decision layer, and a card still waiting for it would
+            // then render and load the photo catalog for a game that is going away (#592; since the GDD cutover a new game's
+            // card waits under the screen, so New Game's Begin would load it).
+            if (card != null) { owned.Remove(card); card.Dispose(); }
             for (int i = owned.Count - 1; i >= 0; i--) owned[i].Dispose();
             owned.Clear();
             minimap = null; labels = null; nav = null; start = null; card = null; outcomes = null; rig = null; drawn = null; units = null; Regions = null; logCamera = false;
@@ -470,8 +470,9 @@ namespace Statecraft.Game.UI
             Debug.Log(CameraLine(rig.Distance, rig.Yaw));
         }
 
-        /// <summary>Plays turns the way a player does: answers each open event by pressing the card's first option button,
-        /// then presses End Turn. Logs "SMOKE turn &lt;n&gt; &lt;date&gt; refused &lt;k&gt;" per turn through <paramref name="log"/>,
+        /// <summary>Plays turns the way a player does: answers each open event by pressing the card's first option button
+        /// while the turn's Attention pays for an answer, then presses End Turn; a card left unanswered goes to its minister
+        /// (since the GDD cutover, 15 July 1948 brings three cards at full war, where an answer costs 2 of the 4). Logs "SMOKE turn &lt;n&gt; &lt;date&gt; refused &lt;k&gt;" per turn through <paramref name="log"/>,
         /// then "SMOKE OK &lt;n&gt; turns &lt;date&gt; &lt;hash&gt;", or "SMOKE FAIL &lt;reason&gt;" when a press does not take effect.
         /// Static, so an edit-mode test can drive it step by step.</summary>
         public static IEnumerator Smoke(VisualElement root, SimBridge bridge, EventCardPresenter card, int turns, Action<string> log)
@@ -482,6 +483,7 @@ namespace Statecraft.Game.UI
                 for (int guard = 0; card.Shown != null; guard++)
                 {
                     var shown = card.Shown;
+                    if (bridge.AttentionLeft + 1e-9 < AttentionSystem.Cost(bridge.Content, bridge.State, new ChooseEventOption(shown.Id, "").Kind)) break;
                     var option = root.Q<VisualElement>("event-options")?.Q<Button>();
                     if (option == null || guard >= 50) { log(FormattableString.Invariant($"SMOKE FAIL event {shown.Id} has no option to press")); yield break; }
                     if (!Press(option, log)) yield break;

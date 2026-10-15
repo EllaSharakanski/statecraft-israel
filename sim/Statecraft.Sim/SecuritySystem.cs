@@ -71,11 +71,15 @@ namespace Statecraft.Sim
 
         public static void Apply(Content c, GameState s, TurnLength len, List<Cause> why) => Apply(c, s, Weeks(len), why);
 
+        /// <summary>True while the country is at full war: rung 5, the ladder's top. The war state the sim already keeps (the
+        /// ceasefire clock runs only then); D-C4 derives the rung from the war in Phase 5. R-TURN-003 reads it.</summary>
+        public static bool AtFullWar(GameState s) => s.Rung == 5;
+
         /// <summary>Counts the ceasefire clock down by <paramref name="weeks"/> (a whole turn's weeks, or the whole weeks of
         /// an adjusted turn at an era's end) while the country is at full war.</summary>
         public static void Apply(Content c, GameState s, int weeks, List<Cause> why)
         {
-            if (s.Rung != 5) return;
+            if (!AtFullWar(s)) return;
             s.CeasefireWeeksLeft = Math.Max(0, s.CeasefireWeeksLeft - weeks);
             if (s.CeasefireWeeksLeft == 0)
             {

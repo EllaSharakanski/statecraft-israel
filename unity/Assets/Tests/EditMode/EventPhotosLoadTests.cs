@@ -206,10 +206,19 @@ public class EventPhotosLoadTests
                 Assert.AreEqual(1000, delay, "a second after Begin");
                 Assert.AreEqual(EventPhotos.PrefetchDelayMs, delay);
             }
+            if (!startScreen)
+            {
+                // No start screen (the automated runs): since the GDD cutover turn 0 shows a card (One Army, 15 May 1948), and
+                // a visible card takes its photograph at once; New Game reuses it, and the prefetch then has nothing to do.
+                Assert.AreEqual(1, loadsNow, "the visible turn-0 card loads the catalog once");
+                foreach (var (_, action, _) in scheduled) action();
+                Assert.AreEqual(0, starts, "the prefetch finds it loaded");
+                return;
+            }
             Assert.AreEqual(0, starts, "nothing loads until the scheduler runs it");
             foreach (var (_, action, _) in scheduled) action();
             Assert.AreEqual(1, starts, "the action is the async prefetch, and once");
-            Assert.AreEqual(0, loadsNow, "never the synchronous load");
+            Assert.AreEqual(0, loadsNow, "never the synchronous load: the turn-0 card waits under the start screen (#592)");
             Assert.IsFalse(EventPhotos.Loaded, "the catalog waits for the first card");
         }
         finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
@@ -284,15 +293,14 @@ public class EventPhotosLoadTests
     }
 
     /// <summary>Issue #592 review: the card waits for its photograph exactly when Begin shows the start screen (one value
-    /// in GameRoot decides both; #598's slice game shows none). A card waiting under no screen would never be uncovered and
+    /// in GameRoot decides both; the ?mvp=1 slice went with the cutover). A card waiting under no screen would never be uncovered and
     /// never show its photograph.</summary>
     [Test]
-    public void TheCardWaitsForThePhotographExactlyWhenTheStartScreenShows([Values(false, true)] bool startScreen, [Values(0, 5)] int smoke,
-        [Values(false, true)] bool slice)
+    public void TheCardWaitsForThePhotographExactlyWhenTheStartScreenShows([Values(false, true)] bool startScreen, [Values(0, 5)] int smoke)
     {
         SaveWithAPhotographedDecisionWaiting();
         EventPhotos.Schedule = (_, _, _) => { };
-        var inputs = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap, slice);
+        var inputs = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
         try
         {
             EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
@@ -302,7 +310,7 @@ public class EventPhotosLoadTests
             if (smoke > 0) UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "SMOKE FAIL the smoke run needs play mode or a player");
             root.Begin(inputs, smoke, startScreen);
             var open = Object.FindFirstObjectByType<UIDocument>().rootVisualElement.Q("root").ClassListContains(StartScreenPresenter.OpenClass);
-            Assert.AreEqual(startScreen && smoke == 0 && !slice, open, "the start screen shows only outside a smoke run and the slice");
+            Assert.AreEqual(startScreen && smoke == 0, open, "the start screen shows only outside a smoke run");
             Assert.AreEqual(open, root.Card!.PhotoWaits, "the card waits for the photograph exactly when the screen covers it");
         }
         finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
@@ -330,6 +338,35 @@ public class EventPhotosLoadTests
         finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
     }
 
+    /// <summary>#592: the turn-0 card (One Army, since the GDD cutover) under the start screen asks for no photograph; when
+    /// the screen closes the card takes it, so it never opens with the minister's portrait.</summary>
+    [Test]
+    public void TheOpeningCardTakesItsPhotographWhenTheStartScreenCloses()
+    {
+        var inputs = GameInputs.FromDisk(Paths.Content, Paths.StreamingMap);
+        try
+        {
+            EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+            Object.FindFirstObjectByType<MapScene>().Build(inputs.Map);
+            var root = Object.FindFirstObjectByType<GameRoot>();
+            root.Store = new SaveStore(saveDir);
+            root.Begin(inputs, 0, startScreen: true);
+            var ui = Object.FindFirstObjectByType<UIDocument>().rootVisualElement;
+            Assert.IsTrue(ui.Q("root")!.ClassListContains(StartScreenPresenter.OpenClass), "the start screen is up");
+            Assert.AreEqual(0, loadsNow, "no catalog under the start screen");
+            Assert.IsFalse(EventPhotos.Loaded);
+            UiTestKit.Press(ui.Q<Button>("start-new-game"));               // a new game: the first press closes the screen
+            Assert.IsFalse(ui.Q("root")!.ClassListContains(StartScreenPresenter.OpenClass), "the start screen closed");
+            Assert.AreEqual(1, loadsNow, "the card loads the catalog when it comes out from under the screen");
+            var entry = Shipped.Find("idf_founding")!.Value;
+            var band = ui.Q<VisualElement>("event-photo");
+            Assert.AreEqual(DisplayStyle.Flex, band.style.display.value, "the photograph shows");
+            Assert.AreEqual(entry.image, band.style.backgroundImage.value.texture);
+            Assert.AreEqual(DisplayStyle.None, ui.Q<VisualElement>("event-image").style.display.value, "no portrait in its place");
+        }
+        finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
+    }
+
     [Test]
     public void GameRootBeginLoadsNoPhotoCatalog([Values(false, true)] bool startScreen)
     {
@@ -344,8 +381,11 @@ public class EventPhotosLoadTests
             var before = EventImageCatalog.ResourceLoads;
             root.Begin(inputs, 0, startScreen);
             root.Begin(inputs, 0, startScreen);                            // New Game
-            Assert.AreEqual(before, EventImageCatalog.ResourceLoads, "no catalog load in Begin (the prefetch waits for the idle time)");
-            Assert.IsFalse(EventPhotos.Loaded);
+            // Since the GDD cutover turn 0 shows a card. Under the start screen it waits, so Begin loads nothing (#592), and
+            // New Game's Begin does not load it for the closing game either (GameRoot.Shutdown disposes the card first); with
+            // no start screen (the automated runs) the card is visible and loads the catalog once, and New Game reuses it.
+            Assert.AreEqual(before + (startScreen ? 0 : 1), EventImageCatalog.ResourceLoads, "catalog loads in Begin");
+            Assert.AreEqual(!startScreen, EventPhotos.Loaded);
         }
         finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); VisualToggles.Clear(); }
     }

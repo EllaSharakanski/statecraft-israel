@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: sinai_withdrawal
 title: The British Ultimatum
-text: 'Israeli forces have crossed into Sinai and reached the outskirts of El-Arish airfield. The Security Council has called for a cease-fire, the United States has added its pressure, and Britain threatens to act against Israel under its 1936 treaty with Egypt. {prime_minister} must decide whether to pull back to the Negev frontier.'
+text: 'Israeli forces crossed into Sinai and reached the outskirts of El-Arish airfield. The Security Council called for a cease-fire, the United States added its pressure, and Britain threatened to act against Israel under its 1936 treaty with Egypt. By 2 January the forces had been pulled back to the Negev frontier. {prime_minister} must decide whether they stay behind it.'
 anchor: hard
 tags: [security]
 office: prime_minister
@@ -13,22 +13,26 @@ office: prime_minister
 # (JVL, en.wiki "1949 in Israel" and "1948 Arab-Israeli War") vs 6 January (en.wiki "Operation Horev"); Israel accepted the
 # cease-fire on 7 January. The alternative (holding El-Arish to cut off the Egyptian army) is in Avnery's commentary [S].
 # Research notes facts-1948.md section 9.
-# The card comes on 2 January, a day after Ben-Gurion told McDonald the orders were given (1 January): it cannot come on
-# the 26 December turn without stating the facts of 28-30 December in advance (review M6, accepted). Only a player who
-# launched Operation Horev sees it.
-from: 1948-12-31
-to: 1949-01-03
+# The card must not state the facts of 28-30 December in advance (review M6, accepted). Only a player who launched
+# Operation Horev sees it.
+# The card is a decision after the fact (owner decision, 15 October 2026, #567;
+# docs/superpowers/specs/2026-10-14-event-timing-monthly.md):
+# on monthly turns it comes on 15 January, after the withdrawal, so the window opens on 2 January and ends on
+# 15 January, and the text states the withdrawal.
+from: 1949-01-02
+to: 1949-01-16
 requires: { event: operation_horev, option: launch }
 options:
   - id: withdraw
-    text: Withdraw from Sinai to the Negev frontier
+    text: Keep the forces behind the Negev frontier
     historical: true
     recommended: true
     effects:
       - { target: intl_standing, delta: 0.05 }
       - { target: security, delta: -0.01 }
   - id: hold_el_arish
-    text: Hold the positions around El-Arish
+    # Game assumption: after the withdrawal, the alternative in Avnery's commentary becomes a return.
+    text: Send them back toward El-Arish to cut off the Egyptian army
     effects:
       - { target: intl_standing, delta: -0.10 }
       - { target: security, delta: 0.025 }

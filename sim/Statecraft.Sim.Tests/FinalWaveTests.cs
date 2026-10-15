@@ -18,6 +18,24 @@ public class FinalWaveTests
     static readonly string[] SensitiveEvents =
         { "altalena", "bernadotte_assassination", "operation_hiram", "operation_horev", "operation_yoav", "reparations_claim", "ten_days" };
 
+    /// <summary>The resources a sensitive option may not raise (EventRules.NoGainTargets, internal to the sim).</summary>
+    static readonly string[] Resources = { "treasury", "fx_reserves", "food_supply", "morale", "intl_standing" };
+
+    /// <summary>Owner decision of 15 October 2026 (Q-EFX-3, "Add a real cost", #375): the three options that lost a gain under
+    /// the extended no-gain rule (Q-EFX-2) each carry a real cost in a resource other than the one they gained, and raise
+    /// no resource. The reparations claim's cost is Money (owner decision of 15 October 2026, "Move the cost to Money", #600).</summary>
+    [Theory]
+    [InlineData("altalena", "compromise", "morale", "intl_standing")]
+    [InlineData("bernadotte_assassination", "outlaw", "intl_standing", "morale")]
+    [InlineData("reparations_claim", "claim", "intl_standing", "treasury")]
+    public void TheOptionsThatLostAGainCarryARealCostElsewhere(string id, string option, string gained, string cost)
+    {
+        var o = Real.Events.Single(e => e.Id == id).Options.Single(x => x.Id == option);
+        Assert.DoesNotContain(o.Effects, f => Resources.Contains(f.Target) && f.Delta > 0);
+        Assert.NotEqual(gained, cost);
+        Assert.Contains(o.Effects, f => f.Target == cost && f.Delta < 0);
+    }
+
     [Fact]
     public void TheSensitiveEventsArePinned()
     {
@@ -38,7 +56,9 @@ public class FinalWaveTests
     [Fact]
     public void AShareableBuildNeedsEverySensitiveEventReviewed()
     {
-        Assert.Empty(ReleaseGate.SensitiveUnreviewed(Real));   // the owner signed off all seven on 2026-10-10 (docs/oss/DECISIONS.md D11)
+        // The owner signed off all seven on 2026-10-10 (docs/oss/DECISIONS.md D11), and re-reviewed altalena,
+        // bernadotte_assassination, operation_hiram and ten_days after #577 changed them on 2026-10-15 ("Approve all 4", #600).
+        Assert.Empty(ReleaseGate.SensitiveUnreviewed(Real));
         var reviewed = Fixture.Write(events: new Dictionary<string, string>
         {
             ["a.yaml"] = "id: a\ntitle: A\ntext: x\nfrom: 1948-06-01\ntags: [terror]\noptions:\n  - id: o\n    text: O\nstatus: sensitivity-reviewed\n",

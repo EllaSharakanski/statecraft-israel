@@ -8,16 +8,16 @@ As the maintainer, I want the GDD v0.1 loop built behind one switch, so that the
 
 - `systems.loop` in eras.yaml is `legacy` or `gdd`, the same in every era; absent means legacy (R-LOOP-001).
 - The GDD state (cities, units, the next unit id, completed objectives, the score) is hashed only when it is set, so the legacy hash text is unchanged (R-LOOP-002).
-- `MvpSlice.Overlay` gives the real content with the switch on and monthly turns, and changes nothing else (R-LOOP-003).
-- A save names its ruleset, `legacy` or `gdd-0.1`; a game refuses a save from another ruleset (R-SAVE-001, decision D-E4 [S2]).
-- Balance values the owner has not set live only in the overlay or in test fixtures, never under `content/` [S3].
+- Until the cutover, `MvpSlice.Overlay` gave the real content with the switch on and monthly turns. The cutover turned the switch on in the real content and retired the overlay with its rule ID.
+- A save names its ruleset, `legacy` or `gdd-0.1`; a game refuses a save from another ruleset (R-SAVE-001, decision D-E4 [S2]), and a save from a ruleset it does not know as made by a newer version (R-SAVE-002).
+- Before the cutover, balance values the owner had not set lived only in the overlay or in test fixtures [S3]; since it they are labelled design values in `content/` (R-LOOP-005).
 
 ## Data touched
 
-- `content/eras.yaml`: `systems.loop` (the real content keeps the default).
+- `content/eras.yaml`: `systems.loop` (`gdd` in the real content since the cutover).
 - `GameState`: `Cities`, `Units`, `NextId`, `Objectives`, `Score`.
 - Save files: schema 2 and the `ruleset` line.
-- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: the `mvp-slice` line.
+- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: the `mvp-slice` line (until the cutover).
 
 ## Done when
 
@@ -27,7 +27,7 @@ As the maintainer, I want the GDD v0.1 loop built behind one switch, so that the
 ## Out of scope
 
 - Any GDD rule: cities, training, sites, objectives and the score are built once the owner rules on the open decisions.
-- Turning the switch on for the real game, which is the cutover PR.
+- Turning the switch on for the real game: the cutover PR, Phase 2 PR 1.
 
 ## Sources
 

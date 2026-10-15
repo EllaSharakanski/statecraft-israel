@@ -19,6 +19,7 @@ namespace Statecraft.Sim
         public static string GameOver(string code) => code switch
         {
             GameOverCodes.EraEnded => "The chapter has ended",
+            GameOverCodes.MvpEnded => "The game has reached its last turn",
             GameOverCodes.CoalitionCollapse => "The coalition collapsed",
             _ => throw Unknown("game over reason", code),
         };

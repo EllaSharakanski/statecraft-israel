@@ -8,12 +8,28 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>The GDD orders through the UI's queue (#380): AssignWorkers, Train and CancelTraining queue in the slice
-/// (MvpSlice), an id the content or state does not have is refused before End Turn, an order replaces an earlier one
+/// (the real content, the GDD game since the cutover), an id the content or state does not have is refused before End Turn, an order replaces an earlier one
 /// with the same key, and the legacy loop's content queues none of them.</summary>
 public class SimBridgeGddTests
 {
-    static readonly Content Slice = MvpSlice.Load(Paths.Content);
-    static readonly Content Legacy = ContentLoader.Load(Paths.Content);
+    static readonly Content Slice = ContentLoader.Load(Paths.Content);
+    /// <summary>The legacy loop: the real content without eras.yaml's loop switch (the real game runs gdd since the cutover).</summary>
+    internal static readonly Content Legacy = LoadLegacy();
+
+    static Content LoadLegacy()
+    {
+        const string loop = "    systems: { loop: gdd }\n";
+        var dir = Paths.Content;
+        var events = System.IO.Directory.GetFiles(System.IO.Path.Combine(dir, "events"), "*.yaml").Select(f => "events/" + System.IO.Path.GetFileName(f)).ToList();
+        Assert.IsTrue(System.IO.File.ReadAllText(System.IO.Path.Combine(dir, "eras.yaml")).Contains(loop), "eras.yaml has the switch to take out");
+        return ContentLoader.Load(rel =>
+        {
+            var path = System.IO.Path.Combine(dir, rel);
+            if (!System.IO.File.Exists(path)) return null;
+            var text = System.IO.File.ReadAllText(path);
+            return rel == "eras.yaml" ? text.Replace(loop, "") : text;
+        }, events);
+    }
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
     static SimBridge Bridge(Content c) => new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), Text);
 

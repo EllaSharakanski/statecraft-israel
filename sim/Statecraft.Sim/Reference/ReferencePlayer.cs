@@ -7,7 +7,7 @@ namespace Statecraft.Sim.Reference
     /// <summary>Test policy for the GDD goldens (D-A7): a stated simple policy, not game AI and not historical. It sends
     /// HistoricalAI's orders, then fills each city's jobs with as many civilians as there are jobs, then sends each idle halutz
     /// unit to the first available yishuv site, then, when there is no halutz and none in training, trains one halutz group in
-    /// the first city with a Hakhshara and a civilian left without work, while the turn's Attention lasts (both orders borrow). It lives in Statecraft.Sim only so Unity can replay the MVP goldens (#394); no game mode or UI may reach it
+    /// the first city with a Hakhshara and a civilian left without work, while the turn's Attention lasts (both orders borrow). It lives in Statecraft.Sim only so Unity can replay the goldens (#394; GoldenRun); no game mode or UI may reach it
     /// (ReferencePlayerTests.NoGameModeOrUiReachesIt).</summary>
     public static class ReferencePlayer
     {

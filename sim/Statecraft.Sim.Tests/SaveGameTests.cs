@@ -95,7 +95,7 @@ public class SaveGameTests
     {
         var c = ContentLoader.Load(RealContentTests.ContentRoot());
         var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
-        while (g.State.Date < GoldenRun.Until1952) g.Step(HistoricalAI.Commands(c, g.State));
+        while (g.State.Date < GoldenRun.Until1952 && g.State.GameOver == null) g.Step(GoldenRun.Orders(c, g.State));
         Assert.Equal(GoldenRun.Hash1952, g.State.Hash());
         var loaded = GameSession.Load(c, g.Save.Write(), out var warnings);
         Assert.Empty(warnings);
@@ -530,7 +530,7 @@ public class SaveGameTests
     [Fact]
     public void AGddSaveNamesItsRulesetAndRoundTrips()
     {
-        var c = MvpSlice.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
         var g = GameSession.New(c, 1, Mode.Historical);
         g.Step(HistoricalAI.Commands(c, g.State));
         var text = g.Save.Write();
@@ -554,32 +554,58 @@ public class SaveGameTests
         Assert.Contains("\nruleset legacy\n", SaveGame.Parse(v1).Write());
     }
 
+    /// <summary>N4 (#382): a save from before the cutover (a schema 1 save, or one that names the legacy ruleset) is refused
+    /// with a stable code the UI translates, and the sim's English reason does not itself tell the player to start a new
+    /// game: the UI's message says that once.</summary>
     // R-SAVE-001
     [Fact]
-    public void AGddGameRefusesALegacySave()
+    public void ALegacySaveIsRefusedOnceWithACode()
+    {
+        var g = Played(Fixture1());   // the legacy loop: a fixture since the cutover
+        var real = ContentLoader.Load(RealContentTests.ContentRoot());
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(real, g.Save.Write(), out _));
+        Assert.Equal(SaveException.OlderRules, ex.Code);
+        Assert.Equal("This save was made with an earlier version of the game's rules.", ex.Message);
+        Assert.DoesNotContain("new game", ex.Message);
+        var v1 = g.Save.Write().Replace("statecraft-save 2\n", "statecraft-save 1\n").Replace("ruleset legacy\n", "");
+        var ex1 = Assert.Throws<SaveException>(() => GameSession.Load(real, v1, out _));
+        Assert.Equal((ex.Code, ex.Message), (ex1.Code, ex1.Message));
+    }
+
+    /// <summary>N2 (#382): a save naming a ruleset this build does not know was made by a newer version of the game, and is
+    /// refused the way a newer save schema is: with the same code.</summary>
+    // R-SAVE-002
+    [Fact]
+    public void AnUnknownRulesetSaysItIsNewer()
     {
         var real = ContentLoader.Load(RealContentTests.ContentRoot());
-        var g = GameSession.New(real, 1, Mode.Historical);
-        g.Step(new Command[0]);
-        var gdd = MvpSlice.Load(RealContentTests.ContentRoot());
-        var ex = Assert.Throws<SaveException>(() => GameSession.Load(gdd, g.Save.Write(), out _));
-        Assert.Equal("This save was made with an earlier version of the game's rules; start a new game.", ex.Message);
-        var v1 = g.Save.Write().Replace("statecraft-save 2\n", "statecraft-save 1\n").Replace("ruleset legacy\n", "");
-        Assert.Equal(ex.Message, Assert.Throws<SaveException>(() => GameSession.Load(gdd, v1, out _)).Message);
+        var text = GameSession.New(real, 1, Mode.Historical).Save.Write().Replace("\nruleset gdd-0.1\n", "\nruleset gdd-0.2\n");
+        var ex = Assert.Throws<SaveException>(() => SaveGame.Parse(text));
+        Assert.Equal((SaveException.NewerVersion, 5), (ex.Code, ex.Line));
+        Assert.Contains("This save was made with a newer version of the game", ex.Message);
+        Assert.DoesNotContain("new game", ex.Message);
+        Assert.Equal(SaveException.NewerVersion, Assert.Throws<SaveException>(() => GameSession.Load(real, text, out _)).Code);
+        var schema3 = text.Replace("statecraft-save 2\n", "statecraft-save 3\n");
+        Assert.Equal(SaveException.NewerVersion, Assert.Throws<SaveException>(() => SaveGame.Parse(schema3)).Code);
     }
 
     // R-SAVE-001
     [Fact]
     public void ALegacyGameRefusesAGddSave()
     {
-        var gdd = MvpSlice.Load(RealContentTests.ContentRoot());
-        var text = GameSession.New(gdd, 1, Mode.Historical).Save.Write();
-        var ex = Assert.Throws<SaveException>(() => GameSession.Load(ContentLoader.Load(RealContentTests.ContentRoot()), text, out _));
-        Assert.Equal("This save was made with another version of the game's rules; start a new game.", ex.Message);
+        var text = GameSession.New(ContentLoader.Load(RealContentTests.ContentRoot()), 1, Mode.Historical).Save.Write();
+        var ex = Assert.Throws<SaveException>(() => GameSession.Load(Fixture1(), text, out _));   // the legacy loop: a fixture
+        Assert.Equal(SaveException.NewerVersion, ex.Code);
+        Assert.Equal("This save was made with a newer version of the game's rules.", ex.Message);
     }
 
+    /// <summary>A damaged save carries no refusal code: the UI shows its own reason.</summary>
+    [Fact]
+    public void AMalformedSaveHasNoRefusalCode() =>
+        Assert.Null(Assert.Throws<SaveException>(() => SaveGame.Parse("statecraft-save x\ncontent a\nseed 1\nmode Historical\nend b\n")).Code);
+
     [Theory]
-    [InlineData("ruleset chess", "unknown ruleset 'chess'")]
+    [InlineData("ruleset chess", "a newer version of the game (ruleset 'chess')")]
     [InlineData("ruleset", "expected 'ruleset'")]
     [InlineData("turn", "expected 'ruleset'")]
     public void ABadRulesetLineIsRefused(string line, string message)

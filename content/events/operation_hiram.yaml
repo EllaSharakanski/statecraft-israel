@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: operation_hiram
 title: Operation Hiram
-text: 'In breach of the truce, the Arab Liberation Army has attacked the Sheikh Abd position above Kibbutz Manara, and Qawuqji refuses to withdraw. Israel has told the UN that it feels free to act. {defense_minister} must decide whether Moshe Carmel''s forces clear the Upper Galilee.'
+text: 'In breach of the truce, the Arab Liberation Army attacked the Sheikh Abd position above Kibbutz Manara on 22 October. Between 29 and 31 October Moshe Carmel''s forces drove it out of the Upper Galilee in Operation Hiram, and a cease-fire took effect on 31 October. {defense_minister} must decide whether the forces stop at the cease-fire or advance further into Lebanon.'
 anchor: soft
 tags: [security, war-casualties]
 office: defense_minister
@@ -14,27 +14,27 @@ office: defense_minister
 # (Ben-Gurion's diary, 31 October; S/1071 has the Israeli cease-fire order effective at 0600 GMT). Ben-Gurion declined
 # to authorise an advance further into Lebanon, fearing international condemnation (en.wiki "Operation Hiram"): the
 # third option. Owner ruling: the text stays military. Research notes facts-1948.md section 8.
-from: 1948-10-24
-to: 1948-10-29
+# The card is a decision after the fact (owner decision, 15 October 2026, #567;
+# docs/superpowers/specs/2026-10-14-event-timing-monthly.md):
+# no monthly turn date falls between the attack of 22 October and the launch. The window opens on 31 October, the
+# cease-fire, and ends on 15 November. The "protest to the UN" option (a game assumption) is gone: it belonged to the
+# decision before the operation.
+from: 1948-10-31
+to: 1948-11-16
 options:
-  - id: launch
-    text: Launch Operation Hiram and drive the Arab Liberation Army out of the Galilee
+  - id: stop_at_ceasefire
+    text: Stop at the cease-fire and hold the Upper Galilee
     historical: true
     recommended: true
     set_rung: 5
     effects:
       - { target: security, delta: 0.02 }
   - id: advance_into_lebanon
-    text: Launch it, and advance further into Lebanon
+    text: Advance further into Lebanon
     set_rung: 5
     effects:
       - { target: security, delta: 0.025 }
       - { target: intl_standing, delta: -0.08 }
-  - id: protest_to_un
-    # Game assumption: the notes name no advocate for this option.
-    text: Protest to the UN and hold the line
-    effects:
-      - { target: security, delta: -0.02 }
 sources:
   - { url: "https://en.wikipedia.org/wiki/Operation_Hiram", checked: 2026-10-10 }
   - { url: "https://www.un.org/unispal/document/auto-insert-211203/", checked: 2026-10-14 }

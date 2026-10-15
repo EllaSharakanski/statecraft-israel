@@ -80,7 +80,7 @@ namespace Statecraft.Sim
             if (units == 0) return;
             var x = s.Cities[r.ArrivalsCity];
             s.Cities[x.Id] = x.WithCounts(x.Civilians, x.Employed, x.Refugees + units);
-            why.Add(new Cause("city", x.Id, units, FormattableString.Invariant($"{PlayerText.Settlement(c, x.Id)}: {units} groups of immigrants arrived and wait for housing")));
+            why.Add(new Cause("city", x.Id, units, FormattableString.Invariant($"{PlayerText.Settlement(c, x.Id)}: {units} groups of immigrants arrived and wait for homes")));
         }
 
         /// <summary>The whole units of <paramref name="peoplePerUnit"/> people that arrive in [from, to). Counted from the game's

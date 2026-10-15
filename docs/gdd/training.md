@@ -16,10 +16,10 @@ As a player of the MVP, I want to send Tel Aviv's civilians without work to basi
 
 ## Data touched
 
-- `unit_types.yaml` (`recruit`, `halutz`: `facility`, `training_turns`, `training_cost`), `cities.yaml` (`facilities`) and `rules.yaml` `attention_cost.train` and `cancel_training`: supplied by `MvpSlice.Overlay` as placeholders, never under `content/` (ruling 2 [S3]).
+- `unit_types.yaml` (`recruit`, `halutz`: `facility`, `training_turns`, `training_cost`), `cities.yaml` (`facilities`) and `rules.yaml` `attention_cost.train` and `cancel_training`: labelled design values in `content/` since the cutover (Q-CUT-1, R-LOOP-005), the overlay's placeholders before it (ruling 2 [S3]).
 - `GameState`: `Cohorts` (hashed as `train[...]` when there are some), a city's `Recruits` (in its hash record when not 0), `Units`, `NextId`, `Treasury`.
 - Save files: the `train CITY TRACK N` and `untrain COHORT` lines. Scenarios: `train` and `cancel_training`.
-- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: `mvp-slice` moves; `scenario-mvp-absorb-first` does not.
+- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: `mvp-slice` moved (retired at the cutover); `scenario-mvp-absorb-first` did not.
 
 ## Done when
 

@@ -180,9 +180,9 @@ eras:
 
     // R-LOOP-001
     [Fact]
-    public void RealContentRunsTheLegacyLoop()
+    public void WithoutTheSwitchTheLoopIsLegacy()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the real game runs gdd since the cutover (CutoverTests)
         Assert.Equal("legacy", c.Loop);
         Assert.False(c.IsGdd);
         Assert.Equal("legacy", c.Ruleset);

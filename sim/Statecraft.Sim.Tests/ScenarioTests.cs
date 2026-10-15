@@ -8,10 +8,9 @@ using Statecraft.Sim;
 public class ScenarioTests
 {
     static readonly Content C = ContentLoader.Load(RealContentTests.ContentRoot());
-    static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
 
     /// <summary>The content a scenario plays on: the real content, or the GDD slice for `content: mvp`.</summary>
-    static Content For(Scenario sc) => sc.Content == Scenario.MvpContent ? Mvp : C;
+    static Content For(Scenario sc) => C;   // every scenario plays the real content since the cutover
 
     /// <summary>sim/Statecraft.Sim.Tests/scenarios, where the scenario files live (the runner, Scenario, is in the sim library).</summary>
     public static string Dir() =>
@@ -42,7 +41,7 @@ public class ScenarioTests
         Assert.Equal(hashes.Count, hashes.Distinct().Count());
         foreach (var (sc, hash) in scenarios.Zip(hashes, (sc, h) => (sc, h)))
         {
-            var bare = Scenario.Parse($"name: {sc.Name}\nuntil: {sc.Until}\n" + (sc.Seed.HasValue ? $"seed: {sc.Seed}\n" : "") + (sc.Content != "" ? $"content: {sc.Content}\n" : ""));
+            var bare = Scenario.Parse($"name: {sc.Name}\nuntil: {sc.Until}\n" + (sc.Seed.HasValue ? $"seed: {sc.Seed}\n" : ""));
             Assert.True(bare.Play(For(bare)).Hash() != hash, $"scenario '{sc.Name}' ends where the same run with no scripted command ends: its choices change nothing");
         }
     }
@@ -83,17 +82,17 @@ public class ScenarioTests
         Assert.Contains(expected, Assert.Throws<InvalidDataException>(() => Scenario.Parse(Head + command)).Message);
 
     [Fact]
-    public void TheMvpScenarioPlaysTheGddSlice()
+    public void TheMvpScenarioPlaysTheGddLoop()
     {
         var sc = Scenario.Parse(File.ReadAllText(Path.Combine(Dir(), "mvp-absorb-first.yaml")));
-        Assert.Equal("mvp", sc.Content);
         Assert.True(For(sc).IsGdd);
         Assert.Equal(90, sc.Play(For(sc)).Cities["tel_aviv"].Employed);
     }
 
+    /// <summary>The `content: mvp` key went with the overlay at the cutover: a scenario that still names it fails to parse.</summary>
     [Fact]
-    public void AnUnknownContentIsRefused() =>
-        Assert.Contains("'content' must be mvp", Assert.Throws<InvalidDataException>(() => Scenario.Parse("name: t\ncontent: civ\nuntil: 1948-08-01\n")).Message);
+    public void TheRetiredContentKeyIsRefused() =>
+        Assert.Contains("content", Assert.ThrowsAny<Exception>(() => Scenario.Parse("name: t\ncontent: mvp\nuntil: 1948-08-01\n")).Message);
 
     [Fact]
     public void ABadDateIsRefused() =>

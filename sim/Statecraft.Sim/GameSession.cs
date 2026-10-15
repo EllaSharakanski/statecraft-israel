@@ -45,10 +45,11 @@ namespace Statecraft.Sim
             if (c == null) throw new ArgumentNullException(nameof(c));
             var saved = SaveGame.Parse(saveText);
             // R-SAVE-001: a save replays only under the rules it was played with (spec 2026-10-12 section 2.4, decision D-E4).
+            // The refusal carries a code the UI translates; its own message tells the player a new game started (N4).
             if (saved.Ruleset != c.Ruleset)
-                throw new SaveException(0, saved.Ruleset == SaveGame.LegacyRuleset
-                    ? "This save was made with an earlier version of the game's rules; start a new game."
-                    : "This save was made with another version of the game's rules; start a new game.");
+                throw saved.Ruleset == SaveGame.LegacyRuleset
+                    ? new SaveException(0, "This save was made with an earlier version of the game's rules.", SaveException.OlderRules)
+                    : new SaveException(0, "This save was made with a newer version of the game's rules.", SaveException.NewerVersion);
             var list = new List<string>();
             bool sameContent = saved.ContentHash == c.Hash;
             if (!sameContent) list.Add("This save was made with different game content; the replayed game may differ.");

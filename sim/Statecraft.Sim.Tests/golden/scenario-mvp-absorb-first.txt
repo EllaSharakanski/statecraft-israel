@@ -2,9 +2,9 @@
 ind{
   food_supply=0.7200000000000001 [3FE70A3D70A3D70B]
   housing=0.4311483383927494 [3FDB97EF3347C84B]
-  intl_standing=0.7100000000000002 [3FE6B851EB851EBA]
-  morale=0.4449244143453166 [3FDC79A440338690]
-  security=0.510599903035164 [3FE056D59B9C0EC0]
+  intl_standing=0.7600000000000002 [3FE851EB851EB854]
+  morale=0.4239879519429728 [3FDB229E5CDF8EC0]
+  security=0.500599903035164 [3FE004EA167D566E]
 pol{
   border_settlement=0.2 [3FC999999999999A]
   housing_construction=0.3 [3FD3333333333333]
@@ -16,13 +16,13 @@ eff{
   homes_lift_morale=0.06417065737109631 [3FB06D7CFAC58CD2]
   rationing_feeds=0.17 [3FC5C28F5C28F5C3]
   rationing_grates=-0.15 [BFC3333333333333]
-  safety_lifts_morale=0.05075375697422029 [3FA9FC657CB4F1E7]
+  safety_lifts_morale=0.049817294571876544 [3FA981A705EC3DAE]
 shift{
   food_supply=0.15000000000000002 [3FC3333333333334]
   housing=0 [0000000000000000]
-  intl_standing=0.2100000000000002 [3FCAE147AE147AE8]
-  morale=-0.07000000000000006 [BFB1EB851EB851F0]
-  security=0.17500000000000016 [3FC666666666666C]
+  intl_standing=0.26000000000000023 [3FD0A3D70A3D70A8]
+  morale=-0.09000000000000008 [BFB70A3D70A3D710]
+  security=0.16500000000000015 [3FC51EB851EB8524]
 bud{
   agriculture_minister=0.07 [3FB1EB851EB851EC]
   defense_minister=0.45 [3FDCCCCCCCCCCCCD]
@@ -45,7 +45,7 @@ debt=57.82904503222418 [404CEA1E25CA2835]
 fx=94.29191537516759 [405792AEBDD362D7]
 rung=2;cf=0;
 mob=0.8 [3FE999999999999A]
-stab=0.5583883508188896 [3FE1DE513F278112]
+stab=0.5512986983937466 [3FE1A43D2AFDB659]
 att=4 [4010000000000000]
 fired[
   altalena
@@ -63,7 +63,9 @@ fired[
   operation_hiram
   operation_horev
   operation_yoav
+  rhodes_talks
   second_truce
+  sinai_withdrawal
   ten_days
 pending[
 chosen{
@@ -76,13 +78,15 @@ chosen{
   elections_1949=hold
   first_truce=accept
   idf_founding=one_army
-  jerusalem_ceasefire=sign
+  jerusalem_ceasefire=keep
   jerusalem_military_government=military_government
   latrun_proposal=accept_vote
-  operation_hiram=launch
+  operation_hiram=stop_at_ceasefire
   operation_horev=launch
   operation_yoav=stop_at_ceasefire
+  rhodes_talks=send_delegation
   second_truce=comply
+  sinai_withdrawal=withdraw
   ten_days=central_front
 appt{
 under=;

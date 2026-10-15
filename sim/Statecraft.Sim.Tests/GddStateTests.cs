@@ -8,11 +8,14 @@ public class GddStateTests
 {
     // R-LOOP-002
     [Fact]
-    public void WithTheSwitchOffTheGoldenSnapshotIsByteIdentical()
+    public void WithTheSwitchOffAPlayedGameWritesNoNewSection()
     {
-        var s = GoldenRun.Play(ContentLoader.Load(RealContentTests.ContentRoot()), GoldenRun.Until1950);
-        Assert.Equal(GoldenSnapshot.Read("hash1950"), s.Describe());
-        Assert.Equal(GoldenRun.Hash1950, s.Hash());
+        // Since the cutover the legacy loop is a fixture's (the real goldens run gdd): a legacy game played a year writes
+        // none of the GDD sections.
+        var c = ContentLoader.Load(Fixture.Write());
+        var s = GoldenRun.Play(c, new DateTime(1949, 5, 15));
+        Assert.True(s.Turn > 1);
+        foreach (var label in new[] { "city{", "coh=", "units[", "train[", "next=", "obj{", "score=" }) Assert.DoesNotContain(label, s.Describe());
     }
 
     // R-LOOP-002

@@ -39,10 +39,14 @@ namespace Statecraft.Game.UI
                 {
                     try { store.SetAsideAutosave(); } catch (Exception) { /* even this must not stop the start */ }
                     // The sim's reasons are English and technical (line numbers, a replay's own exception), and anything else
-                    // can carry file paths: the player gets one short reason in their language, and the full exception (with
-                    // a replay's inner exception) goes to the log only (#631).
+                    // can carry file paths: the full exception (with a replay's inner exception) goes to the log only (#631).
                     UnityEngine.Debug.LogWarning((e is SaveException ? "Autosave rejected: " : "Autosave could not be loaded: ") + e);
-                    notes.Add(text.Format("save.unreadable", text["save.reason_other"]));
+                    // A refusal with a code (a save from before the GDD cutover, or from a newer version: R-SAVE-001, R-SAVE-002)
+                    // is said once, in the player's language (N4); anything else, and a code with no string, gets one short
+                    // localised reason (#631): this path never throws, so the start is never blocked.
+                    if (e is SaveException refused && refused.Code != null && text.Has("save.refused." + refused.Code))
+                        notes.Add(text["save.refused." + refused.Code]);
+                    else notes.Add(text.Format("save.unreadable", text["save.reason_other"]));
                 }
             }
             return GameSession.New(c, newSeed(), Mode.Historical);

@@ -35,8 +35,11 @@ public class PromoScreensTests
         return g;
     }
 
-    /// <summary>One date in each legislature the content has: the Provisional State Council, the First and the Second Knesset.</summary>
-    static IEnumerable<DateTime> OneDatePerLegislature() => C.Legislatures.Select(l => l.From < C.Rules.Start ? C.Rules.Start : l.From.AddDays(30));
+    /// <summary>One date in each legislature the game reaches: the Provisional State Council, the First and the Second
+    /// Knesset. Since the GDD cutover play ends on 15 January 1952 (R-LOOP-004); the later legislatures stay in the content for
+    /// the paused eras (G2), where play does not reach them.</summary>
+    static IEnumerable<DateTime> OneDatePerLegislature() => C.Legislatures.Where(l => l.From < C.End.AddDays(-30))
+        .Select(l => l.From < C.Rules.Start ? C.Rules.Start : l.From.AddDays(30));
 
     [Test]
     public void TheHalfCircleSeatsTheRealLegislatureWithTheCoalitionFirst()

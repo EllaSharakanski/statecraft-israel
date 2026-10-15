@@ -50,14 +50,14 @@ namespace Statecraft.Sim
             }, eventFiles);
         }
 
-        /// <summary>The states after each <paramref name="every"/>th turn and the final one, playing HistoricalAI from the golden start until <paramref name="until"/>.</summary>
+        /// <summary>The states after each <paramref name="every"/>th turn and the final one, playing the golden runs' orders (GoldenRun.Orders) from the golden start until <paramref name="until"/>.</summary>
         public static List<GameState> Play(Content c, ulong seed, DateTime until, int every)
         {
             var s = Simulation.NewGame(c, seed, Mode.Historical);
             var states = new List<GameState> { s };
             for (int turn = 0; turn < 1000 && s.Date < until && s.GameOver == null; turn++)   // the same stop as GoldenRun.Play
             {
-                s = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
+                s = Simulation.Step(c, s, GoldenRun.Orders(c, s)).State;
                 if ((turn + 1) % every == 0 || s.Date >= until || s.GameOver != null) states.Add(s);
             }
             return states;

@@ -193,6 +193,7 @@ public class SubdistrictTests
     public void TheInfoPanelNamesTheSelectedHexsSubdistrict()
     {
         Boot(saveDir);
+        GameSceneTests.HideTheOpeningCard(Object.FindFirstObjectByType<UIDocument>().rootVisualElement);   // the 15 May card covers the map
         var pointer = Object.FindFirstObjectByType<MapPointer>();
         var map = Object.FindFirstObjectByType<MapScene>();
         var tlv = Inputs.Content.SettlementHexes.Single(s => s.Id == "tel_aviv");

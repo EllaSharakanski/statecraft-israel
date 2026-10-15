@@ -40,12 +40,12 @@ public class CalibrationTests
     {
         var s = Simulation.NewGame(C, 1948, Mode.Historical);
         var history = new List<GameState> { s };
-        while (s.Date <= End)
+        while (s.Date <= End && s.GameOver == null)
         {
             s = Simulation.Step(C, s, HistoricalAI.Commands(C, s)).State;
             history.Add(s);
         }
-        Assert.Null(s.GameOver);
+        Assert.True(s.GameOver == null || s.GameOver == GameOverCodes.MvpEnded, "game over: " + s.GameOver);   // the game ends on 15 January 1952 (R-LOOP-004)
         Assert.Equal(5, C.PopulationAnchors.Count);
         var report = C.PopulationAnchors.Select(a =>
         {

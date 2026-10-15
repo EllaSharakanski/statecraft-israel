@@ -142,6 +142,8 @@ public class EventCardTests
         using var ui = new UiTestKit();
         var g = GameSession.New(C, GoldenRun.Seed, Mode.Historical);
         while (!g.State.PendingEvents.Contains("elections_1949")) g.Step(new Command[0]);
+        // On monthly turns elections_1949 comes on 15 January 1949 with sinai_withdrawal and rhodes_talks; this test is about the one-option card.
+        g.State.PendingEvents.RemoveAll(id => id != "elections_1949");
         var bridge = new SimBridge(g, Text);
         var card = new EventCardPresenter(ui.Root, bridge, Text, null);
         Assert.AreEqual("elections_1949", card.Shown!.Id);

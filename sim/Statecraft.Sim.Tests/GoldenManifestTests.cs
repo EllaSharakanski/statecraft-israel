@@ -15,7 +15,7 @@ public class GoldenManifestTests
     {
         var m = GoldenManifest.Read();
         var scenarios = System.IO.Directory.GetFiles(ScenarioTests.Dir(), "*.yaml").Select(f => "scenario-" + System.IO.Path.GetFileNameWithoutExtension(f));
-        var known = new[] { "hash1950", "hash1952", "smoke5", "mvp-slice" }.Concat(scenarios).OrderBy(k => k, StringComparer.Ordinal).ToArray();   // one line per scenario file (#296)
+        var known = new[] { "hash1950", "hash1952", "smoke5", "mvp-end" }.Concat(scenarios).OrderBy(k => k, StringComparer.Ordinal).ToArray();   // one line per scenario file (#296)
         Assert.Equal(known, m.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
         Assert.All(m.Values, h => Assert.Matches("^[0-9a-f]{64}$", h));
     }

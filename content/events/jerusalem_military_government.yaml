@@ -16,9 +16,9 @@ office: prime_minister
 # of the first truce, and his progress report has it sent to Cairo and Tel Aviv on 3 July, with a working paper after
 # 15 July; Shertok told the council Israel had agreed to explore the first proposal, not to accept it, and rejected the
 # detailed one outright ([C] JVL dates the suggestion to 26 July, the day he met Shertok, as JTA reports). Research
-# notes sections 5 (companion events) and 13b. The window opens on 17 July, the turn date before 2 August on the
-# monthly grid of the second truce (game timing).
-from: 1948-07-17
+# notes sections 5 (companion events) and 13b. The window opens on 15 July, the monthly turn date before 2 August
+# (game timing).
+from: 1948-07-15
 to: 1948-08-03
 # Effects of both options are game assumptions: the notes give none for this event.
 options:

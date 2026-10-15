@@ -15,7 +15,7 @@ using UnityEngine.UIElements;
 /// text, and whole, at every window size the HUD's tests use, in English and Hebrew.</summary>
 public class TopBarScoreLayoutTests
 {
-    static readonly Content Slice = MvpSlice.Load(Paths.Content);
+    static readonly Content Gdd = ContentLoader.Load(Paths.Content);   // the real game: GDD since the cutover
     static UiText En => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
     static UiText He => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.StringsHebrew).text, "strings.he.yaml");
 
@@ -60,7 +60,7 @@ public class TopBarScoreLayoutTests
                 var root = doc.rootVisualElement;
                 root.Q("root").RemoveFromClassList("loading");
                 root.Q("root").EnableInClassList(UiLanguage.HebrewClass, hebrew);
-                var bridge = new SimBridge(GameSession.New(Slice, GoldenRun.Seed, Mode.Historical), text);
+                var bridge = new SimBridge(GameSession.New(Gdd, GoldenRun.Seed, Mode.Historical), text);
                 bridge.State.Score = WorstScore;
                 bridge.State.Date = WorstDate;
                 bridge.State.Turn = WorstTurn;

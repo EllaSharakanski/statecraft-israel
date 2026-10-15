@@ -5,9 +5,11 @@
 # Optional per era: `systems: { legislature: state | assembly, map_actions: [transit_camp, housing] }` (issue #58). Absent means
 # a state legislature and both map actions. A key is added only with the code behind it.
 # `systems.loop: legacy | gdd` (GDD v0.1, docs/rules/mvp.md R-LOOP-001): which game loop runs; the same in every era. Absent
-# means legacy. The real game stays legacy until the GDD cutover.
+# means legacy. Since the GDD cutover (Phase 2 PR 1) the real game runs the GDD loop in every era; play ends at rules.yaml
+# mvp.end (R-LOOP-004), before this era's end.
 eras:
   - id: founding
     name: The Founding
     from: 1948-05-15               # = rules.yaml start
     to: 1957-01-01
+    systems: { loop: gdd }

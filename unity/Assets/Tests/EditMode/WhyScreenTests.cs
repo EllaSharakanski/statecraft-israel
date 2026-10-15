@@ -21,7 +21,7 @@ public class WhyScreenTests
         Assert.AreEqual("Nothing has happened yet: end the turn to see its causes.", ui.Q<Label>("why-empty").text);
         bridge.Queue(new SetMobilization(1.0));
         var r = bridge.EndTurn();
-        Assert.AreEqual("15 May 1948 to 22 May 1948", ui.Q<Label>("why-turn").text);
+        Assert.AreEqual("15 May 1948 to 15 June 1948", ui.Q<Label>("why-turn").text);
         var lines = ui.Q<ScrollView>("why-rows").Query<Label>(className: "why-line").ToList();
         Assert.AreEqual(r.Why.Count, lines.Count);
         Assert.AreEqual("Immigration and population", ui.Q<Label>("why-group-population").text);
@@ -143,7 +143,7 @@ public class WhyScreenTests
             var second = ui.Q<ScrollView>("why-rows").Query<Label>(className: "why-line").ToList();
             Assert.AreEqual(r.Why.Count, second.Count);
             Assert.AreNotSame(first[0], second[0]);
-            Assert.AreEqual("22 May 1948 to 29 May 1948", ui.Q<Label>("why-turn").text);
+            Assert.AreEqual("15 June 1948 to 15 July 1948", ui.Q<Label>("why-turn").text);
         }
     }
 

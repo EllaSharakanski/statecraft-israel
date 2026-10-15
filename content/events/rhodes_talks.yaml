@@ -11,7 +11,9 @@ office: foreign_minister
 # January 1949 (FRUS 1949 vol. VI doc. 389). The RAF clash was on 7 January: the British statement of 8 January
 # (Hansard) and Israel's reply to the British protest (JTA, 19 January 1949) both give that date ([C] 6 January on
 # en.wiki "Operation Horev"); it is left out of the text. Research notes facts-1948.md section 9 (aftermath).
-# Only a player who launched Operation Horev sees this card (the cease-fire it names ends that operation).
+# Only a player who launched Operation Horev sees this card (the cease-fire it names ends that operation). On monthly
+# turns it comes on 15 January, two days after the talks opened: it needs Horev answered first, and the owner accepted
+# the delay (owner decision, 15 October 2026, #567; docs/superpowers/specs/2026-10-14-event-timing-monthly.md).
 from: 1949-01-09
 to: 1949-01-13
 requires: { event: operation_horev, option: launch }

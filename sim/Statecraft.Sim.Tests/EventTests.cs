@@ -246,8 +246,7 @@ options:
     [Fact]
     public void SensitiveEventCannotRewardTreasury()
     {
-        var bad = Shortage.Replace("title: Bread lines", "title: Bread lines\ntags: [massacre]")
-                          .Replace("target: fx_reserves\n        delta: -10", "target: treasury\n        delta: 50");
+        var bad = Sensitive("massacre", "treasury", "50");
         var ex = Assert.Throws<ContentException>(() => Load(new Dictionary<string, string> { ["shortage.yaml"] = bad }));
         Assert.Equal("events/shortage.yaml", ex.File);
         Assert.Equal("events[shortage].options[import].effects.treasury", ex.Field);
@@ -360,7 +359,7 @@ options:
     {
         // Fixture: pm_one holds defense until 1949-01-01, def_two from then on (open-ended).
         var ok = Shortage.Replace("{finance_minister}", "{defense_minister}");
-        Assert.Single(Load(new Dictionary<string, string> { ["shortage.yaml"] = ok }).Events);
+        Assert.Single(LoadWithStanding(ok).Events);
     }
 
     [Theory]
@@ -399,8 +398,11 @@ options:
         Assert.Equal("events[shortage].id", ex.Field);
     }
 
+    /// <summary>The shortage event with a sensitive tag, its import option's effect replaced by <paramref name="target"/> and
+    /// <paramref name="delta"/>. Its ration option's food gain becomes a cost, since a sensitive option may not raise food.</summary>
     static string Sensitive(string tag, string target, string delta) =>
         Shortage.Replace("title: Bread lines", "title: Bread lines\ntags: [" + tag + "]")
+                .Replace("target: food_supply\n        delta: 0.2", "target: food_supply\n        delta: -0.2")
                 .Replace("target: fx_reserves\n        delta: -10", "target: " + target + "\n        delta: " + delta);
 
     [Theory]
@@ -432,6 +434,44 @@ options:
     {
         var c = Load(new Dictionary<string, string> { ["shortage.yaml"] = Sensitive("massacre", target, delta) });
         Assert.Single(c.Events);
+    }
+
+    /// <summary>The fixture with an intl_standing indicator, as the real model has.</summary>
+    static Content LoadWithStanding(string ev) =>
+        ContentLoader.Load(Fixture.Write(new Dictionary<string, string>
+        {
+            ["model.yaml"] = Fixture.Files["model.yaml"].Replace("indicators:\n", "indicators:\n  - id: intl_standing\n    base: 0.5\n    name: International standing\n"),
+        }, new Dictionary<string, string> { ["shortage.yaml"] = ev }));
+
+    /// <summary>Owner decision of 15 October 2026 on Q-EFX-2, "Extend it": a sensitive option may not raise any resource. The
+    /// legacy indicators stand for Food (food_supply), Social cohesion (morale) and International Support (intl_standing).</summary>
+    [Theory]
+    [InlineData("food_supply")]
+    [InlineData("morale")]
+    [InlineData("intl_standing")]
+    public void SensitiveEventCannotRaiseFoodCohesionOrSupport(string target)
+    {
+        var ex = Assert.Throws<ContentException>(() => LoadWithStanding(Sensitive("war-casualties", target, "0.02")));
+        Assert.Equal("events/shortage.yaml", ex.File);
+        Assert.Equal($"events[shortage].options[import].effects.{target}", ex.Field);
+        Assert.Contains("sensitive events cannot reward", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("food_supply", "0")]
+    [InlineData("morale", "-0.02")]
+    [InlineData("intl_standing", "-0.05")]
+    public void SensitiveEventMayCostOrNotChangeFoodCohesionOrSupport(string target, string delta)
+    {
+        Assert.Single(LoadWithStanding(Sensitive("terror", target, delta)).Events);
+    }
+
+    /// <summary>A non-sensitive event may still raise them.</summary>
+    [Fact]
+    public void AnUntaggedEventMayRaiseCohesionAndSupport()
+    {
+        var ok = Shortage.Replace("target: fx_reserves\n        delta: -10", "target: intl_standing\n        delta: 0.05");
+        Assert.Single(LoadWithStanding(ok).Events);
     }
 
     [Fact]

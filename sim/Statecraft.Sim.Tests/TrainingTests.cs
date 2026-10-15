@@ -6,7 +6,7 @@ using Statecraft.Sim;
 /// and a Hakhshara, and the cohorts' progress in TurnResolver (R-TRAIN-003, step 4 of spec 2026-10-12 section 2.3, D-A6).</summary>
 public class TrainingTests
 {
-    static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
+    static readonly Content Mvp = ContentLoader.Load(RealContentTests.ContentRoot());
 
     /// <summary>The GDD fixture's town: 10 civilians, 6 of them employed, so 4 without work. The fixture's recruit trains for 2
     /// turns at 0.5 a group, its halutz for 3 turns at 0.25.</summary>
@@ -115,9 +115,9 @@ public class TrainingTests
     [Fact]
     public void TheLegacyLoopRefusesBothOrdersAndRefundsAttention()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the legacy loop (a fixture since the cutover)
         var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
-        var r = Step(c, s, new Train("tel_aviv", "recruit", 1), new CancelTraining(0));
+        var r = Step(c, s, new Train("town_a", "recruit", 1), new CancelTraining(0));
         Assert.All(r.Rejected, x => Assert.Equal("That order is not available in this game", x.Reason));
         Assert.Equal(2, r.Rejected.Count);
         Assert.Equal(Step(c, s).State.Hash(), r.State.Hash());

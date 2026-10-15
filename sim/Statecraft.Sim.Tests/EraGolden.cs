@@ -3,7 +3,7 @@ using System.Linq;
 using Statecraft.Sim;
 
 /// <summary>Adds a golden for one era in a few lines (#292): <c>EraGolden.Check("hash_founding_1950", c, "founding", new DateTime(1950, 1, 1))</c>
-/// plays a fresh start of that era (golden seed, Historical mode, HistoricalAI, as <see cref="GoldenRun.Play"/> does) and
+/// plays a fresh start of that era (golden seed, Historical mode, the golden orders, as <see cref="GoldenRun.Play"/> does) and
 /// checks its hash against the manifest line and its snapshot in golden/&lt;name&gt;.txt, with the readable diff on a mismatch.
 /// Bless a new one with STATECRAFT_UPDATE_GOLDEN=1 (docs/determinism.md).
 /// The run stays inside the era: it stops before the turn that would reach the era's <c>to</c>. That turn ends on the boundary
@@ -23,7 +23,7 @@ public static class EraGolden
         var s = Simulation.NewGame(c, seed, Mode.Historical);
         for (int turn = 0; turn < 1000 && s.Date < until && s.GameOver == null; turn++)
         {
-            var next = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
+            var next = Simulation.Step(c, s, GoldenRun.Orders(c, s)).State;
             if (next.Date >= era.To) break;
             s = next;
         }

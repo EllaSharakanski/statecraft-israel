@@ -34,16 +34,16 @@ public class CommandGuardTests
         foreach (var t in CommandTypes()) Assert.True(Samples.ContainsKey(t), $"{t.Name} has no sample: add it, then its touch-points");
     }
 
-    /// <summary>A GDD kind is priced in the slice (MvpSlice.Overlay, a placeholder), and every other kind in the real rules.</summary>
+    /// <summary>Every kind, the GDD ones included, is priced in the real rules since the cutover (the GDD kinds' costs are
+    /// design values, R-LOOP-005).</summary>
     [Fact]
     public void EveryCommandHasAnAttentionKindAndACostInTheRealRules()
     {
         var c = ContentLoader.Load(RealContentTests.ContentRoot());
-        var mvp = MvpSlice.Load(RealContentTests.ContentRoot());
         foreach (var cmd in Samples.Values)
         {
             Assert.True(AttentionSystem.IsCommandKind(cmd.Kind), cmd.Kind);
-            Assert.True((AttentionSystem.IsGddKind(cmd.Kind) ? mvp : c).Rules.AttentionCost.ContainsKey(cmd.Kind), cmd.Kind);
+            Assert.True(c.Rules.AttentionCost.ContainsKey(cmd.Kind), cmd.Kind);
         }
     }
 

@@ -56,9 +56,10 @@ namespace Statecraft.Sim
             EventSystem.Delegate(c, s, why);
 
             var len = SecuritySystem.TurnLengthFor(c, s.Date, s.Rung);
-            // The next era's start, or the last era's end, is a boundary: the turn that reaches it ends on it, with that turn's real days (spec 4.1, 4.5).
-            var end = c.Eras[c.Eras.Count - 1].To;
-            var boundary = c.Eras.Select(e => e.From).Where(f => f > s.Date).DefaultIfEmpty(end).Min();
+            // The next era's start, or the game's end (the last era's end, or mvp.end in the GDD loop, R-LOOP-004), is a
+            // boundary: the turn that reaches it ends on it, with that turn's real days (spec 4.1, 4.5).
+            var end = c.End;
+            var boundary = c.Eras.Select(e => e.From).Where(f => f > s.Date).Concat(new[] { end }).Min();
             var next = SimTime.AdvanceTo(s.Date, len, boundary);
             var adjusted = next != SimTime.Advance(s.Date, len);
             var days = (next - s.Date).Days;
@@ -76,8 +77,9 @@ namespace Statecraft.Sim
             s.Turn++;
             if (s.GameOver == null && s.Date >= end)
             {
-                s.GameOver = GameOverCodes.EraEnded;   // the legacy report (#19) will come before this once it exists
-                why.Add(new Cause("era", "era_ended", 0, PlayerText.GameOver(s.GameOver)));
+                // the legacy report (#19) will come before this once it exists
+                s.GameOver = end == c.Eras[c.Eras.Count - 1].To ? GameOverCodes.EraEnded : GameOverCodes.MvpEnded;
+                why.Add(new Cause("era", s.GameOver, 0, PlayerText.GameOver(s.GameOver)));
             }
             ContentWindows.Update(c, s, turnStart);
             Cabinet.ExpireOnGovernmentChange(c, s, why);

@@ -11,8 +11,9 @@ office: defense_minister
 # 7 January 1949 (the IDF Archives: cease-fire at 14:00; the cease-fire agreement of 24 January: effective 7 January
 # at 12:00 GMT). Commander Yigal Allon, five brigades (the IDF Archives: three brigades moved south to reinforce two
 # southern ones). Research notes facts-1948.md section 9.
-# The window opens on 19 December, the turn date before the launch (game timing).
-from: 1948-12-19
+# The window opens on 15 December, the monthly turn date before the launch (game timing). Opening it earlier also lets
+# the follow-ups (sinai_withdrawal, rhodes_talks) fire on 15 January 1949: they need Horev answered first.
+from: 1948-12-15
 to: 1948-12-23
 options:
   - id: launch

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: ten_days
 title: The Ten Days
-text: 'The first truce is due to end on 9 July. Where should the main effort go when the fighting resumes? In the centre, Operation Dani under Yigal Allon would take Lydda airport and secure the road to Jerusalem. {defense_minister} must decide.'
+text: 'The first truce has ended and the fighting has resumed, with Egypt attacking in the south. In the centre, Operation Dani under Yigal Allon has taken Lydda airport and is pushing to secure the road to Jerusalem. {defense_minister} must decide where the main effort goes for the rest of the fighting.'
 anchor: hard
 tags: [security, war-casualties]
 office: defense_minister
@@ -14,14 +14,17 @@ office: defense_minister
 # has it taken "yesterday", without a dateline); the attacks on Latrun on 15-16 and 18 July failed (en.wiki for the
 # dates; the Knesset summary for the failure of the second phase). Owner ruling: the text describes the military
 # operation only. Research notes section 4.
-# The window opens on 3 July, the turn date before the truce ends (game timing). Only a player who accepted the first
-# truce sees this card (its text is about the truce ending).
-from: 1948-07-03
-to: 1948-07-11
+# The card is a decision during the fighting (owner decision, 15 October 2026, #567;
+# docs/superpowers/specs/2026-10-14-event-timing-monthly.md):
+# on monthly turns it cannot come before 15 July while it needs the first truce answered. The window opens on 10 July,
+# when Lydda airport was taken, and ends on 17 July, before the second truce took effect on 18 July. Only a player who
+# accepted the first truce sees this card (its text is about the truce ending).
+from: 1948-07-10
+to: 1948-07-18
 requires: { event: first_truce, option: accept }
 options:
   - id: central_front
-    text: Strike in the centre with Operation Dani, toward Lydda airport and the Jerusalem road
+    text: Keep the main effort in the centre with Operation Dani, toward the Jerusalem road
     historical: true
     recommended: true
     set_rung: 5
@@ -30,7 +33,7 @@ options:
   - id: southern_front
     # Game assumption: a design alternative. The notes found no cabinet debate in July; Ben-Gurion's diary of 11 July
     # records Yadin asking where forces should go next [S].
-    text: Strike against Egypt in the south first
+    text: Shift the main effort south, against Egypt
     set_rung: 5
     effects:
       - { target: security, delta: 0.015 }

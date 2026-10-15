@@ -20,7 +20,11 @@ options:
     historical: true
     recommended: true
     effects:
-      - { target: intl_standing, delta: 0.02 }
+      - { target: intl_standing, delta: 0 }
+      # Owner decisions of 15 October 2026: Q-EFX-3, "Add a real cost" (#375), and "Move the cost to Money" (#600). A design
+      # value, IL 1 million, half the smallest Money effect of any event (maabarot_policy, IL 2 million); not a historical
+      # figure and not a moral judgement of either answer.
+      - { target: treasury, delta: -1 }
   - id: refuse
     text: Refuse any dealings with Germany
     effects:

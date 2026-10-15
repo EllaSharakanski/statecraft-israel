@@ -1,0 +1,14 @@
+# The GDD v0.1 cities and their start values (GDD "Cities and construction"; docs/rules/mvp.md R-CITY-001 to R-CITY-005).
+# Every number below is a design value: the owner's balance, set or accepted in review (Q-CUT-1, owner, 15 October 2026:
+# "Labelled design values"). None is a claim about Tel Aviv in 1948. Counts are population units of rules.yaml
+# mvp.people_per_unit people (D-A1). The MVP has one city so far (D-A4: Tel Aviv); Phase 3 adds the others.
+# DesignValuesTests lists every number here (R-LOOP-005); changing one is a balance edit that re-pins the goldens.
+cities:
+  - id: tel_aviv                         # a settlement id of map/settlements_1948.yaml
+    housing_capacity: 120                # DESIGN VALUE: owner-set balance, not a historical figure (D-A4)
+    job_slots: 90                        # DESIGN VALUE: owner-set balance, not a historical figure (D-A4)
+    civilians: 100                       # DESIGN VALUE: owner-set balance, not a historical figure (D-A4)
+    employed: 80                         # DESIGN VALUE: owner-set balance, not a historical figure (D-A4)
+    # D-D5 (owner, 14 October 2026): one military camp and one Hakhshara exist at the start, a design assumption, not a
+    # claim about 1948. More are built by pioneers (Phase 4).
+    facilities: [military_camp, hakhshara]

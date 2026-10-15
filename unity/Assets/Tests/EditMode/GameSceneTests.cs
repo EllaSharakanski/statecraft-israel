@@ -158,7 +158,12 @@ public class GameSceneTests
             var pointer = Object.FindFirstObjectByType<MapPointer>();
             var camera = Camera.main.GetComponent<CameraController>();
             var bridge = root.Bridge!;
-            Assert.IsFalse(ui.Q("root").ClassListContains(EventCardPresenter.ModalClass), "precondition: no card at the start");
+            // Since the GDD cutover the game opens on a card (One Army, 15 May 1948): take it away for the "no card" half.
+            var none = GameSession.New(Inputs.Content, GoldenRun.Seed, Mode.Historical);
+            none.State.PendingEvents.Clear();
+            bridge.Replace(none);
+            for (int i = 0; i < 5; i++) yield return null;
+            Assert.IsFalse(ui.Q("root").ClassListContains(EventCardPresenter.ModalClass), "precondition: no card");
             foreach (var (where, p) in probes)
             {
                 Assert.IsFalse(pointer.IsOverUi!(ScreenFor(p)), $"no card: {where} {p} is map");
@@ -209,6 +214,8 @@ public class GameSceneTests
 
             foreach (var s in ScreenNav.Screens)
                 Assert.AreEqual(DisplayStyle.None, ui.Q("screen-" + s).resolvedStyle.display, s + " is hidden at start");
+            HideTheOpeningCard(ui);
+            yield return null;
             var panel = ui.panel;
             Assert.IsNull(panel.Pick(ui.worldBound.center), "the middle of the screen is map, not UI");
 
@@ -301,6 +308,7 @@ public class GameSceneTests
     public void AClickOnTheTerrainFillsTheInfoPanel()
     {
         Boot();
+        HideTheOpeningCard(Ui);
         var pointer = Object.FindFirstObjectByType<MapPointer>();
         Assert.IsTrue(pointer.HandleClick(AimAtTelAviv()), "the ray hit the terrain");
         Assert.AreEqual("Tel Aviv", Ui.Q<Label>("info-title").text);
@@ -315,6 +323,16 @@ public class GameSceneTests
         var b = sel.GetComponent<MeshFilter>().sharedMesh.bounds;
         Assert.AreEqual(ground.x, b.center.x, 100f, "the outline is on the clicked hex");
         Assert.AreEqual(ground.z, b.center.z, 100f);
+    }
+
+    /// <summary>Since the GDD cutover the game opens on its first card, One Army (idf_founding, window from 15 May 1948 per
+    /// #567: the order it asks about was signed on 26 May, before the next monthly turn), and its photograph covers the map. A
+    /// player hides it to use the map; so do these tests.</summary>
+    public static void HideTheOpeningCard(VisualElement ui)
+    {
+        var hide = ui.Q<Button>("event-hide");
+        Assert.IsNotNull(hide, "the opening card has its Hide button");
+        UiTestKit.Press(hide);
     }
 
     /// <summary>Points the main camera straight down at Tel Aviv and returns Tel Aviv's screen position.</summary>
@@ -527,6 +545,29 @@ public class GameSceneTests
         Assert.AreEqual(turn + 1, bridge.State.Turn);
         Assert.IsTrue(bridge.Session.Last!.Why.Any(w => w.Message == "Chosen: Sign the armistice"), "the card's option was pressed, not delegated");
         Assert.IsFalse(bridge.Session.Last.Why.Any(w => w.Target == "armistice_egypt" && w.Message.StartsWith("Delegated")));
+    }
+
+    /// <summary>Since the GDD cutover, 15 July 1948 brings three cards at full war, where an answer costs 2 of the 4
+    /// Attention: the smoke answers the two it can pay for and leaves the third to its minister, and the run still passes.</summary>
+    [Test]
+    public void TheSmokeRunLeavesACardItCannotPayForToItsMinister()
+    {
+        using var ui = new UiTestKit();
+        var c = Inputs.Content;
+        var g = GameSession.New(c, GoldenRun.Seed, Mode.Historical);
+        while (g.State.Date < new System.DateTime(1948, 7, 15)) g.Step(new Command[0]);
+        Assert.AreEqual(3, g.State.PendingEvents.Count, string.Join(", ", g.State.PendingEvents));
+        var text = Text;
+        var bridge = new SimBridge(g, text);
+        using var toast = new ToastPresenter(ui.Root, bridge, text);
+        using var hud = new HudPresenter(ui.Root, bridge, text);
+        using var card = new EventCardPresenter(ui.Root, bridge, text, null);
+        var log = new List<string>();
+        var run = GameRoot.Smoke(ui.Root, bridge, card, 1, log.Add);
+        while (run.MoveNext()) { }
+        StringAssert.StartsWith("SMOKE OK 1 turns 1948-08-15", log[log.Count - 1], string.Join("\n", log));
+        Assert.AreEqual(2, bridge.Session.Last!.Why.Count(w => w.System == "events" && w.Message.StartsWith("Chosen")));
+        Assert.AreEqual(1, bridge.Session.Last.Why.Count(w => w.System == "events" && w.Message.StartsWith("Delegated")));
     }
 
     [Test]

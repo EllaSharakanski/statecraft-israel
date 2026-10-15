@@ -7,7 +7,7 @@ using Statecraft.Sim;
 using YamlDotNet.Serialization;
 
 /// <summary>The designated sites (Phase 1 PR 5, Task 5.1): content/sites.yaml holds sourced facts only (the site, its names,
-/// hex, founding date and sources); the build turns and cost are placeholders in MvpSlice.Overlay or test fixtures (ruling 2).
+/// hex, founding date and sources); the build turns and cost are labelled design values in rules.yaml mvp: (Q-CUT-1, R-LOOP-005).
 /// The loader reads sites.yaml only when systems.loop is gdd, so the legacy content hash does not move.</summary>
 public class SitesContentTests
 {
@@ -30,7 +30,8 @@ public class SitesContentTests
     [Fact]
     public void TheLegacyLoopReadsNoSites()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        // The legacy loop (a fixture since the cutover), with a sites file next to it that it must not read.
+        var c = ContentLoader.Load(Fixture.Write(new Dictionary<string, string> { ["sites.yaml"] = Fixture.GddSites }));
         Assert.Empty(c.Sites);
     }
 
@@ -39,7 +40,7 @@ public class SitesContentTests
     [Fact]
     public void TheSliceHasMefalsimFromContent()
     {
-        var c = MvpSlice.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
         var site = Assert.Single(c.Sites);
         Assert.Equal(("mefalsim", "Mefalsim", "מפלסים", -10, 27), (site.Id, site.Name, site.NameHe, site.Q, site.R));
         Assert.Equal(new[] { "yishuv" }, site.Kinds);
@@ -49,7 +50,7 @@ public class SitesContentTests
         Assert.Contains(site.Sources, s => s.Url.StartsWith("https://israelalbum.org.il/", StringComparison.Ordinal));
         Assert.All(site.Sources, s => Assert.NotEqual(default, s.Checked));
         var mvp = c.RulesAt(c.Eras[0].From).Mvp!;
-        Assert.Equal((6, 2.0), (mvp.BuildYishuvTurns, mvp.BuildYishuvCost));   // PLACEHOLDER: owner sets (MvpSlice.Overlay)
+        Assert.Equal((6, 2.0), (mvp.BuildYishuvTurns, mvp.BuildYishuvCost));   // design values (rules.yaml mvp:, R-LOOP-005)
         Assert.Equal(0, c.Rules.AttentionCost["pioneer_work"]);   // D-A6: unit orders are free
         Assert.Equal(0, c.Rules.AttentionCost["stop_work"]);
     }
@@ -63,19 +64,17 @@ public class SitesContentTests
         var root = RealContentTests.ContentRoot();
         var map = new DeserializerBuilder().Build().Deserialize<Dictionary<string, object>>(File.ReadAllText(Path.Combine(root, "map", "armistice_hexes_1949.yaml")));
         var lineHexes = ((List<object>)map["line_hexes"]).Cast<List<object>>().Select(x => (int.Parse((string)x[0], CultureInfo.InvariantCulture), int.Parse((string)x[1], CultureInfo.InvariantCulture)));
-        var site = Assert.Single(MvpSlice.Load(root).Sites);
+        var site = Assert.Single(ContentLoader.Load(root).Sites);
         Assert.Contains((site.Q, site.R), lineHexes);
     }
 
     [Fact]
-    public void NoBalanceValueIsUnderContent()
+    public void TheSitesFileHoldsNoBalanceValue()
     {
-        var root = RealContentTests.ContentRoot();
-        var sites = File.ReadAllText(Path.Combine(root, "sites.yaml"));
+        // sites.yaml is sourced facts; the build turns and cost are design values in rules.yaml mvp: since the cutover
+        // (Q-CUT-1), listed and tagged under DesignValuesTests (R-LOOP-005).
+        var sites = File.ReadAllText(Path.Combine(RealContentTests.ContentRoot(), "sites.yaml"));
         Assert.DoesNotMatch(@"(?m)^[^#\n]*\b\w*(turns|cost)\w*\s*:|build_yishuv", sites);   // no such key outside a comment
-        var overrides = Directory.Exists(Path.Combine(root, "rules")) ? Directory.GetFiles(Path.Combine(root, "rules"), "*.yaml") : new string[0];
-        foreach (var f in new[] { "rules.yaml" }.Concat(overrides.Select(x => "rules/" + Path.GetFileName(x))))
-            Assert.DoesNotMatch(@"build_yishuv|pioneer_work|stop_work", File.ReadAllText(Path.Combine(root, f)));
     }
 
     static string Site(string replace, string with) => Fixture.GddSites.Replace(replace, with);

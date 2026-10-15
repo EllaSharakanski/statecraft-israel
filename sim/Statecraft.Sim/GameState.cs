@@ -12,6 +12,8 @@ namespace Statecraft.Sim
     {
         /// <summary>The last era's end was reached (eras.yaml).</summary>
         public const string EraEnded = "era_ended";
+        /// <summary>The GDD game's last day was reached (rules.yaml mvp.end, R-LOOP-004).</summary>
+        public const string MvpEnded = "mvp_ended";
         public const string CoalitionCollapse = "coalition_collapse";
     }
 

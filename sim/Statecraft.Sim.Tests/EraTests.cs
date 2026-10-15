@@ -224,7 +224,7 @@ public class EraTests
         var c = EndingOn("1948-07-03");
         var s = Simulation.NewGame(c, 1948, Mode.Historical);
         StepResult r = null!;
-        while (s.GameOver == null) { r = Simulation.Step(c, s, new Command[0]); s = r.State; }
+        while (s.GameOver == null && s.Turn < 1000) { r = Simulation.Step(c, s, new Command[0]); s = r.State; }   // capped: a broken end fails, not hangs
         var text = r.Why.Single(w => w.System == "era").Message;
         Assert.Equal("The chapter has ended", text);
         Assert.DoesNotContain("era_ended", text);

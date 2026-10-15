@@ -11,9 +11,9 @@ public class WarEvents1948Tests
     static readonly DateTime Start = new DateTime(1948, 5, 15);
     static readonly DateTime EgyptArmistice = new DateTime(1949, 2, 24);
 
-    /// <summary>Most consecutive turns of the historical run, before the Egyptian armistice card, that raise no card
-    /// (controller ruling, fix round 1, I7).</summary>
-    const int MaxEmptyTurns = 4;
+    /// <summary>The longest time, in months, from one card of the historical run to the next, up to the Egyptian armistice
+    /// card. Controller ruling, fix round 1, I7, restated in months: owner decision of 15 October 2026 (Q-CUT-8, "6 months,
+    /// 2 in wartime", #375).</summary>
 
     static DateTime D(int y, int m, int d) => new DateTime(y, m, d);
 
@@ -25,27 +25,32 @@ public class WarEvents1948Tests
         ("idf_founding", "one_army", null, "defense_minister", "ben_gurion", 2, D(1948, 5, 26)),         // order signed (§3a)
         ("first_truce", "accept", null, "prime_minister", "ben_gurion", 2, D(1948, 6, 10)),              // acceptance sent (§1)
         ("altalena", "enforce", null, "defense_minister", "ben_gurion", 2, D(1948, 6, 20)),              // force authorised (§2)
-        ("ten_days", "central_front", 5, "defense_minister", "ben_gurion", 2, D(1948, 7, 9)),            // Dani begins (§4)
+        ("ten_days", "central_front", 5, "defense_minister", "ben_gurion", 2, D(1948, 7, 18)),           // the second truce ends the fighting (§4, §5)
         ("second_truce", "comply", 4, "prime_minister", "ben_gurion", 2, D(1948, 7, 18)),                // truce in force (§5)
         ("jerusalem_military_government", "military_government", null, "prime_minister", "ben_gurion", 2, D(1948, 8, 2)),
-        ("bernadotte_assassination", "outlaw", null, "prime_minister", "ben_gurion", 2, D(1948, 9, 20)),  // ultimatum (§6)
+        ("bernadotte_assassination", "outlaw", null, "prime_minister", "ben_gurion", 2, D(1948, 9, 23)),  // ordinance adopted (§6)
         ("latrun_proposal", "accept_vote", null, "prime_minister", "ben_gurion", 2, D(1948, 9, 26)),     // cabinet vote (§13a)
         ("operation_yoav", "stop_at_ceasefire", 5, "defense_minister", "ben_gurion", 2, D(1948, 10, 22)), // Hebron refused, cease-fire (§7)
-        ("operation_hiram", "launch", 5, "defense_minister", "ben_gurion", 3, D(1948, 10, 28)),          // launched night of 28-29 Oct (§8)
-        ("jerusalem_ceasefire", "sign", null, "prime_minister", "ben_gurion", 2, D(1948, 11, 30)),       // signed (§13b)
+        ("operation_hiram", "stop_at_ceasefire", 5, "defense_minister", "ben_gurion", 2, D(1948, 10, 31)), // cease-fire (§8)
+        ("jerusalem_ceasefire", "keep", null, "prime_minister", "ben_gurion", 2, D(1948, 11, 30)),       // signed (§13b)
         ("operation_horev", "launch", 5, "defense_minister", "ben_gurion", 2, D(1948, 12, 22)),          // launched (§9)
-        ("sinai_withdrawal", "withdraw", null, "prime_minister", "ben_gurion", 2, D(1949, 1, 1)),        // orders given (§9, FRUS d341)
+        ("sinai_withdrawal", "withdraw", null, "prime_minister", "ben_gurion", 2, D(1949, 1, 2)),        // withdrawn (§9, FRUS d371)
         ("rhodes_talks", "send_delegation", null, "foreign_minister", "sharett", 2, D(1949, 1, 13)),     // talks open (§9)
         ("elections_1949", "hold", null, "prime_minister", "ben_gurion", 1, D(1949, 1, 25)),             // the vote (§11)
     };
 
-    /// <summary>Cards allowed to reach the player after DecidedBy, and why.</summary>
-    static readonly Dictionary<string, string> LateByDesign = new Dictionary<string, string>
+    /// <summary>Cards allowed to reach the player up to Days after DecidedBy, and why (owner decision, 15 October 2026, #567:
+    /// on monthly turns no turn date falls between the fact each card states and the decision).</summary>
+    static readonly Dictionary<string, (int Days, string Why)> LateByDesign = new Dictionary<string, (int, string)>
     {
-        // The facts that make the ultimatum (Sinai crossing 28 Dec, UN call 29 Dec, US message 30 Dec) come after the
-        // Horev card's turn, so the card can only come one turn later, a day after the orders (review M6).
-        ["sinai_withdrawal"] = "facts of 28-30 Dec cannot be stated on the 26 Dec turn",
+        ["first_truce"] = (5, "no monthly turn date between the resolution of 29 May and the acceptance of 10 June"),
+        ["rhodes_talks"] = (2, "it needs Horev answered, so it comes on 15 January, after the talks opened on 13 January"),
     };
+
+    /// <summary>Cards that are decisions after the fact (owner decision, 15 October 2026, #567): their text states what
+    /// happened, so the card must come on or after DecidedBy, the last fact it states.</summary>
+    static readonly HashSet<string> AfterTheFact = new HashSet<string>
+        { "bernadotte_assassination", "operation_hiram", "jerusalem_ceasefire", "sinai_withdrawal" };
 
     /// <summary>Follow-up events and the earlier choice they depend on (review I2).</summary>
     public static readonly (string Id, string Event, string Option)[] Chains =
@@ -149,13 +154,16 @@ public class WarEvents1948Tests
     /// <summary>Plays to March 1949 with HistoricalAI, except that <paramref name="pick"/> may choose another option.</summary>
     static List<Turn> Play(Func<string, string?>? pick = null)
     {
-        var turns = new List<Turn>();
         var s = Simulation.NewGame(C, GoldenRun.Seed, Mode.Historical);
+        // The first entry is the new game: a card raised on 15 May 1948 (idf_founding) comes then.
+        var turns = new List<Turn> { new Turn { Start = s.Date, End = s.Date, Raised = s.FiredEvents.ToList(), RungAfter = s.Rung } };
         while (s.Date < new DateTime(1949, 3, 1) && s.GameOver == null)
         {
-            var commands = HistoricalAI.Commands(C, s)
-                .Select(c => c is ChooseEventOption o && pick?.Invoke(o.EventId) is string other ? new ChooseEventOption(o.EventId, other) : c)
-                .ToList();
+            // A picked answer goes first, so it is never the card left to the minister when Attention runs out (on monthly
+            // turns 15 July 1948 brings three cards and full war prices each at 2 of the 4).
+            var picked = s.PendingEvents.Where(id => pick?.Invoke(id) != null).Select(id => (Command)new ChooseEventOption(id, pick!(id)!)).ToList();
+            var commands = picked.Concat(HistoricalAI.Commands(C, s)
+                .Where(c => !(c is ChooseEventOption o && picked.OfType<ChooseEventOption>().Any(p => p.EventId == o.EventId)))).ToList();
             var step = Simulation.Step(C, s, commands);
             turns.Add(new Turn
             {
@@ -171,7 +179,11 @@ public class WarEvents1948Tests
 
     /// <summary>The date of the card for <paramref name="id"/>: the end of the turn that raised it.</summary>
     static DateTime CardDate(string id) =>
-        Run.FirstOrDefault(t => t.Raised.Contains(id))?.End ?? throw new Xunit.Sdk.XunitException($"{id} never fired in the historical run");
+        AtStart.Contains(id) ? Start
+        : Run.FirstOrDefault(t => t.Raised.Contains(id))?.End ?? throw new Xunit.Sdk.XunitException($"{id} never fired in the historical run");
+
+    /// <summary>The cards the new game raises on its first day (idf_founding opens on 15 May).</summary>
+    static readonly HashSet<string> AtStart = new HashSet<string>(Simulation.NewGame(C, GoldenRun.Seed, Mode.Historical).FiredEvents);
 
     /// <summary>The card reaches the player in a turn that starts by the historical decision (review I1, I7).</summary>
     [Theory]
@@ -182,8 +194,10 @@ public class WarEvents1948Tests
         var card = CardDate(id);
         var e = Get(id);
         Assert.True(card >= e.From && card < e.To!.Value.AddDays(31), $"{id}: card {card:yyyy-MM-dd} far from its window");
-        if (LateByDesign.TryGetValue(id, out var why))
-            Assert.True(card <= row.DecidedBy.AddDays(1), $"{id}: card {card:yyyy-MM-dd}, more than a day after {row.DecidedBy:yyyy-MM-dd} ({why})");
+        if (AfterTheFact.Contains(id))
+            Assert.True(card >= row.DecidedBy, $"{id}: card {card:yyyy-MM-dd}, before the facts of {row.DecidedBy:yyyy-MM-dd} it states");
+        else if (LateByDesign.TryGetValue(id, out var late))
+            Assert.True(card <= row.DecidedBy.AddDays(late.Days), $"{id}: card {card:yyyy-MM-dd}, more than {late.Days} days after {row.DecidedBy:yyyy-MM-dd} ({late.Why})");
         else
             Assert.True(card <= row.DecidedBy, $"{id}: card {card:yyyy-MM-dd}, after the historical decision of {row.DecidedBy:yyyy-MM-dd}");
     }
@@ -200,41 +214,43 @@ public class WarEvents1948Tests
     [Fact]
     public void TheHistoricalRunMovesThroughTheTruces()
     {
-        int After(string id) => Run.Single(t => t.Start == CardDate(id)).RungAfter;
+        int After(string id) => Run.Single(t => t.Start == CardDate(id) && t.End > t.Start).RungAfter;   // the turn answering the card
         Assert.Equal(4, After("second_truce"));       // the second truce: monthly turns
         Assert.Equal(5, After("operation_yoav"));     // Yoav ends it
         Assert.Equal(5, After("sinai_withdrawal"));   // full war until the armistice with Egypt
     }
 
-    /// <summary>Two events whose historical options set different security levels must never be answered on the same
-    /// turn: the order the player presses them in would decide the level.</summary>
+    /// <summary>Two cards whose historical options set different security levels may come on the same turn on monthly turns
+    /// (15 July 1948: ten_days at 5 and second_truce at 4). Answered in the card's order (window start, then id), the turn
+    /// must end at the level of the decision taken last in history (on the same day, the card answered last), so the historical
+    /// run keeps the historical level.</summary>
     [Fact]
-    public void NoTurnOfTheHistoricalRunAsksForTwoDifferentSecurityLevels()
+    public void ATurnAskingForTwoSecurityLevelsEndsAtTheLaterDecisionsLevel()
     {
-        foreach (var t in Run)
+        for (int i = 0; i + 1 < Run.Count; i++)
         {
-            var rungs = t.Raised.Where(id => Events.Any(x => x.Id == id)).Select(id => Events.Single(x => x.Id == id).Rung)
-                .Where(x => x.HasValue).Distinct().ToList();
-            Assert.True(rungs.Count <= 1, $"card {t.End:yyyy-MM-dd} asks for levels {string.Join(", ", rungs)}");
+            var rows = Run[i].Raised.Select(id => Events.SingleOrDefault(x => x.Id == id)).Where(x => x.Id != null && x.Rung.HasValue).ToList();
+            if (rows.Select(x => x.Rung).Distinct().Count() <= 1) continue;
+            // Decided last in history; on the same day, the card answered last (the card order: window start, then id).
+            var last = rows.OrderBy(x => x.DecidedBy).ThenBy(x => Get(x.Id).From).ThenBy(x => x.Id, StringComparer.Ordinal).Last();
+            Assert.True(last.Rung == Run[i + 1].RungAfter, $"card {Run[i].End:yyyy-MM-dd}: the turn ends at level {Run[i + 1].RungAfter}, not {last.Rung} ({last.Id}, decided last)");
         }
     }
 
-    /// <summary>Playtest 1 E: counted in turns of the historical run, from the start to the Egyptian armistice card, no
-    /// more than MaxEmptyTurns consecutive turns raise no card (review I7, I8).</summary>
+    /// <summary>R-TURN-003 in the war period: no more than 2 months pass from one card to the next while the country is at
+    /// full war on any turn of the stretch (owner, 15 October 2026: "Full-war level = wartime", SecuritySystem.AtFullWar), the
+    /// same rule and predicate as EventRetimingTests.NoLongStretchWithoutACard, on the golden run up to March 1949.</summary>
+    // R-TURN-003
     [Fact]
-    public void NoLongStretchOfTurnsWithoutACard()
+    public void NoLongStretchWithoutACard()
     {
-        var armistice = Run.FindIndex(t => t.Raised.Contains("armistice_egypt"));
-        Assert.True(armistice > 0, "the Egyptian armistice never fired");
-        int empty = 0;
-        var stretches = new List<string>();
-        for (int i = 0; i <= armistice; i++)
-        {
-            if (Run[i].Raised.Count == 0) { empty++; continue; }
-            if (empty > MaxEmptyTurns) stretches.Add($"{empty} turns ending {Run[i - 1].End:yyyy-MM-dd}");
-            empty = 0;
-        }
-        Assert.True(stretches.Count == 0, "empty stretches: " + string.Join("; ", stretches));
+        var s = Simulation.NewGame(C, GoldenRun.Seed, Mode.Historical);
+        var run = new List<GameState> { s };
+        while (s.Date < new DateTime(1949, 3, 1) && s.GameOver == null) { s = Simulation.Step(C, s, GoldenRun.Orders(C, s)).State; run.Add(s); }
+        var war = EventRetimingTests.Gaps(run).Where(g => g.AtWar).ToList();
+        Assert.NotEmpty(war);
+        var bad = war.Where(EventRetimingTests.TooLong).Select(g => $"{g.From:yyyy-MM-dd} to {g.To:yyyy-MM-dd}").ToList();
+        Assert.True(bad.Count == 0, "stretches at full war without a card: " + string.Join("; ", bad));
     }
 
     /// <summary>A follow-up card never fires when the player chose otherwise earlier (review I2).</summary>

@@ -8,7 +8,7 @@ using Statecraft.Sim;
 /// #378's questions are the plan's recommendations, which the owner took on 14 October 2026.</summary>
 public class ProjectsTests
 {
-    static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
+    static readonly Content Mvp = ContentLoader.Load(RealContentTests.ContentRoot());
 
     /// <summary>The GDD fixture: town_a at (1, 0) and site_a at (2, 0). A build takes 3 turns and costs IL 1.5m.</summary>
     static Content Town(Dictionary<string, string>? extra = null) => ContentLoader.Load(Fixture.Write(Fixture.Gdd(extra)));
@@ -112,7 +112,7 @@ public class ProjectsTests
     [Fact]
     public void TheLegacyLoopRefusesBothOrdersAndRefundsAttention()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the legacy loop (a fixture since the cutover)
         var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
         var r = Step(c, s, new PioneerWork(1, Projects.BuildYishuv, "mefalsim"), new StopWork(1));
         Assert.Equal(2, r.Rejected.Count);

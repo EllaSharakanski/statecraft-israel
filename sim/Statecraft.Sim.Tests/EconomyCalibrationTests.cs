@@ -51,7 +51,8 @@ public class EconomyCalibrationTests
     public void ThePlaythroughSurvivesTo1952()
     {
         var last = History[History.Count - 1];
-        Assert.True(last.GameOver == null, "game over: " + last.GameOver);
+        // The game's own end (15 January 1952, R-LOOP-004) is the only way this run may stop.
+        Assert.True(last.GameOver == null || last.GameOver == GameOverCodes.MvpEnded, "game over: " + last.GameOver);
         Assert.True(last.CoalitionStability > PoliticsSystem.CollapseBelow);
     }
 

@@ -1,7 +1,7 @@
 # GDD v0.1 designated sites (docs/GDD.md "Pioneer work": building is allowed only at designated spots, and a new yishuv
 # takes its site's name). Phase 1 has one site (owner decision D-A4; the owner chose Mefalsim on #378, 14 October 2026).
-# Sourced facts only: the build turns and cost are balance values, set in MvpSlice.Overlay until the owner sets them
-# (ruling 2). The loader reads this file only when eras.yaml systems.loop is gdd. Research: #459,
+# Sourced facts only: the build turns and cost are labelled design values in rules.yaml mvp: (Q-CUT-1, owner, 15 October
+# 2026; R-LOOP-005). The loader reads this file only when eras.yaml systems.loop is gdd. Research: #459,
 # research_notes/GDD objectives/designated-site-1.md.
 sites:
   - id: mefalsim

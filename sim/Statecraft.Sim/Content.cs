@@ -431,7 +431,7 @@ namespace Statecraft.Sim
         /// term's day. Read through <see cref="Offices.BudgetOwner"/> and <see cref="Offices.BudgetLineOf"/>. Start-only, like budget_start.</summary>
         public Dictionary<string, List<BudgetOwnerTerm>> BudgetOwners { get; set; } = new Dictionary<string, List<BudgetOwnerTerm>>();
         /// <summary>The GDD v0.1 rules (docs/rules/mvp.md). Required, and read, only when eras.yaml systems.loop is gdd; null
-        /// otherwise. Its values are the owner's to set: until then they live in MvpSlice.Overlay or a test fixture.</summary>
+        /// otherwise. Its numbers are design values the owner sets (R-LOOP-005).</summary>
         public MvpRules? Mvp { get; set; }
     }
 
@@ -448,6 +448,9 @@ namespace Statecraft.Sim
         public double CohesionJobsWeight { get; set; }
         /// <summary>The city every arrival lands in (Phase 1 has one city; R-CITY-003).</summary>
         public string ArrivalsCity { get; set; } = "";
+        /// <summary>The day the GDD game ends (R-LOOP-004; D-E5, 15 January 1952 in the real content), or null for the last
+        /// era's end. Read from rules.yaml through <see cref="Content.End"/>; the same in every era.</summary>
+        public DateTime? End { get; set; }
         /// <summary>Turns a "build yishuv" takes, counting the turn it was ordered in (R-SITE-003).</summary>
         public int BuildYishuvTurns { get; set; }
         /// <summary>IL millions a "build yishuv" costs, paid in full when it starts (R-SITE-001).</summary>
@@ -693,6 +696,9 @@ namespace Statecraft.Sim
         public bool IsGdd => Loop == EraSystems.Gdd;
         /// <summary>The ruleset a save names (SaveGame.Ruleset): "legacy" or "gdd-0.1".</summary>
         public string Ruleset => IsGdd ? SaveGame.GddRuleset : SaveGame.LegacyRuleset;
+        /// <summary>The day play ends, a boundary the last turn reaches (Simulation.Step): rules.yaml mvp.end in the GDD loop
+        /// (R-LOOP-004), otherwise the last era's end.</summary>
+        public DateTime End => IsGdd && Rules.Mvp?.End is DateTime e ? e : Eras[Eras.Count - 1].To;
         public List<Indicator> Indicators = new List<Indicator>();
         public List<Policy> Policies = new List<Policy>();
         public List<Effect> Effects = new List<Effect>();

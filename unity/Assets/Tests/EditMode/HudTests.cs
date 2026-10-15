@@ -35,22 +35,24 @@ public class HudTests
 
     // ---- The score (#380): only in the GDD loop, from GameState.Score ----
 
-    static readonly Content Slice = MvpSlice.Load(Paths.Content);
-    static SimBridge SliceBridge() => new SimBridge(GameSession.New(Slice, GoldenRun.Seed, Mode.Historical), Text);
+    /// <summary>The real game: the GDD loop since the cutover (the ?mvp=1 slice is gone with MvpSlice).</summary>
+    static SimBridge GddBridge() => new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), Text);
 
     [Test]
     public void TheLegacyLoopShowsNoScore()
     {
-        Assert.AreEqual("", HudModel.From(NewBridge(), Text).Score);
+        // The legacy loop survives only as content without the loop switch (SimBridgeGddTests.Legacy) since the cutover.
+        SimBridge LegacyBridge() => new SimBridge(GameSession.New(SimBridgeGddTests.Legacy, GoldenRun.Seed, Mode.Historical), Text);
+        Assert.AreEqual("", HudModel.From(LegacyBridge(), Text).Score);
         using var ui = new UiTestKit();
-        using var hud = new HudPresenter(ui.Root, NewBridge(), Text);
+        using var hud = new HudPresenter(ui.Root, LegacyBridge(), Text);
         Assert.AreEqual(DisplayStyle.None, ui.Q<Label>("score").style.display.value);
     }
 
     [Test]
-    public void TheSliceShowsItsScore()
+    public void TheGddGameShowsItsScore()
     {
-        var bridge = SliceBridge();
+        var bridge = GddBridge();
         Assert.AreEqual("Score 0", HudModel.From(bridge, Text).Score);
         bridge.State.Score = 150;
         Assert.AreEqual("Score 150", HudModel.From(bridge, Text).Score);
@@ -61,10 +63,10 @@ public class HudTests
     }
 
     [Test]
-    public void TheBarShowsTheSlicesScore()
+    public void TheBarShowsTheGddGamesScore()
     {
         using var ui = new UiTestKit();
-        var bridge = SliceBridge();
+        var bridge = GddBridge();
         using var hud = new HudPresenter(ui.Root, bridge, Text);
         var label = ui.Q<Label>("score");
         Assert.AreEqual("Score 0", label.text);
@@ -83,12 +85,12 @@ public class HudTests
         ui.Press("end-turn");
         Assert.AreEqual(1, bridge.State.Turn);
         Assert.AreEqual("Turn 1", ui.Q<Label>("turn").text);
-        Assert.AreEqual("22 May 1948", ui.Q<Label>("date").text);
+        Assert.AreEqual("15 June 1948", ui.Q<Label>("date").text);   // monthly turns since the GDD cutover
         var arrivals = bridge.Session.Last!.Why.Where(w => w.System == "population").Sum(w => w.Delta);
         Assert.AreEqual(arrivals.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), ui.Q<Label>("immigration-value").text);
         var s0 = bridge.Session.Previous!; var s1 = bridge.State;
         var d = System.Math.Round((s1.Treasury - s1.Debt) - (s0.Treasury - s0.Debt), 1, System.MidpointRounding.AwayFromZero);
-        Assert.AreNotEqual(0.0, d, "the test needs a week with a treasury change");
+        Assert.AreNotEqual(0.0, d, "the test needs a turn with a treasury change");
         Assert.AreEqual(PlayerText.MoneyChange(C, "treasury", d), ui.Q<Label>("treasury-delta").text);
         Assert.AreEqual(d < 0, ui.Q<Label>("treasury-delta").ClassListContains("delta-down"));
         Assert.AreEqual(d > 0, ui.Q<Label>("treasury-delta").ClassListContains("delta-up"));

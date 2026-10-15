@@ -8,8 +8,8 @@ import pytest
 
 import release_build as rb
 
-H1950 = "71e9904d0ee48083db9bbba281f3f046136482ba83ee056e48d57b62e76a5b07"
-H1952 = "62f8ec61a14acff4eab503381994a7c94d7a2f786dcfde5c4c19439ac8b4c5e8"
+H1950 = "f97e9f81d1feaee78c55847e1fc42f8e60bd9f12c84d234f0d10002f9dae48f2"
+H1952 = "75d382995d0f12f0eed772dd851906831990b0ab830c10f3a0af310da0547f31"
 SHA = "1b7a36cb" + "0" * 32
 LICENCE_TEXTS = ("CC-BY-4.0.txt", "CC-BY-SA-4.0.txt", "CC0-1.0.txt", "YamlDotNet-MIT.txt")
 NOTICES = ["LICENSE", "LICENSES/CC-BY-4.0.txt", "LICENSES/CC-BY-SA-4.0.txt", "LICENSES/CC0-1.0.txt",

@@ -7,7 +7,7 @@ using Statecraft.Sim;
 /// cohesion and arrivals in TurnResolver (R-CITY-002 to R-CITY-005, in the order of spec 2026-10-12 section 2.3, D-A6).</summary>
 public class CitiesTests
 {
-    static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
+    static readonly Content Mvp = ContentLoader.Load(RealContentTests.ContentRoot());
 
     /// <summary>The GDD fixture with one city: 20 jobs, 10 civilians, 6 of them employed, housing for 12.</summary>
     static Content Town(string city = "  - { id: town_a, housing_capacity: 12, job_slots: 20, civilians: 10, employed: 6, facilities: [] }\n") =>
@@ -24,8 +24,8 @@ public class CitiesTests
     }
 
     [Fact]
-    public void ALegacyGameHasNoCities() =>
-        Assert.Empty(Simulation.NewGame(ContentLoader.Load(RealContentTests.ContentRoot()), GoldenRun.Seed, Mode.Historical).Cities);
+    public void ALegacyGameHasNoCities() =>   // the legacy loop lives on only in test fixtures since the cutover
+        Assert.Empty(Simulation.NewGame(ContentLoader.Load(Fixture.Write()), GoldenRun.Seed, Mode.Historical).Cities);
 
     // R-CITY-001
     [Fact]
@@ -58,9 +58,9 @@ public class CitiesTests
     [Fact]
     public void TheLegacyLoopRefusesTheOrderAndRefundsAttention()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the legacy loop (a fixture since the cutover)
         var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
-        var r = Step(c, s, new AssignWorkers("tel_aviv", "job", 1));
+        var r = Step(c, s, new AssignWorkers("town_a", "job", 1));
         Assert.Equal("That order is not available in this game", Assert.Single(r.Rejected).Reason);
         Assert.Equal(Step(c, s).State.Hash(), r.State.Hash());
     }
@@ -223,7 +223,7 @@ public class CitiesTests
     [Fact]
     public void TheResolverDoesNotRunInTheLegacyLoop()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the legacy loop (a fixture since the cutover)
         var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
         s = Step(c, s).State;
         Assert.Empty(s.Cities);

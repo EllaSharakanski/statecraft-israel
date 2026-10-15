@@ -7,12 +7,12 @@ using Statecraft.Sim;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>Pioneer work through the UI's queue (#378): PioneerWork and StopWork queue in the slice (MvpSlice) for a unit that
+/// <summary>Pioneer work through the UI's queue (#378): PioneerWork and StopWork queue in the real content (the GDD game since the cutover) for a unit that
 /// exists, an id the content or state does not have is refused before End Turn, one order per unit, and the legacy loop's
 /// content queues neither.</summary>
 public class SimBridgeSiteTests
 {
-    static readonly Content Slice = MvpSlice.Load(Paths.Content);
+    static readonly Content Slice = ContentLoader.Load(Paths.Content);
     static readonly Content Legacy = ContentLoader.Load(Paths.Content);
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
     static SimBridge Bridge(Content c) => new SimBridge(GameSession.New(c, GoldenRun.Seed, Mode.Historical), Text);

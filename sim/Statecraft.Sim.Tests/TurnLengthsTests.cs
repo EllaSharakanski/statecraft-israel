@@ -16,7 +16,7 @@ public class TurnLengthsTests
     [InlineData(4, TurnLength.Month)] [InlineData(5, TurnLength.Week)]
     public void TheDefaultReproducesTheLegacyTable(int rung, TurnLength expected)
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the fixture has no turn_lengths; the real game sets all month (CutoverTests)
         Assert.Equal(expected, SecuritySystem.TurnLengthFor(c, c.Rules.Start, rung));
         Assert.Equal(SecuritySystem.TurnLengthFor(rung), SecuritySystem.TurnLengthFor(c, c.Rules.Start, rung));
     }

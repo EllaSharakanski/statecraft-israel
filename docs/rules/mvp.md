@@ -1,24 +1,38 @@
 # Rules of the GDD v0.1 MVP
 
-The rules of the 1948–1951 MVP in [docs/GDD.md](../GDD.md), as Phase 1 builds them behind the `systems.loop` switch
-([the approved plan](../superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md), §6). Balance values are the owner's.
-Until the owner sets them, they are placeholders in the dev and test overlay (`MvpSlice.Overlay`) or in test fixtures, never in `content/`.
+The rules of the 1948–1951 MVP in [docs/GDD.md](../GDD.md), as Phase 1 built them behind the `systems.loop` switch
+([the approved plan](../superpowers/specs/2026-10-12-gdd-v0.1-impact-and-plan.md), §6). Since the cutover (Phase 2 PR 1)
+the real game runs them. Balance values are the owner's.
+
+**15 October 2026 (owner, Q-CUT-1: "Labelled design values").** From the cutover, every balance number is a labelled
+design value in `content/`, tagged on its line and listed by `DesignValuesTests` (R-LOOP-005). This replaces controller
+ruling 2 of 12 October 2026, under which placeholders lived only in the dev and test overlay, never in `content/`.
 
 ## Turns
 
-R-TURN-001: The turn length on each security rung (1 to 5) is read from the rules key `turn_lengths` of the era the turn starts in. Without the key it is quarter, quarter, quarter, month, week, today's table. The GDD's monthly turns set all five to month.
+R-TURN-001: The turn length on each security rung (1 to 5) is read from the rules key `turn_lengths` of the era the turn starts in. Without the key it is quarter, quarter, quarter, month, week, the legacy table. The real game sets all five to month (D-B1), so turns from 15 May 1948 end on the 15th of each month.
+
+R-TURN-002: An event that asks for a decision opens its window on the 15th on or before the historical decision, so the card reaches the player on the turn before it (#567 §4, owner, 15 October 2026). The exceptions are listed in the tests: `first_truce` (+5 days) and `rhodes_talks` (+2 days) arrive late by design, and the five war cards PR 1a rewrites as decisions during or after the fact.
+
+R-TURN-003: In the historical run, no more than 6 months pass from one card to the next (or from the last card to the game's end), and no more than 2 when the country is at full war (security level 5) on any turn of the stretch (owner, 15 October 2026, Q-CUT-8: "6 months, 2 in wartime"; the M3 gap ruling restated in months).
 
 ## The loop switch
 
 R-LOOP-001: `systems.loop` in eras.yaml is `legacy` (the default) or `gdd`, and every era has the same value. Its ruleset id, which a save records, is `legacy` or `gdd-0.1`.
 
-R-LOOP-003: `MvpSlice.Overlay` loads the real content with `systems.loop: gdd` in every era and `turn_lengths` all month, and adds the slice's placeholder city data (`cities.yaml`, `unit_types.yaml`, the rules' `mvp:` block and the GDD command kinds' `attention_cost`) where the content has none. It changes nothing else. Tests, the MVP goldens and the dev flag use it until cutover.
-
 R-LOOP-002: The GDD state (cities, units, the next unit id, completed objectives, the score) is written into the state hash only when it is set. With the legacy loop the hash text is unchanged, byte for byte.
+
+R-LOOP-004: The GDD game ends on the rules key `mvp.end`, 15 January 1952 in the real content (owner, 15 October 2026, D-E5: "End on 15 Jan 1952"), after 44 monthly turns. The end is a boundary the last turn reaches, like the last era's end; the game is then over (`mvp_ended`) and raises no new event. It is the same in every era, after the start and before the last era's end (so the game ends as `mvp_ended`, not `era_ended`). The eras after it stay in the repository and load (G2).
+
+R-LOOP-005: Every balance number of the GDD loop (all of `cities.yaml` and `unit_types.yaml`, the rules' `mvp:` block, and the GDD orders' `attention_cost`) carries the tag `# DESIGN VALUE: owner-set balance, not a historical figure` and its decision row on its own line, and `DesignValuesTests` lists every one of them: a number missing from the list, or a listed one without the tag, fails.
+
+The ID R-LOOP-003 (the Phase 1 overlay, `MvpSlice.Overlay`) is retired with the overlay at the cutover and is not reused.
 
 ## Saves
 
-R-SAVE-001: A save names the ruleset it was played under (`ruleset legacy` or `ruleset gdd-0.1`, save schema 2). A game refuses a save made under another ruleset, with a message to start a new game. A schema 1 save has no ruleset line and is legacy.
+R-SAVE-001: A save names the ruleset it was played under (`ruleset legacy` or `ruleset gdd-0.1`, save schema 2). A game refuses a save made under another ruleset. A schema 1 save has no ruleset line and is legacy, so the GDD game refuses it as made under earlier rules. The refusal carries a code (`older_rules`) the UI translates, and the sim's reason does not itself ask for a new game: the player reads that once (N4).
+
+R-SAVE-002: A save that names a ruleset this build does not know, or a newer save schema, was made by a newer version of the game and is refused with the code `newer_version` (N2).
 
 ## Cities
 
@@ -28,7 +42,7 @@ R-CITY-001: `AssignWorkers(city, role, n)` sets how many of the city's civilians
 
 R-CITY-002: Each turn every city's employed units add `employed * income_per_job_per_year * the turn's share of a year` to the Treasury.
 
-R-CITY-003: Arrivals from the CBS series (`aliyah.yaml`) become refugees in the rules' `arrivals_city`. Let `P(t)` be the people the series brings from the first era's start to the date `t`, summed over the origin groups in ordinal order. A turn from date `d` to date `e` adds `floor(P(e) / people_per_unit) - floor(P(d) / people_per_unit)` refugees. `people_per_unit` is the same in every era (the loader refuses an era that changes it), so over any run of turns the refugees added are `floor(P(end) / people_per_unit) - floor(P(start) / people_per_unit)`: no unit is lost or counted twice. Before cutover the legacy population (`GameState.Population`) also counts the same arrivals; the two are separate views of the same people until Phase 3 makes arrivals counts.
+R-CITY-003: Arrivals from the CBS series (`aliyah.yaml`) become refugees in the rules' `arrivals_city`. Let `P(t)` be the people the series brings from the first era's start to the date `t`, summed over the origin groups in ordinal order. A turn from date `d` to date `e` adds `floor(P(e) / people_per_unit) - floor(P(d) / people_per_unit)` refugees. `people_per_unit` is the same in every era (the loader refuses an era that changes it), so over any run of turns the refugees added are `floor(P(end) / people_per_unit) - floor(P(start) / people_per_unit)`: no unit is lost or counted twice. The legacy population (`GameState.Population`) also counts the same arrivals; the two are separate views of the same people until Phase 3 makes arrivals counts.
 
 R-CITY-004: Each turn, `min(refugees, max(0, housing_capacity - civilians))` of a city's refugees become civilians without a job. The cap is a placeholder while overflow (D-D1) is open.
 
@@ -36,7 +50,7 @@ R-CITY-005: Social cohesion is `clamp(0, 1, cohesion_housing_weight * housed + c
 
 ## Training
 
-Training is step 4 of the turn in the approved order (§2.3, D-A6): it runs before production. One military camp and one Hakhshara exist in the slice's city at the start, a labelled design assumption (D-D5); pioneers will build more.
+Training is step 4 of the turn in the approved order (§2.3, D-A6): it runs before production. One military camp and one Hakhshara exist in Tel Aviv at the start, a labelled design assumption (D-D5); pioneers will build more.
 
 R-TRAIN-001: `Train(city, track, n)` takes `n` of the city's civilians without a job into a cohort that trains as `track` (a unit type with a `facility`: `recruit` in a military camp, `halutz` in a Hakhshara) for the type's `training_turns`, counting the turn it was ordered in. The Treasury pays `n * training_cost` at once. When the Treasury holds less, the shortfall is borrowed, as for map actions: it is added to the debt and the Treasury stops at 0 (owner decision "Allow borrowing", 15 October 2026). The trainees leave the civilians at once; the cohort takes the next id, which units share. It is refused, with the state unchanged and the Attention refunded, when the city or track is unknown, `n` is below 1, the city lacks the facility, or it has fewer civilians without a job. The legacy loop refuses it before charging Attention.
 

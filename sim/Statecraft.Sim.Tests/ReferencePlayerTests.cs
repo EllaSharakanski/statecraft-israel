@@ -10,12 +10,22 @@ using Statecraft.Sim.Reference;
 /// goldens (#394), but no game mode or UI may reach it (controller decision on PR 3, 2026-10-14).</summary>
 public class ReferencePlayerTests
 {
-    static readonly Content Mvp = MvpSlice.Load(RealContentTests.ContentRoot());
+    static readonly Content Mvp = ContentLoader.Load(RealContentTests.ContentRoot());
+
+    /// <summary>The game's start without its first card: since the cutover idf_founding is raised on 15 May, and answering
+    /// it at full war takes the Attention a halutz group needs (the golden run trains on a later turn). These tests check
+    /// the stated policy, not that turn.</summary>
+    static GameState Start()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        s.PendingEvents.Clear();
+        return s;
+    }
 
     [Fact]
     public void ItSendsHistoricalAIsOrdersThenFillsTheJobsThenTrainsOneHalutzGroup()
     {
-        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        var s = Start();
         var orders = ReferencePlayer.Commands(Mvp, s);
         var history = HistoricalAI.Commands(Mvp, s);
         Assert.Equal(history.Select(x => x.Kind), orders.Take(history.Count).Select(x => x.Kind));
@@ -27,12 +37,36 @@ public class ReferencePlayerTests
         Assert.Empty(Simulation.Step(Mvp, s, orders).Rejected);
     }
 
+    /// <summary>The real start: the 15 May card (idf_founding) is answered first, at full war's price, and the jobs are
+    /// filled; the halutz group no longer fits that turn's 4 Attention (Q-CUT-5 keeps 4), so the player trains on the first
+    /// later turn that has the Attention (the turn from 15 August 1948 in the golden run), and every order it sends is taken.</summary>
+    [Fact]
+    public void OnTheRealStartItAnswersTheCardFirstAndTrainsWhenAttentionAllows()
+    {
+        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        Assert.Contains("idf_founding", s.PendingEvents);
+        var first = ReferencePlayer.Commands(Mvp, s);
+        Assert.IsType<ChooseEventOption>(first[0]);
+        Assert.Contains(first, x => x is AssignWorkers);
+        Assert.DoesNotContain(first, x => x is Train);
+        DateTime? trained = null;
+        while (trained == null && s.GameOver == null && s.Turn < 1000)
+        {
+            var orders = ReferencePlayer.Commands(Mvp, s);
+            var r = Simulation.Step(Mvp, s, orders);
+            Assert.Empty(r.Rejected);
+            if (orders.Any(x => x is Train)) trained = s.Date;
+            s = r.State;
+        }
+        Assert.Equal(new DateTime(1948, 8, 15), trained);
+    }
+
     // R-TRAIN-001: the stated policy trains a halutz group only when there is none, none in training, a civilian without
     // work, and the Attention to pay. Training borrows, so Money does not hold it back (owner decision, 2026-10-15).
     [Fact]
     public void ItTrainsNoHalutzWhenOneExistsOrTrainsOrNobodyIsFreeButDoesWithNoMoney()
     {
-        var s = Simulation.NewGame(Mvp, GoldenRun.Seed, Mode.Historical);
+        var s = Start();
         var training = Simulation.Step(Mvp, s, ReferencePlayer.Commands(Mvp, s)).State;
         Assert.Single(training.Cohorts);
         training.Treasury = 100;   // only the cohort in training holds it back: Money, Attention and free civilians are there
@@ -145,12 +179,12 @@ public class ReferencePlayerTests
     [Fact]
     public void ItIssuesNoGddOrderInTheLegacyLoop()
     {
-        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        var c = ContentLoader.Load(Fixture.Write());   // the legacy loop (a fixture since the cutover)
         var s = Simulation.NewGame(c, GoldenRun.Seed, Mode.Historical);
         Assert.Equal(HistoricalAI.Commands(c, s).Select(x => x.Kind), ReferencePlayer.Commands(c, s).Select(x => x.Kind));
     }
 
-    /// <summary>Only the golden runner (MvpGolden) and tests may name it: no game mode, CLI command or Unity screen.</summary>
+    /// <summary>Only the golden runner (GoldenRun) and tests may name it: no game mode, CLI command or Unity screen.</summary>
     [Fact]
     public void NoGameModeOrUiReachesIt()
     {
@@ -164,7 +198,7 @@ public class ReferencePlayerTests
             .Select(Rel)
             .Where(f => !f.StartsWith("sim/Statecraft.Sim/Reference/", StringComparison.Ordinal) && !f.StartsWith("unity/Assets/Tests/", StringComparison.Ordinal))
             .OrderBy(f => f, StringComparer.Ordinal);
-        Assert.Equal(new[] { "sim/Statecraft.Sim/MvpGolden.cs" }, users);
+        Assert.Equal(new[] { "sim/Statecraft.Sim/GoldenRun.cs" }, users);
         Assert.Equal("Statecraft.Sim.Reference", typeof(ReferencePlayer).Namespace);
     }
 }

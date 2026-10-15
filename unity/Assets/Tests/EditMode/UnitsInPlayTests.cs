@@ -231,7 +231,7 @@ public class UnitsInPlayTests
             var tokens = UnitRoster.Build(units, C, s);
             Assert.AreEqual(before, s.Hash(), $"turn {turn}: building the roster changed the state");
             digests.Add($"{s.Date:yyyy-MM-dd} {string.Join(",", tokens)}");
-            s = Simulation.Step(C, s, HistoricalAI.Commands(C, s)).State;
+            s = Simulation.Step(C, s, GoldenRun.Orders(C, s)).State;   // the golden runs' orders (the reference player since the cutover)
         }
         Assert.AreEqual(GoldenRun.Hash1950, s.Hash(), "the golden does not move");
         // The presentation golden: the roster of every turn of the historical playthrough, pinned. A deliberate change to
@@ -255,7 +255,8 @@ public class UnitsInPlayTests
         Assert.AreEqual(WeeklyGolden, Sha256(all));
     }
 
-    const string RosterGolden1950 = "f07b1655defbd0299767a2e214bf62558f8c64a37d2e408ecc9ee0ed4ed24c29";
+    // GDD Phase 2 PR 1 (the cutover): the golden run is 20 monthly turns with the reference player (was f07b1655).
+    const string RosterGolden1950 = "573f30998628a434e6b4156cba5d20f8d974ca28b62f74388f9480de84592baa";
     const string WeeklyGolden = "323cbe046b9666b1d9ab46abeb139540d6e06e394a65ad03e043aa0912cba96e";
 
     // ---- Placement, the layer and the card (a built map) ---------------------------------------------------------

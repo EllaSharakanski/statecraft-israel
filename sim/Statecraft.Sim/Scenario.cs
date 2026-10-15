@@ -8,12 +8,11 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Statecraft.Sim
 {
-    /// <summary>A golden playthrough with scripted player choices (#296). The two hash goldens use HistoricalAI, so they cover
-    /// the path history took; a scenario covers a path a player might take instead. File: sim/Statecraft.Sim.Tests/scenarios/&lt;name&gt;.yaml.
+    /// <summary>A golden playthrough with scripted player choices (#296). The hash goldens use the reference player (HistoricalAI's orders, then the
+    /// GDD orders it states), so they cover the path history took; a scenario covers a path a player might take instead. File: sim/Statecraft.Sim.Tests/scenarios/&lt;name&gt;.yaml.
     /// <code>
     /// name: reckless
     /// seed: 1948          # optional, default GoldenRun.Seed
-    /// content: mvp        # optional: the GDD slice (MvpSlice.Load) instead of the real content
     /// until: 1949-01-01   # the run stops when the date reaches it
     /// steps:
     ///   - on: 1948-05-15  # the commands go in on the first turn that starts on or after this date, once
@@ -29,9 +28,6 @@ namespace Statecraft.Sim
     {
         public string Name { get; set; } = "";
         public ulong? Seed { get; set; }
-        /// <summary>"" for the real content, or <see cref="MvpContent"/> for the GDD slice. The caller loads the content it names.</summary>
-        public string Content { get; set; } = "";
-        public const string MvpContent = "mvp";
         public string Until { get; set; } = "";
         public List<ScenarioStep> Steps { get; set; } = new List<ScenarioStep>();
 
@@ -40,7 +36,6 @@ namespace Statecraft.Sim
             var d = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
             var s = d.Deserialize<Scenario>(yaml) ?? throw new InvalidDataException("the scenario file is empty");
             if (string.IsNullOrWhiteSpace(s.Name)) throw new InvalidDataException("a scenario needs a name");
-            if (s.Content != "" && s.Content != MvpContent) throw new InvalidDataException($"'content' must be mvp or left out, got '{s.Content}'");
             s.UntilDate = Date(s.Until, "until");
             foreach (var step in s.Steps)
             {

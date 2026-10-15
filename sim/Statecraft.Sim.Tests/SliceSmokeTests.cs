@@ -24,18 +24,31 @@ public class SliceSmokeTests
     static readonly Content Real = ContentLoader.Load(RealContentTests.ContentRoot());
 
     /// <summary>docs/determinism.md: the WebGL smoke (?smoke=5) ends here; its policy is FirstOption.</summary>
-    static string WebSmoke5 => "SMOKE OK 5 turns 1948-06-19 " + GoldenManifest.Expected("smoke5");
+    static string WebSmoke5 => "SMOKE OK 5 turns 1948-10-15 " + GoldenManifest.Expected("smoke5");
 
     static readonly Regex IsoDate = new Regex(@"\d{4}-\d{2}-\d{2}");
 
     delegate List<Command> Policy(Content c, GameState s, int turn);
 
-    /// <summary>What GameRoot.Smoke does: answer each open event, in the card's order, with its first option button.</summary>
-    static List<Command> FirstOption(Content c, GameState s, int turn) =>
-        s.PendingEvents.Select(id => c.Events.First(e => e.Id == id))
-            .Select(e => (Command)new ChooseEventOption(e.Id, e.Options[0].Id)).ToList();
+    /// <summary>What GameRoot.Smoke does: answer each open event, in the card's order, with its first option button, while
+    /// the turn's Attention pays for an answer; the rest go to their ministers at the turn's end.</summary>
+    static List<Command> FirstOption(Content c, GameState s, int turn)
+    {
+        var answers = new List<Command>();
+        var left = s.Attention;
+        foreach (var e in s.PendingEvents.Select(id => c.Events.First(x => x.Id == id)))
+        {
+            var cmd = new ChooseEventOption(e.Id, e.Options[0].Id);
+            var price = AttentionSystem.Cost(c, s, cmd.Kind);
+            if (price > left + 1e-9) break;
+            left -= price;
+            answers.Add(cmd);
+        }
+        return answers;
+    }
 
-    static List<Command> Historical(Content c, GameState s, int turn) => HistoricalAI.Commands(c, s).ToList();
+    /// <summary>The golden runs' player (GoldenRun.Orders): HistoricalAI's orders, then the reference player's GDD orders.</summary>
+    static List<Command> Historical(Content c, GameState s, int turn) => GoldenRun.Orders(c, s).ToList();
 
     /// <summary>A player who uses every UI order: the event card's first options, then (in turn) an appointment, a
     /// budget change, a call-up change, a map build and a security-level change, each only when the sim's own check
@@ -215,7 +228,7 @@ public class SliceSmokeTests
     {
         Assert.True(run.Failures.Count == 0, $"{name}: {run.Failures.Count} invariant failures:\n" + string.Join("\n", run.Failures.Take(60)));
         Assert.True(run.Final.Date >= GoldenRun.Until1952, $"{name}: the run stopped on {PlayerText.Date(run.Final.Date)} (game over: {run.Final.GameOver})");
-        Assert.Null(run.Final.GameOver);
+        Assert.True(run.Final.GameOver == null || run.Final.GameOver == GameOverCodes.MvpEnded, $"{name}: game over: {run.Final.GameOver}");   // only the game's own end (R-LOOP-004)
         Assert.Equal(straight.Hashes, run.Hashes);                      // reloading every turn changes nothing
     }
 
@@ -242,7 +255,7 @@ public class SliceSmokeTests
         var clock = Stopwatch.StartNew();
         var run = Play(Real, Historical, reload: true, PlayerTextTests.LeakGuard(Real));
         AssertClean("historical", run, Play(Real, Historical, reload: false, guard: null));
-        Assert.True(run.QueueRefusals.Count == 0, "HistoricalAI sent an order the UI would refuse:\n" + string.Join("\n", run.QueueRefusals));
+        Assert.True(run.QueueRefusals.Count == 0, "the reference player sent an order the UI would refuse:\n" + string.Join("\n", run.QueueRefusals));
         Assert.Equal(GoldenRun.Hash1952, run.Final.Hash());
         Assert.True(clock.Elapsed < TimeSpan.FromMinutes(1), $"took {clock.Elapsed}");
     }

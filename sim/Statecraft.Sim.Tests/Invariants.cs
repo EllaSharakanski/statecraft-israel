@@ -118,7 +118,7 @@ public static class Invariants
         var h = new List<GameState> { s };
         for (int turn = 0; turn < 1000 && s.Date < until && s.GameOver == null; turn++)
         {
-            s = Simulation.Step(c, s, HistoricalAI.Commands(c, s)).State;
+            s = Simulation.Step(c, s, GoldenRun.Orders(c, s)).State;
             h.Add(s);
         }
         return h;

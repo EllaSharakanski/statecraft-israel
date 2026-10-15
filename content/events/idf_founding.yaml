@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../schema/event.schema.json
 id: idf_founding
 title: One Army
-text: 'Armed forces are being brought into the new Israel Defense Forces, while the Irgun and Lehi still keep their own units. {defense_minister} proposes an order that forbids any armed force other than the IDF.'
+text: 'The Irgun and Lehi still keep their own armed units. {defense_minister} proposes an order that establishes the Israel Defense Forces and forbids any armed force other than the IDF.'
 anchor: hard
 tags: [security]
 office: defense_minister
@@ -10,9 +10,10 @@ office: defense_minister
 # dates its publication 31 May 1948), so the window ends then. The Irgun agreed with the government on 1 June 1948 to
 # dissolve into the IDF (Ben-Gurion to the Provisional State Council on 23 June 1948, below), Jerusalem excepted (JVL).
 # Research notes facts-1948.md section 3a.
-# The window opens on 22 May, the turn date before the order (game timing), so the card reaches the player in the turn
-# that covers 26 May.
-from: 1948-05-22
+# The window opens on 15 May, the game's first day: on monthly turns the next turn date, 15 June, would come after the
+# order of 26 May (game timing; docs/superpowers/specs/2026-10-14-event-timing-monthly.md). The text does not say the IDF
+# exists yet: the ordinance established it.
+from: 1948-05-15
 to: 1948-06-01
 # Security deltas in these war-period events were halved in fix round 1 (review I6): ten of them stacked as permanent
 # shifts, which moved end-1948 security from 0.34 to 0.62 with nothing anchoring it.

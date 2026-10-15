@@ -16,10 +16,10 @@ As a player of the MVP, I want to put Tel Aviv's people to work and house the im
 
 ## Data touched
 
-- `cities.yaml`, `unit_types.yaml` and `rules.yaml` `mvp:` and `attention_cost.assign_workers`: supplied by `MvpSlice.Overlay` as placeholders, never under `content/` (ruling 2 [S3]).
+- `cities.yaml`, `unit_types.yaml` and `rules.yaml` `mvp:` and `attention_cost.assign_workers`: labelled design values in `content/` since the cutover (Q-CUT-1, R-LOOP-005), the overlay's placeholders before it (ruling 2 [S3]).
 - `GameState`: `Cities` (counts), `Cohesion` (hashed as `coh=` when the state has cities), `Treasury`.
-- Save files: the `work CITY ROLE N` line. Scenarios: `assign_workers` and `content: mvp`.
-- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: `mvp-slice` moves; `scenario-mvp-absorb-first` is new.
+- Save files: the `work CITY ROLE N` line. Scenarios: `assign_workers` (and `content: mvp` until the cutover).
+- `sim/Statecraft.Sim.Tests/golden/manifest.txt`: `mvp-slice` moved (retired at the cutover); `scenario-mvp-absorb-first` was new.
 
 ## Done when
 

@@ -16,7 +16,7 @@ public class PreviewTests
         var text = Preview.Run(Root, GoldenRun.Until1950, GoldenRun.Seed, None, Show, 8);
         Assert.Contains("(the descriptions are identical)", text);
         Assert.Contains($"hash {GoldenRun.Hash1950.Substring(0, 8)} -> changed", text);
-        Assert.Contains($"changed 1950-02-27 hash {GoldenRun.Hash1950.Substring(0, 8)}", text);
+        Assert.Contains($"changed 1950-01-15 hash {GoldenRun.Hash1950.Substring(0, 8)}", text);
     }
 
     [Fact]

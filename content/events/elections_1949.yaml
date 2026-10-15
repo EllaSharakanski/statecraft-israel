@@ -17,11 +17,11 @@ office: prime_minister
 # Central Elections Committee: 440,095 voters of 506,567, which is 86.88%; the Official Gazette's notice of the results
 # gives 5,411 invalid votes, which with CBS's 434,684 valid votes makes the same 440,095; the IDI's Hebrew page also
 # gives 86.9%; [C] its English page 87.0%, a rounding the figures do not support). 25 January was fixed on
-# 25 November 1948 (Harpaz, p. 187); the card comes on 23 January, by when the date was set. Research notes sections
+# 25 November 1948 (Harpaz, p. 187); the card comes on 15 January, by when the date was set. Research notes sections
 # 10 and 11.
 # One option (review I3): legislatures.yaml fixes the election and the First Knesset's sitting, so a "postpone" option
-# could not change anything. The window opens on 17 January, so the card comes in the week of the vote.
-from: 1949-01-17
+# could not change anything. The window opens on 15 January, the monthly turn date before the vote.
+from: 1949-01-15
 to: 1949-01-26
 options:
   - id: hold

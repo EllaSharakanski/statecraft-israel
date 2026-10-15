@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Statecraft.Sim;
@@ -345,11 +346,31 @@ public class RealContentTests
         }
     }
 
+    /// <summary>The m3 ruling "Event cap and gaps", restated in months (owner decision, 15 October 2026, Q-CUT-8, "6 months,
+    /// 2 in wartime", #375): in the historical run to 1952, no more than 6 months pass from one card to the next. The longest
+    /// stretch is 6 months on both the legacy and the monthly turns (27 August 1949 to 27 February 1950 today; 15 May to
+    /// 15 November 1951 on monthly turns).</summary>
+    [Fact]
+    public void NoMoreThanSixMonthsPassWithoutACard()
+    {
+        var s = Simulation.NewGame(C, GoldenRun.Seed, Mode.Historical);
+        var cards = new List<DateTime> { s.Date };
+        while (s.Date < new DateTime(1952, 1, 1) && s.GameOver == null)
+        {
+            var next = Simulation.Step(C, s, HistoricalAI.Commands(C, s)).State;
+            if (next.FiredEvents.Count > s.FiredEvents.Count) cards.Add(next.Date);
+            s = next;
+        }
+        var stretches = cards.Zip(cards.Skip(1), (a, b) => (a, b)).Where(p => p.b > p.a.AddMonths(6))
+            .Select(p => $"{p.a:yyyy-MM-dd} to {p.b:yyyy-MM-dd}").ToList();
+        Assert.True(stretches.Count == 0, "stretches without a card: " + string.Join("; ", stretches));
+    }
+
     [Fact]
     public void EveryEventOf1950And1951FiresInTheHistoricalPlaythrough()
     {
         var s = GoldenRun.Play(C, new DateTime(1952, 1, 1));
-        Assert.Null(s.GameOver);
+        Assert.Equal(GameOverCodes.MvpEnded, s.GameOver);   // the run reaches the game's end, 15 January 1952 (R-LOOP-004)
         var expected = new[] { "clothing_rationing_1950", "education_registration_1951", "forex_crisis_1951", "frumkin_commission",
             "hula_drainage", "iraqi_exodus", "israel_bonds", "law_of_return", "maabarot_policy", "ministry_supply_crisis", "reparations_claim" };
         var missing = expected.Where(id => !s.FiredEvents.Contains(id)).ToList();

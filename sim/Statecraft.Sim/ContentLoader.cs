@@ -334,21 +334,17 @@ namespace Statecraft.Sim
         }
 
         /// <summary>Loads content from a directory: every events/*.yaml file is an event.</summary>
-        public static Content Load(string contentRoot) => Load(contentRoot, read => read);
-
-        /// <summary>Loads content from a directory through <paramref name="wrap"/>, which may change the text of the files read
-        /// (MvpSlice.Overlay). The directory checks are the same as for <see cref="Load(string)"/>.</summary>
-        internal static Content Load(string contentRoot, Func<Func<string, string?>, Func<string, string?>> wrap)
+        public static Content Load(string contentRoot)
         {
             var eventsDir = Path.Combine(contentRoot, "events");
             var eventFiles = Directory.Exists(eventsDir)
                 ? Directory.GetFiles(eventsDir, "*.yaml").Select(f => "events/" + Path.GetFileName(f)).ToList()
                 : new List<string>();
-            var content = Load(wrap(rel =>
+            var content = Load(rel =>
             {
                 var path = Path.Combine(contentRoot, rel);
                 return File.Exists(path) ? File.ReadAllText(path) : null;
-            }), eventFiles);
+            }, eventFiles);
             // Only this overload can list the directory. The readFile overload (WebGL) cannot, so a misnamed file is caught
             // here and by RealContentTests before anything ships.
             var rulesDir = Path.Combine(contentRoot, "rules");
@@ -980,7 +976,12 @@ namespace Statecraft.Sim
                 if (!cities.Contains(m.ArrivalsCity)) throw new ContentException(file, "mvp.arrivals_city", $"'{m.ArrivalsCity}' is not a city in cities.yaml");
                 if (m.BuildYishuvTurns < 1) throw new ContentException(file, "mvp.build_yishuv_turns", "must be >= 1");
                 if (!(m.BuildYishuvCost >= 0 && IsFinite(m.BuildYishuvCost))) throw new ContentException(file, "mvp.build_yishuv_cost", "must be a finite number >= 0");
+                // One game has one last day (R-LOOP-004): an era cannot move it.
+                if (m.End != c.Rules.Mvp!.End) throw new ContentException(file, "mvp.end", "must be the same in every era (the game has one end)");
             }
+            // Strictly before the last era's end: an end on it is the era's own end, and the game would be over as era_ended.
+            if (c.Rules.Mvp!.End is DateTime end && (end <= c.Rules.Start || end >= c.Eras[c.Eras.Count - 1].To))
+                throw new ContentException("rules.yaml", "mvp.end", FormattableString.Invariant($"must be after start ({c.Rules.Start:yyyy-MM-dd}) and before the last era's end ({c.Eras[c.Eras.Count - 1].To:yyyy-MM-dd})"));
             ValidateSites(c);
         }
 

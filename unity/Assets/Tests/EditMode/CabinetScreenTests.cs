@@ -151,7 +151,8 @@ public class CabinetScreenTests
     /// <summary>Steps until the next turn would reach <paramref name="date"/>, so the next End Turn crosses it.</summary>
     static void StepUntilNextTurnCrosses(GameSession g, DateTime date)
     {
-        while (SimTime.Advance(g.State.Date, SecuritySystem.TurnLengthFor(g.State.Rung)) < date) g.Step(HistoricalAI.Commands(C, g.State));
+        // The content's turn lengths (monthly since the GDD cutover), not the legacy table.
+        while (SimTime.Advance(g.State.Date, SecuritySystem.TurnLengthFor(C, g.State.Date, g.State.Rung)) < date) g.Step(HistoricalAI.Commands(C, g.State));
     }
 
     [Test]

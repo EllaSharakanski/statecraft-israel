@@ -7,6 +7,19 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+### Changed
+- Event timing for monthly turns (refs #382; lands with the GDD cutover, Phase 2 PR 1; owner decisions of 15 October 2026
+  on #567): six war-period windows open on the monthly turn date before their decision (`idf_founding`,
+  `jerusalem_military_government`, `latrun_proposal`, `operation_horev`, `elections_1949`; `operation_horev` also lets
+  `sinai_withdrawal` and `rhodes_talks` fire again). `ten_days`, `bernadotte_assassination`, `operation_hiram`,
+  `jerusalem_ceasefire` and `sinai_withdrawal` are rewritten as decisions during or after the fact; Hiram loses its
+  "protest to the UN" option. `altalena` opens on 15 June 1948 without the Kfar Vitkin clause (Q-CUT-7). The owner
+  re-reviewed the four changed sensitive events on 15 October 2026 ("Approve all 4", #600).
+  Sensitive events may no longer raise food, morale or international standing either (Q-EFX-2): the gains in `altalena`,
+  `bernadotte_assassination` and `reparations_claim` are removed, and each of those options carries a small cost in
+  another resource instead (Q-EFX-3, design values; the reparations claim's is Money, #600). The event-gap ruling is restated in months: 6, and 2 in wartime
+  (Q-CUT-8). Every golden moves; the cutover re-pins them once.
+
 ### Added
 - A person's sign-off beside a status (refs #375, #564, #611; owner, 15 October 2026: "Yes, humans only"): every status
   row takes `reviewed_by` (the reviewer's GitHub handle, never an email) and `reviewed_on` (the day), both or neither.
@@ -349,6 +362,29 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   +0.9 ms at the gameplay zoom), not yet on an idle one.
 
 ### Changed
+- **The GDD cutover (GDD Phase 2 PR 1, refs #382).** The real game now plays the GDD v0.1 loop on monthly turns, from
+  15 May 1948 to the game's end on 15 January 1952, 44 turns (owner decisions D-B1, D-E1, D-E5):
+  - `content/eras.yaml` sets `systems.loop: gdd` and `content/rules.yaml` sets `turn_lengths` all month (R-LOOP-001,
+    R-TURN-001) and `mvp.end: 1952-01-15` (R-LOOP-004; the game is then over, `mvp_ended`).
+  - The Phase 1 balance numbers move into `content/` unchanged as labelled design values (owner, Q-CUT-1): new
+    `content/cities.yaml` and `content/unit_types.yaml`, the rules' `mvp:` block and the GDD orders' Attention costs, each
+    tagged `# DESIGN VALUE` and listed by `DesignValuesTests` (R-LOOP-005). `attention_per_turn` stays 4 (Q-CUT-5); inertia
+    and the soft-event cap stay per turn (Q-CUT-6). The overlay `MvpSlice`, its `?mvp=1` dev flag (#598) and the `mvp-slice` golden are retired: the real game is the GDD game, and a game started under it autosaves and has New Game again.
+  - Event windows re-timed for monthly turns (#567): `idf_founding`, `altalena` (15 June 1948, sourced; Q-CUT-7),
+    `jerusalem_military_government`, `latrun_proposal`, `operation_horev` and `elections_1949` open on the 15th on or
+    before their decision (R-TURN-002), so `sinai_withdrawal` and `rhodes_talks` fire again. The gap rule is restated in
+    months: 6, and 2 at full war (Q-CUT-8, R-TURN-003).
+  - Old saves are refused, said once in English or Hebrew: a save from before the cutover as made under earlier rules
+    (R-SAVE-001), and one from an unknown ruleset as made by a newer version (R-SAVE-002).
+  - The golden runs play the reference player, and every golden moves once: `hash1950` `f97e9f81`, `hash1952` and the new
+    `mvp-end` `75d38299`, `smoke5` `85191d48` (five turns end 15 October 1948), and the three scenarios
+    (docs/determinism.md). The browser smoke answers cards while the turn's Attention lasts. The Defence screen shows
+    monthly turns on every level. The arrivals line reads "wait for homes".
+  - Every new game now opens on a card (One Army, 15 May 1948), so #620's wait under the start screen covers a new game
+    too, and `GameRoot.Shutdown` disposes the card first, so New Game does not load the event photo catalog for the
+    game it closes (refs #592, #321). Without a start screen (the automated runs) the visible card loads it at once.
+  - A refused autosave whose code has no string falls back to the short localised reason, so the start never fails on
+    it; `mvp.end` must fall before the last era's end, so the game always ends as `mvp_ended`.
 - The 1948 Arab villages and towns on the map are dense packs of small stone houses with lanes between them (visual
   gap S1, refs #32): each Arab locality is laid out on the village plot lattice, as Lod and Ramla are, with smaller
   one-room houses (3.8-5.4 m, still at 100x), more two-storey houses in the core, roof rooms, and terraces under the

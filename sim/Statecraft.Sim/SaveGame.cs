@@ -8,9 +8,21 @@ namespace Statecraft.Sim
 {
     public sealed class SaveException : Exception
     {
+        /// <summary><see cref="Code"/> of a save made under the rules before this build's (a schema 1 save, or ruleset legacy
+        /// in the GDD game): R-SAVE-001.</summary>
+        public const string OlderRules = "older_rules";
+        /// <summary><see cref="Code"/> of a save made by a newer version of the game: a newer schema, or a ruleset this build
+        /// does not know (R-SAVE-002).</summary>
+        public const string NewerVersion = "newer_version";
+
         /// <summary>1-based line of the save text the error is on (0 when it concerns the whole save).</summary>
         public int Line { get; }
-        public SaveException(int line, string message) : base(line > 0 ? FormattableString.Invariant($"line {line}: {message}") : message) { Line = line; }
+        /// <summary>A stable refusal code the UI translates (<see cref="OlderRules"/>, <see cref="NewerVersion"/>), or null for a
+        /// damaged save, whose reason the UI words itself. The English message never asks the player to start a new game:
+        /// the UI says that once (N4).</summary>
+        public string? Code { get; }
+        public SaveException(int line, string message, string? code = null)
+            : base(line > 0 ? FormattableString.Invariant($"line {line}: {message}") : message) { Line = line; Code = code; }
         /// <summary>A save whose replay threw <paramref name="inner"/>: kept, with its stack, for the log (#631).</summary>
         public SaveException(string message, Exception inner) : base(message, inner) { }
     }
@@ -21,7 +33,8 @@ namespace Statecraft.Sim
     ///   statecraft-save 2          schema version (a schema 1 save has no ruleset line and is legacy)
     ///   content &lt;hex&gt;             Content.Hash of the content it was played with
     ///   seed &lt;ulong&gt;  /  mode Historical
-    ///   ruleset legacy|gdd-0.1     the rules it was played under (Content.Ruleset); another ruleset refuses it (R-SAVE-001)
+    ///   ruleset legacy|gdd-0.1     the rules it was played under (Content.Ruleset); another ruleset refuses it (R-SAVE-001),
+    ///                              and one this build does not know was made by a newer version (R-SAVE-002)
     ///   turn                       starts the next turn's command list (one per Simulation.Step)
     ///   &lt;command&gt; ...              policy ID LEVEL | budget OFFICE=SHARE,... | event ID OPTION | mobilize LEVEL |
     ///                              security DELTA | appoint OFFICE PERSON | map ACTION Q R | work CITY ROLE N |
@@ -131,7 +144,7 @@ namespace Statecraft.Sim
             }
             var magic = Head(0, Magic, 2);
             if (!int.TryParse(magic[1], NumberStyles.None, CultureInfo.InvariantCulture, out var version)) throw new SaveException(1, "bad schema version");
-            if (version > SchemaVersion) throw new SaveException(1, FormattableString.Invariant($"save schema version {version} is newer than this game ({SchemaVersion})"));
+            if (version > SchemaVersion) throw new SaveException(1, FormattableString.Invariant($"save schema version {version} is newer than this game ({SchemaVersion})"), SaveException.NewerVersion);
             if (version < 1) throw new SaveException(1, FormattableString.Invariant($"unknown save schema version {version}"));
             var content = Head(1, "content", 2)[1];
             if (!IsHash(content)) throw new SaveException(2, "bad content hash");
@@ -146,7 +159,9 @@ namespace Statecraft.Sim
             {
                 if (n < 6) throw new SaveException(0, "Not a Statecraft save (too short)");
                 ruleset = Head(4, "ruleset", 2)[1];
-                if (ruleset != LegacyRuleset && ruleset != GddRuleset) throw new SaveException(5, $"unknown ruleset '{ruleset}'");
+                // R-SAVE-002 (N2): a ruleset this build does not know comes from a newer version, like a newer schema.
+                if (ruleset != LegacyRuleset && ruleset != GddRuleset)
+                    throw new SaveException(5, $"This save was made with a newer version of the game (ruleset '{ruleset}').", SaveException.NewerVersion);
                 first = 5;
             }
             var end = Head(n - 1, "end", 2)[1];

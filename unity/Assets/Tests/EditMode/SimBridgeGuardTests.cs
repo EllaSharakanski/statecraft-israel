@@ -14,7 +14,7 @@ using UnityEngine;
 /// sample below and its branch in SimBridge. The samples mirror the sim's CommandGuardTests.Samples.</summary>
 public class SimBridgeGuardTests
 {
-    static readonly Content Slice = MvpSlice.Load(Paths.Content);
+    static readonly Content Slice = ContentLoader.Load(Paths.Content);
     static UiText Text => UiText.Parse(AssetDatabase.LoadAssetAtPath<TextAsset>(UiPaths.Strings).text);
 
     static readonly Dictionary<Type, Command> Samples = new Dictionary<Type, Command>

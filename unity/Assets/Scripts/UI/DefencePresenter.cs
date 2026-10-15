@@ -138,7 +138,8 @@ namespace Statecraft.Game.UI
             for (int rung = 1; rung <= 5; rung++)
             {
                 screen.Q<Label>($"rung-{rung}-name").text = text[$"defence.rung{rung}"];
-                screen.Q<Label>($"rung-{rung}-turn").text = text[TurnKey(SecuritySystem.TurnLengthFor(rung))];
+                // The content's turn_lengths (R-TURN-001): every rung reads "month" in the GDD game.
+                screen.Q<Label>($"rung-{rung}-turn").text = text[TurnKey(SecuritySystem.TurnLengthFor(c, s.Date, rung))];
                 var row = screen.Q<VisualElement>($"rung-{rung}");
                 row.EnableInClassList("rung-current", rung == s.Rung);
                 row.EnableInClassList("rung-target", rung == target && target != s.Rung);   // the level an order will move to

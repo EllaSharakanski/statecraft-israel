@@ -1,8 +1,39 @@
 # Game rules. Values are game balance, except where a comment cites a source.
 start: 1948-05-15                 # first day covered by the CBS 1948 immigration series (aliyah.yaml)
-start_rung: 5                     # the war is under way when the slice opens
-attention_per_turn: 4
-attention_cost: { set_policy: 1, allocate_budget: 2, choose_event_option: 1, set_mobilization: 1, security_order: 1, appoint: 2, map_action: 1 }
+start_rung: 5                     # the war is under way when the game opens
+attention_per_turn: 4                    # kept at 4 for monthly turns (owner, 15 October 2026, Q-CUT-5)
+# Attention each order costs. The GDD orders' costs are design values (the owner's balance, not history), docs/rules/mvp.md
+# R-LOOP-005; a unit order will be free (D-A6).
+attention_cost:
+  set_policy: 1
+  allocate_budget: 2
+  choose_event_option: 1
+  set_mobilization: 1
+  security_order: 1
+  appoint: 2
+  map_action: 1
+  assign_workers: 0.5                    # DESIGN VALUE: owner-set balance, not a historical figure (D-A6)
+  train: 1                               # DESIGN VALUE: owner-set balance, not a historical figure (D-A6)
+  cancel_training: 0.5                   # DESIGN VALUE: owner-set balance, not a historical figure (D-A6)
+  pioneer_work: 0                        # DESIGN VALUE: owner-set balance, not a historical figure (D-A6: unit orders are free)
+  stop_work: 0                           # DESIGN VALUE: owner-set balance, not a historical figure (D-A6: unit orders are free)
+# Turn length on each security rung, rungs 1 to 5 (R-TURN-001). The GDD MVP plays monthly turns on every rung (D-B1), so
+# turns from 15 May 1948 end on the 15th of each month.
+turn_lengths: [month, month, month, month, month]
+# The GDD v0.1 rules (docs/rules/mvp.md). Every number here is a design value: the owner's balance, set or accepted in
+# review (Q-CUT-1, owner, 15 October 2026: "Labelled design values"), never a historical claim. DesignValuesTests lists
+# them all (R-LOOP-005); changing one is a balance edit that re-pins the goldens.
+mvp:
+  # The game ends on 15 January 1952, after 44 monthly turns (R-LOOP-004; owner, 15 October 2026, D-E5: "End on 15 Jan
+  # 1952"). The founding era still runs to 1957 (G2), so its later content stays and loads, but play stops here.
+  end: 1952-01-15
+  people_per_unit: 1000                  # DESIGN VALUE: owner-set balance, not a historical figure (D-A1: people in one population unit)
+  income_per_job_per_year: 0.06          # DESIGN VALUE: owner-set balance, not a historical figure (D-C6: IL millions per employed unit a year)
+  cohesion_housing_weight: 0.5           # DESIGN VALUE: owner-set balance, not a historical figure (D-C1, until Phase 2 PR 4)
+  cohesion_jobs_weight: 0.5              # DESIGN VALUE: owner-set balance, not a historical figure (D-C1, until Phase 2 PR 4; the two weights sum to 1)
+  arrivals_city: tel_aviv                # the MVP has one city so far: every arrival lands there (R-CITY-003)
+  build_yishuv_turns: 6                  # DESIGN VALUE: owner-set balance, not a historical figure (D-D6: turns a pioneer build takes)
+  build_yishuv_cost: 2                   # DESIGN VALUE: owner-set balance, not a historical figure (D-D6: IL millions, paid at the start)
 # Coalition stability lost by replacing a minister (Cabinet.Appoint): a seat taken from the minister's party, or a
 # reshuffle within it.
 appoint_stability_cost_other_party: 0.06
@@ -47,7 +78,10 @@ imports_per_capita_per_year: 0.00025
 # war-period events (playtest 1 E, which moved the turn grid by a day): the range is 194.00 to 206.83 (bisection), and the
 # margins at 200 are reserves $18.2m at the turn ending 1951-05-27 and $20.9m at the turn covering 19 Oct (against $45m
 # falling due); first crisis in the turn ending 1952-02-27 (the one covering 31 Dec 1951); reserves -36.8 at the end of
-# the run. The value was not retuned.
+# the run. The value was not retuned. Re-measured at the GDD cutover (monthly turns, play ending 15 January 1952): the
+# anchor holds for 190.09 to 202.81 (bisection); at 200, reserves are $29.7m at the turn ending 1951-05-15 and $35.2m at
+# the turn covering 19 Oct (ending 1951-11-15), against $45m falling due; the first crisis is in the turn ending
+# 1951-12-15; reserves -13.0 at the game's end. The value was not retuned.
 capital_inflow_per_year: 200
 # While reserves are exhausted, food imports are cut: food_supply falls by this much per year.
 fx_crisis_food_per_year: -0.2

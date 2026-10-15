@@ -32,7 +32,7 @@ public class SimSmokeTests
     public void GoldenPlaythroughTo1952MatchesDotNet()
     {
         var s = GoldenRun.Play(ContentLoader.Load(Paths.Content), GoldenRun.Until1952);
-        Assert.IsNull(s.GameOver);
+        Assert.AreEqual(GameOverCodes.MvpEnded, s.GameOver);   // the game's last turn ends on 15 January 1952 (R-LOOP-004)
         Assert.AreEqual(GoldenRun.Hash1952, s.Hash());
     }
 
