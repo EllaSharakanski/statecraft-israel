@@ -25,6 +25,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   records an explicit Cc-by-sa-4.0 file as `CC-BY-SA-4.0`, verified only with a named artist and a `NOTICE` entry, with a
   share-alike note; `PortraitImport` accepts CC BY-SA 4.0. Kaplan, Gruenbaum, Bernstein, Zisling, Rosen and Sheetrit stay
   on GPO photographs for now.
+- GDD v0.1 Phase 1, build yishuv at one designated site (refs #378), behind the `systems.loop` switch: `content/sites.yaml`
+  holds Mefalsim (founded 12 June 1949; Gvati's settlement list and Yad Ben-Zvi), read only by the GDD loop.
+  `PioneerWork(build_yishuv)` sends an idle halutz unit to build there, paid at once; `StopWork` frees the
+  unit and the site and keeps the Money spent (D-A3). Construction is step 5 of the GDD turn (D-A6) (R-SITE-001 to
+  R-SITE-003). The build turns and cost are placeholders in `MvpSlice.Overlay`, never under `content/`; both orders cost 0
+  Attention (D-A6: unit orders free). By the owner's decision "Allow borrowing" (15 October 2026), `PioneerWork` and
+  `Train` borrow what the Treasury lacks, as map actions do. `mvp-slice` moves (the reference player builds Mefalsim by
+  15 March 1949, and the golden now runs to that date); the legacy goldens and `scenario-mvp-absorb-first` do not.
+  The Unity order queue (`SimBridge`) takes both orders, one per unit.
 - Desktop release builds from the Mac (refs #54; Phases 0-1 of the plan in PR #482): `Build.LinuxMono` and
   `Build.WindowsMono` build the Linux and Windows x64 players on Mono (decisions O7, O8) and put the committed IL2CPP
   setting back afterwards, and
@@ -38,7 +47,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   at 32:9; a portrait window never shows it); one draw call, no shadow pass, no golden moves.
 - GDD v0.1 Phase 1, training (refs #377), behind the `systems.loop` switch: `Train` sends a city's civilians without work
   to basic training in a military camp (recruits, a count) or pioneer training in a Hakhshara (halutzim, movable units at
-  the city's hex), paid from the Treasury without borrowing; `CancelTraining` returns the people but not the Money (D-A3).
+  the city's hex), paid from the Treasury, with any shortfall borrowed as debt (owner decision, 15 October 2026);
+  `CancelTraining` returns the people but not the Money (D-A3).
   Cohorts progress as step 4 of the GDD turn (D-A6) (R-TRAIN-001 to R-TRAIN-003). One camp and one Hakhshara at the start
   is a labelled design assumption (D-D5); training turns, costs and Attention costs are placeholders in `MvpSlice.Overlay`,
   never under `content/`. `mvp-slice` moves (the reference player trains one halutz group); the legacy goldens and
