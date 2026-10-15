@@ -173,11 +173,12 @@ namespace Statecraft.Game.UI
             var text = Strings();
             var store = Store ?? SaveStore.ForPlatform();
             var notes = new List<string>();
-            // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave.
+            // A smoke run is reproducible: a fresh game with the golden seed, never the player's autosave. A slice game (?mvp=1,
+            // #380) is fresh too: the autosave was made with other rules, so it is neither read nor set aside.
             bool resumed;
             var session = smoke > 0
                 ? GameStart.Begin(inputs.Content, store, () => GoldenRun.Seed, notes, text, out resumed, fresh: true)
-                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed);
+                : GameStart.Begin(inputs.Content, store, GameStart.NewSeed, notes, text, out resumed, fresh: inputs.Slice);
             DiagLog.BootPhase($"session started (turn {session.State.Turn}, replayed)");
             var bridge = Bridge = new SimBridge(session, text);
             var root = document.rootVisualElement;
@@ -258,14 +259,18 @@ namespace Statecraft.Game.UI
             var info = Own(new InfoPanelPresenter(root, bridge, text, names, nav: nav,
                 selectedUnit: () => unitLayer.Selected is string id ? unitLayer.Tokens.First(p => p.Token.Unit.Id == id) : (Statecraft.Game.Map.Units.PlacedToken?)null,
                 regions: regions, localitiesAt: localitiesAt));
-            // A smoke session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
-            // Leaving New Game out is safer than handing it a throwaway store: no file is ever deleted, no path has to be
-            // right on every platform, and the scripted run never presses it.
+            // A smoke or slice session never touches the player's save: no autosave, and no New Game (which deletes the autosave).
+            // A smoke run gets no New Game at all: no file is ever deleted, no path has to be right on every platform, and the
+            // scripted run never presses it. A slice game (?mvp=1) hides the button and takes it out of the Tab order, and its
+            // presenter refuses every press (slice: true), so even a press that reaches it deletes nothing.
             NewGamePresenter? newGame = null;
+            var newGameButton = root.Q<Button>("new-game");
+            newGameButton.style.display = inputs.Slice ? DisplayStyle.None : StyleKeyword.Null;
+            newGameButton.focusable = !inputs.Slice;
             if (smoke == 0)
             {
-                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed));
-                Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
+                newGame = Own(new NewGamePresenter(root, bridge, store, toast, text, GameStart.NewSeed, slice: inputs.Slice));
+                if (!inputs.Slice) Own(GameStart.Autosave(bridge, store, text, toast.Append));   // appends: the turn's refusals stay visible
             }
 
             // An outcome clip holds the pointer while it shows and in the frame it closes (the skipping click selects no hex).
@@ -313,7 +318,7 @@ namespace Statecraft.Game.UI
             SyncMinimap();
             // The start screen goes up in the same frame the loading state ends, so the HUD never flashes before it. While it
             // shows, the camera keys are off (keyboard pan would otherwise move the hidden map; plan amendment A4).
-            if (startScreen && newGame != null)
+            if (startScreen && newGame != null && !inputs.Slice)   // no start screen in a slice game: its New Game would be dead
             {
                 var cam = cameraController;
                 var recording = Own(new DeclarationRecording(root, text, toast.Show));   // never built in automated runs (Skipped)
