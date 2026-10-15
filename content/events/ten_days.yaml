@@ -65,4 +65,4 @@ sources:
   - { url: "https://www.jta.org/archive/israeli-minister-to-u-s-confers-with-lovett-on-egyptian-violation-of-truce", checked: 2026-10-14 }
   # JTA bulletin of 12 July 1948: Israeli forces in the streets of Ramleh after "yesterday's capture of the Lydda airport".
   - { url: "https://www.jta.org/archive/israeli-forces-fighting-in-streets-of-ramleh-jews-massing-for-several-offensives", checked: 2026-10-14 }
-status: fact-checked
+status: sensitivity-reviewed

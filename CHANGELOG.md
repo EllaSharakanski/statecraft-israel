@@ -13,11 +13,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   `jerusalem_military_government`, `latrun_proposal`, `operation_horev`, `elections_1949`; `operation_horev` also lets
   `sinai_withdrawal` and `rhodes_talks` fire again). `ten_days`, `bernadotte_assassination`, `operation_hiram`,
   `jerusalem_ceasefire` and `sinai_withdrawal` are rewritten as decisions during or after the fact; Hiram loses its
-  "protest to the UN" option. The three rewritten sensitive events go back to `fact-checked` for the owner's re-review.
-  `altalena` opens on 15 June 1948 without the Kfar Vitkin clause (Q-CUT-7) and also waits for re-review.
+  "protest to the UN" option. `altalena` opens on 15 June 1948 without the Kfar Vitkin clause (Q-CUT-7). The owner
+  re-reviewed the four changed sensitive events on 15 October 2026 ("Approve all 4", #600).
   Sensitive events may no longer raise food, morale or international standing either (Q-EFX-2): the gains in `altalena`,
   `bernadotte_assassination` and `reparations_claim` are removed, and each of those options carries a small cost in
-  another resource instead (Q-EFX-3, design values). The event-gap ruling is restated in months: 6, and 2 in wartime
+  another resource instead (Q-EFX-3, design values; the reparations claim's is Money, #600). The event-gap ruling is restated in months: 6, and 2 in wartime
   (Q-CUT-8). Every golden moves; the cutover re-pins them once.
 
 ### Added

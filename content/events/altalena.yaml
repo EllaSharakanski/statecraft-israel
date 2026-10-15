@@ -68,4 +68,4 @@ sources:
   - { url: "https://www.izkor.gov.il/monument/en_fad2775fa80e5dc770a8f8652d44ecbf/", checked: 2026-10-14 }
   # Ministry of Education page on Yitzhak Rabin: he commanded the IDF force in the Altalena affair off Tel Aviv.
   - { url: "https://pop.education.gov.il/tchumey_daat/moledet_hevra_ezrahut/yesodi/noseem_nilmadim/itzhak_rabin/", checked: 2026-10-14 }
-status: fact-checked
+status: sensitivity-reviewed

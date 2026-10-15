@@ -233,6 +233,10 @@ war-casualties). The owner's sign-off for all seven events below is recorded in 
 `sensitivity-reviewed`. For any new sensitive event, the owner records the sign-off **only** by moving its YAML
 `status:` to `sensitivity-reviewed` and committing it (the loader accepts that value). Nothing else counts as a sign-off.
 
+**Re-review, 2026-10-15.** The event re-timing for monthly turns (#577) changed the text of `altalena`, `ten_days`,
+`operation_hiram` and `bernadotte_assassination`; they went back to `fact-checked` until the owner re-reviewed them
+("Approve all 4", reviewer: the owner, recorded on #600 and in D11), and they are `sensitivity-reviewed` again.
+
 - **Gate:** `Build.Web ... -shareable` and `Build.Mac ... -shareable` refuse to build while any sensitive event is not
   `sensitivity-reviewed`, and name them (`Statecraft.Sim.ReleaseGate.SensitiveUnreviewed`). `tools/package_release.py`
   makes the shareable zip and runs the same check (`Statecraft.Cli --release-gate`) on the content inside the build, so

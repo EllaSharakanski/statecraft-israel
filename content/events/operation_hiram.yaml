@@ -60,4 +60,4 @@ sources:
   - { url: "https://www.izkor.gov.il/%D7%99%D7%A2%D7%A7%D7%91%20%D7%91%D7%95%D7%91%D7%A8/en_7ff130c52733b6aa60625807a0342f08", checked: 2026-10-14 }
   # The Knesset's summary of the War of Independence: Operation Hiram, 29-31 October 1948, took the Upper Galilee.
   - { url: "https://m.knesset.gov.il/About/Occasion/Documents/IndependenceWar.pdf", checked: 2026-10-14 }
-status: fact-checked
+status: sensitivity-reviewed
