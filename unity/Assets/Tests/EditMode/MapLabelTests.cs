@@ -175,6 +175,7 @@ public class MapLabelTests
         Assert.AreEqual(new Rect(115, 215 - lift - 10, 30, 10), over);
         Assert.AreEqual(30f * 9f / (60f * 40f), MapLabelsPresenter.Cover(over, kit), 1e-4f, "over the kit: its bottom 9 rows, 270 of its 2400 px");
         Assert.AreEqual(0f, MapLabelsPresenter.Cover(over, new Rect(0, 0, 0, 0)), "an empty kit is never covered");
+        Assert.AreEqual(new Rect(115, 215 + lift, 30, 10), MapLabelsPresenter.SpotRect(MapLabelsPresenter.Spot.Under, kit, point, size), "under the point (#599)");
     }
     [Test]
     public void EverySettlementHasOneGaramondPillThatIgnoresThePointer()
@@ -674,6 +675,118 @@ public class MapLabelTests
             }
         }
         finally { labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Issue #599: close over Jaffa's harbour (gameplay03's yaw at 30, 40 and 50% of its distance, with the game's
+    /// top-bar inset), Tel Aviv's and Jaffa's kit rectangles are hundreds of pixels across and overlap, and each holds or
+    /// touches the other's marker. Every shown pill must still be nearer its own settlement's marker than any other
+    /// visible marker, so "Tel Aviv" never hangs by Jaffa's harbour and "Jaffa" never sits on the pier by Tel Aviv. The
+    /// markers are measured independently of the presenter. Jaffa is named at every pose, and Tel Aviv wherever its
+    /// marker is visible (a city keeps its name). gameplay03 itself is checked the same way.</summary>
+    [UnityTest]
+    public IEnumerator EachPillIsNearerItsOwnMarkerByJaffasHarbour() => NearerOwnMarker(false);
+
+    /// <summary>The same with the units in play (#518's keep-clear moves the spots round the Kiryati Brigade).</summary>
+    [UnityTest]
+    public IEnumerator EachPillIsNearerItsOwnMarkerByJaffasHarbourWithTheUnits() => NearerOwnMarker(true);
+
+    IEnumerator NearerOwnMarker(bool units)
+    {
+        var hd = new HdPanel(cam);
+        var labels = Labels(hd, units);
+        var inset = new TopBarInset(hd.Root, rig);
+        try
+        {
+            var g03 = PromoPose.Gameplay03;
+            foreach (var pose in new[] { g03, new PromoPose("jaffa30", 34.76, 32.05, 0.3f * g03.Distance, g03.Yaw),
+                         new PromoPose("jaffa40", 34.76, 32.05, 0.4f * g03.Distance, g03.Yaw), new PromoPose("jaffa50", 34.76, 32.05, 0.5f * g03.Distance, g03.Yaw) })
+            {
+                pose.Apply(rig, map.Frame);
+                yield return null;
+                inset.Update();
+                yield return Settle(labels);
+                var tops = VisibleMarkerTops(hd, map);
+                var shown = labels.Slots.Where(Shown).Select(s => (id: s.name.Substring("slot-".Length), rect: s.Q<Label>().worldBound)).ToList();
+                foreach (var id in new[] { "tel_aviv", "jaffa" })
+                {
+                    var p = shown.FirstOrDefault(x => x.id == id);
+                    string Gaps() => string.Join(" ", new[] { "tel_aviv", "jaffa" }.Where(tops.ContainsKey).Select(o => $"{o} {Gap(p.rect, tops[o]):F0}"));
+                    TestContext.WriteLine($"{pose.Name} units={units}: {id} marker {(tops.TryGetValue(id, out var t) ? t.ToString() : "not visible")} " +
+                        (p.id == null ? "hidden" : $"pill {p.rect}, gap to {Gaps()}"));
+                }
+                Assert.IsTrue(shown.Any(x => x.id == "jaffa"), $"{pose.Name}: Jaffa is named");
+                if (tops.ContainsKey("tel_aviv")) Assert.IsTrue(shown.Any(x => x.id == "tel_aviv"), $"{pose.Name}: Tel Aviv's marker is visible, so it is named");
+                foreach (var (id, rect) in shown)
+                {
+                    Assert.IsTrue(tops.ContainsKey(id), $"{pose.Name}: {id} is shown but its marker is not visible");
+                    float own = Gap(rect, tops[id]);
+                    foreach (var other in tops.Where(o => o.Key != id))
+                        Assert.Less(own, Gap(rect, other.Value), $"{pose.Name}: the {id} pill {rect} is {own:F0} px from its own marker but {Gap(rect, other.Value):F0} px from {other.Key}'s");
+                }
+            }
+        }
+        finally { inset.Dispose(); labels.Dispose(); hd.Dispose(); }
+    }
+
+    /// <summary>Second review of #599: a city keeps its name. At gameplay03, at jaffa30, and over each city
+    /// (from the closest zoom out to 40 km, at five yaws, with the top-bar inset), every city whose marker is visible is named, with the units off and on, and
+    /// its pill is nearer its own marker than any other visible settlement's. Within LocalityDistanceM the 1948 localities'
+    /// markers are on the map too (Silwan is 1.5 km from Jerusalem), and they must not take a city's name away. The towns
+    /// the review named are logged (a town may give way, as before). No other settlement's pill hangs under its marker:
+    /// Spot.Under is a city's last resort.</summary>
+    [UnityTest]
+    public IEnumerator EveryCityKeepsItsNameCloseUp() => CitiesKeepTheirNames(false);
+
+    [UnityTest]
+    public IEnumerator EveryCityKeepsItsNameCloseUpWithTheUnits() => CitiesKeepTheirNames(true);
+
+    IEnumerator CitiesKeepTheirNames(bool units)
+    {
+        var hd = new HdPanel(cam);
+        var labels = Labels(hd, units);
+        var inset = new TopBarInset(hd.Root, rig);
+        try
+        {
+            var g03 = PromoPose.Gameplay03;
+            var cities = map.Settlements.Where(s => s.Type == "city").ToList();
+            Assert.GreaterOrEqual(cities.Count, 3, "Jerusalem, Tel Aviv and Haifa");
+            var poses = new System.Collections.Generic.List<(PromoPose pose, string? over)> { (g03, null), (new PromoPose("jaffa30", 34.76, 32.05, 0.3f * g03.Distance, g03.Yaw), null) };
+            foreach (var c in cities)
+                foreach (var d in new[] { CameraController.MinDistance, 10000f, 14000f, 18000f, 24000f, 30000f, 40000f })
+                    foreach (var yaw in new[] { 0f, g03.Yaw, 90f, 180f, 270f })
+                        poses.Add((new PromoPose($"{c.Id}{d / 1000f:F0}y{yaw:F0}", c.Lon, c.Lat, d, yaw), c.Id));
+            string[] towns = { "acre", "rosh_pinna", "rishon_lezion", "petah_tikva" };
+            foreach (var (pose, over) in poses)
+            {
+                pose.Apply(rig, map.Frame);
+                if (over != null)   // over a city the look point is on the ground, as the game's pan keeps it (CameraController)
+                {
+                    var at = rig.LookAt; at.y = map.Terrain.SampleHeight(at) + map.Terrain.transform.position.y;
+                    rig.LookAt = at; rig.Apply();
+                }
+                yield return null;
+                inset.Update();
+                yield return Settle(labels);
+                var tops = VisibleMarkerTops(hd, map);
+                var shown = labels.Slots.Where(Shown).Select(s => (id: s.name.Substring("slot-".Length), rect: s.Q<Label>().worldBound)).ToList();
+                if (over != null) Assert.IsTrue(tops.ContainsKey(over), $"{pose.Name}: {over}'s marker is on screen, so this pose checks it");
+                TestContext.WriteLine($"{pose.Name} units={units}: " + string.Join(" ", cities.Select(c => c.Id).Concat(towns).Where(tops.ContainsKey)
+                    .Select(id => $"{id}={(shown.Any(x => x.id == id) ? "named" : "HIDDEN")}")));
+                // Only a city hangs its pill under its marker (Spot.Under: top LiftPx below the marker top, centred on it).
+                foreach (var (id, rect) in shown.Where(x => tops.ContainsKey(x.id) && map.Settlements.First(s => s.Id == x.id).Type != "city"))
+                    Assert.IsFalse(Mathf.Abs(rect.yMin - (tops[id].y + MapLabelsPresenter.LiftPx)) < 1f && Mathf.Abs(rect.center.x - tops[id].x) < 1f,
+                        $"{pose.Name}: {id} is no city but its pill {rect} hangs under its marker {tops[id]}");
+                foreach (var c in cities.Where(c => tops.ContainsKey(c.Id)))
+                {
+                    var p = shown.FirstOrDefault(x => x.id == c.Id);
+                    Assert.IsNotNull(p.id, $"{pose.Name}: {c.Id}'s marker {tops[c.Id]} is visible, so it is named");
+                    float own = Gap(p.rect, tops[c.Id]);
+                    foreach (var other in tops.Where(o => o.Key != c.Id))
+                        Assert.Less(own, Gap(p.rect, other.Value), $"{pose.Name}: the {c.Id} pill {p.rect} is {own:F0} px from its own marker but {Gap(p.rect, other.Value):F0} px from {other.Key}'s");
+                }
+            }
+        }
+        finally { inset.Dispose(); labels.Dispose(); hd.Dispose(); }
     }
 
     /// <summary>Re-review N1: a panel that appears (the event card) hides the pill it covers when its layout lands, from the
