@@ -695,6 +695,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   It decodes to the same bytes, so the terrain is unchanged (#44).
 
 ### Fixed
+- A save that loads with warnings (made with other game content; then a replay that differs) says each warning in the
+  player's language (refs #637): `GameSession.Load` returns the kind (`content_changed`, `replay_differs`) instead of
+  English text, the UI shows `save.warning.<kind>` from both strings files, and the kind goes to the log. A boot failure
+  no longer shows the exception's English text either: the loading line gives the short reason `boot.reason_other`, and
+  the full reason stays in the log. The Hebrew waits for the native reviewer (#564). No golden moves.
 - In the Hebrew UI the top bar's date plate shows the date in Hebrew, "15 במאי 1948", through the same `date.*` strings
   as the map's front-line date (refs #687). Before, it read "15 May 1948". English is unchanged.
 - Map labels (refs #599): close over Jaffa's harbour the "Tel Aviv" and "Jaffa" pills no longer read swapped. Every pill
