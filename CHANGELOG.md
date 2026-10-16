@@ -13,6 +13,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- The Oded (9th) Brigade row in `content/map/units_1948.yaml` records the #197 sourcing pass: Ben-Gurion's diary for
+  31 October 1948 has Tarshiha fall on 30 October and the 9th Brigade attack the villages between Tarshiha and Sa'sa',
+  and he.wiki dates its companies at al-Malkiyya (1 June 1948) and Tel Azaziyat (9-10 July 1948); en.wiki alone puts it
+  near Jerusalem (Malha and Ein Karim, July 1948; "headquartered in Jerusalem" has no footnote). No source names a
+  headquarters or a place held over a window, so the row stays hidden. Map data only: the content hash and the goldens
+  do not move.
 - Food is a national stock (refs #382, R-FOOD-001 to R-FOOD-003; maintainer, 16 October 2026, option (b)): the nation
   eats its head count each month, a monthly import keeps three months of cover, and the stock stops at 0. Food supply
   falls as the cover falls and further by any unmet share; rationing and events still act on top. The 1951 currency
