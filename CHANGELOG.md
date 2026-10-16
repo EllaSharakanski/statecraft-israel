@@ -73,6 +73,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - GDD v0.1 Phase 1, a dev flag and the score (refs #380): `?mvp=1` in the WebGL page's URL loads the content through
   `MvpSlice.Overlay` (the GDD slice) for playtests. The golden check and the smoke run ignore it, and a slice game never
   reads, sets aside or writes the player's autosave (and has no New Game). In the GDD loop the top bar shows the score.
+- The top bar at promo 03's height (HUD round 2, part 3, refs #398): 70 px, 6.5% of a 16:9 frame (it was 96, 8.8%), with
+  the date plate hanging below it as promo 03's does, two-line meters (Security's level beside its caption), New Game a
+  round icon named in a tip, and a smaller End Turn. With the screen buttons in the left column (#602) the bar needs about
+  248 px less, so 16:10 and 4:3 windows keep the one-row bar, and 5:4 the stacked bar with its icons. The decision card's
+  backdrop reaches up to the bar at every tier, so no strip of map stays live under a card. The bar's small text (captions,
+  Security's level, the attention line, the plate's turn and date) stays at least 12 px on screen at small windows, the owner's floor: it is set
+  larger as the panel scales down, and the bar takes a taller tier when it needs the room. Presentation only: no golden
+  moves.
 - The left icon column (HUD round 2, part 2, refs #398): the four screens' buttons (Cabinet, Budget, Defence, Why?) move
   from the top bar to promo 03's column of round icons at the left edge, icon-only, each named in a tip beside it on hover
   and on keyboard focus. No new action. Tab still runs Cabinet, Budget, Defence, Why?, New Game, End Turn; the column stays

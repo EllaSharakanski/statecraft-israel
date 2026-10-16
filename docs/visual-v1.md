@@ -3121,6 +3121,73 @@ Diorama02 `none` is 0.35-0.4 ms lower on the branch in both positions, outside t
 equal (27.91 / 27.87). It is not explained (the branch draws four fewer captioned buttons in the bar, but that is not
 measured on its own), so it is not claimed as a gain.
 
+## HUD round 2, part 3: the top bar (#398)
+
+T54 measured the bar at 8.8% of the frame's height against promo 03's and T29's 6.5%. The one-row bar is now 70 px:
+- The date plate hangs below it, as promo 03's "1936 / Turn 1 / January 1936" plate does. It is at least 98 px tall and
+  grows if the date wraps to a third line. #598's "Score {n}" stays at the far end of the year line.
+- The meters keep two lines, caption then value and change. Security's "Level 5 of 5" sits beside its caption; it was a
+  third line. Captions are 15 px, values 21 px (24 on the roomy bar), with the icons as before.
+- New Game is a round icon with no caption, as promo 03's bar buttons are. Its name is its text, drawn clear (the event
+  log reads it), and its tooltip, which `HoverTip` shows beside it on hover and on focus.
+- End Turn is 20 px with its attention line at 14 px.
+- With the four screen buttons in the left column (#602) the bar needs about 248 px less, so each width tier starts that
+  much narrower (`HudPresenter`). Logical width is the window's width over the panel's scale, which is the plain mean of
+  the two ratios, (w/1920 + h/1080) / 2 (logged by `TopBarTests`). The one-row edge is 1640, between a fullscreen 5:4 and
+  4:3 (review of #624 asked whether a fullscreen 5:4 could keep the one-row bar; at 1563-1612 it wrapped "Public Support"
+  and "International Standing" (the captions' names then; #622 and #683 renamed them) with the widest values, while at 1635 it still fit, so 1640 is a margin, not a limit). So 16:10 (~1819) and 4:3 (~1646) keep the one-row bar with its icons,
+  a fullscreen 5:4 (~1585) takes the stacked bar with them, and a square window (~1382) the stacked bar without. The
+  taller tiers' heights are unchanged.
+- The panels under the bar keep their 112 px top, which clears the hanging plate. Under a decision card a full-width band
+  of the backdrop runs from the bar's bottom to the column's top (`event-scrim-top`), so no strip of map stays live and
+  the hanging plate is dimmed evenly; the column's strip starts at the column's top (`TopBarTests.WithACardOpenTheBackdropMeetsTheBar`).
+- The plate is a label occluder (`date-plate` in `MapLabelsPresenter.OccluderNames`), since the bar's box no longer covers
+  it (`MapLabelTests.APillUnderTheHangingPlateIsHidden`).
+- Security's level and the attention line are 15 px, the accessibility audit's floor (H4); they were 13 and 14.
+- The owner's text floor (15 October 2026): the bar's small text stays at least 12 px on screen at small windows. The panel
+  scales with the window (0.67 at 1280x720, 0.62 at 1024x768), so `HudPresenter` sets it to the whole px that keeps 12 on
+  screen (18 px at 1280x720, 20 at 1024x768; in a browser, CSS px: the panel's scale over `devicePixelRatio`). Raised
+  captions stay on one line, the turn box widens with them, and the tiers read the bar's width less the room this takes
+  (`FloorGrowth`), so 1024x768 takes the stacked bar without icons; above 18 px the one-row bar's turn box no longer fits
+  its 70 px, so 1366x657 takes the stacked bar. The phone tier (three rows) keeps 15 px: its fixed rows have no room for
+  25 px captions (a follow-up, by the owner's answer). The plate's turn and date line takes the same floor (the owner's
+  second answer): the plate keeps its 230 px width, the turn and the date take a line each,
+  and the plate's padding (18 px at the sides, 9 at the top and bottom) keeps every line inside its gilt frame's inner
+  rule and at least 0 px from the 18 px corner zones (the scrolls' reach of about 14 px, plus 4; the score sits on a
+  zone's edge at 1280x720, 4 px clear of the scroll); the plate grows to hold them, taller and, where the date needs it (23 px at 960x600), wider
+  than 230 px, and the tiers count the extra width.
+- In Hebrew the bar's row mirrors (#550): the plate is at the right and End Turn at the left. The left column and the
+  minimap keep their corners.
+
+Measured on the WebGL `?shot` frames (`measure_bar.py`: the rows from the top until the frame's middle third stops being
+dark; promo 03 and T29 include a 3 px gold rule):
+
+| frame | bar | share of height | plate bottom | share | plate below the bar |
+|---|---|---|---|---|---|
+| promo 03 | 103 px | 6.7% | 130 px | 8.5% | 27 px |
+| demo2 T29 | 73 px | 6.8% | 91 px | 8.4% | 18 px |
+| before (#602), gameplay03 and diorama02, EN and HE | 95 px | 8.8% | 95 px | 8.8% | 0 |
+| after, gameplay03 and diorama02, EN and HE | 69 px | 6.4% | 97 px | 9.0% | 28 px |
+
+At 21:9 (2560x1080) the panel scales by the plain mean of the two ratios, so the 70 px bar is 7.6% of the frame.
+
+Frame time (`?vprofile` headless 1920x1080 with a temporary, uncommitted all/none-only FrameProfile patch on both builds,
+then a headed DPR 2 pair) and boot (`headed.py boot --runs 3`), one `--exclusive` slot of 8 minutes, interleaved base,
+branch, branch, base; base is #602's head 192fdf31. Median avg ms (spread):
+
+| | base | branch | branch | base |
+|---|---|---|---|---|
+| gameplay03 all | 8.19 (0.07) | 8.14 (0.07) | 8.12 (0.04) | 8.19 (0.04) |
+| gameplay03 none | 7.02 (0.06) | 6.96 (0.07) | 6.94 (0.05) | 7.02 (0.07) |
+| diorama02 all | 15.75 (0.39) | 15.72 (0.41) | 15.74 (0.54) | 15.55 (0.38) |
+| diorama02 none | 10.74 (0.05) | 10.69 (0.10) | 10.74 (0.11) | 10.72 (0.11) |
+| boot map_build / first_frame, cpu 1 | 540 / 3761 ms | 567 / 3786 ms | 562 / 3792 ms | 541 / 3779 ms |
+
+DPR 2 headed, branch then base (spread): gameplay03 all 19.09 (0.24) / 19.10 (0.20), none 17.75 (0.02) / 17.85 (0.02);
+diorama02 all 33.96 (0.27) / 33.79 (0.19), none 28.08 (0.14) / 27.97 (0.10). Frame time is equal within the spreads.
+Boot's `map_build` median is about 24 ms higher on the branch in both positions, but its single runs overlap base's (base
+524-552 ms, branch 546-570 ms), the change touches no map code, and both are far inside the 743 ms budget at cpu 1.
+
 ## Issue #391: the terrain shader's frame-time cliff (warm land shade, not shipped)
 #391 asked for the shaded hill ground to read warm brown, as promo 03's does (about (67, 53, 46)), rather than olive-grey.
 The look was solved; the cost was not, so nothing shipped. What was measured is a constraint on any future addition to

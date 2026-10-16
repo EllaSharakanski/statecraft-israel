@@ -69,28 +69,32 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 /* Top bar: the date badge, the national indicators (icon, name, value and change), the round screen buttons, attention
    and End Turn. */
 .top-bar {
-    position: absolute; left: 0; right: 0; top: 0; height: 96px;
+    position: absolute; left: 0; right: 0; top: 0; height: 70px;
     flex-direction: row; align-items: center;
     border-width: 0 0 1px 0; border-radius: 0; padding: 0 14px 0 8px;
     border-color: rgba(196, 160, 92, 0.75);
     background-color: var(--navy-solid);   /* opaque: map labels must not show through it (Task 24 review M7) */
 }
-/* Everything in the bar must fit its 96px (EB Garamond lines are about 1.55 x the font size): labels lose their default
-   vertical padding and margin, the year is 32px, and turn and date share one line. */
+/* HUD round 2, part 3 (#398): the one-row bar is 70 px, 6.5% of a 16:9 frame, as promo 03's and T29's (T54: it was 96,
+   8.8%). Everything in it fits two lines (EB Garamond lines are about 1.55 x the font size): labels lose their default
+   vertical padding and margin; the date plate hangs below the bar, as promo 03's "1936 / Turn 1 / January 1936" does. */
 .top-bar Label { padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
 /* The date badge: a raised, trimmed box at the left, as the promo's "1936 / Turn 1 / January 1936" plate. */
 .date-box {
-    flex-shrink: 0; width: 230px; height: 82px;   /* fixed, and wide enough for the widest line ("Turn 120  30 September 1956"),
-                                                     so the meters never shift when the month changes */ justify-content: center;
-    padding: 0 10px 0 12px; margin-right: 10px;
+    /* A fixed width, wide enough for the widest line ("Turn 120  30 September 1956"), so the meters never shift when the
+       month changes; at least 98 px tall, so it hangs 28 px below the 70 px bar as promo 03's plate does, and grows if the
+       date wraps to a third line. */
+    flex-shrink: 0; width: 230px; min-height: 98px; align-self: flex-start; justify-content: center;
+    padding: 2px 10px 2px 12px; margin-right: 10px;
     background-color: var(--navy-raised); border-width: 1px; border-color: var(--gold-dim); border-radius: 2px;
 }
-.date-row { flex-direction: row; }
+/* Turn and date share a line; if they do not fit, the date wraps to a line of its own inside the plate, which grows. */
+.date-row { flex-direction: row; flex-wrap: wrap; }
 /* The year, and the GDD loop's score at the line's far end (#380): the year line has the room the date line lacks. */
 .year-row { flex-direction: row; justify-content: space-between; align-items: center; }
 #score { font-size: 17px; flex-shrink: 0; }
-.date-row Label { font-size: 17px; margin-right: 8px; }
-.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 32px; color: var(--ink); }
+.date-row Label { font-size: 15px; margin-right: 8px; }
+.year { -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 27px; color: var(--ink); }
 .meters { flex-direction: row; flex-grow: 1; align-items: center; }
 .meter {
     flex-direction: row; align-items: center; min-width: 130px; flex-shrink: 1; padding: 0 7px 0 6px;
@@ -100,15 +104,16 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .meter-icon { width: 30px; height: 30px; flex-shrink: 1; min-width: 24px; margin-right: 5px; }
 /* With room to spare (HudPresenter sets top-bar--roomy on the one-row bar), the promo's sizes. */
 .top-bar--roomy .meter-icon { width: 38px; height: 38px; margin-right: 7px; }
-.top-bar--roomy .meter-value { font-size: 25px; }
+.top-bar--roomy .meter-value { font-size: 24px; }
 .meter-body { flex-shrink: 1; flex-grow: 1; min-width: 0; }
-.meter-name { font-size: 16px; color: var(--ink); white-space: normal; }
+.meter-name { font-size: 15px; color: var(--ink); white-space: normal; }
+.meter-caption-row { flex-direction: row; align-items: flex-end; }
 /* In the bar a long caption wraps rather than widen its meter; on the roomy bar it keeps one line, as in the promo (B8). */
 .meter .meter-name { max-width: 120px; }
 .top-bar--roomy .meter .meter-name { max-width: none; white-space: nowrap; }
-#security-level { font-size: 14px; color: var(--ink-dim); }
+#security-level { font-size: 15px; color: var(--ink-dim); margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
 .meter-row { flex-direction: row; align-items: flex-end; }
-.meter-value { font-size: 22px; color: var(--ink); }
+.meter-value { font-size: 21px; color: var(--ink); }
 .meter-delta { font-size: 16px; margin-left: 7px; }
 /* The screen buttons: a round, gold-rimmed icon with its name under it (the name keeps them legible without tooltips). */
 .nav { flex-direction: row; flex-shrink: 0; align-items: center; }
@@ -121,9 +126,11 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
     position: absolute; top: 2px; left: 5px; width: 50px; height: 50px; padding: 11px;
     border-radius: 25px; border-width: 1.5px; border-color: var(--gold-dim); background-color: var(--navy-deep);
 }
-/* "New game" is the longest caption: its button is wider, its disc centred (PromoHudTests: every caption fits). */
-#new-game { width: 66px; }
-#new-game .nav-disc { left: 8px; }
+/* New Game in the bar, as promo 03's round bar buttons (HUD round 2, part 3): icon-only; its name is its text, drawn clear
+   (the event log reads it), and its tooltip, which HoverTip shows beside it on hover and on focus. */
+#new-game.bar-button { width: 52px; height: 52px; margin: 0 10px; padding: 0; font-size: 1px; color: rgba(0, 0, 0, 0); }
+#new-game.bar-button:hover, #new-game.bar-button:focus, #new-game.bar-button.nav-open { color: rgba(0, 0, 0, 0); }
+#new-game.bar-button .nav-disc { top: 0; left: 0; width: 52px; height: 52px; padding: 13px; border-radius: 26px; }
 .nav-button:hover { background-color: rgba(0, 0, 0, 0); color: var(--ink); }
 .nav-button:hover .nav-disc { border-color: var(--gold); background-color: var(--navy-raised); }
 /* Two separate signals: "open" (ScreenNav's nav-open) is a gold-light rim on a raised disc with a gold caption; keyboard
@@ -136,12 +143,12 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    drop their icons and tighten, as the bar was before the icons. */
 .top-bar--compact .meter-icon { display: none; }
 .top-bar--compact .date-box { width: 226px; margin-right: 6px; }
-.top-bar--compact .date-row Label { font-size: 16px; margin-right: 6px; }
+.top-bar--compact .date-row Label { font-size: 15px; margin-right: 6px; }
 .top-bar--compact .meter { padding: 0 8px; }
 /* The narrow HUD (HudPresenter sets hud-narrow on the root, with the compact bar): a taller bar whose meters put the
    change under the value, so no change runs into its neighbour; the panels below the bar move down with it. */
 .hud-narrow .top-bar { height: 124px; }
-.hud-narrow .right-column, .hud-narrow .left-column, .hud-narrow .event-layer, .hud-narrow .screen, .hud-narrow .toast { top: 140px; }
+.hud-narrow .right-column, .hud-narrow .left-column, .hud-narrow .event-gutter, .hud-narrow .event-layer, .hud-narrow .screen, .hud-narrow .toast { top: 140px; }
 .hud-narrow .meter { min-width: 96px; padding: 0 6px; }
 .hud-narrow .meter-row { flex-direction: column; align-items: flex-start; }
 .hud-narrow .meter-value { font-size: 22px; }
@@ -150,17 +157,17 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    (78% of the bar, so they always take the first row) above, the screen buttons and End Turn below; the panels move down. */
 .hud-two-row .top-bar { height: 216px; padding-top: 6px; padding-bottom: 4px; flex-wrap: wrap; justify-content: space-between; align-content: space-around; }
 .hud-two-row .meters { width: 78%; flex-grow: 1; }
-.hud-two-row .right-column, .hud-two-row .left-column, .hud-two-row .event-layer, .hud-two-row .screen, .hud-two-row .toast { top: 232px; }
+.hud-two-row .right-column, .hud-two-row .left-column, .hud-two-row .event-gutter, .hud-two-row .event-layer, .hud-two-row .screen, .hud-two-row .toast { top: 232px; }
 /* Narrower still (a phone upright; HudPresenter adds hud-three-row with hud-two-row): the badge, the meters and the
    screen buttons with End Turn take a row each, and the panels move down under the taller bar (#210). */
 .hud-three-row .top-bar { height: 312px; }
 .hud-three-row .meters { width: 100%; }
-.hud-three-row .right-column, .hud-three-row .left-column, .hud-three-row .event-layer, .hud-three-row .screen, .hud-three-row .toast { top: 328px; }
+.hud-three-row .right-column, .hud-three-row .left-column, .hud-three-row .event-gutter, .hud-three-row .event-layer, .hud-three-row .screen, .hud-three-row .toast { top: 328px; }
 .turn-box { width: 150px; flex-shrink: 1; min-width: 150px; align-items: flex-end; }
-#attention { font-size: 16px; }
+#attention { font-size: 15px; }   /* the audit's floor (H4): 15 px in the stylesheet */
 .end-turn {
-    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 22px;
-    border-color: var(--gold); border-width: 1.5px; color: var(--gold-light); padding: 4px 14px 4px 40px;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond-SemiBold.ttf"); font-size: 20px;
+    border-color: var(--gold); border-width: 1.5px; color: var(--gold-light); padding: 2px 12px 2px 38px;
 }
 .end-turn:hover { border-color: var(--gold-light); }
 
@@ -176,7 +183,7 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
 .left-column { position: absolute; left: 16px; top: 112px; width: 56px; align-items: center; }
 /* The backdrop's strip under the column (review of #602): from the window's left edge to where the backdrop starts (72 px),
    full height (the bar draws over its top), shown and taking the pointer only while the decision card is open. */
-.event-gutter { display: none; position: absolute; left: 0; top: 0; bottom: 0; width: 72px; background-color: rgba(5, 9, 18, 0.55); }
+.event-gutter { display: none; position: absolute; left: 0; top: 112px; bottom: 0; width: 72px; background-color: rgba(5, 9, 18, 0.55); }
 .event-modal .event-gutter { display: flex; }
 .left-column .rail-button { width: 56px; height: 56px; margin: 0 0 12px 0; padding: 0; font-size: 1px; color: rgba(0, 0, 0, 0); }
 .left-column .rail-button:hover, .left-column .rail-button:focus, .left-column .nav-open { color: rgba(0, 0, 0, 0); }
@@ -188,8 +195,15 @@ Button:disabled { color: var(--ink-dim); border-color: rgba(120, 120, 120, 0.4);
    middle. Hide collapses the card to the "Decision
    waiting" button at the layer's top right (EventCardPresenter), which takes no more room than itself. */
 .event-layer { position: absolute; left: 16px; right: 16px; top: 112px; bottom: 16px; justify-content: center; align-items: center; }
-.event-scrim { display: none; position: absolute; left: 56px; right: -16px; top: -16px; bottom: -16px; background-color: rgba(5, 9, 18, 0.55); }
+.event-scrim { display: none; position: absolute; left: 56px; right: -16px; top: 0; bottom: -16px; background-color: rgba(5, 9, 18, 0.55); }
 .event-open .event-scrim { display: flex; }
+/* The backdrop reaches up to the bar's bottom at every tier: a full-width band from the bar to the layer's top (42 px under the
+   70 px one-row bar, where the date plate hangs; 16 px under the taller tiers' bars), then the layer's own part right of
+   the left column, and the column's strip (event-gutter) beside and below its discs. No strip of map stays live under a
+   card, and the hanging plate is dimmed evenly (review of #624). */
+.event-scrim-top { display: none; position: absolute; left: -16px; right: -16px; top: -42px; height: 42px; background-color: rgba(5, 9, 18, 0.55); }
+.event-open .event-scrim-top { display: flex; }
+.hud-narrow .event-scrim-top, .hud-two-row .event-scrim-top, .hud-three-row .event-scrim-top { top: -16px; height: 16px; }
 .event-reopen {
     display: none; position: absolute; right: 0; top: 0; margin: 0; padding: 6px 18px; font-size: 20px; -unity-text-align: middle-center;
     background-color: var(--navy-solid); border-color: var(--gold); border-width: 1.5px; color: var(--gold-light);
