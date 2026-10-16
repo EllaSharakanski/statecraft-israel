@@ -75,6 +75,13 @@ namespace Statecraft.Game.Map.Kits
         /// <summary>The hills' scatter (Plant): one try per cell this wide (m), kept at about this share (a broad noise
         /// takes it from 0.4 to 1.6 times), this share of it low scrub (a small, squat olive), the rest single olives.</summary>
         public const float ScatterCellM = 800f, ScatterShare = 0.85f, ScrubShare = 0.35f;
+        /// <summary>Visual gap L1 (issue #34; owner, 15 Oct 2026: "~1.7x bigger, fewer trees", the plan's option "hill olives
+        /// only"): the hill olives (the clumps' trees on the hills and mountains and the scatter's single olives, not its
+        /// scrub; the plain's and the valleys' olives are unchanged) are this many times the size, to
+        /// promo 03's crowns as measured on screen at gameplay03, and only this share of them is kept, so the hills keep
+        /// ground between the crowns and the instance count falls. CrownRadiusM, the mesh and every other tree are unchanged;
+        /// the keep-outs (lots, routes, footprints, groves, grid marks) and the tree holes under units read the size.</summary>
+        public const float HillOliveSize = 1.7f, HillOliveShare = 0.6f;
         /// <summary>The widest crown (m) the grove index is asked about (its query reach past a grove's disc).</summary>
         const float ScatterKeepM = 1500f;
 
@@ -170,7 +177,8 @@ namespace Statecraft.Game.Map.Kits
                 }
             }
 
-            // Olives over the hills and mountains: one jittered cell per 1.2 km, in clumps (Perlin), denser by the old towns.
+            // Olives over the hills and mountains: one jittered cell per 1.2 km, in clumps (Perlin), denser by the old towns; the
+            // trees on the hills and mountains HillOliveSize times the size, HillOliveShare of them kept.
             {
                 var rnd = new KitRandom("olives", 13);
                 // About 2.6 crowns apart where they grow (promo 03's hills), but never more than one cell per 1.1 km: at small
@@ -186,7 +194,9 @@ namespace Statecraft.Game.Map.Kits
                         if (!rnd.Chance(Mathf.Max(p, 0.03f))) continue;
                         var b = ground.Biome(px, pz);
                         bool plain = b == "coastal_plain" || b == "lowland";
-                        if (!plain && b != "hills" && b != "mountains" && b != "valley") continue;
+                        bool hill = b == "hills" || b == "mountains";
+                        float size = hill ? HillOliveSize : 1f;
+                        if (!plain && !hill && b != "valley") continue;
                         if (plain && !rnd.Chance(0.35f)) continue;   // lone trees between the fields
                         float e = ground.ElevM(px, pz);
                         if (e < (plain ? 5f : 40f) || e > 950f || ground.Water(px, pz) || ground.InTown(px, pz, 0.9f) || ground.Slope(px, pz, 600f) > 0.35f) continue;
@@ -194,7 +204,10 @@ namespace Statecraft.Game.Map.Kits
                         for (int i = 0; i < n; i++)
                         {
                             float tx = px + rnd.Range(-0.5f, 0.5f) * cell, tz = pz + rnd.Range(-0.5f, 0.5f) * cell;
-                            if (!ground.Water(tx, tz) && !ground.InTown(tx, tz, 0.85f)) Add(TreeKind.Olive, tx, tz, ref rnd);
+                            if (hill && !rnd.Chance(HillOliveShare)) continue;
+                            // Off the hex-edge midpoints, as the scatter below (the grid guard, L1's G4).
+                            if (ground.OnGridMark(new Vector2(tx, tz), CrownRadiusM(TreeKind.Olive) * s * size * 1.15f)) continue;
+                            if (!ground.Water(tx, tz) && !ground.InTown(tx, tz, 0.85f)) Add(TreeKind.Olive, tx, tz, ref rnd, size);
                         }
                     }
             }
@@ -219,7 +232,8 @@ namespace Statecraft.Game.Map.Kits
                         float uneven = 0.4f + 1.2f * Mathf.PerlinNoise(px / 23000f + 3.7f, pz / 23000f + 1.9f);
                         if (!rnd.Chance(ScatterShare * uneven)) continue;
                         bool scrub = rnd.Chance(ScrubShare);
-                        float size = scrub ? rnd.Range(0.5f, 0.7f) : rnd.Range(0.9f, 1.2f);
+                        float size = scrub ? rnd.Range(0.5f, 0.7f) : rnd.Range(0.9f, 1.2f) * HillOliveSize;
+                        if (!scrub && !rnd.Chance(HillOliveShare)) continue;
                         float e = ground.ElevM(px, pz);
                         if (e < 120f || e > 950f || !ground.HillCountry(px, pz) || ground.Water(px, pz) || ground.Slope(px, pz, 600f) > 0.37f) continue;
                         var p = new Vector2(px, pz); float crown = CrownRadiusM(TreeKind.Olive) * s * size * 1.15f;
