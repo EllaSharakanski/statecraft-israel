@@ -13,6 +13,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- The first-new-yishuv card's source comment records the #706 gazetteer findings for places under 1,000 near
+  Mefalsim (seven depopulated villages in the sweeps, none naming Mefalsim; the Bedouin-locality caveat), instead of
+  the stale not-checked note (#654). Comment only; the card's text is unchanged.
 - Sourcing audit of the MVP-window office rows (#457): the First Government row no longer cites Wikipedia (the
   Knesset's position records, the 14 May 1948 minutes, Ben-Gurion's diary page, the plenum records and the
   Knesset's history pages cover every value); the Provisional Government keeps its two named Wikipedia lines for
