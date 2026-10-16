@@ -90,6 +90,26 @@ public class HudTests
         StringAssert.Contains("-IL", m.Treasury.Value);
     }
 
+    /// <summary>#681 (owner, 16 October 2026: "keep one top-bar figure and label it as net (cash minus debt)"): the Money
+    /// caption, and the tooltip that says it, read net in both languages; the value stays cash minus debt, so with debt
+    /// it reads negative.</summary>
+    [TestCase(false, "Money (net)")]
+    [TestCase(true, "כסף (נטו)")]
+    public void TheMoneyFigureIsLabelledNet(bool hebrew, string caption)
+    {
+        var text = hebrew ? He : Text;
+        var bridge = new SimBridge(GameSession.New(C, GoldenRun.Seed, Mode.Historical), text);
+        for (var i = 0; i < 4; i++) bridge.EndTurn();
+        Assert.Greater(bridge.State.Debt, 0.0, "precondition: something is borrowed");
+        using var ui = new UiTestKit();
+        new HudPresenter(ui.Root, bridge, text);
+        var meter = ui.Q<VisualElement>("meter-treasury");
+        Assert.AreEqual(caption, meter.Q<Label>(className: "meter-name").text);
+        StringAssert.StartsWith(caption + ":", meter.tooltip);
+        Assert.AreEqual(PlayerText.Money(C, "treasury", bridge.State.Treasury - bridge.State.Debt), ui.Q<Label>("treasury-value").text);
+        StringAssert.Contains("-IL", ui.Q<Label>("treasury-value").text);
+    }
+
     // ---- The score (#380): only in the GDD loop, from GameState.Score ----
 
     /// <summary>The real game: the GDD loop since the cutover (the ?mvp=1 slice is gone with MvpSlice).</summary>
@@ -519,13 +539,14 @@ public class HudTests
 
     /// <summary>Fix round 1, M3: the top-bar captions are the content names. Since #622 they are in the sentence case the
     /// content and the rest of the strings use, so a caption is the content name as written (it was Title Case before);
-    /// Immigration and Public support are UI quantities with no content name.</summary>
+    /// Immigration and Public support are UI quantities with no content name. Money carries "(net)" after its name: the top
+    /// bar shows cash minus debt (#681, owner, 16 October 2026), where the content name, as the causes use it, is cash.</summary>
     [Test]
     public void TopBarCaptionsAreTheContentNames()
     {
         using var ui = new UiTestKit();
         string Caption(string meter) => ui.Q<VisualElement>(meter).Q<Label>(className: "meter-name").text;
-        Assert.AreEqual(PlayerText.Target(C, "treasury"), Caption("meter-treasury"));
+        Assert.AreEqual(PlayerText.Target(C, "treasury") + " (net)", Caption("meter-treasury"));
         Assert.AreEqual(PlayerText.Target(C, "security"), Caption("meter-security"));
         Assert.AreEqual(PlayerText.Target(C, "intl_standing"), Caption("meter-standing"));
         Assert.AreEqual(PlayerText.Target(C, "fx_reserves"), Caption("meter-fx"));
@@ -596,7 +617,7 @@ public class HudTests
         using var ui = new UiTestKit();
         var bridge = NewBridge();
         var hud = new HudPresenter(ui.Root, bridge, Text);
-        Assert.AreEqual("Money: IL 20.0 million", ui.Q<VisualElement>("meter-treasury").tooltip);           // turn 0: no change
+        Assert.AreEqual("Money (net): IL 20.0 million", ui.Q<VisualElement>("meter-treasury").tooltip);           // turn 0: no change
         Assert.AreEqual("Foreign currency: $40.0 million", ui.Q<VisualElement>("meter-fx").tooltip);
         Assert.AreEqual("Security: 30%", ui.Q<VisualElement>("meter-security").tooltip);
         bridge.EndTurn();
@@ -608,7 +629,7 @@ public class HudTests
         hud.Render();
         var net = System.Math.Round(now.Treasury - now.Debt, 1, System.MidpointRounding.AwayFromZero);
         Assert.Greater(net, 0, "the test expects a positive net position after one turn");
-        Assert.AreEqual(Inv($"Money: IL {net:0.0} million, down IL 1.4 million since last turn"), ui.Q<VisualElement>("meter-treasury").tooltip);
+        Assert.AreEqual(Inv($"Money (net): IL {net:0.0} million, down IL 1.4 million since last turn"), ui.Q<VisualElement>("meter-treasury").tooltip);
         Assert.AreEqual(Inv($"Foreign currency: ${now.FxReserves:0.0} million, up $2.0 million since last turn"), ui.Q<VisualElement>("meter-fx").tooltip);
         Assert.AreEqual($"Security: {ui.Q<Label>("security-value").text}, up 5 points since last turn", ui.Q<VisualElement>("meter-security").tooltip);
         Assert.AreEqual($"International support: {ui.Q<Label>("standing-value").text}, down 1 point since last turn", ui.Q<VisualElement>("meter-standing").tooltip);
@@ -668,8 +689,8 @@ public class HudTests
         new HudPresenter(ui.Root, bridge, he);
         var said = ui.Q<VisualElement>("meter-treasury").tooltip;
         // The values carry left-to-right marks (U+200E, #543), so the minus stays on the left of "IL" in a right-to-left line.
-        Assert.AreEqual("כסף: \u200E-IL \u200E\u200E3.0\u200E מיליון, קיטון של \u200EIL \u200E\u200E4.0\u200E מיליון מאז התור הקודם", said);
-        Assert.AreEqual("כסף: -IL 3.0 מיליון, קיטון של IL 4.0 מיליון מאז התור הקודם", said.Replace("\u200E", ""));
+        Assert.AreEqual("כסף (נטו): \u200E-IL \u200E\u200E3.0\u200E מיליון, קיטון של \u200EIL \u200E\u200E4.0\u200E מיליון מאז התור הקודם", said);
+        Assert.AreEqual("כסף (נטו): -IL 3.0 מיליון, קיטון של IL 4.0 מיליון מאז התור הקודם", said.Replace("\u200E", ""));
         foreach (var id in MeterIds)
         {
             var tip = ui.Q<VisualElement>("meter-" + id).tooltip;

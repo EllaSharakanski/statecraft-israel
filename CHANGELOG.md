@@ -13,6 +13,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- The top bar's Money figure is labelled net: "Money (net)", "כסף (נטו)" in Hebrew, and its tooltip says the same (refs
+  #681; owner, 16 October 2026: "keep one top-bar figure and label it as net (cash minus debt)"). The value is unchanged,
+  cash minus debt; the Budget screen still shows money and debt separately.
 - The Oded (9th) Brigade row in `content/map/units_1948.yaml` records the #197 sourcing pass: Ben-Gurion's diary for
   31 October 1948 has Tarshiha fall on 30 October and the 9th Brigade attack the villages between Tarshiha and Sa'sa',
   and he.wiki dates its companies at al-Malkiyya (1 June 1948) and Tel Azaziyat (9-10 July 1948); en.wiki alone puts it
