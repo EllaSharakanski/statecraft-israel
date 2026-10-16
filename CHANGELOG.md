@@ -8,6 +8,11 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Changed
+- Sourcing audit of the MVP-window office rows (#457): the First Government row no longer cites Wikipedia (the
+  Knesset's position records, the 14 May 1948 minutes, Ben-Gurion's diary page, the plenum records and the
+  Knesset's history pages cover every value); the Provisional Government keeps its two named Wikipedia lines for
+  the coalition, the State Council keeps one named Wikipedia line for the seat distribution, and the Third
+  Government keeps its named he.wiki lines. No values changed.
 - The Treasury is now shown as Money, כסף in Hebrew, on the top bar, the Budget screen and in the causes (refs #382,
   R-MONEY-001; spec §1.2, owner, 15 October 2026, Q-MONEY-4 and Q-HUD-3). Debt and foreign currency stay in the sim
   (D-C3). No upkeep yet: per Q-MONEY-2 it waits for Phase 3. No golden moves; the content hash does (the name is in
