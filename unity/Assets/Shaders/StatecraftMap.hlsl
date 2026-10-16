@@ -102,10 +102,29 @@ static const float ScWaveTilt = 0.6;                             // wave normal 
 // The surf: a swash line along the sand (full to ScSwashM) and breakers rolling shoreward through the surf zone
 // (ScSurfM), broken along the shore by noise. The breakers are a squared triangle wave in the distance from the shore,
 // box-filtered over the pixel's footprint in closed form, so they never alias and tend to their mean (1/3) as the pixel
-// grows; ScBreakerRate cycles per second roll them in at ScBreakerSpacingM x ScBreakerRate = 15 m/s (a quarter pixel per
+// grows; ScBreakerRate cycles per second roll them in at ScBreakerSpacingM x ScBreakerRate = 22.5 m/s (half a pixel per
 // frame at the gameplay pose's ~45 m pixels and 60 fps). coast.png's 94 m levels are interpolated linearly between
 // texels, so a crest can sit up to ~47 m off its true place: about one gameplay pixel, under the phase noise.
-static const float ScSwashM = 180.0, ScSurfM = 900.0, ScBreakerSpacingM = 300.0, ScBreakerRate = 0.05;
+// Sea round 3 (#388): towards promo 03's lace (2-4 broken white lines over the turquoise; SeaTests guarantees the swash
+// and at least one breaker, the rest waits for #519's grade). The surf zone from 900 to 1800 m (the
+// promo's 29-52 px foam band at gameplay03's ~45 m pixels; at 1500 m the second crest faded under the foam's white before
+// it reached the turquoise), the crests from 300 to 450 m apart (about 10 px, so they stand clear of each other;
+// ScBreakerRate kept, so they roll in at 22.5 m/s, about half a pixel a frame), and the foam whiter (ScFoamWhite, 0.85
+// before: the crests read turquoise-tinted).
+// The lace (the "foam" toggle, _ScSeaFoam): the constants alone left whole crests out where the 300 m "broken" noise was
+// low, since one blob of it covers two crests 450 m apart (SeaTests.TheSurfShowsABrokenBreakerBeyondTheSwashAtTheGameplayZoom
+// at 31.95 N).
+// With the toggle on, a finer net (ScLaceCellM cells, kept where it is under ScLaceCover) breaks each crest on its own.
+// Its edge is a fixed ScLaceEdge wide in noise units, not the pixel's footprint: an edge that sharpens with resolution
+// changes the net's mean between a pixel and its sub-pixels, and TheBreakersAreFilteredToThePixel saw it (p99 0.067 at a
+// 140 m net with a footprint edge); a 200 m net with a 0.25 edge stays smooth over a 45 m pixel. The net keeps more than
+// "broken" does: its mean is 0.676 (2M samples of ScNoise; P(noise < 0.62) = 0.69), "broken"'s 0.5, so the breakers
+// carry about 35% more foam on average at the gameplay zoom. Like "broken", it fades to 0.5 at 75-150 m pixels, so the
+// overview's mean foam is unchanged, and zooming out through that range dims the breakers by about a quarter
+// (independent review of #660; kept rather than re-centred, which would change the overview).
+float _ScSeaFoam;                                                // 1 = on, 0 = off (the "foam" toggle)
+static const float ScSwashM = 180.0, ScSurfM = 1800.0, ScBreakerSpacingM = 450.0, ScBreakerRate = 0.05, ScFoamWhite = 0.95;
+static const float ScLaceCellM = 200.0, ScLaceCover = 0.62, ScLaceEdge = 0.25;
 // Sea round 2 (#388): the far sea's texture, which promo 02 and 03 show at the gameplay and overview zooms where the waves
 // above have faded to a smooth surface (sea detail 0.013 against promo 03's 0.060 at gameplay03, 0.019 against 0.063 at
 // diorama02). Three terms, all behind the "seatexture" toggle (_ScSeaTexture), so the profile prices them together and
@@ -285,10 +304,13 @@ float3 ScWaterShade(float coast, float elevM, float3 positionWS, float2 mapM, fl
     float zone = 1.0 - smoothstep(ScSwashM, ScSurfM, offshoreM);
     float crest = ScTriSqBox(breakers.x, breakers.y);
     float broken = smoothstep(0.3, 0.7, ScNoise(mapM / 300.0 + float2(0.0, time * 0.02)));
+    float lace = ScNoise(mapM / ScLaceCellM + float2(5.1, 2.3) + float2(time * 0.03, 0.0));
+    lace = 1.0 - smoothstep(ScLaceCover - ScLaceEdge, ScLaceCover + ScLaceEdge, lace);   // kept where the net is under ScLaceCover
+    broken = lerp(broken, lace, _ScSeaFoam);
     broken = lerp(0.5, broken, 1.0 - smoothstep(75.0, 150.0, footprintM));
     float rim = salt * (1.0 - smoothstep(0.0, 900.0, offshoreM));
     float foam = saturate((swash * (0.8 + 0.2 * broken) + zone * crest * broken) * (1.0 - salt) + rim + fleck);
-    return lerp(lit, SRGBToLinear(float3(0.93, 0.95, 0.94)), foam * 0.85);
+    return lerp(lit, SRGBToLinear(float3(0.93, 0.95, 0.94)), foam * ScFoamWhite);
 }
 
 // The shore on land (promo-sea): a sand strip along every sea-level coast (above -100 m: the Mediterranean and the Gulf
