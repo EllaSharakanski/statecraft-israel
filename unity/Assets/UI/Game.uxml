@@ -7,7 +7,7 @@
         <ui:VisualElement name="map-labels" class="map-labels" picking-mode="Ignore" />
         <!-- HUD round 2, part 2 (#398): promo 03's left icon column, the four screens (ScreenNav), icon-only; each one's name
              is its text (the event log records it), hidden, and its tooltip, shown beside it on hover and on focus
-             (HoverTip). Before the top bar in the tree, so Tab still runs Cabinet, Budget, Defence, Why?, New Game, End Turn. -->
+             (HoverTip). Before the top bar in the tree, so Tab still runs Cabinet, Budget, Defence, Why?, Settings, New Game, End Turn. -->
         <!-- The left column's strip of the decision card's backdrop (review of #602): dimmed and taking the pointer while the
              card is open (event-modal), so the map is blocked between and below the discs as it is everywhere else; before
              the column in the tree, so the column's buttons stay above it and usable. -->
@@ -17,6 +17,7 @@
             <ui:Button name="nav-budget" text="Budget" class="nav-button rail-button"><Statecraft.Game.UI.UiIcon glyph="ledger" class="nav-disc" /></ui:Button>
             <ui:Button name="nav-defence" text="Defence" class="nav-button rail-button"><Statecraft.Game.UI.UiIcon glyph="helmet" class="nav-disc" /></ui:Button>
             <ui:Button name="nav-why" text="Why?" class="nav-button rail-button"><Statecraft.Game.UI.UiIcon glyph="question" class="nav-disc" /></ui:Button>
+            <ui:Button name="nav-settings" text="Settings" class="nav-button rail-button"><Statecraft.Game.UI.UiIcon glyph="gear" class="nav-disc" /></ui:Button>
         </ui:VisualElement>
         <ui:VisualElement name="top-bar" class="panel top-bar">
             <Statecraft.Game.UI.UiFrame corners="false" rule="false" />
@@ -280,6 +281,16 @@
         <ui:VisualElement name="screen-why" class="panel screen">
             <ui:VisualElement class="screen-header"><ui:Label name="why-screen-title" text="Why did this happen?" class="title" /><ui:Label name="why-turn" class="muted" /></ui:VisualElement>
             <ui:ScrollView name="why-rows" class="grow" />
+            <Statecraft.Game.UI.UiFrame />
+        </ui:VisualElement>
+        <!-- Settings (#40, SettingsPresenter): the player's presentation options, kept per browser (SettingsStore), never in
+             the sim or the save. Each option is a row: its name, and a button that says what is set. -->
+        <ui:VisualElement name="screen-settings" class="panel screen">
+            <ui:VisualElement class="screen-header"><ui:Label name="settings-screen-title" text="Settings" class="title" /></ui:VisualElement>
+            <ui:VisualElement class="row settings-row">
+                <ui:Label name="settings-tiltshift-label" text="Blur at the top and bottom of the map" class="settings-name" />
+                <ui:Button name="settings-tiltshift" class="settings-switch" />
+            </ui:VisualElement>
             <Statecraft.Game.UI.UiFrame />
         </ui:VisualElement>
         <!-- The End Turn outcome clip (OutcomePresenter): the historical order the player gave, as a 3.5 s silent clip in the

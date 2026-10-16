@@ -63,7 +63,7 @@ namespace Statecraft.Game.UI
         static readonly (string name, string key)[] Texts =
         {
             ("nav-cabinet", "hud.nav.cabinet"), ("nav-budget", "hud.nav.budget"), ("nav-defence", "hud.nav.defence"),
-            ("nav-why", "hud.nav.why"), ("new-game", "hud.new_game"), ("end-turn", "hud.end_turn"),
+            ("nav-why", "hud.nav.why"), ("nav-settings", "hud.nav.settings"), ("new-game", "hud.new_game"), ("end-turn", "hud.end_turn"),
         };
 
         /// <summary>The owner's text floor (#624, 15 October 2026): the bar's small text (the six captions, Security's level
@@ -95,7 +95,7 @@ namespace Statecraft.Game.UI
         readonly IVisualElementScheduledItem floorCheck;
         float smallTextSize = SmallTextPx;
 
-        /// <summary>The left icon column (promo 03): the four screens' buttons.</summary>
+        /// <summary>The left icon column (promo 03): the screens' buttons (ScreenNav.Screens).</summary>
         public const string RailName = "left-column";
         readonly HoverTip? railTips, barTips;
 
