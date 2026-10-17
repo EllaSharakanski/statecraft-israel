@@ -89,6 +89,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - The olive crowns are darker, with pale tops (visual gap L2, refs #34; owner, 15 October 2026: "Darker, with pale
   sunlit tops"). At gameplay03 their body is luma 0.29 (main 0.50, promo 03 0.30) and their sunlit top stands 0.18 above
   it (main 0.14, promo 0.18). Vertex colours only: no tree count, size, shader or grade change.
+- The olive crowns read grey olive, not chocolate brown (refs #772): their median saturation at gameplay03 (editor shot)
+  is 0.34 (main 0.41, promo 03 0.32) and their hue 27.5 degrees (main 31.7, promo 28.2), with more blue in the lobes
+  and a greyer sunlit top. Body luma 0.29 and top contrast 0.20 stay in promo 03's bands. Vertex colours only.
 - The surf is wide on the dune coasts and narrow under the kurkar, as promo 03 draws it (refs #690, #388): 3.0 km from
   Jaffa south and in Haifa Bay, 1.5 km elsewhere (2.4 km everywhere before). The dune coasts are one definition,
   `unity/Assets/Resources/Map/DuneCoasts.json`, which the water pass reads through `MapShaderGlobals`. Presentation only.
