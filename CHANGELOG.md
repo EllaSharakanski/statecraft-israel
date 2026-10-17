@@ -20,6 +20,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- The coalition can no longer end the GDD game (refs #730, R-GOV-001; D-C5, D-B5: "Coalition collapse is off in the
+  MVP"). Its stability still follows public approval and still weights the coalition votes; the legacy loop keeps its
+  collapse. R-GOV-002 pins what the GDD orders cost in Attention: each has a price, the unit orders are free, and a
+  refused order is refunded. No golden moves: no reference run's stability falls below 0.2.
 - The Negev's sand is a warmer orange, toward promo 02 (refs #709, #695, #388; the owner chose this step on 16 October
   2026): the desert ground colour has less blue (`MapPalette`), re-baked into `BiomeColours.bytes` and the minimap relief.
   The #519 grade is unchanged.
