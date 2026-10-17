@@ -59,6 +59,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- Hebrew names: a native speaker read the 12 government and legislature names (#874) and 27 office rows, 29 titles (#876), and the start, new-game, save and loading UI strings (#877, no wording changed). The `agent-checked` flags on the names and titles were cleared; the 24 party names (#875) keep theirs (refs #564).
 - In the Hebrew UI the population-tier badge sits on the right of a map pill, at the start of the Hebrew
   name, as the owner decided on #897 ("Yes, mirror it"; refs #880, #710). The English pill keeps it on the left.
 - Refusing the reparations claim (`reparations_claim.refuse`) now costs $4 million of Foreign currency, so neither answer is free (owner, 17 Oct 2026, "A cost for refusing too", #938). The amount is a labelled design value, not a historical figure, and waits for the owner's sign-off on the PR. The reference runs send the claim, so no golden moves.
