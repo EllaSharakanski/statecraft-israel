@@ -31,7 +31,7 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 - `EventImageMappingTests.EveryPictureHasItsProvenanceRow` no longer lists `first_new_yishuv` as waiting for the owner's sign-off. Its `ASSETS.yaml` row became `verified` in #913 (owner, 17 Oct 2026, "Approve both", #879), so the test failed on main.
 - In the Hebrew UI the map's name pills show each row's `name_he`: the game settlements ("נהלל", "תל אביב") and
   the 1948 localities that have one. The thirteen localities with no `name_he` keep their English name, and the
-  English UI is unchanged. The tier badge stays on the left of the pill until the owner rules on mirroring it (#880).
+  English UI is unchanged (#880).
 - End Turn now logs a throwing `Changed` or `TurnEnded` subscriber and continues notifying the remaining presenters,
   so a successful turn cannot leave later UI or autosave handlers stale (#912).
 - The info panel now translates every map-action refusal from the sim's stable reason kind and invariant values. Under
@@ -59,6 +59,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- In the Hebrew UI the population-tier badge sits on the right of a map pill, at the start of the Hebrew
+  name, as the owner decided on #897 ("Yes, mirror it"; refs #880, #710). The English pill keeps it on the left.
 - Refusing the reparations claim (`reparations_claim.refuse`) now costs $4 million of Foreign currency, so neither answer is free (owner, 17 Oct 2026, "A cost for refusing too", #938). The amount is a labelled design value, not a historical figure, and waits for the owner's sign-off on the PR. The reference runs send the claim, so no golden moves.
 - Refusing Egypt's armistice (`armistice_egypt.hold_out`) now sets the war to rung 4, like refusing Jordan's, Lebanon's or Syria's (owner, 17 Oct 2026, "Yes, match the others", #937). The reference runs sign every armistice, so no golden moves.
 - The desktop players' bundle ID is `io.github.eyalgolan.statecraftisrael` (decision O6, owner, 17 Oct 2026, #879; refs #905). Only the Standalone identifier changes; the WebGL build does not read it.
