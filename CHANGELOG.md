@@ -20,6 +20,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- People audit batch 1 (#457): shazar's name_he now cites the Knesset's member page instead of en.wiki; the
+  batch's source-coverage findings (some MK pages - Kaplan, Pinkas - carry the birth year only, so those exact
+  birth dates keep their citations pending a JPress pass; the Zisling spelling conflict) are recorded in the PR. No values changed.
 - Tel Aviv's White City is plastered a warm cream, as in promo 03, where it was a cooler lime white (refs #658). Walls,
   parapets and roof terraces change in Tel Aviv only. Haifa's Hadar and every other town keep their colours, and Tel
   Aviv stays clearly lighter than Jaffa's sandstone (`TownCensusTests.TelAvivsPlasterIsWarmCreamAndStillWhiterThanJaffa`).
