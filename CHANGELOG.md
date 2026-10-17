@@ -8,6 +8,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 ## [Unreleased]
 
 ### Fixed
+- In the Hebrew UI the Budget's "no ministry until" date, the Why? screen's turn span and the info panel's build date
+  name their months in Hebrew ("מ־15 במאי 1948 עד 15 ביוני 1948", "באוגוסט 1950") through the `date.*` strings, as
+  the top bar does since #696 (refs #701). English is unchanged. `info.built` in Hebrew now says "ב{1}" instead of
+  "בשנת {1}", since its value is a month and a year.
 - The loading screen's boot-failure line wraps inside the screen with a side margin (refs #765). In Hebrew at phone width
   it ran past both edges, so the player could not read "reload the page"; `.loading-line` had no `white-space: normal`.
   `UiLayoutTests.TheBootFailureLineWrapsInsideTheScreen` checks English and Hebrew at 390x844, 960x600 and 1280x720.
