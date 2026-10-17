@@ -129,3 +129,7 @@ R-NAT-002: "Low social cohesion" (`low_cohesion`) is a situation on `morale`: on
 R-NAT-003: International Support is the 0 to 1 `intl_standing` indicator, shown as International support; event effects on `intl_standing` move it (Q-NAT-4).
 
 R-NAT-004: "Low international support" (`low_intl_support`) is a situation on `intl_standing` with the same bands and, likewise, no effect of its own (Q-NAT-3).
+
+R-EFX-001: An option's effect may target an indicator id from `model.yaml`, `treasury` or `fx_reserves` (game money), or `food`, the national Food stock: the effect moves the stock by whole units (the delta rounds half away from zero) and the stock never drops below 0, so a cut larger than the stock applies only to what is there. Any other target is a load error naming file and field. The Arms stock becomes a target with its pool (#781).
+
+R-EFX-002: An option of an event tagged `holocaust`, `terror`, `massacre` or `war-casualties` cannot raise `treasury`, `fx_reserves`, `food`, `food_supply`, `morale` or `intl_standing` (Q-EFX-2, decided 15 October 2026: the no-gain rule covers all five resources, with the legacy indicators standing for Food, Social cohesion and International Support; `food` is Food's own target, and Arms joins the rule with its pool, #781). A cost stays allowed. The rule for the Phase 6 `displacement` tag is Q-DEP-6 (open).

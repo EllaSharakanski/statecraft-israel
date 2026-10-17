@@ -453,4 +453,22 @@ public class PlayerTextTests
     [Fact]
     public void EveryRealPortraitHasAFocalPoint() =>
         Assert.All(Real.People.Where(p => p.Portrait != null && p.Portrait.File != ""), p => Assert.InRange(p.Portrait!.FocusY ?? -1, 0.05, 0.95));
+
+    /// <summary>R-EFX-001: whole-unit national stocks read in units, not percent.</summary>
+    [Theory]
+    [InlineData(7, "+7 units")]
+    [InlineData(-3, "-3 units")]
+    [InlineData(0, "0 units")]
+    public void UnitsChangeRendersAWholeUnitStock(double change, string shown)
+    {
+        Assert.Equal(shown, PlayerText.UnitsChange(change));
+    }
+
+    [Fact]
+    public void ChangeRendersTheFoodStockInUnits()
+    {
+        var c = ContentLoader.Load(RealContentTests.ContentRoot());
+        Assert.Equal("Food +7 units", PlayerText.Change(c, Pools.FoodTarget, 7));
+    }
 }
+
