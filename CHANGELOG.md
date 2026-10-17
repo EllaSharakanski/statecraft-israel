@@ -21,6 +21,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   target follows with its pool (#781).
 
 ### Fixed
+- Under `?lang=he` the hex info panel names its towns and 1948 localities in Hebrew: the title, the "Settlements"
+  line and the 1948 name in the localities line read the row's `name_he`, and the English name where a row has none
+  (13 of 271 localities). Where the Hebrew 1948 and today names are one word (48 rows that would otherwise show
+  a today name), the "today" part is left out. English is unchanged (refs #899).
 - In the Hebrew UI the info panel's build line is a date label with no verb, "{0} – תאריך הקמה: {1}" (refs #701), since
   the fixed masculine "נבנה" read wrong for a feminine name ("מעברה נבנה"). Beri approved the wording as a native speaker.
   English is unchanged.
