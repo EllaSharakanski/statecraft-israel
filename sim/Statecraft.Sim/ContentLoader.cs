@@ -1056,6 +1056,11 @@ namespace Statecraft.Sim
                 if (m.BuildCampTurns < 1) throw new ContentException(file, "mvp.build_camp_turns", "must be >= 1");
                 if (m.BuildCampCost == null) throw new ContentException(file, "mvp.build_camp_cost", "required when eras.yaml systems.loop is gdd");
                 if (!(m.BuildCampCost >= 0 && IsFinite(m.BuildCampCost.Value))) throw new ContentException(file, "mvp.build_camp_cost", "must be a finite number >= 0");
+                if (m.PlowFieldsTurns < 1) throw new ContentException(file, "mvp.plow_fields_turns", "must be >= 1");
+                if (m.PlowFieldsCost == null) throw new ContentException(file, "mvp.plow_fields_cost", "required when eras.yaml systems.loop is gdd");
+                if (!(m.PlowFieldsCost >= 0 && IsFinite(m.PlowFieldsCost.Value))) throw new ContentException(file, "mvp.plow_fields_cost", "must be a finite number >= 0");
+                if (m.FieldFoodPerTurn == null) throw new ContentException(file, "mvp.field_food_per_turn", "required when eras.yaml systems.loop is gdd");
+                if (m.FieldFoodPerTurn < 0) throw new ContentException(file, "mvp.field_food_per_turn", "must be >= 0");
                 // R-FOOD-001 to R-FOOD-003: required, so a missing key is never read as 0 (a stock term of 0, or no stock).
                 if (m.KFood == null) throw new ContentException(file, "mvp.k_food", "required when eras.yaml systems.loop is gdd");
                 if (!(m.KFood >= 0 && m.KFood <= 1)) throw new ContentException(file, "mvp.k_food", "must be between 0 and 1");
@@ -1145,6 +1150,10 @@ namespace Statecraft.Sim
                 if (x.Kinds.Count == 0) throw new ContentException(sf, at + ".kinds", "required: one or more of " + string.Join(", ", SiteKinds));
                 foreach (var k in x.Kinds)
                     if (!SiteKinds.Contains(k)) throw new ContentException(sf, at + ".kinds", $"unknown kind '{k}' ({string.Join(", ", SiteKinds)})");
+                // R-FIELD-001: a field site's built record is its plowed state, so a built yishuv on it would yield Food. Only that
+                // pair is refused; other kinds may share a field site (a drained swamp is PR 5's question, Q-SWAMP-1).
+                if (x.Kinds.Contains(Projects.FieldKind) && x.Kinds.Contains(Projects.YishuvKind))
+                    throw new ContentException(sf, at + ".kinds", "a field site cannot also be a yishuv site (its built record is its plowed state)");
                 if (x.Kinds.Contains(Projects.YishuvKind))
                 {
                     // R-SITE-005 (Q-SITE-3): one yishuv per hex, so SettlementPlacer keeps one kit per hex; other kinds may share it.
