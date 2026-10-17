@@ -20,6 +20,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   The checks file is now written in the bundle cache and copied beside the shipped bundles.
 
 ### Changed
+- Tel Aviv's White City is plastered a warm cream, as in promo 03, where it was a cooler lime white (refs #658). Walls,
+  parapets and roof terraces change in Tel Aviv only. Haifa's Hadar and every other town keep their colours, and Tel
+  Aviv stays clearly lighter than Jaffa's sandstone (`TownCensusTests.TelAvivsPlasterIsWarmCreamAndStillWhiterThanJaffa`).
 - The coalition can no longer end the GDD game (refs #730, R-GOV-001; D-C5, D-B5: "Coalition collapse is off in the
   MVP"). Its stability still follows public approval and still weights the coalition votes; the legacy loop keeps its
   collapse. R-GOV-002 pins what the GDD orders cost in Attention: each has a price, the unit orders are free, and a
