@@ -126,6 +126,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   and stream after the first frame (#725).
 
 ### Fixed
+- MATKOT's townspeople (#666) and wildlife (#670) stand at the same 24x train scale as the building models
+  (`SettlementKits.ModelScale`, #1030): a man is about 43 m tall, an ibex about 31 m and a striped hyena about 26 m
+  long, all smaller than a house and about a fifth of the locomotive's car or less. Before, a man was about 2.5 km and
+  an animal about 1.9 km, sized like the unit pieces, which keep their symbolic size (#1033).
 - Official records for three sourcing calls (owner, 18 October 2026, #457): the Provisional Government keeps its
   14 May 1948 start (the Knesset position records), Education is vacant from 19 May to 8 October 1951 (no official term
   follows Remez's, row 3860), and `education_registration_1951` opens on 12 February 1951, its first cited plenum record
