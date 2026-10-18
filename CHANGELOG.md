@@ -68,6 +68,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   goldens do not move (refs #107).
 
 ### Changed
+- MATKOT's whole-town models now stand on their towns far off, and the towns draw no procedural houses at any zoom
+  (refs #663, #917, #659; owner, 18 October 2026: "Whole model far, buildings near"). Each mapped town's model stands
+  on the town's core (where most of its building models stand, inside its kit footprint, clear of the next town and of
+  the sea, so Tel Aviv's no longer covers Jaffa and Haifa's stays out of the bay), as wide as that core, upright,
+  tilted to its ground (at most 10 degrees) and seated at its lowest point, so it never floats and a hillside no longer
+  cuts through it. Below about 40 km it gives way to
+  the single building models (#700), with the same hysteresis band. Mosques, churches, walls and ports keep the kit.
+  The 110 km view-distance switch and the "beside the town" spot are gone; a ma'abara or shikun still stands beside its
+  camp or housing project.
 - The population-tier badge on the twelve city and town pills keeps the values it shipped with, now owner-approved: tiers 1
   to 9 doubling from 1,000 people, at every zoom, at the start of the name and mirrored in Hebrew (owner, 18 October 2026,
   "Accept as shipped"). Rosh Pinna keeps tier 1 from its May 1948 figure of 350, which the data marks `wikipedia-only`
