@@ -12,6 +12,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   under the monthly turn) join the yishuv sites in `content/sites.yaml`, each with a field site in its hex; the
   founding days are the owner's (#785), and the rows stay draft. The reference player builds them in id order, so
   Mefalsim is built in March 1950 and the goldens move (refs #785, #782).
+- Event options in the GDD loop can move a city's housing condition: `city_effects` takes `field: condition` with a
+  change from -1 to 1, the condition stays from 0 to 1, and a sensitive event may only lower it (R-EFX-004, R-EFX-005;
+  refs #806). No event uses them yet.
 - Settings: a graphics quality choice, Automatic, High or Low (refs #40, second slice; owner decision of 18 Oct 2026).
   Automatic is what the game did before: the tier the device gets, and on the web the frame-time fallback steps down
   when frames are slow. High is the PC tier at render scale 1.0 and Low the Mobile tier at 0.8, both fixed, so the
