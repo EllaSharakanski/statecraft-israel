@@ -57,6 +57,8 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   outside the content hash, so no golden moves (#200).
 
 ### Fixed
+- The sim tests no longer leave a temp folder behind for every `Fixture.Write` call (about 1,150 per run): the
+  folders share one root per run, deleted when the run ends (#1017).
 - Event city effects preserve the city's housing condition when changing its housing capacity or job slots (#1000).
 - The Cabinet's Hebrew "already holds" refusal uses the holder's office title, including the feminine form for a woman;
   English is unchanged (#990).
