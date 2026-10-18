@@ -7,6 +7,12 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+### Added
+- Kiryat Shmona (founded 18 July 1949) and Beit Shemesh (15 December 1950, the National Library's December 1950
+  under the monthly turn) join the yishuv sites in `content/sites.yaml`, each with a field site in its hex; the
+  founding days are the owner's (#785), and the rows stay draft. The reference player builds them in id order, so
+  Mefalsim is built in March 1950 and the goldens move (refs #785, #782).
+
 ### Fixed
 - The Cabinet's Hebrew "already holds" refusal uses the holder's office title, including the feminine form for a woman;
   English is unchanged (#990).
