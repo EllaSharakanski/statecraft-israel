@@ -12,6 +12,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   each written into the state hash only when set, so a halutz hashes as before and no golden moves. `unit_types.yaml`
   gains Israel's `veteran_soldier` (infantry), `artillery` and `armoured_car` (armour) with a `side` and a `class`; the
   loader refuses a military type without both (R-UNIT-001, R-UNIT-002; refs #741, #385). Nothing uses them yet.
+- Objectives can complete on absorbing the immigrants: `completes_when: { absorbed: ... }` holds once the Jewish
+  population has reached a stated number and then the cities' overflow and employed shares are inside stated bounds
+  (R-OBJ-004; owner's option (a) on #738). The real objective and its card come with a person's source check, so no
+  content uses it yet and no golden moves (refs #738, #383).
 - Farm and village life from MATKOT's 1948 Collection: three tractors by kibbutz fields, three horse wagons and three
   draught horses by moshav and moshava fields, three flocks of five sheep and three donkeys by villages, and three camels
   by Bedouin camp areas, each anchor chosen by a fixed hash and kept clear of the kits, routes, unit tokens, water,
