@@ -18,6 +18,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   on their real sides, the Golden Gate sealed: 7 gates, not one per road gap (13) (#319).
 - Under `?lang=he`, the Cabinet's candidate refusal reasons use Hebrew UI strings and Hebrew person, office, party and
   date values instead of displaying the simulation's English prose; English is unchanged (refs #901, #564).
+- In the Hebrew UI the Cabinet and Defence screens name people, offices, parties, the government and the legislature in
+  Hebrew, from the content's sourced Hebrew forms (refs #558): "ממשלת ישראל הראשונה", "אליעזר קפלן", "שר האוצר", "מפא״י".
+  A woman's office takes its feminine title from the content (Golda Meir is "שרת העבודה"): every office in
+  `content/offices.yaml` with a Hebrew title now has a `title_he_f` (the loader rejects one without it), sourced and flagged `agent-checked` unless a
+  native speaker has read it (Labour, Foreign Affairs; #930), since the
+  player can order her into any office ("שרת האוצר", "השרה לנפגעי מלחמה", "שרה בלי תיק"; the Prime Minister stays
+  "ראש הממשלה"; Beri's wording as a native speaker). A card with no portrait shows the first name's initial and the surname
+  ("י. ידין"). A row with no Hebrew form yet keeps its English name (today only the Minister responsible for rationing).
+  English is unchanged.
 
 ## [0.1.0] - 2026-10-18
 
