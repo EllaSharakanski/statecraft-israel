@@ -40,6 +40,28 @@ GitHub Releases page (and, from M4, on itch.io). Steps 1–3 are a normal pull r
    first, which the golden and smoke run skips: New game, and Play the recording then New game, in English and in
    Hebrew. Each must print `PASS`. A console exception, `RECORDING failed` or `BOOT FAIL` fails it (#908).
 
+   For the website's playable demo, build a second web variant with Unity's Decompression Fallback - GitHub Pages
+   cannot set response headers, so the loader must decompress the files itself (the site's Play page explains) -
+   check it and package it the same way:
+
+   ```bash
+   "$UNITY" -batchmode -CI false -GITHUB_ACTIONS false -TF_BUILD false -quit -projectPath unity -buildTarget WebGL -executeMethod Statecraft.Game.EditorTools.Build.Web -compression gzip -decompressionFallback -shareable -out Builds/Web-pages -logFile "$PWD/unity-build-web-pages.log"
+   git checkout -- unity/Assets/Settings unity/ProjectSettings/ProjectSettings.asset
+   uv run tools/web_check.py unity/Builds/Web-pages --query "golden&smoke=5" "${golden_expect[@]}" \
+     --expect "SMOKE OK 5 turns 1948-10-15 3005405d64abc6e7418fa1f0d35c36ce5f64ed3af7c5a4c24a73d5dfdb16121f"
+   uv run tools/web_check.py unity/Builds/Web-pages --startscreen new --timeout 300 --stall 90
+   uv run tools/web_check.py unity/Builds/Web-pages --startscreen recording --timeout 300 --stall 90
+   uv run tools/web_check.py unity/Builds/Web-pages --startscreen new --query lang=he --timeout 300 --stall 90
+   uv run tools/web_check.py unity/Builds/Web-pages --startscreen recording --query lang=he --timeout 300 --stall 90
+   bash scripts/oss/package_web.sh unity/Builds/Web-pages unity/Builds/statecraft-israel-vX.Y.Z-web-pages.zip
+   ```
+
+   When the latest release carries this `statecraft-israel-vX.Y.Z-web-pages.zip`, the site's deploy
+   (`.github/workflows/site.yml`) unpacks it at `/demo/`, so the demo is live at the site's `/demo/` after the next
+   deploy (`gh workflow run site.yml` starts one on demand). Until then the site deploys without it, and the Play
+   page keeps saying there is no hosted build. Updating the Play page (and the README's Play section) to link to
+   `/demo/` is a follow-up step when the first such release ships, not part of this release flow.
+
    `package_web.sh` copies the licence and attribution files into the build folder, then runs
    `tools/package_release.py`, M3's sensitivity gate, which zips the folder and prints `PACKAGED …` or
    `PACKAGE REFUSED …`. It refuses a build that was not made with `-shareable` (the build's `event-photos.json` says
@@ -93,7 +115,8 @@ GitHub Releases page (and, from M4, on itch.io). Steps 1–3 are a normal pull r
    git tag -a vX.Y.Z -m "Statecraft: Israel vX.Y.Z"   # skip if "Desktop builds" already made it
    git push origin vX.Y.Z
    gh release create vX.Y.Z --prerelease --title "vX.Y.Z" --notes-file <notes from CHANGELOG.md, saying "unchecked"> \
-     unity/Builds/statecraft-israel-vX.Y.Z-web.zip <out>/statecraft-israel-vX.Y.Z-windows-x64.zip \
+     unity/Builds/statecraft-israel-vX.Y.Z-web.zip unity/Builds/statecraft-israel-vX.Y.Z-web-pages.zip \
+     <out>/statecraft-israel-vX.Y.Z-windows-x64.zip \
      <out>/statecraft-israel-vX.Y.Z-linux-x64.tar.gz <out>/statecraft-israel-vX.Y.Z-macos-universal.zip
    ```
 
