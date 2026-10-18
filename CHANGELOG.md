@@ -7,6 +7,14 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+### Added
+- Pioneers can drain the Hula swamp: `PioneerWork(unit, dry_swamp, site)` at the new `hula` swamp site takes 12 turns
+  and IL 4m (labelled design values, Q-SWAMP-1), and once drained the Hula field site in its hex can be plowed
+  (refs #789; GDD Phase 4 PR 5, R-SWAMP-001). The `hula_drainage` card now has `site: hula`: in the GDD loop it fires only
+  while the player's works at the Hula are in progress (R-SWAMP-002, Q-SWAMP-2); its text, options and sources are
+  unchanged. The reference player drains no swamp, so the card no longer fires in its run and `hash1952` and `mvp-end`
+  move (docs/determinism.md). The loader refuses a swamp site that is also a field, yishuv or camp site.
+
 ### Fixed
 - The Unity golden checks play every golden in `sim/Statecraft.Sim.Tests/golden/manifest.txt` (`hash1950`, `hash1952`,
   `smoke5`, `mvp-end` and each scenario), not only the 1950 and 1952 runs: one EditMode test and `GoldenCheck` (`-golden`,
