@@ -7,6 +7,15 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
 
 ## [Unreleased]
 
+### Fixed
+- On a phone held upright (390x844) the top bar's small text keeps the owner's 12 px floor too: the seven captions,
+  Security's level, the attention line and the plate's turn and date are 25 px in the panel, 12.3 px on screen (they
+  were 15 px, 7.4 px). The phone's bar is 32 px taller to hold them, a caption wraps between words, and Security's level
+  goes under its caption; the plate keeps its width when the month changes (#642). Smaller phones down to 375x667
+  keep the floor too (26 px at 360x800, 30 px at 375x667): there the bar grows to its rows' height and the panels
+  under it follow. On a phone held upright the decision card now starts right of the left rail and hangs under the bar instead of sitting centred, so no
+  rail button sits under it (Why? and Settings did), and the rail's buttons are 60 px, at least 24 px on screen.
+
 ## [0.1.1] - 2026-10-18
 
 ### Added
