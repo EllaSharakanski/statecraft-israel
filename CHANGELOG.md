@@ -121,6 +121,9 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   to 9 doubling from 1,000 people, at every zoom, at the start of the name and mirrored in Hebrew (owner, 18 October 2026,
   "Accept as shipped"). Rosh Pinna keeps tier 1 from its May 1948 figure of 350, which the data marks `wikipedia-only`
   ("Keep tier 1 from 350"). Nothing changes in the game; EditMode tests pin both rulings (#710).
+- Touchscreens play the map directly: one finger drags it, a pinch zooms it (100 px to the wheel notch, the touchpad's
+  rate), and a tap selects its hex when the finger is released, so a drag never selects by accident. The mouse's controls
+  are unchanged.
 - The 52 `owner_verify` flags on the 1948 localities are cleared (owner, 18 October 2026, "all defaults"), since #488
   checked every row against the Village Statistics 1945 scan and #490 applied the corrections. No other field changes.
   Open from #488, not touched here: the six split-or-merge rows, Dayr al-Qassi's landmark, 'Ilut. The localities are
