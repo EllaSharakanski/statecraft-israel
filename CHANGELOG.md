@@ -25,6 +25,10 @@ adds a line under **Unreleased**; CI's `Changelog` job checks this (see `CONTRIB
   exist on the date reads its named successor's multiplier. In the historical run every build and absorption moves:
   the reference player builds Mefalsim on 15 February 1951 (was 15 March 1950), the camps are never started, and every
   golden is re-pinned.
+- The map zooms from the keyboard (a11y B1a, refs #41): hold = or - (or the numpad's + and -) to zoom in or out at
+  six wheel notches a second, so 6 to 250 km takes about six seconds. Like keyboard pan, the keys work while the
+  pointer rests over a panel, and only without Ctrl, Alt or Cmd, so Ctrl/Cmd with + and - stays the browser's own
+  zoom. A new `ZoomKeys` action in the Camera map; the wheel's `Zoom` keeps its one binding.
 
 ### Fixed
 - Fractional site and city-project carry is hashed as IEEE bits on every runtime, avoiding different decimal spellings on .NET and Unity Mono; gameplay progress is unchanged.
