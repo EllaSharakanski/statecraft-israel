@@ -11,7 +11,8 @@ def test_mit_licence_names_the_copyright_holder():
 def test_licence_texts_are_the_real_ones():
     for name, marker in (("CC-BY-4.0", "Attribution 4.0 International"),
                          ("CC-BY-SA-4.0", "Attribution-ShareAlike 4.0 International"),
-                         ("CC0-1.0", "CC0 1.0 Universal")):
+                         ("CC0-1.0", "CC0 1.0 Universal"),
+                         ("CC-BY-NC-ND-4.0", "Attribution-NonCommercial-NoDerivatives 4.0 International")):
         assert marker in (ROOT / f"LICENSES/{name}.txt").read_text(encoding="utf-8"), name
     yaml_dot_net = (ROOT / "LICENSES/YamlDotNet-MIT.txt").read_text(encoding="utf-8")
     assert "Antoine Aubry" in yaml_dot_net and "Permission is hereby granted" in yaml_dot_net
@@ -67,3 +68,10 @@ def test_every_repo_path_licensing_names_exists():
         if not ok:
             missing.append(token)
     assert missing == [], f"LICENSING.md names paths that are not in the repository: {missing}"
+
+
+def test_tal_heubergers_new_models_are_non_commercial_and_the_released_ones_stay_cc0():
+    text = (ROOT / "LICENSING.md").read_text(encoding="utf-8")
+    row = next(l for l in text.splitlines() if l.startswith("| 3D models by Tal Heuberger (from 20 October 2026)"))
+    assert "`CC-BY-NC-ND-4.0`" in row and "CC BY-NC-ND 4.0" in row and "LICENSES/CC-BY-NC-ND-4.0.txt" in row
+    assert "stay CC0" in row
