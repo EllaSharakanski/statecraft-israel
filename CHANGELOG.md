@@ -124,6 +124,13 @@ checks this (see `CONTRIBUTING.md`).
 - The Cabinet, Budget, Defence, Why, How to play and Settings screens each gain an X in the header that closes
   them (the same close as Escape): a phone has no Escape key, and re-tapping the lit rail button was the only way
   out (v0.1.1 playtest feedback).
+- The Carmeli Brigade stands at Haifa, its sector's seat, from 15 May to 9 July 1948 (before its Operation Brosh
+  window), in the town on a clearing kept free of the kits' buildings. Haifa and Tel Aviv each get a budget of one unit
+  clearing, and Haifa's census floors drop by what Carmeli's clearing takes: 11 houses and 6.8 / 3.9 points of cover
+  (owner, #588). The 8th Brigade stays hidden: Tel Aviv's clearing is Kiryati's, and every spot within 7.4 km of Tel
+  Litvinsky also cuts into another town or village. A unit clearing's ground counts as if it still held plots when a
+  whole-town model finds its town's core (`TownLandmarks.CoreOf`; owner, #588: "Clearing doesn't move the core"), so
+  Haifa's model stays on land beside Carmeli's clearing.
 - Map: a city shows it can be clicked. With the mouse over one of its hexes or its name, the city's name lights up in
   ivory and the browser's pointer becomes a hand; a click on the name opens the city panel, as a click on its hex does,
   in English and Hebrew and at every zoom (Fixes #1063).
