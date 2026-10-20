@@ -59,6 +59,9 @@ checks this (see `CONTRIBUTING.md`).
   zoom. A new `ZoomKeys` action in the Camera map; the wheel's `Zoom` keeps its one binding.
 
 ### Fixed
+- The browser page now fills a notched phone's whole screen (`viewport-fit=cover` in the WebGL template): iPhone
+  Safari letterboxed the game inside the safe area, so the notch and home-indicator insets read 0 and no safe-area
+  padding could apply (found on Agam's iPhone run; refs #1013).
 - Money negatives and changes put the sign next to the number, not the currency ("IL -3.0m", "IL +1.2m"), everywhere the player sees money - top bar, Budget, Why?, the turn report and tooltips - in English and Hebrew (player feedback, 19 October 2026, refs #1107).
 - On a phone held upright the three-row top bar shrinks to fit its rows instead of keeping a fixed 440 px, so no
   empty band is left between the stats and the map, and Attention and End Turn sit at the bar's bottom; the panels
