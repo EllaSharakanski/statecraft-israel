@@ -9,6 +9,10 @@ checks this (see `CONTRIBUTING.md`).
 ## [Unreleased]
 
 ### Added
+- The city panel in the GDD loop shows the city's overflow, the people beyond its housing (`Cities.Overflow`,
+  R-HOUSE-002), beside the refugees waiting, and its trained craftsmen (`City.Craftsmen`, R-CRAFT-001) beside the jobs,
+  in English and Hebrew; both numbers are the sim's, and each pair shares a row so the panel stays clear of the left
+  column on a short window (fixes #1121).
 - The IDF brigades' 15 May 1948 strengths in `content/map/units_1948.yaml` (the first step of GDD Phase 5 PR 4, refs
   #743): the eight brigades with a size in the #906 research note (en.wiki's brigade table, citing Ben-Gurion's War
   Diaries) carry it, cite it and are `status: to_verify` until a primary source replaces it (owner, 20 October 2026).
