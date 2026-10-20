@@ -1178,6 +1178,11 @@ namespace Statecraft.Sim
                 if (m.DefeatTurns < 1) throw new ContentException(file, "mvp.defeat_turns", "must be >= 1");
                 if (m.DebtCeiling == null) throw new ContentException(file, "mvp.debt_ceiling", "required when eras.yaml systems.loop is gdd");
                 if (!(m.DebtCeiling >= 0 && IsFinite(m.DebtCeiling.Value))) throw new ContentException(file, "mvp.debt_ceiling", "must be a finite number >= 0");
+                // R-ORDER-002, R-ORDER-003 (#746): required, so a missing key is never read as 0 (a unit with no defence).
+                if (m.FortifyDefencePercent == null) throw new ContentException(file, "mvp.fortify_defence_percent", "required when eras.yaml systems.loop is gdd");
+                if (m.FortifyDefencePercent < 1) throw new ContentException(file, "mvp.fortify_defence_percent", "must be >= 1");
+                if (m.HoldDefencePercent == null) throw new ContentException(file, "mvp.hold_defence_percent", "required when eras.yaml systems.loop is gdd");
+                if (m.HoldDefencePercent < 1) throw new ContentException(file, "mvp.hold_defence_percent", "must be >= 1");
                 // R-EVT-003 (#107): required, so a missing key is never read as 0 (no floor, or a disloyal minister who does nothing).
                 if (m.DelegationLoyaltyFloor == null) throw new ContentException(file, "mvp.delegation_loyalty_floor", "required when eras.yaml systems.loop is gdd");
                 if (m.DelegationLoyaltyFloor < 0 || m.DelegationLoyaltyFloor > 10) throw new ContentException(file, "mvp.delegation_loyalty_floor", "must be 0-10");

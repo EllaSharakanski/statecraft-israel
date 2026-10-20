@@ -585,6 +585,12 @@ namespace Statecraft.Sim
         /// <summary>The debt, in IL millions, at or above which Money is exhausted (R-END-001; D-B5, Q-DEF-1). Required in the
         /// GDD loop, a finite number >= 0.</summary>
         public double? DebtCeiling { get; set; }
+        /// <summary>A fortified unit's defence, in percent of its strength (R-ORDER-002; D-G4, Q-HOLD-1). Required in the GDD
+        /// loop, at least 1. Combat (Phase 5 PR 8) reads it through Orders.DefencePercent.</summary>
+        public int? FortifyDefencePercent { get; set; }
+        /// <summary>A holding unit's defence, in percent of its strength (R-ORDER-003; D-G4, Q-HOLD-2). Required in the GDD
+        /// loop, at least 1.</summary>
+        public int? HoldDefencePercent { get; set; }
         /// <summary>A minister whose loyalty is below this carries a delegated decision out half-heartedly (R-EVT-003; #107,
         /// owner, 18 October 2026). Required in the GDD loop, 0 to 10 (0: nobody is below it).</summary>
         public int? DelegationLoyaltyFloor { get; set; }

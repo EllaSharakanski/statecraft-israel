@@ -172,6 +172,8 @@ namespace Statecraft.Sim
                     return Projects.Start(c, s, p.Unit, p.Action, p.Site, why);
                 case StopWork w:
                     return Projects.Stop(c, s, w.Unit, why);
+                case UnitOrder o:
+                    return Orders.Give(s, o.Unit, o.Order, why);
                 case StartProject p:
                     return Projects.StartCity(c, s, p.ProjectKind, p.City, p.Q, p.R, why);
                 case CancelProject p:

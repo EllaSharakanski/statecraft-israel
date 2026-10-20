@@ -142,6 +142,16 @@ R-UNIT-001: A military unit is a group at formation scale, one token per formati
 
 R-UNIT-002: A unit's side, strength, order and order target are written into the state hash only when they are not at their default ("" or 0), after its service (R-LOOP-002's rule), so a halutz unit's hash text, and every golden, is unchanged.
 
+## Standing orders
+
+Phase 5 PR 7 (#746). Q-HOLD-1, "(a) 1 turn, free, lost on move", and Q-HOLD-2, "(a) Own hex, no interception" (owner, 15 October 2026, #375). The two percents are design values this PR proposes from avlco's option 1 on #746; the owner may override them.
+
+R-ORDER-001: `UnitOrder(unit, order)` gives one of the player's military units the standing order `fortify` or `hold`, replacing the one it had. The unit keeps its order, turn after turn, until the player gives another; moving clears fortify (Q-HOLD-1): in the resolver after combat (step 2), in id order, a unit no longer on the hex its fortify names (`OrderTarget`, "q,r") loses the order. The order is refused with the state unchanged and a reason for an unknown order or unit, a unit with no side (a halutz), a unit of another side, or the order the unit already has (fortify on the hex it fortifies). It costs `attention_cost.unit_order` (0, D-A6) and is refused in the legacy loop.
+
+R-ORDER-002: Fortify takes one turn to set and costs no Arms or Money (Q-HOLD-1). Given, it reads `fortifying` and names the unit's hex; in the same resolver step it becomes `fortify`, so the combat of the turn it is given sees no bonus. A fortified unit on its hex defends at `mvp.fortify_defence_percent` of its strength (`Orders.DefencePercent`; real value 125), and from the moment it leaves the hex at 100.
+
+R-ORDER-003: Hold acts on the unit's own hex only and does not intercept or stop any enemy move, past or next to it (Q-HOLD-2). It names no hex and stays when the unit moves. A holding unit defends at `mvp.hold_defence_percent` of its strength (real value 100: hold keeps the position and adds nothing); a unit with no order defends at 100.
+
 ## Objectives
 
 R-OBJ-001: An objective (`objectives.yaml`) names its condition, `completes_when: { site_built: <site> }` (R-OBJ-004's `absorbed` has no site, so the site rules here apply only to `site_built`), a designated site of kind yishuv whose `founded` date must equal the objective's `reference_date`. In the last step of each GDD turn (spec §2.3, step 11; D-A6), in id order, an objective whose site is built and that is not yet recorded is recorded once, with the turn's end date (the site's `BuiltOn`). Recording it again, or in the legacy loop, changes nothing; a stopped build completes nothing.
