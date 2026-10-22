@@ -14,7 +14,6 @@ public class StartingForcesTests
 
     /// <summary>The fixture's military types: Israel's brigade type and one Egyptian type (design values for the test).</summary>
     const string Types = Fixture.GddUnitTypes
-        + "  - { id: veteran_soldier, kind: unit, side: israel, class: infantry, movement_points: 3 }\n"
         + "  - { id: egyptian_army, kind: unit, side: egypt, class: infantry, movement_points: 3 }\n";
 
     /// <summary>One units_1948.yaml row in the fixture's map (an army row with one anchor from 15 May 1948) and its anchor's

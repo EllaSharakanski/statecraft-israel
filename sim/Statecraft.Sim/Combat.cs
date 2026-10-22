@@ -78,7 +78,7 @@ namespace Statecraft.Sim
             {
                 var u = s.Units[id];
                 if (!Player(u) || u.Order != Attack) continue;
-                s.Units[id] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, "", "");
+                s.Units[id] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, "", "", u.HomeCity);
                 why.Add(new Cause("map", id.ToString(CultureInfo.InvariantCulture), 0, $"Unit {id}'s attack on hex {u.OrderTarget} ends: a truce is on"));
             }
         }
@@ -120,7 +120,7 @@ namespace Statecraft.Sim
             var refused = Check(c, s, unitId, q, r, enemy);
             if (refused != null) return refused;
             var u = s.Units[unitId]; var target = Hex(q!.Value, r!.Value);
-            s.Units[unitId] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, Attack, target);
+            s.Units[unitId] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, Attack, target, u.HomeCity);
             why.Add(new Cause("map", unitId.ToString(CultureInfo.InvariantCulture), 0, $"Unit {unitId} will attack hex {target}", enemy ? Attack : ""));
             return null;
         }
@@ -247,7 +247,7 @@ namespace Statecraft.Sim
 
         static void End(GameState s, Unit u, string line, List<Cause> why)
         {
-            s.Units[u.Id] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, "", "");
+            s.Units[u.Id] = new Unit(u.Id, u.Type, u.Q, u.R, u.Service, u.Side, u.Strength, "", "", u.HomeCity);
             why.Add(new Cause("map", u.Id.ToString(CultureInfo.InvariantCulture), 0, line));
         }
 
@@ -278,7 +278,7 @@ namespace Statecraft.Sim
                 if (!s.Units.TryGetValue(d.Id, out var u)) continue;
                 if (Retreat(c, s, mvp, u) is (int, int) to)
                 {
-                    s.Units[u.Id] = new Unit(u.Id, u.Type, to.Item1, to.Item2, u.Service, u.Side, u.Strength, u.Order, u.OrderTarget);
+                    s.Units[u.Id] = new Unit(u.Id, u.Type, to.Item1, to.Item2, u.Service, u.Side, u.Strength, u.Order, u.OrderTarget, u.HomeCity);
                     why.Add(new Cause("map", u.Id.ToString(CultureInfo.InvariantCulture), 0, $"Unit {u.Id} retreated to hex {Hex(to.Item1, to.Item2)}"));
                 }
                 else
@@ -310,7 +310,7 @@ namespace Statecraft.Sim
                     if (s.Units.TryGetValue(id, out var x) && (top == null || x.Strength > top.Strength)) top = x;
                 if (top == null) break;
                 if (top.Strength <= 1) { s.Units.Remove(top.Id); removed.Add(top.Id); }
-                else s.Units[top.Id] = new Unit(top.Id, top.Type, top.Q, top.R, top.Service, top.Side, top.Strength - 1, top.Order, top.OrderTarget);
+                else s.Units[top.Id] = new Unit(top.Id, top.Type, top.Q, top.R, top.Service, top.Side, top.Strength - 1, top.Order, top.OrderTarget, top.HomeCity);
             }
             return taken;
         }

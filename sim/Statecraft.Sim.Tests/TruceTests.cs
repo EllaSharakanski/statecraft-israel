@@ -126,6 +126,20 @@ public class TruceTests
         Assert.Equal(Combat.Attack, t.Units[1].Order);
     }
 
+    /// <summary>R-COMBAT-009 with Q-HOUSE-5 (#1130): ending an attack for a truce keeps the formation's home city, so it
+    /// stays housed there.</summary>
+    [Fact]
+    public void AcceptingATruceKeepsTheFormationsHomeCity()
+    {
+        var c = Load(TruceEvents);
+        var s = State(c, new DateTime(1948, 6, 15));
+        s.Units[1] = new Unit(1, "soldier", 3, 0, side: "israel", strength: 5, order: Combat.Attack, orderTarget: "2,0", homeCity: "tel_aviv");
+        s.PendingEvents.Add("first_truce");
+        Assert.Null(EventSystem.Choose(c, s, "first_truce", "accept", new List<Cause>()));
+        Assert.Equal("", s.Units[1].Order);
+        Assert.Equal("tel_aviv", s.Units[1].HomeCity);
+    }
+
     /// <summary>The two truce cards as the fixture needs them: the accepting option and one that fights on. Fixture
     /// texts, not the cards'.</summary>
     static readonly Dictionary<string, string> TruceEvents = new Dictionary<string, string>
