@@ -404,3 +404,4 @@ The hash reads the state keys, so it never sees a record outside its window. An 
 | GDD Phase 5 PR 3: recruit formations and their upkeep (#742, #1130) | scenario-cautious | `95982cf8` | same as reckless (was `d6e7cea0`) |
 | GDD Phase 5 PR 3: recruit formations and their upkeep (#742, #1130) | scenario-mvp-absorb-first | `d6d47fd8` | same; debt alone rises by IL 8.2m (was `912504be`) |
 | GDD Phase 5 PR 3: recruit formations and their upkeep (#742, #1130) | scenario-mvp-defeat | `584a828a` | same; debt alone rises by IL 17.8m; the defeat is unchanged (was `109b0a5e`) |
+| GDD Phase 7 PR 6, slice 1: the score's parts (R-SCORE-001, #809) | scenario-mvp-absorb-first | `6aa49f62` | the state keeps the score's parts as they score, a new `scoreparts=` line (objective points, timing bonuses, prisoner points): `scoreparts=100,0,0` beside `score=100`. Nothing else moves; the other goldens score nothing, so they keep their hashes (was `d6d47fd8`) |
