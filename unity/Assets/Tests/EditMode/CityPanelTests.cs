@@ -484,6 +484,31 @@ public class CityPanelTests
         Assert.AreEqual((Projects.DrySwamp, "hula"), (order?.Action, order?.Site));
     }
 
+    /// <summary>#41 (review of #1330): on a hex with two sites both parts hold a site-build-&lt;unit&gt; button; when the panel
+    /// is rebuilt (any bridge change), the focus goes back to the button in the part that had it, not the first part's.</summary>
+    [Test]
+    public void ARebuiltSiteHexKeepsTheFocusInThePartThatHadIt()
+    {
+        var camp = Def("camp_80");
+        var field = new Statecraft.Sim.Site { Id = "a_camp_field", Name = "A camp field", Q = camp.Q, R = camp.R, Kinds = new System.Collections.Generic.List<string> { "field" } };
+        C.Sites.Add(field);
+        try
+        {
+            using var ui = new UiTestKit();
+            int a = -1;
+            var bridge = Bridge(En, s => a = AddHalutz(s));
+            using var panel = Panel(ui, bridge, En);
+            panel.Show(camp.Q, camp.R);
+            Assert.IsNotNull(SiteBox(ui, camp.Id).Q<Button>($"site-build-{a}"), "precondition: the camp's part, first, has the same button");
+            SiteBox(ui, field.Id).Q<Button>($"site-build-{a}").Focus();
+            panel.Render();
+            var focused = ui.Root.focusController.focusedElement as VisualElement;
+            Assert.AreEqual($"site-build-{a}", focused?.name);
+            Assert.IsTrue(SiteBox(ui, field.Id).Contains(focused), "the field's rebuilt Build, not the camp's");
+        }
+        finally { C.Sites.Remove(field); }
+    }
+
     /// <summary>#1124 (R-FIELD-001): a yishuv's field waits while the yishuv is not built, and offers Plow once it is.</summary>
     [Test]
     public void AYishuvsFieldIsPlowedOnceTheYishuvIsBuilt()
