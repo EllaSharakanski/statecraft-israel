@@ -17,12 +17,14 @@ public class BuildGateTests
         return (string?)t!.GetMethod("ShareableRefusal", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object?[] { c, null, false, null, null });   // event content only
     }
 
-    /// <summary>The real content with its starting forces' rows fact-checked, as a person's check would leave them
-    /// (R-UNIT-006, Q-START-3), for the tests about the other gates.</summary>
+    /// <summary>The real content with its starting forces' rows fact-checked (R-UNIT-006, Q-START-3) and its settlement
+    /// target rows sensitivity-reviewed (Q-TGT-3 (b), #793), as a person's check would leave them, for the tests about the
+    /// other gates. In memory only: the shipped target rows stay draft until the owner's review.</summary>
     internal static Content Checked()
     {
         var c = ContentLoader.Load(Paths.Content);
         foreach (var f in c.StartingForces) f.Status = "fact-checked";
+        foreach (var t in c.SettlementTargets) t.Status = ReleaseGate.ReviewedStatus;
         return c;
     }
 
