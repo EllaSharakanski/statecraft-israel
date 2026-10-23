@@ -507,8 +507,12 @@ separately here.
 
 ## 8. Sources not reached, and what was not read
 
-- **knesset.gov.il**, both `fs.knesset.gov.il` and `main.knesset.gov.il`, returns HTTP 247 and a
-  JavaScript bot challenge rather than content. Nothing in this note rests on it.
+- **The Knesset's HTML sites** are behind a bot wall: `main.knesset.gov.il` and
+  `www.knesset.gov.il` return HTTP 247 and a JavaScript challenge. **Its file server and OData
+  service are not blocked**: `fs.knesset.gov.il` serves Divrei HaKnesset PDFs with real text
+  layers and `knesset.gov.il/Odata/ParliamentInfo.svc` answers, both checked 2026-10-23, and that
+  is the route `events-1952-56.md` uses. Nothing in this note rests on either, but the earlier
+  blanket statement that the whole domain is walled was wrong and is corrected here.
 - **No contemporaneous newspaper was read.** Several facts cited above rest on newspaper footnotes
   inside the Wikipedia articles (על המשמר, דבר, הצופה, מעריב), and those scans were not opened. A
   fact of that kind is [S, Wikipedia] here even where the article footnotes a newspaper, because
