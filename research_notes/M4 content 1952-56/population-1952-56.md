@@ -40,6 +40,11 @@ calibration test, which stay paused (#102, maintainer comment of 22 October 2026
   https://www.cbs.gov.il/he/publications/DocLib/shnaton_saruk/shnaton1963_num14.pdf
 - **SA No. 14 (1963) table 1**, marriages, divorces, births, deaths, natural increase, infant
   deaths and stillbirths, by population groups, printed page 65. Same PDF.
+- **SA No. 14 (1963) table 13**, emigrants by population groups and year of emigration,
+  printed page 121; definitions in the migration introduction, printed page 104. Same PDF.
+- **SA 2010 table 4.4**, immigrants by period of immigration, country of birth and last country
+  of residence, printed pages 233-234.
+  https://www.cbs.gov.il/he/publications/doclib/2010/4.%20shnatonimmigration/st04_04.pdf
 
 ---
 
@@ -68,11 +73,14 @@ The table's own period subtotals are 54,676 for 1952 to 1954 and 166,492 for 195
 
 **The 1955 and 1956 surge is African.** Africa rises from 5,102 in 1953 to 32,815 in 1955 and
 45,284 in 1956, while Asia falls to 1,432 in 1955. In 1955 Africa alone is 87.4 per cent of all
-arrivals (computed here). This is the North African aliyah the issue flags as mattering for the
-1955 election and the development towns.
+arrivals (computed here).
 
-**Finer than continent, by year: [GAP].** SA 2010 table 4.4 gives country of birth, but its
-columns for this window are the period 1952 to 1960 as one bucket, not single years. No per-year
+**Our reading:** this African surge is the nearest by-year proxy in these tables for the North
+African aliyah that #102 says matters for the 1955 election and the development towns; table 4.2
+does not split Africa by country.
+
+**Finer than continent, by year: [GAP].** SA 2010 table 4.4, pp. 233-234, gives country of birth,
+but its columns for this window are the period 1952 to 1960 as one bucket, not single years. No per-year
 country-of-origin table was found. The repo's 1950 to 1951 note records the same gap for its own
 window.
 
@@ -88,22 +96,41 @@ window.
 
 [C], both CBS. Both values are given above and neither is presented as the figure.
 
-The 2010 table's own footnote 1 reads: "Incl. potential immigrants and tourists who changed their
-status to immigrants. As of 1970 excl. immigrating citizens". [V]
+The 2010 table's own footnote 1, p. 231, reads: "Incl. potential immigrants and tourists who
+changed their status to immigrants. As of 1970 excl. immigrating citizens". [V]
 
-**Our reading:** that footnote describes a wider count than the 1963 volume's `עולים` column, and
-the gap is of the right size and sign to be the potential immigrants and status-changing tourists.
-The 1963 volume's own definition of its immigrants column was not read, so this is an inference
-about the difference, not a statement CBS makes about it. A reader who needs one series should say
-which, rather than mixing them across years.
+**Our reading:** the 1963 migration introduction, p. 104, defines immigrants as "persons entering
+the country to take up permanent residence" and lists tourists settling separately. [V] SA No. 14
+table 3, p. 109, gives tourists settling (Jews) as 994 in 1952, 979 in 1953, 899 in 1954, 1,175
+in 1955 and 1,309 in 1956. [V] That is most of each year's gap above, and the rest (25 to 208 a
+year) is consistent with the potential immigrants and non-Jews the 2010 footnotes include. CBS
+does not reconcile the two series itself. A reader who needs one series should say which,
+rather than mixing them across years.
 
 ## 3. Emigration by year
 
-SA No. 14 (1963) table 2, p. 16, whole population. [V]
+SA No. 14 (1963) table 13, p. 121, whole population. [V]
 
-The volume has no column called emigration. It gives **net movement of residents**, which is
-negative in every year of this window, and that is the nearest printed series to the one #102 asks
-for.
+| Year | All emigrants (estimate) | Persons declaring emigration |
+|---|---|---|
+| 1952 | 13,500 | 11,128 |
+| 1953 | 13,000 | 8,644 |
+| 1954 | 7,500 | 5,774 |
+| 1955 | 6,400 | 3,922 |
+| 1956 | 11,400 | 6,245 |
+
+The migration introduction, p. 104, defines emigrants as "residents leaving the country
+permanently" and says the number who declare that intention on leaving "is lower than that of
+persons emigrating in fact". For 1952 to 1960 the all-emigrants column is "a rough estimate" from
+the number of residents leaving and returning and the average stay abroad of returning
+residents. [V]
+
+The printed table has no 1951 row, so the year labels were checked: table 13 gives 10,698 Jewish
+declaring emigrants for 1952, and less the 202 who returned the same year (table 13, note 3) that
+is the 10,496 table 14 prints for 1952 on the same page. Computed here.
+
+SA No. 14 table 2, p. 16, also gives net movement of residents, which balances the population
+account. It is a net figure, not a count of emigrants. [V]
 
 | Year | Immigrants | Net movement of residents | Net movement of travellers | Migration balance |
 |---|---|---|---|---|
@@ -119,15 +146,11 @@ the printed migration balance, exactly. Computed here.
 **1953 is the year the migration balance is negative**, at minus 1,535, and the table prints its
 migration share of total growth as minus 3.8 per cent against a natural increase share of 103.8
 per cent. [V] This supports the statement in #102 that in 1953 emigration roughly matched
-immigration; on this table it slightly exceeded it.
+immigration: table 13 estimates 13,000 emigrants that year, against 10,388 immigrants in table 2.
 
 **Two text-extraction corrections.** The extracted text gave the 1953 migration balance as minus
 1,533 and the 1955 migration balance as plus 31,133. On the rendered page both read minus 1,535
 and plus 31,153, and only those values satisfy the row arithmetic. The printed figures are used.
-
-**What this series is not.** Net movement of residents is a net figure, so it is not a count of
-people who left, and it is not split by destination or by year of arrival. A gross emigration
-series for these years was not found. [GAP]
 
 ## 4. Population at the end of each year
 
@@ -147,7 +170,7 @@ In the 1963 table, each year's population at the beginning of the period equals 
 year's population at the end, and population at the beginning plus total increase equals
 population at the end, in every year of the window. Computed here.
 
-**One misprint in the source.** The 1952 row of SA No. 14 table 2 prints the population at the end
+**One text-extraction correction.** The 1952 row of SA No. 14 table 2 prints the population at the end
 of the period as 1,629,319 in the extracted text. The rendered page reads **1,629,519**, which is
 also what the 1953 row gives as its population at the beginning of the period, what the row's own
 arithmetic requires (1,577,825 plus 51,694), and what SA 2010 table 2.1 gives as 1,629.5 thousand.
@@ -170,48 +193,54 @@ Arabs. [V]
 [C], and both are in the same volume. On p. 65, births minus deaths equals the printed natural
 increase in every year, exactly. Computed here.
 
-Table 1 carries footnote 1: "Excluding all data for the Bedouin in the Negev. As from 1957
-marriages and divorces of Negev Bedouin are included. Registration of deaths among non-Jews is
-incomplete." [V] Table 2 is headed "Sources of Increase of the Population (Estimate)". [V]
+Table 1 carries footnote 1 on its "Others" rows: "Excluding all data for the Bedouin in the
+Negev. As from 1957 marriages and divorces of Negev Bedouin are included. Registration of deaths
+among non-Jews is incomplete." [V] Table 2 is headed "Sources of Increase of the Population
+(Estimate)", and its footnote 1, p. 17, says its figures differ slightly from chapter C, table 1
+and refers to the introduction. [V]
 
-**Our reading:** the p. 65 series is vital registration with a stated coverage gap, and the p. 16
-series is a population estimate, so the two are not meant to be the same number. The difference
-narrowing from 227 in 1952 to 45 in 1956 is consistent with coverage improving, but no CBS page
-read for this note says that, and the direction of the gap is the opposite of what excluding
-people from registration alone would produce. Treat the pair as a range, not as one figure with an
-error.
+The chapter B introduction, p. 11, says: "Births and deaths which occurred prior to 8 XI 1948 but
+were registered after that date were excluded from the calculation of the population estimates."
+It gives this as the reason for the discrepancy between natural increase in the vital statistics
+(chapter C, table 1) and in the sources of increase table, which it calls table 3; on p. 16 that
+table is numbered 2. [V]
+
+**Our reading:** this is why table 2 is the lower figure in every year, and the gap narrowing
+from 227 in 1952 to 45 in 1956 fits fewer pre-1948 events being registered late as time went
+on. CBS does not say the second part.
 
 ## 6. Natural increase rate
 
-**Computed here, not a printed CBS figure.** Natural increase divided by the average population of
-the same year (SA 2010 table 2.1, p. 85), per 1,000.
+SA No. 14 (1963) chapter C, table 2, p. 66, prints the natural increase rate per 1,000 of the
+average population, whole population (definition in the chapter C introduction, p. 63). [V]
+The two right-hand columns are computed here: natural increase divided by the average population
+in SA 2010 table 2.1, p. 85.
 
-| Year | using table 2, p. 16 | using table 1, p. 65 |
-|---|---|---|
-| 1952 | 25.3 | 25.5 |
-| 1953 | 25.1 | 25.2 |
-| 1954 | 22.2 | 22.3 |
-| 1955 | 22.9 | 22.9 |
-| 1956 | 22.0 | 22.0 |
+| Year | printed, p. 66 | computed from table 2, p. 16 | computed from table 1, p. 65 |
+|---|---|---|---|
+| 1952 | 25.68 | 25.3 | 25.5 |
+| 1953 | 25.44 | 25.1 | 25.2 |
+| 1954 | 22.45 | 22.2 | 22.3 |
+| 1955 | 23.12 | 22.9 | 22.9 |
+| 1956 | 22.18 | 22.0 | 22.0 |
 
-The two bases agree to about a tenth, so the choice between them does not matter at this precision.
+The computed rates run about 0.2 per 1,000 below the printed ones, and the two computed columns
+differ by up to 0.2 (1952). **Our reading:** the 1963 volume's own average population differs a
+little from the 2010 series. The printed rate is the CBS figure.
 
-**A caution about the printed rate column.** SA No. 14 table 2 has a column headed "Rate of
+**A caution about the other rate column.** SA No. 14 table 2, p. 16, has a column headed "Rate of
 Increase", reading 32.8 for 1952, 24.5 for 1953, 29.0 for 1954, 41.5 for 1955 and 46.6 for 1956.
 [V] Those are the rate of **total** increase, which includes migration, not the natural increase
 rate, and the 1955 and 1956 values are far above the natural rate because those are the heavy
 arrival years. They should not be read as the natural increase rate.
 
 The sim's current `natural_increase_per_year` is 0.0169, that is 16.9 per 1,000. Every year in this
-window computes higher than that, between 22.0 and 25.5. What, if anything, follows for the rule
-value belongs to the paused half of #102 and is not proposed here.
+window is higher than that, between 22.18 and 25.68 printed. What, if anything, follows for the
+rule value belongs to the paused half of #102 and is not proposed here.
 
 ## 7. Gaps
 
 - Per-year arrivals by country of origin, finer than continent. [GAP] See section 1.
-- A gross emigration series, as opposed to net movement of residents. [GAP] See section 3.
-- The 1963 volume's own definition of its immigrants column, which would settle section 2 rather
-  than leaving it as our reading. [GAP]
 
 ## 8. Noted while sourcing, outside this issue
 
