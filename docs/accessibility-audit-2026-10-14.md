@@ -410,9 +410,9 @@ EditMode test that fails without it.
 | K5 | Opening a screen from the side rail leaves the focus on the rail button. A screen's content sits after the whole HUD in the Tab order, so reaching it means walking the rail's eight buttons, New Game, End Turn, the minimap's three buttons and star, report and share first. Walked in EditMode: 16 Tabs for the Cabinet and the Budget, 14 for Defence, the count being only where the player's button sits in the rail. `ScreenNav.Close` already hands the focus back to the rail button, so open was the asymmetric half. | `ScreenNav.Open` hands the focus to the screen it opened, after the screen's `OnOpened` action has built its rows. The screen's own X is first in its order, since the header is its first child, so the focus goes to the first control of the screen's content and the X stays one Shift+Tab back; a screen with no control of its own that can take the focus (Defence at the opening turn, whose ladder and call-up buttons are `display:none`) takes its X. Only a keyboard press hands the focus on, as `Close` already respects, so a mouse press still moves no focus. |
 
 A scroll bar is never the landing control: `defence-body`'s scroller otherwise comes before any control of Defence's
-own. The bars of the screens other than the Cabinet take no Tab stop today, because a scroll view hides its scroller
-while the content fits, but their sliders stay focusable, so a bar becomes a stop once its list overflows. That is
-K3's scope and is not changed here.
+own. When K5 landed, the bars of the screens other than the Cabinet took no Tab stop but their sliders were still
+focusable, so one would have become a stop as soon as its list overflowed. K6 below closes that: every bar is out of
+the Tab order now.
 
 Pinned in EditMode: `ScreenEntryTests` (the Cabinet and the Budget land on their first control; Defence, which has
 none usable yet, lands on its X; a pointer press hands no focus; Escape still returns it to the rail button). No UI
