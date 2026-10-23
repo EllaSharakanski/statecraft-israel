@@ -26,13 +26,19 @@ enter the game; none is proposed here.
 - Hebrew dates are reported as the article gives them. **No Hebrew-date conversion was done here**,
   so where a source gives only a Hebrew date it is quoted and not turned into a civil date.
 
-**Tags**, as in `settlements-1949-51.md`
-- **[V]** verified on the cited page, which was opened and read.
-- **[S]** single source, or a secondary compilation only.
-- **[C]** sources conflict. Both values are given, each with its source.
+**Tags**, one per fact, as in `settlements-1949-51.md`
+- **[V] verified**: two or more independent sources agree, or one authoritative primary source.
+  The CBS localities file is treated as that primary source for a founding year and a coordinate.
+- **[S] single source**: one source, or several that plainly copy one another. Hebrew Wikipedia is
+  a lead and a cross-check, not an authority, so a fact resting on it alone is [S] however plainly
+  the article states it. Gvati's appendix alone is also [S]: it is one secondary compilation.
+- **[C] conflicting**: sources disagree. The conflict and the sources on each side are stated.
 - **[GAP]** not found.
 - **computed here** is arithmetic or a conversion done for this note, not a printed figure.
 - **our reading** marks an interpretation, and is not attributed to the source.
+
+Every page cited was opened and read, including each Wikipedia revision at the `oldid` given and
+each CBS and Gvati row; that is the floor for citing anything here, not what [V] means.
 
 ## What counts as the Negev here
 
@@ -61,28 +67,28 @@ The Jewish National Fund established three observation and experiment stations i
 ### Gvulot
 - CBS: locality code **352**, `שנת ייסוד` **1943**, **31.21084, 34.46549**, Be'er Sheva
   sub-district. [V]
-- Gvati, kibbutzim section: `גְּבוּלוֹת | הנגב הצפוני | 12.5.43 | הקיבוץ הארצי`. [V]
+- Gvati, kibbutzim section: `גְּבוּלוֹת | הנגב הצפוני | 12.5.43 | הקיבוץ הארצי`. [S]
 - he.wiki `גבולות`, oldid **43752363**: "עלה לקרקע ב-12 במאי 1943 כתחנת ניסיון חקלאית (מצפה) -
-  הראשון משלושת המצפים בנגב". [V] Gvati and he.wiki agree on **12 May 1943**.
+  הראשון משלושת המצפים בנגב". [S] Gvati and he.wiki agree on **12 May 1943**, so the date is [V].
 - **[C] within the same he.wiki article.** A later paragraph says "הקיבוץ הוקם בשנת 1946 על ידי חברי
   גרעין אלמגור". Both readings are in the article; the 1946 sentence is about the founding group of
   the present kibbutz, not the mitzpe. **Our reading:** 12 May 1943 is the date for the mitzpe and
   the one to use; the article does not reconcile the two itself.
-- Relocation: "לאחר מלחמת העצמאות הועתק היישוב למקומו הנוכחי, כקילומטר צפונית מזרחית למצפה". [V]
+- Relocation: "לאחר מלחמת העצמאות הועתק היישוב למקומו הנוכחי, כקילומטר צפונית מזרחית למצפה". [S]
   No day given. [GAP]
 - Departure base for Urim and Nirim in October 1946. [V]
 
 ### Revivim
 - CBS: code **354**, `שנת ייסוד` **1943**, **31.04397, 34.72178**, Be'er Sheva. [V]
-- Gvati: `רְבִיבִים | נגב צפוני | 20.7.43 | הקיבוץ המאוחד`. [V]
+- Gvati: `רְבִיבִים | נגב צפוני | 20.7.43 | הקיבוץ המאוחד`. [S]
 - he.wiki `רביבים`, oldid **43556273**: "הקיבוץ עלה לקרקע ב-7 ביולי 1943, בשם תל צופים כאחד משלושת
-  המצפים". [V]
-- **Rename: founded as תל צופים (Tel Tzofim).** [V]
+  המצפים". [S]
+- **Rename: founded as תל צופים (Tel Tzofim).** [S]
 - **[C] on the day: Gvati 20 July 1943 against he.wiki 7 July 1943.** The article also quotes a
   founding scroll dated "כ"ט במנחם-אב" of 5703, a third value. No conversion was done here, so the
   Hebrew date is left as the article gives it. All three agree on 1943.
 - Relocation: "לאחר המלחמה הקיבוץ עבר ממקומו המקורי אל האתר בו הוא נמצא היום. אבן הפינה של היישוב
-  החדש הונחה ב-1 ביוני 1949". [V]
+  החדש הונחה ב-1 ביוני 1949". [S]
 
 ### Beit Eshel
 - **Not in the CBS localities file.** No row matches `בית אשל` in the 1,490 rows. [V, checked] It was
@@ -90,9 +96,9 @@ The Jewish National Fund established three observation and experiment stations i
 - **No row in Gvati's appendix** either. [V, checked]
 - he.wiki `בית אשל`, oldid **42228944**. Infobox: `סוג יישוב=יישוב לשעבר`, `תאריך ייסוד=1943`,
   `סיבת נטישה=מלחמת העצמאות`, `תאריך נטישה=אוקטובר 1948`, `יישובים יורשים=באר שבע`, and explicit
-  coordinates `רוחב=31.233472 | אורך=34.813272`. [V] These are written in the article, not drawn
+  coordinates `רוחב=31.233472 | אורך=34.813272`. [S] These are written in the article, not drawn
   from the CBS bot template, so they are the article's own figure.
-- Body: "היישוב עלה לקרקע באוגוסט 1943, כ-2 ק"מ מזרחית לבאר שבע". [V] **Month only, no day.** [GAP]
+- Body: "היישוב עלה לקרקע באוגוסט 1943, כ-2 ק"מ מזרחית לבאר שבע". [S] **Month only, no day.** [GAP]
 - **[C] on the abandonment date.** The infobox says `תאריך נטישה = אוקטובר 1948`. The body says the
   place held out "עד כיבוש באר שבע על ידי צה"ל" in October 1948 and that the members decided only
   afterwards to move to the Jezreel valley and found Hayogev. Gvati's narrative agrees with the
@@ -101,7 +107,7 @@ The Jewish National Fund established three observation and experiment stations i
   the month the site was given up, and the two are being conflated. Both values are given; neither
   is used as the abandonment date here.
 - Unlike the other two mitzpim, its people wanted a moshav: "בניגוד לקיבוצים רביבים וגבולות, תושבי
-  בית אשל שאפו להקים במקום מושב עובדים". [V]
+  בית אשל שאפו להקים במקום מושב עובדים". [S]
 
 ## 2. The northern kibbutzim that the sources call the first in the Negev
 
@@ -110,16 +116,16 @@ first, so they are in this note rather than a coastal one.
 
 ### Ruhama
 - CBS: code **362**, `שנת ייסוד` **1944**, **31.49799, 34.70613**, Ashkelon. [V]
-- Gvati: `רוּחָמָה | הנגב הצפוני | 19.3.44 | הקיבוץ הארצי`. [V]
+- Gvati: `רוּחָמָה | הנגב הצפוני | 19.3.44 | הקיבוץ הארצי`. [S]
 - he.wiki `רוחמה`, oldid **43556283**: "היה זה היישוב היהודי הראשון בנגב בעת החדשה", of the 1911
-  venture. [V] **Rename:** "תחילה נקרא היישוב ג'ממה, כשם הכפר הערבי הסמוך", later changed to
-  Ruhama. [V]
+  venture. [S] **Rename:** "תחילה נקרא היישוב ג'ממה, כשם הכפר הערבי הסמוך", later changed to
+  Ruhama. [S]
 - **Three abandonments before the present kibbutz**, all in the article: in the First World War
   ("היישוב ננטש ונבזז על ידי בדווים"), in 1929, and a third time in the 1936 to 1939 disturbances
-  ("נעזבה רוחמה בשלישית; בתיה נהרסו ומטעיה נעקרו"). [V] No day for any of the three. [GAP]
+  ("נעזבה רוחמה בשלישית; בתיה נהרסו ומטעיה נעקרו"). [S] No day for any of the three. [GAP]
 - **[C] on the founding of the present kibbutz.** The article gives both: "ב-1 בדצמבר 1943 עלו חברי
   השומר הצעיר, חידשו את הבאר והחלו להקים גדר ואת מבני הקיבוץ, טקס העלייה הרשמית לקרקע התבצע במרץ
-  1944 ומהווה את ראשיתו של היישוב הנוכחי". [V] So 1 December 1943 is the arrival and March 1944 the
+  1944 ומהווה את ראשיתו של היישוב הנוכחי". [S] So 1 December 1943 is the arrival and March 1944 the
   official ascent. CBS's 1944 and Gvati's 19 March 1944 both fall on the second. **Our reading:**
   Gvati's 19 March 1944 is the best day-level value, and the December 1943 arrival should be
   recorded beside it rather than replaced by it.
@@ -127,27 +133,27 @@ first, so they are in this note rather than a coastal one.
 
 ### Dorot
 - CBS: code **336**, `שנת ייסוד` **1941**, **31.50672, 34.64506**, Ashkelon. [V]
-- Gvati: `דוֹרוֹת | דרום | 18.12.41 | האיחוד`. [V]
+- Gvati: `דוֹרוֹת | דרום | 18.12.41 | האיחוד`. [S]
 - he.wiki `דורות`, oldid **43555697**: "דורות היה הקיבוץ הראשון בנגב בהיווסדו בשנת 1941", and
-  "היישוב הוקם בחנוכה, שנת ה'תש"ב (1941) על קרקעות שנרכשו מתושבי הכפר הסמוך הוג'". [V]
+  "היישוב הוקם בחנוכה, שנת ה'תש"ב (1941) על קרקעות שנרכשו מתושבי הכפר הסמוך הוג'". [S]
 - **Day: Gvati only (18 December 1941).** he.wiki gives the Hebrew festival, not a civil day, and no
   conversion was done here. [S] for the day, [V] for the year in all three.
 
 ### Nir Am
 - CBS: code **348**, `שנת ייסוד` **1943**, **31.51966, 34.57977**, Ashkelon. [V]
-- Gvati: `נִיר-עָם | דרום | 12.1.43 | האיחוד`. [V]
-- he.wiki `ניר עם`, oldid **44033578**: "הקיבוץ הוקם בט"ו בשבט ה'תש"ג (21 בינואר 1943)". [V]
+- Gvati: `נִיר-עָם | דרום | 12.1.43 | האיחוד`. [S]
+- he.wiki `ניר עם`, oldid **44033578**: "הקיבוץ הוקם בט"ו בשבט ה'תש"ג (21 בינואר 1943)". [S]
 - **[C] on the day: Gvati 12 January 1943 against he.wiki 21 January 1943.** Both are January 1943.
   The he.wiki value is tied to a Hebrew date the article converts itself; Gvati's is a bare column
   value. Both are given.
 - The article notes the Nir Am wells fed the 1947 water line to the eleven points: "קידוחים באזור
-  ניר עם שימשו מקור לקו המים שהונח בשנת 1947 וסיפק מים ל-11 הנקודות בנגב". [V]
+  ניר עם שימשו מקור לקו המים שהונח בשנת 1947 וסיפק מים ל-11 הנקודות בנגב". [S]
 
 ## 3. The eleven points, the night of 5 to 6 October 1946
 
 he.wiki `11 הנקודות`, oldid **43974883**, opens: "11 הנקודות הן אחד-עשר יישובים יהודיים בנגב
 הצפוני, אשר הוקמו במבצע התיישבות גדול במוצאי יום הכיפורים ה'תש"ז", on "הלילה שבין 5 ל-6 באוקטובר
-1946", at the initiative of the Jewish Agency. [V]
+1946", at the initiative of the Jewish Agency. [S]
 
 **A correction worth stating plainly.** The operation is often dated 11 October 1946. The "11" is
 the count of points, not a date: the article dates it to the night of 5 to 6 October 1946, and
@@ -155,7 +161,9 @@ Gvati's appendix independently gives **6.10.46** for eight of the eleven. Nothin
 supports 11 October.
 
 The article's own list of eleven, with the site name it gives in brackets and the base each party
-left from. [V]
+left from. [S] In the table below, the CBS code, year and coordinate are [V] (CBS is the primary
+source for those), and the Gvati date column is [S] on its own but [V] for the eight localities
+where it agrees with the article.
 
 | Locality | site name | departure base | CBS code | CBS year | CBS lat, lon | Gvati date |
 |---|---|---|---|---|---|---|
@@ -171,7 +179,7 @@ left from. [V]
 | Shoval | Bir Zabala | Ruhama | 394 | 1946 | 31.41449, 34.74384 | 6.10.46 |
 | Tkuma | Sumra | Be'erot Yitzhak | 665 | **1949** | 31.45092, 34.57933 | 30.5.49 |
 
-The article also gives the mnemonic "קח משכנתא נג"ב" for the eleven names. [V]
+The article also gives the mnemonic "קח משכנתא נג"ב" for the eleven names. [S]
 
 **The CBS coordinates above are the present localities.** Several of the eleven moved after the war,
 so for those the CBS point is not the October 1946 point. Where an article gives the original site
@@ -182,10 +190,10 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 - **Nirim.** CBS `שנת ייסוד` **1949**; Gvati and he.wiki **6 October 1946**. [C] he.wiki `נירים`,
   oldid **43556145**: "יצאו חברי נירים במוצאי יום הכיפורים תש"ז, 6 באוקטובר 1946, במסגרת עליית 11
   הנקודות", and "בגלל תקלה לוגיסטית, ההתיישבות לא הייתה במקום המתוכנן", the planned point being
-  reached only months later, at **Dangur**. [V] After the war, "בתחילת 1949 עבר הקיבוץ למקומו
-  הנוכחי ובשטחו המקורי הוקם הקיבוץ ניר יצחק". [V] **Our reading:** CBS's 1949 is the present site
+  reached only months later, at **Dangur**. [S] After the war, "בתחילת 1949 עבר הקיבוץ למקומו
+  הנוכחי ובשטחו המקורי הוקם הקיבוץ ניר יצחק". [S] **Our reading:** CBS's 1949 is the present site
   and the 1946 date is the Dangur point; they are not in conflict about the same thing. The battle
-  of Nirim is dated "בוקר ה־15 במאי 1948" in the article. [V]
+  of Nirim is dated "בוקר ה־15 במאי 1948" in the article. [S]
   - **[C] on where the first site was.** he.wiki places it "ליד קיבוץ סופה של היום" and also says
     Nir Yitzhak was founded on Nirim's original ground; Gvati's narrative says Nir Yitzhak now sits
     at Dangur. For reference, CBS Nir Yitzhak is code **402**, `שנת ייסוד` 1949, **31.23768,
@@ -193,7 +201,7 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 - **Tkuma.** CBS **1949**, Gvati **30.5.49**, he.wiki **the night of 5 to 6 October 1946**. [C], and
   he.wiki `תקומה`, oldid **42996459**, explains the mechanism: founded as a kibbutz at Sumra, then
   "בתאריך 30 במאי 1949 ... עברו תושבי תקומה אל אזור אדמות הכפר הערבי אל-מוחרקה, שתושביו גורשו על ידי
-  כוחות של חטיבת הנגב". [V] **Rename: founded as סומרה**, renamed Tkuma within days. [V] It also
+  כוחות של חטיבת הנגב". [S] **Rename: founded as סומרה**, renamed Tkuma within days. [S] It also
   changed type, founded as a kibbutz and now a moshav, which is why Gvati's row is in the moshavim
   section. **Our reading:** 1946 is the founding and 1949 the move; a row needs both.
   - The 1949 move is onto the land of a depopulated Arab village, which the article states. That is
@@ -201,54 +209,55 @@ explicitly it is recorded below; otherwise the original position is [GAP].
     sensitivity review.
 - **Kedma.** CBS `שנת ייסוד` is **blank**, and the CBS row is the present youth village, not the
   kibbutz. Gvati's appendix has **no row**; his narrative mentions "קדמה, גלאון, דברת שעלו בשנת
-  1946". [V] he.wiki `קדמה`, oldid **43293211**: "קֶדְמָה התקיימה כקיבוץ בין השנים 1946–1962", and
-  "מאז 1979 נמצא במקום כפר נוער טיפולי". [V]
+  1946". [S] he.wiki `קדמה`, oldid **43293211**: "קֶדְמָה התקיימה כקיבוץ בין השנים 1946–1962", and
+  "מאז 1979 נמצא במקום כפר נוער טיפולי". [S]
   - **An impossible date in the source.** The article's founding sentence reads "במוצאי יום כיפור,
-    10.6.1946 יצאו חברי קדמה מכפר מנחם". [V] Motza'ei Yom Kippur 5707 and 10 June 1946 cannot both
+    10.6.1946 יצאו חברי קדמה מכפר מנחם". [S] Motza'ei Yom Kippur 5707 and 10 June 1946 cannot both
     be right, and the `11 הנקודות` article dates the operation to 5 to 6 October 1946. The numeral
     is reported as written. **Our reading:** the day-month digits are transposed or wrong and the
     intended date is the October ascent, but no page read here says so, so no corrected date is
     given.
-  - End: "במאי 1962 עזבו אחרוני קדמה את המקום". [V] The article carries
+  - End: "במאי 1962 עזבו אחרוני קדמה את המקום". [S] The article carries
     `קטגוריה:יישובים ישראליים שננטשו`.
 
 ### The rest of the eleven
 
 - **Urim.** he.wiki `אורים`, oldid **44069164**: "קבוצת אורים הוקמה במוצאי יום כיפור ה'תש"ז, 1946".
-  [V] **Three sites, two with explicit coordinates in the article's own footnotes:** first at Grein
+  [S] **Three sites, two with explicit coordinates in the article's own footnotes:** first at Grein
   near Gvulot, `31.185812, 34.485823`, where a marker stone now stands; then "לנקודה הסמוכה לצאלים",
   `31.184178, 34.499766`, where a half-ruined security house stands; then "בשנת 1948 עברו למקום הקבע
-  במשטרת עימארה". [V] The CBS point **31.30419, 34.52263** is the third.
+  במשטרת עימארה". [S] The CBS point **31.30419, 34.52263** is the third.
 - **Be'eri.** he.wiki `בארי (קיבוץ)`, oldid **44086869**: "בארי הוקם במוצאי יום כיפור ה'תש"ז, 1946,
-  במסגרת 11 הנקודות". [V] Year only in the article; Gvati gives 6.10.46. Relocation: "לאחר קום
-  המדינה הועתק הקיבוץ שלושה קילומטר דרום־מזרחה". [V] No day. [GAP]
+  במסגרת 11 הנקודות". [S] Year only in the article; Gvati gives 6.10.46. Relocation: "לאחר קום
+  המדינה הועתק הקיבוץ שלושה קילומטר דרום־מזרחה". [S] No day. [GAP]
 - **Gal-On.** he.wiki `גלאון`, oldid **43897874**: "במוצאי יום הכיפורים ה'תש"ז, 5-6 באוקטובר 1946,
-  עלה על הקרקע ליד קיבוץ גת, במסגרת 11 הנקודות בנגב". [V] This is the one article that prints the
+  עלה על הקרקע ליד קיבוץ גת, במסגרת 11 הנקודות בנגב". [S] This is the one article that prints the
   two-day form. Gvati puts it in **Lachish**, not the Negev. Not evacuated: it repelled an Egyptian
-  attack "ב-14 ביולי 1948". [V]
+  attack "ב-14 ביולי 1948". [S]
 - **Hatzerim.** he.wiki `חצרים`, oldid **43555845**: "הקיבוץ הוקם במוצאי יום כיפור בשנת 1946 על
-  אדמות קלטה כחלק מ־11 הנקודות". [V] No move recorded.
+  אדמות קלטה כחלק מ־11 הנקודות". [S] No move recorded.
 - **Mishmar HaNegev.** he.wiki `משמר הנגב`, oldid **44065142**: "שהוקם כחלק ממבצע י"א הנקודות
   במוצאי יום כיפור תש"ז, 6 באוקטובר 1946", and "לאחר שנה הועתק הקיבוץ למקומו הנוכחי על גבעה שכנה
-  כ-500 מטר צפונה", the first site now called "הגבעה הראשונה". [V]
+  כ-500 מטר צפונה", the first site now called "הגבעה הראשונה". [S]
 - **Nevatim.** he.wiki `נבטים (מושב)`, oldid **44032217**: "מושב נבטים נוסד ב-6 באוקטובר 1946,
-  במוצאי יום כיפור, במבצע 11 הנקודות על ידי עולים יוצאי עיראק". [V] Moved "כ-2 קילומטר" to its
+  במוצאי יום כיפור, במבצע 11 הנקודות על ידי עולים יוצאי עיראק". [S] Moved "כ-2 קילומטר" to its
   permanent site; no date for the move. [GAP] Note the bare title `נבטים` is the article on the
   Nabataeans, not the locality.
 - **Shoval.** he.wiki `שובל (קיבוץ)`, oldid **44069091**: "נוסד ב-6 באוקטובר 1946", and "עלה לקרקע
-  באדמות קרן קיימת לישראל ב'ביר זבאלה' במוצאי יום כיפור, 6 באוקטובר 1946". [V] **Intended name:**
-  the founders wanted "אילת"; the settling institutions chose Shoval. [V]
+  באדמות קרן קיימת לישראל ב'ביר זבאלה' במוצאי יום כיפור, 6 באוקטובר 1946". [S] Gvati gives the
+  same day, so the date is [V]. **Intended name:**
+  the founders wanted "אילת"; the settling institutions chose Shoval. [S]
 - **Kfar Darom.** **Not in the CBS file and no Gvati appendix row.** [V, checked] he.wiki
   `כפר דרום`, oldid **42998094**: "במוצאי יום הכיפורים תש"ז -1946 יושב המקום, על ידי גרעין של הקיבוץ
   הדתי", with explicit coordinates `רוחב=31.401389 | אורך=34.36` and `תאריך נטישה = 18 באוגוסט
-  2005`. [V] First attacked "ב-13 במאי 1948, יום לפני הכרזת העצמאות", the first locality the
-  Egyptian army attacked. [V] Evacuated on the night of **8 July 1948**. [V]
+  2005`. [S] First attacked "ב-13 במאי 1948, יום לפני הכרזת העצמאות", the first locality the
+  Egyptian army attacked. [S] Evacuated on the night of **8 July 1948**. [S]
   - **[C] on the hour of the fall.** Gvati: the defenders left at night "ולמחרת נכבש הישוב
     על־ידי המצרים". he.wiki: "בבוקר 8 ביולי החל הצבא המצרי בהתקפה על היישוב ... וגילה כי היישוב
     ריק", that is the same morning. Both given.
   - Gvati lists it among the localities permanently lost in the war, and its people founded **Bnei
     Darom**: his appendix row reads `בְּנֵי-דָרוֹם | דרום | 23.3.49 | הפועל המזרחי | נוסד בידי חברי
-    כפר-דרום שננטש במלחמת השחרור ונקרא על שמו`. [V]
+    כפר-דרום שננטש במלחמת השחרור ונקרא על שמו`. [S]
   - The 1970 re-establishment and the 2005 evacuation are outside this note's window and are
     recorded only so the row is not mistaken for a continuous settlement.
 
@@ -256,17 +265,17 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 
 ### Sa'ad
 - CBS: code **419**, `שנת ייסוד` **1947**, **31.47068, 34.53445**, Be'er Sheva. [V]
-- Gvati: `סַעַד | נגב מערבי | 30.6.47 | הפועל המזרחי`. [V]
+- Gvati: `סַעַד | נגב מערבי | 30.6.47 | הפועל המזרחי`. [S]
 - he.wiki `סעד`, oldid **42997897**: "היישוב עלה על הקרקע בי"ב בתמוז ה'תש"ז (30 ביוני 1947), במלאת
-  שנה ל'שבת השחורה'". [V] **All three agree, and Gvati and he.wiki agree to the day.**
+  שנה ל'שבת השחורה'". [S] **All three agree, and Gvati and he.wiki agree to the day.**
 - **Rename:** "השם שנבחר לקיבוץ על ידי מייסדיו היה 'עלומים', אולם בהחלטת המוסדות המיישבים שונה השם
-  ל'סעד'". [V]
-- Relocation after the war: "העבירו חברי הקיבוץ את יישובם כקילומטר מזרחה". [V] No day. [GAP]
+  ל'סעד'". [S]
+- Relocation after the war: "העבירו חברי הקיבוץ את יישובם כקילומטר מזרחה". [S] No day. [GAP]
 
 ### Tze'elim
 - CBS: code **413**, `שנת ייסוד` **1947**, **31.20370, 34.53417**, Be'er Sheva. [V]
-- Gvati: `צֶאֱלִים | הנגב המערבי | 7.2.47 | האיחוד`. [V]
-- he.wiki `צאלים`, oldid **43801220**: "הקיבוץ נוסד בינואר 1947". [V]
+- Gvati: `צֶאֱלִים | הנגב המערבי | 7.2.47 | האיחוד`. [S]
+- he.wiki `צאלים`, oldid **43801220**: "הקיבוץ נוסד בינואר 1947". [S]
 - **[C]: Gvati 7 February 1947 against he.wiki January 1947.** Worth flagging that 7 February 1947
   is also the date he.wiki gives for **Mivtahim**; the two may be the same event recorded against
   different names. Not resolved here.
@@ -277,8 +286,8 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 
 ### Gvim
 - CBS: code **424**, `שנת ייסוד` **1947**, **31.50689, 34.59654**, Ashkelon. [V]
-- Gvati: `גֵבִים | דרום | 28.8.47 | האיחוד`. [V]
-- he.wiki `גבים`, oldid **44057295**: "קיבוץ גבים הוקם בי"ב אלול תש"ז, 28 באוגוסט 1947". [V]
+- Gvati: `גֵבִים | דרום | 28.8.47 | האיחוד`. [S]
+- he.wiki `גבים`, oldid **44057295**: "קיבוץ גבים הוקם בי"ב אלול תש"ז, 28 באוגוסט 1947". [S]
   **Gvati and he.wiki agree to the day.**
 - **Rename:** "שמו המקורי של הקיבוץ היה שדה עקיבא ... לאחר זמן מה שונה שמו לגבים". [V]
 - **An error in a source, reported rather than dropped.** he.wiki `בתי הביטחון בנגב הצפוני`, oldid
@@ -296,7 +305,7 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 
 ### Brur Hayil
 - CBS: code **428**, `שנת ייסוד` **1948**, **31.55787, 34.64673**, Ashkelon. [V]
-- Gvati: `בְרוֹר חַיִל | הנגב המערבי | 18.4.48 | האיחוד`. [V] His narrative adds it was built
+- Gvati: `בְרוֹר חַיִל | הנגב המערבי | 18.4.48 | האיחוד`. [S] His narrative adds it was built
   "בשיטה של חומה ומגדל" beside the Arab village of Burayr.
 - he.wiki `ברור חיל`, oldid **43890748**: "באפריל 1948 הוקם משלט סמוך לכפר ברייר בנגב המערבי על ידי
   הפלמ"ח ותושבים מהאזור", and it was "אחד משני היישובים היחידים שהוקמו בין החלטת החלוקה להכרזת
