@@ -87,12 +87,6 @@ namespace Statecraft.Game.UI
 
         static bool LaidOut(Rect r) => !float.IsNaN(r.width) && !float.IsNaN(r.height) && r.width > 0f && r.height > 0f;
 
-        /// <summary>Takes a scroll view's own scroll bars out of the Tab order (accessibility audit, #41, the keyboard-only
-        /// turn's "Still open" list). A scroll bar is always in sight and the list it belongs to is reached by Tabbing
-        /// through its rows, so a stop on the bar only adds a press between the last row and the next control. Dragging it
-        /// with the pointer and the mouse wheel are untouched: this changes focusability, not behaviour. Call it after the
-        /// view exists; UI Toolkit rebuilds the bars' children with the view, so the sliders are set as well as the
-        /// scrollers.</summary>
         /// <summary>Takes every scroll bar under <paramref name="root"/> out of the Tab order (accessibility audit, #41,
         /// K3 widened). #1453 did the Cabinet's two views, which is where the audit found the stop: the seat list is the
         /// one long enough to show its bar in a 1280x720 window. Every other view's slider stayed focusable, and a
@@ -110,6 +104,12 @@ namespace Statecraft.Game.UI
             foreach (var view in root.Query<ScrollView>().Build()) BarsAreNotTabStops(view);
         }
 
+        /// <summary>Takes a scroll view's own scroll bars out of the Tab order (accessibility audit, #41, the keyboard-only
+        /// turn's "Still open" list). A scroll bar is always in sight and the list it belongs to is reached by Tabbing
+        /// through its rows, so a stop on the bar only adds a press between the last row and the next control. Dragging it
+        /// with the pointer and the mouse wheel are untouched: this changes focusability, not behaviour. Call it after the
+        /// view exists; UI Toolkit rebuilds the bars' children with the view, so the sliders are set as well as the
+        /// scrollers.</summary>
         public static void BarsAreNotTabStops(params ScrollView?[] views)
         {
             foreach (var view in views)

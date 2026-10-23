@@ -81,8 +81,10 @@ public class ScrollBarTabStopTests
 
     static bool IsBar(VisualElement e) => e is Scroller || e.GetFirstAncestorOfType<Scroller>() != null;
 
-    /// <summary>Opens the screen from its rail button and walks a full lap of the Tab order, returning the scroll views
-    /// whose bar took a stop inside that screen.</summary>
+    /// <summary>Opens the screen from its rail button, presses Tab 45 times and returns the scroll views whose bar took
+    /// a stop inside that screen. 45 is comfortably more than a lap of the HUD and any one screen today; it is a fixed
+    /// count rather than "until the focus comes back", so a screen that grows past it would under-report rather than
+    /// loop.</summary>
     IEnumerator BarStops(string screen, List<string> found)
     {
         var nav = ui.Q<Button>("nav-" + screen);
@@ -132,21 +134,23 @@ public class ScrollBarTabStopTests
     }
 
     /// <summary>Every ScrollView in the tree, including the ones no screen walk reaches (the event card's text, the
-    /// capture dialog, the turn report and the end screen), has its bar out of the order.</summary>
+    /// capture dialog, the turn report and the end screen), has both of its bars out of the order.</summary>
     [UnityTest]
     public IEnumerator NoScrollViewInTheTreeKeepsAFocusableBar()
     {
         yield return BootShort();
         var bad = new List<string>();
         foreach (var sv in ui.Query<ScrollView>().Build())
-        {
-            var s = sv.verticalScroller;
-            if (s == null) continue;
-            if (s.focusable) bad.Add(sv.name + ".scroller");
-            if (s.slider != null && s.slider.focusable) bad.Add(sv.name + ".slider");
-            if (s.lowButton != null && s.lowButton.focusable) bad.Add(sv.name + ".lowButton");
-            if (s.highButton != null && s.highButton.focusable) bad.Add(sv.name + ".highButton");
-        }
+            // both bars, as the helper itself sets: "every scroll bar" means the horizontal one too
+            foreach (var (which, s) in new[] { ("vertical", sv.verticalScroller), ("horizontal", sv.horizontalScroller) })
+            {
+                if (s == null) continue;
+                var at = $"{sv.name}.{which}";
+                if (s.focusable) bad.Add(at + ".scroller");
+                if (s.slider != null && s.slider.focusable) bad.Add(at + ".slider");
+                if (s.lowButton != null && s.lowButton.focusable) bad.Add(at + ".lowButton");
+                if (s.highButton != null && s.highButton.focusable) bad.Add(at + ".highButton");
+            }
         Assert.IsEmpty(bad, $"these scroll bars can still take the focus: {string.Join(", ", bad)}");
     }
 }
