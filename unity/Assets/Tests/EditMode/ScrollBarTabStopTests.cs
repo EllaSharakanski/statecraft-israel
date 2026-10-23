@@ -1,0 +1,152 @@
+#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using NUnit.Framework;
+using Statecraft.Game;
+using Statecraft.Game.Map;
+using Statecraft.Game.UI;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
+
+/// <summary>#41 K3, widened: a scroll bar is no use from the keyboard, so none of them should take a Tab stop. #1453
+/// took the Cabinet's two out of the order, which is where the audit found the stop, because the seat list is the one
+/// long enough to show its bar in a 1280x720 window. Every other view's slider stayed focusable, and a ScrollView hides
+/// its scroller only while the content fits, so the stop comes back as soon as a view overflows: a shorter window, or
+/// a list that grows during a game (the Why list and the Timeline gain rows every turn).
+///
+/// These run in a 1280x420 window, the short window the 14 October audit also used, so the Budget's and Defence's
+/// views overflow and their bars are really in the order. Defence is the worst case: it has no control of its own at
+/// the opening turn, so its bar is very nearly the only thing a keyboard player can land on.</summary>
+public class ScrollBarTabStopTests
+{
+    string saveDir = "";
+    RenderTexture? rt; PanelSettings? ps;
+    VisualElement ui = null!;
+    GameRoot root = null!;
+
+    [SetUp] public void TempSaves() => saveDir = Path.Combine(Path.GetTempPath(), "statecraft-bars-" + Guid.NewGuid().ToString("N"));
+
+    [TearDown]
+    public void DiscardScene()
+    {
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        if (ps != null) Object.DestroyImmediate(ps);
+        if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
+        if (Directory.Exists(saveDir)) Directory.Delete(saveDir, true);
+    }
+
+    Focusable? Focused => ui.panel?.focusController?.focusedElement;
+    VisualElement At => Focused as VisualElement ?? throw new AssertionException("nothing has the focus");
+    string FocusedName => (Focused as VisualElement)?.name is string n && n.Length > 0 ? n : Focused == null ? "none" : Focused.GetType().Name;
+    IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
+
+    IEnumerator Tab()
+    {
+        var at = At;
+        using (var e = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Next)) { e.target = at; at.SendEvent(e); }
+        yield return null;
+    }
+
+    IEnumerator Enter()
+    {
+        var at = At;
+        using (var s = NavigationSubmitEvent.GetPooled()) { s.target = at; at.SendEvent(s); }
+        yield return null;
+    }
+
+    /// <summary>A 1280x420 window: short enough that the Budget's and Defence's views overflow and show their bars.</summary>
+    IEnumerator BootShort()
+    {
+        EditorSceneManager.OpenScene("Assets/Map.unity", OpenSceneMode.Single);
+        var doc = Object.FindFirstObjectByType<UIDocument>();
+        rt = new RenderTexture(1280, 420, 0);
+        ps = Object.Instantiate(doc.panelSettings);
+        ps.targetTexture = rt;
+        doc.panelSettings = ps;
+        Object.FindFirstObjectByType<MapScene>().Build(MapFocusTests.Inputs.Map);
+        root = Object.FindFirstObjectByType<GameRoot>();
+        root.Store = new SaveStore(saveDir);
+        root.Begin(MapFocusTests.Inputs, 0);
+        ui = doc.rootVisualElement;
+        for (int i = 0; i < 30 && !(ui.Q("top-bar").worldBound.height > 0); i++) yield return null;
+        yield return Frames(5);
+        GameSceneTests.HideTheOpeningCard(ui);
+        yield return Frames(3);
+    }
+
+    static bool IsBar(VisualElement e) => e is Scroller || e.GetFirstAncestorOfType<Scroller>() != null;
+
+    /// <summary>Opens the screen from its rail button and walks a full lap of the Tab order, returning the scroll views
+    /// whose bar took a stop inside that screen.</summary>
+    IEnumerator BarStops(string screen, List<string> found)
+    {
+        var nav = ui.Q<Button>("nav-" + screen);
+        Assert.IsNotNull(nav, $"precondition: the rail has a button for {screen}");
+        nav.Focus();
+        yield return null;
+        yield return Enter();
+        yield return Frames(5);
+        var panel = ui.Q<VisualElement>("screen-" + screen);
+        for (int i = 0; i < 45; i++)
+        {
+            yield return Tab();
+            if (Focused is VisualElement at && IsBar(at) && panel != null && panel.Contains(at))
+                found.Add(at.GetFirstAncestorOfType<ScrollView>()?.name ?? "?");
+        }
+    }
+
+    [UnityTest]
+    [TestCase("budget", "budget-rows", ExpectedResult = null)]
+    [TestCase("defence", "defence-body", ExpectedResult = null)]
+    public IEnumerator AnOverflowingScreensScrollBarIsNotATabStop(string screen, string view)
+    {
+        yield return BootShort();
+
+        var found = new List<string>();
+        yield return BarStops(screen, found);
+
+        // precondition: the view really does overflow here, so its bar is shown and this test means something
+        var sv = ui.Q<ScrollView>(view);
+        Assert.IsNotNull(sv, $"precondition: {view} is in the tree");
+        Assert.Greater(sv.contentContainer.layout.height, sv.contentViewport.layout.height + 0.5f,
+            $"precondition: {view} overflows in a 1280x420 window, so its bar is shown");
+        Assert.AreEqual(DisplayStyle.Flex, sv.verticalScroller.resolvedStyle.display,
+            $"precondition: {view}'s scroller is shown");
+
+        Assert.IsEmpty(found, $"no scroll bar takes a Tab stop in {screen}, but one lap stopped on: {string.Join(", ", found)}");
+    }
+
+    /// <summary>The Cabinet, which #1453 already fixed, stays at zero in the short window too.</summary>
+    [UnityTest]
+    public IEnumerator TheCabinetStaysFreeOfBarStopsInAShortWindow()
+    {
+        yield return BootShort();
+        var found = new List<string>();
+        yield return BarStops("cabinet", found);
+        Assert.IsEmpty(found, $"the Cabinet's bars stay out of the order, but one lap stopped on: {string.Join(", ", found)}");
+    }
+
+    /// <summary>Every ScrollView in the tree, including the ones no screen walk reaches (the event card's text, the
+    /// capture dialog, the turn report and the end screen), has its bar out of the order.</summary>
+    [UnityTest]
+    public IEnumerator NoScrollViewInTheTreeKeepsAFocusableBar()
+    {
+        yield return BootShort();
+        var bad = new List<string>();
+        foreach (var sv in ui.Query<ScrollView>().Build())
+        {
+            var s = sv.verticalScroller;
+            if (s == null) continue;
+            if (s.focusable) bad.Add(sv.name + ".scroller");
+            if (s.slider != null && s.slider.focusable) bad.Add(sv.name + ".slider");
+            if (s.lowButton != null && s.lowButton.focusable) bad.Add(sv.name + ".lowButton");
+            if (s.highButton != null && s.highButton.focusable) bad.Add(sv.name + ".highButton");
+        }
+        Assert.IsEmpty(bad, $"these scroll bars can still take the focus: {string.Join(", ", bad)}");
+    }
+}

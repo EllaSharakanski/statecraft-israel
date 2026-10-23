@@ -93,6 +93,23 @@ namespace Statecraft.Game.UI
         /// with the pointer and the mouse wheel are untouched: this changes focusability, not behaviour. Call it after the
         /// view exists; UI Toolkit rebuilds the bars' children with the view, so the sliders are set as well as the
         /// scrollers.</summary>
+        /// <summary>Takes every scroll bar under <paramref name="root"/> out of the Tab order (accessibility audit, #41,
+        /// K3 widened). #1453 did the Cabinet's two views, which is where the audit found the stop: the seat list is the
+        /// one long enough to show its bar in a 1280x720 window. Every other view's slider stayed focusable, and a
+        /// ScrollView hides its scroller only while the content fits, so the stop came back as soon as a view
+        /// overflowed: a shorter window, or a list that grows during a game. Measured at 1280x420, the Budget's bar took
+        /// one Tab stop and Defence's took two in a single lap, and Defence has no control of its own at the opening
+        /// turn, so its bar was very nearly all a keyboard player could land on.
+        ///
+        /// The same reasoning as K3, no wider: a bar is always in sight and a list is reached by Tabbing its rows, and
+        /// for the lists that hold labels only (why-rows, defence-body, the event card's text) there is nothing to Tab
+        /// to at all, while KeyScroll already gives PageUp, PageDown, Home and End with or without focus. Dragging the
+        /// bar and the wheel are untouched: this changes focusability, not behaviour.</summary>
+        public static void NoScrollBarIsATabStop(VisualElement root)
+        {
+            foreach (var view in root.Query<ScrollView>().Build()) BarsAreNotTabStops(view);
+        }
+
         public static void BarsAreNotTabStops(params ScrollView?[] views)
         {
             foreach (var view in views)

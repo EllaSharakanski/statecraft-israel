@@ -401,6 +401,44 @@ seat open), `CityPanelFocusTests` (the Assign minus at 0 keeps the focus inside 
 `SitePanelFocusTests` (a Build order, which disables every Build in its part, leaves the focus on something that
 can hold it). No UI string was added, so nothing goes to #564.
 
+## Every scroll bar out of the Tab order, 23 October 2026
+
+K3 again, wider. #1453 took the Cabinet's two views out of the Tab order, which is where the 23 October list found
+the stop. That was the whole of the finding as written, but not the whole of the bug: every other view's slider
+stayed `focusable`, and a `ScrollView` hides its scroller only while its content fits, so the stop returns the
+moment a view overflows.
+
+Walked in EditMode. At 1280x720, the opening turn, no screen stops on a bar, because every scroller but the seat
+list's is `display:none`:
+
+| screen | bar stops in one lap | scroller shown | slider focusable |
+|---|---|---|---|
+| cabinet (`cabinet-seats`) | 0 | yes | no, #1453 |
+| budget (`budget-rows`) | 0 | no | **yes** |
+| defence (`defence-body`) | 0 | no | **yes** |
+| why (`why-rows`) | 0 | no | **yes** |
+| timeline (`timeline-list`) | 0 | no | **yes** |
+| how to play (`how-to-play-body`) | 0 | no | **yes** |
+| objectives (`objectives-rows`) | 0 | no | **yes** |
+
+At 1280x420, the short window this audit already used a pass at, the views overflow and the stops are real:
+the Budget takes **one**, Defence takes **two** in a lap, and the Cabinet still takes none. Defence is the worst
+case, since it has no control of its own at the opening turn, so its bar is very nearly all a keyboard player can
+land on.
+
+| | Finding | Fix |
+|---|---|---|
+| K6 | Only the Cabinet's bars were out of the Tab order. Every other scroll view's slider was still focusable, so the stop came back whenever the view overflowed: a shorter window, or a list that grows during a game. `event-scroll`, `capture-scroll`, `turn-report-rows` and `end-screen-rows` are not on any screen's walk and were never checked at all. | `FocusScroll.NoScrollBarIsATabStop` applies the existing `BarsAreNotTabStops` to every `ScrollView` under the UI root, called once from `GameRoot` beside `FocusScroll`. `CabinetPresenter` keeps its own call, because many tests build that presenter without `GameRoot` and the Cabinet should not depend on the harness. |
+
+The reasoning is K3's, not wider: a bar is always in sight, a list is reached by Tabbing its rows, and the lists
+that hold labels only (`why-rows`, `defence-body`, the event card's text) have nothing to Tab to, while `KeyScroll`
+gives PageUp, PageDown, Home and End with or without focus. Focusability only: dragging and the wheel are untouched.
+
+Pinned in EditMode: `ScrollBarTabStopTests` (in a 1280x420 window the Budget's and Defence's bars take no stop,
+with the overflow asserted as a precondition so the test cannot pass vacuously; the Cabinet stays at zero; and no
+`ScrollView` in the tree keeps a focusable scroller, slider or arrow button). No UI string was added, so nothing
+goes to #564.
+
 ## Screenshots
 
 In `.superpowers/a11y-2026-10-14/` (1568x752 unless noted), with the driver and the contrast, colour-vision and
