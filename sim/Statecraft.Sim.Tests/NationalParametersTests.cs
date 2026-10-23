@@ -172,8 +172,12 @@ public class NationalParametersTests
 
         b.State.ActiveSituations.Remove(situation);
         Assert.Equal(a.State.Describe(), b.State.Describe());
+        // Every field of the line, not just the first four: a difference only in the unit or placeholder fields is
+        // unlikely without the message changing too, but this way the comparison cannot miss one (owner's nit).
         static IEnumerable<string> Lines(StepResult r) =>
-            r.Why.Select(w => $"{w.System}|{w.Target}|{w.Delta:R}|{w.Message}");
+            r.Why.Select(w => $"{w.System}|{w.Target}|{w.Delta:R}|{w.Message}|{w.EnemyOrder}|" +
+                              $"{string.Join(",", w.EnemyAttackers)}|{w.Key}|" +
+                              $"{string.Join(",", w.Units.Select(u => u.Id))}|{string.Join(",", w.Args)}");
         Assert.Equal(Lines(a), Lines(b));
     }
 }
