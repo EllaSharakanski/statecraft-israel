@@ -89,7 +89,7 @@ Revivim articles both say "משלושת המצפים".
   the one to use; the article does not reconcile the two itself.
 - Relocation: "לאחר מלחמת העצמאות הועתק היישוב למקומו הנוכחי, כקילומטר צפונית מזרחית למצפה". [S, Wikipedia]
   No day given. [GAP]
-- Departure base for Urim and Nirim in October 1946. [V]
+- Departure base for Urim and Nirim in October 1946. [S, Wikipedia]
 
 ### Revivim
 - CBS: code **354**, `שנת ייסוד` **1943**, **31.04397, 34.72178**, Be'er Sheva. [V]
@@ -151,7 +151,7 @@ of Negev settlement. Be'erot Yitzhak has its own section below.
   December 1943 arrival is a distinct event rather than a competing date for the same one.
 - The article also records that the neighbouring Arab village of al-Jammama, whose name Ruhama
   first carried, "ננטש במלחמת העצמאות". [S, Wikipedia] No day. [GAP]
-- Departure base for Mishmar HaNegev and Shoval in October 1946. [V]
+- Departure base for Mishmar HaNegev and Shoval in October 1946. [S, Wikipedia]
 
 ### Dorot
 - CBS: code **336**, `שנת ייסוד` **1941**, **31.50672, 34.64506**, Ashkelon. [V]
@@ -160,7 +160,7 @@ of Negev settlement. Be'erot Yitzhak has its own section below.
   "היישוב הוקם בחנוכה, שנת ה'תש"ב (1941) על קרקעות שנרכשו מתושבי הכפר הסמוך הוג'". [S, Wikipedia]
 - **Day: Gvati only (18 December 1941).** he.wiki gives the festival, not a civil day. Hanukkah
   5702 ran **15 to 22 December 1941 (computed here)** and Gvati's 18 December falls inside it, so
-  the two sources agree: [S, Wikipedia] for the exact day, [V] for December 1941.
+  the two sources agree: [S] for the exact day, which is Gvati's alone, and [V] for December 1941.
 
 ### Nir Am
 - CBS: code **348**, `שנת ייסוד` **1943**, **31.51966, 34.57977**, Ashkelon. [V]
@@ -216,7 +216,7 @@ supports 11 October.
 
 The article's own list of eleven, with the site name it gives in brackets and the base each party
 left from. [S, Wikipedia] In the table below, the CBS code, year and coordinate are [V] (CBS is the primary
-source for those), and the Gvati date column is [S, Wikipedia] on its own but [V] for the eight localities
+source for those), and the Gvati date column is [S] on its own but [V] for the eight localities
 where it agrees with the article.
 
 | Locality | site name | departure base | CBS code | CBS year | CBS lat, lon | Gvati date |
@@ -267,7 +267,7 @@ explicitly it is recorded below; otherwise the original position is [GAP].
     sensitivity review.
 - **Kedma.** CBS `שנת ייסוד` is **blank**, and the CBS row is the present youth village, not the
   kibbutz. Gvati's appendix has **no row**; his narrative mentions "קדמה, גלאון, דברת שעלו בשנת
-  1946". [S, Wikipedia] he.wiki `קדמה`, oldid **43293211**: "קֶדְמָה התקיימה כקיבוץ בין השנים 1946–1962", and
+  1946". [S] he.wiki `קדמה`, oldid **43293211**: "קֶדְמָה התקיימה כקיבוץ בין השנים 1946–1962", and
   "מאז 1979 נמצא במקום כפר נוער טיפולי". [S, Wikipedia]
   - The year range quoted above is printed in the article with an en dash, which is kept because
     it is inside a quotation.
@@ -322,7 +322,7 @@ explicitly it is recorded below; otherwise the original position is [GAP].
     ריק", that is the same morning. Both given.
   - Gvati lists it among the localities permanently lost in the war, and its people founded **Bnei
     Darom**: his appendix row reads `בְּנֵי-דָרוֹם | דרום | 23.3.49 | הפועל המזרחי | נוסד בידי חברי
-    כפר-דרום שננטש במלחמת השחרור ונקרא על שמו`. [S, Wikipedia]
+    כפר-דרום שננטש במלחמת השחרור ונקרא על שמו`. [S]
   - The 1970 re-establishment and the 2005 evacuation are outside this note's window and are
     recorded only so the sequence is not mistaken for a continuous settlement.
 
@@ -385,8 +385,7 @@ explicitly it is recorded below; otherwise the original position is [GAP].
 - he.wiki `ברור חיל`, oldid **43890748**: "באפריל 1948 הוקם משלט סמוך לכפר ברייר בנגב המערבי על ידי
   הפלמ"ח ותושבים מהאזור", and it was "אחד משני היישובים היחידים שהוקמו בין החלטת החלוקה להכרזת
   העצמאות". [S, Wikipedia] **Our reading, computed here from this note's own dates:** it is the
-  only locality in this note founded between the Partition Resolution
-  and 15 May 1948.**
+  only locality in this note founded between the Partition Resolution and 15 May 1948.
 - Relocation: "בינואר 1950 עברו החברים ממיקומו הראשוני של היישוב לנקודה החדשה". [S, Wikipedia]
 
 ### Ramat HaNegev (Ofakim)
@@ -463,7 +462,7 @@ separately here.
   site in 1952, and CBS records one founding year per locality, which here most likely marks the
   arrival at Wilhelma rather than the present site. CBS is the primary source for a founding year,
   so this is the one place in the note where it is not followed, and the reason is given.
-- It was the departure base for three of the eleven points, Kfar Darom, Be'eri and Tkuma. [V]
+- It was the departure base for three of the eleven points, Kfar Darom, Be'eri and Tkuma. [S, Wikipedia]
 
 ## 6. Checked and excluded
 
@@ -494,16 +493,19 @@ separately here.
 ## 7. Gaps
 
 - The October 1946 position of Be'eri, Hatzerim, Shoval, Mishmar HaNegev and Nevatim, beyond the
-  direction and rough distance the articles give. [GAP] Only Urim, Nirim, Beit Eshel, Kfar Darom and
-  Be'erot Yitzhak have an explicit original coordinate in a source read here.
+  direction and rough distance the articles give. [GAP] The localities with an explicit original
+  coordinate in a source read here are Urim (two sites), Beit Eshel, Kfar Darom, Be'erot Yitzhak,
+  Halutza and Alumim at Hazla. Nirim is **not** among them: its article places the first site near
+  today's Sufa but gives no point, so its 1946 coordinate is [GAP], as section 3 says.
 - A day for several of the moves: Gvulot, Be'eri, Nevatim, Sa'ad, Mivtahim's evacuation. [GAP]
 - Beit Eshel's founding day within August 1943. [GAP]
 - A coordinate for Ramat HaNegev. [GAP] CET places it east of Tze'elim; no source read here gives
   a point.
 - The day within March 1949 that Ramat HaNegev disbanded, and the day Alumim at Hazla was given up.
   [GAP]
-- Coordinates were taken from CBS and from article footnotes only. None was computed from a map, and
-  no hex was computed here, since `tools/settlement_hexes.py` stays with #61.
+- Coordinates were taken from CBS, from Amudanan, and from coordinates written into the articles
+  themselves. None was measured off a map, and no hex was computed here, since
+  `tools/settlement_hexes.py` stays with #61.
 
 ## 8. Sources not reached, and what was not read
 
