@@ -46,6 +46,9 @@ namespace Statecraft.Game.UI
         readonly VisualElement gdd;
         /// <summary>The hex's city projects (GddHexPanel, #1122), under the facts.</summary>
         readonly VisualElement projects;
+        /// <summary>The map stop the panel is opened from: the last place to put the focus when a press leaves its whole
+        /// part with nothing that can take it (#41, "Still open" item 2).</summary>
+        readonly VisualElement? mapFocus;
         readonly IReadOnlyDictionary<string, string> settlementNames;
         readonly MapRegions? regions;
         readonly System.Func<string, (int q, int r)>? townHex;
@@ -87,6 +90,7 @@ namespace Statecraft.Game.UI
             thumb = panel.Q<UiIcon>("info-thumb");
             gdd = panel.Q<VisualElement>(GddHexPanel.HostName);
             projects = panel.Q<VisualElement>(GddHexPanel.ProjectsHostName);
+            mapFocus = root.Q<VisualElement>("map-focus");
             foreach (var row in panel.Query(className: RowClass).ToList()) rows.Add((row, row.Q<Label>()));
             campButton = panel.Q<Button>("build-camp"); housingButton = panel.Q<Button>("build-housing");
             onCamp = () => Build(MapActions.TransitCamp); onHousing = () => Build(MapActions.Housing);
@@ -470,6 +474,9 @@ namespace Statecraft.Game.UI
             // names (site-build-<unit>, site-stop), so the button is looked up inside the part it was in.
             var focused = presses.ByKeyboard ? panel.focusController?.focusedElement as VisualElement : null;
             var keep = focused != null && (gdd.Contains(focused) || projects.Contains(focused)) ? focused.name : null;
+            // Which host it was in, read before Render while it is still in the tree: afterwards a button that is gone
+            // from gdd would look as though it had been in projects.
+            var keptIn = keep == null ? null : gdd.Contains(focused!) ? gdd : projects;
             var part = keep == null ? null : focused!.parent;
             while (part != null && !(part.name is { } pn && (pn.StartsWith("site-part-", System.StringComparison.Ordinal) || pn.StartsWith("corridor-part-", System.StringComparison.Ordinal))))
                 part = part.parent;
@@ -477,12 +484,13 @@ namespace Statecraft.Game.UI
             var siteName = GddHexPanel.Render(gdd, projects, bridge, text, q, r, TownName);
             if (!string.IsNullOrEmpty(keep))
             {
-                // The rebuilt button of the same name, or, when the press itself left it gone or disabled (the Assign
-                // stepper's minus at 0, Cancel once cancelled), the first control that can take the focus in the part the
-                // player was in (#41, "Still open" item 2): without that the focus is left nowhere.
+                // The rebuilt button of the same name; failing that the nearest control that can take the focus, the
+                // part first, then the host it was in, then the other host, and last the map stop (#41, "Still open"
+                // item 2). A press can leave its whole part unfocusable: Build disables every Build in the part once one
+                // group is ordered, and Stop and a project's Cancel leave a state line and a disabled button.
                 var rebuiltPart = partName != null ? gdd.Q(partName) : null;
-                var again = rebuiltPart != null ? rebuiltPart.Q(keep) : gdd.Q(keep) ?? projects.Q(keep);
-                FocusReturn.ToOrWithin(again, rebuiltPart ?? (gdd.Q(keep) != null ? gdd : projects));
+                var again = rebuiltPart != null ? rebuiltPart.Q(keep) : keptIn!.Q(keep);
+                FocusReturn.ToOrWithin(again, mapFocus, rebuiltPart, keptIn, keptIn == gdd ? projects : gdd);
             }
             if (siteName != null && owned.Count == 0) title.text = siteName;
             subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)

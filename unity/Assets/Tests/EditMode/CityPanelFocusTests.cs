@@ -143,5 +143,6 @@ public class CityPanelFocusTests
         Assert.IsNotNull(Focused, "the focus is not dropped when the pressed button cannot take it back");
         Assert.IsTrue(ui.Q("info-panel")?.Contains(At) ?? false,
             $"the focus stays in the city panel, but it is on {FocusedName}");
+        Assert.AreEqual("city-workers-more", FocusedName, "and on the stepper's plus, the nearest control that can take it");
     }
 }

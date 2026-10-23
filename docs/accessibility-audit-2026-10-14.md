@@ -376,6 +376,11 @@ Still open, not blocking the turn:
 
 - From a screen's button it takes about 16 Tabs to reach the screen's first control.
 
+Pinned in EditMode: the card's order (the card, each option, Hide, the side menu, New Game, End Turn, Star, Report,
+Share, the card again; Shift+Tab the reverse), End Turn's (the map stop, the minimap's three buttons, Star, Report,
+Share, the side menu, New Game, End Turn; Shift+Tab to New Game) and where the focus goes after End Turn
+(`KeyboardTurnTests`). No UI string was added, so nothing goes to #564.
+
 ## The two scroll-bar and focus-drop fixes, 23 October 2026
 
 Two of the three items the 22 October list left open are closed here (the owner's list of 23 October 2026,
@@ -386,19 +391,15 @@ it.
 | | Finding | Fix |
 |---|---|---|
 | K3 | The Cabinet's scroll bars each take a Tab stop. Walking the screen's order shows `unity-slider`, a `ScrollerSlider` inside `cabinet-seats`, as a stop after the last seat, and the same inside `cabinet-candidates` once a seat is open. Before a seat is opened only the seat list's bar is in the order, so the default Cabinet has one stray stop and an open seat has two. | `FocusScroll.BarsAreNotTabStops` takes a view's scrollers, their sliders and their arrow buttons out of the Tab order; `CabinetPresenter` calls it for both views. Focusability only: dragging the bar and the wheel are untouched. |
-| K4 | A city panel button that the press itself leaves gone or disabled drops the focus. The Assign stepper's minus disables itself at 0 (`GddHexPanel`, `SetEnabled(target > 0)`), so after the press that reaches 0 the K2 fix hands the focus to a disabled button, `Focus()` does not take, and nothing has the focus: the next Tab starts again at Cabinet, which is the H2 symptom K2 was meant to end. `Cancel` has the same shape, disabling once the cancel is ordered. | `FocusReturn.ToOrWithin` focuses the rebuilt button of the same name when it can take the focus, and otherwise the first control that can inside the part the player was in, so the next Tab carries on from where they were. |
+| K4 | A city panel button that the press itself leaves gone or disabled drops the focus. The Assign stepper's minus disables itself at 0 (`GddHexPanel`, `SetEnabled(target > 0)`), so after the press that reaches 0 the K2 fix hands the focus to a disabled button, `Focus()` does not take, and nothing has the focus: the next Tab starts again at Cabinet, which is the H2 symptom K2 was meant to end. Build, Stop and a project's Cancel are the same shape: Build disables every Build in the part once one group is ordered, and Stop and Cancel leave a state line and a disabled button. | `FocusReturn.ToOrWithin` focuses the rebuilt button of the same name when it can take the focus, and otherwise the nearest control that can, trying the part, then the host it was in, then the other host, and last the map stop the panel was opened from, so the next Tab carries on from where the player was. |
 
 `KeyboardTurnTests` asserted the K1 behaviour, that the Tab after the last seat lands on a scroll bar. That
 assertion is inverted with K3, since the stop is gone.
 
 Pinned in EditMode: `CabinetScrollFocusTests` (no scroll bar takes a stop in the Cabinet, with and without a
-seat open) and `CityPanelFocusTests` (the Assign minus at 0 keeps the focus inside the city panel). No UI
-string was added, so nothing goes to #564.
-
-Pinned in EditMode: the card's order (the card, each option, Hide, the side menu, New Game, End Turn, Star, Report,
-Share, the card again; Shift+Tab the reverse), End Turn's (the map stop, the minimap's three buttons, Star, Report,
-Share, the side menu, New Game, End Turn; Shift+Tab to New Game) and where the focus goes after End Turn
-(`KeyboardTurnTests`). No UI string was added, so nothing goes to #564.
+seat open), `CityPanelFocusTests` (the Assign minus at 0 keeps the focus inside the city panel) and
+`SitePanelFocusTests` (a Build order, which disables every Build in its part, leaves the focus on something that
+can hold it). No UI string was added, so nothing goes to #564.
 
 ## Screenshots
 
