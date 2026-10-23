@@ -19,8 +19,9 @@ namespace Statecraft.Game.UI
         }
 
         /// <summary>Whether an element can actually take the keyboard focus now: a control that is disabled or not drawn
-        /// cannot, and asking it to leaves the focus nowhere.</summary>
-        static bool CanTakeFocus(VisualElement? e) =>
+        /// cannot, and asking it to leaves the focus nowhere. Public so the one rule has one home: ScreenNav asks it
+        /// which control to hand an opened screen (#41).</summary>
+        public static bool CanTakeFocus(VisualElement? e) =>
             e?.panel != null && e.focusable && e.enabledInHierarchy && e.resolvedStyle.display != DisplayStyle.None;
 
         /// <summary>Focuses <paramref name="target"/>; failing that the first control that can take the focus in each of

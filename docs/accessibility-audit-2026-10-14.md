@@ -372,9 +372,8 @@ What failed, and what changed:
 | K1 | Tab after the Cabinet's last card (and after the last candidate) lands on the list's own scroll bar. `FocusScroll` then called `ScrollView.ScrollTo` on it, which throws for anything outside the list's content: an error on every such Tab. | `FocusScroll` leaves an element outside the view's content alone (the scroll bar is always in sight). |
 | K2 | Enter on a city panel button (Train, Assign, Build) rebuilt the panel and took the focus with it; the next Tab started again at Cabinet, as H2 did on the Budget. | `InfoPanelPresenter` gives the focus to the rebuilt button of the same name after a keyboard press; a mouse press still leaves none (PointerBlur's rule). |
 
-Still open, not blocking the turn:
-
-- From a screen's button it takes about 16 Tabs to reach the screen's first control.
+Still open, not blocking the turn: nothing. The last entry, the long Tab run from a screen's button to its
+first control, is closed below (23 October 2026, K5).
 
 Pinned in EditMode: the card's order (the card, each option, Hide, the side menu, New Game, End Turn, Star, Report,
 Share, the card again; Shift+Tab the reverse), End Turn's (the map stop, the minimap's three buttons, Star, Report,
@@ -400,6 +399,24 @@ Pinned in EditMode: `CabinetScrollFocusTests` (no scroll bar takes a stop in the
 seat open), `CityPanelFocusTests` (the Assign minus at 0 keeps the focus inside the city panel) and
 `SitePanelFocusTests` (a Build order, which disables every Build in its part, leaves the focus on something that
 can hold it). No UI string was added, so nothing goes to #564.
+
+## The screen-entry fix, 23 October 2026
+
+The last of the three items the 23 October list left open (K5). Found on main `c389b492` before the change, with an
+EditMode test that fails without it.
+
+| | Finding | Fix |
+|---|---|---|
+| K5 | Opening a screen from the side rail leaves the focus on the rail button. A screen's content sits after the whole HUD in the Tab order, so reaching it means walking the rail's eight buttons, New Game, End Turn, the minimap's three buttons and star, report and share first. Walked in EditMode: 16 Tabs for the Cabinet and the Budget, 14 for Defence, the count being only where the player's button sits in the rail. `ScreenNav.Close` already hands the focus back to the rail button, so open was the asymmetric half. | `ScreenNav.Open` hands the focus to the screen it opened, after the screen's `OnOpened` action has built its rows. The screen's own X is first in its order, since the header is its first child, so the focus goes to the first control of the screen's content and the X stays one Shift+Tab back; a screen with no control of its own that can take the focus (Defence at the opening turn, whose ladder and call-up buttons are `display:none`) takes its X. Only a keyboard press hands the focus on, as `Close` already respects, so a mouse press still moves no focus. |
+
+A scroll bar is never the landing control: `defence-body`'s scroller otherwise comes before any control of Defence's
+own. The bars of the screens other than the Cabinet take no Tab stop today, because a scroll view hides its scroller
+while the content fits, but their sliders stay focusable, so a bar becomes a stop once its list overflows. That is
+K3's scope and is not changed here.
+
+Pinned in EditMode: `ScreenEntryTests` (the Cabinet and the Budget land on their first control; Defence, which has
+none usable yet, lands on its X; a pointer press hands no focus; Escape still returns it to the rail button). No UI
+string was added, so nothing goes to #564.
 
 ## Every scroll bar out of the Tab order, 23 October 2026
 
