@@ -33,6 +33,12 @@ The simulation must produce the same state, bit for bit, on .NET, Unity Mono and
   `OccupationDrawsNothing`). No golden occupies a place, so none moves. The `mvp-occupy-cost` golden is deferred by the
   owner's ruling of 22 October 2026 (#1324), and it is the next step now that a capture can be reached in play (#1314; a
   manifest golden plays the real content); `OccupyTests` plays the same run on fixture content.
+- **Deport (resolver step 10, after the occupation timers):** the units leave as in Raid; the costs, the drag (each turn,
+  per place in `DisplacedByPlayer`) and the International Support ceiling are plain arithmetic on the indicator's shift,
+  with no RNG draw (R-CTRL-018; `DeportTests.DeportDrawsNothing`). `DisplacedByPlayer` is hashed as `displaced=` only when
+  non-zero. The real content keeps Deport out of play (`mvp.deport_in_play: false`), and no golden captures a place, so
+  none moves. The `mvp-deport-cost` golden, paired with `mvp-occupy-cost`, waits for the same capture (#1304);
+  `DeportNeverDominatesTests` plays both runs from the same fixture states.
 
 ## Combat draws
 
