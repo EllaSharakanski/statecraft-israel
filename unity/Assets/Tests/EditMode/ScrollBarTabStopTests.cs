@@ -17,11 +17,14 @@ using Object = UnityEngine.Object;
 /// took the Cabinet's two out of the order, which is where the audit found the stop, because the seat list is the one
 /// long enough to show its bar in a 1280x720 window. Every other view's slider stayed focusable, and a ScrollView hides
 /// its scroller only while the content fits, so the stop comes back as soon as a view overflows: a shorter window, or
-/// a list that grows during a game (the Why list and the Timeline gain rows every turn).
+/// enough content in the list.
 ///
 /// These run in a 1280x420 window, the short window the 14 October audit also used, so the Budget's and Defence's
 /// views overflow and their bars are really in the order. Defence is the worst case: it has no control of its own at
-/// the opening turn, so its bar is very nearly the only thing a keyboard player can land on.</summary>
+/// the opening turn, so its bar is very nearly the only thing a keyboard player can land on.
+///
+/// `turn-report-rows`, `end-screen-rows` and `capture-scroll` are deliberately not swept: their bar is the only way a
+/// keyboard player can scroll them, and that exclusion is pinned below so it cannot be dropped by accident.</summary>
 public class ScrollBarTabStopTests
 {
     string saveDir = "";
@@ -94,10 +97,13 @@ public class ScrollBarTabStopTests
         yield return Enter();
         yield return Frames(5);
         var panel = ui.Q<VisualElement>("screen-" + screen);
+        // Unique elements, not every hit: 45 presses is more than one lap on a short screen, so the same bar comes
+        // round again and counting hits would overstate it (the owner's review of 3923ce06).
+        var seen = new HashSet<VisualElement>();
         for (int i = 0; i < 45; i++)
         {
             yield return Tab();
-            if (Focused is VisualElement at && IsBar(at) && panel != null && panel.Contains(at))
+            if (Focused is VisualElement at && IsBar(at) && panel != null && panel.Contains(at) && seen.Add(at))
                 found.Add(at.GetFirstAncestorOfType<ScrollView>()?.name ?? "?");
         }
     }
@@ -133,14 +139,19 @@ public class ScrollBarTabStopTests
         Assert.IsEmpty(found, $"the Cabinet's bars stay out of the order, but one lap stopped on: {string.Join(", ", found)}");
     }
 
-    /// <summary>Every ScrollView in the tree, including the ones no screen walk reaches (the event card's text, the
-    /// capture dialog, the turn report and the end screen), has both of its bars out of the order.</summary>
+    /// <summary>Every ScrollView in the tree has both of its bars out of the order, except the three whose bar is the
+    /// only way a keyboard player can scroll them. `KeyScroll` has no target for `turn-report-rows`,
+    /// `end-screen-rows` or `capture-scroll`, and `GameRoot` switches PageUp, PageDown, Home and End off entirely
+    /// while the report or the end screen is open, so taking their bar out would leave no keyboard route at all.</summary>
     [UnityTest]
     public IEnumerator NoScrollViewInTheTreeKeepsAFocusableBar()
     {
         yield return BootShort();
+        var exempt = new[] { "turn-report-rows", "end-screen-rows", "capture-scroll" };
         var bad = new List<string>();
         foreach (var sv in ui.Query<ScrollView>().Build())
+        {
+            if (System.Array.IndexOf(exempt, sv.name) >= 0) continue;
             // both bars, as the helper itself sets: "every scroll bar" means the horizontal one too
             foreach (var (which, s) in new[] { ("vertical", sv.verticalScroller), ("horizontal", sv.horizontalScroller) })
             {
@@ -151,6 +162,23 @@ public class ScrollBarTabStopTests
                 if (s.lowButton != null && s.lowButton.focusable) bad.Add(at + ".lowButton");
                 if (s.highButton != null && s.highButton.focusable) bad.Add(at + ".highButton");
             }
+        }
         Assert.IsEmpty(bad, $"these scroll bars can still take the focus: {string.Join(", ", bad)}");
+    }
+
+    /// <summary>The exclusion is deliberate, so it is pinned: the three views the keyboard cannot otherwise scroll
+    /// keep a focusable bar. If `KeyScroll` is ever given a route to them, this test should be deleted along with the
+    /// exclusion in `FocusScroll.OnlyReachableByTheirBar` (#41 K6, the owner's review).</summary>
+    [UnityTest]
+    public IEnumerator TheViewsTheKeyboardCannotOtherwiseScrollKeepTheirBar()
+    {
+        yield return BootShort();
+        foreach (var name in new[] { "turn-report-rows", "end-screen-rows", "capture-scroll" })
+        {
+            var sv = ui.Q<ScrollView>(name);
+            Assert.IsNotNull(sv, $"precondition: {name} is in the tree");
+            Assert.IsTrue(sv.verticalScroller.slider.focusable,
+                $"{name} has no keyboard scroll route but its bar, so the bar stays reachable");
+        }
     }
 }

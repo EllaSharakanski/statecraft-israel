@@ -15,7 +15,8 @@ using Object = UnityEngine.Object;
 /// <summary>Writes the before and after stills for #41 K6, in English and Hebrew, to `.superpowers/a11y-bars-41/`
 /// (local, not committed). A 1280x420 window, so the Budget's rows overflow and its bar is shown and in the order.
 /// The "before" state puts the bar's slider back in the Tab order, which is what it was before the change, and Tabs
-/// from the last budget control; the "after" state is the same walk as it ships. Explicit, so it does not run with the
+/// from the Budget's rail button until the bar takes the focus; the "after" state walks the same number of presses
+/// from the same start. Explicit, so it does not run with the
 /// checks.</summary>
 [Explicit("writes stills for a pull request, not a check")]
 public class ScrollBarShots

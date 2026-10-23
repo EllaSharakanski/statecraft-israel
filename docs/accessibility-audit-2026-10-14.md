@@ -439,22 +439,30 @@ list's is `display:none`:
 | objectives (`objectives-rows`) | 0 | no | **yes** |
 
 At 1280x420, the short window this audit already used a pass at, the views overflow and the stops are real:
-the Budget takes **one**, Defence takes **two** in a lap, and the Cabinet still takes none. Defence is the worst
-case, since it has no control of its own at the opening turn, so its bar is very nearly all a keyboard player can
-land on.
+the Budget's bar and Defence's each take **one**, and the Cabinet still takes none. Defence is the worst case,
+since it has no control of its own at the opening turn, so its bar is very nearly all a keyboard player can land
+on. (An earlier draft of this section said Defence took two. That was the walk counting the same slider twice on
+two laps of a short screen, not two bars; the walk counts unique elements now.)
 
 | | Finding | Fix |
 |---|---|---|
-| K6 | Only the Cabinet's bars were out of the Tab order. Every other scroll view's slider was still focusable, so the stop came back whenever the view overflowed: a shorter window, or a list that grows during a game. `event-scroll`, `capture-scroll`, `turn-report-rows` and `end-screen-rows` are not on any screen's walk and were never checked at all. | `FocusScroll.NoScrollBarIsATabStop` applies the existing `BarsAreNotTabStops` to every `ScrollView` under the UI root, called once from `GameRoot` beside `FocusScroll`. `CabinetPresenter` keeps its own call, because many tests build that presenter without `GameRoot` and the Cabinet should not depend on the harness. |
+| K6 | Only the Cabinet's bars were out of the Tab order. Every other scroll view's slider was still focusable, so the stop came back whenever the view overflowed: a shorter window, or enough content in the list. `event-scroll`, `capture-scroll`, `turn-report-rows` and `end-screen-rows` are not on any screen's walk and were never checked at all. | `FocusScroll.NoScrollBarIsATabStop` applies the existing `BarsAreNotTabStops` to every `ScrollView` under the UI root, called once from `GameRoot` beside `FocusScroll`. `CabinetPresenter` keeps its own call, because many tests build that presenter without `GameRoot` and the Cabinet should not depend on the harness. |
 
 The reasoning is K3's, not wider: a bar is always in sight, a list is reached by Tabbing its rows, and the lists
 that hold labels only (`why-rows`, `defence-body`, the event card's text) have nothing to Tab to, while `KeyScroll`
 gives PageUp, PageDown, Home and End with or without focus. Focusability only: dragging and the wheel are untouched.
 
+Three views are left out of the sweep, because for them that reasoning does not hold: `turn-report-rows`,
+`end-screen-rows` and `capture-scroll`. `KeyScroll` has no target for any of them, `GameRoot` switches the paging
+keys off entirely while the turn report or the end screen is open, and their rows are plain labels, so Tab reaches
+nothing inside them. Taking their bar out would leave no keyboard route at all, which is worse than a stray stop.
+Giving `KeyScroll` a route to them is the better answer and is its own change.
+
 Pinned in EditMode: `ScrollBarTabStopTests` (in a 1280x420 window the Budget's and Defence's bars take no stop,
-with the overflow asserted as a precondition so the test cannot pass vacuously; the Cabinet stays at zero; and no
-`ScrollView` in the tree keeps a focusable scroller, slider or arrow button). No UI string was added, so nothing
-goes to #564.
+with the overflow asserted as a precondition so the test cannot pass vacuously; the Cabinet stays at zero; no
+`ScrollView` in the tree keeps a focusable scroller, slider or arrow button apart from the three above; and those
+three do keep theirs, so the exclusion cannot be dropped by accident). No UI string was added, so nothing goes
+to #564.
 
 ## Screenshots
 
