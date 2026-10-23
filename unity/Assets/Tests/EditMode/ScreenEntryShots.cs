@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Linq;
 using NUnit.Framework;
 using Statecraft.Game;
 using Statecraft.Game.Map;

@@ -329,8 +329,9 @@ namespace Statecraft.Game.UI
             {
                 if (e == screen || e == x || !FocusReturn.CanTakeFocus(e)) continue;
                 // Not a scroll bar: Defence's defence-body puts its scroller before any control of its own, and a bar is
-                // no use from the keyboard (#41 K3, which took the Cabinet's bars out of the Tab order). The bars of the
-                // other screens are still Tab stops; that is K3's scope, not this one's.
+                // no use from the keyboard (#41 K3, which took the Cabinet's bars out of the Tab order). The other
+                // screens' bars take no stop today, since a view hides its scroller while the content fits, but their
+                // sliders stay focusable, so one becomes a stop once its list overflows; that is K3's scope, not this one's.
                 if (e is Scroller || e.GetFirstAncestorOfType<Scroller>() != null) continue;
                 first = e;
                 break;

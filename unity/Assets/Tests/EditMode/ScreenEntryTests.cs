@@ -100,7 +100,7 @@ public class ScreenEntryTests
         var panel = ui.Q<VisualElement>("screen-" + screen);
         Assert.IsNotNull(panel, $"precondition: screen-{screen} is in the tree");
         Assert.IsTrue(panel.Contains(At),
-            $"the focus is inside the screen the moment it opens, but it is on {FocusedName}");
+            $"the focus should be inside the screen the moment it opens, but it is on {FocusedName}");
         // and on the content, not the X: the header's close button is first in the screen's own order, so without
         // skipping it the first thing a keyboard player could do with a screen they just opened is close it.
         Assert.AreEqual(expected, FocusedName, "and on the screen's first content control");
@@ -127,7 +127,7 @@ public class ScreenEntryTests
                         && !(e is Scroller) && e.GetFirstAncestorOfType<Scroller>() == null)
             .ToList();
         Assert.IsEmpty(usable, $"precondition: Defence has no control of its own that can take the focus at the opening turn");
-        Assert.IsTrue(panel.Contains(At), $"the focus is inside the screen, but it is on {FocusedName}");
+        Assert.IsTrue(panel.Contains(At), $"the focus should be inside the screen, but it is on {FocusedName}");
         Assert.AreEqual("screen-close-defence", FocusedName, "and on its X, the only thing in it that can hold the focus");
     }
 
