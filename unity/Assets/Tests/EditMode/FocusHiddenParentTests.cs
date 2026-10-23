@@ -96,24 +96,28 @@ public class FocusHiddenParentTests
             "the hidden screen's own button is skipped and the last stop takes the focus");
     }
 
-    /// <summary>The ordinary case still works: a scope that is drawn hands the focus to its first usable control, so
-    /// the ancestor walk has not made the predicate too strict.</summary>
+    /// <summary>The ordinary case still works, and this one has to prove it rather than pass on the fallback: a scope
+    /// that is drawn gives up its own first control. The owner caught the first version asserting only that something
+    /// had the focus, which `end-turn` would have satisfied even if the minimap gave up nothing.</summary>
     [UnityTest]
     public IEnumerator AVisibleScopeStillGivesUpItsFirstControl()
     {
         yield return Boot();
 
-        var hud = ui.Q<VisualElement>("top-bar");
-        Assert.IsNotNull(hud, "precondition: the top bar is drawn");
-        Assert.AreNotEqual(DisplayStyle.None, hud.resolvedStyle.display, "precondition: and not hidden");
+        var minimap = ui.Q<VisualElement>("minimap");
+        Assert.IsNotNull(minimap, "precondition: the minimap is in the tree");
+        Assert.AreNotEqual(DisplayStyle.None, minimap.resolvedStyle.display, "precondition: and it is drawn");
+        var first = ui.Q<Button>("minimap-overview");
+        Assert.IsNotNull(first, "precondition: minimap-overview is its first button");
 
         (Focused as VisualElement)?.Blur();
         yield return null;
 
-        var last = ui.Q<Button>("end-turn");
-        FocusReturn.ToOrWithin(null, last, ui.Q<VisualElement>("minimap"));
+        FocusReturn.ToOrWithin(null, ui.Q<Button>("end-turn"), minimap);
         yield return Frames(3);
 
-        Assert.IsNotNull(Focused, $"a drawn scope gives up a control; the focus is on {FocusedName}");
+        Assert.IsTrue(minimap.Contains(Focused as VisualElement),
+            $"the focus lands inside the drawn scope, not on the last stop; it is on {FocusedName}");
+        Assert.AreEqual("minimap-overview", FocusedName, "and on its first button");
     }
 }
