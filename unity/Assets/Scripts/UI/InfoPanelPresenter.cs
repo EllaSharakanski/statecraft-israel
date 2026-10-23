@@ -476,7 +476,14 @@ namespace Statecraft.Game.UI
             var partName = part?.name;
             var siteName = GddHexPanel.Render(gdd, projects, bridge, text, q, r, TownName);
             if (!string.IsNullOrEmpty(keep))
-                FocusReturn.To(partName != null ? gdd.Q(partName)?.Q(keep) : gdd.Q(keep) ?? projects.Q(keep));
+            {
+                // The rebuilt button of the same name, or, when the press itself left it gone or disabled (the Assign
+                // stepper's minus at 0, Cancel once cancelled), the first control that can take the focus in the part the
+                // player was in (#41, "Still open" item 2): without that the focus is left nowhere.
+                var rebuiltPart = partName != null ? gdd.Q(partName) : null;
+                var again = rebuiltPart != null ? rebuiltPart.Q(keep) : gdd.Q(keep) ?? projects.Q(keep);
+                FocusReturn.ToOrWithin(again, rebuiltPart ?? (gdd.Q(keep) != null ? gdd : projects));
+            }
             if (siteName != null && owned.Count == 0) title.text = siteName;
             subtitle.text = hex == null ? "" : text.Format("info.hex", text["info.biome." + hex.Biome], hex.ElevM);   // no debug coordinates in player text (playtest 2, P2-6)
             // The armistice zone in force, else the sub-district on 15 May 1948, and any armistice line in force through the

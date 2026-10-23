@@ -202,10 +202,11 @@ public class KeyboardTurnTests
         yield return TabTo(v => ui.Q("cabinet-candidates").Contains(v), "a candidate");
         yield return Enter();
         Assert.IsTrue(Bridge.Queued.OfType<Appoint>().Any(), "the appointment is ordered");
-        // The candidate list's and the seat list's own scroll bars take Tab after their last row: no error, and Tab goes on.
+        // The lists' own scroll bars used to take Tab after their last row (K1). They are out of the order now
+        // (#41, "Still open" item 1), so the Tab after the last seat goes straight on to the next control.
         yield return TabTo(v => v.name == "seat-chief_of_staff", "the last seat, past every candidate", 120);
         yield return Tab();
-        Assert.IsTrue(At is Scroller || At.GetFirstAncestorOfType<Scroller>() != null, $"the Tab after the last seat lands on a scroll bar (K1), not {FocusedName}");
+        Assert.IsFalse(At is Scroller || At.GetFirstAncestorOfType<Scroller>() != null, $"no scroll bar takes a Tab stop, but the focus is on {FocusedName}");
         yield return TabTo("nav-cabinet");
         yield return Escape();
         Assert.IsNull(ScreenOpen(), "Escape closes the Cabinet");

@@ -17,6 +17,26 @@ namespace Statecraft.Game.UI
             target.Focus();
             target.schedule.Execute(() => { if (target.panel != null && target.focusController?.focusedElement == null) target.Focus(); });
         }
+
+        /// <summary>Whether an element can actually take the keyboard focus now: a control that is disabled or not drawn
+        /// cannot, and asking it to leaves the focus nowhere.</summary>
+        static bool CanTakeFocus(VisualElement? e) =>
+            e?.panel != null && e.focusable && e.enabledInHierarchy && e.resolvedStyle.display != DisplayStyle.None;
+
+        /// <summary>Focuses <paramref name="target"/>, or, when it cannot take the focus, the first control inside
+        /// <paramref name="scope"/> that can (accessibility audit, #41, the keyboard-only turn's "Still open" list). The
+        /// K2 fix hands the focus to the rebuilt button of the same name, but a button can be gone or disabled by the very
+        /// press that rebuilt it: the Assign stepper's minus disables itself at 0, Cancel disables once the cancel is
+        /// ordered. Without a fallback the focus is left nowhere and the next Tab starts again at the first screen, which
+        /// is the symptom K2 was meant to end. Staying inside the part the player was in keeps the next Tab where they
+        /// expect it.</summary>
+        public static void ToOrWithin(VisualElement? target, VisualElement? scope)
+        {
+            if (CanTakeFocus(target)) { To(target); return; }
+            if (scope?.panel == null) return;
+            foreach (var e in scope.Query<VisualElement>().Build())
+                if (CanTakeFocus(e) && e != scope) { To(e); return; }
+        }
     }
 
     /// <summary>Whether the last press inside an element came from the keyboard (Enter or Space: NavigationSubmitEvent) or
