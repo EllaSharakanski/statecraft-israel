@@ -43,12 +43,14 @@ namespace Statecraft.Game.Map
     /// A right click (press and release inside the same slop) raises HexOrdered instead, selecting nothing. One TapPress per
     /// gesture decides both a click and the camera's pan (RightTapCandidate, TouchTapCandidate): the camera pans only once
     /// the press has left the slop, so a press is a click or a pan, never both (#1654 review).</summary>
-    /// <summary>Runs before <see cref="CameraController"/> (#1661 item 5). The camera asks this pointer whether a press
-    /// may still be a tap (<see cref="TouchTapCandidate"/>, <see cref="RightTapCandidate"/>), and only this component's
-    /// own frame moves that state. With no order declared, Unity was free to tick the camera first, which then read the
-    /// answer from the frame before: a one-finger drag lifted just after crossing the slop had its delta kept by
-    /// CameraController.HoldDrag and then dropped, so the pan was lost. The order is the cause, so the order is what is
-    /// fixed; HoldDrag's contract (a press is a click or a pan, never both, #1654) is left alone.</summary>
+    /// <remarks>Runs before <see cref="CameraController"/> (#1661 item 5). The camera asks this pointer whether a press
+    /// may still be a tap. For a finger that answer is <see cref="TouchTapCandidate"/>, which only this component's own
+    /// frame moves; <see cref="RightTapCandidate"/> is moved by the right button's action callbacks
+    /// (<see cref="RightStep"/>) instead, so it does not depend on the order. With no order declared, Unity was free to
+    /// tick the camera first, which then read the touch answer from the frame before: a one-finger drag lifted just
+    /// after crossing the slop had its delta kept by CameraController.HoldDrag and then dropped, so the pan was lost.
+    /// The order is the cause, so the order is what is fixed; HoldDrag's contract (a press is a click or a pan, never
+    /// both, #1654) is left alone.</remarks>
     [DefaultExecutionOrder(-100)]
     public sealed class MapPointer : MonoBehaviour
     {

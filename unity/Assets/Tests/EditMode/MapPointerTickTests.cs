@@ -97,44 +97,49 @@ public class MapPointerTickTests : InputTestFixture
     // and a test asserting it would be order-dependent. Reported on #1661 instead of pinned; the no-order half is
     // already covered by RightClickOrPanTests.ARightDragOutAndBackInsideOneFrameIsNoClick.
 
-    /// <summary>The touch half of item 4, and the answer is blunter than the tap rule: a touch press and release
-    /// inside <em>one</em> input update is not seen by <c>MapPointer</c> at all. <c>Tick</c> reads
-    /// <c>press.wasPressedThisFrame</c>, and when Began and Ended land in the same update the press control starts and
-    /// ends at 0, so no press edge appears and <c>TapPress.Step</c> returns at <c>if (!down)</c>. The zero-travel
-    /// control below shows this is about the press edge and not about the travel.</summary>
+    /// <summary>Item 4's touch half, pinning what happens **today**: a flick whose press, travel and release all land
+    /// in one input update comes back as a <em>tap</em>, and at the release point rather than where the finger landed.
+    /// <para>Why. <c>Tick</c> samples the touch once per frame, and <c>TapPress.Step</c> sets <c>start</c> from that
+    /// same sample on the press edge, so <c>position - start</c> is zero and <c>moved</c> never latches however far the
+    /// finger travelled. The 200 px of travel is invisible, and the one position the frame saw is the last one.</para>
+    /// <para>The warming frame matters: <c>ButtonControl.wasPressedThisFrame</c> takes an old path on its first call
+    /// ever and can miss a fast press (ButtonControl.cs:287-293, and its own remarks). Without it this test passed for
+    /// the wrong reason, with the gesture not seen at all. In the game <c>Tick</c> queries every frame, so the control
+    /// is warm, and this is what a real one-update flick would do. Reported on #1661; the fix would mean reading the
+    /// touch's travel or phase rather than one sampled position, which changes the tap rule.</para></summary>
     [Test]
-    public void AFlickInsideOneInputUpdateIsNotSeenAtAll()
+    public void AFlickInsideOneInputUpdateIsATapAtTheReleasePointToday()
     {
         using var rig = new Rig();
         var start = rig.View.LookAt;
         var from = new Vector2(400, 400);
+        rig.Frame();   // warms press.wasPressedThisFrame: its first call ever takes ButtonControl's old path
         BeginTouch(1, from, queueEventOnly: true);
         MoveTouch(1, from + new Vector2(200, 0), queueEventOnly: true);
         EndTouch(1, from + new Vector2(200, 0));
         rig.Frame();
-        rig.SettleFrame();   // a queued tap would be handled here
-        Assert.AreEqual(start, rig.View.LookAt, "the flick does not pan");
-        Assert.IsEmpty(rig.Asked, "and it does not select");
+        rig.SettleFrame();
+        CollectionAssert.AreEqual(new[] { from + new Vector2(200, 0) }, rig.Asked,
+            "today a one-update flick taps, and at the release point: the travel is invisible to the slop");
+        Assert.AreEqual(start, rig.View.LookAt, "and it does not pan");
     }
 
-    /// <summary>The zero-travel control, and it is why the test above is not evidence that the drag was rejected: the
-    /// same one-update press and release with the finger completely still does not select either. So for touch, a whole
-    /// gesture inside one input update is dropped on the press edge, before the slop is ever consulted. A mouse click
-    /// does not pay this, since it enqueues from the action callback rather than being polled for an edge
-    /// (<c>TheFrameHandlesAQueuedPressOnceThroughTheRealPath</c>). Reported on #1661; a fix would mean reading the
-    /// touch phase instead of the press edge, which is a change to the tap rule and not mine to choose here.</summary>
+    /// <summary>The zero-travel control, and the reason the test above is a finding rather than an artefact: the same
+    /// one-update press and release with the finger still selects where it was pressed, which is correct. So the
+    /// difference between the two is the 200 px of travel being lost, not the gesture being dropped.</summary>
     [Test]
-    public void AStillPressInsideOneInputUpdateIsAlsoNotSeen()
+    public void AStillPressInsideOneInputUpdateSelectsWhereItWasPressed()
     {
         using var rig = new Rig();
         var start = rig.View.LookAt;
         var at = new Vector2(500, 350);
+        rig.Frame();   // same warming as above
         BeginTouch(1, at, queueEventOnly: true);
         EndTouch(1, at);
         rig.Frame();
         rig.SettleFrame();
-        Assert.IsEmpty(rig.Asked, "a still press and release inside one input update is dropped, like the flick");
-        Assert.AreEqual(start, rig.View.LookAt, "and it does not pan");
+        CollectionAssert.AreEqual(new[] { at }, rig.Asked, "a still press and release in one update selects, correctly");
+        Assert.AreEqual(start, rig.View.LookAt, "and a tap never pans");
     }
 
     // --- item 5: the order, now declared ------------------------------------------------------------------------
