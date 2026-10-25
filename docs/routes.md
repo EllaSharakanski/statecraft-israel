@@ -73,7 +73,7 @@ month) is skipped alone, with a warning.
   - `test_no_sawtooth_on_straight_lines` bounds the zigzags: at most 3 on the plain railways, and at most 15% of points
     anywhere. The hill roads and the Jericho descent have real hairpins.
 - A hook at either end is cut. The line goes out to a waypoint just off the route's end and back; for example the Burma
-  Road began "just east of Dayr Muhaysin".
+  Road began "just east of Deir Muhaysin".
 - `--preview DIR` writes every traced segment over the map, which is how each was checked by eye.
 - The tool records each trace's quality in the generated file, and `test_routes_1948.py` guards both values, so an
   invented chord cannot hide in a straight stretch:
