@@ -111,7 +111,8 @@ Six things the rule does not reach:
 
 - **A quoted source form keeps the spelling its source prints** ("keep quotes as printed", same ruling). That covers
   `listed_as` values, the armistice line names in `content/map/armistice_hexes_1949.yaml`, and any wording inside
-  quotation marks.
+  quotation marks. `docs/routes.md` quoting the Burma Road's start as "just east of Dayr Muhaysin" is the pattern: the
+  phrase is the English Wikipedia article's, so it keeps that article's spelling even though our own prose says Deir.
 - **Kafr and Kfar stay distinct.** Kafr is the Arabic word and Kfar the Hebrew one; they are two words, not two
   spellings of one, and `name_basis` already records which is which.
 - **A URL is never respelled.** A Wikipedia article title belongs to the article, so a waypoint spelled "Beit Jiz" may
