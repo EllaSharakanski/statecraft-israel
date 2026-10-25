@@ -121,7 +121,12 @@ namespace Statecraft.Game.Map
             while (rightClicks.Count > 0) HandleRightClick(rightClicks.Dequeue());
         }
 
-        void Update()
+        void Update() => Tick();
+
+        /// <summary>One frame of this pointer: the queued presses, then the primary finger's tap rule. Test seam (internal;
+        /// the tests see it through InternalsVisibleTo), as CameraController.Tick is (#890): an EditMode test has no player
+        /// loop, so it drives the real Update path instead of the handlers underneath it (#1661 item 6).</summary>
+        internal void Tick()
         {
             ProcessPresses();
             var ts = Touchscreen.current;
