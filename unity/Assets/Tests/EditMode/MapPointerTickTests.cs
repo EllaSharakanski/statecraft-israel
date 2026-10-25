@@ -7,10 +7,12 @@ using UnityEditor;
 using UnityEngine.InputSystem;
 
 /// <summary>#1661 items 4, 5 and 6: the real <c>MapPointer.Update</c> path, driven through its test seam
-/// (<c>MapPointer.Tick</c>, as <c>CameraController.Tick</c> is, #890). The existing fixtures reach
+/// (<c>MapPointer.Tick</c>, as <c>CameraController.Tick</c> is, #890). The other fixtures reach
 /// <c>ProcessPresses</c> and the handlers underneath <c>Update</c>, so nothing drove the frame itself (item 6).
-/// With that seam, the two timing questions become answerable: a touch gesture that begins and ends inside one
-/// frame (item 4), and the undefined order of the two <c>Update</c> calls (item 5).</summary>
+/// <para>One thing to know when reading these: the fixture's <c>BeginTouch</c>, <c>MoveTouch</c> and <c>EndTouch</c>
+/// default to <c>queueEventOnly: false</c>, so each call runs its own <c>InputSystem.Update</c>. A gesture written as
+/// three plain calls therefore spans three input updates, and the press edge is gone before <c>Tick</c> runs. To put a
+/// whole gesture inside one input update, every call but the last passes <c>queueEventOnly: true</c>.</para></summary>
 public class MapPointerTickTests : InputTestFixture
 {
     static void Send(Object o, string message) =>
@@ -22,7 +24,7 @@ public class MapPointerTickTests : InputTestFixture
         public readonly CameraRig View;
         public readonly CameraController Controller;
         public readonly MapPointer Pointer;
-        /// <summary>Every position the pointer asked the UI about: one per click or tap it decided to act on.</summary>
+        /// <summary>Every position the pointer asked the UI about: one per click, order or tap it acted on.</summary>
         public readonly List<Vector2> Asked = new List<Vector2>();
         public Rig()
         {
@@ -39,106 +41,131 @@ public class MapPointerTickTests : InputTestFixture
             Controller.HoldsTouchDrag = () => pointer.TouchTapCandidate;
             Send(Controller, "Awake"); Send(Controller, "OnEnable"); Send(Pointer, "OnEnable");
         }
-        /// <summary>One frame in the order Unity happens to give today when the pointer runs first.</summary>
-        public void FramePointerFirst() { Pointer.Tick(); Controller.Tick(0.016f); }
+        /// <summary>One frame, in the order the attribute now guarantees: the pointer, then the camera.</summary>
+        public void Frame() { Pointer.Tick(); Controller.Tick(0.016f); }
         /// <summary>A tap is decided at the end of the pointer's frame and only <em>enqueued</em> (OnPress), while
-        /// ProcessPresses already ran at the top of that same frame. So a tap takes effect on the frame after the finger
-        /// lifts, and a test that asserts on the release frame alone asserts too early.</summary>
-        public void SettleFrame() { Pointer.Tick(); Controller.Tick(0.016f); }
-        /// <summary>The same frame with the other order, which Unity is equally free to choose (item 5).</summary>
-        public void FrameCameraFirst() { Controller.Tick(0.016f); Pointer.Tick(); }
+        /// ProcessPresses already ran at the top of that same frame, so a tap takes effect on the frame after the finger
+        /// lifts. A mouse click does not pay this, since it enqueues from the action callback outside Tick.</summary>
+        public void SettleFrame() { Frame(); }
         public void Dispose() { Send(Pointer, "OnDisable"); Send(Controller, "OnDisable"); Object.DestroyImmediate(Go); }
     }
 
     Mouse mouse = null!;
-    Touchscreen touch = null!;
 
     [SetUp]
     public void Devices()
     {
         InputSystem.actions = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
         mouse = InputSystem.AddDevice<Mouse>();
-        touch = InputSystem.AddDevice<Touchscreen>();
+        InputSystem.AddDevice<Touchscreen>();
     }
 
-    /// <summary>Item 6: the real Update path, not the handlers under it. A queued left press is handled by the frame
-    /// itself, and only once.</summary>
+    // --- item 6: the frame itself -------------------------------------------------------------------------------
+
+    /// <summary>The frame handles a queued press, at its own position, exactly once.</summary>
     [Test]
     public void TheFrameHandlesAQueuedPressOnceThroughTheRealPath()
     {
         using var rig = new Rig();
         rig.Pointer.OnPress(new Vector2(800, 450));
-        rig.FramePointerFirst();
+        rig.Frame();
         CollectionAssert.AreEqual(new[] { new Vector2(800, 450) }, rig.Asked, "the frame handled the press at its own position");
-        rig.FramePointerFirst();
+        rig.Frame();
         Assert.AreEqual(1, rig.Asked.Count, "a press is handled once, not again on the next frame");
     }
 
-    /// <summary>Item 6: a tap that spans two frames still selects where the finger landed, driven through the frame.</summary>
+    /// <summary>A tap spanning frames selects where the finger landed, driven through the frame.</summary>
     [Test]
     public void ATapOverTwoFramesSelectsWhereTheFingerLanded()
     {
         using var rig = new Rig();
         var at = new Vector2(600, 300);
         BeginTouch(1, at);
-        rig.FramePointerFirst();
+        rig.Frame();
         Assert.IsEmpty(rig.Asked, "nothing while the finger is down");
         EndTouch(1, at + new Vector2(2, -1));
-        rig.FramePointerFirst();
+        rig.Frame();
         Assert.IsEmpty(rig.Asked, "the tap is decided on the release frame but only queued");
         rig.SettleFrame();
         CollectionAssert.AreEqual(new[] { at }, rig.Asked, "a 2 px wiggle is a tap, at where the finger landed");
     }
 
-    /// <summary>Item 4, failing first: a flick that begins and ends inside one frame. The finger travelled far past the
-    /// slop, so it was a drag and must not select. Today MapPointer samples one position per frame and sets the tap's
-    /// start from it, so the travel is invisible and the gesture comes back as a tap.</summary>
+    // --- item 4: a whole gesture inside one frame --------------------------------------------------------------
+    // The mouse half of item 4 ("no pan") is deliberately absent. A test asserting that a right press, a 300 px move
+    // and a release inside one frame leaves LookAt alone passes on its own and fails in the full suite, where the
+    // camera had panned to (503876.60, 0, 499869.60). So "it does not pan" is not a stable property of the system here,
+    // and a test asserting it would be order-dependent. Reported on #1661 instead of pinned; the no-order half is
+    // already covered by RightClickOrPanTests.ARightDragOutAndBackInsideOneFrameIsNoClick.
+
+    /// <summary>The touch half of item 4, and the answer is blunter than the tap rule: a touch press and release
+    /// inside <em>one</em> input update is not seen by <c>MapPointer</c> at all. <c>Tick</c> reads
+    /// <c>press.wasPressedThisFrame</c>, and when Began and Ended land in the same update the press control starts and
+    /// ends at 0, so no press edge appears and <c>TapPress.Step</c> returns at <c>if (!down)</c>. The zero-travel
+    /// control below shows this is about the press edge and not about the travel.</summary>
     [Test]
-    public void AFlickInsideOneFrameIsNotATap()
+    public void AFlickInsideOneInputUpdateIsNotSeenAtAll()
     {
         using var rig = new Rig();
+        var start = rig.View.LookAt;
         var from = new Vector2(400, 400);
-        BeginTouch(1, from);
-        MoveTouch(1, from + new Vector2(200, 0));
+        BeginTouch(1, from, queueEventOnly: true);
+        MoveTouch(1, from + new Vector2(200, 0), queueEventOnly: true);
         EndTouch(1, from + new Vector2(200, 0));
-        rig.FramePointerFirst();
-        rig.SettleFrame();   // a queued tap would be handled here; without this the assert passes for the wrong reason
-        Assert.IsEmpty(rig.Asked, "a 200 px flick inside one frame is a drag, not a tap");
+        rig.Frame();
+        rig.SettleFrame();   // a queued tap would be handled here
+        Assert.AreEqual(start, rig.View.LookAt, "the flick does not pan");
+        Assert.IsEmpty(rig.Asked, "and it does not select");
     }
 
-    /// <summary>Item 5, and it fails today: a one-finger drag past the slop pans when the pointer's Update runs first
-    /// and does not pan at all when the camera's does. Neither component declares an execution order, so Unity is free
-    /// to choose either.
-    /// <para>Why the pan is lost, not merely late. On the frame the finger crosses the slop the camera asks
-    /// <c>HoldsTouchDrag</c> before <c>MapPointer.Tick</c> has set <c>moved</c>, so it still believes the press may be a
-    /// tap and keeps the delta (<c>HoldDrag</c>, <c>heldDrag += drag</c>). On the next frame the finger is up, so
-    /// <c>down</c> is false and <c>HoldDrag</c>'s first branch drops the kept delta, as its contract says it should when
-    /// "the press ends while still held (it was a click)". The gesture was not a click; the pointer had simply not
-    /// recorded the movement yet when the camera asked.</para>
-    /// <para>Ignored rather than deleted because the fix is a design choice, not a correction: either give the two
-    /// components a <c>DefaultExecutionOrder</c> (this project uses none today, so it would be the first), or let
-    /// <c>HoldDrag</c> replay a kept delta whose press had already left the slop, which cuts against its documented
-    /// contract and the #1654 ruling that a press is a click or a pan and never both. #1661 item 5.</para></summary>
+    /// <summary>The zero-travel control, and it is why the test above is not evidence that the drag was rejected: the
+    /// same one-update press and release with the finger completely still does not select either. So for touch, a whole
+    /// gesture inside one input update is dropped on the press edge, before the slop is ever consulted. A mouse click
+    /// does not pay this, since it enqueues from the action callback rather than being polled for an edge
+    /// (<c>TheFrameHandlesAQueuedPressOnceThroughTheRealPath</c>). Reported on #1661; a fix would mean reading the
+    /// touch phase instead of the press edge, which is a change to the tap rule and not mine to choose here.</summary>
     [Test]
-    [Ignore("#1661 item 5: fails today; the fix is an owner/maintainer choice between a DefaultExecutionOrder and changing HoldDrag's contract")]
-    public void TheHeldPanDoesNotDependOnWhichUpdateRunsFirst()
+    public void AStillPressInsideOneInputUpdateIsAlsoNotSeen()
     {
-        var reached = new List<Vector3>();
-        foreach (var cameraFirst in new[] { false, true })
-        {
-            using var rig = new Rig();
-            var from = new Vector2(700, 400);
-            BeginTouch(1, from);
-            if (cameraFirst) rig.FrameCameraFirst(); else rig.FramePointerFirst();
-            // past the slop in one step: from this frame on the gesture is a pan, never a tap
-            MoveTouch(1, from + new Vector2(TapPress.SlopPixels + 40, 0));
-            if (cameraFirst) rig.FrameCameraFirst(); else rig.FramePointerFirst();
-            EndTouch(1, from + new Vector2(TapPress.SlopPixels + 40, 0));
-            if (cameraFirst) rig.FrameCameraFirst(); else rig.FramePointerFirst();
-            rig.SettleFrame();
-            reached.Add(rig.View.LookAt);
-            Assert.IsEmpty(rig.Asked, $"a drag past the slop never taps (cameraFirst={cameraFirst})");
-        }
-        Assert.AreEqual(reached[0], reached[1], "the pan reaches the same place whichever Update runs first");
+        using var rig = new Rig();
+        var start = rig.View.LookAt;
+        var at = new Vector2(500, 350);
+        BeginTouch(1, at, queueEventOnly: true);
+        EndTouch(1, at);
+        rig.Frame();
+        rig.SettleFrame();
+        Assert.IsEmpty(rig.Asked, "a still press and release inside one input update is dropped, like the flick");
+        Assert.AreEqual(start, rig.View.LookAt, "and it does not pan");
+    }
+
+    // --- item 5: the order, now declared ------------------------------------------------------------------------
+
+    /// <summary>Item 5's fix, pinned at its cause: the pointer's frame must run before the camera's, because the camera
+    /// asks it whether a press may still be a tap and only the pointer's frame moves that state.</summary>
+    [Test]
+    public void ThePointerTicksBeforeTheCamera()
+    {
+        int Order<T>() => System.Attribute.GetCustomAttribute(typeof(T), typeof(DefaultExecutionOrder)) is DefaultExecutionOrder o ? o.order : 0;
+        Assert.Less(Order<MapPointer>(), Order<CameraController>(),
+            "MapPointer must tick first, or a drag lifted just after crossing the slop loses its pan (#1661 item 5)");
+    }
+
+    /// <summary>Item 5, the behaviour the order protects: a one-finger drag that crosses the slop and is lifted on the
+    /// very next frame still pans. In that order the pointer sets moved first, so HoldDrag replays the kept delta
+    /// instead of dropping it as a click's.</summary>
+    [Test]
+    public void APanLiftedRightAfterCrossingTheSlopIsNotLost()
+    {
+        using var rig = new Rig();
+        var start = rig.View.LookAt;
+        var from = new Vector2(700, 400);
+        BeginTouch(1, from);
+        rig.Frame();
+        MoveTouch(1, from + new Vector2(TapPress.SlopPixels + 40, 0));
+        rig.Frame();
+        EndTouch(1, from + new Vector2(TapPress.SlopPixels + 40, 0));
+        rig.Frame();
+        rig.SettleFrame();
+        Assert.AreNotEqual(start, rig.View.LookAt, "the pan is not lost when the finger lifts right after the slop");
+        Assert.IsEmpty(rig.Asked, "a drag past the slop never taps");
     }
 }
