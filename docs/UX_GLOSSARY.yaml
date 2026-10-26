@@ -22,8 +22,8 @@ conventions:
 - id: transliteration
   status: preferred
   summary: 'Hebrew terms in English text: ma''abara and ma''abarot take a straight apostrophe (owner''s ruling, 26 October
-    2026, #1760), and Halutz, Hakhshara, yishuv, yishuvim, aliyah and Knesset are spelt as they already are, never having
-    been spelt two ways. An identifier is not display text, so ids, YAML keys, filenames and C# names keep their
+    2026, #1760). Halutz, Hakhshara (with kh), yishuv, yishuvim, aliyah and Knesset keep the spelling already in use,
+    pending the owner's word on them. An identifier is not display text, so ids, YAML keys, filenames and C# names keep their
     apostrophe-free spelling (content/model.yaml: id maabarot beside name "Transit camps (ma''abarot)"); a quoted source
     form and a URL keep what they print. The rule is docs/WRITING_GUIDE.md section 10. Arabic place names are settled
     separately (see place-names).'
@@ -654,8 +654,6 @@ concepts:
     in_use:
     - form: Place a transit camp ({0})
       where: strings.en.yaml info.build_camp
-    - form: the ma'abarot transit camps
-      where: README.md, site press page
   he:
     preferred: מעברה
     avoid: []

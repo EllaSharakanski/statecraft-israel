@@ -79,7 +79,7 @@ Decision owner: Eyal: where the rule is documented and the dictionary; the rule 
 
 ### transliteration (preferred)
 
-Hebrew terms in English text: ma'abara and ma'abarot take a straight apostrophe (owner's ruling, 26 October 2026, #1760), and Halutz, Hakhshara, yishuv, yishuvim, aliyah and Knesset are spelt as they already are, never having been spelt two ways. An identifier is not display text, so ids, YAML keys, filenames and C# names keep their apostrophe-free spelling (content/model.yaml: id maabarot beside name "Transit camps (ma'abarot)"); a quoted source form and a URL keep what they print. The rule is docs/WRITING_GUIDE.md section 10. Arabic place names are settled separately (see place-names).
+Hebrew terms in English text: ma'abara and ma'abarot take a straight apostrophe (owner's ruling, 26 October 2026, #1760). Halutz, Hakhshara (with kh), yishuv, yishuvim, aliyah and Knesset keep the spelling already in use, pending the owner's word on them. An identifier is not display text, so ids, YAML keys, filenames and C# names keep their apostrophe-free spelling (content/model.yaml: id maabarot beside name "Transit camps (ma'abarot)"); a quoted source form and a URL keep what they print. The rule is docs/WRITING_GUIDE.md section 10. Arabic place names are settled separately (see place-names).
 
 Recommendation (see status): Written down in docs/WRITING_GUIDE.md section 10; each term is listed once here, glossed at first use in prose, with the Hebrew beside it.
 
@@ -600,7 +600,6 @@ Category: place. Scope: ui, docs, marketing.
 | In use | Where |
 |---|---|
 | Place a transit camp ({0}) | strings.en.yaml info.build_camp |
-| the ma'abarot transit camps | README.md, site press page |
 
 **Hebrew.** Preferred: מעברה.
 

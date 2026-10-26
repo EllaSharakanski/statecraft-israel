@@ -23,7 +23,7 @@ Use short, concrete sentences when possible. Favor verbs that tell the player wh
 Good examples:
 
 - “The cabinet divided over the truce terms.”
-- “The budget tightened as the ma’abarot swelled.”
+- “The budget tightened as the ma'abarot swelled.”
 - “The government faced a fresh wave of security pressure.”
 
 ## 3. Tone guidelines
@@ -130,17 +130,20 @@ Six things the rule does not reach:
 2026 (#1760), for docs, content and the UI alike. Give the English at the first mention, as the glossary's
 *transit camp* entry sets out: "the ma'abarot (transit camps)", then either word.
 
-The other Hebrew terms in use have never been spelt two ways, so this records them rather than deciding anything:
-**yishuv** and **yishuvim**, **halutz** and **halutzim**, **aliyah**, **hakhshara** (with *kh*, as 69 of its 79 uses
-already have it), and **Knesset**.
+The owner has ruled on ma'abara and ma'abarot only. For the other Hebrew terms this records the spelling already in
+use, pending the owner's word, and a straggler is not a second scheme: **yishuv** and **yishuvim** (429 and 73 uses,
+with no variant spelling at all), **halutz** and **halutzim** (191 and 56, against 5 "haluz"), **aliyah** (355,
+against 5 "aliya"), **hakhshara** with *kh* (69, against 10 "hachshara", two of them in `content/sites.yaml`), and
+**Knesset** (2737, against 6 "Knesseth"). Counted on main, 26 October 2026.
 
 Three things the rule does not reach, for the same reasons as section 9:
 
 - **An identifier is not display text.** An apostrophe cannot go in an id, a YAML key, a filename or a C# name, so
   the event `maabarot_policy`, the policy key `maabarot`, `content/events/maabarot_policy.yaml` and
   `MaabaraCamp.cs` keep their spelling. `content/model.yaml` is the pattern: `id: maabarot` beside
-  `name: Transit camps (ma'abarot)`. Renaming ids would move every reference, the three goldens that name this event
-  and the content hash, for no player-visible gain.
+  `name: Transit camps (ma'abarot)`. Renaming them would move every reference and the content hash for no
+  player-visible gain: the event id `maabarot_policy` is named by three goldens, and the policy key `maabarot` has a
+  line in all nine.
 - **A quoted source form keeps the spelling its source prints**, as in section 9. `research_notes/GDD phase 3/locked-project-kinds.md`
   quoting "The first maabara opened in Ksalon" keeps the source's spelling.
 - **A URL is never respelled.**

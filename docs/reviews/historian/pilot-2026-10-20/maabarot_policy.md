@@ -83,7 +83,7 @@ This is a draft claim inventory, including assertions in YAML comments. Rows may
 | M08 | text; office | PrimeMinister is the decision office; historical-reference holder resolves within window. | Pinned people.yaml and Offices.Holder. | Player appointments can change actual runtime text. |  |
 | M09 | keep_camps option | Keeping free-board camps is a playable alternative. | Pinned YAML `alternative: { basis: design }`; accepted road 21. | Design assumption; no historical advocate, date or nested source is asserted. Do not invent one. |  |
 | M10 | sources comment | CET bibliography publication year versus YAML source note. | S20 Bibliography field 1986; YAML comment 1987. | Unresolved bibliographic mismatch; no source/comment correction included. |  |
-| M11 | effects/set_policy | Housing/cohesion/money changes and maabarot policy 1.0. | Pinned YAML/model. | Design values, not historical quantities. |  |
+| M11 | effects/set_policy | Housing/cohesion/money changes and the `maabarot` policy 1.0. | Pinned YAML/model. | Design values, not historical quantities. |  |
 
 ## Known gaps and contradictions
 
