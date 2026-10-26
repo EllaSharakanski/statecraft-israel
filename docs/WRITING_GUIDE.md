@@ -121,6 +121,27 @@ Six things the rule does not reach:
   moves every reference and the content hash for no player-visible gain.
 - **Today's name of a living place is not a 1945 form.** It is the present-day official name with its own source, so
   `today.name` reads "Bayt Jann" beside `name` "Beit Jann".
-- **Hebrew-term transliteration is still open.** ma'abarot, yishuv, halutz and the rest have no scheme yet; see
-  `docs/UX_GLOSSARY.md`, "transliteration".
+- **Hebrew terms follow section 10, not this rule.** ma'abarot, yishuv and halutz are Hebrew, not Arabic place names;
+  their spelling is section 10 below.
+
+## 10. Hebrew terms in English text
+
+**ma'abara**, **ma'abarot** — with a straight apostrophe, never "maabara" or "maabarot". Owner's ruling, 26 October
+2026 (#1760), for docs, content and the UI alike. Give the English at the first mention, as the glossary's
+*transit camp* entry sets out: "the ma'abarot (transit camps)", then either word.
+
+The other Hebrew terms in use have never been spelt two ways, so this records them rather than deciding anything:
+**yishuv** and **yishuvim**, **halutz** and **halutzim**, **aliyah**, **hakhshara** (with *kh*, as 69 of its 79 uses
+already have it), and **Knesset**.
+
+Three things the rule does not reach, for the same reasons as section 9:
+
+- **An identifier is not display text.** An apostrophe cannot go in an id, a YAML key, a filename or a C# name, so
+  the event `maabarot_policy`, the policy key `maabarot`, `content/events/maabarot_policy.yaml` and
+  `MaabaraCamp.cs` keep their spelling. `content/model.yaml` is the pattern: `id: maabarot` beside
+  `name: Transit camps (ma'abarot)`. Renaming ids would move every reference, the three goldens that name this event
+  and the content hash, for no player-visible gain.
+- **A quoted source form keeps the spelling its source prints**, as in section 9. `research_notes/GDD phase 3/locked-project-kinds.md`
+  quoting "The first maabara opened in Ksalon" keeps the source's spelling.
+- **A URL is never respelled.**
 
