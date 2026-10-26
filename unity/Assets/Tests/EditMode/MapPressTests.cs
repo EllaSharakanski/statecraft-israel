@@ -68,6 +68,29 @@ public class MapPressTests
         tap.Step(true, false, new Vector2(300, 300), false);
         Assert.AreEqual((Vector2?)new Vector2(300, 300), tap.Step(false, true, new Vector2(300, 300), false));
     }
+
+    /// <summary>The travel rule with no devices (#1661 item 4, owner's ruling of 26 October 2026): a press whose
+    /// whole journey happens inside one frame is a drag, because <c>Step</c> is now told how far the finger went.
+    /// Position and start are the same sample here, so without the travel the slop would see nothing move.</summary>
+    [Test]
+    public void APressThatTravelsPastTheSlopInOneFrameIsNotATap()
+    {
+        var tap = new TapPress();
+        var at = new Vector2(600, 400);
+        Assert.IsNull(tap.Step(true, true, at, false, new Vector2(200, 0)),
+            "200 px of travel inside the frame is a drag, even though position equals start");
+    }
+
+    /// <summary>The other side of the same rule: travel inside the slop still taps, so the threshold is the slop and
+    /// not merely "any travel at all".</summary>
+    [Test]
+    public void APressThatTravelsInsideTheSlopInOneFrameStillTaps()
+    {
+        var tap = new TapPress();
+        var at = new Vector2(600, 400);
+        Assert.AreEqual((Vector2?)at, tap.Step(true, true, at, false, new Vector2(20, 0)),
+            "20 px is inside TapPress.SlopPixels (30), so it is still a tap at where the finger landed");
+    }
 }
 
 /// <summary>#1654 review (blocker): a right press is a right click (an order) or the camera's drag pan, never both. Real

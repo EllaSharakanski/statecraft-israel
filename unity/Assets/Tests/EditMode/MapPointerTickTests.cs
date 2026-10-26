@@ -147,9 +147,10 @@ public class MapPointerTickTests : InputTestFixture
         Assert.AreNotEqual(start, rig.View.LookAt, "and the map pans by the swipe");
     }
 
-    /// <summary>The zero-travel control, and the reason the test above is a finding rather than an artefact: the same
-    /// one-update press and release with the finger still selects where it was pressed, which is correct. So the
-    /// difference between the two is the 200 px of travel being lost, not the gesture being dropped.</summary>
+    /// <summary>The zero-travel control for the two tests above: the same one-update press and release, with the
+    /// finger still, selects where it was pressed. The finger's travel in the frame is zero, so the slop sees nothing
+    /// and the press is a tap, as it should be. That is what makes the swipe above a travel rule rather than a
+    /// one-update gesture being dropped: the only difference between them is the 200 px.</summary>
     [Test]
     public void AStillPressInsideOneInputUpdateSelectsWhereItWasPressed()
     {
