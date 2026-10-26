@@ -976,3 +976,8 @@ why.cause.objective_completed: "היעד הושלם: {0}; ניקוד: {1}"
 why.cause.prisoners_returned: "חילופי שבויים: {0:N0} שבויים הוחזרו אל {1}"
 # C166: agent-drafted Hebrew; native review: owner, in chat on 25 Oct 2026 (approved as drafted, C155 HE-V031.md row 33).
 why.cause.soldiers_returned: "חילופי שבויים: {0:N0} מחיילינו חזרו הביתה מידי {1}"
+
+# #1708 artillery action status. Hebrew: native review pending (#564).
+unit.artillery_move_missing: "לא ניתן להזיז ארטילריה עדיין: נקודות התנועה שלה טרם נקבעו"
+unit.fire_ready: "ניתן לירות"
+unit.fire_spent: "הירי בוצע בתור הזה"

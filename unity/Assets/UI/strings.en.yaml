@@ -877,3 +877,8 @@ why.cause.event_policy_from: "{0} set to {1} ({2})"
 why.cause.objective_completed: "{0}: completed, {1} points"
 why.cause.prisoners_returned: "Prisoners exchanged: {0:N0} prisoners returned to {1}"
 why.cause.soldiers_returned: "Prisoners exchanged: {0:N0} of our soldiers came home from {1}"
+
+# #1708 artillery action status. Hebrew: native review pending (#564).
+unit.artillery_move_missing: "Artillery cannot move yet: its movement points have not been set"
+unit.fire_ready: "Fire available"
+unit.fire_spent: "Fired this turn"
