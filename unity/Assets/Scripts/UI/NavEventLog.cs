@@ -33,7 +33,30 @@ namespace Statecraft.Game.UI
 
         static string Name(IEventHandler? t) => t is VisualElement v ? (string.IsNullOrEmpty(v.name) ? v.GetType().Name : v.name) : "?";
 
-        void OnDown(PointerDownEvent e) => DiagLog.NavLine($"ui pointerdown id={e.pointerId} at ({e.position.x:0}, {e.position.y:0}) target={Name(e.target)}");
+        /// <summary>The classes on one element, sorted so two lines can be compared by eye.</summary>
+        static string Classes(VisualElement v)
+        {
+            var names = new List<string>(v.GetClasses());
+            names.Sort(System.StringComparer.Ordinal);
+            return names.Count == 0 ? "" : "." + string.Join(".", names);
+        }
+
+        /// <summary>The pressed element and every ancestor above it, each with its classes, innermost first. A press that
+        /// lands somewhere nobody expected is usually a full-screen layer in front of the panels, and the rules that show
+        /// those layers are descendant selectors (Statecraft.uss, ".event-open .event-scrim"), so the class that displays
+        /// the backdrop may sit on any ancestor, not only the HUD root — the whole chain is what settles it. #1728: in
+        /// Hebrew a press on the unit panel's Skip reaches `event-scrim` with nothing dimmed, which needs the backdrop to
+        /// be both displayed and invisible; this says whether it was displayed, and from where.</summary>
+        static string Path(IEventHandler? target)
+        {
+            if (target is not VisualElement v) return "?";
+            var parts = new List<string>();
+            for (var e = v; e != null && parts.Count < 12; e = e.parent)
+                parts.Add((string.IsNullOrEmpty(e.name) ? e.GetType().Name : e.name) + Classes(e));
+            return string.Join(" < ", parts);
+        }
+
+        void OnDown(PointerDownEvent e) => DiagLog.NavLine($"ui pointerdown id={e.pointerId} at ({e.position.x:0}, {e.position.y:0}) target={Name(e.target)} path={Path(e.target)}");
         void OnUp(PointerUpEvent e) => DiagLog.NavLine($"ui pointerup id={e.pointerId} at ({e.position.x:0}, {e.position.y:0}) target={Name(e.target)}");
         void OnClick(ClickEvent e) => DiagLog.NavLine($"ui click count={e.clickCount} target={Name(e.target)}");
         void OnButtonUp(PointerUpEvent e) => DiagLog.NavLine($"button pointerup at ({e.position.x:0}, {e.position.y:0}) on={Name(e.currentTarget)} inside={((VisualElement)e.currentTarget).worldBound.Contains(e.position)}");
