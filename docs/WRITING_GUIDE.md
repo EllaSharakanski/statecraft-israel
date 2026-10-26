@@ -134,7 +134,13 @@ The owner has ruled on ma'abara and ma'abarot only. For the other Hebrew terms t
 use, pending the owner's word, and a straggler is not a second scheme: **yishuv** and **yishuvim** (429 and 73 uses,
 with no variant spelling at all), **halutz** and **halutzim** (191 and 56, against 5 "haluz"), **aliyah** (355,
 against 5 "aliya"), **hakhshara** with *kh* (69, against 10 "hachshara", two of them in `content/sites.yaml`), and
-**Knesset** (2737, against 6 "Knesseth"). Counted on main, 26 October 2026.
+**Knesset** (2737, against 6 "Knesseth").
+
+Counted on main on 26 October 2026, over `docs/`, `research_notes/`, `content/`, `README.md`, `README.he.md`,
+`CONTRIBUTING.md` and `unity/Assets/UI/strings.en.yaml`, matching `.md`, `.yaml`, `.yml`, `.tsv`, `.json` and `.txt`
+files only, case-insensitively, with a word boundary either side so that "aliya" does not count the "aliyah" that
+contains it. A different scope gives different totals; the straggler counts are the ones that matter to the rule, and
+they reproduce under any reasonable scope.
 
 Three things the rule does not reach, for the same reasons as section 9:
 
