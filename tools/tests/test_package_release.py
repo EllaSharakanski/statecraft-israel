@@ -9,9 +9,9 @@ from pathlib import Path
 import package_release
 
 REPO = Path(package_release.REPO)
-SENSITIVE_PHOTOS = ["altalena", "bernadotte_assassination", "burma_road_complete", "degania_defence", "operation_hiram", "operation_horev", "operation_yoav", "ten_days"]
+SENSITIVE_PHOTOS = ["altalena", "bernadotte_assassination", "burma_road_complete", "degania_defence", "operation_hiram", "operation_horev", "operation_yoav", "reparations_vote", "ten_days"]
 ALTERNATE_FIXTURE_CARDS = ("jerusalem_demilitarisation_guard", "rafah_force_pressure")
-SENSITIVE = ["altalena", "bernadotte_assassination", "burma_road_complete", "degania_defence", "operation_hiram", "operation_horev", "operation_yoav", "reparations_claim", "ten_days"]
+SENSITIVE = ["altalena", "bernadotte_assassination", "burma_road_complete", "degania_defence", "operation_hiram", "operation_horev", "operation_yoav", "reparations_claim", "reparations_vote", "ten_days"]
 
 
 def photo_manifest(build, reviewed=True, shareable=True):
