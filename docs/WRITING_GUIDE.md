@@ -130,17 +130,16 @@ Six things the rule does not reach:
 2026 (#1760), for docs, content and the UI alike. Give the English at the first mention, as the glossary's
 *transit camp* entry sets out: "the ma'abarot (transit camps)", then either word.
 
-The owner has ruled on ma'abara and ma'abarot only. For the other Hebrew terms this records the spelling already in
-use, pending the owner's word, and a straggler is not a second scheme: **yishuv** and **yishuvim** (429 and 73 uses,
-with no variant spelling at all), **halutz** and **halutzim** (191 and 56, against 5 "haluz"), **aliyah** (355,
-against 5 "aliya"), **hakhshara** with *kh* (69, against 10 "hachshara", two of them in `content/sites.yaml`), and
-**Knesset** (2737, against 6 "Knesseth").
+The owner has ruled on ma'abara and ma'abarot only. The spellings below are **observed in the game, not ruled**:
+they are what the text already uses, recorded here so a reader has one place to look, and a straggler is not a second
+scheme. **yishuv** and **yishuvim**, with no variant spelling at all; **halutz** and **halutzim**, against 5 "haluz";
+**aliyah**, against 5 "aliya"; **hakhshara** with *kh*, against 10 "hachshara", two of them in `content/sites.yaml`;
+and **Knesset**, against 6 "Knesseth".
 
-Counted on main on 26 October 2026, over `docs/`, `research_notes/`, `content/`, `README.md`, `README.he.md`,
-`CONTRIBUTING.md` and `unity/Assets/UI/strings.en.yaml`, matching `.md`, `.yaml`, `.yml`, `.tsv`, `.json` and `.txt`
-files only, case-insensitively, with a word boundary either side so that "aliya" does not count the "aliyah" that
-contains it. A different scope gives different totals; the straggler counts are the ones that matter to the rule, and
-they reproduce under any reasonable scope.
+The straggler counts are from main on 26 October 2026, over `docs/`, `research_notes/`, `content/`, `README.md`,
+`README.he.md`, `CONTRIBUTING.md` and `unity/Assets/UI/strings.en.yaml`, matching `.md`, `.yaml`, `.yml`, `.tsv`,
+`.json` and `.txt` only, case-insensitively, with a word boundary either side so that "aliya" does not count the
+"aliyah" that contains it. They are the counts that matter to the rule, and they reproduce exactly.
 
 Three things the rule does not reach, for the same reasons as section 9:
 
