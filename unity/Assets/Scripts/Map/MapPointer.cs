@@ -40,9 +40,11 @@ namespace Statecraft.Game.Map
     /// <summary>Left click on the map (not on the UI) selects the hex under the pointer: a ray from the camera hits the
     /// terrain's collider, the hit becomes lon/lat (GeoFrame) and then a hex (HexPicker). On a touchscreen a tap (press and
     /// release inside TapPress.SlopPixels, with no second finger down) does the same, so a one-finger drag pans and a pinch zooms without selecting.
-    /// A right click (press and release inside the same slop) raises HexOrdered instead, selecting nothing. One TapPress per
-    /// gesture decides both a click and the camera's pan (RightTapCandidate, TouchTapCandidate): the camera pans only once
-    /// the press has left the slop, so a press is a click or a pan, never both (#1654 review).</summary>
+    /// A right click (press and release inside the same slop) raises HexOrdered instead, selecting nothing. Since #998 a
+    /// left press behaves the same way: inside the slop it selects on release, and past it the camera pans and nothing is
+    /// selected. One TapPress per gesture decides both a click and the camera's pan (RightTapCandidate, LeftTapCandidate,
+    /// TouchTapCandidate): the camera pans only once the press has left the slop, so a press is a click or a pan, never
+    /// both (#1654 review).</summary>
     /// <remarks>Runs before <see cref="CameraController"/> (#1661 item 5). The camera asks this pointer whether a press
     /// may still be a tap. For a finger that answer is <see cref="TouchTapCandidate"/>, which only this component's own
     /// frame moves; <see cref="RightTapCandidate"/> is moved by the right button's action callbacks
