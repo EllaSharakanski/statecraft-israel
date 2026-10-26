@@ -71,21 +71,28 @@ namespace Statecraft.Game.Map
         // Right clicks, as presses are: the right button's press, every pointer move while it is held and its release are
         // each stepped at their own event's position, so a drag out and back inside one slow frame is still a drag.
         readonly Queue<Vector2> rightClicks = new Queue<Vector2>();
-        InputAction? press, rightPress, rightMove;
+        InputAction? press, leftMove, rightPress, rightMove;
 
-        TapPress tap, rightTap;
+        TapPress tap, rightTap, leftTap;
 
         /// <summary>True while the right button's press could still end as a right click (TapPress.TapCandidate): the
         /// camera holds its right-drag pan until it is false.</summary>
         public bool RightTapCandidate => rightTap.TapCandidate;
         /// <summary>True while the primary finger's press could still end as a tap: the camera holds its one-finger pan.</summary>
         public bool TouchTapCandidate => tap.TapCandidate;
+        /// <summary>True while the left button's press could still end as a click (#998): the camera holds its drag
+        /// until the press leaves the slop, so a click never nudges the map and a drag past it pans.</summary>
+        public bool LeftTapCandidate => leftTap.TapCandidate;
 
         void OnEnable()
         {
             press = new InputAction("map-press", InputActionType.Button, "<Mouse>/leftButton");
             press.performed += OnPressed;
+            press.canceled += OnReleased;
             press.Enable();
+            leftMove = new InputAction("map-left-move", InputActionType.PassThrough, "<Mouse>/position");
+            leftMove.performed += OnLeftMoved;
+            leftMove.Enable();
             rightPress = new InputAction("map-right-press", InputActionType.Button, "<Mouse>/rightButton");
             rightPress.performed += OnRightPressed;
             rightPress.canceled += OnRightReleased;
@@ -97,11 +104,12 @@ namespace Statecraft.Game.Map
 
         void OnDisable()
         {
-            if (press != null) { press.performed -= OnPressed; press.Dispose(); press = null; }
+            if (press != null) { press.performed -= OnPressed; press.canceled -= OnReleased; press.Dispose(); press = null; }
+            if (leftMove != null) { leftMove.performed -= OnLeftMoved; leftMove.Dispose(); leftMove = null; }
             if (rightPress != null) { rightPress.performed -= OnRightPressed; rightPress.canceled -= OnRightReleased; rightPress.Dispose(); rightPress = null; }
             if (rightMove != null) { rightMove.performed -= OnRightMoved; rightMove.Dispose(); rightMove = null; }
             presses.Clear(); rightClicks.Clear();
-            rightTap = default;
+            rightTap = default; leftTap = default;
         }
 
         void OnRightPressed(InputAction.CallbackContext ctx)
@@ -118,7 +126,24 @@ namespace Statecraft.Game.Map
 
         void OnPressed(InputAction.CallbackContext ctx)
         {
-            if (ctx.control.device is Pointer p) OnPress(p.position.ReadValue());   // read during the event: its own position
+            if (ctx.control.device is Pointer p) LeftStep(true, false, p.position.ReadValue());   // read during the event: its own position
+        }
+
+        void OnLeftMoved(InputAction.CallbackContext ctx) => LeftStep(false, false, ctx.ReadValue<Vector2>());
+
+        void OnReleased(InputAction.CallbackContext ctx)
+        {
+            if (ctx.control.device is Pointer p) LeftStep(false, true, p.position.ReadValue());
+        }
+
+        /// <summary>One step of the left button's press (#998, owner's ruling of 22 October 2026: a left drag pans the
+        /// map). The click is decided like the right button's: it is queued on the release, at the position the press
+        /// went down, and only while it never left the slop. Queuing on the release and not the press is what lets a
+        /// drag pan without selecting — a press cannot be known to be a drag until it moves — and the queue still holds
+        /// one entry per physical press, so each click acts exactly once (docs/m3-rulings.md, #1617).</summary>
+        internal void LeftStep(bool pressed, bool released, Vector2 position)
+        {
+            if (leftTap.Step(pressed, released, position, false) is Vector2 at) OnPress(at);
         }
 
         /// <summary>Queues a press at <paramref name="at"/> (screen pixels, y up).</summary>

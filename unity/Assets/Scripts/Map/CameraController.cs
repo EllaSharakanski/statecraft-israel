@@ -114,7 +114,9 @@ namespace Statecraft.Game.Map
         {
             if (pan == null || dragPan == null || zoom == null || zoomKeys == null || orbit == null) return;
             Vector2? pointer = Pointer.current != null ? Pointer.current.position.ReadValue() : (Vector2?)null;
-            var down = Mouse.current != null && Mouse.current.rightButton.isPressed;
+            // Either button (#998, owner 22 Oct 2026): DragPan is bound to both, and a press is only a pan once it has
+            // left the click's slop, so HoldDrag must see that a button is down for the left one as well as the right.
+            var down = Mouse.current != null && (Mouse.current.rightButton.isPressed || Mouse.current.leftButton.isPressed);
             var held = down && HoldsMouseDrag?.Invoke() == true;
             var drag = dragPan.ReadValue<Vector2>();
             var zoomRaw = WheelOr(zoom.ReadValue<float>());

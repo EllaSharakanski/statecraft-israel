@@ -98,7 +98,7 @@ public class RightClickOrPanTests : InputTestFixture
             var clicks = Clicks;
             Pointer.IsOverUi = p => { clicks.Add(p); return true; };   // asked once per right click; true: no map needed
             var pointer = Pointer;
-            Controller.HoldsMouseDrag = () => pointer.RightTapCandidate;   // as GameRoot wires it
+            Controller.HoldsMouseDrag = () => pointer.RightTapCandidate || pointer.LeftTapCandidate;   // as GameRoot wires it
             Send(Controller, "Awake"); Send(Controller, "OnEnable"); Send(Pointer, "OnEnable");
         }
         public void Frame() { Controller.Tick(0.016f); Pointer.ProcessPresses(); }
@@ -181,5 +181,48 @@ public class RightClickOrPanTests : InputTestFixture
         Release(mouse.rightButton);
         rig.Frame();
         Assert.IsEmpty(rig.Clicks, "each event is stepped at its own position: the excursion makes it a drag");
+    }
+
+    /// <summary>Drags the left button, the same shape as <see cref="Drag"/> does the right one.</summary>
+    Vector3 LeftDrag(Rig rig, Vector2 from, params Vector2[] path)
+    {
+        Set(mouse.position, from);
+        rig.Frame();
+        Press(mouse.leftButton);
+        rig.Frame();
+        var at = from;
+        foreach (var p in path) { Move(mouse.position, p, p - at); at = p; rig.Frame(); }
+        var held = rig.View.LookAt;
+        Release(mouse.leftButton);
+        rig.Frame();
+        return held;
+    }
+
+    /// <summary>#998, owner's ruling of 22 October 2026: dragging the map with the left button pans it once the
+    /// pointer has moved more than a few pixels, and the drag selects nothing. Today the left button selects on its
+    /// press, so a drag both selects the hex it started on and leaves the map still.</summary>
+    [Test]
+    public void ALeftDragPastTheSlopPansAndSelectsNothing()
+    {
+        using var rig = new Rig();
+        var start = rig.View.LookAt;
+        var from = new Vector2(600, 400);
+        LeftDrag(rig, from, from + new Vector2(120, 0), from + new Vector2(240, 0));
+        Assert.IsEmpty(rig.Clicks, "a left drag selects nothing");
+        Assert.AreNotEqual(start, rig.View.LookAt, "and the map pans with it");
+    }
+
+    /// <summary>The other half of the same ruling: a plain left click still selects, and does not nudge the map. It
+    /// selects on the release now rather than the press, because a press cannot be known to be a drag until it moves;
+    /// the click is still queued per press, so each physical click acts exactly once (docs/m3-rulings.md, #1617).</summary>
+    [Test]
+    public void ALeftClickInsideTheSlopStillSelectsAndDoesNotPan()
+    {
+        using var rig = new Rig();
+        var start = rig.View.LookAt;
+        var at = new Vector2(600, 400);
+        LeftDrag(rig, at, at + new Vector2(4, -3));
+        CollectionAssert.AreEqual(new[] { at }, rig.Clicks, "a click inside the slop selects where it went down");
+        Assert.AreEqual(start, rig.View.LookAt, "and the map does not move");
     }
 }
