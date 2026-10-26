@@ -249,6 +249,12 @@ public class MapPointerTickTests : InputTestFixture
         MoveTouch(1, thumb + new Vector2(0, -TapPress.SlopPixels - 40));   // the thumb drags well past the slop
         rig.Frame();
         Assert.AreEqual(start, rig.View.LookAt, "a pinch must not pan the map, however briefly the other finger was down");
+        // ...and it must not arrive a frame late either (#1795 review). Skipping case 1 for one frame is enough today,
+        // because the drag is read from the finger's delta and that delta is gone next frame. On the #1661 camera lane
+        // the drag comes from travel recorded at the events, so a deferred pan would land here and a single assertion
+        // on the pinch frame alone would not notice.
+        rig.Frame();
+        Assert.AreEqual(start, rig.View.LookAt, "and the pan does not arrive on the frame after the pinch either");
     }
 
     /// <summary>The control, and the reason the test above is a finding rather than an artefact: the same gesture with
