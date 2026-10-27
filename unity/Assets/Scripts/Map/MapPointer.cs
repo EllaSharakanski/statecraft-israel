@@ -7,8 +7,9 @@ using UnityEngine.InputSystem;
 namespace Statecraft.Game.Map
 {
     /// <summary>The tap rule, with no devices: a finger becomes a tap only when it lifts within
-    /// <see cref="SlopPixels"/> of where it landed and no second finger was down while it was held. A moved finger
-    /// drags the camera and two fingers pinch (CameraController), so neither may also select a hex.</summary>
+    /// <see cref="SlopPixels"/> of where it landed, travelled no further than that inside any one frame, and no second
+    /// finger was down while it was held. A moved finger drags the camera and two fingers pinch (CameraController), so
+    /// neither may also select a hex.</summary>
     public struct TapPress
     {
         /// <summary>How far the finger may wander, in screen pixels, before the press stops being a tap (about
@@ -23,14 +24,22 @@ namespace Statecraft.Game.Map
         /// pan, never both (#1654 review).</summary>
         public bool TapCandidate => down && !moved && !pinched;
 
-        /// <summary>One frame of the watched finger: its pressed and released edges, where it is, and whether any
-        /// other finger is down. The tap's position on a release frame that still qualifies, otherwise null.</summary>
-        public Vector2? Step(bool pressed, bool released, Vector2 position, bool otherFingerDown)
+        /// <summary>One frame of the watched finger: its pressed and released edges, where it is, whether any other
+        /// finger is down, and how far it travelled within this frame. The tap's position on a release frame that
+        /// still qualifies, otherwise null.
+        /// <para><paramref name="travel"/> is what makes a very fast swipe a pan rather than a tap (owner's ruling of
+        /// 26 October 2026, #1661 item 4). A finger sampled once per frame can press, cross the screen and lift inside
+        /// one input update, and then <c>position</c> and <c>start</c> are the same sample: the distance test below
+        /// sees nothing moved however far it went. The frame's own travel does see it. Callers with no travel to
+        /// report (the mouse's right button, which is stepped from its action callbacks) pass none, so their rule is
+        /// unchanged.</para></summary>
+        public Vector2? Step(bool pressed, bool released, Vector2 position, bool otherFingerDown, Vector2 travel = default)
         {
             if (pressed) { start = position; down = true; moved = false; pinched = false; }
             if (!down) return null;
             if (otherFingerDown) pinched = true;                       // a pinch is never a tap, even a still thumb
             if ((position - start).sqrMagnitude > SlopPixels * SlopPixels) moved = true;   // latched: coming back helps not
+            if (travel.sqrMagnitude > SlopPixels * SlopPixels) moved = true;               // a whole flick inside one frame
             if (!released) return null;
             down = false;
             return moved || pinched ? (Vector2?)null : start;
@@ -174,7 +183,7 @@ namespace Statecraft.Game.Map
                 if (touch.press.isPressed) pressed++;
             // any other finger down cancels the tap (TapPress): a releasing pinch's thumb is inside the slop, yet must not select
             var tapAt = tap.Step(t.press.wasPressedThisFrame, t.press.wasReleasedThisFrame,
-                t.position.ReadValue(), pressed > (t.press.isPressed ? 1 : 0));
+                t.position.ReadValue(), pressed > (t.press.isPressed ? 1 : 0), t.delta.ReadValue());
             if (tapAt.HasValue) OnPress(tapAt.Value);   // a tap selects where the finger landed, like a click
         }
 
