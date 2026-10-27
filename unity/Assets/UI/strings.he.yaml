@@ -1121,3 +1121,6 @@ why.cause.ending.mvp_ended: "המשחק הגיע לתור האחרון" # native
 why.cause.ending.coalition_collapse: "הקואליציה התפרקה" # native-review-pending (#564)
 why.cause.ending.defeat_economy: "הכסף והמזון אזלו" # native-review-pending (#564)
 why.cause.ending.defeat_war: "האויב מחזיק בעיר" # native-review-pending (#564)
+
+# native-review-pending: #1661 occupied-destination confirmation
+unit.confirm_move: "שליחת {0} אל {1}"
